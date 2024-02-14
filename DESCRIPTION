@@ -1,6 +1,6 @@
 Package: dsOMOPClient
 Title: DataSHIELD integration for OMOP CDM (Client-side)
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R:
     c(person("David", "Sarrat González", , "david.sarrat@isglobal.org", role = c("aut", "cre")),
       person("Xavier", "Escribà Montagut", , "xavier.escriba@isglobal.org", role = c("aut")),
@@ -9,4 +9,6 @@ Description:
 License: MIT
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
+Remotes:
+  datashield/dsBaseClient
