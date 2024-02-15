@@ -13,6 +13,7 @@ of tables as well as fetching catalogs of available data within the database.
 \itemize{
 \item \href{#method-OMOPCDMDatabase-new}{\code{OMOPCDMDatabase$new()}}
 \item \href{#method-OMOPCDMDatabase-assignResource}{\code{OMOPCDMDatabase$assignResource()}}
+\item \href{#method-OMOPCDMDatabase-removeResource}{\code{OMOPCDMDatabase$removeResource()}}
 \item \href{#method-OMOPCDMDatabase-get}{\code{OMOPCDMDatabase$get()}}
 \item \href{#method-OMOPCDMDatabase-tables}{\code{OMOPCDMDatabase$tables()}}
 \item \href{#method-OMOPCDMDatabase-columns}{\code{OMOPCDMDatabase$columns()}}
@@ -50,6 +51,15 @@ A new instance of the OMOPCDMDatabase class.
 \subsection{Method \code{assignResource()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OMOPCDMDatabase$assignResource(symbol)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-OMOPCDMDatabase-removeResource"></a>}}
+\if{latex}{\out{\hypertarget{method-OMOPCDMDatabase-removeResource}{}}}
+\subsection{Method \code{removeResource()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{OMOPCDMDatabase$removeResource()}\if{html}{\out{</div>}}
 }
 
 }

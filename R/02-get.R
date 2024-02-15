@@ -34,7 +34,13 @@ OMOPCDMDatabase$set("public", "get", function(table,
   
   self$assignResource(self$resourceSymbol)
   call <- getTableCall(self$resourceSymbol, table, conceptFilter, columnFilter, personFilter, mergeColumn, dropNA)
-  datashield.assign.expr(self$connections, symbol, call)
+  datashield.assign.expr(self$connections, 
+                         symbol, 
+                         call, 
+
+                         # Removes the connection resource from the environment after the call
+                         success = function(server, error) self$removeResource(),
+                         error = function(server, error) self$removeResource())
 })
 
 

@@ -1,9 +1,9 @@
 #' @title Assign the OMOP CDM database resource to a DataSHIELD environment
-#' @name assignResource
+#' @name OMOPCDMDatabase-assignResource
 #'
 #' @description This function assigns the resource of the OMOP CDM database connection
-#' to a DataSHIELD environment, facilitating the connection to the database
-#' from the server side.
+#' to the DataSHIELD environment, facilitating the connection to the database from the 
+#' server side.
 #'
 #' @param symbol A character string representing the symbol to which the 
 #' resource will be assigned.
@@ -14,6 +14,18 @@ OMOPCDMDatabase$set("public", "assignResource", function(symbol) {
     symbol,
     self$resource
   )
+})
+
+
+#' @title Remove the OMOP CDM database resource from a DataSHIELD environment
+#' @name OMOPCDMDatabase-removeResource
+#' 
+#' @description This function removes the resource of the OMOP CDM database connection
+#' from the DataSHIELD environment. It is commonly used after having performed operations
+#' related to the connection with the database. 
+#'  
+OMOPCDMDatabase$set("public", "removeResource", function() {
+  datashield.rm(self$connections, self$resourceSymbol)
 })
 
 

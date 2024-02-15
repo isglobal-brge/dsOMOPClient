@@ -12,6 +12,10 @@ OMOPCDMDatabase$set("public", "concepts", function(table) {
   self$assignResource(self$resourceSymbol)
   datashield.aggregate(
     self$connections,
-    expr = paste0("getConceptCatalogDS(", self$resourceSymbol, ", table = '", table, "')")
+    expr = paste0("getConceptCatalogDS(", self$resourceSymbol, ", table = '", table, "')"),
+        
+    # Removes the connection resource from the environment after the call
+    success = function(server, error) self$removeResource(),
+    error = function(server, error) self$removeResource()
   )
 })
