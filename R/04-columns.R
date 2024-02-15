@@ -1,3 +1,13 @@
+#' @title Get Columns Catalog
+#' @name OMOPCDMDatabase-columns
+#'
+#' @description This function returns a list of available columns for a specified table in an OMOP CDM database.
+#'
+#' @param table The name of the table for which to retrieve the columns catalog.
+#' @param dropNA A boolean indicating whether to skip empty columns.
+#'
+#' @return A list of column names available in the specified table of the OMOP CDM database.
+#' 
 OMOPCDMDatabase$set("public", "columns", function(table, dropNA = TRUE) {
   self$assignResource(self$resourceSymbol)
   datashield.aggregate(

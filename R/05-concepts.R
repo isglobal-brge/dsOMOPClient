@@ -1,3 +1,13 @@
+#' @title Get Concepts Catalog
+#' @name OMOPCDMDatabase-concepts
+#'
+#' @description This function returns a data frame of available concept IDs and their names for a specified table in an OMOP CDM database. 
+#'
+#' @param table The name of the table for which to retrieve the concepts catalog.
+#'
+#' @return A data frame containing concept_id and concept_name columns representing available concepts in the specified 
+#' table of the OMOP CDM database.
+#' 
 OMOPCDMDatabase$set("public", "concepts", function(table) {
   self$assignResource(self$resourceSymbol)
   datashield.aggregate(
