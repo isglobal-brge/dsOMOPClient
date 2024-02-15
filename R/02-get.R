@@ -1,3 +1,20 @@
+OMOPCDMDatabase$set("public", "get", function(table,
+                                              symbol = NULL,
+                                              conceptFilter = NULL, 
+                                              columnFilter = NULL, 
+                                              personFilter = NULL, 
+                                              mergeColumn = NULL,
+                                              dropNA = FALSE) {
+  # If a symbol is not provided, use the table name as the symbol
+  if (is.null(symbol)) {
+    symbol <- table
+  }
+  
+  self$assignResource(self$resourceSymbol)
+  call <- getTableCall(self$resourceSymbol, table, conceptFilter, columnFilter, personFilter, mergeColumn, dropNA)
+  datashield.assign.expr(self$connections, symbol, call)
+})
+
 getTableCall <- function(resource,
                          table, 
                          conceptFilter = NULL, 
