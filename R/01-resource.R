@@ -9,7 +9,7 @@
 #' resource will be assigned.
 #'
 OMOPCDMDatabase$set("public", "assignResource", function(symbol) {
-  datashield.assign.resource(
+  DSI::datashield.assign.resource(
     self$connections, 
     symbol,
     self$resource
@@ -25,7 +25,7 @@ OMOPCDMDatabase$set("public", "assignResource", function(symbol) {
 #' related to the connection with the database. 
 #'  
 OMOPCDMDatabase$set("public", "removeResource", function() {
-  datashield.rm(self$connections, self$resourceSymbol)
+  DSI::datashield.rm(self$connections, self$resourceSymbol)
 })
 
 

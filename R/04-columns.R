@@ -10,10 +10,9 @@
 #' 
 OMOPCDMDatabase$set("public", "columns", function(table, dropNA = FALSE) {
   self$assignResource(self$resourceSymbol)
-  datashield.aggregate(
+  DSI::datashield.aggregate(
     self$connections,
     expr = paste0("getColumnCatalogDS(", self$resourceSymbol, ", table = '", table, "', dropNA = ", dropNA, ")"),
-    
     # Removes the connection resource from the environment after the call
     success = function(server, error) self$removeResource(),
     error = function(server, error) self$removeResource()
