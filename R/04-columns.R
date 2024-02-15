@@ -8,7 +8,7 @@
 #'
 #' @return A list of column names available in the specified table of the OMOP CDM database.
 #' 
-OMOPCDMDatabase$set("public", "columns", function(table, dropNA = TRUE) {
+OMOPCDMDatabase$set("public", "columns", function(table, dropNA = FALSE) {
   self$assignResource(self$resourceSymbol)
   datashield.aggregate(
     self$connections,

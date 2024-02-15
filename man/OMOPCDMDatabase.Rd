@@ -94,7 +94,7 @@ A new instance of the OMOPCDMDatabase class.
 \if{latex}{\out{\hypertarget{method-OMOPCDMDatabase-columns}{}}}
 \subsection{Method \code{columns()}}{
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{OMOPCDMDatabase$columns(table, dropNA = TRUE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{OMOPCDMDatabase$columns(table, dropNA = FALSE)}\if{html}{\out{</div>}}
 }
 
 }
