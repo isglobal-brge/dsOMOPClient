@@ -28,6 +28,15 @@ OMOPCDMDatabase <- R6::R6Class(
       self$connections = connections
       self$resource = resource
       self$resourceSymbol = generateResourceSymbol(resource)
+      
+      # Checks if the connection to the OMOP CDM database can be established
+      tryCatch({
+        if(!self$checkConnection()) {
+          stop("Connection failed.")
+        }
+      }, error = function(error) {
+        stop(paste0("Unable to establish connection to the OMOP CDM database `", self$resource), "`.")
+      })
     }
   )
 )

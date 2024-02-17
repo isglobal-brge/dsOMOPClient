@@ -10,7 +10,7 @@
 #'
 OMOPCDMDatabase$set("public", "assignResource", function(symbol) {
   DSI::datashield.assign.resource(
-    self$connections, 
+    self$connections,
     symbol,
     self$resource
   )
@@ -25,7 +25,11 @@ OMOPCDMDatabase$set("public", "assignResource", function(symbol) {
 #' related to the connection with the database. 
 #'  
 OMOPCDMDatabase$set("public", "removeResource", function() {
-  DSI::datashield.rm(self$connections, self$resourceSymbol)
+  tryCatch({
+    DSI::datashield.rm(self$connections, self$resourceSymbol)
+  }, 
+  # Hide DataSHIELD's error/warning messages as they may be ambiguous in this case
+  error = function(error) {}, warning = function(warning) {})
 })
 
 
