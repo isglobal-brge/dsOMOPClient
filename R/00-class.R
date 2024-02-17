@@ -20,7 +20,8 @@ OMOPCDMDatabase <- R6::R6Class(
     #' DataSHIELD connection object and the OMOP CDM database resource identifier.
     #'
     #' @param connections Connection object to the DataSHIELD server.
-    #' @param resource Identifier for the specific resource within the DataSHIELD server.
+    #' @param resource Either an identifier or a named list of identifiers for the specific resource(s) within the DataSHIELD 
+    #' server(s). If a named list, the name of each resource identifier should correspond to the server name in the connections.
     #' 
     #' @return A new instance of the OMOPCDMDatabase class.
     #' 
@@ -32,10 +33,14 @@ OMOPCDMDatabase <- R6::R6Class(
       # Checks if the connection to the OMOP CDM database can be established
       tryCatch({
         if(!self$checkConnection()) {
-          stop("Connection failed.")
+          stop()
         }
       }, error = function(error) {
-        stop(paste0("Unable to establish connection to the OMOP CDM database `", self$resource), "`.")
+        if (is.list(resource)) { # If resource is a list (multiple resource identifiers)
+          stop("Unable to establish connections to all the OMOP CDM databases.")
+        } else { # If resource is not a list (a single resource identifier)
+          stop("Unable to establish a connection to the OMOP CDM database.")
+        }
       })
     }
   )

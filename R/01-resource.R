@@ -45,6 +45,6 @@ OMOPCDMDatabase$set("public", "removeResource", function() {
 #'
 generateResourceSymbol <- function(resource) {
   randomString <- paste0(sample(c(0:9, letters, LETTERS), 8, replace = TRUE), collapse = "")
-  resourceSymbol <- paste("dsOMOP", resource, randomString, sep = ".")
+  resourceSymbol <- paste("dsOMOP", randomString, sep = ".")
   return(resourceSymbol)
 }

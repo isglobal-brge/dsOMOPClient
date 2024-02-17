@@ -10,6 +10,7 @@
 #' 
 OMOPCDMDatabase$set("public", "columns", function(table, dropNA = FALSE) {
   self$assignResource(self$resourceSymbol)
+
   DSI::datashield.aggregate(
     self$connections,
     expr = paste0("getColumnCatalogDS(", self$resourceSymbol, ", table = '", table, "', dropNA = ", dropNA, ")"),

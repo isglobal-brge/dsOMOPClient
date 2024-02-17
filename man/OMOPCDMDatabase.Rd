@@ -38,7 +38,8 @@ DataSHIELD connection object and the OMOP CDM database resource identifier.
 \describe{
 \item{\code{connections}}{Connection object to the DataSHIELD server.}
 
-\item{\code{resource}}{Identifier for the specific resource within the DataSHIELD server.}
+\item{\code{resource}}{Either an identifier or a named list of identifiers for the specific resource(s) within the DataSHIELD
+server(s). If a named list, the name of each resource identifier should correspond to the server name in the connections.}
 }
 \if{html}{\out{</div>}}
 }
