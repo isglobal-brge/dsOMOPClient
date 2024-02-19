@@ -7,7 +7,7 @@
 #' @param dropNA A boolean indicating whether to skip empty columns.
 #'
 #' @return A list of column names available in the specified table of the OMOP CDM database.
-#' 
+#'
 OMOPCDMDatabase$set("public", "columns", function(table, dropNA = FALSE) {
   self$assignResource(self$resourceSymbol)
 

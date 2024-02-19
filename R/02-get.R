@@ -1,11 +1,11 @@
 #' @title Get Table from OMOP CDM Database
-#' @name OMOPCDMDatabase-get 
+#' @name OMOPCDMDatabase-get
 #'
 #' @description This function assigns a specified table by name (string) from an OMOP CDM database to the DataSHIELD environment.
 #' The user can specify the symbol (string) for the table assignment in the DataSHIELD environment,
 #' a vector of concept IDs (numeric) to filter if dealing with a table categorized by concept IDs,
 #' a vector of column names (strings) of the table to filter (i.e., select),
-#' the name of a symbol (string) in the environment of a table from which to obtain its person IDs 
+#' the name of a symbol (string) in the environment of a table from which to obtain its person IDs
 #' (from the unique values of their person_id),
 #' and the name of the column (string) by which to perform merging operations with other database tables.
 #' If not specified, the "person_id" column is assumed to be the merging column.
@@ -16,28 +16,28 @@
 #' @param conceptFilter A numeric vector specifying concept IDs to filter the table by.
 #' @param columnFilter A string vector specifying column names to filter (select) in the table.
 #' @param personFilter A string specifying the symbol in the environment of a table from which to obtain person IDs.
-#' @param mergeColumn A string specifying the column name for merging operations with other tables. 
+#' @param mergeColumn A string specifying the column name for merging operations with other tables.
 #'                    Defaults to "person_id" if not specified.
 #' @param dropNA A boolean indicating whether to drop empty columns. Defaults to FALSE.
 #'
 OMOPCDMDatabase$set("public", "get", function(table,
                                               symbol = NULL,
-                                              conceptFilter = NULL, 
-                                              columnFilter = NULL, 
-                                              personFilter = NULL, 
+                                              conceptFilter = NULL,
+                                              columnFilter = NULL,
+                                              personFilter = NULL,
                                               mergeColumn = NULL,
                                               dropNA = FALSE) {
   # If a symbol is not provided, uses the table name as the symbol
   if (is.null(symbol)) {
     symbol <- table
   }
-  
+
   self$assignResource(self$resourceSymbol)
   call <- getTableCall(self$resourceSymbol, table, conceptFilter, columnFilter, personFilter, mergeColumn, dropNA)
   DSI::datashield.assign.expr(
-    self$connections, 
-    symbol, 
-    call, 
+    self$connections,
+    symbol,
+    call,
     # Removes the connection resource from the environment after the call
     success = function(server, error) self$removeResource(),
     error = function(server, error) self$removeResource()
@@ -60,15 +60,14 @@ OMOPCDMDatabase$set("public", "get", function(table,
 #' @param dropNA A boolean indicating whether to drop empty columns. Defaults to FALSE.
 #'
 #' @return A string representing the call to be executed on the DataSHIELD server for table assignment.
-#' 
+#'
 getTableCall <- function(resource,
-                         table, 
-                         conceptFilter = NULL, 
-                         columnFilter = NULL, 
-                         personFilter = NULL, 
-                         mergeColumn = NULL, 
+                         table,
+                         conceptFilter = NULL,
+                         columnFilter = NULL,
+                         personFilter = NULL,
+                         mergeColumn = NULL,
                          dropNA = FALSE) {
-                        
   call <- paste0("getOMOPCDMTableDS(", resource, ", table = '", table, "'")
 
   if (!is.null(conceptFilter)) {
