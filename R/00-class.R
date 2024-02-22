@@ -30,21 +30,29 @@ OMOPCDMDatabase <- R6::R6Class(
       self$resource <- resource
       self$resourceSymbol <- generateResourceSymbol(resource)
 
-      # Checks if the connection to the OMOP CDM database can be established
-      tryCatch(
-        {
-          if (!self$checkConnection()) {
-            stop()
-          }
-        },
-        error = function(error) {
-          if (is.list(resource)) { # If resource is a list (multiple resource identifiers)
-            stop("Unable to establish connections to all the OMOP CDM databases.")
-          } else { # If resource is not a list (a single resource identifier)
-            stop("Unable to establish a connection to the OMOP CDM database.")
-          }
-        }
-      )
+      # Checks if the connections are valid
+      tryCatch({
+        self$checkConnection()
+      }, error = function(error) {
+        errors <- DSI::datashield.errors()
+        stop(paste(
+          paste(crayon::red("\nERROR: Some of the connections could not be established!"), "The following errors were raised:"),
+          paste(crayon::bgRed(paste0("[", names(errors), "]")), errors, collapse = "\n"),
+          "Please check the connection details and try again.",
+          sep = "\n"
+        ))
+      })
+
+      # Checks if the privacy control level is permissive enough
+      privacyWarnings <- self$checkPrivacyControlLevel()
+      if (length(privacyWarnings) > 0) {
+        warning(paste(
+          paste(crayon::yellow("\nWARNING: The privacy control level may not be permissive enough to allow some of the dsOMOP operations!"), "The following warnings were raised:"),
+          paste(crayon::bgYellow(paste0("[", names(privacyWarnings), "]")), privacyWarnings, collapse = "\n"),
+          "This is a setting that should be configured by the server administrator. Please contact them for more information.",
+          sep = "\n"
+        ))
+      }
     }
   )
 )

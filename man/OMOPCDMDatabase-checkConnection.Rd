@@ -7,6 +7,5 @@
 A boolean value indicating whether the connection to the database is valid (TRUE) or not (FALSE).
 }
 \description{
-This function checks if the OMOPCDMDatabase object points to a valid connection to the OMOP CDM database
-by attempting to retrieve its list of tables.
+This function checks if the OMOPCDMDatabase object points to a valid connection to an OMOP CDM database.
 }

@@ -19,6 +19,7 @@ of tables as well as fetching catalogs of available data within the database.
 \item \href{#method-OMOPCDMDatabase-columns}{\code{OMOPCDMDatabase$columns()}}
 \item \href{#method-OMOPCDMDatabase-concepts}{\code{OMOPCDMDatabase$concepts()}}
 \item \href{#method-OMOPCDMDatabase-checkConnection}{\code{OMOPCDMDatabase$checkConnection()}}
+\item \href{#method-OMOPCDMDatabase-checkPrivacyControlLevel}{\code{OMOPCDMDatabase$checkPrivacyControlLevel()}}
 \item \href{#method-OMOPCDMDatabase-clone}{\code{OMOPCDMDatabase$clone()}}
 }
 }
@@ -115,6 +116,15 @@ A new instance of the OMOPCDMDatabase class.
 \subsection{Method \code{checkConnection()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OMOPCDMDatabase$checkConnection()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-OMOPCDMDatabase-checkPrivacyControlLevel"></a>}}
+\if{latex}{\out{\hypertarget{method-OMOPCDMDatabase-checkPrivacyControlLevel}{}}}
+\subsection{Method \code{checkPrivacyControlLevel()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{OMOPCDMDatabase$checkPrivacyControlLevel()}\if{html}{\out{</div>}}
 }
 
 }
