@@ -47,7 +47,7 @@ OMOPCDMDatabase$set("public", "removeResource", function() {
 #' @return A character string representing the unique symbol for the resource.
 #'
 generateResourceSymbol <- function(resource) {
-  randomString <- paste0(sample(c(0:9, letters, LETTERS), 8, replace = TRUE), collapse = "")
-  resourceSymbol <- paste("dsOMOP", randomString, sep = ".")
+  randomString <- paste0(sample(c(0:9, letters, LETTERS), 4, replace = TRUE), collapse = "")
+  resourceSymbol <- paste0("dsO.", randomString)
   return(resourceSymbol)
 }
