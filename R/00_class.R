@@ -36,9 +36,9 @@ OMOPCDMDatabase <- R6::R6Class(
       }, error = function(error) {
         errors <- DSI::datashield.errors()
         stop(paste(
-          paste(crayon::red("\nERROR: Some of the connections could not be established!"), "The following errors were raised:"),
-          paste(crayon::bgRed(paste0("[", names(errors), "]")), errors, collapse = "\n"),
-          "Please check the connection details and try again.",
+          paste(crayon::red("\nSome connections could not be established!"), "The following errors were raised:"),
+          paste(crayon::bgRed(crayon::white(paste0("[", names(errors), "]"))), errors, collapse = "\n"),
+          crayon::red("Please check the connection details and try again."),
           sep = "\n"
         ))
       })
@@ -47,9 +47,9 @@ OMOPCDMDatabase <- R6::R6Class(
       privacyWarnings <- self$checkPrivacyControlLevel()
       if (length(privacyWarnings) > 0) {
         warning(paste(
-          paste(crayon::yellow("\nWARNING: The privacy control level may not be permissive enough to allow some of the dsOMOP operations!"), "The following warnings were raised:"),
-          paste(crayon::bgYellow(paste0("[", names(privacyWarnings), "]")), privacyWarnings, collapse = "\n"),
-          "This is a setting that should be configured by the server administrator. Please contact them for more information.",
+          paste(crayon::yellow("\nThe privacy control level may not be permissive enough to allow some operations!"), "The following warnings were raised:"),
+          paste(crayon::bgYellow(crayon::black(paste0("[", names(privacyWarnings), "]"))), privacyWarnings, collapse = "\n"),
+          crayon::yellow("This should be configured by the server administrator. Please contact them for more information."),
           sep = "\n"
         ))
       }
