@@ -31,17 +31,20 @@ OMOPCDMDatabase <- R6::R6Class(
       self$resourceSymbol <- generateResourceSymbol(resource)
 
       # Checks if the connections are valid
-      tryCatch({
-        self$checkConnection()
-      }, error = function(error) {
-        errors <- DSI::datashield.errors()
-        stop(paste(
-          paste(crayon::red("\nSome connections could not be established!"), "The following errors were raised:"),
-          paste(crayon::bgRed(crayon::white(paste0("[", names(errors), "]"))), errors, collapse = "\n"),
-          crayon::red("Please check the connection details and try again."),
-          sep = "\n"
-        ))
-      })
+      tryCatch(
+        {
+          self$checkConnection()
+        },
+        error = function(error) {
+          errors <- DSI::datashield.errors()
+          stop(paste(
+            paste(crayon::red("\nSome connections could not be established!"), "The following errors were raised:"),
+            paste(crayon::bgRed(crayon::white(paste0("[", names(errors), "]"))), errors, collapse = "\n"),
+            crayon::red("Please check the connection details and try again."),
+            sep = "\n"
+          ))
+        }
+      )
 
       # Checks if the privacy control level is permissive enough
       privacyWarnings <- self$checkPrivacyControlLevel()
