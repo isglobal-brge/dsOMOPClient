@@ -32,6 +32,14 @@ library(devtools)
 devtools::install_github('isglobal-brge/dsOMOPClient')
 ```
 
+## Community development and extensions
+
+The `dsOMOPClient` package serves as a gateway for interacting with databases in the OMOP CDM format, enabling the fetching of tables to be integrated into the DataSHIELD workflow. This integration adheres to the privacy standards and disclosure control mechanisms inherent to the DataSHIELD software, ensuring that the subsequent data manipulation and analysis operations are secure.
+
+While `dsOMOPClient` acts as an interface, the potential for automation or streamlining of processes through the creation of supplementary functions, scripts, and packages is vast. We strongly encourage the community to develop tools that build upon `dsOMOPClient`, tailoring them to specific use cases and research needs. Such community-driven development not only enhances the utility of `dsOMOPClient` but also fosters a collaborative ecosystem around the combined use of both DataSHIELD and OMOP CDM.
+
+An example of this approach is **[`dsOMOPHelper`](https://github.com/isglobal-brge/dsOMOPHelper)**, a complementary package we have developed alongside `dsOMOPClient`. `dsOMOPHelper` illustrates how the process can be simplified by combining commands from `dsOMOPClient` and `dsBaseClient` (which invokes standard DataSHIELD workflow operations). This package significantly reduces the complexity of using `dsOMOPClient` for most simple use cases, where data from an OMOP CDM database may be used for epidemiological studies within the DataSHIELD environment. You can read more about `dsOMOPHelper` and its functionalities by visiting its GitHub repository: [https://github.com/isglobal-brge/dsOMOPHelper](https://github.com/isglobal-brge/dsOMOPHelper).
+
 ## Acknowledgements
 
 - The development of dsOMOP has been supported by the **RadGen4COPD**, **[P4COPD](https://www.clinicbarcelona.org/en/projects-and-clinical-assays/detail/p4copd-prediction-prevention-personalized-and-precision-management-of-copd-in-young-adults)**, and **[DATOS-CAT](https://datos-cat.github.io/LandingPage)** projects. These collaborations have not only provided essential financial backing but have also affirmed the project's relevance and application in significant research endeavors.
