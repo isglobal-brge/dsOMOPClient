@@ -2,7 +2,7 @@
 
 ## Introduction
 
-<img src="doc/img/dsomop_logo.png" align="left" height="140" style="margin-right: 10px;" />
+<img src="man/figures/dsomop_logo.png" align="left" height="140" style="margin-right: 10px;" />
 
 The `dsOMOP` package is designed to facilitate the interaction with remote databases formatted in the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) from within a [DataSHIELD](https://www.datashield.org/about/about-datashield-collated) environment. It provides a suite of functions that allow users to fetch and transform data from these databases into a format that is intelligible and usable within the DataSHIELD analytical workflow. This integration ensures that data analysis complies with the DataSHIELD security model, which is crucial for maintaining the privacy and security of the data.
 
@@ -40,7 +40,7 @@ The `dsOMOPClient` package serves as a gateway for interacting with databases in
 
 While `dsOMOPClient` acts as an interface, the potential for automation or streamlining of processes through the creation of supplementary functions, scripts, and packages is vast. We strongly encourage the community to develop tools that build upon `dsOMOPClient`, tailoring them to specific use cases and research needs. Such community-driven development not only enhances the utility of `dsOMOPClient` but also fosters a collaborative ecosystem around the combined use of both DataSHIELD and OMOP CDM.
 
-<a href="https://github.com/isglobal-brge/dsOMOPHelper"><img src="doc/img/dsomophelper_logo.png" align="right" height="140" style="margin-left: 10px;" /></a>
+<a href="https://github.com/isglobal-brge/dsOMOPHelper"><img src="man/figures/dsomophelper_logo.png" align="right" height="140" style="margin-left: 10px;" /></a>
 
 An example of this approach is **[`dsOMOPHelper`](https://github.com/isglobal-brge/dsOMOPHelper)**, a complementary package we have developed alongside `dsOMOPClient`. `dsOMOPHelper` illustrates how the process can be simplified by combining commands from `dsOMOPClient` and `dsBaseClient` (which invokes standard DataSHIELD workflow operations). This package significantly reduces the complexity of using `dsOMOPClient` for most simple use cases, where data from an OMOP CDM database may be used for epidemiological studies within the DataSHIELD environment. You can read more about `dsOMOPHelper` and its functionalities by visiting its GitHub repository: [https://github.com/isglobal-brge/dsOMOPHelper](https://github.com/isglobal-brge/dsOMOPHelper).
 
