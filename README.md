@@ -33,6 +33,11 @@ You can then install the `dsOMOPClient` package using the following command in R
 devtools::install_github('isglobal-brge/dsOMOPClient')
 ```
 
+Once the package is installed, you can load it into your R environment using the following command:
+```
+library(dsOMOPClient)
+```
+
 ## Community development and extensions
 
 The `dsOMOPClient` package serves as a gateway for interacting with databases in the OMOP CDM format, enabling the fetching of tables to be integrated into the DataSHIELD workflow. This integration adheres to the privacy standards and disclosure control mechanisms inherent to the DataSHIELD software, ensuring that the subsequent data manipulation and analysis operations are secure.
