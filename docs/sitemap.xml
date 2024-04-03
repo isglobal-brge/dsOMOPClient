@@ -4,7 +4,28 @@
     <loc>/404.html</loc>
   </url>
   <url>
+    <loc>/LICENSE-text.html</loc>
+  </url>
+  <url>
     <loc>/LICENSE.html</loc>
+  </url>
+  <url>
+    <loc>/articles/01_object.html</loc>
+  </url>
+  <url>
+    <loc>/articles/02_tables.html</loc>
+  </url>
+  <url>
+    <loc>/articles/catalogs.html</loc>
+  </url>
+  <url>
+    <loc>/articles/get.html</loc>
+  </url>
+  <url>
+    <loc>/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>/articles/interface_object.html</loc>
   </url>
   <url>
     <loc>/authors.html</loc>

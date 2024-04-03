@@ -1,0 +1,193 @@
+---
+title: "2. Table retrieval"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{02_tables}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r creating_object, include = FALSE}
+library(DSI)
+library(DSOpal)
+library(dsBaseClient)
+library(dsOMOPClient)
+
+builder <- newDSLoginBuilder()
+builder$append(
+  server = "brge",
+  url = "https://opal.isglobal.org/brge",
+  user = "omop_demo",
+  password = "P@ssw0rd"
+)
+logindata <- builder$build()
+conns <- datashield.login(logins = logindata)
+
+o <- ds.omop(
+  connections = conns,
+  resource = "omop_demo.mimiciv"
+)
+```
+
+We have already seen how to create an interface object for the OMOP CDM database. Now, let's see how to use it to retrieve tables from the database. For this purpose, we will use the `get` method of the interface object. This method has several arguments that allow filtering the data that is retrieved and customizing the output.
+
+# 2.1 Features of the `get` method
+
+##  2.1.1 Table reshaping
+
+The `get` method is an intelligent method that returns the table after subjecting it to a series of operations. If it detects that this table can present various records linked to the same entity (for example, to a `Person`), it will transform the table into a wide format using the ds.reShape function, ready to be merged with other tables. For instance, when we take the `Person` table, it will return a table without altering its original format:
+
+```{r get_person}
+o$get("person")
+ds.summary("person")
+```
+
+Whereas if we take the `Measurement` table, which has records potentially linkable to the `Person` table, it will return a table in wide format, preserving the column `person_id` so that it can be merged with the `Person` table:
+
+```{r get_measurement}
+o$get(table = "measurement", conceptFilter = 3000099)
+ds.summary("measurement")
+```
+
+## 2.1.2 Concept translation
+
+Another feature you may have noticed in the previous example is that the `get` method automatically translates the concepts of the table that we are retrieving. For instance, in the case of the `Measurement` table, the concept `3000099` was translated to `Nuclear Ab [Units/volume] in Serum by Immunoassay`.
+
+The same happens with the values of the rows in the tables. For example, in the `Person` table, in the `gender_concept_id` column, the value `8532` was translated to `FEMALE` and the value `8507` was translated to `MALE` automatically.
+
+```{r concept_translation}
+ds.summary("person$gender_concept_id")
+```
+
+This will happen automatically with all concepts in the database as long as they are recognized and properly named in the `Concept` table of the database. Otherwise, the concept will remain as `concept_id_` + the numeric value of the concept. For example, if the concept `FEMALE` was not properly named in the `Concept` table, it would remain as `concept_id_8532`.
+
+## 2.1.3 Longitudinal data sequencing
+
+When dealing with longitudinal data, where multiple records of the same type exist for the same entity over time (for example, several `Breath rate spontaneous` measurements for the same `person`), the `get` method will not only transform the table into a wide format but will also add numerically suffixed columns for each occurrence. This allows for a comprehensive view of the data over time, preserving the temporal sequence of events or measurements for each entity.
+
+```{r longitudinal_data, R.options = list(max.print = 10)}
+o$get(table = "measurement", conceptFilter = 1175625, columnFilter = "value_as_number")
+ds.summary("measurement")
+```
+
+The method by which these additional data columns are aggregated is left to the discretion of the researcher. This flexibility ensures that the data can be structured in a way that best suits the analysis being performed. 
+
+Furthermore, support is provided for server-side functions that identify when a table obtained directly from the OMOP CDM database remains unaltered (since being integrated into the DataSHIELD workflow, the table will have the class `omop.cdm.table` in addition to `data.frame`. However, if it is modified in terms of its original composition, it will lose the `omop.cdm.table` class). This class check can be utilized from the server side to streamline the process of enabling methods for aggregating longitudinal data in server-side packages, making the overall data handling process more efficient.
+
+```{r class_check}
+ds.class("measurement")
+```
+
+# 2.2 Using the `get` method
+
+The `get` method has several arguments that allow for the customization of the data that is retrieved. These arguments are:
+
+- `table`: the name of the table to be retrieved.
+- `symbol`: the name of the symbol that will be used to store the table in the server's R environment. If not specified, the table will be stored in a symbol with the same name as the table.
+- `conceptFilter`: a numeric vector with the concept IDs to be retrieved. It can also be a single numeric value.
+- `columnFilter`: a character vector with the names of the columns to be retrieved. It can also be a single character value.
+- `personFilter`: the name of another symbol in the server's R environment which contains the person IDs to be retrieved by the current `get` operation. If not specified, all existing person IDs will be retrieved.
+- `mergeColumn`: the name of the column that will be used to merge the table with another table. If not specified, the `person_id` column will be used as the default merge column.
+- `dropNA`: a logical value indicating whether empty columns should be automatically filtered out from the table. The default value is `TRUE`.
+
+Note that only the `table` parameter is mandatory for retrieving a table. However, it is highly recommended to utilize the available data filtering parameters, as they can significantly enhance the performance of operations and ensure that only the relevant data for your study is selected.
+
+## 2.2.1 Applying basic filters
+
+This part is quite straightforward. We use the `tables()` command to know which tables we can take, `columns()` to know what columns we have available, and `concepts()` to understand what concepts are present as entities in the table and select those we wish to work with.
+
+Once we have identified the specific data we are interested in analyzing, we can apply the `columnFilter` and `conceptFilter` parameters to retrieve the desired `table`.
+
+Let's proceed with an example.
+
+We check the available tables:
+
+```{r tables}
+o$tables()
+```
+
+Let's say we want to retrieve some measurements from the `Measurement` table. We can use the `concepts()` command to see what concepts are available in this table:
+
+```{r concepts, R.options = list(max.print = 10)}
+o$concepts("measurement")
+```
+
+We have decided to retrieve the information related to the concept `3000099` (which corresponds to `Nuclear Ab [Units/volume] in Serum by Immunoassay`). 
+
+But we don't want to retrieve all the columns from the table, so we can use the `columns()` command to see what columns are available in the `Measurement` table:
+
+```{r columns}
+o$columns("measurement")
+```
+
+We are only interested in the `measurement_date` and `value_as_number` from the `Measurement` table related to the concept `3000099`. We can use the `get` method to retrieve this information:
+
+```{r get_measurement_3000099}
+o$get(table = "measurement", # the table we want to retrieve
+      symbol = "my_table", # the name of the symbol that will store the table
+      conceptFilter = 3000099, # the concept we are interested in
+      columnFilter = c("measurement_date", "value_as_concept_id"), # the only columns we want to retrieve
+      dropNA = FALSE # whether we want to drop empty columns or not
+)
+ds.summary("my_table")
+```
+
+Now this information is ready to be used within the DataSHIELD environment for any analysis or data manipulation operation that we want to perform. In the next article, we will see how to use the built-in functions of DataSHIELD's `dsBaseClient` package to combine it with other tables.
+
+## 2.2.2 Selecting a merge column
+
+When retrieving a table, it is possible to specify a column that will be used to merge the table with another table. This is done using the `mergeColumn` argument. For example, when retrieving the `Visit_detail` table, we can specify that the column `visit_occurrence_id` will be used to merge this table with the `Visit_occurrence` table, and it will perform the reshaping operation to make this merge possible.
+
+```{r merge_column}
+o$get(table = "visit_detail",
+      conceptFilter = 581383,
+      columnFilter = c("visit_detail_start_date", "visit_detail_end_date"),
+      mergeColumn = "visit_occurrence_id")
+ds.summary("visit_detail")
+```
+
+If no `mergeColumn` is specified, the `get` method will assume `person_id` as the default merge column, as this is the most common column that is used to merge tables in an OMOP CDM database.
+
+## 2.2.3 Filtering by person IDs
+
+The `personFilter` argument allows for the retrieval of data for a specific subset of person IDs. This can be useful when working with a large dataset and only needing to retrieve data for a specific group of individuals.
+
+To use the `personFilter` parameter, we have to specify the symbol of another table that already exists in the R environment. This referenced table has to contain `person_id` values that may represent a subset of the `person_id` values in the table that we aim to retrieve. By applying this parameter, the retrieval process filters the target table to include only records corresponding to the `person_id` values present in the referenced table, thereby excluding any records associated with `person_id` values not contained in the referenced table.
+
+Utilizing the subsetting functions provided by the `dsBaseClient` package can significantly enhance the versatility of filtering database records based on cohorts, conditions, or any other characteristics defining a subset of individuals. Furthermore, the `dsOMOP` package implements a disclosure control process that prevents the retrieval of tables containing information on a number of patients below a predefined threshold set in the server's configuration. This ensures the security and confidentiality of the data at all times.
+
+Let's perform a simple example to illustrate the potential of this feature.
+
+Suppose we are interested in analyzing data from patients who have records of the condition `Chest pain` (Concept ID `77670` in `Condition_occurrence`). We can save this information to a specific `symbol` and then pass it as the `personFilter` argument to the `get` method for the `Person` table.
+
+```{r set_filter_criteria}
+o$get(table = "condition_occurrence",
+      conceptFilter = 77670, # `Chest pain`
+      columnFilter = "condition_start_date",
+      symbol = "chest_pain_condition")
+ds.summary("chest_pain_condition")
+```
+
+We stored the measurements in the `chest_pain_condition` symbol. Now we can use this `symbol` to filter the `Person` table and retrieve only the data related to these patients:
+
+```{r filter_person_by_condition}
+o$get(table = "person",
+      symbol = "person_with_chest_pain",
+      personFilter = "chest_pain_condition")
+```
+
+Now we have a subset of the `Person` table that only contains the data related to the patients who have records of the condition `Chest pain`, stored in the `person_with_chest_pain` symbol. We can pass it to the `personFilter` argument of the `get` method for a third table to retrieve only the data related to these patients. For example, we can retrieve the `Observation` table using the `person_with_chest_pain` symbol as the `personFilter`:
+
+```{r filter_observation_by_person, R.options = list(max.print = 10)}
+o$get(table = "observation",
+      symbol = "observation_from_person_with_chest_pain",
+      columnFilter = "observation_date",
+      personFilter = "person_with_chest_pain")
+ds.summary("observation_from_person_with_chest_pain")
+```
+
+The `Observation` table we retrieved only contains data related to the patients who have records of the condition `Chest pain`.
+
+This way, we can easily filter the data we are interested in and work with a subset of the data that is relevant to our study. This can also be done with cohorts, conditions, and any other characteristics that define a subset of individuals. It is done at query time, which makes data retrieval very fast and efficient.
+
+In the next article, we will see how to use the `dsBaseClient` package to combine the data we have retrieved to create a combined dataset that can be used for analysis. 

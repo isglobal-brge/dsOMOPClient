@@ -15,3 +15,7 @@ RoxygenNote: 7.3.1
 Imports:
   crayon,
   DSI
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

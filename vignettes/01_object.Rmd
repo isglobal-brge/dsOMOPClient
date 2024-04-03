@@ -1,0 +1,108 @@
+---
+title: "1. Interface object"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{01_object}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+**Important Note:** The `dsOMOPClient` package serves as a client-side interface with DataSHIELD servers, facilitating the retrieval of tables from OMOP CDM databases based on resources and integrating such tables into the DataSHIELD workflow. However, users will need to manually carry out the subsequent processes of transforming the resulting tables into a single dataset afterwards using the DataSHIELD base functions of `dsBaseClient`. 
+
+Auxiliary packages automate this integration, which is why we recommend taking a look at packages like `dsOMOPHelper` instead of directly using `dsOMOPClient`. We advise against the direct use of `dsOMOPClient` for regular researchers unless faced with an edge-case usage that requires the flexibility of operating directly with the `dsOMOPClient` data interface at a more primitive level, or for developers who are building their own packages on top of `dsOMOPClient`. 
+
+For more information on `dsOMOPHelper`, please visit [its GitHub repository](https://github.com/isglobal-brge/dsOMOPHelper).
+
+# 1.1 Creating an interface object
+
+The `ds.omop` function creates an interface object that allows users to interact with the OMOP CDM database based on a resource. This object enables obtaining tables from the database by applying desired filters and querying data catalogs for information present in the database. 
+
+In this example, we will be using the [MIMIC IV](https://physionet.org/content/mimic-iv-demo-omop/0.9/) data available on the [Opal server of the BRGE at ISGlobal](https://opal.isglobal.org/brge). We will establish a connection to our server using `DSI` with the following demonstration user credentials:
+
+```{r establishing_connection, message=FALSE}
+library(DSI)
+library(DSOpal)
+library(dsBaseClient)
+library(dsOMOPClient)
+
+builder <- newDSLoginBuilder()
+builder$append(
+  server = "brge",
+  url = "https://opal.isglobal.org/brge",
+  user = "omop_demo",
+  password = "P@ssw0rd"
+)
+logindata <- builder$build()
+conns <- datashield.login(logins = logindata)
+```
+
+Once we have successfully established a connection with the server, we will create the object with `ds.omop`. The function requires the following parameters:
+
+- `connections`: A list of established DataSHIELD connections.
+- `resource`: The name of the resource of the OMOP CDM database in the DataSHIELD server.
+
+Our server contains the database connection resource under the name `mimiciv` within the `omop_demo` project. Therefore, we need to specify that, from the connection we have established, we want to take the `omop_demo.mimiciv` resource.
+
+```{r creating_object}
+o <- ds.omop(
+  connections = conns,
+  resource = "omop_demo.mimiciv"
+)
+```
+
+## 1.1.1 Establishing multiple connections
+
+If we wish to establish connections with multiple OMOP CDM databases simultaneously in a `connections` pool, the `resource` parameter accepts a named list as a parameter where the name of the list object corresponds to the server name, and the value corresponds to the resource name. For example:
+
+```{r multiple_connections, eval = FALSE}
+o <- ds.omop(
+  connections = conns,
+  resource = list(brge = "omop_demo.mimiciv",
+                  another_server = "project.resource")
+)
+```
+
+# 1.2 Interface object functions
+
+The `ds.omop` interface object provides several functions to interact with the OMOP CDM database. These functions allow users to query information from the database and extract tables, which will then be transformed and integrated into the DataSHIELD workflow.
+
+## 1.2.1 Querying information
+
+- `tables()`: This function lists all the available tables in the OMOP CDM database. It allows users to understand the structure of the database and identify which tables might be relevant for their analysis.
+
+```{r tables_catalog}
+o$tables()
+```
+
+- `columns(tableName)`: Given a table name, this function returns the columns available in that table. This is useful for users to identify the specific data fields they might want to analyze or use in their queries.
+
+```{r columns_catalog}
+o$columns("measurement")
+```
+
+- `concepts(tableName)`: This function retrieves the concepts present in a given table and returns them as a data frame with two columns: `concept_id` and their associated `concept_name`. Concepts in OMOP CDM are standardized terms that represent clinical events, measurements, and other entities. Understanding the concepts available in a table can help users to formulate data filtering queries.
+
+```{r concepts_catalog, R.options = list(max.print = 20)}
+o$concepts("measurement")
+```
+
+## 1.2.2 Retrieving tables
+
+- `get(tableName)`: This function enables users to extract a specific table from the OMOP CDM database. The extracted table becomes available within the DataSHIELD environment, where it can be manipulated using other DataSHIELD functions and potentially combined with other tables from the database. Users have the flexibility to apply filters and specify columns to customize the extracted data according to their research needs. Below are some examples of how to use the `get` function:
+
+```{r get_person}
+o$get("person")
+ds.summary("person")
+```
+
+```{r get_measurement, R.options = list(max.print = 5)}
+o$get(table = "measurement",
+      symbol = "meas",
+      columnFilter = c("value_as_number", "measurement_date"),
+      conceptFilter = c(3000099, 3000068))
+ds.summary("meas")
+```
+
+These functions form the core of the `ds.omop` interface object's capabilities, enabling users to effectively interact with OMOP CDM databases within the DataSHIELD environment. It is expected that the various resulting tables will be relationally joined using the `ds.merge` function through their common identifiers, such as `person_id`.
+
+In the next articles, we will explore the internal workings of the table processing operations, understanding how to manipulate and combine tables into single datasets ready for analysis, along with a deeper dive into the customization possibilities of the `get` function and its potential applications.
