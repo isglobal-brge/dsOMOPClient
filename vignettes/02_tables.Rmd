@@ -129,10 +129,11 @@ o$get(table = "measurement", # the table we want to retrieve
       columnFilter = c("measurement_date", "value_as_concept_id"), # the only columns we want to retrieve
       dropNA = FALSE # whether we want to drop empty columns or not
 )
+
 ds.summary("my_table")
 ```
 
-Now this information is ready to be used within the DataSHIELD environment for any analysis or data manipulation operation that we want to perform. In the next article, we will see how to use the built-in functions of DataSHIELD's `dsBaseClient` package to combine it with other tables.
+Now this information is ready to be used within the DataSHIELD environment for any analysis or data manipulation operations that we want to perform. In the next article, we will see how to use the built-in functions of DataSHIELD's `dsBaseClient` package to combine it with other tables.
 
 ## 2.2.2 Selecting a merge column
 
@@ -143,6 +144,7 @@ o$get(table = "visit_detail",
       conceptFilter = 581383,
       columnFilter = c("visit_detail_start_date", "visit_detail_end_date"),
       mergeColumn = "visit_occurrence_id")
+
 ds.summary("visit_detail")
 ```
 
@@ -165,6 +167,7 @@ o$get(table = "condition_occurrence",
       conceptFilter = 77670, # `Chest pain`
       columnFilter = "condition_start_date",
       symbol = "chest_pain_condition")
+
 ds.summary("chest_pain_condition")
 ```
 
@@ -183,6 +186,7 @@ o$get(table = "observation",
       symbol = "observation_from_person_with_chest_pain",
       columnFilter = "observation_date",
       personFilter = "person_with_chest_pain")
+
 ds.summary("observation_from_person_with_chest_pain")
 ```
 

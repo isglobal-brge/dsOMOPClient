@@ -1,0 +1,183 @@
+---
+title: "3. Workflow integration"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{integration}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r creating_object, include = FALSE}
+library(DSI)
+library(DSOpal)
+library(dsBaseClient)
+library(dsOMOPClient)
+
+builder <- newDSLoginBuilder()
+builder$append(
+  server = "brge",
+  url = "https://opal.isglobal.org/brge",
+  user = "omop_demo",
+  password = "P@ssw0rd"
+)
+logindata <- builder$build()
+conns <- datashield.login(logins = logindata)
+
+o <- ds.omop(
+  connections = conns,
+  resource = "omop_demo.mimiciv"
+)
+```
+
+Having explored how to retrieve tables using the `get` method from `dsOMOPClient` and its customization parameters, it is now time to integrate these tables into the DataSHIELD workflow. To achieve this, we will primarily use two commands from the `dsBaseClient` package:
+
+- `ds.merge`, to combine tables into a single data frame.
+- `ds.dataFrameSubset`, to apply value filters to tables based on desired characteristics.
+
+# 3.1 Merging tables
+
+In this section, we will demonstrate how to combine the `Person` table and the `Measurement` table. This process involves retrieving the necessary data from both tables and then merging them based on a common identifier.
+
+First, we retrieve the `Person` table:
+
+```{r get_person}
+o$get("person")
+ds.summary("person")
+```
+
+Then, we retrieve the `Measurement` table:
+
+```{r get_measurement}
+o$get("measurement",
+      columnFilter = c("value_as_number", "measurement_date"),
+      conceptFilter = c(3000099))
+
+ds.summary("measurement")
+```
+
+We can now merge the two tables based on the `person_id` column, using the conventional `ds.merge` command, which adheres to DataSHIELD's data disclosure rules:
+
+```{r merging_tables}
+ds.merge(
+  x.name = "person",
+  y.name = "measurement",
+  by.x.names = "person_id",
+  by.y.names = "person_id",
+  all.x = TRUE,
+  all.y = FALSE,
+  sort = FALSE,
+  suffixes = c(".x", ".y"),
+  no.dups = TRUE,
+  newobj = "person_measurement",
+  datasources = conns
+)
+```
+
+We can see the merged table includes the columns from both the `Person` and `Measurement` tables:
+
+```{r merged_summary}
+ds.summary("person_measurement")
+```
+
+This is how we can merge tables in DataSHIELD. We could also merge more tables by repeating the process with additional tables and the combined table.
+
+## 3.1.1 Auxiliar functions and packages
+
+Given the complexity of the previous example, it is recommended to use and develop auxiliary packages that encapsulate and automate the interaction with `dsOMOPClient`, which only acts as an interface with the database data, to meet the research needs of each specific case.
+
+Below we can see an example of how the `dsOMOPHelper` package can automatically join multiple tables in batch by the desired concepts using the `auto` function:
+
+```{r auxiliar_packages} 
+library(dsOMOPHelper)
+
+h <- ds.omop.helper(connections = conns,
+                    resource = "omop_demo.mimiciv",
+                    symbol = "resulting_table")
+
+h$auto(tables = c("measurement", "condition_occurrence"),
+       columns = c("date", "start_date"),
+       concepts = c(3000099, 77670))
+
+ds.summary("resulting_table")
+```
+
+This is precisely why we encourage the community to develop their own packages on top of `dsOMOPClient`. By creating custom packages, researchers and developers can tailor the functionality to meet the specific needs of their projects, enhancing the efficiency and effectiveness of their analyses.
+
+For more information about `dsOMOPHelper` and how it can streamline the process of working with OMOP CDM databases in DataSHIELD, please visit [its GitHub repository](https://github.com/dsOMOPHelper).
+
+# 3.2 Subsetting tables
+
+Another fundamental operation in data selection and dataset construction that fits specific research needs in DataSHIELD is the `ds.dataFrameSubset` operation from the `dsBaseClient` package.
+
+Let's see with a simple example how we can filter, using the subset operation, a dataset to only include female individuals.
+
+First, we take the `Person` table, which contains `gender_concept_id`, and verify that this column includes values for `female` and `male`.
+
+```{r get_person_gender}
+o$get("person")
+ds.summary("person$gender_concept_id")
+```
+
+From this point on, we will work with the standard DataSHIELD procedures to filter the data. First, we create a `gender_filter` object that contains the value `female`:
+
+```{r create_gender_filter}
+ds.make(newobj = "gender_filter", toAssign = "c('female')")
+```
+
+Then, we use the `ds.dataFrameSubset` function to apply the `gender_filter` to the `gender_concept_id` column of the `Person` table:
+
+```{r subset_by_gender}
+ds.dataFrameSubset(
+  df.name = "person",
+  V1.name = "person$gender_concept_id",
+  V2.name = "gender_filter",
+  Boolean.operator = "==",
+  newobj = "person_female",
+  datasources = conns,
+  notify.of.progress = FALSE
+)
+```
+
+Thus, we can verify that the resulting table `person_female` only contains individuals with a `gender_concept_id` value of `female`:
+
+```{r check_gender_subset}
+ds.summary("person_female$gender_concept_id")
+```
+
+Once the `person_female` subset is obtained, we can pass it as the `personFilter` parameter to the `get` function to retrieve another table, in this case, `Measurement`. The resulting table will contain only the measurements from individuals with a `gender_concept_id` value of `female`:
+
+```{r get_person_females}
+o$get(table = "measurement",
+      symbol = "measurement_female",
+      columnFilter = c("value_as_number", "measurement_date"),
+      conceptFilter = c(3000099),
+      personFilter = "person_female")
+ds.summary("measurement_female")
+```
+
+We can now merge the `person_female` and `measurement_female` tables based on the `person_id` column:
+
+```{r merging_female_measurements}
+ds.merge(
+  x.name = "person_female",
+  y.name = "measurement_female",
+  by.x.names = "person_id",
+  by.y.names = "person_id",
+  all.x = TRUE,
+  all.y = FALSE,
+  sort = FALSE,
+  suffixes = c(".x", ".y"),
+  no.dups = TRUE,
+  newobj = "person_female_measurements",
+  datasources = conns
+)
+```
+
+We can see the merged table includes the columns from both the `Person` and `Measurement` tables, but only for individuals with a `gender_concept_id` value of `female`:
+
+```{r check_female_measurements}
+ds.summary("person_female_measurements")
+ds.summary("person_female_measurements$gender_concept_id")
+```
+
+This is how we can use DataSHIELD's standard methods to subset tables obtained from OMOP CDM databases. We could also apply more filters to the tables by repeating the process with additional filters and the combined table.

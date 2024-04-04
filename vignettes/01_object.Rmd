@@ -100,6 +100,7 @@ o$get(table = "measurement",
       symbol = "meas",
       columnFilter = c("value_as_number", "measurement_date"),
       conceptFilter = c(3000099, 3000068))
+
 ds.summary("meas")
 ```
 

@@ -55,6 +55,9 @@
     <li>
       <a href="../articles/02_tables.html">2. Table retrieval</a>
     </li>
+    <li>
+      <a href="../articles/03_integration.html">3. Workflow integration</a>
+    </li>
   </ul>
 </li>
       </ul>
@@ -356,6 +359,7 @@ related to the concept <code>3000099</code>. We can use the
 <span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"measurement_date"</span>, <span class="st">"value_as_concept_id"</span><span class="op">)</span>, <span class="co"># the only columns we want to retrieve</span></span>
 <span>      dropNA <span class="op">=</span> <span class="cn">FALSE</span> <span class="co"># whether we want to drop empty columns or not</span></span>
 <span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"my_table"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
@@ -372,10 +376,10 @@ related to the concept <code>3000099</code>. We can use the
 <span><span class="co">## [2] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"   </span></span>
 <span><span class="co">## [3] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_concept_id"</span></span></code></pre>
 <p>Now this information is ready to be used within the DataSHIELD
-environment for any analysis or data manipulation operation that we want
-to perform. In the next article, we will see how to use the built-in
-functions of DataSHIELD’s <code>dsBaseClient</code> package to combine
-it with other tables.</p>
+environment for any analysis or data manipulation operations that we
+want to perform. In the next article, we will see how to use the
+built-in functions of DataSHIELD’s <code>dsBaseClient</code> package to
+combine it with other tables.</p>
 </div>
 <div class="section level3">
 <h3 id="selecting-a-merge-column">2.2.2 Selecting a merge column<a class="anchor" aria-label="anchor" href="#selecting-a-merge-column"></a>
@@ -392,6 +396,7 @@ reshaping operation to make this merge possible.</p>
 <span>      conceptFilter <span class="op">=</span> <span class="fl">581383</span>,</span>
 <span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"visit_detail_start_date"</span>, <span class="st">"visit_detail_end_date"</span><span class="op">)</span>,</span>
 <span>      mergeColumn <span class="op">=</span> <span class="st">"visit_occurrence_id"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"visit_detail"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
@@ -457,6 +462,7 @@ for the <code>Person</code> table.</p>
 <span>      conceptFilter <span class="op">=</span> <span class="fl">77670</span>, <span class="co"># `Chest pain`</span></span>
 <span>      columnFilter <span class="op">=</span> <span class="st">"condition_start_date"</span>,</span>
 <span>      symbol <span class="op">=</span> <span class="st">"chest_pain_condition"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"chest_pain_condition"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
@@ -493,6 +499,7 @@ example, we can retrieve the <code>Observation</code> table using the
 <span>      symbol <span class="op">=</span> <span class="st">"observation_from_person_with_chest_pain"</span>,</span>
 <span>      columnFilter <span class="op">=</span> <span class="st">"observation_date"</span>,</span>
 <span>      personFilter <span class="op">=</span> <span class="st">"person_with_chest_pain"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"observation_from_person_with_chest_pain"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
@@ -522,7 +529,7 @@ related to the patients who have records of the condition
 <p>This way, we can easily filter the data we are interested in and work
 with a subset of the data that is relevant to our study. This can also
 be done with cohorts, conditions, and any other characteristics that
-define a subset of individuals. It is done at query time, so it makes
+define a subset of individuals. It is done at query time, which makes
 data retrieval very fast and efficient.</p>
 <p>In the next article, we will see how to use the
 <code>dsBaseClient</code> package to combine the data we have retrieved
