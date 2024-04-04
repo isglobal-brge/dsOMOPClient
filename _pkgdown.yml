@@ -1,3 +1,11 @@
 template:
   package: dstemplate
   bootstrap: 5
+
+authors:
+  David Sarrat González:
+    href: https://github.com/davidsarratgonzalez
+  Xavier Escribà-Montagut:
+    href: https://github.com/ESCRI11
+  Juan R González:
+    href: https://github.com/isglobal-brge
