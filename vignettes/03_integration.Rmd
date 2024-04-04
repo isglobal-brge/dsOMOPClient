@@ -103,7 +103,7 @@ ds.summary("resulting_table")
 
 This is precisely why we encourage the community to develop their own packages on top of `dsOMOPClient`. By creating custom packages, researchers and developers can tailor the functionality to meet the specific needs of their projects, enhancing the efficiency and effectiveness of their analyses.
 
-For more information about `dsOMOPHelper` and how it can streamline the process of working with OMOP CDM databases in DataSHIELD, please visit [its GitHub repository](https://github.com/dsOMOPHelper).
+For more information about `dsOMOPHelper` and how it can streamline the process of working with OMOP CDM databases in DataSHIELD, please visit [its GitHub repository](https://github.com/isglobal-brge/dsOMOPHelper).
 
 # 3.2 Subsetting tables
 
@@ -152,6 +152,7 @@ o$get(table = "measurement",
       columnFilter = c("value_as_number", "measurement_date"),
       conceptFilter = c(3000099),
       personFilter = "person_female")
+
 ds.summary("measurement_female")
 ```
 
@@ -168,7 +169,7 @@ ds.merge(
   sort = FALSE,
   suffixes = c(".x", ".y"),
   no.dups = TRUE,
-  newobj = "person_female_measurements",
+  newobj = "merged_female",
   datasources = conns
 )
 ```
@@ -176,8 +177,8 @@ ds.merge(
 We can see the merged table includes the columns from both the `Person` and `Measurement` tables, but only for individuals with a `gender_concept_id` value of `female`:
 
 ```{r check_female_measurements}
-ds.summary("person_female_measurements")
-ds.summary("person_female_measurements$gender_concept_id")
+ds.summary("merged_female")
+ds.summary("merged_female$gender_concept_id")
 ```
 
-This is how we can use DataSHIELD's standard methods to subset tables obtained from OMOP CDM databases. We could also apply more filters to the tables by repeating the process with additional filters and the combined table.
+This is how we can use DataSHIELD's standard methods to subset tables obtained from OMOP CDM databases. We can achieve complex filters by applying more sophisticated `ds.dataFrameSubset` logics and propagating them to the desired tables through the `personFilter` parameter of the `get` method.

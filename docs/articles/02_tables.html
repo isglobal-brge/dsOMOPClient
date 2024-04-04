@@ -234,20 +234,26 @@ or measurements for each entity.</p>
 left to the discretion of the researcher. This flexibility ensures that
 the data can be structured in a way that best suits the analysis being
 performed.</p>
-<p>Furthermore, support is provided for server-side functions that
-identify when a table obtained directly from the OMOP CDM database
-remains unaltered (since being integrated into the DataSHIELD workflow,
-the table will have the class <code>omop.cdm.table</code> in addition to
-<code>data.frame</code>. However, if it is modified in terms of its
-original composition, it will lose the <code>omop.cdm.table</code>
-class). This class check can be utilized from the server side to
-streamline the process of enabling methods for aggregating longitudinal
-data in server-side packages, making the overall data handling process
-more efficient.</p>
+<p>Furthermore, <code>dsOMOP</code> provides support for server-side
+functions that identify when a table obtained directly from the OMOP CDM
+database remains unaltered. When integrated into the DataSHIELD
+workflow, the table will have the class <code>omop.cdm.table</code> in
+addition to <code>data.frame</code>, but if it is modified in terms of
+its original composition, it will lose the <code>omop.cdm.table</code>
+class.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.class.html" class="external-link">ds.class</a></span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## [1] "omop.cdm.table" "data.frame"</span></span></code></pre>
+<p>This class check serves as a mechanism to ensure that certain data
+have not been modified between their retrieval from the database and
+their interaction with the user. This allows for the use of more
+permissive data manipulation methods from server-side packages, under
+the assumption that the data are not being maliciously altered by the
+user (since there is no function from the client-side that could modify
+the object’s classes directly), thereby enabling developers to build
+packages with specific functionalities for dealing with longitudinal
+data.</p>
 </div>
 </div>
 <div class="section level2">

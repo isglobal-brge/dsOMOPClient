@@ -247,8 +247,8 @@ meet the specific needs of their projects, enhancing the efficiency and
 effectiveness of their analyses.</p>
 <p>For more information about <code>dsOMOPHelper</code> and how it can
 streamline the process of working with OMOP CDM databases in DataSHIELD,
-please visit <a href="https://github.com/dsOMOPHelper" class="external-link">its GitHub
-repository</a>.</p>
+please visit <a href="https://github.com/isglobal-brge/dsOMOPHelper" class="external-link">its
+GitHub repository</a>.</p>
 </div>
 </div>
 <div class="section level2">
@@ -342,6 +342,7 @@ value of <code>female</code>:</p>
 <span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value_as_number"</span>, <span class="st">"measurement_date"</span><span class="op">)</span>,</span>
 <span>      conceptFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3000099</span><span class="op">)</span>,</span>
 <span>      personFilter <span class="op">=</span> <span class="st">"person_female"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"measurement_female"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
@@ -371,20 +372,20 @@ value of <code>female</code>:</p>
 <span>  sort <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  suffixes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">".x"</span>, <span class="st">".y"</span><span class="op">)</span>,</span>
 <span>  no.dups <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"person_female_measurements"</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"merged_female"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $is.object.created</span></span>
-<span><span class="co">## [1] "A data object &lt;person_female_measurements&gt; has been created in all specified data sources"</span></span>
+<span><span class="co">## [1] "A data object &lt;merged_female&gt; has been created in all specified data sources"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $validity.check</span></span>
-<span><span class="co">## [1] "&lt;person_female_measurements&gt; appears valid in all sources"</span></span></code></pre>
+<span><span class="co">## [1] "&lt;merged_female&gt; appears valid in all sources"</span></span></code></pre>
 <p>We can see the merged table includes the columns from both the
 <code>Person</code> and <code>Measurement</code> tables, but only for
 individuals with a <code>gender_concept_id</code> value of
 <code>female</code>:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person_female_measurements"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"merged_female"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
 <span><span class="co">## [1] "data.frame"</span></span>
@@ -410,7 +411,7 @@ individuals with a <code>gender_concept_id</code> value of
 <span><span class="co">## [12] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"</span></span>
 <span><span class="co">## [13] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_number"</span></span></code></pre>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person_female_measurements$gender_concept_id"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"merged_female$gender_concept_id"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
 <span><span class="co">## [1] "factor"</span></span>
@@ -427,9 +428,10 @@ individuals with a <code>gender_concept_id</code> value of
 <span><span class="co">## $brge$`count of 'male'`</span></span>
 <span><span class="co">## [1] 0</span></span></code></pre>
 <p>This is how we can use DataSHIELD’s standard methods to subset tables
-obtained from OMOP CDM databases. We could also apply more filters to
-the tables by repeating the process with additional filters and the
-combined table.</p>
+obtained from OMOP CDM databases. We can achieve complex filters by
+applying more sophisticated <code>ds.dataFrameSubset</code> logics and
+propagating them to the desired tables through the
+<code>personFilter</code> parameter of the <code>get</code> method.</p>
 </div>
   </div>
 
