@@ -148,18 +148,18 @@ adheres to DataSHIELD’s data disclosure rules:</p>
 <span>  sort <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  suffixes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">".x"</span>, <span class="st">".y"</span><span class="op">)</span>,</span>
 <span>  no.dups <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"person_measurement"</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"merged"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $is.object.created</span></span>
-<span><span class="co">## [1] "A data object &lt;person_measurement&gt; has been created in all specified data sources"</span></span>
+<span><span class="co">## [1] "A data object &lt;merged&gt; has been created in all specified data sources"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $validity.check</span></span>
-<span><span class="co">## [1] "&lt;person_measurement&gt; appears valid in all sources"</span></span></code></pre>
-<p>We can see the merged table includes the columns from both the
-<code>Person</code> and <code>Measurement</code> tables:</p>
+<span><span class="co">## [1] "&lt;merged&gt; appears valid in all sources"</span></span></code></pre>
+<p>We can see the <code>merged</code> table includes the columns from
+both the <code>Person</code> and <code>Measurement</code> tables:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person_measurement"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"merged"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
 <span><span class="co">## [1] "data.frame"</span></span>
@@ -203,13 +203,13 @@ concepts using the <code>auto</code> function:</p>
 <span></span>
 <span><span class="va">h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/dsOMOPHelper/man/ds.omop.helper.html" class="external-link">ds.omop.helper</a></span><span class="op">(</span>connections <span class="op">=</span> <span class="va">conns</span>,</span>
 <span>                    resource <span class="op">=</span> <span class="st">"omop_demo.mimiciv"</span>,</span>
-<span>                    symbol <span class="op">=</span> <span class="st">"resulting_table"</span><span class="op">)</span></span>
+<span>                    symbol <span class="op">=</span> <span class="st">"automatic_table"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">h</span><span class="op">$</span><span class="fu">auto</span><span class="op">(</span>tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"condition_occurrence"</span><span class="op">)</span>,</span>
 <span>       columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"start_date"</span><span class="op">)</span>,</span>
 <span>       concepts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3000099</span>, <span class="fl">77670</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"resulting_table"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"automatic_table"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
 <span><span class="co">## [1] "data.frame"</span></span>

@@ -68,15 +68,15 @@ ds.merge(
   sort = FALSE,
   suffixes = c(".x", ".y"),
   no.dups = TRUE,
-  newobj = "person_measurement",
+  newobj = "merged",
   datasources = conns
 )
 ```
 
-We can see the merged table includes the columns from both the `Person` and `Measurement` tables:
+We can see the `merged` table includes the columns from both the `Person` and `Measurement` tables:
 
 ```{r merged_summary}
-ds.summary("person_measurement")
+ds.summary("merged")
 ```
 
 This is how we can merge tables in DataSHIELD. We could also merge more tables by repeating the process with additional tables and the combined table.
@@ -92,13 +92,13 @@ library(dsOMOPHelper)
 
 h <- ds.omop.helper(connections = conns,
                     resource = "omop_demo.mimiciv",
-                    symbol = "resulting_table")
+                    symbol = "automatic_table")
 
 h$auto(tables = c("measurement", "condition_occurrence"),
        columns = c("date", "start_date"),
        concepts = c(3000099, 77670))
 
-ds.summary("resulting_table")
+ds.summary("automatic_table")
 ```
 
 This is precisely why we encourage the community to develop their own packages on top of `dsOMOPClient`. By creating custom packages, researchers and developers can tailor the functionality to meet the specific needs of their projects, enhancing the efficiency and effectiveness of their analyses.
