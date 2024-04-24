@@ -19,6 +19,8 @@
 #' @param mergeColumn A string specifying the column name for merging operations with other tables.
 #'                    Defaults to "person_id" if not specified.
 #' @param dropNA A boolean indicating whether to drop empty columns. Defaults to FALSE.
+#' @param wideLongitudinal A boolean indicating whether to reshape the table to a wide format with numerically suffixed 
+#'                         columns if it contains longitudinal data. Defaults to FALSE.
 #'
 OMOPCDMDatabase$set("public", "get", function(table,
                                               symbol = NULL,
@@ -26,14 +28,15 @@ OMOPCDMDatabase$set("public", "get", function(table,
                                               columnFilter = NULL,
                                               personFilter = NULL,
                                               mergeColumn = NULL,
-                                              dropNA = FALSE) {
+                                              dropNA = FALSE,
+                                              wideLongitudinal = FALSE) {
   # If a symbol is not provided, uses the table name as the symbol
   if (is.null(symbol)) {
     symbol <- table
   }
 
   self$assignResource(self$resourceSymbol)
-  call <- getTableCall(self$resourceSymbol, table, conceptFilter, columnFilter, personFilter, mergeColumn, dropNA)
+  call <- getTableCall(self$resourceSymbol, table, conceptFilter, columnFilter, personFilter, mergeColumn, dropNA, wideLongitudinal)
   DSI::datashield.assign.expr(
     self$connections,
     symbol,
@@ -58,6 +61,8 @@ OMOPCDMDatabase$set("public", "get", function(table,
 #' @param mergeColumn A string specifying the column name for merging operations with other tables.
 #'                    Defaults to "person_id" if not specified.
 #' @param dropNA A boolean indicating whether to drop empty columns. Defaults to FALSE.
+#' @param wideLongitudinal A boolean indicating whether to reshape the table to a wide format with numerically suffixed 
+#'                         columns if it contains longitudinal data. Defaults to FALSE.
 #'
 #' @return A string representing the call to be executed on the DataSHIELD server for table assignment.
 #'
@@ -67,7 +72,8 @@ getTableCall <- function(resource,
                          columnFilter = NULL,
                          personFilter = NULL,
                          mergeColumn = NULL,
-                         dropNA = FALSE) {
+                         dropNA = FALSE,
+                         wideLongitudinal = FALSE) {
   call <- paste0("getOMOPCDMTableDS(", resource, ", table = '", table, "'")
 
   if (!is.null(conceptFilter)) {
@@ -94,6 +100,10 @@ getTableCall <- function(resource,
 
   if (dropNA) {
     call <- paste0(call, ", dropNA = TRUE")
+  }
+
+  if (wideLongitudinal) {
+    call <- paste0(call, ", wideLongitudinal = TRUE")
   }
 
   call <- paste0(call, ")")

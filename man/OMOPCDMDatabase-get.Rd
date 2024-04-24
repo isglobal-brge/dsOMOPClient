@@ -18,6 +18,9 @@
 Defaults to "person_id" if not specified.}
 
 \item{dropNA}{A boolean indicating whether to drop empty columns. Defaults to FALSE.}
+
+\item{wideLongitudinal}{A boolean indicating whether to reshape the table to a wide format with numerically suffixed
+columns if it contains longitudinal data. Defaults to FALSE.}
 }
 \description{
 This function assigns a specified table by name (string) from an OMOP CDM database to the DataSHIELD environment.

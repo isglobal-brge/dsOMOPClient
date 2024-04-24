@@ -78,7 +78,8 @@ A new instance of the OMOPCDMDatabase class.
   columnFilter = NULL,
   personFilter = NULL,
   mergeColumn = NULL,
-  dropNA = FALSE
+  dropNA = FALSE,
+  wideLongitudinal = FALSE
 )}\if{html}{\out{</div>}}
 }
 

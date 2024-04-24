@@ -60,7 +60,8 @@ to perform the assignment of a table from an OMOP CDM database based on the para
 <span>  columnFilter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  personFilter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  mergeColumn <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  dropNA <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  dropNA <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  wideLongitudinal <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -93,6 +94,11 @@ Defaults to "person_id" if not specified.</p></dd>
 
 <dt>dropNA</dt>
 <dd><p>A boolean indicating whether to drop empty columns. Defaults to FALSE.</p></dd>
+
+
+<dt>wideLongitudinal</dt>
+<dd><p>A boolean indicating whether to reshape the table to a wide format with numerically suffixed
+columns if it contains longitudinal data. Defaults to FALSE.</p></dd>
 
 </dl></div>
     <div class="section level2">

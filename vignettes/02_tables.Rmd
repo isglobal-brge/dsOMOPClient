@@ -63,12 +63,14 @@ This will happen automatically with all concepts in the database as long as they
 
 ## 2.1.3 Longitudinal data sequencing
 
-When dealing with longitudinal data, where multiple records of the same type exist for the same entity over time (for example, several `Breath rate spontaneous` measurements for the same `person`), the `get` method will not only transform the table into a wide format but will also add numerically suffixed columns for each occurrence. This allows for a comprehensive view of the data over time, preserving the temporal sequence of events or measurements for each entity.
+When dealing with longitudinal data, where multiple records of the same type exist for the same entity over time (for example, several `Breath rate spontaneous` measurements for the same `person`), setting the `wideLongitudinal` parameter to `TRUE` in the `get` method reshapes the longitudinal data entries into a wide format. This transformation appends numerically suffixed columns for each occurrence, providing a comprehensive view of the data over time and preserving the temporal sequence of events or measurements for each entity.
 
 ```{r longitudinal_data, R.options = list(max.print = 10)}
-o$get(table = "measurement", conceptFilter = 1175625, columnFilter = "value_as_number")
+o$get(table = "measurement", conceptFilter = 1175625, columnFilter = "value_as_number", wideLongitudinal = TRUE)
 ds.summary("measurement")
 ```
+
+Otherwise, if `wideLongitudinal` is set to `FALSE` (the default), the data remains in a long format without the numerically suffixed columns, and the identifier of the entity will be repeated across multiple records of the same type for the same entity to support this format.
 
 The method by which these additional data columns are aggregated is left to the discretion of the researcher. This flexibility ensures that the data can be structured in a way that best suits the analysis being performed. 
 

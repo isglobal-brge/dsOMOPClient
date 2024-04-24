@@ -11,7 +11,8 @@ getTableCall(
   columnFilter = NULL,
   personFilter = NULL,
   mergeColumn = NULL,
-  dropNA = FALSE
+  dropNA = FALSE,
+  wideLongitudinal = FALSE
 )
 }
 \arguments{
@@ -29,6 +30,9 @@ getTableCall(
 Defaults to "person_id" if not specified.}
 
 \item{dropNA}{A boolean indicating whether to drop empty columns. Defaults to FALSE.}
+
+\item{wideLongitudinal}{A boolean indicating whether to reshape the table to a wide format with numerically suffixed
+columns if it contains longitudinal data. Defaults to FALSE.}
 }
 \value{
 A string representing the call to be executed on the DataSHIELD server for table assignment.
