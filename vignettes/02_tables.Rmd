@@ -72,14 +72,6 @@ ds.summary("measurement")
 
 The method by which these additional data columns are aggregated is left to the discretion of the researcher. This flexibility ensures that the data can be structured in a way that best suits the analysis being performed. 
 
-Furthermore, `dsOMOP` provides support for server-side functions that identify when a table obtained directly from the OMOP CDM database remains unaltered. When integrated into the DataSHIELD workflow, the table will have the class `omop.cdm.table` in addition to `data.frame`, but if it is modified in terms of its original composition, it will lose the `omop.cdm.table` class. 
-
-```{r class_check}
-ds.class("measurement")
-```
-
-This class check serves as a mechanism to ensure that certain data have not been modified between their retrieval from the database and their interaction with the user. This allows for the use of more permissive data manipulation methods from server-side packages, under the assumption that the data are not being maliciously altered by the user (since there is no function from the client-side that could modify the object's classes directly), thereby enabling developers to build packages with specific functionalities for dealing with longitudinal data.
-
 # 2.2 Using the `get` method
 
 The `get` method has several arguments that allow for the customization of the data that is retrieved. These arguments are:

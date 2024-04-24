@@ -177,15 +177,15 @@ analysis.</li>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">##  [1] "attribute_definition" "care_site"            "cdm_source"          </span></span>
 <span><span class="co">##  [4] "cohort"               "cohort_attribute"     "cohort_definition"   </span></span>
-<span><span class="co">##  [7] "concept_relationship" "condition_era"        "condition_occurrence"</span></span>
-<span><span class="co">## [10] "cost"                 "death"                "device_exposure"     </span></span>
-<span><span class="co">## [13] "dose_era"             "drug_era"             "drug_exposure"       </span></span>
-<span><span class="co">## [16] "fact_relationship"    "location"             "measurement"         </span></span>
-<span><span class="co">## [19] "metadata"             "note"                 "note_nlp"            </span></span>
-<span><span class="co">## [22] "observation"          "observation_period"   "payer_plan_period"   </span></span>
-<span><span class="co">## [25] "person"               "procedure_occurrence" "provider"            </span></span>
-<span><span class="co">## [28] "specimen"             "visit_detail"         "visit_occurrence"    </span></span>
-<span><span class="co">## [31] "vocabulary"           "concept"</span></span></code></pre>
+<span><span class="co">##  [7] "concept"              "concept_relationship" "condition_era"       </span></span>
+<span><span class="co">## [10] "condition_occurrence" "cost"                 "death"               </span></span>
+<span><span class="co">## [13] "device_exposure"      "dose_era"             "drug_era"            </span></span>
+<span><span class="co">## [16] "drug_exposure"        "fact_relationship"    "location"            </span></span>
+<span><span class="co">## [19] "measurement"          "metadata"             "note"                </span></span>
+<span><span class="co">## [22] "note_nlp"             "observation"          "observation_period"  </span></span>
+<span><span class="co">## [25] "payer_plan_period"    "person"               "procedure_occurrence"</span></span>
+<span><span class="co">## [28] "provider"             "specimen"             "visit_detail"        </span></span>
+<span><span class="co">## [31] "visit_occurrence"     "vocabulary"</span></span></code></pre>
 <ul>
 <li>
 <code>columns(tableName)</code>: Given a table name, this function
@@ -251,7 +251,7 @@ research needs. Below are some examples of how to use the
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"    </span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`number of rows`</span></span>
 <span><span class="co">## [1] 100</span></span>
@@ -273,7 +273,7 @@ research needs. Below are some examples of how to use the
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"meas"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"    </span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`number of rows`</span></span>
 <span><span class="co">## [1] 17</span></span>
@@ -282,11 +282,11 @@ research needs. Below are some examples of how to use the
 <span><span class="co">## [1] 11</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`variables held`</span></span>
-<span><span class="co">## [1] "person_id"                                                       </span></span>
-<span><span class="co">## [2] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"</span></span>
-<span><span class="co">## [3] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_number" </span></span>
-<span><span class="co">## [4] "oxycodone_presence_in_urine.measurement_date"                    </span></span>
-<span><span class="co">## [5] "oxycodone_presence_in_urine.value_as_number"                     </span></span>
+<span><span class="co">## [1] "person_id"                                                         </span></span>
+<span><span class="co">## [2] "nuclear_ab_units_volume_in_serum_by_immunoassay.1.measurement_date"</span></span>
+<span><span class="co">## [3] "nuclear_ab_units_volume_in_serum_by_immunoassay.1.value_as_number" </span></span>
+<span><span class="co">## [4] "oxycodone_presence_in_urine.1.measurement_date"                    </span></span>
+<span><span class="co">## [5] "oxycodone_presence_in_urine.1.value_as_number"                     </span></span>
 <span><span class="co">##  [ reached getOption("max.print") -- omitted 6 entries ]</span></span></code></pre>
 <p>These functions form the core of the <code>ds.omop</code> interface
 object’s capabilities, enabling users to effectively interact with OMOP

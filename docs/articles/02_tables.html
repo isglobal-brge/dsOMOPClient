@@ -97,7 +97,7 @@ will return a table without altering its original format:</p>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"    </span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`number of rows`</span></span>
 <span><span class="co">## [1] 100</span></span>
@@ -120,7 +120,7 @@ return a table in wide format, preserving the column
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"    </span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`number of rows`</span></span>
 <span><span class="co">## [1] 11</span></span>
@@ -200,7 +200,7 @@ or measurements for each entity.</p>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"    </span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`number of rows`</span></span>
 <span><span class="co">## [1] 55</span></span>
@@ -210,7 +210,7 @@ or measurements for each entity.</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`variables held`</span></span>
 <span><span class="co">##  [1] "person_id"                                </span></span>
-<span><span class="co">##  [2] "breath_rate_spontaneous.value_as_number"  </span></span>
+<span><span class="co">##  [2] "breath_rate_spontaneous.1.value_as_number"</span></span>
 <span><span class="co">##  [3] "breath_rate_spontaneous.2.value_as_number"</span></span>
 <span><span class="co">##  [4] "breath_rate_spontaneous.3.value_as_number"</span></span>
 <span><span class="co">##  [5] "breath_rate_spontaneous.4.value_as_number"</span></span>
@@ -224,26 +224,6 @@ or measurements for each entity.</p>
 left to the discretion of the researcher. This flexibility ensures that
 the data can be structured in a way that best suits the analysis being
 performed.</p>
-<p>Furthermore, <code>dsOMOP</code> provides support for server-side
-functions that identify when a table obtained directly from the OMOP CDM
-database remains unaltered. When integrated into the DataSHIELD
-workflow, the table will have the class <code>omop.cdm.table</code> in
-addition to <code>data.frame</code>, but if it is modified in terms of
-its original composition, it will lose the <code>omop.cdm.table</code>
-class.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.class.html" class="external-link">ds.class</a></span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## $brge</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"</span></span></code></pre>
-<p>This class check serves as a mechanism to ensure that certain data
-have not been modified between their retrieval from the database and
-their interaction with the user. This allows for the use of more
-permissive data manipulation methods from server-side packages, under
-the assumption that the data are not being maliciously altered by the
-user (since there is no function from the client-side that could modify
-the object’s classes directly), thereby enabling developers to build
-packages with specific functionalities for dealing with longitudinal
-data.</p>
 </div>
 </div>
 <div class="section level2">
@@ -298,24 +278,24 @@ analyzing, we can apply the <code>columnFilter</code> and
 <code>table</code>.</p>
 <p>Let’s proceed with an example.</p>
 <p>We check the available tables:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">tables</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">##  [1] "attribute_definition" "care_site"            "cdm_source"          </span></span>
 <span><span class="co">##  [4] "cohort"               "cohort_attribute"     "cohort_definition"   </span></span>
-<span><span class="co">##  [7] "concept_relationship" "condition_era"        "condition_occurrence"</span></span>
-<span><span class="co">## [10] "cost"                 "death"                "device_exposure"     </span></span>
-<span><span class="co">## [13] "dose_era"             "drug_era"             "drug_exposure"       </span></span>
-<span><span class="co">## [16] "fact_relationship"    "location"             "measurement"         </span></span>
-<span><span class="co">## [19] "metadata"             "note"                 "note_nlp"            </span></span>
-<span><span class="co">## [22] "observation"          "observation_period"   "payer_plan_period"   </span></span>
-<span><span class="co">## [25] "person"               "procedure_occurrence" "provider"            </span></span>
-<span><span class="co">## [28] "specimen"             "visit_detail"         "visit_occurrence"    </span></span>
-<span><span class="co">## [31] "vocabulary"           "concept"</span></span></code></pre>
+<span><span class="co">##  [7] "concept"              "concept_relationship" "condition_era"       </span></span>
+<span><span class="co">## [10] "condition_occurrence" "cost"                 "death"               </span></span>
+<span><span class="co">## [13] "device_exposure"      "dose_era"             "drug_era"            </span></span>
+<span><span class="co">## [16] "drug_exposure"        "fact_relationship"    "location"            </span></span>
+<span><span class="co">## [19] "measurement"          "metadata"             "note"                </span></span>
+<span><span class="co">## [22] "note_nlp"             "observation"          "observation_period"  </span></span>
+<span><span class="co">## [25] "payer_plan_period"    "person"               "procedure_occurrence"</span></span>
+<span><span class="co">## [28] "provider"             "specimen"             "visit_detail"        </span></span>
+<span><span class="co">## [31] "visit_occurrence"     "vocabulary"</span></span></code></pre>
 <p>Let’s say we want to retrieve some measurements from the
 <code>Measurement</code> table. We can use the <code>concepts()</code>
 command to see what concepts are available in this table:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">concepts</span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">##   concept_id                                       concept_name</span></span>
@@ -331,7 +311,7 @@ command to see what concepts are available in this table:</p>
 <p>But we don’t want to retrieve all the columns from the table, so we
 can use the <code>columns()</code> command to see what columns are
 available in the <code>Measurement</code> table:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">columns</span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">##  [1] "measurement_id"                "person_id"                    </span></span>
@@ -348,7 +328,7 @@ available in the <code>Measurement</code> table:</p>
 <code>value_as_number</code> from the <code>Measurement</code> table
 related to the concept <code>3000099</code>. We can use the
 <code>get</code> method to retrieve this information:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>, <span class="co"># the table we want to retrieve</span></span>
 <span>      symbol <span class="op">=</span> <span class="st">"my_table"</span>, <span class="co"># the name of the symbol that will store the table</span></span>
 <span>      conceptFilter <span class="op">=</span> <span class="fl">3000099</span>, <span class="co"># the concept we are interested in</span></span>
@@ -359,7 +339,7 @@ related to the concept <code>3000099</code>. We can use the
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"my_table"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"    </span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`number of rows`</span></span>
 <span><span class="co">## [1] 11</span></span>
@@ -387,7 +367,7 @@ be used to merge the table with another table. This is done using the
 <code>visit_occurrence_id</code> will be used to merge this table with
 the <code>Visit_occurrence</code> table, and it will perform the
 reshaping operation to make this merge possible.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"visit_detail"</span>,</span>
 <span>      conceptFilter <span class="op">=</span> <span class="fl">581383</span>,</span>
 <span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"visit_detail_start_date"</span>, <span class="st">"visit_detail_end_date"</span><span class="op">)</span>,</span>
@@ -396,7 +376,7 @@ reshaping operation to make this merge possible.</p>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"visit_detail"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"    </span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`number of rows`</span></span>
 <span><span class="co">## [1] 31</span></span>
@@ -406,9 +386,9 @@ reshaping operation to make this merge possible.</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`variables held`</span></span>
 <span><span class="co">##  [1] "visit_occurrence_id"                                      </span></span>
-<span><span class="co">##  [2] "inpatient_cardiac_care_facility.person_id"                </span></span>
-<span><span class="co">##  [3] "inpatient_cardiac_care_facility.visit_detail_start_date"  </span></span>
-<span><span class="co">##  [4] "inpatient_cardiac_care_facility.visit_detail_end_date"    </span></span>
+<span><span class="co">##  [2] "inpatient_cardiac_care_facility.1.person_id"              </span></span>
+<span><span class="co">##  [3] "inpatient_cardiac_care_facility.1.visit_detail_start_date"</span></span>
+<span><span class="co">##  [4] "inpatient_cardiac_care_facility.1.visit_detail_end_date"  </span></span>
 <span><span class="co">##  [5] "inpatient_cardiac_care_facility.2.person_id"              </span></span>
 <span><span class="co">##  [6] "inpatient_cardiac_care_facility.2.visit_detail_start_date"</span></span>
 <span><span class="co">##  [7] "inpatient_cardiac_care_facility.2.visit_detail_end_date"  </span></span>
@@ -453,7 +433,7 @@ records of the condition <code>Chest pain</code> (Concept ID
 this information to a specific <code>symbol</code> and then pass it as
 the <code>personFilter</code> argument to the <code>get</code> method
 for the <code>Person</code> table.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"condition_occurrence"</span>,</span>
 <span>      conceptFilter <span class="op">=</span> <span class="fl">77670</span>, <span class="co"># `Chest pain`</span></span>
 <span>      columnFilter <span class="op">=</span> <span class="st">"condition_start_date"</span>,</span>
@@ -462,7 +442,7 @@ for the <code>Person</code> table.</p>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"chest_pain_condition"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"    </span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`number of rows`</span></span>
 <span><span class="co">## [1] 4</span></span>
@@ -472,14 +452,14 @@ for the <code>Person</code> table.</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`variables held`</span></span>
 <span><span class="co">## [1] "person_id"                        </span></span>
-<span><span class="co">## [2] "chest_pain.condition_start_date"  </span></span>
+<span><span class="co">## [2] "chest_pain.1.condition_start_date"</span></span>
 <span><span class="co">## [3] "chest_pain.2.condition_start_date"</span></span>
 <span><span class="co">## [4] "chest_pain.3.condition_start_date"</span></span></code></pre>
 <p>We stored the measurements in the <code>chest_pain_condition</code>
 symbol. Now we can use this <code>symbol</code> to filter the
 <code>Person</code> table and retrieve only the data related to these
 patients:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"person"</span>,</span>
 <span>      symbol <span class="op">=</span> <span class="st">"person_with_chest_pain"</span>,</span>
 <span>      personFilter <span class="op">=</span> <span class="st">"chest_pain_condition"</span><span class="op">)</span></span></code></pre></div>
@@ -492,7 +472,7 @@ third table to retrieve only the data related to these patients. For
 example, we can retrieve the <code>Observation</code> table using the
 <code>person_with_chest_pain</code> symbol as the
 <code>personFilter</code>:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"observation"</span>,</span>
 <span>      symbol <span class="op">=</span> <span class="st">"observation_from_person_with_chest_pain"</span>,</span>
 <span>      columnFilter <span class="op">=</span> <span class="st">"observation_date"</span>,</span>
@@ -501,7 +481,7 @@ example, we can retrieve the <code>Observation</code> table using the
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"observation_from_person_with_chest_pain"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $brge</span></span>
 <span><span class="co">## $brge$class</span></span>
-<span><span class="co">## [1] "omop.cdm.table" "data.frame"    </span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`number of rows`</span></span>
 <span><span class="co">## [1] 4</span></span>
@@ -510,16 +490,16 @@ example, we can retrieve the <code>Observation</code> table using the
 <span><span class="co">## [1] 887</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $brge$`variables held`</span></span>
-<span><span class="co">##  [1] "person_id"                                              </span></span>
-<span><span class="co">##  [2] "history_of_clinical_finding_in_subject.observation_date"</span></span>
-<span><span class="co">##  [3] "primary_insurance.observation_date"                     </span></span>
-<span><span class="co">##  [4] "preferred_language.observation_date"                    </span></span>
-<span><span class="co">##  [5] "cost_containment.observation_date"                      </span></span>
-<span><span class="co">##  [6] "cost_containment.2.observation_date"                    </span></span>
-<span><span class="co">##  [7] "cost_containment.3.observation_date"                    </span></span>
-<span><span class="co">##  [8] "pain_severity_reported.observation_date"                </span></span>
-<span><span class="co">##  [9] "pain_severity_reported.2.observation_date"              </span></span>
-<span><span class="co">## [10] "acceptable_pain_level_status.observation_date"          </span></span>
+<span><span class="co">##  [1] "person_id"                                                </span></span>
+<span><span class="co">##  [2] "history_of_clinical_finding_in_subject.1.observation_date"</span></span>
+<span><span class="co">##  [3] "primary_insurance.1.observation_date"                     </span></span>
+<span><span class="co">##  [4] "preferred_language.1.observation_date"                    </span></span>
+<span><span class="co">##  [5] "cost_containment.1.observation_date"                      </span></span>
+<span><span class="co">##  [6] "cost_containment.2.observation_date"                      </span></span>
+<span><span class="co">##  [7] "cost_containment.3.observation_date"                      </span></span>
+<span><span class="co">##  [8] "pain_severity_reported.1.observation_date"                </span></span>
+<span><span class="co">##  [9] "pain_severity_reported.2.observation_date"                </span></span>
+<span><span class="co">## [10] "acceptable_pain_level_status.1.observation_date"          </span></span>
 <span><span class="co">##  [ reached getOption("max.print") -- omitted 877 entries ]</span></span></code></pre>
 <p>The <code>Observation</code> table we retrieved only contains data
 related to the patients who have records of the condition
