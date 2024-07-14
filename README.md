@@ -25,17 +25,17 @@ The `dsOMOP` ecosystem comprises two essential components designed to work in ta
 To install the client-side package `dsOMOPClient`, follow the steps below. This guide assumes you have R installed on your system and the necessary permissions to install R packages.
 
 The `dsOMOPClient` package can be installed directly from GitHub using the `devtools` package. If you do not have `devtools` installed, you can install it using the following command in R:
-```
+```R
 install.packages("devtools")
 ```
 
 You can then install the `dsOMOPClient` package using the following command in R:
-```
+```R
 devtools::install_github('isglobal-brge/dsOMOPClient')
 ```
 
 Once the package is installed, you can load it into your R environment using the following command:
-```
+```R
 library(dsOMOPClient)
 ```
 
