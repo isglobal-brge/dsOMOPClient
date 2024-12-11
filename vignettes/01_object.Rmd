@@ -9,15 +9,34 @@ vignette: >
 
 **Important note:** The `dsOMOPClient` package serves as a client-side interface with DataSHIELD servers, facilitating the retrieval of tables from OMOP CDM databases based on resources and integrating such tables into the DataSHIELD workflow. However, users will need to manually carry out the subsequent processes of transforming the resulting tables into a single dataset afterwards using the DataSHIELD base functions of `dsBaseClient`. 
 
-Auxiliary packages automate this integration, which is why we recommend taking a look at packages like `dsOMOPHelper` instead of directly using `dsOMOPClient`. We advise against the direct use of `dsOMOPClient` for regular researchers unless faced with an edge-case usage that requires the flexibility of operating directly with the `dsOMOPClient` data interface at a more primitive level, or for developers who are building their own packages on top of `dsOMOPClient`. 
+There are auxiliary packages that automate this integration, which is why we recommend taking a look at packages like `dsOMOPHelper` instead of directly using `dsOMOPClient`. We advise against the direct use of `dsOMOPClient` for regular researchers unless faced with an edge-case usage that requires the flexibility of operating directly with the `dsOMOPClient` data interface at a more primitive level, or for developers who are building their own packages on top of `dsOMOPClient`. 
 
 For more information on `dsOMOPHelper`, please visit [its GitHub repository](https://github.com/isglobal-brge/dsOMOPHelper).
 
+# Prerequisites
+
+Before using `dsOMOPClient`, it is recommended to have a basic understanding of:
+
+- The OMOP CDM structure and its standardized clinical data format. You can learn more about OMOP CDM in the [OHDSI Book chapter 'The Common Data Model'](https://ohdsi.github.io/TheBookOfOhdsi/CommonDataModel.html).
+
+- OMOP Vocabularies and how they standardize medical concepts (like diagnoses, medications, procedures) across different coding systems (ICD-9, ICD-10, SNOMED CT, etc.) into a common representation. The [OHDSI Book chapter 'Standardized Vocabularies'](https://ohdsi.github.io/TheBookOfOhdsi/StandardizedVocabularies.html) provides a comprehensive overview of this standardization process.
+
+- Basic DataSHIELD concepts and workflow. The [DataSHIELD Beginner's Tutorial](https://data2knowledge.atlassian.net/wiki/spaces/DSDEV/pages/931069953/Beginners+Tutorial+DataSHIELD+v6.1) is a good starting point.
+
+This knowledge will help you better understand how to effectively query and work with OMOP CDM data through the DataSHIELD infrastructure.
+
 # 1.1 Creating an interface object
 
-The `ds.omop` function creates an interface object that allows users to interact with the OMOP CDM database based on a resource. This object enables obtaining tables from the database by applying desired filters and querying data catalogs for information present in the database. 
+The `ds.omop` function creates an interface object that allows users to interact with the OMOP CDM database based on a resource. We can use this object to obtain tables from the database by applying the desired filters and querying data catalogs for information present in the database. 
 
-In this example, we will be using the [MIMIC IV](https://physionet.org/content/mimic-iv-demo-omop/0.9/) data available on the [Opal server of the BRGE at ISGlobal](https://opal.isglobal.org/brge). We will establish a connection to our server using `DSI` with the following demonstration user credentials:
+In this example, we will be using the [MIMIC IV](https://physionet.org/content/mimic-iv-demo-omop/0.9/) data available on the [OBiBa's public Opal demo server](https://opal-demo.obiba.org). This server is publicly accessible, so all users are able to reproduce the examples of this guide by executing the same commands in their R session. The access credentials are:
+
+- Server URL: `https://opal-demo.obiba.org`
+- User: `dsuser`
+- Password: `P@ssw0rd`
+- Profile: `omop`
+
+First, we will establish a connection to the demo server using `DSI` with the provided credentials:
 
 ```{r establishing_connection, message=FALSE}
 library(DSI)
@@ -27,10 +46,11 @@ library(dsOMOPClient)
 
 builder <- newDSLoginBuilder()
 builder$append(
-  server = "brge",
-  url = "https://opal.isglobal.org/brge",
-  user = "omop_demo",
-  password = "P@ssw0rd"
+  server = "opal_demo",
+  url = "https://opal-demo.obiba.org",
+  user = "dsuser",
+  password = "P@ssw0rd",
+  profile = "omop"
 )
 logindata <- builder$build()
 conns <- datashield.login(logins = logindata)
@@ -57,8 +77,8 @@ If we wish to establish connections with multiple OMOP CDM databases simultaneou
 ```{r multiple_connections, eval = FALSE}
 o <- ds.omop(
   connections = conns,
-  resource = list(brge = "omop_demo.mimiciv",
-                  another_server = "project.resource")
+  resource = list(opal_demo = "omop_demo.mimiciv",
+                  another_server = "project_name.resource_name")
 )
 ```
 
@@ -80,7 +100,7 @@ o$tables()
 o$columns("measurement")
 ```
 
-- `concepts(tableName)`: This function retrieves the concepts present in a given table and returns them as a data frame with two columns: `concept_id` and their associated `concept_name`. Concepts in OMOP CDM are standardized terms that represent clinical events, measurements, and other entities. Understanding the concepts available in a table can help users to formulate data filtering queries.
+- `concepts(tableName)`: This function retrieves the concepts present in a given table and returns them as a data frame with two columns: `concept_id` and their associated `concept_name`. Concepts in OMOP CDM are standardized terms that represent clinical events, measurements, observations, and other entities. Understanding the concepts available in a table can help users to formulate data filtering queries.
 
 ```{r concepts_catalog, R.options = list(max.print = 20)}
 o$concepts("measurement")
@@ -104,6 +124,6 @@ o$get(table = "measurement",
 ds.summary("meas")
 ```
 
-These functions form the core of the `ds.omop` interface object's capabilities, enabling users to effectively interact with OMOP CDM databases within the DataSHIELD environment. It is expected that the various resulting tables will be relationally joined using the `ds.merge` function through their common identifiers, such as `person_id`.
+These functions form the core of the `ds.omop` interface object's capabilities, which enables users to interact with OMOP CDM databases within the DataSHIELD environment. It is expected that the various resulting tables will be relationally joined using the `ds.merge` function through their common identifiers, such as `person_id`.
 
-In the next articles, we will explore the internal workings of the table processing operations, understanding how to manipulate and combine tables into single datasets ready for analysis, along with a deeper dive into the customization possibilities of the `get` function and its potential applications.
+In the next article, we will explore the internal workings of the table processing operations, understanding how to manipulate and combine tables into single datasets ready for analysis, along with a deeper dive into the customization possibilities of the `get` function and its potential applications.
