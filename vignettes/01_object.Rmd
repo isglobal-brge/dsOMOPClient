@@ -1,5 +1,5 @@
 ---
-title: "1. Interface object"
+title: "1. Creating an interface object"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{01_object}
@@ -37,6 +37,16 @@ In this example, we will be using the [MIMIC IV](https://physionet.org/content/m
 - Profile: `omop`
 
 First, we will establish a connection to the demo server using `DSI` with the provided credentials:
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+```
 
 ```{r establishing_connection, message=FALSE}
 library(DSI)
@@ -106,24 +116,44 @@ o$columns("measurement")
 o$concepts("measurement")
 ```
 
+The numeric values in the `concept_id` column are the standardized identifiers for the concepts in the OMOP CDM. For example, as we can observe in the table above, the concept `1175625` refers to the concept `Breath rate spontaneous`. We will use these identifiers to filter the data in the following sections.
+
 ## 1.2.2 Retrieving tables
 
 - `get(tableName)`: This function enables users to extract a specific table from the OMOP CDM database. The extracted table becomes available within the DataSHIELD environment, where it can be manipulated using other DataSHIELD functions and potentially combined with other tables from the database. Users have the flexibility to apply filters and specify columns to customize the extracted data according to their research needs. Below are some examples of how to use the `get` function:
 
+### Getting a complete table
+
+We simply specify the desired table's name as a string in the `get` function: 
+
 ```{r get_person}
 o$get("person")
+
+# We can use the `ds.summary` function to get a summary of the retrieved table
 ds.summary("person")
 ```
 
+However, this is only advised for small tables or in contexts where we need the full table, as it can be memory-intensive and slow to retrieve. For larger tables, it is recommended to apply filters to the `get` function to retrieve a specific subset of the table.
+
+### Getting a filtered table
+
+We can apply filters to the `get` function to retrieve a specific subset of the table, which is the recommended approach for larger tables, such as the `Measurement` table. For example, we can set the parameters of the `get` function to retrieve only specific columns (in this case, `value_as_number` and `measurement_date`) and specific measurement types (in this case, we want to use the concept IDs of `Heart rate` and `Body weight`, which are `3027018` and `3025315`):
+
 ```{r get_measurement, R.options = list(max.print = 5)}
 o$get(table = "measurement",
-      symbol = "meas",
       columnFilter = c("value_as_number", "measurement_date"),
-      conceptFilter = c(3000099, 3000068))
+      conceptFilter = c(3027018, 3025315))
 
-ds.summary("meas")
+# We print a summary of the retrieved table
+ds.summary("measurement")
 ```
+
+As we can observe, the resulting table contains only the information about the measurements of `Heart rate` and `Body weight` of all patients in the database.
 
 These functions form the core of the `ds.omop` interface object's capabilities, which enables users to interact with OMOP CDM databases within the DataSHIELD environment. It is expected that the various resulting tables will be relationally joined using the `ds.merge` function through their common identifiers, such as `person_id`.
 
 In the next article, we will explore the internal workings of the table processing operations, understanding how to manipulate and combine tables into single datasets ready for analysis, along with a deeper dive into the customization possibilities of the `get` function and its potential applications.
+
+```{r log_out, echo = FALSE}
+datashield.logout(conns)
+```

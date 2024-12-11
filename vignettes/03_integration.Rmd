@@ -15,10 +15,11 @@ library(dsOMOPClient)
 
 builder <- newDSLoginBuilder()
 builder$append(
-  server = "brge",
-  url = "https://opal.isglobal.org/brge",
-  user = "omop_demo",
-  password = "P@ssw0rd"
+  server = "opal_demo",
+  url = "https://opal-demo.obiba.org",
+  user = "dsuser",
+  password = "P@ssw0rd",
+  profile = "omop"
 )
 logindata <- builder$build()
 conns <- datashield.login(logins = logindata)

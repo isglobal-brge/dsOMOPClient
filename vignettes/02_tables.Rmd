@@ -1,5 +1,5 @@
 ---
-title: "2. Table retrieval"
+title: "2. Retrieving tables from the database"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{02_tables}
@@ -15,10 +15,11 @@ library(dsOMOPClient)
 
 builder <- newDSLoginBuilder()
 builder$append(
-  server = "brge",
-  url = "https://opal.isglobal.org/brge",
-  user = "omop_demo",
-  password = "P@ssw0rd"
+  server = "opal_demo",
+  url = "https://opal-demo.obiba.org",
+  user = "dsuser",
+  password = "P@ssw0rd",
+  profile = "omop"
 )
 logindata <- builder$build()
 conns <- datashield.login(logins = logindata)
@@ -29,13 +30,13 @@ o <- ds.omop(
 )
 ```
 
-We have already seen how to create an interface object for the OMOP CDM database. Now, let's see how to use it to retrieve tables from the database. For this purpose, we will use the `get` method of the interface object. This method has several arguments that allow filtering the data that is retrieved and customizing the output.
+We have already seen how to create an interface object for an OMOP CDM database. Now, let's see how to use it to retrieve tables from it in deeper detail. For this purpose, we will use the `get` method of the interface object. This method has several arguments that allow filtering the data that is retrieved and customizing the output.
 
 # 2.1 Features of the `get` method
 
 ##  2.1.1 Table reshaping
 
-The `get` method is an intelligent method that returns the table after subjecting it to a series of operations. If it detects that this table can present various records linked to the same entity (for example, to a `Person`), it will transform the table into a wide format using the ds.reShape function, ready to be merged with other tables. For instance, when we take the `Person` table, it will return a table without altering its original format:
+The `get` method is an smart method that returns the table after subjecting it to a series of operations. If it detects that this table can present various records linked to the same OMOP CDM entity (for example, to a `Person`), it will transform the table into a wide format automatically using the in-built DataSHIELD reshape function, ready to be merged with other tables. For instance, when we take the `Person` table, it will return a table without altering its original format:
 
 ```{r get_person}
 o$get("person")

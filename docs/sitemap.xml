@@ -1,78 +1,28 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE.html</loc>
-  </url>
-  <url>
-    <loc>/articles/01_object.html</loc>
-  </url>
-  <url>
-    <loc>/articles/02_tables.html</loc>
-  </url>
-  <url>
-    <loc>/articles/03_integration.html</loc>
-  </url>
-  <url>
-    <loc>/articles/catalogs.html</loc>
-  </url>
-  <url>
-    <loc>/articles/get.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/articles/interface_object.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/OMOPCDMDatabase-assignResource.html</loc>
-  </url>
-  <url>
-    <loc>/reference/OMOPCDMDatabase-checkConnection.html</loc>
-  </url>
-  <url>
-    <loc>/reference/OMOPCDMDatabase-checkPrivacyControlLevel.html</loc>
-  </url>
-  <url>
-    <loc>/reference/OMOPCDMDatabase-columns.html</loc>
-  </url>
-  <url>
-    <loc>/reference/OMOPCDMDatabase-concepts.html</loc>
-  </url>
-  <url>
-    <loc>/reference/OMOPCDMDatabase-get.html</loc>
-  </url>
-  <url>
-    <loc>/reference/OMOPCDMDatabase-removeResource.html</loc>
-  </url>
-  <url>
-    <loc>/reference/OMOPCDMDatabase-tables.html</loc>
-  </url>
-  <url>
-    <loc>/reference/OMOPCDMDatabase.html</loc>
-  </url>
-  <url>
-    <loc>/reference/ds.omop.html</loc>
-  </url>
-  <url>
-    <loc>/reference/generateResourceSymbol.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getTableCall.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/LICENSE-text.html</loc></url>
+<url><loc>/LICENSE.html</loc></url>
+<url><loc>/articles/01_object.html</loc></url>
+<url><loc>/articles/02_tables.html</loc></url>
+<url><loc>/articles/03_integration.html</loc></url>
+<url><loc>/articles/catalogs.html</loc></url>
+<url><loc>/articles/get.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/articles/interface_object.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/reference/OMOPCDMDatabase-assignResource.html</loc></url>
+<url><loc>/reference/OMOPCDMDatabase-checkConnection.html</loc></url>
+<url><loc>/reference/OMOPCDMDatabase-checkPrivacyControlLevel.html</loc></url>
+<url><loc>/reference/OMOPCDMDatabase-columns.html</loc></url>
+<url><loc>/reference/OMOPCDMDatabase-concepts.html</loc></url>
+<url><loc>/reference/OMOPCDMDatabase-get.html</loc></url>
+<url><loc>/reference/OMOPCDMDatabase-removeResource.html</loc></url>
+<url><loc>/reference/OMOPCDMDatabase-tables.html</loc></url>
+<url><loc>/reference/OMOPCDMDatabase.html</loc></url>
+<url><loc>/reference/ds.omop.html</loc></url>
+<url><loc>/reference/generateResourceSymbol.html</loc></url>
+<url><loc>/reference/getTableCall.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
 </urlset>
+
