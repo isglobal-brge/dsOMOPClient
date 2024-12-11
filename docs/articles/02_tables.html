@@ -110,34 +110,36 @@ return a table in wide format, preserving the column
 <code>person_id</code> so that it can be merged with the
 <code>Person</code> table:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>, conceptFilter <span class="op">=</span> <span class="fl">3000099</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># 3027018 is the concept ID for `Heart rate`</span></span>
+<span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>, conceptFilter <span class="op">=</span> <span class="fl">3027018</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
 <span><span class="co">## $opal_demo$class</span></span>
 <span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of rows`</span></span>
-<span><span class="co">## [1] 11</span></span>
+<span><span class="co">## [1] 100</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of columns`</span></span>
 <span><span class="co">## [1] 15</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
-<span><span class="co">##  [1] "person_id"                                                                  </span></span>
-<span><span class="co">##  [2] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_id"             </span></span>
-<span><span class="co">##  [3] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"           </span></span>
-<span><span class="co">##  [4] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_datetime"       </span></span>
-<span><span class="co">##  [5] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_time"           </span></span>
-<span><span class="co">##  [6] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_type_concept_id"</span></span>
-<span><span class="co">##  [7] "nuclear_ab_units_volume_in_serum_by_immunoassay.operator_concept_id"        </span></span>
-<span><span class="co">##  [8] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_number"            </span></span>
-<span><span class="co">##  [9] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_concept_id"        </span></span>
-<span><span class="co">## [10] "nuclear_ab_units_volume_in_serum_by_immunoassay.unit_concept_id"            </span></span>
-<span><span class="co">## [11] "nuclear_ab_units_volume_in_serum_by_immunoassay.range_low"                  </span></span>
-<span><span class="co">## [12] "nuclear_ab_units_volume_in_serum_by_immunoassay.range_high"                 </span></span>
-<span><span class="co">## [13] "nuclear_ab_units_volume_in_serum_by_immunoassay.provider_id"                </span></span>
-<span><span class="co">## [14] "nuclear_ab_units_volume_in_serum_by_immunoassay.visit_occurrence_id"        </span></span>
-<span><span class="co">## [15] "nuclear_ab_units_volume_in_serum_by_immunoassay.visit_detail_id"</span></span></code></pre>
+<span><span class="co">##  [1] "person_id"                             </span></span>
+<span><span class="co">##  [2] "heart_rate.measurement_id"             </span></span>
+<span><span class="co">##  [3] "heart_rate.measurement_date"           </span></span>
+<span><span class="co">##  [4] "heart_rate.measurement_datetime"       </span></span>
+<span><span class="co">##  [5] "heart_rate.measurement_time"           </span></span>
+<span><span class="co">##  [6] "heart_rate.measurement_type_concept_id"</span></span>
+<span><span class="co">##  [7] "heart_rate.operator_concept_id"        </span></span>
+<span><span class="co">##  [8] "heart_rate.value_as_number"            </span></span>
+<span><span class="co">##  [9] "heart_rate.value_as_concept_id"        </span></span>
+<span><span class="co">## [10] "heart_rate.unit_concept_id"            </span></span>
+<span><span class="co">## [11] "heart_rate.range_low"                  </span></span>
+<span><span class="co">## [12] "heart_rate.range_high"                 </span></span>
+<span><span class="co">## [13] "heart_rate.provider_id"                </span></span>
+<span><span class="co">## [14] "heart_rate.visit_occurrence_id"        </span></span>
+<span><span class="co">## [15] "heart_rate.visit_detail_id"</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="concept-translation">2.1.2 Concept translation<a class="anchor" aria-label="anchor" href="#concept-translation"></a>
@@ -145,14 +147,13 @@ return a table in wide format, preserving the column
 <p>Another feature you may have noticed in the previous example is that
 the <code>get</code> method automatically translates the concepts of the
 table that we are retrieving. For instance, in the case of the
-<code>Measurement</code> table, the concept <code>3000099</code> was
-translated to
-<code>Nuclear Ab [Units/volume] in Serum by Immunoassay</code>.</p>
+<code>Measurement</code> table, the concept <code>3027018</code> was
+translated to <code>Heart rate</code>.</p>
 <p>The same happens with the values of the rows in the tables. For
 example, in the <code>Person</code> table, in the
 <code>gender_concept_id</code> column, the value <code>8532</code> was
-translated to <code>FEMALE</code> and the value <code>8507</code> was
-translated to <code>MALE</code> automatically.</p>
+translated automatically to <code>FEMALE</code>, and the value
+<code>8507</code> was translated to <code>MALE</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person$gender_concept_id"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
@@ -170,60 +171,59 @@ translated to <code>MALE</code> automatically.</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`count of 'male'`</span></span>
 <span><span class="co">## [1] 57</span></span></code></pre>
-<p>This will happen automatically with all concepts in the database as
-long as they are recognized and properly named in the
-<code>Concept</code> table of the database. Otherwise, the concept will
-remain as <code>concept_id_</code> + the numeric value of the concept.
-For example, if the concept <code>FEMALE</code> was not properly named
-in the <code>Concept</code> table, it would remain as
-<code>concept_id_8532</code>.</p>
+<p>This will happen with all concepts in the database as long as they
+are recognized and properly named in the <code>Concept</code> table of
+the database. Otherwise, the concept will remain as
+<code>concept_id_</code> + the numeric value of the concept. For
+example, if the concept <code>FEMALE</code> was not properly named in
+the <code>Concept</code> table, it would remain as
+<code>concept_id_8532</code> so that it can at least be identified.</p>
 </div>
 <div class="section level3">
 <h3 id="longitudinal-data-sequencing">2.1.3 Longitudinal data sequencing<a class="anchor" aria-label="anchor" href="#longitudinal-data-sequencing"></a>
 </h3>
 <p>When dealing with longitudinal data, where multiple records of the
 same type exist for the same entity over time (for example, several
-<code>Breath rate spontaneous</code> measurements for the same
-<code>person</code>), setting the <code>wideLongitudinal</code>
-parameter to <code>TRUE</code> in the <code>get</code> method reshapes
-the longitudinal data entries into a wide format. This transformation
-appends numerically suffixed columns for each occurrence, providing a
-comprehensive view of the data over time and preserving the temporal
-sequence of events or measurements for each entity.</p>
+<code>Heart rate</code> measurements for the same <code>Person</code>),
+setting the <code>wideLongitudinal</code> parameter to <code>TRUE</code>
+in the <code>get</code> method reshapes the longitudinal data entries
+into a wide format. This transformation appends numerically suffixed
+columns for each occurrence, providing a comprehensive view of the data
+over time and preserving the temporal sequence of events or measurements
+for each entity.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>, conceptFilter <span class="op">=</span> <span class="fl">1175625</span>, columnFilter <span class="op">=</span> <span class="st">"value_as_number"</span>, wideLongitudinal <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>, </span>
+<span>      conceptFilter <span class="op">=</span> <span class="fl">3027018</span>, </span>
+<span>      columnFilter <span class="op">=</span> <span class="st">"value_as_number"</span>, </span>
+<span>      wideLongitudinal <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
 <span><span class="co">## $opal_demo$class</span></span>
 <span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of rows`</span></span>
-<span><span class="co">## [1] 55</span></span>
+<span><span class="co">## [1] 100</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of columns`</span></span>
-<span><span class="co">## [1] 139</span></span>
+<span><span class="co">## [1] 4550</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
-<span><span class="co">##  [1] "person_id"                                </span></span>
-<span><span class="co">##  [2] "breath_rate_spontaneous.1.value_as_number"</span></span>
-<span><span class="co">##  [3] "breath_rate_spontaneous.2.value_as_number"</span></span>
-<span><span class="co">##  [4] "breath_rate_spontaneous.3.value_as_number"</span></span>
-<span><span class="co">##  [5] "breath_rate_spontaneous.4.value_as_number"</span></span>
-<span><span class="co">##  [6] "breath_rate_spontaneous.5.value_as_number"</span></span>
-<span><span class="co">##  [7] "breath_rate_spontaneous.6.value_as_number"</span></span>
-<span><span class="co">##  [8] "breath_rate_spontaneous.7.value_as_number"</span></span>
-<span><span class="co">##  [9] "breath_rate_spontaneous.8.value_as_number"</span></span>
-<span><span class="co">## [10] "breath_rate_spontaneous.9.value_as_number"</span></span>
-<span><span class="co">##  [ reached getOption("max.print") -- omitted 129 entries ]</span></span></code></pre>
+<span><span class="co">##  [1] "person_id"                    "heart_rate.1.value_as_number"</span></span>
+<span><span class="co">##  [3] "heart_rate.2.value_as_number" "heart_rate.3.value_as_number"</span></span>
+<span><span class="co">##  [5] "heart_rate.4.value_as_number" "heart_rate.5.value_as_number"</span></span>
+<span><span class="co">##  [7] "heart_rate.6.value_as_number" "heart_rate.7.value_as_number"</span></span>
+<span><span class="co">##  [9] "heart_rate.8.value_as_number" "heart_rate.9.value_as_number"</span></span>
+<span><span class="co">##  [ reached getOption("max.print") -- omitted 4540 entries ]</span></span></code></pre>
 <p>Otherwise, if <code>wideLongitudinal</code> is set to
-<code>FALSE</code> (the default), the data remains in a long format
-without the numerically suffixed columns, and the identifier of the
-entity will be repeated across multiple records of the same type for the
-same entity to support this format.</p>
+<code>FALSE</code> (which is the default), the data remains in a long
+format without the numerically suffixed columns, and the identifier of
+the entity will be repeated across multiple records of the same type for
+the same entity to support this format.</p>
 <p>The method by which these additional data columns are aggregated is
-left to the discretion of the researcher. This flexibility ensures that
-the data can be structured in a way that best suits the analysis being
-performed.</p>
+left to the discretion of the researcher. This degree of flexibility
+ensures that the data can be structured in a way that best suits the
+analysis being performed.</p>
 </div>
 </div>
 <div class="section level2">
@@ -306,8 +306,8 @@ command to see what concepts are available in this table:</p>
 <span><span class="co">## 5    3000099  Nuclear Ab [Units/volume] in Serum by Immunoassay</span></span>
 <span><span class="co">##  [ reached 'max' / getOption("max.print") -- omitted 348 rows ]</span></span></code></pre>
 <p>We have decided to retrieve the information related to the concept
-<code>3000099</code> (which corresponds to
-<code>Nuclear Ab [Units/volume] in Serum by Immunoassay</code>).</p>
+<code>3010421</code> (which corresponds to
+<code>pH of blood</code>).</p>
 <p>But we don’t want to retrieve all the columns from the table, so we
 can use the <code>columns()</code> command to see what columns are
 available in the <code>Measurement</code> table:</p>
@@ -326,14 +326,14 @@ available in the <code>Measurement</code> table:</p>
 <span><span class="co">## [19] "unit_source_value"             "value_source_value"</span></span></code></pre>
 <p>We are only interested in the <code>measurement_date</code> and
 <code>value_as_number</code> from the <code>Measurement</code> table
-related to the concept <code>3000099</code>. We can use the
+related to the concept ID <code>3010421</code>. We can use the
 <code>get</code> method to retrieve this information:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>, <span class="co"># the table we want to retrieve</span></span>
-<span>      symbol <span class="op">=</span> <span class="st">"my_table"</span>, <span class="co"># the name of the symbol that will store the table</span></span>
-<span>      conceptFilter <span class="op">=</span> <span class="fl">3000099</span>, <span class="co"># the concept we are interested in</span></span>
-<span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"measurement_date"</span>, <span class="st">"value_as_concept_id"</span><span class="op">)</span>, <span class="co"># the only columns we want to retrieve</span></span>
-<span>      dropNA <span class="op">=</span> <span class="cn">FALSE</span> <span class="co"># whether we want to drop empty columns or not</span></span>
+<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>,  <span class="co"># The table we want to retrieve</span></span>
+<span>      symbol <span class="op">=</span> <span class="st">"my_table"</span>,  <span class="co"># The name of the symbol that will store the table</span></span>
+<span>      conceptFilter <span class="op">=</span> <span class="fl">3010421</span>,  <span class="co"># The concept we are interested in</span></span>
+<span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"measurement_date"</span>, <span class="st">"value_as_concept_id"</span><span class="op">)</span>,  <span class="co"># The only columns we want to retrieve</span></span>
+<span>      dropNA <span class="op">=</span> <span class="cn">FALSE</span>  <span class="co"># Whether we want to drop empty columns or not</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"my_table"</span><span class="op">)</span></span></code></pre></div>
@@ -342,18 +342,17 @@ related to the concept <code>3000099</code>. We can use the
 <span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of rows`</span></span>
-<span><span class="co">## [1] 11</span></span>
+<span><span class="co">## [1] 78</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of columns`</span></span>
 <span><span class="co">## [1] 3</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
-<span><span class="co">## [1] "person_id"                                                          </span></span>
-<span><span class="co">## [2] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"   </span></span>
-<span><span class="co">## [3] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_concept_id"</span></span></code></pre>
+<span><span class="co">## [1] "person_id"                       "ph_of_blood.measurement_date"   </span></span>
+<span><span class="co">## [3] "ph_of_blood.value_as_concept_id"</span></span></code></pre>
 <p>Now this information is ready to be used within the DataSHIELD
 environment for any analysis or data manipulation operations that we
-want to perform. In the next article, we will see how to use the
+want to perform. In the next chapter, we will see how to use the
 built-in functions of DataSHIELD’s <code>dsBaseClient</code> package to
 combine it with other tables.</p>
 </div>
@@ -367,9 +366,13 @@ be used to merge the table with another table. This is done using the
 <code>visit_occurrence_id</code> will be used to merge this table with
 the <code>Visit_occurrence</code> table, and it will perform the
 reshaping operation to make this merge possible.</p>
+<p>For this example, we will retrieve the <code>Visit_detail</code>
+table related to the concept ID <code>4149943</code> (which corresponds
+to <code>Cardiac intensive care unit</code>, meaning that we are
+interested in retrieving only the visits to this unit):</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"visit_detail"</span>,</span>
-<span>      conceptFilter <span class="op">=</span> <span class="fl">581383</span>,</span>
+<span>      conceptFilter <span class="op">=</span> <span class="fl">4149943</span>,  <span class="co"># `Cardiac intensive care unit`</span></span>
 <span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"visit_detail_start_date"</span>, <span class="st">"visit_detail_end_date"</span><span class="op">)</span>,</span>
 <span>      mergeColumn <span class="op">=</span> <span class="st">"visit_occurrence_id"</span><span class="op">)</span></span>
 <span></span>
@@ -379,16 +382,16 @@ reshaping operation to make this merge possible.</p>
 <span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of rows`</span></span>
-<span><span class="co">## [1] 31</span></span>
+<span><span class="co">## [1] 39</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of columns`</span></span>
 <span><span class="co">## [1] 4</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
-<span><span class="co">## [1] "visit_occurrence_id"                                    </span></span>
-<span><span class="co">## [2] "inpatient_cardiac_care_facility.person_id"              </span></span>
-<span><span class="co">## [3] "inpatient_cardiac_care_facility.visit_detail_start_date"</span></span>
-<span><span class="co">## [4] "inpatient_cardiac_care_facility.visit_detail_end_date"</span></span></code></pre>
+<span><span class="co">## [1] "visit_occurrence_id"                                </span></span>
+<span><span class="co">## [2] "cardiac_intensive_care_unit.person_id"              </span></span>
+<span><span class="co">## [3] "cardiac_intensive_care_unit.visit_detail_start_date"</span></span>
+<span><span class="co">## [4] "cardiac_intensive_care_unit.visit_detail_end_date"</span></span></code></pre>
 <p>If no <code>mergeColumn</code> is specified, the <code>get</code>
 method will assume <code>person_id</code> as the default merge column,
 as this is the most common column that is used to merge tables in an
@@ -421,15 +424,15 @@ the server’s configuration. This ensures the security and
 confidentiality of the data at all times.</p>
 <p>Let’s perform a simple example to illustrate the potential of this
 feature.</p>
-<p>Suppose we are interested in analyzing data from patients who have
-records of the condition <code>Chest pain</code> (Concept ID
-<code>77670</code> in <code>Condition_occurrence</code>). We can save
-this information to a specific <code>symbol</code> and then pass it as
-the <code>personFilter</code> argument to the <code>get</code> method
-for the <code>Person</code> table.</p>
+<p>Suppose that, in this case, we are interested in analyzing data from
+patients who have records of the condition <code>Chest pain</code>
+(Concept ID <code>77670</code> in <code>Condition_occurrence</code>). We
+can save this information to a specific <code>symbol</code> and then
+pass it as the <code>personFilter</code> argument to the
+<code>get</code> method for the <code>Person</code> table:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"condition_occurrence"</span>,</span>
-<span>      conceptFilter <span class="op">=</span> <span class="fl">77670</span>, <span class="co"># `Chest pain`</span></span>
+<span>      conceptFilter <span class="op">=</span> <span class="fl">77670</span>,  <span class="co"># `Chest pain`</span></span>
 <span>      columnFilter <span class="op">=</span> <span class="st">"condition_start_date"</span>,</span>
 <span>      symbol <span class="op">=</span> <span class="st">"chest_pain_condition"</span><span class="op">)</span></span>
 <span></span>
@@ -446,14 +449,15 @@ for the <code>Person</code> table.</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
 <span><span class="co">## [1] "person_id"                       "chest_pain.condition_start_date"</span></span></code></pre>
-<p>We stored the measurements in the <code>chest_pain_condition</code>
-symbol. Now we can use this <code>symbol</code> to filter the
-<code>Person</code> table and retrieve only the data related to these
-patients:</p>
+<p>We stored the measurements under the
+<code>chest_pain_condition</code> symbol. Now we can use this table
+(referenced through the <code>chest_pain_condition</code> symbol) to
+filter the <code>Person</code> table and retrieve only the data related
+to these patients:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"person"</span>,</span>
-<span>      symbol <span class="op">=</span> <span class="st">"person_with_chest_pain"</span>,</span>
-<span>      personFilter <span class="op">=</span> <span class="st">"chest_pain_condition"</span><span class="op">)</span></span></code></pre></div>
+<span>      symbol <span class="op">=</span> <span class="st">"person_with_chest_pain"</span>,  <span class="co"># The name of the symbol that will store the table</span></span>
+<span>      personFilter <span class="op">=</span> <span class="st">"chest_pain_condition"</span><span class="op">)</span>  <span class="co"># The symbol that contains the only person IDs to be retrieved</span></span></code></pre></div>
 <p>Now we have a subset of the <code>Person</code> table that only
 contains the data related to the patients who have records of the
 condition <code>Chest pain</code>, stored in the
@@ -462,7 +466,9 @@ condition <code>Chest pain</code>, stored in the
 third table to retrieve only the data related to these patients. For
 example, we can retrieve the <code>Observation</code> table using the
 <code>person_with_chest_pain</code> symbol as the
-<code>personFilter</code>:</p>
+<code>personFilter</code>, and it will only retrieve the data related to
+the the patients who are present in the
+<code>person_with_chest_pain</code> symbol:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"observation"</span>,</span>
 <span>      symbol <span class="op">=</span> <span class="st">"observation_from_person_with_chest_pain"</span>,</span>
@@ -492,14 +498,14 @@ example, we can retrieve the <code>Observation</code> table using the
 <span><span class="co">##  [9] "pain_management_specialty.observation_date"          </span></span>
 <span><span class="co">## [10] "bowel_sounds.observation_date"                       </span></span>
 <span><span class="co">##  [ reached getOption("max.print") -- omitted 5 entries ]</span></span></code></pre>
-<p>The <code>Observation</code> table we retrieved only contains data
-related to the patients who have records of the condition
-<code>Chest pain</code>.</p>
+<p>The <code>Observation</code> table we retrieved only contains all the
+observation records related to the patients who have records of the
+condition <code>Chest pain</code>.</p>
 <p>This way, we can easily filter the data we are interested in and work
 with a subset of the data that is relevant to our study. This can also
 be done with cohorts, conditions, and any other characteristics that
 define a subset of individuals. It is done at query time, which makes
-data retrieval very fast and efficient.</p>
+data retrieval efficient.</p>
 <p>In the next article, we will see how to use the
 <code>dsBaseClient</code> package to combine the data we have retrieved
 to create a combined dataset that can be used for analysis.</p>
