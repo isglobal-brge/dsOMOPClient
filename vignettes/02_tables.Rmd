@@ -40,6 +40,7 @@ The `get` method is an smart method that returns the table after subjecting it t
 
 ```{r get_person}
 o$get("person")
+
 ds.summary("person")
 ```
 
@@ -201,6 +202,6 @@ This way, we can easily filter the data we are interested in and work with a sub
 
 In the next article, we will see how to use the `dsBaseClient` package to combine the data we have retrieved to create a combined dataset that can be used for analysis. 
 
-```{r log_out, echo = FALSE}
+```{r logout, echo = FALSE}
 datashield.logout(conns)
 ```

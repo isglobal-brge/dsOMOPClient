@@ -144,7 +144,6 @@ o$get(table = "measurement",
       columnFilter = c("value_as_number", "measurement_date"),
       conceptFilter = c(3027018, 3025315))
 
-# We print a summary of the retrieved table
 ds.summary("measurement")
 ```
 
@@ -154,6 +153,6 @@ These functions form the core of the `ds.omop` interface object's capabilities, 
 
 In the next article, we will explore the internal workings of the table processing operations, understanding how to manipulate and combine tables into single datasets ready for analysis, along with a deeper dive into the customization possibilities of the `get` function and its potential applications.
 
-```{r log_out, echo = FALSE}
+```{r logout, echo = FALSE}
 datashield.logout(conns)
 ```

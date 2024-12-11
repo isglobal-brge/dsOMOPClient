@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>3. Workflow integration • dsOMOPClient</title>
+<title>3. Integrating data into the workflow • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.9/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.9/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="3. Workflow integration">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="3. Integrating data into the workflow">
 </head>
 <body>
     <a href="#container" class="visually-hidden-focusable">Skip to content</a>
@@ -37,7 +37,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/01_object.html">1. Creating an interface object</a></li>
     <li><a class="dropdown-item" href="../articles/02_tables.html">2. Retrieving tables from the database</a></li>
-    <li><a class="dropdown-item" href="../articles/03_integration.html">3. Workflow integration</a></li>
+    <li><a class="dropdown-item" href="../articles/03_integration.html">3. Integrating data into the workflow</a></li>
   </ul>
 </li>
       </ul>
@@ -58,7 +58,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>3. Workflow integration</h1>
+      <h1>3. Integrating data into the workflow</h1>
             
       
 
@@ -69,8 +69,8 @@
     
 <p>Having explored how to retrieve tables using the <code>get</code>
 method from <code>dsOMOPClient</code> and its customization parameters,
-it is now time to integrate these tables into the DataSHIELD workflow.
-To achieve this, we will primarily use two commands from the
+it is now time to integrate these tables into the DataSHIELD workflow
+properly. To achieve this, we will primarily use two commands from the
 <code>dsBaseClient</code> package:</p>
 <ul>
 <li>
@@ -80,6 +80,10 @@ frame.</li>
 <code>ds.dataFrameSubset</code>, to apply value filters to tables
 based on desired characteristics.</li>
 </ul>
+<p>Make sure that you have the <code>dsBaseClient</code> package
+installed and loaded in your DataSHIELD environment:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">dsBaseClient</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="merging-tables">3.1 Merging tables<a class="anchor" aria-label="anchor" href="#merging-tables"></a>
 </h2>
@@ -88,8 +92,9 @@ based on desired characteristics.</li>
 process involves retrieving the necessary data from both tables and then
 merging them based on a common identifier.</p>
 <p>First, we retrieve the <code>Person</code> table:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"person"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
 <span><span class="co">## $opal_demo$class</span></span>
@@ -106,11 +111,16 @@ merging them based on a common identifier.</p>
 <span><span class="co">##  [4] "month_of_birth"       "day_of_birth"         "birth_datetime"      </span></span>
 <span><span class="co">##  [7] "race_concept_id"      "ethnicity_concept_id" "location_id"         </span></span>
 <span><span class="co">## [10] "provider_id"          "care_site_id"</span></span></code></pre>
-<p>Then, we retrieve the <code>Measurement</code> table:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>Then, we retrieve the <code>Measurement</code> table. For this
+example, we will only retrieve the numerical value
+(<code>value_as_number</code>) and the date of the measurement
+(<code>measurement_date</code>) for the concept
+<code>Dyastolic blood pressure</code>, which has a concept ID of
+<code>3012888</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"measurement"</span>,</span>
 <span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value_as_number"</span>, <span class="st">"measurement_date"</span><span class="op">)</span>,</span>
-<span>      conceptFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3000099</span><span class="op">)</span><span class="op">)</span></span>
+<span>      conceptFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3012888</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
@@ -118,19 +128,19 @@ merging them based on a common identifier.</p>
 <span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of rows`</span></span>
-<span><span class="co">## [1] 11</span></span>
+<span><span class="co">## [1] 59</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of columns`</span></span>
 <span><span class="co">## [1] 3</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
-<span><span class="co">## [1] "person_id"                                                       </span></span>
-<span><span class="co">## [2] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"</span></span>
-<span><span class="co">## [3] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_number"</span></span></code></pre>
+<span><span class="co">## [1] "person_id"                                </span></span>
+<span><span class="co">## [2] "diastolic_blood_pressure.measurement_date"</span></span>
+<span><span class="co">## [3] "diastolic_blood_pressure.value_as_number"</span></span></code></pre>
 <p>We can now merge the two tables based on the <code>person_id</code>
 column, using the conventional <code>ds.merge</code> command, which
 adheres to DataSHIELD’s data disclosure rules:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.merge.html" class="external-link">ds.merge</a></span><span class="op">(</span></span>
 <span>  x.name <span class="op">=</span> <span class="st">"person"</span>,</span>
 <span>  y.name <span class="op">=</span> <span class="st">"measurement"</span>,</span>
@@ -151,7 +161,7 @@ adheres to DataSHIELD’s data disclosure rules:</p>
 <span><span class="co">## [1] "&lt;merged&gt; appears valid in all sources"</span></span></code></pre>
 <p>We can see the <code>merged</code> table includes the columns from
 both the <code>Person</code> and <code>Measurement</code> tables:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"merged"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
 <span><span class="co">## $opal_demo$class</span></span>
@@ -164,43 +174,52 @@ both the <code>Person</code> and <code>Measurement</code> tables:</p>
 <span><span class="co">## [1] 13</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
-<span><span class="co">##  [1] "person_id"                                                       </span></span>
-<span><span class="co">##  [2] "gender_concept_id"                                               </span></span>
-<span><span class="co">##  [3] "year_of_birth"                                                   </span></span>
-<span><span class="co">##  [4] "month_of_birth"                                                  </span></span>
-<span><span class="co">##  [5] "day_of_birth"                                                    </span></span>
-<span><span class="co">##  [6] "birth_datetime"                                                  </span></span>
-<span><span class="co">##  [7] "race_concept_id"                                                 </span></span>
-<span><span class="co">##  [8] "ethnicity_concept_id"                                            </span></span>
-<span><span class="co">##  [9] "location_id"                                                     </span></span>
-<span><span class="co">## [10] "provider_id"                                                     </span></span>
-<span><span class="co">## [11] "care_site_id"                                                    </span></span>
-<span><span class="co">## [12] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"</span></span>
-<span><span class="co">## [13] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_number"</span></span></code></pre>
+<span><span class="co">##  [1] "person_id"                                </span></span>
+<span><span class="co">##  [2] "gender_concept_id"                        </span></span>
+<span><span class="co">##  [3] "year_of_birth"                            </span></span>
+<span><span class="co">##  [4] "month_of_birth"                           </span></span>
+<span><span class="co">##  [5] "day_of_birth"                             </span></span>
+<span><span class="co">##  [6] "birth_datetime"                           </span></span>
+<span><span class="co">##  [7] "race_concept_id"                          </span></span>
+<span><span class="co">##  [8] "ethnicity_concept_id"                     </span></span>
+<span><span class="co">##  [9] "location_id"                              </span></span>
+<span><span class="co">## [10] "provider_id"                              </span></span>
+<span><span class="co">## [11] "care_site_id"                             </span></span>
+<span><span class="co">## [12] "diastolic_blood_pressure.measurement_date"</span></span>
+<span><span class="co">## [13] "diastolic_blood_pressure.value_as_number"</span></span></code></pre>
 <p>This is how we can merge tables in DataSHIELD. We could also merge
 more tables by repeating the process with additional tables and the
 combined table.</p>
 <div class="section level3">
 <h3 id="auxiliar-functions-and-packages">3.1.1 Auxiliar functions and packages<a class="anchor" aria-label="anchor" href="#auxiliar-functions-and-packages"></a>
 </h3>
-<p>Given the complexity of the previous example, it is recommended to
+<p>Given the complexity that the previous operations could pose when
+having to work with multiple concepts and tables, it is recommended to
 use and develop auxiliary packages that encapsulate and automate the
 interaction with <code>dsOMOPClient</code>, which only acts as an
 interface with the database data, to meet the research needs of each
 specific case.</p>
-<p>Below we can see an example of how the <code>dsOMOPHelper</code>
-package can automatically join multiple tables in batch by the desired
-concepts using the <code>auto</code> function:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<p>Below we can see an example of how <code>dsOMOPHelper</code>, a
+package that encapsulates the interaction with
+<code>dsOMOPClient</code>, can automatically join multiple tables in
+batch by the desired concepts using the <code>auto</code> function.</p>
+<p>For this example, we will retrieve the concepts
+<code>Tobacco use</code> (identified by the concept ID
+<code>4005823</code> in the <code>Observation</code> table) and
+<code>Chronic obstructive pulmonary disease</code> (identified by the
+concept ID <code>255573</code> in the <code>Condition_occurrence</code>
+table):</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">dsOMOPHelper</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/dsOMOPHelper/man/ds.omop.helper.html" class="external-link">ds.omop.helper</a></span><span class="op">(</span>connections <span class="op">=</span> <span class="va">conns</span>,</span>
 <span>                    resource <span class="op">=</span> <span class="st">"omop_demo.mimiciv"</span>,</span>
 <span>                    symbol <span class="op">=</span> <span class="st">"automatic_table"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">h</span><span class="op">$</span><span class="fu">auto</span><span class="op">(</span>tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"condition_occurrence"</span><span class="op">)</span>,</span>
-<span>       columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"start_date"</span><span class="op">)</span>,</span>
-<span>       concepts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3000099</span>, <span class="fl">77670</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">h</span><span class="op">$</span><span class="fu">auto</span><span class="op">(</span>tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"observation"</span>, <span class="st">"condition_occurrence"</span><span class="op">)</span>,</span>
+<span>       columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"observation_date"</span>, <span class="st">"condition_start_date"</span><span class="op">)</span>,</span>
+<span>       concepts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4005823</span>,  <span class="co"># `Tobacco use`</span></span>
+<span>                    <span class="fl">255573</span><span class="op">)</span><span class="op">)</span>  <span class="co"># `Chronic obstructive pulmonary disease`</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"automatic_table"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
@@ -214,38 +233,42 @@ concepts using the <code>auto</code> function:</p>
 <span><span class="co">## [1] 7</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
-<span><span class="co">## [1] "person_id"                                                       </span></span>
-<span><span class="co">## [2] "gender_concept_id"                                               </span></span>
-<span><span class="co">## [3] "year_of_birth"                                                   </span></span>
-<span><span class="co">## [4] "race_concept_id"                                                 </span></span>
-<span><span class="co">## [5] "ethnicity_concept_id"                                            </span></span>
-<span><span class="co">## [6] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"</span></span>
-<span><span class="co">## [7] "chest_pain.condition_start_date"</span></span></code></pre>
+<span><span class="co">## [1] "person_id"                                            </span></span>
+<span><span class="co">## [2] "gender_concept_id"                                    </span></span>
+<span><span class="co">## [3] "year_of_birth"                                        </span></span>
+<span><span class="co">## [4] "race_concept_id"                                      </span></span>
+<span><span class="co">## [5] "ethnicity_concept_id"                                 </span></span>
+<span><span class="co">## [6] "tobacco_user.observation_date"                        </span></span>
+<span><span class="co">## [7] "chronic_obstructive_lung_disease.condition_start_date"</span></span></code></pre>
 <p>This is precisely why we encourage the community to develop their own
-packages on top of <code>dsOMOPClient</code>. By creating custom
-packages, researchers and developers can tailor the functionality to
-meet the specific needs of their projects, enhancing the efficiency and
-effectiveness of their analyses.</p>
-<p>For more information about <code>dsOMOPHelper</code> and how it can
-streamline the process of working with OMOP CDM databases in DataSHIELD,
-please visit <a href="https://github.com/isglobal-brge/dsOMOPHelper" class="external-link">its
-GitHub repository</a>.</p>
+packages on top of <code>dsOMOPClient</code>. Creating custom packages
+with specific workflows allows researchers and developers to tailor the
+functionality of <code>dsOMOPClient</code> to easily meet the specific
+needs of their projects. For more information about
+<code>dsOMOPHelper</code> and how it can automate the process of working
+with OMOP CDM databases in DataSHIELD, please visit <a href="https://github.com/isglobal-brge/dsOMOPHelper" class="external-link">its GitHub
+repository</a>.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="subsetting-tables">3.2 Subsetting tables<a class="anchor" aria-label="anchor" href="#subsetting-tables"></a>
 </h2>
 <p>Another fundamental operation in data selection and dataset
-construction that fits specific research needs in DataSHIELD is the
+construction that may be required for specific research contexts is the
 <code>ds.dataFrameSubset</code> operation from the
-<code>dsBaseClient</code> package.</p>
+<code>dsBaseClient</code> package. It is used to filter tables based on
+specific criteria, such as gender, age, or other characteristics. This
+operation can be used to determine a specific cohort of individuals
+based on their characteristics so that they can be used for further data
+retrieval and analysis.</p>
 <p>Let’s see with a simple example how we can filter, using the subset
 operation, a dataset to only include female individuals.</p>
-<p>First, we take the <code>Person</code> table, which contains
+<p>First, we get the <code>Person</code> table, which contains
 <code>gender_concept_id</code>, and verify that this column includes
 values for <code>female</code> and <code>male</code>.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"person"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person$gender_concept_id"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
 <span><span class="co">## $opal_demo$class</span></span>
@@ -266,7 +289,7 @@ values for <code>female</code> and <code>male</code>.</p>
 procedures to filter the data. First, we create a
 <code>gender_filter</code> object that contains the value
 <code>female</code>:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.make.html" class="external-link">ds.make</a></span><span class="op">(</span>newobj <span class="op">=</span> <span class="st">"gender_filter"</span>, toAssign <span class="op">=</span> <span class="st">"c('female')"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $is.object.created</span></span>
 <span><span class="co">## [1] "A data object &lt;gender_filter&gt; has been created in all specified data sources"</span></span>
@@ -276,7 +299,7 @@ procedures to filter the data. First, we create a
 <p>Then, we use the <code>ds.dataFrameSubset</code> function to apply
 the <code>gender_filter</code> to the <code>gender_concept_id</code>
 column of the <code>Person</code> table:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dataFrameSubset.html" class="external-link">ds.dataFrameSubset</a></span><span class="op">(</span></span>
 <span>  df.name <span class="op">=</span> <span class="st">"person"</span>,</span>
 <span>  V1.name <span class="op">=</span> <span class="st">"person$gender_concept_id"</span>,</span>
@@ -294,7 +317,7 @@ column of the <code>Person</code> table:</p>
 <p>Thus, we can verify that the resulting table
 <code>person_female</code> only contains individuals with a
 <code>gender_concept_id</code> value of <code>female</code>:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person_female$gender_concept_id"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
 <span><span class="co">## $opal_demo$class</span></span>
@@ -314,14 +337,16 @@ column of the <code>Person</code> table:</p>
 <p>Once the <code>person_female</code> subset is obtained, we can pass
 it as the <code>personFilter</code> parameter to the <code>get</code>
 function to retrieve another table, in this case,
-<code>Measurement</code>. The resulting table will contain only the
+<code>Measurement</code>. In this case, we are going to retrieve the
+measurements of <code>Mean blood pressure</code>, which has a concept ID
+of <code>3027598</code>. The resulting table will contain only the
 measurements from individuals with a <code>gender_concept_id</code>
 value of <code>female</code>:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>,</span>
 <span>      symbol <span class="op">=</span> <span class="st">"measurement_female"</span>,</span>
 <span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value_as_number"</span>, <span class="st">"measurement_date"</span><span class="op">)</span>,</span>
-<span>      conceptFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3000099</span><span class="op">)</span>,</span>
+<span>      conceptFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3027598</span><span class="op">)</span>,  <span class="co"># `Mean blood pressure`</span></span>
 <span>      personFilter <span class="op">=</span> <span class="st">"person_female"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"measurement_female"</span><span class="op">)</span></span></code></pre></div>
@@ -330,19 +355,19 @@ value of <code>female</code>:</p>
 <span><span class="co">## [1] "data.frame"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of rows`</span></span>
-<span><span class="co">## [1] 7</span></span>
+<span><span class="co">## [1] 21</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`number of columns`</span></span>
 <span><span class="co">## [1] 3</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
-<span><span class="co">## [1] "person_id"                                                       </span></span>
-<span><span class="co">## [2] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"</span></span>
-<span><span class="co">## [3] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_number"</span></span></code></pre>
+<span><span class="co">## [1] "person_id"                           </span></span>
+<span><span class="co">## [2] "mean_blood_pressure.measurement_date"</span></span>
+<span><span class="co">## [3] "mean_blood_pressure.value_as_number"</span></span></code></pre>
 <p>We can now merge the <code>person_female</code> and
 <code>measurement_female</code> tables based on the
 <code>person_id</code> column:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.merge.html" class="external-link">ds.merge</a></span><span class="op">(</span></span>
 <span>  x.name <span class="op">=</span> <span class="st">"person_female"</span>,</span>
 <span>  y.name <span class="op">=</span> <span class="st">"measurement_female"</span>,</span>
@@ -365,8 +390,9 @@ value of <code>female</code>:</p>
 <code>Person</code> and <code>Measurement</code> tables, but only for
 individuals with a <code>gender_concept_id</code> value of
 <code>female</code>:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"merged_female"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># General summary of the resulting table</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"merged_female"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
 <span><span class="co">## $opal_demo$class</span></span>
 <span><span class="co">## [1] "data.frame"</span></span>
@@ -378,21 +404,22 @@ individuals with a <code>gender_concept_id</code> value of
 <span><span class="co">## [1] 13</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $opal_demo$`variables held`</span></span>
-<span><span class="co">##  [1] "person_id"                                                       </span></span>
-<span><span class="co">##  [2] "gender_concept_id"                                               </span></span>
-<span><span class="co">##  [3] "year_of_birth"                                                   </span></span>
-<span><span class="co">##  [4] "month_of_birth"                                                  </span></span>
-<span><span class="co">##  [5] "day_of_birth"                                                    </span></span>
-<span><span class="co">##  [6] "birth_datetime"                                                  </span></span>
-<span><span class="co">##  [7] "race_concept_id"                                                 </span></span>
-<span><span class="co">##  [8] "ethnicity_concept_id"                                            </span></span>
-<span><span class="co">##  [9] "location_id"                                                     </span></span>
-<span><span class="co">## [10] "provider_id"                                                     </span></span>
-<span><span class="co">## [11] "care_site_id"                                                    </span></span>
-<span><span class="co">## [12] "nuclear_ab_units_volume_in_serum_by_immunoassay.measurement_date"</span></span>
-<span><span class="co">## [13] "nuclear_ab_units_volume_in_serum_by_immunoassay.value_as_number"</span></span></code></pre>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"merged_female$gender_concept_id"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">##  [1] "person_id"                           </span></span>
+<span><span class="co">##  [2] "gender_concept_id"                   </span></span>
+<span><span class="co">##  [3] "year_of_birth"                       </span></span>
+<span><span class="co">##  [4] "month_of_birth"                      </span></span>
+<span><span class="co">##  [5] "day_of_birth"                        </span></span>
+<span><span class="co">##  [6] "birth_datetime"                      </span></span>
+<span><span class="co">##  [7] "race_concept_id"                     </span></span>
+<span><span class="co">##  [8] "ethnicity_concept_id"                </span></span>
+<span><span class="co">##  [9] "location_id"                         </span></span>
+<span><span class="co">## [10] "provider_id"                         </span></span>
+<span><span class="co">## [11] "care_site_id"                        </span></span>
+<span><span class="co">## [12] "mean_blood_pressure.measurement_date"</span></span>
+<span><span class="co">## [13] "mean_blood_pressure.value_as_number"</span></span></code></pre>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Summary of the `gender_concept_id` column to verify that it only includes `female` values</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"merged_female$gender_concept_id"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $opal_demo</span></span>
 <span><span class="co">## $opal_demo$class</span></span>
 <span><span class="co">## [1] "factor"</span></span>
@@ -413,6 +440,15 @@ obtained from OMOP CDM databases. We can achieve complex filters by
 applying more sophisticated <code>ds.dataFrameSubset</code> logics and
 propagating them to the desired tables through the
 <code>personFilter</code> parameter of the <code>get</code> method.</p>
+</div>
+<div class="section level2">
+<h2 id="logout">Logout<a class="anchor" aria-label="anchor" href="#logout"></a>
+</h2>
+<p>We have arrived at the end of these vignettes. If we have finished
+working with our DataSHIELD session, it is a good practice to disconnect
+from the DataSHIELD server to avoid any potential issues:</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.logout.html" class="external-link">datashield.logout</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

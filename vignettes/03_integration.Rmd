@@ -1,5 +1,5 @@
 ---
-title: "3. Workflow integration"
+title: "3. Integrating data into the workflow"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{integration}
@@ -30,10 +30,16 @@ o <- ds.omop(
 )
 ```
 
-Having explored how to retrieve tables using the `get` method from `dsOMOPClient` and its customization parameters, it is now time to integrate these tables into the DataSHIELD workflow. To achieve this, we will primarily use two commands from the `dsBaseClient` package:
+Having explored how to retrieve tables using the `get` method from `dsOMOPClient` and its customization parameters, it is now time to integrate these tables into the DataSHIELD workflow properly. To achieve this, we will primarily use two commands from the `dsBaseClient` package:
 
 - `ds.merge`, to combine tables into a single data frame.
 - `ds.dataFrameSubset`, to apply value filters to tables based on desired characteristics.
+
+Make sure that you have the `dsBaseClient` package installed and loaded in your DataSHIELD environment:
+
+```{r dsBaseClient, eval = FALSE}
+library(dsBaseClient)
+```
 
 # 3.1 Merging tables
 
@@ -43,15 +49,16 @@ First, we retrieve the `Person` table:
 
 ```{r get_person}
 o$get("person")
+
 ds.summary("person")
 ```
 
-Then, we retrieve the `Measurement` table:
+Then, we retrieve the `Measurement` table. For this example, we will only retrieve the numerical value (`value_as_number`) and the date of the measurement (`measurement_date`) for the concept `Dyastolic blood pressure`, which has a concept ID of `3012888`:
 
 ```{r get_measurement}
 o$get("measurement",
       columnFilter = c("value_as_number", "measurement_date"),
-      conceptFilter = c(3000099))
+      conceptFilter = c(3012888))
 
 ds.summary("measurement")
 ```
@@ -84,9 +91,11 @@ This is how we can merge tables in DataSHIELD. We could also merge more tables b
 
 ## 3.1.1 Auxiliar functions and packages
 
-Given the complexity of the previous example, it is recommended to use and develop auxiliary packages that encapsulate and automate the interaction with `dsOMOPClient`, which only acts as an interface with the database data, to meet the research needs of each specific case.
+Given the complexity that the previous operations could pose when having to work with multiple concepts and tables, it is recommended to use and develop auxiliary packages that encapsulate and automate the interaction with `dsOMOPClient`, which only acts as an interface with the database data, to meet the research needs of each specific case.
 
-Below we can see an example of how the `dsOMOPHelper` package can automatically join multiple tables in batch by the desired concepts using the `auto` function:
+Below we can see an example of how `dsOMOPHelper`, a package that encapsulates the interaction with `dsOMOPClient`, can automatically join multiple tables in batch by the desired concepts using the `auto` function. 
+
+For this example, we will retrieve the concepts `Tobacco use` (identified by the concept ID `4005823` in the `Observation` table) and `Chronic obstructive pulmonary disease` (identified by the concept ID `255573` in the `Condition_occurrence` table):
 
 ```{r auxiliar_packages} 
 library(dsOMOPHelper)
@@ -95,27 +104,27 @@ h <- ds.omop.helper(connections = conns,
                     resource = "omop_demo.mimiciv",
                     symbol = "automatic_table")
 
-h$auto(tables = c("measurement", "condition_occurrence"),
-       columns = c("date", "start_date"),
-       concepts = c(3000099, 77670))
+h$auto(tables = c("observation", "condition_occurrence"),
+       columns = c("observation_date", "condition_start_date"),
+       concepts = c(4005823,  # `Tobacco use`
+                    255573))  # `Chronic obstructive pulmonary disease`
 
 ds.summary("automatic_table")
 ```
 
-This is precisely why we encourage the community to develop their own packages on top of `dsOMOPClient`. By creating custom packages, researchers and developers can tailor the functionality to meet the specific needs of their projects, enhancing the efficiency and effectiveness of their analyses.
-
-For more information about `dsOMOPHelper` and how it can streamline the process of working with OMOP CDM databases in DataSHIELD, please visit [its GitHub repository](https://github.com/isglobal-brge/dsOMOPHelper).
+This is precisely why we encourage the community to develop their own packages on top of `dsOMOPClient`. Creating custom packages with specific workflows allows researchers and developers to tailor the functionality of `dsOMOPClient` to easily meet the specific needs of their projects. For more information about `dsOMOPHelper` and how it can automate the process of working with OMOP CDM databases in DataSHIELD, please visit [its GitHub repository](https://github.com/isglobal-brge/dsOMOPHelper).
 
 # 3.2 Subsetting tables
 
-Another fundamental operation in data selection and dataset construction that fits specific research needs in DataSHIELD is the `ds.dataFrameSubset` operation from the `dsBaseClient` package.
+Another fundamental operation in data selection and dataset construction that may be required for specific research contexts is the `ds.dataFrameSubset` operation from the `dsBaseClient` package. It is used to filter tables based on specific criteria, such as gender, age, or other characteristics. This operation can be used to determine a specific cohort of individuals based on their characteristics so that they can be used for further data retrieval and analysis.
 
 Let's see with a simple example how we can filter, using the subset operation, a dataset to only include female individuals.
 
-First, we take the `Person` table, which contains `gender_concept_id`, and verify that this column includes values for `female` and `male`.
+First, we get the `Person` table, which contains `gender_concept_id`, and verify that this column includes values for `female` and `male`.
 
 ```{r get_person_gender}
 o$get("person")
+
 ds.summary("person$gender_concept_id")
 ```
 
@@ -145,13 +154,13 @@ Thus, we can verify that the resulting table `person_female` only contains indiv
 ds.summary("person_female$gender_concept_id")
 ```
 
-Once the `person_female` subset is obtained, we can pass it as the `personFilter` parameter to the `get` function to retrieve another table, in this case, `Measurement`. The resulting table will contain only the measurements from individuals with a `gender_concept_id` value of `female`:
+Once the `person_female` subset is obtained, we can pass it as the `personFilter` parameter to the `get` function to retrieve another table, in this case, `Measurement`. In this case, we are going to retrieve the measurements of `Mean blood pressure`, which has a concept ID of `3027598`. The resulting table will contain only the measurements from individuals with a `gender_concept_id` value of `female`:
 
 ```{r get_person_females}
 o$get(table = "measurement",
       symbol = "measurement_female",
       columnFilter = c("value_as_number", "measurement_date"),
-      conceptFilter = c(3000099),
+      conceptFilter = c(3027598),  # `Mean blood pressure`
       personFilter = "person_female")
 
 ds.summary("measurement_female")
@@ -178,8 +187,19 @@ ds.merge(
 We can see the merged table includes the columns from both the `Person` and `Measurement` tables, but only for individuals with a `gender_concept_id` value of `female`:
 
 ```{r check_female_measurements}
+# General summary of the resulting table
 ds.summary("merged_female")
+
+# Summary of the `gender_concept_id` column to verify that it only includes `female` values
 ds.summary("merged_female$gender_concept_id")
 ```
 
 This is how we can use DataSHIELD's standard methods to subset tables obtained from OMOP CDM databases. We can achieve complex filters by applying more sophisticated `ds.dataFrameSubset` logics and propagating them to the desired tables through the `personFilter` parameter of the `get` method.
+
+# Logout
+
+We have arrived at the end of these vignettes. If we have finished working with our DataSHIELD session, it is a good practice to disconnect from the DataSHIELD server to avoid any potential issues: 
+
+```{r logout}
+datashield.logout(conns)
+```
