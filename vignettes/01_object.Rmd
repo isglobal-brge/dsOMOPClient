@@ -7,6 +7,11 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+```{r knitr_setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(collapse = FALSE)
+```
+
 **Important note:** The `dsOMOPClient` package serves as a client-side interface with DataSHIELD servers, facilitating the retrieval of tables from OMOP CDM databases based on resources and integrating such tables into the DataSHIELD workflow. However, users will need to manually carry out the subsequent processes of transforming the resulting tables into a single dataset afterwards using the DataSHIELD base functions of `dsBaseClient`. 
 
 There are auxiliary packages that automate this integration, which is why we recommend taking a look at packages like `dsOMOPHelper` instead of directly using `dsOMOPClient`. We advise against the direct use of `dsOMOPClient` for regular researchers unless faced with an edge-case usage that requires the flexibility of operating directly with the `dsOMOPClient` data interface at a more primitive level, or for developers who are building their own packages on top of `dsOMOPClient`. 
@@ -37,16 +42,6 @@ In this example, we will be using the [MIMIC IV](https://physionet.org/content/m
 - Profile: `omop`
 
 First, we will establish a connection to the demo server using `DSI` with the provided credentials:
-
-```{r setup, include=FALSE}
-library(knitr)
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  message = FALSE,
-  warning = FALSE
-)
-```
 
 ```{r establishing_connection, message=FALSE}
 library(DSI)

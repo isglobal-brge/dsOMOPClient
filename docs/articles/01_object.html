@@ -202,19 +202,19 @@ the database and identify which tables might be relevant for their
 analysis.</li>
 </ul>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">tables</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $opal_demo</span></span>
-<span><span class="co">#&gt;  [1] "attribute_definition" "care_site"            "cdm_source"          </span></span>
-<span><span class="co">#&gt;  [4] "cohort"               "cohort_attribute"     "cohort_definition"   </span></span>
-<span><span class="co">#&gt;  [7] "concept"              "concept_relationship" "condition_era"       </span></span>
-<span><span class="co">#&gt; [10] "condition_occurrence" "cost"                 "death"               </span></span>
-<span><span class="co">#&gt; [13] "device_exposure"      "dose_era"             "drug_era"            </span></span>
-<span><span class="co">#&gt; [16] "drug_exposure"        "fact_relationship"    "location"            </span></span>
-<span><span class="co">#&gt; [19] "measurement"          "metadata"             "note"                </span></span>
-<span><span class="co">#&gt; [22] "note_nlp"             "observation"          "observation_period"  </span></span>
-<span><span class="co">#&gt; [25] "payer_plan_period"    "person"               "procedure_occurrence"</span></span>
-<span><span class="co">#&gt; [28] "provider"             "specimen"             "visit_detail"        </span></span>
-<span><span class="co">#&gt; [31] "visit_occurrence"     "vocabulary"</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">tables</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## $opal_demo</span></span>
+<span><span class="co">##  [1] "attribute_definition" "care_site"            "cdm_source"          </span></span>
+<span><span class="co">##  [4] "cohort"               "cohort_attribute"     "cohort_definition"   </span></span>
+<span><span class="co">##  [7] "concept"              "concept_relationship" "condition_era"       </span></span>
+<span><span class="co">## [10] "condition_occurrence" "cost"                 "death"               </span></span>
+<span><span class="co">## [13] "device_exposure"      "dose_era"             "drug_era"            </span></span>
+<span><span class="co">## [16] "drug_exposure"        "fact_relationship"    "location"            </span></span>
+<span><span class="co">## [19] "measurement"          "metadata"             "note"                </span></span>
+<span><span class="co">## [22] "note_nlp"             "observation"          "observation_period"  </span></span>
+<span><span class="co">## [25] "payer_plan_period"    "person"               "procedure_occurrence"</span></span>
+<span><span class="co">## [28] "provider"             "specimen"             "visit_detail"        </span></span>
+<span><span class="co">## [31] "visit_occurrence"     "vocabulary"</span></span></code></pre>
 <ul>
 <li>
 <code>columns(tableName)</code>: Given a table name, this function
@@ -222,19 +222,19 @@ returns the columns available in that table. This is useful for users to
 identify the specific data fields they might want to analyze or use in
 their queries.</li>
 </ul>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">columns</span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $opal_demo</span></span>
-<span><span class="co">#&gt;  [1] "measurement_id"                "person_id"                    </span></span>
-<span><span class="co">#&gt;  [3] "measurement_concept_id"        "measurement_date"             </span></span>
-<span><span class="co">#&gt;  [5] "measurement_datetime"          "measurement_time"             </span></span>
-<span><span class="co">#&gt;  [7] "measurement_type_concept_id"   "operator_concept_id"          </span></span>
-<span><span class="co">#&gt;  [9] "value_as_number"               "value_as_concept_id"          </span></span>
-<span><span class="co">#&gt; [11] "unit_concept_id"               "range_low"                    </span></span>
-<span><span class="co">#&gt; [13] "range_high"                    "provider_id"                  </span></span>
-<span><span class="co">#&gt; [15] "visit_occurrence_id"           "visit_detail_id"              </span></span>
-<span><span class="co">#&gt; [17] "measurement_source_value"      "measurement_source_concept_id"</span></span>
-<span><span class="co">#&gt; [19] "unit_source_value"             "value_source_value"</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">columns</span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## $opal_demo</span></span>
+<span><span class="co">##  [1] "measurement_id"                "person_id"                    </span></span>
+<span><span class="co">##  [3] "measurement_concept_id"        "measurement_date"             </span></span>
+<span><span class="co">##  [5] "measurement_datetime"          "measurement_time"             </span></span>
+<span><span class="co">##  [7] "measurement_type_concept_id"   "operator_concept_id"          </span></span>
+<span><span class="co">##  [9] "value_as_number"               "value_as_concept_id"          </span></span>
+<span><span class="co">## [11] "unit_concept_id"               "range_low"                    </span></span>
+<span><span class="co">## [13] "range_high"                    "provider_id"                  </span></span>
+<span><span class="co">## [15] "visit_occurrence_id"           "visit_detail_id"              </span></span>
+<span><span class="co">## [17] "measurement_source_value"      "measurement_source_concept_id"</span></span>
+<span><span class="co">## [19] "unit_source_value"             "value_source_value"</span></span></code></pre>
 <ul>
 <li>
 <code>concepts(tableName)</code>: This function retrieves the
@@ -245,21 +245,21 @@ that represent clinical events, measurements, observations, and other
 entities. Understanding the concepts available in a table can help users
 to formulate data filtering queries.</li>
 </ul>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">concepts</span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $opal_demo</span></span>
-<span><span class="co">#&gt;    concept_id                                         concept_name</span></span>
-<span><span class="co">#&gt; 1           0                                  No matching concept</span></span>
-<span><span class="co">#&gt; 2     1175625                              Breath rate spontaneous</span></span>
-<span><span class="co">#&gt; 3     3000067   Parathyrin.intact [Mass/volume] in Serum or Plasma</span></span>
-<span><span class="co">#&gt; 4     3000068                        oxyCODONE [Presence] in Urine</span></span>
-<span><span class="co">#&gt; 5     3000099    Nuclear Ab [Units/volume] in Serum by Immunoassay</span></span>
-<span><span class="co">#&gt; 6     3000285                       Sodium [Moles/volume] in Blood</span></span>
-<span><span class="co">#&gt; 7     3000330              Specific gravity of Urine by Test strip</span></span>
-<span><span class="co">#&gt; 8     3000348 Leukocyte esterase [Presence] in Urine by Test strip</span></span>
-<span><span class="co">#&gt; 9     3000456   Dacrocytes [Presence] in Blood by Light microscopy</span></span>
-<span><span class="co">#&gt; 10    3000461                  Pressure support setting Ventilator</span></span>
-<span><span class="co">#&gt;  [ reached 'max' / getOption("max.print") -- omitted 343 rows ]</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">concepts</span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## $opal_demo</span></span>
+<span><span class="co">##    concept_id                                         concept_name</span></span>
+<span><span class="co">## 1           0                                  No matching concept</span></span>
+<span><span class="co">## 2     1175625                              Breath rate spontaneous</span></span>
+<span><span class="co">## 3     3000067   Parathyrin.intact [Mass/volume] in Serum or Plasma</span></span>
+<span><span class="co">## 4     3000068                        oxyCODONE [Presence] in Urine</span></span>
+<span><span class="co">## 5     3000099    Nuclear Ab [Units/volume] in Serum by Immunoassay</span></span>
+<span><span class="co">## 6     3000285                       Sodium [Moles/volume] in Blood</span></span>
+<span><span class="co">## 7     3000330              Specific gravity of Urine by Test strip</span></span>
+<span><span class="co">## 8     3000348 Leukocyte esterase [Presence] in Urine by Test strip</span></span>
+<span><span class="co">## 9     3000456   Dacrocytes [Presence] in Blood by Light microscopy</span></span>
+<span><span class="co">## 10    3000461                  Pressure support setting Ventilator</span></span>
+<span><span class="co">##  [ reached 'max' / getOption("max.print") -- omitted 343 rows ]</span></span></code></pre>
 <p>The numeric values in the <code>concept_id</code> column are the
 standardized identifiers for the concepts in the OMOP CDM. For example,
 as we can observe in the table above, the concept <code>1175625</code>
@@ -285,26 +285,26 @@ research needs. Below are some examples of how to use the
 </h4>
 <p>We simply specify the desired table’s name as a string in the
 <code>get</code> function:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"person"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># We can use the `ds.summary` function to get a summary of the retrieved table</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $opal_demo</span></span>
-<span><span class="co">#&gt; $opal_demo$class</span></span>
-<span><span class="co">#&gt; [1] "data.frame"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $opal_demo$`number of rows`</span></span>
-<span><span class="co">#&gt; [1] 100</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $opal_demo$`number of columns`</span></span>
-<span><span class="co">#&gt; [1] 11</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $opal_demo$`variables held`</span></span>
-<span><span class="co">#&gt;  [1] "person_id"            "gender_concept_id"    "year_of_birth"       </span></span>
-<span><span class="co">#&gt;  [4] "month_of_birth"       "day_of_birth"         "birth_datetime"      </span></span>
-<span><span class="co">#&gt;  [7] "race_concept_id"      "ethnicity_concept_id" "location_id"         </span></span>
-<span><span class="co">#&gt; [10] "provider_id"          "care_site_id"</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"person"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## $opal_demo</span></span>
+<span><span class="co">## $opal_demo$class</span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $opal_demo$`number of rows`</span></span>
+<span><span class="co">## [1] 100</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $opal_demo$`number of columns`</span></span>
+<span><span class="co">## [1] 11</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $opal_demo$`variables held`</span></span>
+<span><span class="co">##  [1] "person_id"            "gender_concept_id"    "year_of_birth"       </span></span>
+<span><span class="co">##  [4] "month_of_birth"       "day_of_birth"         "birth_datetime"      </span></span>
+<span><span class="co">##  [7] "race_concept_id"      "ethnicity_concept_id" "location_id"         </span></span>
+<span><span class="co">## [10] "provider_id"          "care_site_id"</span></span></code></pre>
 <p>However, this is only advised for small tables or in contexts where
 we need the full table, as it can be memory-intensive and slow to
 retrieve. For larger tables, it is recommended to apply filters to the
@@ -323,26 +323,26 @@ only specific columns (in this case, <code>value_as_number</code> and
 case, we want to use the concept IDs of <code>Heart rate</code> and
 <code>Body weight</code>, which are <code>3027018</code> and
 <code>3025315</code>):</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">o</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>,</span>
 <span>      columnFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value_as_number"</span>, <span class="st">"measurement_date"</span><span class="op">)</span>,</span>
 <span>      conceptFilter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3027018</span>, <span class="fl">3025315</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $opal_demo</span></span>
-<span><span class="co">#&gt; $opal_demo$class</span></span>
-<span><span class="co">#&gt; [1] "data.frame"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $opal_demo$`number of rows`</span></span>
-<span><span class="co">#&gt; [1] 100</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $opal_demo$`number of columns`</span></span>
-<span><span class="co">#&gt; [1] 5</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $opal_demo$`variables held`</span></span>
-<span><span class="co">#&gt; [1] "person_id"                    "heart_rate.measurement_date" </span></span>
-<span><span class="co">#&gt; [3] "heart_rate.value_as_number"   "body_weight.measurement_date"</span></span>
-<span><span class="co">#&gt; [5] "body_weight.value_as_number"</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"measurement"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## $opal_demo</span></span>
+<span><span class="co">## $opal_demo$class</span></span>
+<span><span class="co">## [1] "data.frame"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $opal_demo$`number of rows`</span></span>
+<span><span class="co">## [1] 100</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $opal_demo$`number of columns`</span></span>
+<span><span class="co">## [1] 5</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $opal_demo$`variables held`</span></span>
+<span><span class="co">## [1] "person_id"                    "heart_rate.measurement_date" </span></span>
+<span><span class="co">## [3] "heart_rate.value_as_number"   "body_weight.measurement_date"</span></span>
+<span><span class="co">## [5] "body_weight.value_as_number"</span></span></code></pre>
 <p>As we can observe, the resulting table contains only the information
 about the measurements of <code>Heart rate</code> and
 <code>Body weight</code> of all patients in the database.</p>
