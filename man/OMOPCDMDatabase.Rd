@@ -2,11 +2,68 @@
 % Please edit documentation in R/00_class.R
 \name{OMOPCDMDatabase}
 \alias{OMOPCDMDatabase}
-\title{OMOP CDM Database class}
+\title{OMOP CDM Database Class}
 \description{
-This class represents a connection to an OMOP CDM database, providing
-various methods for the user to interact with the database. It allows for the retrieval
-of tables as well as fetching catalogs of available data within the database.
+A class that provides an interface to interact with OMOP Common Data Model (CDM) databases
+through DataSHIELD. This class handles database connections and provides methods to access and query
+OMOP CDM data in a secure and privacy-preserving way.
+
+The class implements functionality to:
+\itemize{
+\item Establish and validate database connections
+\item Check privacy control levels
+\item Access OMOP CDM tables and catalogs
+}
+}
+\details{
+The OMOP CDM standardizes the format and content of observational data, enabling
+large-scale analytics while ensuring consistent data representation across different
+healthcare databases.
+}
+\section{Privacy and Security}{
+
+The class implements privacy checks to ensure operations comply with DataSHIELD's
+privacy controls. Warnings are raised if privacy settings may restrict certain operations.
+}
+
+\examples{
+\dontrun{
+# Create a connection to a single server
+builder <- DSI::newDSLoginBuilder()
+builder$append(server = "study1", url = "https://opal-demo.obiba.org",
+              user = "dsuser", password = "P@ssw0rd")
+connections <- DSI::datashield.login(builder)
+
+# Initialize OMOP database connection
+db <- ds.omop(connections, resource = "mimiciv")
+}
+
+
+## ------------------------------------------------
+## Method `OMOPCDMDatabase$new`
+## ------------------------------------------------
+
+\dontrun{
+# Single server connection
+db <- OMOPCDMDatabase$new(connections, "omop_db")
+
+# Multiple server connection
+db <- OMOPCDMDatabase$new(connections, 
+                          list(study1 = "omop_db1", 
+                               study2 = "omop_db2"))
+}
+
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{connections}}{DataSHIELD connection object}
+
+\item{\code{resource}}{Database resource identifier(s)}
+
+\item{\code{resourceSymbol}}{Internal symbol for resource reference}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -27,9 +84,10 @@ of tables as well as fetching catalogs of available data within the database.
 \if{html}{\out{<a id="method-OMOPCDMDatabase-new"></a>}}
 \if{latex}{\out{\hypertarget{method-OMOPCDMDatabase-new}{}}}
 \subsection{Method \code{new()}}{
-This method initializes a new instance of the OMOPCDMDatabase class.
-It sets up the connection to the OMOP CDM database given the provided
-DataSHIELD connection object and the OMOP CDM database resource identifier.
+Initialize a new OMOP CDM database connection
+
+This constructor establishes and validates the connection to an OMOP CDM database
+through DataSHIELD. It performs connection validation and privacy control checks.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OMOPCDMDatabase$new(connections, resource)}\if{html}{\out{</div>}}
 }
@@ -37,16 +95,34 @@ DataSHIELD connection object and the OMOP CDM database resource identifier.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{connections}}{Connection object to the DataSHIELD server.}
+\item{\code{connections}}{A DataSHIELD connection object created via \code{DSI::datashield.login()}}
 
-\item{\code{resource}}{Either an identifier or a named list of identifiers for the specific resource(s) within the DataSHIELD
-server(s). If a named list, the name of each resource identifier should correspond to the server name in the connections.}
+\item{\code{resource}}{Either a single resource identifier (character string) or a named list of
+resource identifiers. When using multiple servers, the list names should match server names
+in the connections object.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-A new instance of the OMOPCDMDatabase class.
+A new \code{OMOPCDMDatabase} object
 }
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{\dontrun{
+# Single server connection
+db <- OMOPCDMDatabase$new(connections, "omop_db")
+
+# Multiple server connection
+db <- OMOPCDMDatabase$new(connections, 
+                          list(study1 = "omop_db1", 
+                               study2 = "omop_db2"))
+}
+
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OMOPCDMDatabase-assignResource"></a>}}

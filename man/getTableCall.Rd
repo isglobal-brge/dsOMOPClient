@@ -2,7 +2,7 @@
 % Please edit documentation in R/02_get.R
 \name{getTableCall}
 \alias{getTableCall}
-\title{Construct the Call for Table Assignment}
+\title{Construct DataSHIELD Server Call for Table Retrieval}
 \usage{
 getTableCall(
   resource,
@@ -16,28 +16,42 @@ getTableCall(
 )
 }
 \arguments{
-\item{resource}{The resource symbol representing the connection to the OMOP CDM database.}
+\item{resource}{Character string identifying the database resource in the server environment}
 
-\item{table}{A string specifying the name of the table to be assigned.}
+\item{table}{Character string naming the OMOP CDM table to retrieve}
 
-\item{conceptFilter}{A numeric vector specifying concept IDs to filter the table by.}
+\item{conceptFilter}{Numeric vector of concept IDs for filtering}
 
-\item{columnFilter}{A string vector specifying column names to filter (select) in the table.}
+\item{columnFilter}{Character vector of column names to select}
 
-\item{personFilter}{A string specifying the symbol in the environment of a table from which to obtain person IDs.}
+\item{personFilter}{Character string naming a table to use for person ID filtering}
 
-\item{mergeColumn}{A string specifying the column name for merging operations with other tables.
-Defaults to "person_id" if not specified.}
+\item{mergeColumn}{Character string specifying the merge key column}
 
-\item{dropNA}{A boolean indicating whether to drop empty columns. Defaults to FALSE.}
+\item{dropNA}{Logical flag for dropping empty columns}
 
-\item{wideLongitudinal}{A boolean indicating whether to reshape the table to a wide format with numerically suffixed
-columns if it contains longitudinal data. Defaults to FALSE.}
+\item{wideLongitudinal}{Logical flag for reshaping longitudinal data}
 }
 \value{
-A string representing the call to be executed on the DataSHIELD server for table assignment.
+A character string containing the complete R expression to be evaluated on the server
 }
 \description{
-This function assists in constructing the call that will be sent from the DataSHIELD client to the server
-to perform the assignment of a table from an OMOP CDM database based on the parameters specified by the user.
+Constructs the R expression that will be evaluated on the DataSHIELD server
+to retrieve and process an OMOP CDM table. This internal function handles the complex
+logic of building a valid call string incorporating all specified filtering and
+transformation options.
 }
+\details{
+The function builds the call in stages:
+\enumerate{
+\item Starts with the base function call including resource and table name
+\item Adds concept filtering if specified
+\item Adds column filtering if specified
+\item Adds person-level filtering if specified
+\item Adds merge column specification if provided
+\item Adds optional flags for NA handling and longitudinal data reshaping
+}
+
+Input validation is performed to ensure vector parameters are properly formatted.
+}
+\keyword{internal}

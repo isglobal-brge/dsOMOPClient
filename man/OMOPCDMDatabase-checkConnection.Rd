@@ -4,8 +4,45 @@
 \alias{OMOPCDMDatabase-checkConnection}
 \title{Check Database Connection}
 \value{
-A boolean value indicating whether the connection to the database is valid (TRUE). Otherwise, an error is raised.
+A logical value:
+\itemize{
+\item TRUE - If the connection is valid and operational
+\item Error - If the connection is invalid or cannot be established
+}
 }
 \description{
-This function checks if the OMOPCDMDatabase object points to a valid connection to an OMOP CDM database.
+Validates the connection between the OMOPCDMDatabase object and an OMOP Common
+Data Model (CDM) database. This function ensures that the database connection is active and
+properly configured before attempting any data operations.
+}
+\details{
+The function performs the following steps:
+\enumerate{
+\item Assigns the database resource to the DataSHIELD environment
+\item Executes a connection test through DataSHIELD's aggregate function
+\item Cleans up by removing the resource from the environment
+\item Handles any connection errors that may occur
+}
+
+The connection check is performed in a privacy-preserving way through DataSHIELD's
+aggregate functions.
+}
+\examples{
+\dontrun{
+# Create database connection
+db <- ds.omop(connections, "omop_database")
+
+# Check if connection is valid
+connection_status <- db$checkConnection()
+
+# Print connection status
+print(connection_status)
+}
+
+}
+\seealso{
+\itemize{
+\item \code{\link{OMOPCDMDatabase-checkPrivacyControlLevel}} for privacy settings validation
+\item \code{\link{OMOPCDMDatabase-assignResource}} for resource management details
+}
 }
