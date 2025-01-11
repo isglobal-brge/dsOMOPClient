@@ -7,13 +7,28 @@
 generateResourceSymbol(resource)
 }
 \arguments{
-\item{resource}{A character string representing the resource for which the symbol is generated.}
+\item{resource}{A character string representing the resource for which the symbol
+is generated. While currently unused, this parameter is maintained for potential
+future customization of symbol generation based on resource characteristics.}
 }
 \value{
-A character string representing the unique symbol for the resource.
+A character string representing the unique symbol for the resource, in the
+format "dsO.XXXX" where XXXX is a random alphanumeric string.
 }
 \description{
-This function generates a unique symbol name for a connection resource to an OMOP CDM database.
-The generated symbol will be stored in the OMOPCDMDatabase object. It includes a random string
-to prevent overwriting other objects in the DataSHIELD environment where the user is working.
+This internal function generates a unique symbol name for a connection resource to an
+OMOP CDM database. The generated symbol includes a random alphanumeric string to prevent
+naming conflicts in the DataSHIELD environment. The symbol follows the format
+"dsO.XXXX" where XXXX is a random 4-character string.
 }
+\details{
+The function:
+\enumerate{
+\item Generates a random 4-character string using numbers, lowercase and uppercase letters
+\item Prepends "dsO." to create the final symbol
+\item Returns the generated symbol
+}
+
+The "dsO." prefix helps identify OMOP database symbols in the DataSHIELD environment.
+}
+\keyword{internal}

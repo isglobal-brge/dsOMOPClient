@@ -3,8 +3,30 @@
 \name{OMOPCDMDatabase-removeResource}
 \alias{OMOPCDMDatabase-removeResource}
 \title{Remove the OMOP CDM database resource from a DataSHIELD environment}
+\value{
+No return value, called for side effect of removing the resource.
+}
 \description{
 This function removes the resource of the OMOP CDM database connection
-from the DataSHIELD environment. It is commonly used after having performed operations
-related to the connection with the database.
+from the DataSHIELD environment. It is commonly used after completing database operations
+to clean up the environment and free resources. The function silently handles any errors
+or warnings that may occur during resource removal.
+}
+\examples{
+\dontrun{
+# Create and use database connection
+db <- ds.omop(connections, "omop_database")
+
+# ... perform operations ...
+
+# Clean up by removing resource
+db$removeResource()
+}
+
+}
+\seealso{
+\itemize{
+\item \code{\link{OMOPCDMDatabase-assignResource}} for assigning resources
+\item \code{\link[DSI]{datashield.rm}} for the underlying DataSHIELD function
+}
 }

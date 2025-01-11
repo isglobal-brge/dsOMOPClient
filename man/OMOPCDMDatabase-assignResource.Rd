@@ -5,10 +5,29 @@
 \title{Assign the OMOP CDM database resource to a DataSHIELD environment}
 \arguments{
 \item{symbol}{A character string representing the symbol to which the
-resource will be assigned.}
+resource will be assigned in the DataSHIELD environment.}
+}
+\value{
+No return value, called for side effect of assigning the resource.
 }
 \description{
 This function assigns the resource of the OMOP CDM database connection
 to the DataSHIELD environment, facilitating the connection to the database from the
-server side.
+server side. The resource assignment is necessary for subsequent database operations.
+}
+\examples{
+\dontrun{
+# Create database connection
+db <- ds.omop(connections, "omop_database")
+
+# Assign resource with custom symbol
+db$assignResource("my_db_resource")
+}
+
+}
+\seealso{
+\itemize{
+\item \code{\link{OMOPCDMDatabase-removeResource}} for removing the assigned resource
+\item \code{\link[DSI]{datashield.assign.resource}} for the underlying DataSHIELD function
+}
 }

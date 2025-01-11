@@ -2,19 +2,39 @@
 % Please edit documentation in R/00_class.R
 \name{ds.omop}
 \alias{ds.omop}
-\title{Factory function for OMOP CDM Database}
+\title{Create a new OMOP CDM Database connection}
 \usage{
 ds.omop(connections, resource)
 }
 \arguments{
-\item{connections}{Connection object to the DataSHIELD server.}
+\item{connections}{A DataSHIELD connection object created via \code{DSI::datashield.login()}}
 
-\item{resource}{Identifier for the specific resource within the DataSHIELD server.}
+\item{resource}{Either a single resource identifier (character string) or a named list of
+resource identifiers for multiple servers}
 }
 \value{
-A new instance of the OMOPCDMDatabase class.
+A new \code{OMOPCDMDatabase} object
 }
 \description{
-This function creates a new instance of the OMOPCDMDatabase class, allowing
-for interaction with an OMOP CDM database.
+Factory function that creates and returns a new instance of the OMOPCDMDatabase class.
+This is the recommended way to create a new OMOP CDM database connection.
+}
+\examples{
+\dontrun{
+# Set up connection parameters
+builder <- DSI::newDSLoginBuilder()
+builder$append(server = "study1", url = "https://study1.org",
+              user = "user1", password = "password1")
+connections <- DSI::datashield.login(builder)
+
+# Create database connection
+db <- ds.omop(connections, "omop_database")
+}
+
+}
+\seealso{
+\itemize{
+\item \code{\link{OMOPCDMDatabase}} for the full class documentation
+\item \code{\link[DSI]{datashield.login}} for creating DataSHIELD connections
+}
 }

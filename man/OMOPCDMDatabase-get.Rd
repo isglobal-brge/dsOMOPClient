@@ -4,32 +4,82 @@
 \alias{OMOPCDMDatabase-get}
 \title{Get Table from OMOP CDM Database}
 \arguments{
-\item{table}{A string specifying the name of the table to be assigned.}
+\item{table}{A string specifying the name of the table to retrieve (e.g., "person", "condition_occurrence")}
 
-\item{symbol}{A string specifying the symbol for the table assignment in the DataSHIELD environment.}
+\item{symbol}{A string specifying the symbol for the table assignment in the DataSHIELD environment.
+If NULL, defaults to the table name.}
 
-\item{conceptFilter}{A numeric vector specifying concept IDs to filter the table by.}
+\item{conceptFilter}{A numeric vector of concept IDs to filter the table by. Useful for tables like
+condition_occurrence, measurement, or observation that are organized by concepts.}
 
-\item{columnFilter}{A string vector specifying column names to filter (select) in the table.}
+\item{columnFilter}{A character vector specifying which columns to keep in the output. Reduces memory
+usage by selecting only needed variables.}
 
-\item{personFilter}{A string specifying the symbol in the environment of a table from which to obtain person IDs.}
+\item{personFilter}{A string specifying a table symbol in the environment from which to obtain person IDs
+for filtering. Uses the unique values of person_id from that table.}
 
-\item{mergeColumn}{A string specifying the column name for merging operations with other tables.
-Defaults to "person_id" if not specified.}
+\item{mergeColumn}{A string specifying the column name for merging operations (defaults to "person_id").
+This column will be used when joining with other tables.}
 
-\item{dropNA}{A boolean indicating whether to drop empty columns. Defaults to FALSE.}
+\item{dropNA}{A logical indicating whether to remove columns containing only NA values (default: FALSE)}
 
-\item{wideLongitudinal}{A boolean indicating whether to reshape the table to a wide format with numerically suffixed
-columns if it contains longitudinal data. Defaults to FALSE.}
+\item{wideLongitudinal}{A logical indicating whether to reshape longitudinal data to wide format
+with numerically suffixed columns (default: FALSE)}
+}
+\value{
+No return value. The function assigns the retrieved table to the specified symbol
+in the DataSHIELD environment.
 }
 \description{
-This function assigns a specified table by name (string) from an OMOP CDM database to the DataSHIELD environment.
-The user can specify the symbol (string) for the table assignment in the DataSHIELD environment,
-a vector of concept IDs (numeric) to filter if dealing with a table categorized by concept IDs,
-a vector of column names (strings) of the table to filter (i.e., select),
-the name of a symbol (string) in the environment of a table from which to obtain its person IDs
-(from the unique values of their person_id),
-and the name of the column (string) by which to perform merging operations with other database tables.
-If not specified, the "person_id" column is assumed to be the merging column.
-The user is also provided with the option to drop empty columns.
+Retrieves and assigns a specified table from an OMOP Common Data Model (CDM) database
+to the DataSHIELD environment. This function provides flexible filtering and transformation options
+to customize the retrieved data while maintaining privacy controls.
+}
+\details{
+The function supports multiple ways to filter and transform the data:
+\itemize{
+\item Concept ID filtering for tables with concept-based data
+\item Column selection to retrieve only needed variables
+\item Person-level filtering based on IDs from other tables
+\item Optional reshaping of longitudinal data to wide format
+\item Removal of empty columns
+}
+
+The function handles the database resource management automatically by:
+\enumerate{
+\item Assigning the database resource
+\item Executing the table retrieval
+\item Cleaning up the resource afterward
+}
+}
+\examples{
+\dontrun{
+# Basic table retrieval
+db$get("person", "person_table")
+
+# Get conditions for specific concepts with column filtering
+db$get("condition_occurrence", 
+       "diabetes_conditions",
+       conceptFilter = c(201826, 201254),  # diabetes-related concepts
+       columnFilter = c("person_id", "condition_start_date"))
+
+# Get measurements for patients in a cohort
+db$get("measurement",
+       "cohort_measurements", 
+       personFilter = "my_cohort",
+       wideLongitudinal = TRUE)
+
+# Get demographics with empty columns removed
+db$get("person",
+       "demographics",
+       columnFilter = c("year_of_birth", "gender_concept_id", "race_concept_id"),
+       dropNA = TRUE)
+}
+
+}
+\seealso{
+\itemize{
+\item \code{\link{OMOPCDMDatabase}} for the main class documentation
+\item \code{\link{getTableCall}} for details on the underlying call construction
+}
 }

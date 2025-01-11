@@ -2,10 +2,54 @@
 % Please edit documentation in R/03_tables.R
 \name{OMOPCDMDatabase-tables}
 \alias{OMOPCDMDatabase-tables}
-\title{Get Tables Catalog}
+\title{Get Tables Catalog from OMOP CDM Database}
 \value{
-A list of table names available in the OMOP CDM database.
+A character vector containing the names of all available tables in the
+OMOP CDM database. Common tables include:
+\itemize{
+\item person - Demographics and person information
+\item condition_occurrence - Clinical conditions and diagnoses
+\item measurement - Laboratory tests and clinical measurements
+\item observation - Clinical observations
+\item drug_exposure - Medication records
+\item procedure_occurrence - Medical procedures
+\item visit_occurrence - Healthcare visits
+}
 }
 \description{
-This function returns a list of available tables in an OMOP CDM database.
+Retrieves a comprehensive list of available tables in an OMOP Common
+Data Model (CDM) database. This function provides an overview of the database
+structure by returning all accessible table names, which is useful for exploring
+the database schema and planning data retrieval operations.
+}
+\details{
+The function performs the following steps:
+\enumerate{
+\item Assigns the database resource to the DataSHIELD environment
+\item Retrieves the table catalog using a server-side function
+\item Cleans up by removing the resource from the environment
+\item Handles any errors that may occur during the process
+}
+
+The table catalog is retrieved in a privacy-preserving way through DataSHIELD's
+aggregate functions.
+}
+\examples{
+\dontrun{
+# Create database connection
+db <- ds.omop(connections, "omop_database")
+
+# Get list of available tables
+available_tables <- db$tables()
+
+# Print the tables
+print(available_tables)
+}
+
+}
+\seealso{
+\itemize{
+\item \code{\link{OMOPCDMDatabase-get}} for retrieving data from specific tables
+\item \code{\link{OMOPCDMDatabase-assignResource}} for resource management details
+}
 }
