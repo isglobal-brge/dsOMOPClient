@@ -32,6 +32,9 @@
 #' @param dropNA A logical indicating whether to remove columns containing only NA values (default: FALSE)
 #' @param wideLongitudinal A logical indicating whether to reshape longitudinal data to wide format
 #'                        with numerically suffixed columns (default: FALSE)
+#' @param completeTimePoints A logical indicating whether to ensure all time points are represented in the
+#'                          output when reshaping longitudinal data to wide format. When TRUE, missing time
+#'                          points will be filled with NA values (default: FALSE)
 #'
 #' @return No return value. The function assigns the retrieved table to the specified symbol
 #'         in the DataSHIELD environment.
@@ -71,7 +74,8 @@ OMOPCDMDatabase$set("public", "get", function(table,
                                              personFilter = NULL,
                                              mergeColumn = NULL,
                                              dropNA = FALSE,
-                                             wideLongitudinal = FALSE) {
+                                             wideLongitudinal = FALSE,
+                                             completeTimePoints = FALSE) {
   # Use table name as default symbol if none provided
   if (is.null(symbol)) {
     symbol <- table
@@ -81,8 +85,15 @@ OMOPCDMDatabase$set("public", "get", function(table,
   self$assignResource(self$resourceSymbol)
   
   # Step 2: Construct the table retrieval call
-  call <- getTableCall(self$resourceSymbol, table, conceptFilter, columnFilter, 
-                      personFilter, mergeColumn, dropNA, wideLongitudinal)
+  call <- getTableCall(self$resourceSymbol, 
+                       table, 
+                       conceptFilter, 
+                       columnFilter, 
+                       personFilter, 
+                       mergeColumn, 
+                       dropNA, 
+                       wideLongitudinal, 
+                       completeTimePoints)
   
   # Step 3: Execute the call and ensure resource cleanup
   DSI::datashield.assign.expr(
@@ -123,6 +134,8 @@ OMOPCDMDatabase$set("public", "get", function(table,
 #' @param mergeColumn Character string specifying the merge key column
 #' @param dropNA Logical flag for dropping empty columns
 #' @param wideLongitudinal Logical flag for reshaping longitudinal data
+#' @param completeTimePoints Logical flag for ensuring all time points are represented when reshaping
+#'                          longitudinal data. When TRUE, missing time points will be filled with NA values
 #'
 #' @return A character string containing the complete R expression to be evaluated on the server
 #'
@@ -135,7 +148,8 @@ getTableCall <- function(resource,
                         personFilter = NULL,
                         mergeColumn = NULL,
                         dropNA = FALSE,
-                        wideLongitudinal = FALSE) {
+                        wideLongitudinal = FALSE,
+                        completeTimePoints = FALSE) {
   # Start with base function call
   call <- paste0("getOMOPCDMTableDS(", resource, ", table = '", table, "'")
 
@@ -171,6 +185,9 @@ getTableCall <- function(resource,
   }
   if (wideLongitudinal) {
     call <- paste0(call, ", wideLongitudinal = TRUE")
+  }
+  if (completeTimePoints) {
+    call <- paste0(call, ", completeTimePoints = TRUE")
   }
 
   # Close the function call
