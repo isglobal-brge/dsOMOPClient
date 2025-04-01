@@ -67,20 +67,72 @@ This will happen with all concepts in the database as long as they are recognize
 
 ## 2.1.3 Longitudinal data sequencing
 
-When dealing with longitudinal data, where multiple records of the same type exist for the same entity over time (for example, several `Heart rate` measurements for the same `Person`), setting the `wideLongitudinal` parameter to `TRUE` in the `get` method reshapes the longitudinal data entries into a wide format. This transformation appends numerically suffixed columns for each occurrence, providing a comprehensive view of the data over time and preserving the temporal sequence of events or measurements for each entity.
+When you have multiple records for the same entity (e.g., a patient) across time points, `dsOMOP` offers two parameters to transform and align these data in a wide format:
 
-```{r longitudinal_data, R.options = list(max.print = 10)}
-o$get(table = "measurement", 
-      conceptFilter = 3027018, 
-      columnFilter = "value_as_number", 
-      wideLongitudinal = TRUE)
+1. **`wideLongitudinal = TRUE`** reshapes repeated measurements for each concept into extra columns, so each row in your table corresponds to one entity (e.g., one patient).
+2. **`completeTimePoints = TRUE`** further ensures that all entities share the same set of time points. Rows (and columns) for missing measurements at particular dates are filled with `NA`.
+
+```{r wide_format, R.options = list(max.print = 10)}
+o$get(
+  table = "measurement",
+  conceptFilter = 3027018,
+  columnFilter = c("measurement_date", "value_as_number"),
+  wideLongitudinal = TRUE,
+  completeTimePoints = TRUE
+)
 
 ds.summary("measurement")
 ```
 
-Otherwise, if `wideLongitudinal` is set to `FALSE` (which is the default), the data remains in a long format without the numerically suffixed columns, and the identifier of the entity will be repeated across multiple records of the same type for the same entity to support this format.
+Because DataSHIELD does not allow row-level inspection on the client side, you will not see the exact final structure of the data. Internally, however, `dsOMOP` arranges your dataset so that every individual is aligned on a consistent time axis. Below is a simplified illustration of how this reshaping would look for a small example of three patients (A, B, C). It does *not* reflect real data—merely a conceptual snapshot.
 
-The method by which these additional data columns are aggregated is left to the discretion of the researcher. This degree of flexibility ensures that the data can be structured in a way that best suits the analysis being performed. 
+---
+
+**Case 1: `wideLongitudinal = TRUE` but `completeTimePoints = FALSE`**
+
+In this scenario, `dsOMOP` just generates a wide table indexed by the *chronological order* of each patient’s events. It does *not* force every patient to share the same time points. Suppose the patients have data as follows:
+
+- Patient A has 3 heart-rate measurements (Dates: 2023-01-01, 2023-01-15, 2023-01-31)
+- Patient B has 2 measurements (Dates: 2023-01-01, 2023-01-02)
+- Patient C has 1 measurement (Date: 2023-01-10)
+
+The resulting table, conceptually, might look like this:
+
+| person_id | heart_rate.measurement_date.1 | heart_rate.measurement_value.1 | heart_rate.measurement_date.2 | heart_rate.measurement_value.2 | heart_rate.measurement_date.3 | heart_rate.measurement_value.3 |
+|-----------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|
+| A         | 2023-01-01                    | 70                             | 2023-01-15                    | 71                             | 2023-01-31                    | 72                             |
+| B         | 2023-01-01                    | 60                             | 2023-01-02                    | 65                             | NA                             | NA                             |
+| C         | 2023-01-10                    | 67                             | NA                             | NA                             | NA                             | NA                             |
+
+- Columns “.1”, “.2”, “.3” represent *the 1st, 2nd, and 3rd measurement* recorded for each patient, in that patient’s *own* chronological order.
+- If a patient doesn’t have a second or third measurement, those columns are `NA`.
+- Different patients can have entirely different date values in, say, `.2` or `.3`.
+
+---
+
+**Case 2: `wideLongitudinal = TRUE` and `completeTimePoints = TRUE`**
+
+Now `dsOMOP` additionally ensures that *all* patients align on *every* time point found across all patients in the dataset. For instance, if the union of dates in your dataset is `{2023-01-01, 2023-01-02, 2023-01-10, 2023-01-15, 2023-01-31}`, then each row (i.e., each patient) will have columns for *five* distinct measurements, even if some are `NA`:
+
+| person_id | heart_rate.measurement_date.1 | heart_rate.measurement_value.1 | heart_rate.measurement_date.2 | heart_rate.measurement_value.2 | heart_rate.measurement_date.3 | heart_rate.measurement_value.3 | heart_rate.measurement_date.4 | heart_rate.measurement_value.4 | heart_rate.measurement_date.5 | heart_rate.measurement_value.5 |
+|-----------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|--------------------------------|
+| A         | 2023-01-01                    | 70                             | NA                             | NA                             | 2023-01-15                    | 71                             | NA                             | NA                             | 2023-01-31                    | 72                             |
+| B         | 2023-01-01                    | 60                             | 2023-01-02                    | 65                             | NA                             | NA                             | NA                             | NA                             | NA                             | NA                             |
+| C         | NA                             | NA                             | NA                             | NA                             | 2023-01-10                    | 67                             | NA                             | NA                             | NA                             | NA                             |
+
+- For privacy reasons, it *still* uses index-based columns (e.g., `.1, .2, .3`), but now behind the scenes, each suffix corresponds to the *same date* for every patient.
+- Patients missing a measurement on a particular date have `NA` in both the `measurement_date` and `measurement_value` columns for that slot.
+- This approach ensures a consistent date axis across all individuals, which is typically needed for time-series analysis or for creating time-aligned comparisons.
+
+---
+
+#### Practical usage notes
+
+1. **Date sorting**: Under the hood, **dsOMOP** first discovers all unique dates in the data, sorts them in ascending order, and then indexes them as `.1, .2, .3, …`.
+2. **Flexibility**: You can still opt *not* to align time points by leaving `completeTimePoints` as `FALSE`. This can be useful for scenarios where each patient’s internal timeline is more relevant than a global date alignment.
+3. **Merging**: Whether you choose to use alignment or not, your wide-format table remains mergeable with other wide-format tables in DataSHIELD if they share the same `person_id` (or whichever merge column(s) you specify).
+
+In short, `wideLongitudinal` provides a wide “spread” of repeated measurements within each row, and `completeTimePoints` ensures that these measurements line up on a shared calendar of dates. You can fine-tune these parameters to suit your analytic design.
 
 # 2.2 Using the `get` method
 
