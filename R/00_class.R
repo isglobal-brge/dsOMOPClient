@@ -90,17 +90,31 @@ OMOPCDMDatabase <- R6::R6Class(
       )
 
       # Check privacy settings and issue warnings if needed
-      privacyWarnings <- self$checkPrivacyControlLevel()
-      if (length(privacyWarnings) > 0) {
-        warning(paste(
-          paste(crayon::yellow("\nThe privacy control level may not be permissive enough to allow some operations!"), 
-                "The following warnings were raised:"),
-          paste(crayon::bgYellow(crayon::black(paste0("[", names(privacyWarnings), "]"))), 
-                privacyWarnings, collapse = "\n"),
-          crayon::yellow("This should be configured by the server administrator. Please contact them for more information."),
-          sep = "\n"
-        ))
-      }
+      tryCatch(
+        {
+          privacyWarnings <- self$checkPrivacyControlLevel()
+          if (length(privacyWarnings) > 0) {
+            warning(paste(
+              paste(crayon::yellow("\nThe privacy control level may not be permissive enough to allow some operations!"), 
+                    "The following warnings were raised:"),
+              paste(crayon::bgYellow(crayon::black(paste0("[", names(privacyWarnings), "]"))), 
+                    privacyWarnings, collapse = "\n"),
+              crayon::yellow("This should be configured by the server administrator. Please contact them for more information."),
+              sep = "\n"
+            ))
+          }
+        },
+        error = function(error) {
+          # If privacy check fails, issue a warning but don't prevent object creation
+          warning(paste(
+            crayon::yellow("\nUnable to check privacy control level settings!"),
+            crayon::yellow("Error:"), error$message,
+            crayon::yellow("The object will be created but some operations may not work properly."),
+            crayon::yellow("Please contact the server administrator for more information."),
+            sep = "\n"
+          ))
+        }
+      )
     }
   )
 )
