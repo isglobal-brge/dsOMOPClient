@@ -123,3 +123,32 @@
   paste0(name, " <- ds.omop.concept.set(c(",
          paste(concept_ids, collapse = ", "), "))")
 }
+
+# --- Per-function codegen helpers for Studio modules --------------------------
+
+#' Generate R code for an exploration function call
+#' @param fn_name Character; function name (e.g. "ds.omop.concept.prevalence")
+#' @param args_list Named list of arguments
+#' @return Character; R code string
+#' @keywords internal
+.studio_codegen_exploration <- function(fn_name, args_list) {
+  do.call(.build_code, c(list(fn_name = fn_name), args_list))
+}
+
+#' Generate R code for a profiling function call
+#' @param fn_name Character; function name
+#' @param args_list Named list of arguments
+#' @return Character; R code string
+#' @keywords internal
+.studio_codegen_profiling <- function(fn_name, args_list) {
+  do.call(.build_code, c(list(fn_name = fn_name), args_list))
+}
+
+#' Generate R code for a vocabulary function call
+#' @param fn_name Character; function name
+#' @param args_list Named list of arguments
+#' @return Character; R code string
+#' @keywords internal
+.studio_codegen_vocabulary <- function(fn_name, args_list) {
+  do.call(.build_code, c(list(fn_name = fn_name), args_list))
+}

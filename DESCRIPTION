@@ -27,6 +27,7 @@ Imports:
 Suggests:
     DSLite,
     testthat (>= 3.0.0),
+    clipr,
     knitr,
     rmarkdown
 Config/testthat/edition: 3

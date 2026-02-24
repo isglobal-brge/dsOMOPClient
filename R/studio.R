@@ -91,7 +91,12 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
         .mod_plan_from_explorer_ui("plans")
       ),
 
-      # --- Tab 7: Session ---
+      # --- Tab 7: Script ---
+      bslib::nav_panel("Script", icon = shiny::icon("code"),
+        .mod_script_builder_ui("script")
+      ),
+
+      # --- Tab 8: Session ---
       bslib::nav_panel("Session", icon = shiny::icon("server"),
         .mod_session_ui("session_tab")
       )
@@ -116,7 +121,8 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       selected_concept_name = NULL,
       concept_set = integer(0),
       plan = ds.omop.plan(),
-      plan_outputs = list()
+      plan_outputs = list(),
+      script_lines = character(0)
     )
 
     # Load initial data on startup
@@ -139,6 +145,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     .mod_concept_locator_server("locator", state)
     .mod_vocab_server("vocab", state)
     .mod_plan_from_explorer_server("plans", state)
+    .mod_script_builder_server("script", state)
     .mod_session_server("session_tab", state)
   }
 }
@@ -390,8 +397,8 @@ isTRUE_vec <- function(x) {
       tryCatch({
         stats_res <- ds.omop.table.stats(tbl, stats = c("rows", "persons"),
                                           symbol = state$symbol)
-        srv <- names(stats_res)[1]
-        s <- stats_res[[srv]]
+        srv <- names(stats_res$per_site)[1]
+        s <- stats_res$per_site[[srv]]
         shiny::tags$dl(class = "row",
           shiny::tags$dt(class = "col-sm-4", "Rows"),
           shiny::tags$dd(class = "col-sm-8",
@@ -422,8 +429,12 @@ isTRUE_vec <- function(x) {
           metric = input$metric, top_n = input$top_n,
           symbol = state$symbol
         )
-        srv <- names(res)[1]
-        prevalence_data(res[[srv]])
+        # Accumulate code for Script tab
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
+        srv <- names(res$per_site)[1]
+        prevalence_data(res$per_site[[srv]])
         shiny::removeNotification("prev_loading")
       }, error = function(e) {
         shiny::removeNotification("prev_loading")
@@ -593,7 +604,12 @@ isTRUE_vec <- function(x) {
           table = tbl, concept_id = cid,
           symbol = state$symbol
         )
-        drilldown_data(res)
+        # Accumulate code for Script tab
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
+        # Store per_site results for display (modules expect named list)
+        drilldown_data(res$per_site)
         shiny::removeNotification("dd_loading")
       }, error = function(e) {
         shiny::removeNotification("dd_loading")
@@ -916,6 +932,10 @@ isTRUE_vec <- function(x) {
         res <- ds.omop.concept.locate(
           concept_ids = ids, symbol = state$symbol
         )
+        # Accumulate code for Script tab
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
         # Combine results from all servers with server column
         all_results <- data.frame(
           table_name = character(0), concept_column = character(0),
@@ -923,8 +943,8 @@ isTRUE_vec <- function(x) {
           n_persons = numeric(0), server = character(0),
           stringsAsFactors = FALSE
         )
-        for (srv in names(res)) {
-          df <- res[[srv]]
+        for (srv in names(res$per_site)) {
+          df <- res$per_site[[srv]]
           if (is.data.frame(df) && nrow(df) > 0) {
             df$server <- srv
             all_results <- rbind(all_results, df)
@@ -1005,8 +1025,12 @@ isTRUE_vec <- function(x) {
           limit = input$limit,
           symbol = state$symbol
         )
-        srv <- names(res)[1]
-        search_results(res[[srv]])
+        # Accumulate code for Script tab
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
+        srv <- names(res$per_site)[1]
+        search_results(res$per_site[[srv]])
       }, error = function(e) {
         shiny::showNotification(
           paste("Search error:", conditionMessage(e)), type = "error"
@@ -1341,7 +1365,96 @@ isTRUE_vec <- function(x) {
 }
 
 # ==============================================================================
-# MODULE 7: Session (kept as-is)
+# MODULE 7: Script Builder
+# ==============================================================================
+
+.mod_script_builder_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_columns(
+    col_widths = 12,
+    bslib::card(
+      bslib::card_header(
+        shiny::div(
+          class = "d-flex justify-content-between align-items-center",
+          "Accumulated R Script",
+          shiny::div(
+            shiny::actionButton(ns("copy_btn"), "Copy to Clipboard",
+                                class = "btn-sm btn-outline-primary me-2"),
+            shiny::downloadButton(ns("download_btn"), "Download .R",
+                                  class = "btn-sm btn-outline-success me-2"),
+            shiny::actionButton(ns("clear_btn"), "Clear",
+                                class = "btn-sm btn-outline-danger")
+          )
+        )
+      ),
+      bslib::card_body(
+        shiny::div(class = "code-output",
+          shiny::verbatimTextOutput(ns("script_output"))
+        )
+      )
+    )
+  )
+}
+
+.mod_script_builder_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+
+    script_text <- shiny::reactive({
+      lines <- state$script_lines
+      if (length(lines) == 0) return("# No operations recorded yet.\n# Use the Explore, Drilldown, Locator, Vocabulary, or Session tabs\n# to generate reproducible R code.")
+      header <- c(
+        "# ==============================================================================",
+        "# dsOMOP Studio - Reproducible Script",
+        paste0("# Generated: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S")),
+        "# ==============================================================================",
+        "library(dsOMOPClient)",
+        ""
+      )
+      paste(c(header, lines), collapse = "\n")
+    })
+
+    output$script_output <- shiny::renderText({
+      script_text()
+    })
+
+    shiny::observeEvent(input$copy_btn, {
+      code <- script_text()
+      tryCatch({
+        if (requireNamespace("clipr", quietly = TRUE)) {
+          clipr::write_clip(code)
+          shiny::showNotification("Script copied to clipboard!",
+                                  type = "message", duration = 2)
+        } else {
+          shiny::showNotification(
+            "Install 'clipr' package for clipboard support.",
+            type = "warning", duration = 4)
+        }
+      }, error = function(e) {
+        shiny::showNotification(
+          paste("Could not copy:", conditionMessage(e)),
+          type = "warning", duration = 3)
+      })
+    })
+
+    output$download_btn <- shiny::downloadHandler(
+      filename = function() {
+        paste0("dsomop_script_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".R")
+      },
+      content = function(file) {
+        writeLines(script_text(), file)
+      },
+      contentType = "text/plain"
+    )
+
+    shiny::observeEvent(input$clear_btn, {
+      state$script_lines <- character(0)
+      shiny::showNotification("Script cleared.", type = "message", duration = 2)
+    })
+  })
+}
+
+# ==============================================================================
+# MODULE 8: Session (kept as-is)
 # ==============================================================================
 
 .mod_session_ui <- function(id) {
@@ -1425,8 +1538,11 @@ isTRUE_vec <- function(x) {
     shiny::observeEvent(input$coverage_btn, {
       tryCatch({
         res <- ds.omop.domain.coverage(symbol = state$symbol)
-        srv <- names(res)[1]
-        coverage_data(res[[srv]])
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
+        srv <- names(res$per_site)[1]
+        coverage_data(res$per_site[[srv]])
       }, error = function(e) {
         shiny::showNotification(
           paste("Error:", conditionMessage(e)), type = "error"
@@ -1446,8 +1562,11 @@ isTRUE_vec <- function(x) {
       tryCatch({
         res <- ds.omop.missingness(input$miss_table,
                                     symbol = state$symbol)
-        srv <- names(res)[1]
-        miss_data(res[[srv]])
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
+        srv <- names(res$per_site)[1]
+        miss_data(res$per_site[[srv]])
       }, error = function(e) {
         shiny::showNotification(
           paste("Error:", conditionMessage(e)), type = "error"

@@ -75,8 +75,15 @@ export(ds.omop.concept.drilldown)
 export(ds.omop.concept.locate)
 export(ds.omop.studio)
 
-# Print method
+# Result class + code extraction
+export(ds.omop.code)
+export(ds.omop.copy_code)
+
+# S3 methods
 S3method(print, omop_plan)
+S3method(print, dsomop_result)
+S3method(as.data.frame, dsomop_result)
+S3method(`$`, dsomop_result)
 
 # Imports
 import(DSI)
