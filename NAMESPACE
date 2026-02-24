@@ -75,6 +75,12 @@ export(ds.omop.concept.drilldown)
 export(ds.omop.concept.locate)
 export(ds.omop.studio)
 
+# Achilles / Data Sources
+export(ds.omop.achilles.status)
+export(ds.omop.achilles.analyses)
+export(ds.omop.achilles.results)
+export(ds.omop.achilles.distribution)
+
 # Result class + code extraction
 export(ds.omop.code)
 export(ds.omop.copy_code)

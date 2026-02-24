@@ -113,7 +113,12 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
         .mod_vocab_ui("vocab")
       ),
 
-      # --- Tab 6: Basket / Cart ---
+      # --- Tab 6: Data Sources (Atlas) ---
+      bslib::nav_panel("Data Sources", icon = shiny::icon("chart-bar"),
+        .mod_atlas_ui("atlas")
+      ),
+
+      # --- Tab 7: Basket / Cart ---
       bslib::nav_panel("Basket", icon = shiny::icon("cart-shopping"),
         .mod_basket_ui("basket")
       ),
@@ -179,6 +184,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     .mod_concept_drilldown_server("drilldown", state)
     .mod_concept_locator_server("locator", state)
     .mod_vocab_server("vocab", state)
+    .mod_atlas_server("atlas", state)
     .mod_basket_server("basket", state)
     .mod_plan_from_explorer_server("plans", state)
     .mod_script_builder_server("script", state)

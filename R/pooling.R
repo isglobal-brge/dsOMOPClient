@@ -617,6 +617,171 @@
       list(result = result, warnings = character(0))
     },
 
+    "achilles_results" = {
+      # Sum count_value per (analysis_id, stratum_1..5) across servers
+      all_dfs <- list()
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        if (is.data.frame(df) && nrow(df) > 0 &&
+            all(c("analysis_id", "count_value") %in% names(df))) {
+          all_dfs[[srv]] <- df
+        } else {
+          if (policy == "strict") {
+            return(list(
+              result = NULL,
+              warnings = paste0("Strict pooling failed: invalid Achilles results from server ", srv)
+            ))
+          }
+        }
+      }
+      if (length(all_dfs) == 0) {
+        return(list(result = NULL, warnings = "No valid Achilles results to pool"))
+      }
+
+      combined <- do.call(rbind, all_dfs)
+      rownames(combined) <- NULL
+
+      # Group by analysis_id + all strata
+      key_cols <- c("analysis_id", "stratum_1", "stratum_2", "stratum_3",
+                     "stratum_4", "stratum_5")
+      key_cols <- intersect(key_cols, names(combined))
+
+      # Replace NA strata with sentinel for grouping
+      for (kc in key_cols[-1]) {
+        combined[[kc]][is.na(combined[[kc]])] <- "__NA__"
+      }
+
+      groups <- split(combined, combined[key_cols], drop = TRUE)
+      pooled_rows <- lapply(groups, function(sub) {
+        row <- sub[1, key_cols, drop = FALSE]
+        vals <- sub$count_value
+        has_na <- any(is.na(vals))
+        if (has_na && policy == "strict") {
+          row$count_value <- NA_real_
+        } else {
+          row$count_value <- sum(vals, na.rm = TRUE)
+        }
+        row
+      })
+      result <- do.call(rbind, pooled_rows)
+      rownames(result) <- NULL
+
+      # Restore NA sentinels
+      for (kc in key_cols[-1]) {
+        result[[kc]][result[[kc]] == "__NA__"] <- NA_character_
+      }
+
+      list(result = result, warnings = character(0))
+    },
+
+    "achilles_distribution" = {
+      # Weighted distribution aggregation across servers
+      all_dfs <- list()
+      warnings <- character(0)
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        if (is.data.frame(df) && nrow(df) > 0 &&
+            all(c("analysis_id", "count_value", "avg_value") %in% names(df))) {
+          all_dfs[[srv]] <- df
+        } else {
+          if (policy == "strict") {
+            return(list(
+              result = NULL,
+              warnings = paste0("Strict pooling failed: invalid Achilles dist from server ", srv)
+            ))
+          }
+          warnings <- c(warnings, paste0("Dropped server with invalid dist data: ", srv))
+        }
+      }
+      if (length(all_dfs) == 0) {
+        return(list(result = NULL, warnings = c(warnings, "No valid Achilles distributions to pool")))
+      }
+
+      combined <- do.call(rbind, all_dfs)
+      rownames(combined) <- NULL
+
+      key_cols <- c("analysis_id", "stratum_1", "stratum_2", "stratum_3",
+                     "stratum_4", "stratum_5")
+      key_cols <- intersect(key_cols, names(combined))
+
+      for (kc in key_cols[-1]) {
+        combined[[kc]][is.na(combined[[kc]])] <- "__NA__"
+      }
+
+      groups <- split(combined, combined[key_cols], drop = TRUE)
+      pooled_rows <- lapply(groups, function(sub) {
+        row <- sub[1, key_cols, drop = FALSE]
+        counts <- sub$count_value
+        has_na <- any(is.na(counts))
+        if (has_na && policy == "strict") {
+          row$count_value <- NA_real_
+          row$min_value <- NA_real_
+          row$max_value <- NA_real_
+          row$avg_value <- NA_real_
+          row$stdev_value <- NA_real_
+          row$median_value <- NA_real_
+          row$p10_value <- NA_real_
+          row$p25_value <- NA_real_
+          row$p75_value <- NA_real_
+          row$p90_value <- NA_real_
+          return(row)
+        }
+
+        valid <- !is.na(counts)
+        n <- counts[valid]
+        N <- sum(n)
+        row$count_value <- N
+
+        # Weighted mean
+        avgs <- sub$avg_value[valid]
+        row$avg_value <- if (N > 0 && !any(is.na(avgs))) {
+          sum(n * avgs) / N
+        } else NA_real_
+
+        # Global min/max
+        row$min_value <- if ("min_value" %in% names(sub)) {
+          min(sub$min_value[valid], na.rm = TRUE)
+        } else NA_real_
+        row$max_value <- if ("max_value" %in% names(sub)) {
+          max(sub$max_value[valid], na.rm = TRUE)
+        } else NA_real_
+
+        # Pooled stdev via Cochrane formula
+        if ("stdev_value" %in% names(sub) && N > 1 && !any(is.na(avgs))) {
+          sds <- sub$stdev_value[valid]
+          if (!any(is.na(sds))) {
+            pooled_mean <- row$avg_value
+            within_ss <- sum((n - 1) * sds^2)
+            between_ss <- sum(n * (avgs - pooled_mean)^2)
+            row$stdev_value <- sqrt((within_ss + between_ss) / (N - 1))
+          } else {
+            row$stdev_value <- NA_real_
+          }
+        } else {
+          row$stdev_value <- NA_real_
+        }
+
+        # Median and percentiles: NOT poolable from summary stats
+        row$median_value <- NA_real_
+        row$p10_value <- NA_real_
+        row$p25_value <- NA_real_
+        row$p75_value <- NA_real_
+        row$p90_value <- NA_real_
+
+        row
+      })
+      result <- do.call(rbind, pooled_rows)
+      rownames(result) <- NULL
+
+      for (kc in key_cols[-1]) {
+        result[[kc]][result[[kc]] == "__NA__"] <- NA_character_
+      }
+
+      warnings <- c(warnings,
+        "Median and percentiles cannot be pooled from summary statistics; set to NA")
+      list(result = result, warnings = warnings)
+    },
+
     # Default: no pooling
     {
       list(result = NULL,
