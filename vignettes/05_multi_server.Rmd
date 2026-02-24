@@ -1,0 +1,210 @@
+---
+title: "Multi-Server Federated Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multi-Server Federated Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Overview
+
+dsOMOP v2 is designed for federated analysis across multiple DataSHIELD
+servers, each hosting an OMOP CDM database. Different servers may have:
+
+- Different OMOP CDM versions
+- Different available tables and columns
+- Different vocabulary versions
+- Different data volumes
+
+dsOMOP handles these differences through runtime schema introspection
+and plan harmonization.
+
+## Connecting to Multiple Servers
+
+```{r connect}
+library(dsOMOPClient)
+library(DSI)
+library(DSOpal)
+
+builder <- DSI::newDSLoginBuilder()
+builder$append(
+  server = "hospital_a",
+  url = "https://opal-a.example.org",
+  user = "analyst", password = "secret_a",
+  resource = "project.omop_cdm"
+)
+builder$append(
+  server = "hospital_b",
+  url = "https://opal-b.example.org",
+  user = "analyst", password = "secret_b",
+  resource = "project.omop_cdm"
+)
+builder$append(
+  server = "hospital_c",
+  url = "https://opal-c.example.org",
+  user = "analyst", password = "secret_c",
+  resource = "project.omop_cdm"
+)
+
+login_data <- builder$build()
+conns <- DSI::datashield.login(logins = login_data)
+```
+
+## Attaching Resources
+
+`ds.omop.attach()` accepts a named list of resources for multi-server:
+
+```{r attach}
+ds.omop.attach(
+  resource = list(
+    hospital_a = "project.omop_cdm",
+    hospital_b = "project.omop_cdm",
+    hospital_c = "project.omop_cdm"
+  ),
+  conns = conns,
+  symbol = "omop"
+)
+```
+
+Or a single resource name if all servers use the same resource:
+
+```{r attach-simple}
+ds.omop.attach(
+  resource = "project.omop_cdm",
+  conns = conns,
+  symbol = "omop"
+)
+```
+
+## Schema Comparison
+
+Before building a plan, compare schemas across servers:
+
+```{r compare}
+comparison <- ds.omop.schema.compare(symbol = "omop", conns = conns)
+
+# Tables available on all servers
+comparison$common_tables
+# e.g., c("person", "condition_occurrence", "measurement")
+
+# Tables only on specific servers
+comparison$server_only
+# e.g., list(hospital_a = c("note"), hospital_c = c("specimen"))
+
+# Column differences
+comparison$column_diffs
+# Shows which columns are missing on which servers
+```
+
+## Plan Harmonization
+
+When schemas differ, harmonize your plan before execution:
+
+### Intersection Mode (Default)
+
+Drops columns and tables not present on ALL servers:
+
+```{r harmonize-intersect}
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.addBaseline(plan,
+  tables = list(
+    person = c("gender_concept_id", "year_of_birth",
+               "race_concept_id"),
+    observation_period = c("observation_period_start_date")
+  ))
+
+# If hospital_b doesn't have race_concept_id, harmonize drops it
+plan <- ds.omop.plan.harmonize(plan,
+  mode = "intersection",
+  symbol = "omop", conns = conns)
+```
+
+### Union with Missing Mode
+
+Keeps all columns, fills missing ones with NA:
+
+```{r harmonize-union}
+plan <- ds.omop.plan.harmonize(plan,
+  mode = "union_with_missing",
+  symbol = "omop", conns = conns)
+```
+
+## Status Checking
+
+Monitor the connection status across servers:
+
+```{r status}
+status <- ds.omop.status(symbol = "omop", conns = conns)
+# Returns per-server: connected, dbms, tables_count, cdm_version
+```
+
+## Federated Analysis Workflow
+
+A complete multi-server analysis workflow:
+
+```{r workflow}
+# 1. Connect and attach
+conns <- DSI::datashield.login(logins = login_data)
+ds.omop.attach(resource = "project.omop_cdm",
+  conns = conns, symbol = "omop")
+
+# 2. Compare schemas
+comparison <- ds.omop.schema.compare(symbol = "omop", conns = conns)
+cat("Common tables:", comparison$common_tables, "\n")
+
+# 3. Build plan on common ground
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.setCohort(plan,
+  spec = list(type = "condition", concept_set = c(201826)))
+plan <- ds.omop.plan.addBaseline(plan,
+  tables = list(
+    person = c("gender_concept_id", "year_of_birth")
+  ))
+plan <- ds.omop.plan.addEvents(plan,
+  name = "labs", table = "measurement",
+  concept_set = c(3004410),
+  representation = list(format = "features"))
+
+# 4. Harmonize
+plan <- ds.omop.plan.harmonize(plan,
+  mode = "intersection",
+  symbol = "omop", conns = conns)
+
+# 5. Preview
+preview <- ds.omop.plan.preview(plan,
+  symbol = "omop", conns = conns)
+
+# 6. Execute
+ds.omop.plan.execute(plan,
+  out = list(baseline = "D", labs = "E"),
+  symbol = "omop", conns = conns)
+
+# 7. Federated analysis with dsBaseClient
+dsBaseClient::ds.glm(
+  formula = "labs_concept_ever ~ gender_concept_id + year_of_birth",
+  data = "D",
+  family = "binomial",
+  datasources = conns
+)
+
+# 8. Clean up
+ds.omop.detach(symbol = "omop", conns = conns)
+DSI::datashield.logout(conns)
+```
+
+## Version-Agnostic Design
+
+dsOMOP v2 does not hard-code OMOP CDM version tables. It discovers
+available tables and columns at runtime. This means:
+
+- CDM 5.3 and 5.4 databases work without configuration changes
+- Custom extensions to the CDM are automatically discovered
+- Missing optional tables are handled gracefully (not errors)
+
+The `getCapabilities` aggregate returns a hash of the server schema,
+which is cached client-side to avoid repeated introspection calls.

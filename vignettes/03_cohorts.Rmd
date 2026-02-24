@@ -1,0 +1,186 @@
+---
+title: "Cohort Management"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Cohort Management}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Overview
+
+Cohorts define a set of persons of interest. dsOMOP v2 supports two
+cohort workflows:
+
+1. **Pre-existing cohorts**: Stored in the results schema (e.g., generated
+   by ATLAS or CohortGenerator)
+2. **Spec-based cohorts**: Created on-the-fly from a structured specification
+
+Both produce a server-side cohort table that can be used to filter
+extraction plans.
+
+## Listing Existing Cohorts
+
+```{r list}
+library(dsOMOPClient)
+
+# List cohort definitions from the results schema
+cohorts <- ds.omop.cohort.list(symbol = "omop", conns = conns)
+# Returns: cohort_definition_id, cohort_definition_name, ...
+```
+
+## Getting a Cohort Definition
+
+```{r getdef}
+defn <- ds.omop.cohort.getDefinition(42,
+  symbol = "omop", conns = conns)
+# Returns full definition details
+```
+
+## Creating a Cohort from a Spec
+
+The cohort spec DSL lets you define cohorts without raw SQL:
+
+```{r create-condition}
+# Persons with diabetes (concept 201826)
+ds.omop.cohort.create(
+  spec = list(
+    type = "condition",
+    concept_set = c(201826)
+  ),
+  cohort_id = 100,
+  name = "diabetes_cohort",
+  mode = "temporary",
+  symbol = "omop",
+  conns = conns
+)
+```
+
+### Supported Spec Types
+
+| Type | Source Table | Notes |
+|---|---|---|
+| `condition` | condition_occurrence | Filter by condition concepts |
+| `drug` | drug_exposure | Filter by drug concepts |
+| `measurement` | measurement | Filter by measurement + value threshold |
+| `observation` | observation | Filter by observation concepts |
+| `procedure` | procedure_occurrence | Filter by procedure concepts |
+
+### Measurement with Value Threshold
+
+```{r create-measurement}
+# Persons with HbA1c >= 6.5
+ds.omop.cohort.create(
+  spec = list(
+    type = "measurement",
+    concept_set = c(3004410),
+    value_threshold = list(op = ">=", value = 6.5)
+  ),
+  cohort_id = 101,
+  name = "high_hba1c",
+  mode = "temporary",
+  symbol = "omop",
+  conns = conns
+)
+```
+
+### Persistent Cohorts
+
+Use `mode = "persistent"` to write to the results schema. This requires
+`datashield.privacyControlLevel = "permissive"` on the server.
+
+```{r create-persistent}
+ds.omop.cohort.create(
+  spec = list(type = "condition", concept_set = c(201826)),
+  cohort_id = 200,
+  name = "diabetes_persistent",
+  mode = "persistent",
+  symbol = "omop",
+  conns = conns
+)
+```
+
+## Combining Cohorts
+
+Combine two cohorts using set operations:
+
+```{r combine}
+# Union: persons in either cohort
+ds.omop.cohort.combine(
+  op = "union",
+  cohort_a = "dsomop_cohort_100",
+  cohort_b = "dsomop_cohort_101",
+  new_name = "dsomop_cohort_combined",
+  symbol = "omop",
+  conns = conns
+)
+
+# Intersect: persons in both cohorts
+ds.omop.cohort.combine(
+  op = "intersect",
+  cohort_a = "dsomop_cohort_100",
+  cohort_b = "dsomop_cohort_101",
+  symbol = "omop",
+  conns = conns
+)
+
+# Set difference: persons in A but not B
+# (requires privacy level "banana" or above)
+ds.omop.cohort.combine(
+  op = "setdiff",
+  cohort_a = "dsomop_cohort_100",
+  cohort_b = "dsomop_cohort_101",
+  symbol = "omop",
+  conns = conns
+)
+```
+
+## Using Cohorts in Plans
+
+Reference a cohort in your extraction plan:
+
+```{r plan-cohort}
+plan <- ds.omop.plan()
+
+# Use an existing cohort by ID
+plan <- ds.omop.plan.setCohort(plan, cohort_definition_id = 42)
+
+# OR use a spec (creates cohort on-the-fly)
+plan <- ds.omop.plan.setCohort(plan,
+  spec = list(type = "condition", concept_set = c(201826)))
+
+# Add outputs
+plan <- ds.omop.plan.addBaseline(plan,
+  tables = list(person = c("gender_concept_id", "year_of_birth")))
+
+# Execute - only persons in the cohort are included
+ds.omop.plan.execute(plan,
+  out = list(baseline = "D"),
+  symbol = "omop", conns = conns)
+```
+
+### Quick Cohort Reference
+
+`ds.omop.cohort.use()` creates a reference for the plan DSL:
+
+```{r cohort-use}
+ref <- ds.omop.cohort.use(42)
+plan <- ds.omop.plan.setCohort(plan,
+  cohort_definition_id = ref$cohort_definition_id)
+```
+
+## Disclosure Controls
+
+All cohort operations enforce `nfilter.subset`. If a cohort contains
+fewer unique persons than the threshold, the operation is blocked:
+
+```
+Error: Disclosive: unique persons (2) < nfilter.subset (3)
+```
+
+Set difference operations additionally require the `banana` privacy level
+to prevent indirect identification through complement sets.

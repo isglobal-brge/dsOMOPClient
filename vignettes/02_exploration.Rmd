@@ -1,0 +1,134 @@
+---
+title: "Schema Exploration"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Schema Exploration}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Overview
+
+Before extracting data, you need to understand what's available in each CDM.
+dsOMOP v2 provides a set of **aggregate** catalog functions that return safe
+metadata without exposing individual-level data.
+
+All catalog functions respect DataSHIELD disclosure controls. Counts below
+`nfilter.subset` are suppressed or blocked.
+
+## Prerequisites
+
+```{r connect}
+library(dsOMOPClient)
+# Assume connections are established and OMOP is attached:
+# ds.omop.attach(resource = "project.omop_cdm", conns = conns)
+```
+
+## Listing Tables
+
+```{r tables}
+tables <- ds.omop.listTables(symbol = "omop", conns = conns)
+# Returns a list (one per server) of character vectors
+# Example: c("person", "condition_occurrence", "measurement", ...)
+```
+
+dsOMOP discovers tables at runtime through schema introspection. It does not
+hard-code OMOP CDM version tables. If your CDM has custom tables, they will
+appear here.
+
+## Listing Columns
+
+```{r columns}
+cols <- ds.omop.listColumns("condition_occurrence",
+  symbol = "omop", conns = conns)
+# Returns column metadata: name, type, nullable
+```
+
+## Relationship Graph
+
+dsOMOP infers join relationships from naming conventions:
+
+- `person_id` → links to `person`
+- `visit_occurrence_id` → links to `visit_occurrence`
+- `*_concept_id` → links to `concept`
+
+```{r relationships}
+graph <- ds.omop.relationshipGraph(symbol = "omop", conns = conns)
+# Returns a data frame of edges: from_table, to_table, join_column
+```
+
+This is useful for understanding how tables connect without needing to
+know the exact CDM version.
+
+## Table Statistics
+
+```{r stats}
+stats <- ds.omop.tableStats("measurement",
+  symbol = "omop", conns = conns)
+# Returns: row_count, person_count (both may be suppressed if too small)
+```
+
+Person counts use `COUNT(DISTINCT person_id)` to give the true number of
+unique individuals, not just row counts.
+
+## Searching Concepts
+
+OMOP CDM uses concept IDs for clinical coding. Search the vocabulary:
+
+```{r concepts}
+# Find diabetes-related concepts
+results <- ds.omop.searchConcepts("diabetes",
+  domain = "Condition",
+  symbol = "omop", conns = conns)
+# Returns: concept_id, concept_name, domain_id, vocabulary_id
+```
+
+You can filter by domain (Condition, Drug, Measurement, etc.) or
+vocabulary (SNOMED, ICD10, RxNorm, etc.).
+
+## Value Frequencies
+
+Examine the distribution of values in a column:
+
+```{r valuecounts}
+# What gender concepts appear in the person table?
+genders <- ds.omop.valueCounts("person", "gender_concept_id",
+  symbol = "omop", conns = conns)
+# Returns: value, count (small cells suppressed per nfilter.tab)
+```
+
+Value counts enforce two disclosure checks:
+1. **nfilter.tab**: Cells with fewer persons are suppressed
+2. **nfilter.levels**: Too many distinct values are blocked
+
+## Multi-Server Schema Comparison
+
+When working with multiple servers, schemas may differ. Compare them:
+
+```{r compare}
+comparison <- ds.omop.schema.compare(symbol = "omop", conns = conns)
+
+# Common tables across all servers
+comparison$common_tables
+
+# Tables only on specific servers
+comparison$server_only
+
+# Column differences
+comparison$column_diffs
+```
+
+This comparison feeds into plan harmonization (see the extraction vignette).
+
+## Schema Snapshot
+
+Export a snapshot for visualization or documentation:
+
+```{r snapshot}
+snapshot <- ds.omop.schema.snapshot(symbol = "omop", conns = conns)
+# Contains tables, columns, relationships per server
+```

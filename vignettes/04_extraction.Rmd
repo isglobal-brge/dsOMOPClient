@@ -1,0 +1,271 @@
+---
+title: "Data Extraction with the Plan DSL"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Data Extraction with the Plan DSL}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Overview
+
+The **extraction plan DSL** is the primary way to specify what data you
+need from OMOP CDM databases. A plan is a serializable list that describes:
+
+- **Cohort**: Which persons to include
+- **Outputs**: What tables and columns to extract
+- **Representations**: How to shape the output (long, wide, features)
+- **Options**: Concept translation, disclosure thresholds
+
+Plans are built client-side, validated against the server schema, and
+executed to produce server-side data frames.
+
+## Building a Plan
+
+### Basic Structure
+
+```{r basic}
+library(dsOMOPClient)
+
+plan <- ds.omop.plan()
+# Creates an empty plan with default anchor (person table)
+```
+
+### Adding Baseline Data
+
+Baseline outputs extract person-level data (one row per person) by
+merging columns from one or more tables:
+
+```{r baseline}
+plan <- ds.omop.plan.addBaseline(plan,
+  tables = list(
+    person = c("gender_concept_id", "year_of_birth", "race_concept_id"),
+    observation_period = c("observation_period_start_date",
+                           "observation_period_end_date")
+  ),
+  name = "demographics"
+)
+```
+
+Tables are joined to `person` via their `person_id` column. If a person
+has multiple observation periods, the first is used.
+
+### Adding Event-Level Data
+
+Event outputs extract rows from clinical event tables:
+
+```{r events}
+# Condition occurrences filtered by concept
+plan <- ds.omop.plan.addEvents(plan,
+  name = "conditions",
+  table = "condition_occurrence",
+  columns = c("person_id", "condition_concept_id",
+              "condition_start_date"),
+  concept_set = c(201826, 255573, 4329847),
+  representation = list(format = "long")
+)
+
+# Measurements with time window
+plan <- ds.omop.plan.addEvents(plan,
+  name = "labs",
+  table = "measurement",
+  concept_set = c(3004410),
+  time_window = list(
+    start_date = "2020-01-01",
+    end_date = "2023-12-31"
+  )
+)
+```
+
+### Adding Outcomes
+
+`addOutcome` is a convenience wrapper for binary condition outcomes
+using the `features` representation:
+
+```{r outcomes}
+plan <- ds.omop.plan.addOutcome(plan,
+  name = "copd",
+  concept_set = c(255573)
+)
+# Produces person-level features: copd_ever, copd_count, etc.
+```
+
+### Setting Options
+
+```{r options}
+plan <- ds.omop.plan.setOptions(plan,
+  translate_concepts = TRUE,
+  min_persons = 5
+)
+```
+
+## Representations
+
+Each event output can use one of three representations:
+
+### Long Format (Default)
+
+One row per event. Preserves full temporal detail.
+
+```{r long}
+plan <- ds.omop.plan.addEvents(plan,
+  name = "conditions",
+  table = "condition_occurrence",
+  representation = list(format = "long")
+)
+# Output: person_id | condition_concept_id | condition_start_date | ...
+```
+
+### Wide Format
+
+Pivots on the concept ID column. Each concept becomes a column prefix.
+
+```{r wide}
+plan <- ds.omop.plan.addEvents(plan,
+  name = "conditions_wide",
+  table = "condition_occurrence",
+  concept_set = c(201826, 255573),
+  representation = list(format = "wide")
+)
+# Output: person_id | 201826_start_date | 255573_start_date | ...
+```
+
+### Features Format
+
+Aggregates to person-level summary statistics:
+
+```{r features}
+plan <- ds.omop.plan.addEvents(plan,
+  name = "condition_features",
+  table = "condition_occurrence",
+  concept_set = c(201826, 255573),
+  representation = list(format = "features")
+)
+# Output: person_id | concept_count | concept_ever | ...
+# For measurements: also concept_mean, concept_min, concept_max
+```
+
+## Concept Translation
+
+When `translate_concepts = TRUE`, concept ID columns are replaced with
+human-readable concept names from the vocabulary:
+
+```{r translate}
+plan <- ds.omop.plan.setOptions(plan, translate_concepts = TRUE)
+
+# condition_concept_id = 201826 becomes "Type 2 diabetes mellitus"
+```
+
+This requires a vocabulary/concept table in the CDM.
+
+## Plan Lifecycle
+
+### 1. Build
+
+```{r build}
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.addBaseline(plan,
+  tables = list(person = c("gender_concept_id", "year_of_birth")))
+plan <- ds.omop.plan.addEvents(plan,
+  name = "labs", table = "measurement",
+  concept_set = c(3004410))
+```
+
+### 2. Preview (Optional)
+
+Preview validates the plan and returns safe metadata:
+
+```{r preview}
+preview <- ds.omop.plan.preview(plan,
+  symbol = "omop", conns = conns)
+
+# Shows: expected columns, person counts, disclosive flags
+# Does NOT create server-side data
+```
+
+### 3. Execute
+
+```{r execute}
+ds.omop.plan.execute(plan,
+  out = list(
+    baseline = "D",
+    labs = "E"
+  ),
+  symbol = "omop",
+  conns = conns
+)
+
+# D and E are now server-side data frames
+# Use dsBaseClient functions for analysis
+dsBaseClient::ds.summary("D")
+dsBaseClient::ds.dim("E")
+```
+
+## Pipe-Style Chaining
+
+Plans support sequential building:
+
+```{r chained}
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.setCohort(plan, cohort_definition_id = 1)
+plan <- ds.omop.plan.addBaseline(plan,
+  tables = list(person = c("gender_concept_id")))
+plan <- ds.omop.plan.addEvents(plan,
+  name = "labs", table = "measurement",
+  concept_set = c(3004410))
+plan <- ds.omop.plan.setOptions(plan, translate_concepts = TRUE)
+
+# Print plan summary
+print(plan)
+```
+
+## Helper Functions
+
+### ds.omop.quick
+
+One-call extraction for common patterns:
+
+```{r quick}
+ds.omop.quick(
+  baseline_tables = list(
+    person = c("gender_concept_id", "year_of_birth")
+  ),
+  event_table = "condition_occurrence",
+  event_concepts = c(201826),
+  out_baseline = "D",
+  out_events = "E",
+  symbol = "omop",
+  conns = conns
+)
+```
+
+### ds.omop.auto
+
+Auto-detect and extract from all available clinical tables:
+
+```{r auto}
+ds.omop.auto(
+  symbol_prefix = "omop_data",
+  tables = c("person", "condition_occurrence", "measurement"),
+  symbol = "omop",
+  conns = conns
+)
+# Creates: omop_data_person, omop_data_condition_occurrence, etc.
+```
+
+### ds.omop.get
+
+Simple single-table extraction:
+
+```{r get}
+ds.omop.get("person",
+  columns = c("person_id", "gender_concept_id", "year_of_birth"),
+  target = "persons",
+  symbol = "omop",
+  conns = conns
+)
+```

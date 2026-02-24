@@ -1,0 +1,200 @@
+---
+title: "Security and Disclosure Controls"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Security and Disclosure Controls}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Overview
+
+dsOMOP v2 enforces DataSHIELD disclosure controls at every level.
+These controls are self-contained — dsOMOP does **not** depend on dsBase
+for disclosure checking, which avoids version coupling.
+
+All disclosure settings are read from DataSHIELD server options,
+configured by the server administrator.
+
+## Disclosure Settings
+
+### nfilter.subset (Minimum Persons)
+
+**The most critical control.** Any query result or cohort must contain
+at least `nfilter.subset` unique persons.
+
+- Default: 3
+- Enforced using `COUNT(DISTINCT person_id)`
+- Blocks: table extraction, cohort creation, cohort combination
+
+```
+# Server-side option
+options(nfilter.subset = 5)
+```
+
+If a query would return data for fewer persons:
+
+```
+Error: Disclosive: unique persons (2) < nfilter.subset (3)
+```
+
+### nfilter.tab (Minimum Cell Count)
+
+Minimum count for frequency distributions. Cells below this threshold
+are replaced with `NA`.
+
+- Default: 3
+- Affects: `ds.omop.valueCounts()`, `catalogTableStats()`
+
+### nfilter.levels.max (Maximum Factor Levels)
+
+Maximum number of distinct values allowed for a categorical column.
+
+- Default: 40
+- Prevents extraction of high-cardinality identifiers
+
+### nfilter.levels.density
+
+Maximum ratio of levels to observations. Prevents near-unique columns
+from being returned.
+
+- Default: 0.33
+- Formula: `n_levels / n_rows <= nfilter.levels.density`
+
+### datashield.privacyControlLevel
+
+Controls which operations are permitted:
+
+| Level | Allowed Operations |
+|---|---|
+| `permissive` | All operations, including persistent cohort writes |
+| `banana` | Most operations, including set difference |
+| `avocado` | Standard operations |
+| `carrot` | Restricted |
+| `non-permissive` | Most restrictive |
+
+Default: `"non-permissive"`
+
+## Where Controls Are Enforced
+
+### Table Extraction (.extractTable)
+
+Before returning any data:
+
+1. Counts unique persons in the query result
+2. Blocks if below `nfilter.subset`
+3. Validates factor levels against `nfilter.levels`
+
+### Cohort Creation (.cohortCreate)
+
+Before materializing a cohort:
+
+1. Counts unique `subject_id` values
+2. Blocks if below `nfilter.subset`
+
+### Cohort Combination (.cohortCombine)
+
+1. Counts unique persons in combined result
+2. Set difference operations require `banana` privacy level
+
+### Catalog Functions
+
+- `tableStats`: Suppresses counts below `nfilter.subset`
+- `valueCounts`: Suppresses cells below `nfilter.tab`, checks levels
+- `searchConcepts`: Read-only vocabulary search (no patient data)
+
+### Plan Preview (.planPreview)
+
+Returns aggregate metadata. Each output is flagged:
+
+```{r preview-flags}
+preview <- ds.omop.plan.preview(plan, symbol = "omop", conns = conns)
+# preview$outputs$conditions$disclosive == TRUE
+# if the person count is below nfilter.subset
+```
+
+### Plan Execution (.planExecute)
+
+Each output is individually checked. Disclosive outputs are skipped
+with a warning rather than failing the entire plan.
+
+## Input Validation
+
+dsOMOP validates all user-provided strings to prevent SQL injection:
+
+### Table and Column Names
+
+- Must match `^[a-zA-Z_][a-zA-Z0-9_]*$`
+- Maximum 128 characters
+- Invalid names are rejected before SQL construction
+
+### String Values
+
+- Maximum 1000 characters by default
+- No raw SQL is accepted from the client
+
+### Concept IDs
+
+- Cast to `as.integer()` before use in SQL
+- Invalid values cause type coercion errors
+
+## SQL Safety
+
+dsOMOP never constructs SQL from raw user strings. All SQL is built
+using parameterized patterns:
+
+- Table/column names go through `adapter$quote_ident()`
+- Literal values go through `adapter$quote_literal()`
+- Concept IDs are cast to integer
+- Filter DSL is compiled recursively with operator whitelisting
+
+## Server Administrator Guide
+
+### Recommended Settings
+
+```r
+# In Opal DataSHIELD options:
+options(
+  nfilter.subset = 5,           # Minimum unique persons
+  nfilter.tab = 5,              # Minimum cell count
+  nfilter.levels.max = 40,      # Max factor levels
+  nfilter.levels.density = 0.33, # Max level density
+  datashield.privacyControlLevel = "banana"
+)
+```
+
+### DATASHIELD File
+
+The `dsOMOP/DATASHIELD` file declares all methods and their default
+option values. Opal reads this file during package installation:
+
+```
+Options:
+  default.nfilter.subset=3
+  default.nfilter.tab=3
+  default.nfilter.levels.max=40
+  default.nfilter.levels.density=0.33
+  default.datashield.privacyControlLevel=non-permissive
+```
+
+Administrators can override these defaults in the Opal admin panel.
+
+### Privacy Level Hierarchy
+
+Operations are gated by privacy level. The hierarchy (most to least
+permissive):
+
+```
+permissive > banana > avocado > carrot > non-permissive
+```
+
+Higher-risk operations require more permissive settings:
+
+- **permissive**: Persistent cohort writes
+- **banana**: Set difference (complement) operations
+- **avocado**: Standard extraction and cohort creation
+- **non-permissive**: Read-only catalog operations

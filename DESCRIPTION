@@ -1,21 +1,30 @@
 Package: dsOMOPClient
-Title: DataSHIELD Integration for OMOP CDM Databases
-Version: 1.1.1
-Authors@R:
-    c(person("David", "Sarrat González", , "david.sarrat@isglobal.org", role = c("aut", "cre")),
-      person("Xavier", "Escribà-Montagut", , "xavier.escriba@isglobal.org", role = c("aut")),
-      person("Juan R", "González", , "juanr.gonzalez@isglobal.org", role = c("aut")))
-Description: This package facilitates interaction with remote databases in the OMOP CDM format from a DataSHIELD environment. 
-    It enables users to invoke server-side functions that perform fetching and transforming of data from OMOP CDM databases, 
-    integrating these operations into the DataSHIELD workflow to maintain adherence to the DataSHIELD security model.
-License: MIT
+Type: Package
+Title: DataSHIELD Client for OMOP CDM Databases
+Version: 2.0.0
+Authors@R: c(
+    person("David", "Sarrat González", role = c("aut", "cre"), email = "david.sarrat@isglobal.org"),
+    person("Xavier", "Escribà-Montagut", role = "aut"),
+    person("Juan R", "González", role = "aut"))
+Description: Client-side DataSHIELD package for interacting with OMOP CDM
+    databases. Provides an ergonomic plan-based API for safe data extraction,
+    schema exploration, vocabulary operations, cohort management, feature
+    engineering, and multi-server harmonization. Absorbs and replaces the
+    former dsOMOPHelper package.
+License: MIT + file LICENSE
 Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+LazyData: true
+Depends:
+    R (>= 4.1.0)
 Imports:
-  crayon,
-  DSI
-Suggests: 
+    DSI,
+    methods,
+    stats
+Suggests:
+    DSLite,
+    testthat (>= 3.0.0),
     knitr,
     rmarkdown
+Config/testthat/edition: 3
 VignetteBuilder: knitr
+RoxygenNote: 7.3.0

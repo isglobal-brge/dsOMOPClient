@@ -1,0 +1,166 @@
+---
+title: "Getting Started with dsOMOP v2"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with dsOMOP v2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Overview
+
+**dsOMOP v2** provides safe, federated access to OMOP Common Data Model databases
+through the DataSHIELD framework. It consists of two packages:
+
+- **dsOMOP** (server-side): Runs on each DataSHIELD node. Handles database queries,
+  disclosure control, and data preparation.
+- **dsOMOPClient** (client-side): Runs on your local machine. Provides an ergonomic
+  API for schema exploration, cohort management, and data extraction.
+
+## Prerequisites
+
+- A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2 installed
+- An OMOP CDM database configured as an Opal resource
+- The `dsOMOPClient` package installed locally
+
+```{r install}
+# From GitHub
+remotes::install_github("your-org/dsomop-rework/dsOMOPClient")
+```
+
+## Quick Start
+
+### 1. Connect to DataSHIELD
+
+```{r connect}
+library(dsOMOPClient)
+library(DSI)
+library(DSOpal)
+
+# Build the login data frame
+builder <- DSI::newDSLoginBuilder()
+builder$append(
+  server = "server1",
+  url = "https://opal.example.org",
+  user = "analyst",
+  password = "secret",
+  resource = "project.omop_cdm"
+)
+
+login_data <- builder$build()
+conns <- DSI::datashield.login(logins = login_data)
+```
+
+### 2. Attach the OMOP Resource
+
+```{r attach}
+# Attach the OMOP CDM resource to start a session
+ds.omop.attach(
+  resource = "project.omop_cdm",
+  conns = conns,
+  symbol = "omop"
+)
+```
+
+This initializes a server-side handle that connects to the database,
+introspects the schema, and prepares for queries. The `symbol` parameter
+identifies this session for subsequent calls.
+
+### 3. Explore the Schema
+
+```{r explore}
+# What tables are available?
+tables <- ds.omop.listTables(symbol = "omop", conns = conns)
+print(tables)
+
+# What columns does person have?
+cols <- ds.omop.listColumns("person", symbol = "omop", conns = conns)
+print(cols)
+
+# Safe summary statistics
+stats <- ds.omop.tableStats("person", symbol = "omop", conns = conns)
+print(stats)
+```
+
+### 4. Extract Data with a Plan
+
+The plan DSL lets you specify exactly what data to extract:
+
+```{r plan}
+# Build a plan
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.addBaseline(plan,
+  tables = list(
+    person = c("gender_concept_id", "year_of_birth"),
+    observation_period = c("observation_period_start_date",
+                           "observation_period_end_date")
+  )
+)
+
+# Preview (returns safe metadata, no actual data)
+preview <- ds.omop.plan.preview(plan, symbol = "omop", conns = conns)
+print(preview)
+
+# Execute (creates server-side data frame)
+ds.omop.plan.execute(plan,
+  out = list(baseline = "D"),
+  symbol = "omop",
+  conns = conns
+)
+
+# Now use D with standard DataSHIELD analysis functions
+dsBaseClient::ds.summary("D")
+dsBaseClient::ds.dim("D")
+```
+
+### 5. Clean Up
+
+```{r cleanup}
+ds.omop.detach(symbol = "omop", conns = conns)
+DSI::datashield.logout(conns)
+```
+
+## One-Call Shortcut
+
+For quick analyses, use `ds.omop.quick()`:
+
+```{r quick}
+ds.omop.attach(resource = "project.omop_cdm", conns = conns)
+
+ds.omop.quick(
+  baseline_tables = list(
+    person = c("gender_concept_id", "year_of_birth")
+  ),
+  event_table = "condition_occurrence",
+  event_concepts = c(201826, 255573),
+  out_baseline = "D",
+  out_events = "E",
+  symbol = "omop",
+  conns = conns
+)
+
+# D and E are now available as server-side data frames
+```
+
+## Migration from v1
+
+If you used dsOMOPClient v1 or dsOMOPHelper, see the migration table:
+
+| v1 | v2 |
+|---|---|
+| `ds.omop(conns, resource)` | `ds.omop.attach(resource, conns = conns)` |
+| `db$get("person")` | `ds.omop.get("person", ...)` |
+| `db$tables()` | `ds.omop.listTables()` |
+| `ds.omop.helper(...)$auto()` | `ds.omop.auto()` |
+
+For temporary v1 server compatibility:
+
+```{r legacy}
+legacy <- ds.omop.legacy.v1()
+db <- legacy$ds.omop(conns, resource)
+db$get("person")
+```
