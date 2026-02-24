@@ -19,7 +19,11 @@ Depends:
 Imports:
     DSI,
     methods,
-    stats
+    stats,
+    shiny (>= 1.7.0),
+    bslib (>= 0.5.0),
+    DT,
+    jsonlite
 Suggests:
     DSLite,
     testthat (>= 3.0.0),

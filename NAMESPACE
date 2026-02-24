@@ -66,9 +66,17 @@ export(ds.omop.domain.coverage)
 export(ds.omop.missingness)
 export(ds.omop.value.counts)
 
+# Exploration (OMOP Studio)
+export(ds.omop.concept.prevalence)
+export(ds.omop.value.histogram)
+export(ds.omop.value.quantiles)
+export(ds.omop.date.counts)
+export(ds.omop.studio)
+
 # Print method
 S3method(print, omop_plan)
 
 # Imports
 import(DSI)
+importFrom(jsonlite, toJSON, fromJSON)
 importFrom(stats, setNames)
