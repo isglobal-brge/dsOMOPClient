@@ -1,14 +1,15 @@
 # ==============================================================================
 # dsOMOPClient v2 - OMOP Studio (Shiny App)
 # ==============================================================================
-# An ATLAS-like interactive exploration + plan authoring tool.
+# A concept-centric interactive exploration + plan authoring tool.
+# Workflow: Table -> Concept Columns -> Observed Concepts -> Drilldown.
 # All data fetched via dsOMOPClient CLI -> DataSHIELD aggregate endpoints.
 # ==============================================================================
 
 #' Launch OMOP Studio
 #'
 #' Opens an interactive Shiny app for OMOP CDM exploration, vocabulary
-#' browsing, concept prevalence analysis, cohort management, and plan
+#' browsing, concept drilldown analysis, cohort management, and plan
 #' authoring. Requires an active DataSHIELD session created via
 #' \code{\link{ds.omop.connect}}.
 #'
@@ -32,6 +33,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
   function(request) {
     bslib::page_navbar(
       title = "OMOP Studio",
+      id = "main_nav",
       theme = bslib::bs_theme(
         version = 5, bootswatch = "flatly",
         "navbar-bg" = "#2c3e50"
@@ -51,49 +53,45 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
                               color: #2c3e50; }
         .metric-card .label { color: #7f8c8d; font-size: 0.9em; }
         .suppressed { color: #e74c3c; font-style: italic; }
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background-color: #ecf0f1 !important; }
+        .concept-badge { display: inline-block; padding: 0.3em 0.6em;
+                         background: #3498db; color: white;
+                         border-radius: 4px; font-size: 0.85em;
+                         margin: 0.2em; }
       ")),
 
-      # --- Tab A: Connections ---
+      # --- Tab 1: Connections ---
       bslib::nav_panel("Connections", icon = shiny::icon("plug"),
         .mod_connections_ui("conn")
       ),
 
-      # --- Tab B: Catalog ---
-      bslib::nav_panel("Catalog", icon = shiny::icon("database"),
-        .mod_catalog_ui("catalog")
+      # --- Tab 2: Explore ---
+      bslib::nav_panel("Explore", icon = shiny::icon("compass"),
+        .mod_table_concepts_ui("explore")
       ),
 
-      # --- Tab C: Vocabulary ---
+      # --- Tab 3: Drilldown ---
+      bslib::nav_panel("Drilldown", icon = shiny::icon("magnifying-glass-chart"),
+        .mod_concept_drilldown_ui("drilldown")
+      ),
+
+      # --- Tab 4: Locator ---
+      bslib::nav_panel("Locator", icon = shiny::icon("location-dot"),
+        .mod_concept_locator_ui("locator")
+      ),
+
+      # --- Tab 5: Vocabulary ---
       bslib::nav_panel("Vocabulary", icon = shiny::icon("book"),
         .mod_vocab_ui("vocab")
       ),
 
-      # --- Tab D: Observed Concepts ---
-      bslib::nav_panel("Concepts", icon = shiny::icon("chart-bar"),
-        .mod_observed_ui("observed")
-      ),
-
-      # --- Tab E: Values ---
-      bslib::nav_panel("Values", icon = shiny::icon("chart-line"),
-        .mod_values_ui("values")
-      ),
-
-      # --- Tab F: Trends ---
-      bslib::nav_panel("Trends", icon = shiny::icon("clock"),
-        .mod_trends_ui("trends")
-      ),
-
-      # --- Tab G: Cohorts ---
-      bslib::nav_panel("Cohorts", icon = shiny::icon("users"),
-        .mod_cohorts_ui("cohorts")
-      ),
-
-      # --- Tab H: Plan Builder ---
+      # --- Tab 6: Plan Builder ---
       bslib::nav_panel("Plan Builder", icon = shiny::icon("hammer"),
-        .mod_plans_ui("plans")
+        .mod_plan_from_explorer_ui("plans")
       ),
 
-      # --- Tab I: Session ---
+      # --- Tab 7: Session ---
       bslib::nav_panel("Session", icon = shiny::icon("server"),
         .mod_session_ui("session_tab")
       )
@@ -112,6 +110,10 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       symbol = symbol,
       status = NULL,
       tables = NULL,
+      selected_table = NULL,
+      selected_concept_col = NULL,
+      selected_concept_id = NULL,
+      selected_concept_name = NULL,
       concept_set = integer(0),
       plan = ds.omop.plan(),
       plan_outputs = list()
@@ -132,13 +134,11 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
 
     # Module servers
     .mod_connections_server("conn", state)
-    .mod_catalog_server("catalog", state)
+    .mod_table_concepts_server("explore", state, session)
+    .mod_concept_drilldown_server("drilldown", state)
+    .mod_concept_locator_server("locator", state)
     .mod_vocab_server("vocab", state)
-    .mod_observed_server("observed", state)
-    .mod_values_server("values", state)
-    .mod_trends_server("trends", state)
-    .mod_cohorts_server("cohorts", state)
-    .mod_plans_server("plans", state)
+    .mod_plan_from_explorer_server("plans", state)
     .mod_session_server("session_tab", state)
   }
 }
@@ -168,8 +168,32 @@ isTRUE_vec <- function(x) {
   !is.na(x) & x == TRUE
 }
 
+# Helper: get concept columns from a table's column metadata
+.get_concept_columns <- function(col_df) {
+  if (is.null(col_df) || !is.data.frame(col_df)) return(character(0))
+  if (!"concept_role" %in% names(col_df)) return(character(0))
+  col_df$column_name[col_df$concept_role != "non_concept"]
+}
+
+# Utility: parse comma-separated IDs
+.parse_ids <- function(s) {
+  if (is.null(s) || nchar(trimws(s)) == 0) return(NULL)
+  ids <- trimws(strsplit(s, ",")[[1]])
+  ids <- ids[nchar(ids) > 0]
+  as.integer(ids)
+}
+
+# Utility: format number with suppression check
+.fmt_count <- function(x) {
+  if (is.null(x) || is.na(x)) {
+    shiny::span(class = "suppressed", "suppressed")
+  } else {
+    format(x, big.mark = ",")
+  }
+}
+
 # ==============================================================================
-# MODULE A: Connections
+# MODULE 1: Connections (kept as-is)
 # ==============================================================================
 
 .mod_connections_ui <- function(id) {
@@ -216,7 +240,6 @@ isTRUE_vec <- function(x) {
       }
 
       cards <- lapply(srv_names, function(srv) {
-        # Check ping
         alive <- FALSE
         ping_entry <- if (!is.null(st$ping)) st$ping[[srv]] else NULL
         if (!is.null(ping_entry)) {
@@ -232,11 +255,9 @@ isTRUE_vec <- function(x) {
         status_class <- if (alive) "status-ok" else "status-err"
         status_text <- if (alive) "Connected" else "Error"
 
-        # Build info items
         items <- list(shiny::p(shiny::strong("Status: "),
                                shiny::span(status_text, class = status_class)))
 
-        # Capabilities (may be NULL)
         caps <- if (!is.null(st$capabilities)) st$capabilities[[srv]] else NULL
         if (!is.null(caps)) {
           if (!is.null(caps$dbms))
@@ -282,115 +303,89 @@ isTRUE_vec <- function(x) {
 }
 
 # ==============================================================================
-# MODULE B: Catalog Explorer
+# MODULE 2: Explore (Table -> Concepts)
+# Replaces old Catalog + Observed Concepts tabs
 # ==============================================================================
 
-.mod_catalog_ui <- function(id) {
+.mod_table_concepts_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
-      title = "Catalog",
-      shiny::selectInput(ns("schema_filter"), "Schema Category",
-        choices = c("All", "CDM", "Vocabulary", "Results"),
-        selected = "CDM"
-      ),
-      shiny::textInput(ns("table_search"), "Search tables",
-                       placeholder = "Type to filter..."),
-      shiny::hr(),
-      # FIX #1: replaced actionLink list with a selectInput dropdown
-      shiny::selectInput(ns("selected_table"), "Select Table",
-                         choices = NULL)
-    ),
-    bslib::card(
-      bslib::card_header(shiny::textOutput(ns("selected_table_title"))),
-      bslib::card_body(
-        DT::DTOutput(ns("columns_table"))
-      )
+      title = "Explore", width = 300,
+      shiny::selectInput(ns("table"), "Table", choices = NULL),
+      shiny::selectInput(ns("concept_col"), "Concept Column", choices = NULL),
+      shiny::selectInput(ns("metric"), "Metric",
+        choices = c("Distinct Persons" = "persons",
+                    "Total Records" = "records")),
+      shiny::numericInput(ns("top_n"), "Top N", 30, 5, 200, 5),
+      shiny::actionButton(ns("run_btn"), "Run",
+                          class = "btn-primary w-100")
     ),
     bslib::card(
       bslib::card_header("Table Statistics"),
       bslib::card_body(
         shiny::uiOutput(ns("table_stats"))
       )
+    ),
+    bslib::card(
+      bslib::card_header(
+        shiny::textOutput(ns("results_title"))
+      ),
+      bslib::card_body(
+        shiny::plotOutput(ns("bar_chart"), height = "400px"),
+        DT::DTOutput(ns("results_dt"))
+      )
     )
   )
 }
 
-.mod_catalog_server <- function(id, state) {
+.mod_table_concepts_server <- function(id, state, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
-    ns <- session$ns
+    prevalence_data <- shiny::reactiveVal(NULL)
 
-    filtered_tables <- shiny::reactive({
-      tbls <- state$tables
-      if (is.null(tbls)) return(NULL)
-      # Use first server
-      srv_name <- names(tbls)[1]
-      df <- tbls[[srv_name]]
-      if (!is.data.frame(df)) return(NULL)
-
-      if (input$schema_filter != "All") {
-        df <- df[df$schema_category == input$schema_filter, , drop = FALSE]
-      }
-      search <- tolower(input$table_search)
-      if (nchar(search) > 0) {
-        df <- df[grepl(search, df$table_name, fixed = TRUE), , drop = FALSE]
-      }
-      df
-    })
-
-    # FIX #1: Update the selectInput dropdown when the filtered table list
-    # changes, instead of creating observeEvent inside observe.
+    # Populate table dropdown from state$tables
     shiny::observe({
-      df <- filtered_tables()
-      if (is.null(df) || nrow(df) == 0) {
-        choices <- stats::setNames(character(0), character(0))
-      } else {
-        # Build labels with a badge hint for has_person_id
-        labels <- vapply(seq_len(nrow(df)), function(i) {
-          tbl <- df$table_name[i]
-          if (isTRUE(df$has_person_id[i])) {
-            paste0(tbl, " [person_id]")
-          } else {
-            tbl
-          }
-        }, character(1))
-        choices <- stats::setNames(df$table_name, labels)
+      tbl_choices <- .get_person_tables(state$tables)
+      if (length(tbl_choices) == 0) {
+        tbl_choices <- c("condition_occurrence", "drug_exposure",
+                         "measurement", "procedure_occurrence",
+                         "observation", "visit_occurrence")
       }
-      shiny::updateSelectInput(session, "selected_table", choices = choices)
+      shiny::updateSelectInput(session, "table", choices = tbl_choices)
     })
 
-    output$selected_table_title <- shiny::renderText({
-      tbl <- input$selected_table
-      if (is.null(tbl) || nchar(tbl) == 0) {
-        "Select a table"
-      } else {
-        paste("Columns:", tbl)
-      }
-    })
-
-    output$columns_table <- DT::renderDT({
-      tbl <- input$selected_table
-      if (is.null(tbl) || nchar(tbl) == 0) return(NULL)
+    # When table changes, fetch columns and populate concept column dropdown
+    shiny::observeEvent(input$table, {
+      tbl <- input$table
+      if (is.null(tbl) || nchar(tbl) == 0) return()
       tryCatch({
-        cols <- ds.omop.columns(tbl, symbol = state$symbol)
-        srv <- names(cols)[1]
-        df <- cols[[srv]]
-        if (is.data.frame(df)) {
-          DT::datatable(df, options = list(pageLength = 25, dom = "ft"),
-                        rownames = FALSE, selection = "none")
+        cols_res <- ds.omop.columns(tbl, symbol = state$symbol)
+        srv <- names(cols_res)[1]
+        col_df <- cols_res[[srv]]
+        concept_cols <- .get_concept_columns(col_df)
+        if (length(concept_cols) > 0) {
+          # Prefer domain_concept column
+          domain_cols <- col_df$column_name[col_df$concept_role == "domain_concept"]
+          selected <- if (length(domain_cols) > 0) domain_cols[1]
+                      else concept_cols[1]
+          shiny::updateSelectInput(session, "concept_col",
+                                   choices = concept_cols,
+                                   selected = selected)
+        } else {
+          shiny::updateSelectInput(session, "concept_col",
+                                   choices = character(0))
         }
       }, error = function(e) {
-        shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error"
-        )
-        NULL
+        shiny::updateSelectInput(session, "concept_col",
+                                 choices = character(0))
       })
-    })
+    }, ignoreInit = TRUE)
 
+    # Table stats
     output$table_stats <- shiny::renderUI({
-      tbl <- input$selected_table
+      tbl <- input$table
       if (is.null(tbl) || nchar(tbl) == 0) {
-        return(shiny::p("Select a table to see statistics."))
+        return(shiny::p("Select a table to begin exploring."))
       }
       tryCatch({
         stats_res <- ds.omop.table.stats(tbl, stats = c("rows", "persons"),
@@ -415,11 +410,547 @@ isTRUE_vec <- function(x) {
         shiny::p(class = "text-danger", conditionMessage(e))
       })
     })
+
+    # Run concept prevalence
+    shiny::observeEvent(input$run_btn, {
+      shiny::req(input$table, input$concept_col)
+      shiny::showNotification("Querying...", type = "message",
+                              duration = 2, id = "prev_loading")
+      tryCatch({
+        res <- ds.omop.concept.prevalence(
+          table = input$table, concept_col = input$concept_col,
+          metric = input$metric, top_n = input$top_n,
+          symbol = state$symbol
+        )
+        srv <- names(res)[1]
+        prevalence_data(res[[srv]])
+        shiny::removeNotification("prev_loading")
+      }, error = function(e) {
+        shiny::removeNotification("prev_loading")
+        shiny::showNotification(
+          paste("Error:", conditionMessage(e)), type = "error"
+        )
+      })
+    })
+
+    output$results_title <- shiny::renderText({
+      paste("Top concepts in", input$table)
+    })
+
+    output$bar_chart <- shiny::renderPlot({
+      df <- prevalence_data()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
+      if (!metric_col %in% names(df)) return(NULL)
+
+      label_col <- if ("concept_name" %in% names(df)) "concept_name"
+        else "concept_id"
+      df$label <- substr(as.character(df[[label_col]]), 1, 40)
+      df$y <- as.numeric(df[[metric_col]])
+      df <- df[!is.na(df$y), , drop = FALSE]
+      if (nrow(df) == 0) return(NULL)
+
+      df <- df[order(df$y, decreasing = TRUE), ]
+      n <- min(nrow(df), 20)
+      df <- df[seq_len(n), ]
+
+      par(mar = c(5, 12, 2, 2))
+      barplot(
+        rev(df$y), names.arg = rev(df$label),
+        horiz = TRUE, las = 1, col = "#3498db",
+        xlab = if (input$metric == "persons")
+          "Distinct Persons" else "Records",
+        cex.names = 0.75
+      )
+    })
+
+    output$results_dt <- DT::renderDT({
+      df <- prevalence_data()
+      if (is.null(df) || !is.data.frame(df)) return(NULL)
+      DT::datatable(df, options = list(pageLength = 20, dom = "ftip"),
+                    rownames = FALSE, selection = "single")
+    })
+
+    # Row click -> navigate to Drilldown
+    shiny::observeEvent(input$results_dt_rows_selected, {
+      df <- prevalence_data()
+      idx <- input$results_dt_rows_selected
+      if (!is.null(idx) && !is.null(df) && idx <= nrow(df)) {
+        state$selected_table <- input$table
+        state$selected_concept_col <- input$concept_col
+        state$selected_concept_id <- as.integer(df$concept_id[idx])
+        state$selected_concept_name <- as.character(
+          df$concept_name[idx] %||% ""
+        )
+        # Navigate to Drilldown tab
+        shiny::updateNavbarPage(parent_session, "main_nav",
+                                selected = "Drilldown")
+      }
+    })
   })
 }
 
 # ==============================================================================
-# MODULE C: Vocabulary Browser
+# MODULE 3: Concept Drilldown
+# Replaces old Values + Trends tabs
+# ==============================================================================
+
+.mod_concept_drilldown_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Concept Info", width = 300,
+      shiny::uiOutput(ns("concept_info")),
+      shiny::hr(),
+      shiny::actionButton(ns("add_to_set"), "Add to Concept Set",
+                          class = "btn-outline-primary w-100 mb-2"),
+      shiny::actionButton(ns("add_to_plan"), "Add to Plan",
+                          class = "btn-outline-success w-100 mb-2"),
+      shiny::actionButton(ns("reload"), "Reload",
+                          class = "btn-outline-secondary w-100")
+    ),
+
+    # Summary metrics
+    bslib::card(
+      bslib::card_header("Summary"),
+      bslib::card_body(
+        shiny::uiOutput(ns("summary_metrics"))
+      )
+    ),
+
+    # Numeric distribution (conditional)
+    shiny::conditionalPanel(
+      condition = paste0("output['", ns("has_numeric"), "']"),
+      bslib::card(
+        bslib::card_header("Numeric Distribution"),
+        bslib::card_body(
+          shiny::plotOutput(ns("histogram_plot"), height = "300px"),
+          DT::DTOutput(ns("quantiles_dt"))
+        )
+      )
+    ),
+
+    # Categorical values (conditional)
+    shiny::conditionalPanel(
+      condition = paste0("output['", ns("has_categorical"), "']"),
+      bslib::card(
+        bslib::card_header("Categorical Values"),
+        bslib::card_body(
+          shiny::plotOutput(ns("categorical_plot"), height = "300px"),
+          DT::DTOutput(ns("categorical_dt"))
+        )
+      )
+    ),
+
+    # Date coverage (conditional)
+    shiny::conditionalPanel(
+      condition = paste0("output['", ns("has_dates"), "']"),
+      bslib::card(
+        bslib::card_header("Date Coverage"),
+        bslib::card_body(
+          shiny::plotOutput(ns("date_plot"), height = "250px"),
+          shiny::uiOutput(ns("date_range_info"))
+        )
+      )
+    ),
+
+    # Missingness (always shown)
+    bslib::card(
+      bslib::card_header("Missingness"),
+      bslib::card_body(
+        shiny::plotOutput(ns("missingness_plot"), height = "250px")
+      )
+    )
+  )
+}
+
+.mod_concept_drilldown_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+    drilldown_data <- shiny::reactiveVal(NULL)
+
+    # Auto-trigger when concept changes
+    shiny::observeEvent(state$selected_concept_id, {
+      cid <- state$selected_concept_id
+      tbl <- state$selected_table
+      if (is.null(cid) || is.null(tbl)) return()
+      .run_drilldown(state, drilldown_data)
+    })
+
+    shiny::observeEvent(input$reload, {
+      .run_drilldown(state, drilldown_data)
+    })
+
+    .run_drilldown <- function(state, drilldown_data) {
+      cid <- state$selected_concept_id
+      tbl <- state$selected_table
+      if (is.null(cid) || is.null(tbl)) return()
+
+      shiny::showNotification("Loading drilldown...", type = "message",
+                              duration = 3, id = "dd_loading")
+      tryCatch({
+        res <- ds.omop.concept.drilldown(
+          table = tbl, concept_id = cid,
+          symbol = state$symbol
+        )
+        drilldown_data(res)
+        shiny::removeNotification("dd_loading")
+      }, error = function(e) {
+        shiny::removeNotification("dd_loading")
+        shiny::showNotification(
+          paste("Drilldown error:", conditionMessage(e)), type = "error"
+        )
+        drilldown_data(NULL)
+      })
+    }
+
+    # Concept info sidebar
+    output$concept_info <- shiny::renderUI({
+      cid <- state$selected_concept_id
+      if (is.null(cid)) {
+        return(shiny::p("No concept selected.",
+                        shiny::br(),
+                        "Use the Explore tab to select a concept."))
+      }
+      shiny::tagList(
+        shiny::p(shiny::strong("Concept ID: "), as.character(cid)),
+        shiny::p(shiny::strong("Name: "),
+                 as.character(state$selected_concept_name %||% "")),
+        shiny::p(shiny::strong("Table: "),
+                 as.character(state$selected_table %||% ""))
+      )
+    })
+
+    # Add to concept set
+    shiny::observeEvent(input$add_to_set, {
+      cid <- state$selected_concept_id
+      if (is.null(cid)) return()
+      current <- state$concept_set
+      if (!cid %in% current) {
+        state$concept_set <- c(current, cid)
+        shiny::showNotification(
+          paste("Added concept", cid, "to set"),
+          type = "message", duration = 2
+        )
+      }
+    })
+
+    # Add to plan as events output
+    shiny::observeEvent(input$add_to_plan, {
+      cid <- state$selected_concept_id
+      tbl <- state$selected_table
+      if (is.null(cid) || is.null(tbl)) return()
+      tryCatch({
+        nm <- paste0("events_", cid)
+        state$plan <- ds.omop.plan.events(
+          state$plan, name = nm, table = tbl,
+          concept_set = as.integer(cid)
+        )
+        shiny::showNotification(
+          paste("Added events output for concept", cid),
+          type = "message", duration = 3
+        )
+      }, error = function(e) {
+        shiny::showNotification(
+          paste("Error:", conditionMessage(e)), type = "error"
+        )
+      })
+    })
+
+    # Conditional panel outputs (must be text for JS condition)
+    output$has_numeric <- shiny::reactive({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(FALSE)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      !is.null(d$numeric_summary)
+    })
+    shiny::outputOptions(output, "has_numeric", suspendWhenHidden = FALSE)
+
+    output$has_categorical <- shiny::reactive({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(FALSE)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      !is.null(d$categorical_values) && is.data.frame(d$categorical_values) &&
+        nrow(d$categorical_values) > 0
+    })
+    shiny::outputOptions(output, "has_categorical", suspendWhenHidden = FALSE)
+
+    output$has_dates <- shiny::reactive({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(FALSE)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      !is.null(d$date_range)
+    })
+    shiny::outputOptions(output, "has_dates", suspendWhenHidden = FALSE)
+
+    # --- Summary metrics ---
+    output$summary_metrics <- shiny::renderUI({
+      dd <- drilldown_data()
+      if (is.null(dd)) {
+        return(shiny::p("Select a concept from the Explore tab."))
+      }
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      s <- d$summary
+
+      metrics <- list(
+        shiny::div(class = "metric-card d-inline-block mx-3",
+          shiny::div(class = "value", .fmt_count(s$n_records)),
+          shiny::div(class = "label", "Records")
+        ),
+        shiny::div(class = "metric-card d-inline-block mx-3",
+          shiny::div(class = "value", .fmt_count(s$n_persons)),
+          shiny::div(class = "label", "Persons")
+        )
+      )
+
+      if (!is.null(s$records_per_person_mean) && !is.na(s$records_per_person_mean)) {
+        metrics <- c(metrics, list(
+          shiny::div(class = "metric-card d-inline-block mx-3",
+            shiny::div(class = "value",
+                       format(round(s$records_per_person_mean, 2), nsmall = 2)),
+            shiny::div(class = "label", "Records/Person")
+          )
+        ))
+      }
+
+      if (!is.null(s$pct_persons_multi) && !is.na(s$pct_persons_multi)) {
+        metrics <- c(metrics, list(
+          shiny::div(class = "metric-card d-inline-block mx-3",
+            shiny::div(class = "value",
+                       paste0(format(s$pct_persons_multi, nsmall = 1), "%")),
+            shiny::div(class = "label", "Multi-record Persons")
+          )
+        ))
+      }
+
+      shiny::div(class = "d-flex flex-wrap justify-content-center", metrics)
+    })
+
+    # --- Numeric histogram ---
+    output$histogram_plot <- shiny::renderPlot({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      if (is.null(d$numeric_summary) || is.null(d$numeric_summary$histogram)) {
+        return(NULL)
+      }
+      df <- d$numeric_summary$histogram
+      if (!is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      cols <- ifelse(is.na(df$count) | df$suppressed, "#e74c3c", "#3498db")
+      y <- df$count; y[is.na(y)] <- 0
+      mids <- (df$bin_start + df$bin_end) / 2
+      par(mar = c(5, 5, 2, 2))
+      barplot(y, names.arg = round(mids, 1), col = cols,
+              xlab = "value_as_number", ylab = "Count",
+              las = 2, cex.names = 0.7)
+      legend("topright", legend = c("OK", "Suppressed"),
+             fill = c("#3498db", "#e74c3c"), cex = 0.8)
+    })
+
+    output$quantiles_dt <- DT::renderDT({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      if (is.null(d$numeric_summary) ||
+          is.null(d$numeric_summary$quantiles)) return(NULL)
+      df <- d$numeric_summary$quantiles
+      if (!is.data.frame(df)) return(NULL)
+      DT::datatable(df, options = list(pageLength = 10, dom = "t"),
+                    rownames = FALSE, selection = "none")
+    })
+
+    # --- Categorical values ---
+    output$categorical_plot <- shiny::renderPlot({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      df <- d$categorical_values
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      df$label <- substr(as.character(df$concept_name), 1, 30)
+      df$y <- as.numeric(df$n)
+      df <- df[!is.na(df$y), , drop = FALSE]
+      if (nrow(df) == 0) return(NULL)
+
+      df <- df[order(df$y, decreasing = TRUE), ]
+      n <- min(nrow(df), 15)
+      df <- df[seq_len(n), ]
+
+      par(mar = c(5, 10, 2, 2))
+      barplot(rev(df$y), names.arg = rev(df$label),
+              horiz = TRUE, las = 1, col = "#2ecc71",
+              xlab = "Count", cex.names = 0.75)
+    })
+
+    output$categorical_dt <- DT::renderDT({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      df <- d$categorical_values
+      if (is.null(df) || !is.data.frame(df)) return(NULL)
+      DT::datatable(df, options = list(pageLength = 10, dom = "ftip"),
+                    rownames = FALSE, selection = "none")
+    })
+
+    # --- Date coverage ---
+    output$date_plot <- shiny::renderPlot({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      if (is.null(d$date_range) || is.null(d$date_range$date_counts)) {
+        return(NULL)
+      }
+      df <- d$date_range$date_counts
+      if (!is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      df <- df[order(df$period), ]
+      y <- as.numeric(df$n_records); y[is.na(y)] <- 0
+      cols <- ifelse(is.na(df$n_records) | df$suppressed,
+                     "#e74c3c", "#2c3e50")
+      par(mar = c(7, 5, 2, 2))
+      barplot(y, names.arg = df$period, col = cols,
+              ylab = "Records", las = 2, cex.names = 0.7)
+    })
+
+    output$date_range_info <- shiny::renderUI({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      dr <- d$date_range
+      if (is.null(dr)) return(NULL)
+
+      shiny::tags$dl(class = "row",
+        shiny::tags$dt(class = "col-sm-4", "Date Column"),
+        shiny::tags$dd(class = "col-sm-8",
+                       as.character(dr$column %||% "")),
+        shiny::tags$dt(class = "col-sm-4", "Safe Min"),
+        shiny::tags$dd(class = "col-sm-8",
+                       as.character(dr$min_date_safe %||% "N/A")),
+        shiny::tags$dt(class = "col-sm-4", "Safe Max"),
+        shiny::tags$dd(class = "col-sm-8",
+                       as.character(dr$max_date_safe %||% "N/A"))
+      )
+    })
+
+    # --- Missingness ---
+    output$missingness_plot <- shiny::renderPlot({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      df <- d$missingness
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      df <- df[order(df$missing_rate, decreasing = TRUE), ]
+      par(mar = c(5, 12, 2, 2))
+      barplot(rev(df$missing_rate * 100),
+              names.arg = rev(df$column_name),
+              horiz = TRUE, las = 1, col = "#e67e22",
+              xlab = "Missing %", xlim = c(0, 100),
+              cex.names = 0.7)
+    })
+  })
+}
+
+# ==============================================================================
+# MODULE 4: Concept Locator
+# ==============================================================================
+
+.mod_concept_locator_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Locate Concepts", width = 300,
+      shiny::textInput(ns("concept_ids"), "Concept IDs (comma-separated)",
+                       placeholder = "201820, 255573"),
+      shiny::actionButton(ns("locate_btn"), "Locate",
+                          class = "btn-primary w-100")
+    ),
+    bslib::card(
+      bslib::card_header("Concept Presence Matrix"),
+      bslib::card_body(
+        DT::DTOutput(ns("presence_dt"))
+      )
+    )
+  )
+}
+
+.mod_concept_locator_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+    locate_data <- shiny::reactiveVal(NULL)
+
+    # Auto-populate from selected concept
+    shiny::observe({
+      cid <- state$selected_concept_id
+      if (!is.null(cid)) {
+        current_text <- input$concept_ids
+        if (is.null(current_text) || nchar(trimws(current_text)) == 0) {
+          shiny::updateTextInput(session, "concept_ids",
+                                 value = as.character(cid))
+        }
+      }
+    })
+
+    shiny::observeEvent(input$locate_btn, {
+      ids <- .parse_ids(input$concept_ids)
+      if (is.null(ids) || length(ids) == 0) {
+        shiny::showNotification("Enter at least one concept ID.",
+                                type = "warning")
+        return()
+      }
+
+      shiny::showNotification("Locating concepts...", type = "message",
+                              duration = 3, id = "locate_loading")
+      tryCatch({
+        res <- ds.omop.concept.locate(
+          concept_ids = ids, symbol = state$symbol
+        )
+        # Combine results from all servers with server column
+        all_results <- data.frame(
+          table_name = character(0), concept_column = character(0),
+          concept_id = integer(0), n_records = numeric(0),
+          n_persons = numeric(0), server = character(0),
+          stringsAsFactors = FALSE
+        )
+        for (srv in names(res)) {
+          df <- res[[srv]]
+          if (is.data.frame(df) && nrow(df) > 0) {
+            df$server <- srv
+            all_results <- rbind(all_results, df)
+          }
+        }
+        locate_data(all_results)
+        shiny::removeNotification("locate_loading")
+      }, error = function(e) {
+        shiny::removeNotification("locate_loading")
+        shiny::showNotification(
+          paste("Error:", conditionMessage(e)), type = "error"
+        )
+      })
+    })
+
+    output$presence_dt <- DT::renderDT({
+      df <- locate_data()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+      DT::datatable(df, options = list(pageLength = 25, dom = "ftip"),
+                    rownames = FALSE, selection = "none")
+    })
+  })
+}
+
+# ==============================================================================
+# MODULE 5: Vocabulary Browser (kept as-is)
 # ==============================================================================
 
 .mod_vocab_ui <- function(id) {
@@ -558,429 +1089,36 @@ isTRUE_vec <- function(x) {
 }
 
 # ==============================================================================
-# MODULE D: Observed Concepts
+# MODULE 6: Plan Builder (reworked with explorer integration)
+# Merges old Plan Builder + Cohorts
 # ==============================================================================
 
-.mod_observed_ui <- function(id) {
-  ns <- shiny::NS(id)
-  bslib::layout_sidebar(
-    sidebar = bslib::sidebar(
-      title = "Concept Prevalence",
-      # FIX #2: dynamic table dropdown, populated from state$tables
-      shiny::selectInput(ns("table"), "Table", choices = NULL),
-      shiny::selectInput(ns("metric"), "Metric",
-        choices = c("Distinct Persons" = "persons",
-                    "Total Records" = "records")),
-      shiny::numericInput(ns("top_n"), "Top N", 30, 5, 200, 5),
-      shiny::actionButton(ns("run_btn"), "Run",
-                          class = "btn-primary w-100")
-    ),
-    bslib::card(
-      bslib::card_header(
-        shiny::textOutput(ns("results_title"))
-      ),
-      bslib::card_body(
-        shiny::plotOutput(ns("bar_chart"), height = "400px"),
-        DT::DTOutput(ns("results_dt"))
-      )
-    )
-  )
-}
-
-.mod_observed_server <- function(id, state) {
-  shiny::moduleServer(id, function(input, output, session) {
-    prevalence_data <- shiny::reactiveVal(NULL)
-
-    # FIX #2: dynamically populate table dropdown from state$tables
-    shiny::observe({
-      tbl_choices <- .get_person_tables(state$tables)
-      if (length(tbl_choices) == 0) {
-        tbl_choices <- c("condition_occurrence", "drug_exposure",
-                         "measurement", "procedure_occurrence",
-                         "observation", "visit_occurrence")
-      }
-      shiny::updateSelectInput(session, "table", choices = tbl_choices)
-    })
-
-    shiny::observeEvent(input$run_btn, {
-      shiny::req(input$table)
-      shiny::showNotification("Querying...", type = "message",
-                              duration = 2, id = "prev_loading")
-      tryCatch({
-        res <- ds.omop.concept.prevalence(
-          table = input$table, metric = input$metric,
-          top_n = input$top_n, symbol = state$symbol
-        )
-        srv <- names(res)[1]
-        prevalence_data(res[[srv]])
-        shiny::removeNotification("prev_loading")
-      }, error = function(e) {
-        shiny::removeNotification("prev_loading")
-        shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error"
-        )
-      })
-    })
-
-    output$results_title <- shiny::renderText({
-      paste("Top concepts in", input$table)
-    })
-
-    output$bar_chart <- shiny::renderPlot({
-      df <- prevalence_data()
-      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
-
-      metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
-      if (!metric_col %in% names(df)) return(NULL)
-
-      # Prepare label
-      label_col <- if ("concept_name" %in% names(df)) "concept_name"
-        else "concept_id"
-      df$label <- substr(as.character(df[[label_col]]), 1, 40)
-      df$y <- as.numeric(df[[metric_col]])
-      df <- df[!is.na(df$y), , drop = FALSE]
-      if (nrow(df) == 0) return(NULL)
-
-      df <- df[order(df$y, decreasing = TRUE), ]
-      n <- min(nrow(df), 20)
-      df <- df[seq_len(n), ]
-
-      par(mar = c(5, 12, 2, 2))
-      barplot(
-        rev(df$y), names.arg = rev(df$label),
-        horiz = TRUE, las = 1, col = "#3498db",
-        xlab = if (input$metric == "persons")
-          "Distinct Persons" else "Records",
-        cex.names = 0.75
-      )
-    })
-
-    output$results_dt <- DT::renderDT({
-      df <- prevalence_data()
-      if (is.null(df) || !is.data.frame(df)) return(NULL)
-      DT::datatable(df, options = list(pageLength = 20, dom = "ftip"),
-                    rownames = FALSE, selection = "none")
-    })
-  })
-}
-
-# ==============================================================================
-# MODULE E: Values / Distributions
-# ==============================================================================
-
-.mod_values_ui <- function(id) {
-  ns <- shiny::NS(id)
-  bslib::layout_sidebar(
-    sidebar = bslib::sidebar(
-      title = "Value Explorer",
-      # FIX #2/#3: dynamic table dropdown, populated from state$tables
-      shiny::selectInput(ns("table"), "Table", choices = NULL),
-      # FIX #3: replaced textInput with selectInput for column
-      shiny::selectInput(ns("column"), "Column", choices = NULL),
-      shiny::radioButtons(ns("mode"), "Analysis",
-        choices = c("Value Counts" = "counts",
-                    "Histogram" = "histogram",
-                    "Quantiles" = "quantiles")),
-      shiny::conditionalPanel(
-        paste0("input['", ns("mode"), "'] == 'histogram'"),
-        shiny::numericInput(ns("bins"), "Bins", 20, 5, 100, 5)
-      ),
-      shiny::actionButton(ns("run_btn"), "Run",
-                          class = "btn-primary w-100")
-    ),
-    bslib::card(
-      bslib::card_header("Results"),
-      bslib::card_body(
-        shiny::plotOutput(ns("value_plot"), height = "350px"),
-        DT::DTOutput(ns("value_dt"))
-      )
-    )
-  )
-}
-
-.mod_values_server <- function(id, state) {
-  shiny::moduleServer(id, function(input, output, session) {
-    result_data <- shiny::reactiveVal(NULL)
-    result_mode <- shiny::reactiveVal("counts")
-
-    # FIX #2: dynamically populate table dropdown from state$tables
-    shiny::observe({
-      tbl_choices <- .get_person_tables(state$tables)
-      if (length(tbl_choices) == 0) {
-        tbl_choices <- c("measurement", "condition_occurrence",
-                         "drug_exposure", "observation",
-                         "procedure_occurrence", "visit_occurrence")
-      }
-      shiny::updateSelectInput(session, "table", choices = tbl_choices)
-    })
-
-    # FIX #3: when the table changes, fetch its columns and populate the
-    # column selectInput. Default to "value_as_number" if present.
-    shiny::observeEvent(input$table, {
-      tbl <- input$table
-      if (is.null(tbl) || nchar(tbl) == 0) return()
-      tryCatch({
-        cols_res <- ds.omop.columns(tbl, symbol = state$symbol)
-        srv <- names(cols_res)[1]
-        col_df <- cols_res[[srv]]
-        if (is.data.frame(col_df) && "column_name" %in% names(col_df)) {
-          col_names <- sort(col_df$column_name)
-          selected <- if ("value_as_number" %in% col_names) {
-            "value_as_number"
-          } else {
-            col_names[1]
-          }
-          shiny::updateSelectInput(session, "column",
-                                   choices = col_names,
-                                   selected = selected)
-        } else {
-          shiny::updateSelectInput(session, "column", choices = character(0))
-        }
-      }, error = function(e) {
-        shiny::showNotification(
-          paste("Error loading columns:", conditionMessage(e)),
-          type = "error"
-        )
-        shiny::updateSelectInput(session, "column", choices = character(0))
-      })
-    }, ignoreInit = TRUE)
-
-    shiny::observeEvent(input$run_btn, {
-      shiny::req(input$column)
-      result_mode(input$mode)
-
-      tryCatch({
-        res <- if (input$mode == "counts") {
-          ds.omop.value.counts(input$table, input$column,
-                               top_n = 30, symbol = state$symbol)
-        } else if (input$mode == "histogram") {
-          ds.omop.value.histogram(input$table, input$column,
-                                   bins = input$bins,
-                                   symbol = state$symbol)
-        } else {
-          ds.omop.value.quantiles(input$table, input$column,
-                                   symbol = state$symbol)
-        }
-        srv <- names(res)[1]
-        result_data(res[[srv]])
-      }, error = function(e) {
-        shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error"
-        )
-      })
-    })
-
-    output$value_plot <- shiny::renderPlot({
-      df <- result_data()
-      mode <- result_mode()
-      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
-
-      if (mode == "counts") {
-        df$y <- as.numeric(df$n)
-        df <- df[!is.na(df$y), , drop = FALSE]
-        if (nrow(df) == 0) return(NULL)
-        n <- min(nrow(df), 15)
-        df <- df[seq_len(n), ]
-        par(mar = c(5, 10, 2, 2))
-        barplot(rev(df$y), names.arg = rev(substr(df$value, 1, 30)),
-                horiz = TRUE, las = 1, col = "#2ecc71",
-                xlab = "Count", cex.names = 0.75)
-      } else if (mode == "histogram") {
-        if (!"count" %in% names(df)) return(NULL)
-        cols <- ifelse(is.na(df$count) | df$suppressed, "#e74c3c", "#3498db")
-        y <- df$count; y[is.na(y)] <- 0
-        mids <- (df$bin_start + df$bin_end) / 2
-        par(mar = c(5, 5, 2, 2))
-        barplot(y, names.arg = round(mids, 1), col = cols,
-                xlab = input$column, ylab = "Count",
-                las = 2, cex.names = 0.7)
-        legend("topright", legend = c("OK", "Suppressed"),
-               fill = c("#3498db", "#e74c3c"), cex = 0.8)
-      } else if (mode == "quantiles") {
-        if (!"value" %in% names(df)) return(NULL)
-        par(mar = c(5, 5, 2, 2))
-        plot(df$probability * 100, df$value, type = "b", pch = 19,
-             col = "#8e44ad", xlab = "Percentile", ylab = "Value",
-             main = paste("Quantiles:", input$column))
-      }
-    })
-
-    output$value_dt <- DT::renderDT({
-      df <- result_data()
-      if (is.null(df) || !is.data.frame(df)) return(NULL)
-      DT::datatable(df, options = list(pageLength = 20, dom = "ftip"),
-                    rownames = FALSE, selection = "none")
-    })
-  })
-}
-
-# ==============================================================================
-# MODULE F: Trends
-# ==============================================================================
-
-.mod_trends_ui <- function(id) {
-  ns <- shiny::NS(id)
-  bslib::layout_sidebar(
-    sidebar = bslib::sidebar(
-      title = "Time Trends",
-      # FIX #4: dynamic table dropdown, populated from state$tables
-      shiny::selectInput(ns("table"), "Table", choices = NULL),
-      shiny::selectInput(ns("granularity"), "Granularity",
-        choices = c("Year" = "year", "Quarter" = "quarter",
-                    "Month" = "month")),
-      shiny::actionButton(ns("run_btn"), "Run",
-                          class = "btn-primary w-100")
-    ),
-    bslib::card(
-      bslib::card_header("Record Counts Over Time"),
-      bslib::card_body(
-        shiny::plotOutput(ns("trend_plot"), height = "400px"),
-        DT::DTOutput(ns("trend_dt"))
-      )
-    )
-  )
-}
-
-.mod_trends_server <- function(id, state) {
-  shiny::moduleServer(id, function(input, output, session) {
-    trend_data <- shiny::reactiveVal(NULL)
-
-    # FIX #4: dynamically populate table dropdown from state$tables
-    shiny::observe({
-      tbl_choices <- .get_person_tables(state$tables)
-      if (length(tbl_choices) == 0) {
-        tbl_choices <- c("condition_occurrence", "drug_exposure",
-                         "measurement", "procedure_occurrence",
-                         "observation", "visit_occurrence")
-      }
-      shiny::updateSelectInput(session, "table", choices = tbl_choices)
-    })
-
-    shiny::observeEvent(input$run_btn, {
-      shiny::req(input$table)
-      tryCatch({
-        res <- ds.omop.date.counts(
-          table = input$table,
-          granularity = input$granularity,
-          symbol = state$symbol
-        )
-        srv <- names(res)[1]
-        trend_data(res[[srv]])
-      }, error = function(e) {
-        shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error"
-        )
-      })
-    })
-
-    output$trend_plot <- shiny::renderPlot({
-      df <- trend_data()
-      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
-      if (!"n_records" %in% names(df)) return(NULL)
-
-      df <- df[order(df$period), ]
-      y <- as.numeric(df$n_records); y[is.na(y)] <- 0
-      cols <- ifelse(is.na(df$n_records) | df$suppressed,
-                     "#e74c3c", "#2c3e50")
-      par(mar = c(7, 5, 2, 2))
-      barplot(y, names.arg = df$period, col = cols,
-              ylab = "Records", las = 2, cex.names = 0.7)
-    })
-
-    output$trend_dt <- DT::renderDT({
-      df <- trend_data()
-      if (is.null(df) || !is.data.frame(df)) return(NULL)
-      DT::datatable(df, options = list(pageLength = 25, dom = "ftip"),
-                    rownames = FALSE, selection = "none")
-    })
-  })
-}
-
-# ==============================================================================
-# MODULE G: Cohorts
-# ==============================================================================
-
-.mod_cohorts_ui <- function(id) {
-  ns <- shiny::NS(id)
-  bslib::layout_columns(
-    col_widths = c(6, 6),
-    bslib::card(
-      bslib::card_header("Available Cohorts"),
-      bslib::card_body(
-        shiny::actionButton(ns("refresh"), "Refresh",
-                            class = "btn-sm btn-outline-primary mb-2"),
-        DT::DTOutput(ns("cohort_list"))
-      )
-    ),
-    bslib::card(
-      bslib::card_header("Set Active Cohort"),
-      bslib::card_body(
-        shiny::numericInput(ns("cohort_id"), "Cohort Definition ID",
-                            value = 1, min = 1, step = 1),
-        shiny::actionButton(ns("set_cohort"), "Set on Plan",
-                            class = "btn-primary"),
-        shiny::hr(),
-        shiny::h6("Current Plan Cohort"),
-        shiny::verbatimTextOutput(ns("current_cohort"))
-      )
-    )
-  )
-}
-
-.mod_cohorts_server <- function(id, state) {
-  shiny::moduleServer(id, function(input, output, session) {
-    cohort_data <- shiny::reactiveVal(NULL)
-
-    refresh_cohorts <- function() {
-      tryCatch({
-        res <- ds.omop.cohort.list(symbol = state$symbol)
-        srv <- names(res)[1]
-        cohort_data(res[[srv]])
-      }, error = function(e) {
-        shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error"
-        )
-      })
-    }
-
-    shiny::observe(refresh_cohorts())
-    shiny::observeEvent(input$refresh, refresh_cohorts())
-
-    output$cohort_list <- DT::renderDT({
-      df <- cohort_data()
-      if (is.null(df) || !is.data.frame(df)) return(NULL)
-      DT::datatable(df, options = list(pageLength = 10, dom = "ftip"),
-                    rownames = FALSE, selection = "single")
-    })
-
-    shiny::observeEvent(input$set_cohort, {
-      cid <- as.integer(input$cohort_id)
-      state$plan <- ds.omop.plan.cohort(state$plan,
-                                         cohort_definition_id = cid)
-      shiny::showNotification(
-        paste("Cohort", cid, "set on plan"),
-        type = "message", duration = 3
-      )
-    })
-
-    output$current_cohort <- shiny::renderText({
-      p <- state$plan
-      if (is.null(p$cohort)) return("None")
-      paste("Cohort ID:", p$cohort$cohort_definition_id %||% "custom spec")
-    })
-  })
-}
-
-# ==============================================================================
-# MODULE H: Plan Builder
-# ==============================================================================
-
-.mod_plans_ui <- function(id) {
+.mod_plan_from_explorer_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
       title = "Add Output", width = 320,
-      shiny::selectInput(ns("output_type"), "Type",
+      # Concept set display
+      bslib::card(
+        bslib::card_header("Current Concept Set"),
+        bslib::card_body(
+          shiny::uiOutput(ns("concept_set_display")),
+          shiny::actionButton(ns("add_current_concept"), "Add Current Concept",
+                              class = "btn-sm btn-outline-primary w-100 mb-2"),
+          shiny::actionButton(ns("add_events_for_set"),
+                              "Add Events for Concept Set",
+                              class = "btn-sm btn-outline-info w-100")
+        )
+      ),
+      shiny::hr(),
+      # Cohort management
+      shiny::numericInput(ns("cohort_id"), "Cohort Definition ID",
+                          value = 1, min = 1, step = 1),
+      shiny::actionButton(ns("set_cohort"), "Set Cohort on Plan",
+                          class = "btn-sm btn-outline-primary w-100 mb-2"),
+      shiny::hr(),
+      # Output type
+      shiny::selectInput(ns("output_type"), "Output Type",
         choices = c("Baseline" = "baseline",
                     "Events (long)" = "event_level",
                     "Events (sparse)" = "sparse",
@@ -1045,8 +1183,77 @@ isTRUE_vec <- function(x) {
   )
 }
 
-.mod_plans_server <- function(id, state) {
+.mod_plan_from_explorer_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
+
+    # Concept set display
+    output$concept_set_display <- shiny::renderUI({
+      ids <- state$concept_set
+      if (length(ids) == 0) return(shiny::p(shiny::em("(empty)")))
+      badges <- lapply(ids, function(cid) {
+        shiny::span(class = "concept-badge", as.character(cid))
+      })
+      shiny::div(badges)
+    })
+
+    # Add current concept from exploration state
+    shiny::observeEvent(input$add_current_concept, {
+      cid <- state$selected_concept_id
+      if (is.null(cid)) {
+        shiny::showNotification("No concept selected in Explore/Drilldown.",
+                                type = "warning")
+        return()
+      }
+      current <- state$concept_set
+      if (!cid %in% current) {
+        state$concept_set <- c(current, cid)
+        shiny::showNotification(
+          paste("Added concept", cid, "to set"),
+          type = "message", duration = 2
+        )
+      }
+    })
+
+    # Add events for concept set
+    shiny::observeEvent(input$add_events_for_set, {
+      ids <- state$concept_set
+      tbl <- state$selected_table
+      if (length(ids) == 0) {
+        shiny::showNotification("Concept set is empty.", type = "warning")
+        return()
+      }
+      if (is.null(tbl)) {
+        tbl <- "condition_occurrence"
+      }
+      tryCatch({
+        nm <- paste0("events_set_", length(state$plan$outputs) + 1)
+        state$plan <- ds.omop.plan.events(
+          state$plan, name = nm, table = tbl,
+          concept_set = as.integer(ids)
+        )
+        shiny::showNotification(
+          paste("Added events output for", length(ids), "concepts"),
+          type = "message", duration = 3
+        )
+      }, error = function(e) {
+        shiny::showNotification(
+          paste("Error:", conditionMessage(e)), type = "error"
+        )
+      })
+    })
+
+    # Set cohort on plan
+    shiny::observeEvent(input$set_cohort, {
+      cid <- as.integer(input$cohort_id)
+      state$plan <- ds.omop.plan.cohort(state$plan,
+                                         cohort_definition_id = cid)
+      shiny::showNotification(
+        paste("Cohort", cid, "set on plan"),
+        type = "message", duration = 3
+      )
+    })
+
+    # Add output (same as old plan builder)
     shiny::observeEvent(input$add_output, {
       otype <- input$output_type
       nm <- input$output_name
@@ -1133,16 +1340,8 @@ isTRUE_vec <- function(x) {
   })
 }
 
-# Utility: parse comma-separated IDs
-.parse_ids <- function(s) {
-  if (is.null(s) || nchar(trimws(s)) == 0) return(NULL)
-  ids <- trimws(strsplit(s, ",")[[1]])
-  ids <- ids[nchar(ids) > 0]
-  as.integer(ids)
-}
-
 # ==============================================================================
-# MODULE I: Session Objects
+# MODULE 7: Session (kept as-is)
 # ==============================================================================
 
 .mod_session_ui <- function(id) {
@@ -1168,7 +1367,6 @@ isTRUE_vec <- function(x) {
     bslib::card(
       bslib::card_header("Missingness Explorer"),
       bslib::card_body(
-        # Dynamic table dropdown for missingness, too
         shiny::selectInput(ns("miss_table"), "Table",
           choices = c("person", "condition_occurrence", "drug_exposure",
                       "measurement", "observation_period",

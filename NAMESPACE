@@ -71,6 +71,8 @@ export(ds.omop.concept.prevalence)
 export(ds.omop.value.histogram)
 export(ds.omop.value.quantiles)
 export(ds.omop.date.counts)
+export(ds.omop.concept.drilldown)
+export(ds.omop.concept.locate)
 export(ds.omop.studio)
 
 # Print method

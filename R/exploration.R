@@ -109,3 +109,49 @@ ds.omop.date.counts <- function(table, date_col = NULL,
                 cohort_table, window)
   )
 }
+
+#' Get concept drilldown profile
+#'
+#' Returns a full drilldown profile for a single concept within a table,
+#' including summary stats, numeric distribution, categorical values,
+#' date coverage, and missingness.
+#'
+#' @param table Character; table name
+#' @param concept_id Integer; concept ID to drill into
+#' @param symbol Character; OMOP session symbol
+#' @param conns DSI connections
+#' @return Named list (per server) with drilldown results
+#' @export
+ds.omop.concept.drilldown <- function(table, concept_id,
+                                       symbol = "omop", conns = NULL) {
+  session <- .get_session(symbol)
+  conns <- conns %||% session$conns
+
+  DSI::datashield.aggregate(
+    conns,
+    expr = call("omopConceptDrilldownDS", session$res_symbol,
+                table, as.integer(concept_id))
+  )
+}
+
+#' Locate concept across all CDM tables
+#'
+#' Searches all CDM tables with concept columns and returns a presence
+#' matrix showing where given concept IDs appear.
+#'
+#' @param concept_ids Integer vector; concept IDs to locate
+#' @param symbol Character; OMOP session symbol
+#' @param conns DSI connections
+#' @return Named list (per server) of data frames
+#' @export
+ds.omop.concept.locate <- function(concept_ids,
+                                    symbol = "omop", conns = NULL) {
+  session <- .get_session(symbol)
+  conns <- conns %||% session$conns
+
+  DSI::datashield.aggregate(
+    conns,
+    expr = call("omopLocateConceptDS", session$res_symbol,
+                as.integer(concept_ids))
+  )
+}
