@@ -45,18 +45,103 @@ ds.omop.plan.cohort <- function(plan,
   plan
 }
 
-#' Add baseline (person-level) tables to the plan
+#' Add a baseline demographics output to the plan
+#'
+#' Produces one row per cohort member with demographics from the person
+#' table and optional derived fields. Requires a cohort to be set.
+#'
+#' @param plan An omop_plan object
+#' @param columns Character vector; person-table columns to include
+#' @param derived Character vector; derived fields to compute
+#'   (e.g. \code{"age_at_index"}, \code{"prior_observation"},
+#'   \code{"future_observation"})
+#' @param name Character; output name
+#' @return The modified plan
+#' @export
+ds.omop.plan.baseline <- function(plan,
+                                  columns = c("gender_concept_id",
+                                              "year_of_birth",
+                                              "race_concept_id"),
+                                  derived = c("age_at_index"),
+                                  name = "baseline") {
+  plan$outputs[[name]] <- list(
+    type = "baseline",
+    columns = columns,
+    derived = derived
+  )
+  plan
+}
+
+#' Add person-level tables to the plan (raw join)
+#'
+#' Joins one or more tables by person_id and merges into a single
+#' wide data.frame. For cohort-aware demographics with derived fields,
+#' use \code{\link{ds.omop.plan.baseline}} instead.
 #'
 #' @param plan An omop_plan object
 #' @param tables Named list; table_name = c(column_names)
 #' @param name Character; output name
 #' @return The modified plan
 #' @export
-ds.omop.plan.baseline <- function(plan, tables,
-                                  name = "baseline") {
+ds.omop.plan.person_level <- function(plan, tables,
+                                      name = "person_data") {
   plan$outputs[[name]] <- list(
     type = "person_level",
     tables = tables
+  )
+  plan
+}
+
+#' Add a survival (time-to-event) output to the plan
+#'
+#' Produces one row per cohort member with event indicator (0/1) and
+#' time-to-event in days. No calendar dates in output.
+#'
+#' @param plan An omop_plan object
+#' @param outcome_table Character; OMOP table containing outcome events
+#' @param outcome_concepts Numeric vector; concept IDs for the outcome
+#' @param tar Named list; time-at-risk with \code{start_offset} and
+#'   \code{end_offset} (days from cohort_start_date)
+#' @param event_order Character; \code{"first"} or \code{"last"} event
+#' @param name Character; output name
+#' @return The modified plan
+#' @export
+ds.omop.plan.survival <- function(plan,
+                                  outcome_table = "condition_occurrence",
+                                  outcome_concepts,
+                                  tar = list(start_offset = 0,
+                                             end_offset = 730),
+                                  event_order = "first",
+                                  name = "survival") {
+  plan$outputs[[name]] <- list(
+    type = "survival",
+    outcome = list(
+      table = outcome_table,
+      concept_set = as.integer(outcome_concepts)
+    ),
+    tar = tar,
+    event_order = event_order
+  )
+  plan
+}
+
+#' Add a concept dictionary output to the plan
+#'
+#' Scans other outputs for concept IDs and produces a lookup table
+#' with concept names, domains, and which outputs reference each concept.
+#'
+#' @param plan An omop_plan object
+#' @param source_outputs Character vector; names of outputs to scan
+#'   (NULL = all non-dictionary outputs)
+#' @param name Character; output name
+#' @return The modified plan
+#' @export
+ds.omop.plan.concept_dictionary <- function(plan,
+                                             source_outputs = NULL,
+                                             name = "concept_dictionary") {
+  plan$outputs[[name]] <- list(
+    type = "concept_dictionary",
+    source_outputs = source_outputs
   )
   plan
 }
@@ -167,6 +252,89 @@ ds.omop.plan.outcome <- function(plan, name, concept_set,
   )
 }
 
+#' Add a cohort membership output to the plan
+#'
+#' Produces the standard OHDSI cohort table as a named output with
+#' row_id, subject_id, cohort_definition_id, cohort_start_date,
+#' cohort_end_date. Requires a cohort to be set.
+#'
+#' @param plan An omop_plan object
+#' @param name Character; output name
+#' @return The modified plan
+#' @export
+ds.omop.plan.cohort_membership <- function(plan,
+                                            name = "cohort_membership") {
+  plan$outputs[[name]] <- list(
+    type = "cohort_membership"
+  )
+  plan
+}
+
+#' Add an intervals (long) output to the plan
+#'
+#' Extracts interval data (observation periods, visits, drug/condition
+#' durations) with start/end days relative to the cohort index date.
+#' Requires a cohort to be set.
+#'
+#' @param plan An omop_plan object
+#' @param tables Character vector; OMOP tables to extract intervals from
+#' @param concept_filter Named list; per-table concept ID filters
+#' @param name Character; output name
+#' @return The modified plan
+#' @export
+ds.omop.plan.intervals <- function(plan,
+                                    tables = c("observation_period",
+                                               "visit_occurrence",
+                                               "drug_exposure",
+                                               "condition_occurrence"),
+                                    concept_filter = NULL,
+                                    name = "intervals") {
+  plan$outputs[[name]] <- list(
+    type = "intervals_long",
+    tables = tables,
+    concept_filter = concept_filter
+  )
+  plan
+}
+
+#' Add a temporal (time-binned) covariates output to the plan
+#'
+#' Produces FeatureExtraction-compatible sparse covariates binned into
+#' time windows relative to the cohort index date. Returns 3 symbols:
+#' \code{<name>.temporalCovariates}, \code{<name>.covariateRef},
+#' \code{<name>.timeRef}. Requires a cohort to be set.
+#'
+#' @param plan An omop_plan object
+#' @param table Character; source OMOP table
+#' @param concept_set Numeric vector; concept IDs to include
+#' @param bin_width Integer; bin width in days
+#' @param window_start Integer; start of window (days from index)
+#' @param window_end Integer; end of window (days from index)
+#' @param analyses Character vector; analyses to compute
+#'   (\code{"binary"}, \code{"count"})
+#' @param name Character; output name
+#' @return The modified plan
+#' @export
+ds.omop.plan.temporal_covariates <- function(plan,
+                                              table,
+                                              concept_set,
+                                              bin_width = 30L,
+                                              window_start = -365L,
+                                              window_end = 0L,
+                                              analyses = c("binary"),
+                                              name = "temporal") {
+  plan$outputs[[name]] <- list(
+    type = "temporal_covariates",
+    table = table,
+    concept_set = as.integer(concept_set),
+    bin_width = as.integer(bin_width),
+    window_start = as.integer(window_start),
+    window_end = as.integer(window_end),
+    analyses = analyses
+  )
+  plan
+}
+
 #' Set plan-wide options
 #'
 #' @param plan An omop_plan object
@@ -264,8 +432,15 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 
 #' Execute a plan and create server-side tables
 #'
+#' Sends the plan to the server for execution. The server-side
+#' \code{omopPlanExecuteDS} assigns each output directly into the
+#' DataSHIELD session as the symbol names specified in \code{out}.
+#' Sparse outputs are split into two symbols:
+#' \code{<name>.covariates} and \code{<name>.covariateRef}.
+#'
 #' @param plan An omop_plan object
-#' @param out Named list; output name -> R symbol mapping
+#' @param out Named character vector; output_name -> symbol_name mapping.
+#'   E.g. \code{c(baseline = "D_base", survival = "D_tte")}
 #' @param symbol Character; OMOP session symbol
 #' @param conns DSI connections
 #' @return Invisible; the output symbol mapping
@@ -276,27 +451,19 @@ ds.omop.plan.execute <- function(plan, out,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  result_symbol <- .generate_symbol("dsOplan")
+  # Single assign call: server assigns each output directly into session
+  exec_symbol <- .generate_symbol("dsOexec")
 
   DSI::datashield.assign.expr(
     conns,
-    symbol = result_symbol,
+    symbol = exec_symbol,
     expr = call("omopPlanExecuteDS",
                 session$res_symbol, plan, out)
   )
 
-  for (out_name in names(out)) {
-    target_sym <- out[[out_name]]
-    extract_expr <- paste0(result_symbol, "[['", out_name, "']]")
-    DSI::datashield.assign.expr(
-      conns,
-      symbol = target_sym,
-      expr = as.symbol(extract_expr)
-    )
-  }
-
+  # exec_symbol holds TRUE (return value); clean up
   tryCatch(
-    DSI::datashield.rm(conns, result_symbol),
+    DSI::datashield.rm(conns, exec_symbol),
     error = function(e) NULL
   )
 
@@ -360,9 +527,38 @@ print.omop_plan <- function(x, ...) {
   cat("Outputs (", length(x$outputs), "):\n")
   for (name in names(x$outputs)) {
     out <- x$outputs[[name]]
-    if (out$type == "person_level") {
-      cat("  [baseline] ", name, ": ",
+    otype <- out$type %||% "event_level"
+
+    if (otype == "person_level") {
+      cat("  [person_level] ", name, ": ",
           length(out$tables), " tables\n")
+    } else if (otype == "baseline") {
+      n_cols <- length(out$columns %||% character(0))
+      n_derived <- length(out$derived %||% character(0))
+      cat("  [baseline] ", name, ": ",
+          n_cols, " columns, ", n_derived, " derived\n")
+    } else if (otype == "survival") {
+      n_concepts <- length(out$outcome$concept_set %||% integer(0))
+      tar_end <- out$tar$end_offset %||% "cohort_end"
+      cat("  [survival] ", name, ": ",
+          out$outcome$table %||% "?", " (",
+          n_concepts, " concepts), TAR 0-", tar_end, " days\n")
+    } else if (otype == "concept_dictionary") {
+      srcs <- out$source_outputs %||% "all"
+      cat("  [dictionary] ", name, ": from ",
+          paste(srcs, collapse = ", "), "\n")
+    } else if (otype == "cohort_membership") {
+      cat("  [cohort] ", name, ": standard OHDSI format\n")
+    } else if (otype == "intervals_long") {
+      n_tbls <- length(out$tables %||% character(0))
+      cat("  [intervals] ", name, ": ",
+          n_tbls, " tables\n")
+    } else if (otype == "temporal_covariates") {
+      bw <- out$bin_width %||% 30L
+      ws <- out$window_start %||% -365L
+      we <- out$window_end %||% 0L
+      cat("  [temporal] ", name, ": ", out$table,
+          " bins=", bw, "d [", ws, ",", we, "]\n")
     } else {
       repr <- out$representation$format %||% "long"
       n_concepts <- length(
