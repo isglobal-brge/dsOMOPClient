@@ -4,7 +4,7 @@
 
 .mod_connections_ui <- function(id) {
   ns <- shiny::NS(id)
-  shiny::div(class = "dsomop-scroll",
+  shiny::div(
     bslib::layout_columns(
       col_widths = 12,
       bslib::card(

@@ -34,6 +34,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     bslib::page_navbar(
       title = "OMOP Studio",
       id = "main_nav",
+      fillable = FALSE,
       theme = bslib::bs_theme(
         version = 5, bootswatch = "flatly",
         "navbar-bg" = "#2c3e50"
@@ -60,8 +61,6 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
                          background: #3498db; color: white;
                          border-radius: 4px; font-size: 0.85em;
                          margin: 0.2em; }
-        .dsomop-scroll { overflow-y: auto;
-                         max-height: calc(100vh - 170px); }
         .server-badge { display: inline-block; padding: 0.15em 0.5em;
                         border-radius: 3px; font-size: 0.75em;
                         margin: 0.1em; font-weight: 600; }

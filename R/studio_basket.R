@@ -709,7 +709,7 @@
           " or use the sidebar controls.")))
       }
 
-      shiny::div(class = "dsomop-scroll", shiny::tagList(sections))
+      shiny::div(shiny::tagList(sections))
     })
 
     # =========================================================================

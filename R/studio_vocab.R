@@ -37,7 +37,7 @@
         )
       ),
       bslib::card_body(
-        shiny::div(class = "dsomop-scroll",
+        shiny::div(
           DT::DTOutput(ns("results_table"))
         )
       )

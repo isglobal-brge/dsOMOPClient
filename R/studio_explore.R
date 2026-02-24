@@ -42,7 +42,7 @@
       ),
       bslib::card_body(
         shiny::plotOutput(ns("bar_chart"), height = "400px"),
-        shiny::div(class = "dsomop-scroll",
+        shiny::div(
           DT::DTOutput(ns("results_dt"))
         ),
         shiny::uiOutput(ns("scope_info"))
