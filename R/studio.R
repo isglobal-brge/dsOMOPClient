@@ -127,22 +127,27 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
         .mod_atlas_ui("atlas")
       ),
 
-      # --- Tab 7: Basket / Cart ---
+      # --- Tab 7: Catalog ---
+      bslib::nav_panel("Catalog", icon = shiny::icon("book-open"),
+        .mod_catalog_ui("catalog")
+      ),
+
+      # --- Tab 8: Basket / Cart ---
       bslib::nav_panel("Basket", icon = shiny::icon("cart-shopping"),
         .mod_basket_ui("basket")
       ),
 
-      # --- Tab 7: Plan Builder ---
+      # --- Tab 9: Plan Builder ---
       bslib::nav_panel("Plan Builder", icon = shiny::icon("hammer"),
         .mod_plan_from_explorer_ui("plans")
       ),
 
-      # --- Tab 8: Script ---
+      # --- Tab 10: Script ---
       bslib::nav_panel("Script", icon = shiny::icon("code"),
         .mod_script_builder_ui("script")
       ),
 
-      # --- Tab 9: Session ---
+      # --- Tab 11: Session ---
       bslib::nav_panel("Session", icon = shiny::icon("server"),
         .mod_session_ui("session_tab")
       )
@@ -216,6 +221,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     .mod_concept_locator_server("locator", state)
     .mod_vocab_server("vocab", state)
     .mod_atlas_server("atlas", state)
+    .mod_catalog_server("catalog", state)
     .mod_basket_server("basket", state)
     .mod_plan_from_explorer_server("plans", state)
     .mod_script_builder_server("script", state)
