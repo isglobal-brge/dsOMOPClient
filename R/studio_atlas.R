@@ -218,10 +218,8 @@
         df$count_value <- as.numeric(df$count_value)
         if (nrow(df) == 0) return()
         vals <- df$count_value[!is.na(df$count_value)]
-        labels <- df$stratum_1
-        # Map concept IDs to labels
-        labels[labels == "8507"] <- "Male"
-        labels[labels == "8532"] <- "Female"
+        cmap <- data$concept_map %||% list()
+        labels <- .atlas_label_stratum(df$stratum_1, cmap)
         labels <- labels[!is.na(df$count_value)]
         if (length(vals) > 0) {
           pie(vals, labels = paste0(labels, " (", vals, ")"),
@@ -259,9 +257,8 @@
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
-        labels <- df$stratum_1
-        labels[labels == "8507"] <- "Male"
-        labels[labels == "8532"] <- "Female"
+        cmap <- data$concept_map %||% list()
+        labels <- .atlas_label_stratum(df$stratum_1, cmap)
         barplot(df$count_value, names.arg = labels,
                 col = c("#3498db", "#e74c3c", "#2ecc71", "#f39c12"),
                 main = "Gender", ylab = "Persons")
@@ -290,7 +287,9 @@
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
-        barplot(df$count_value, names.arg = df$stratum_1,
+        cmap <- data$concept_map %||% list()
+        labels <- .atlas_label_stratum(df$stratum_1, cmap)
+        barplot(df$count_value, names.arg = labels,
                 col = "#2ecc71", main = "Race", ylab = "Persons",
                 horiz = TRUE, las = 1, cex.names = 0.8)
       })
@@ -304,7 +303,9 @@
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
-        barplot(df$count_value, names.arg = df$stratum_1,
+        cmap <- data$concept_map %||% list()
+        labels <- .atlas_label_stratum(df$stratum_1, cmap)
+        barplot(df$count_value, names.arg = labels,
                 col = "#f39c12", main = "Ethnicity", ylab = "Persons",
                 horiz = TRUE, las = 1, cex.names = 0.8)
       })
@@ -436,9 +437,8 @@
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
-        labels <- df$stratum_1
-        labels[labels == "9201"] <- "Inpatient"
-        labels[labels == "9202"] <- "Outpatient"
+        cmap <- data$concept_map %||% list()
+        labels <- .atlas_label_stratum(df$stratum_1, cmap)
         barplot(df$count_value, names.arg = labels,
                 col = c("#3498db", "#2ecc71", "#e74c3c", "#f39c12"),
                 main = "Visit Types", ylab = "Visits")
@@ -556,7 +556,14 @@
     persons_df$count_value[1]
   } else NA
 
-  list(total_persons = total, gender = gender_df, age_dist = age_df)
+  # Resolve gender concept IDs to names
+  concept_map <- list()
+  if (is.data.frame(gender_df) && nrow(gender_df) > 0) {
+    concept_map <- .atlas_resolve_concept_ids(gender_df$stratum_1, state)
+  }
+
+  list(total_persons = total, gender = gender_df, age_dist = age_df,
+       concept_map = concept_map)
 }
 
 .atlas_fetch_person <- function(state, scope, policy) {
@@ -577,12 +584,17 @@
 
   if (!is.data.frame(df)) df <- data.frame()
 
+  # Resolve all concept IDs across analyses
+  all_strata <- if (is.data.frame(df) && nrow(df) > 0) df$stratum_1 else character(0)
+  concept_map <- .atlas_resolve_concept_ids(all_strata, state)
+
   list(
     gender = df[df$analysis_id == 1L, , drop = FALSE],
     yob = df[df$analysis_id == 2L, , drop = FALSE],
     ethnicity = df[df$analysis_id == 5L, , drop = FALSE],
     race = df[df$analysis_id == 8L, , drop = FALSE],
-    age_dist = if (is.data.frame(dist_df)) dist_df else data.frame()
+    age_dist = if (is.data.frame(dist_df)) dist_df else data.frame(),
+    concept_map = concept_map
   )
 }
 
@@ -645,9 +657,18 @@
   .atlas_accumulate_code(state, trend_res)
 
   srv <- names(type_res$per_site)[1]
+  types_df <- .atlas_pick_result(type_res, scope, srv)
+
+  # Resolve visit type concept IDs
+  concept_map <- list()
+  if (is.data.frame(types_df) && nrow(types_df) > 0) {
+    concept_map <- .atlas_resolve_concept_ids(types_df$stratum_1, state)
+  }
+
   list(
-    types = .atlas_pick_result(type_res, scope, srv),
-    trends = .atlas_pick_result(trend_res, scope, srv)
+    types = types_df,
+    trends = .atlas_pick_result(trend_res, scope, srv),
+    concept_map = concept_map
   )
 }
 
@@ -897,6 +918,31 @@
 # ==============================================================================
 # Internal utilities
 # ==============================================================================
+
+# Resolve concept IDs to names for display in plots
+.atlas_resolve_concept_ids <- function(ids, state) {
+  ids <- unique(as.integer(ids[!is.na(ids)]))
+  if (length(ids) == 0) return(list())
+  tryCatch({
+    res <- ds.omop.concept.lookup(ids, symbol = state$symbol)
+    srv <- names(res$per_site)[1]
+    df <- res$per_site[[srv]]
+    if (is.data.frame(df) && nrow(df) > 0) {
+      result <- stats::setNames(as.character(df$concept_name),
+                                as.character(df$concept_id))
+      return(as.list(result))
+    }
+    list()
+  }, error = function(e) list())
+}
+
+# Map stratum IDs to concept names, falling back to raw IDs
+.atlas_label_stratum <- function(stratum_ids, concept_map) {
+  vapply(as.character(stratum_ids), function(id) {
+    nm <- concept_map[[id]]
+    if (!is.null(nm) && nchar(nm) > 0) nm else id
+  }, character(1), USE.NAMES = FALSE)
+}
 
 .atlas_accumulate_code <- function(state, res) {
   if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {

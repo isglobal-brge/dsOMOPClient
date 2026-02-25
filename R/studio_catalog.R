@@ -12,7 +12,10 @@
         choices = c("All" = "", "Condition" = "Condition", "Drug" = "Drug",
                     "Measurement" = "Measurement", "Observation" = "Observation",
                     "Procedure" = "Procedure", "Person" = "Person",
-                    "Visit" = "Visit"),
+                    "Visit" = "Visit", "Death" = "Death",
+                    "Observation Period" = "Observation Period",
+                    "Device" = "Device", "Care Site" = "Care Site",
+                    "General" = "General"),
         selected = ""),
       DT::DTOutput(ns("query_list_dt")),
       .scope_controls_ui(ns)

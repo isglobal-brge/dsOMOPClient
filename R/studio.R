@@ -90,7 +90,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
         .r-string { color: #ce9178; }
         .r-keyword { color: #569cd6; font-weight: bold; }
         .r-number { color: #b5cea8; }
-        .r-function { color: #dcdcaa; }
+        .r-fn { color: #dcdcaa; }
         .r-operator { color: #d4d4d4; font-weight: bold; }
         .r-assign { color: #d4d4d4; }
         .code-output pre { margin: 0; background: transparent;

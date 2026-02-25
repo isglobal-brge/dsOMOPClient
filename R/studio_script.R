@@ -38,7 +38,7 @@
 
   # Function calls (word followed by open paren)
   line <- gsub("\\b([a-zA-Z][a-zA-Z0-9._]*)\\s*\\(",
-               '<span class="r-function">\\1</span>(', line, perl = TRUE)
+               '<span class="r-fn">\\1</span>(', line, perl = TRUE)
 
   # Keywords (override function call styling where applicable)
   keywords <- c("function", "if", "else", "for", "while", "repeat",

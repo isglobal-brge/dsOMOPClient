@@ -26,9 +26,9 @@
       bslib::card_header("Missingness Explorer"),
       bslib::card_body(
         shiny::selectInput(ns("miss_table"), "Table",
-          choices = c("person", "condition_occurrence", "drug_exposure",
-                      "measurement", "observation_period",
-                      "visit_occurrence")),
+          choices = .table_choices(c("person", "condition_occurrence",
+                      "drug_exposure", "measurement",
+                      "observation_period", "visit_occurrence"))),
         shiny::actionButton(ns("miss_btn"), "Check Missingness",
                             class = "btn-sm btn-outline-info mb-2"),
         DT::DTOutput(ns("miss_dt"))
