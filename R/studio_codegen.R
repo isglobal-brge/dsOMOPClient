@@ -13,9 +13,6 @@
 #' @keywords internal
 .studio_codegen_plan <- function(plan, out, symbol = "omop") {
   lines <- character(0)
-  lines <- c(lines, "# --- dsOMOP Extraction Plan ---")
-  lines <- c(lines, "library(dsOMOPClient)")
-  lines <- c(lines, "")
   lines <- c(lines, "plan <- ds.omop.plan()")
 
   # Cohort

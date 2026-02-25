@@ -16,9 +16,9 @@
         bslib::card_header("Quick Add Variable"),
         bslib::card_body(
           shiny::selectInput(ns("add_table"), "Table",
-            choices = c("condition_occurrence", "drug_exposure",
+            choices = .table_choices(c("condition_occurrence", "drug_exposure",
                         "measurement", "procedure_occurrence",
-                        "observation", "visit_occurrence", "person")),
+                        "observation", "visit_occurrence", "person"))),
           shiny::textInput(ns("add_concept_id"), "Concept ID",
                            placeholder = "e.g. 201820"),
           shiny::textInput(ns("add_concept_name"), "Concept Name (optional)",
@@ -39,9 +39,9 @@
         bslib::card_header("Add Variable Block"),
         bslib::card_body(
           shiny::selectInput(ns("block_table"), "Table",
-            choices = c("condition_occurrence", "drug_exposure",
+            choices = .table_choices(c("condition_occurrence", "drug_exposure",
                         "measurement", "procedure_occurrence",
-                        "observation")),
+                        "observation"))),
           shiny::textAreaInput(ns("block_concept_ids"),
             "Concept IDs (comma-separated)",
             placeholder = "201820, 4229440, 316139", rows = 2),
@@ -87,8 +87,8 @@
                                "'] == 'has_concept'"),
             shiny::textInput(ns("filter_concept_id"), "Concept ID"),
             shiny::selectInput(ns("filter_table"), "In Table",
-              choices = c("condition_occurrence", "drug_exposure",
-                          "measurement", "procedure_occurrence"))
+              choices = .table_choices(c("condition_occurrence", "drug_exposure",
+                          "measurement", "procedure_occurrence")))
           ),
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"),
@@ -198,9 +198,7 @@
     bslib::card(
       bslib::card_header("Generated Code"),
       bslib::card_body(
-        shiny::div(class = "code-output",
-          shiny::verbatimTextOutput(ns("cart_code"))
-        )
+        shiny::uiOutput(ns("cart_code_html"))
       )
     )
   )
@@ -214,9 +212,10 @@
     shiny::observe({
       tbl_choices <- .get_person_tables(state$tables)
       if (length(tbl_choices) > 0) {
-        shiny::updateSelectInput(session, "add_table", choices = tbl_choices)
-        shiny::updateSelectInput(session, "block_table", choices = tbl_choices)
-        shiny::updateSelectInput(session, "filter_table", choices = tbl_choices)
+        formatted <- .table_choices(tbl_choices)
+        shiny::updateSelectInput(session, "add_table", choices = formatted)
+        shiny::updateSelectInput(session, "block_table", choices = formatted)
+        shiny::updateSelectInput(session, "filter_table", choices = formatted)
       }
     })
 
@@ -459,8 +458,7 @@
         state$plan <- plan
         code <- cart_to_code(state$cart)
         if (nchar(code) > 0) {
-          state$script_lines <- c(state$script_lines,
-            "# --- Cart to Plan ---", code)
+          state$script_lines <- c(state$script_lines, code)
         }
         shiny::showNotification(
           "Plan generated from cart! See Plan Builder tab.",
@@ -537,7 +535,7 @@
       # Build tree (simple indented list)
       .render_pop_node <- function(pid, depth = 0) {
         p <- pops[[pid]]
-        indent <- paste0("padding-left: ", depth * 1.5, "em;")
+        indent <- paste0("padding-left: ", (depth * 1.5) + 0.5, "em;")
         children_ids <- names(pops)[vapply(pops, function(pp) {
           identical(pp$parent_id, pid)
         }, logical(1))]
@@ -840,13 +838,18 @@
     # =========================================================================
     # Generated Code
     # =========================================================================
-    output$cart_code <- shiny::renderText({
+    output$cart_code_html <- shiny::renderUI({
       cart <- state$cart
       if (length(cart$variables) == 0 && length(cart$filters) == 0 &&
           length(cart$outputs) == 0 && length(cart$blocks) == 0) {
-        return("# Cart is empty. Add variables, filters, and outputs.")
+        return(shiny::p(class = "text-muted",
+          "Cart is empty. Add variables, filters, and outputs."))
       }
-      cart_to_code(cart)
+      code <- cart_to_code(cart)
+      highlighted <- .highlightR(code)
+      shiny::div(class = "code-output",
+        shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))
+      )
     })
   })
 }

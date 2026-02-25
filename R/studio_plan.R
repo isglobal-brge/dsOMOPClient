@@ -245,7 +245,10 @@
     output$code_block <- shiny::renderUI({
       code <- generated_code()
       if (nchar(code) == 0) return(shiny::p("Click 'Generate Code'."))
-      shiny::div(class = "code-output", code)
+      highlighted <- .highlightR(code)
+      shiny::div(class = "code-output",
+        shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))
+      )
     })
   })
 }

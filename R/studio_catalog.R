@@ -346,31 +346,23 @@
       df <- display_data()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
 
-      # Replace NA in sensitive columns with "<suppressed>"
+      # Identify sensitive columns and remove suppressed rows entirely
       q <- selected_query()
       sensitive <- q$sensitive_fields %||% character(0)
       if (length(sensitive) == 0) {
-        # Auto-detect count columns
         sensitive <- names(df)[grepl("^n_|_count$|count_value|num_|n$",
                                      names(df), ignore.case = TRUE)]
       }
 
-      disp <- df
-      for (col in intersect(sensitive, names(disp))) {
-        na_mask <- is.na(disp[[col]])
-        if (any(na_mask)) {
-          disp[[col]] <- as.character(disp[[col]])
-          disp[[col]][na_mask] <- "<suppressed>"
-        }
+      for (col in intersect(sensitive, names(df))) {
+        df <- df[!is.na(df[[col]]), , drop = FALSE]
       }
 
-      DT::datatable(disp,
+      if (nrow(df) == 0) return(NULL)
+
+      DT::datatable(df,
         options = list(pageLength = 20, dom = "ftip", scrollX = TRUE),
         rownames = FALSE, selection = "none"
-      ) |> DT::formatStyle(
-        columns = intersect(sensitive, names(disp)),
-        color = DT::styleEqual("<suppressed>", "#e74c3c"),
-        fontStyle = DT::styleEqual("<suppressed>", "italic")
       )
     })
 

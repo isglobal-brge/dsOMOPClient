@@ -123,8 +123,6 @@
         .add_item("Abbreviation", cdm_info$source_abbreviation)
         .add_item("CDM Version", cdm_info$cdm_version)
         .add_item("Vocabulary Version", cdm_info$vocabulary_version)
-        .add_item("CDM Schema", caps$cdm_schema)
-        .add_item("Vocab Schema", caps$vocab_schema)
 
         shiny::div(class = "cdm-info mb-3",
           shiny::h6(srv),

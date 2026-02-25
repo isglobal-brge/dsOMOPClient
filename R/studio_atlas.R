@@ -9,7 +9,7 @@
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
-      title = "Data Sources", width = 280,
+      title = "Data Sources", width = 320,
       shiny::uiOutput(ns("achilles_status")),
       shiny::hr(),
       shiny::h6("Navigation"),
@@ -159,7 +159,7 @@
             )
           }
         }
-        page_data(data)
+        page_data(data %||% list(no_data = TRUE))
       }, error = function(e) {
         page_data(list(error = conditionMessage(e)))
       })
@@ -186,6 +186,13 @@
         return(shiny::div(class = "alert alert-warning", data$error))
       }
 
+      if (isTRUE(data$no_data)) {
+        return(shiny::div(class = "text-center text-muted py-5",
+          shiny::icon("circle-info", class = "fa-2x mb-3"),
+          shiny::h5("No data available for this page")
+        ))
+      }
+
       nav <- input$atlas_nav
       switch(nav,
         "Dashboard"    = .atlas_render_dashboard(ns, data),
@@ -208,6 +215,7 @@
       if (is.null(data) || is.null(data$gender)) return()
       .safe_plot({
         df <- data$gender
+        df$count_value <- as.numeric(df$count_value)
         if (nrow(df) == 0) return()
         vals <- df$count_value[!is.na(df$count_value)]
         labels <- df$stratum_1
@@ -248,6 +256,7 @@
       if (is.null(data) || is.null(data$gender)) return()
       .safe_plot({
         df <- data$gender
+        df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
         labels <- df$stratum_1
@@ -264,6 +273,7 @@
       if (is.null(data) || is.null(data$yob)) return()
       .safe_plot({
         df <- data$yob
+        df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
         barplot(df$count_value, names.arg = df$stratum_1,
@@ -277,6 +287,7 @@
       if (is.null(data) || is.null(data$race)) return()
       .safe_plot({
         df <- data$race
+        df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
         barplot(df$count_value, names.arg = df$stratum_1,
@@ -290,6 +301,7 @@
       if (is.null(data) || is.null(data$ethnicity)) return()
       .safe_plot({
         df <- data$ethnicity
+        df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
         barplot(df$count_value, names.arg = df$stratum_1,
@@ -304,6 +316,7 @@
       if (is.null(data) || is.null(data$concepts)) return()
       .safe_plot({
         df <- data$concepts
+        df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
         # Sort by count descending
@@ -331,6 +344,7 @@
       if (is.null(data) || is.null(data$trends)) return()
       .safe_plot({
         df <- data$trends
+        df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
         # Aggregate by month across concepts
@@ -351,6 +365,7 @@
       data <- page_data()
       if (is.null(data) || is.null(data$concepts)) return(NULL)
       df <- data$concepts
+      df$count_value <- as.numeric(df$count_value)
       df <- df[!is.na(df$count_value), , drop = FALSE]
       if (!is.null(data$concept_names)) {
         nm <- data$concept_names
@@ -418,6 +433,7 @@
       if (is.null(data) || is.null(data$types)) return()
       .safe_plot({
         df <- data$types
+        df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
         labels <- df$stratum_1
@@ -434,6 +450,7 @@
       if (is.null(data) || is.null(data$trends)) return()
       .safe_plot({
         df <- data$trends
+        df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
         if (nrow(df) == 0) return()
         agg <- stats::aggregate(count_value ~ stratum_2, data = df, FUN = sum)
@@ -452,7 +469,7 @@
     # Trends plot
     output$trends_overlay_plot <- shiny::renderPlot({
       data <- page_data()
-      if (is.null(data)) return()
+      if (is.null(data) || length(data) == 0) return()
       .safe_plot({
         domains <- names(data)
         colors <- c("#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6")
@@ -463,6 +480,7 @@
           df <- data[[domains[i]]]
           if (!is.data.frame(df) || nrow(df) == 0 ||
               !"stratum_2" %in% names(df)) next
+          df$count_value <- as.numeric(df$count_value)
           df <- df[!is.na(df$count_value), , drop = FALSE]
           if (nrow(df) == 0) next
           agg <- stats::aggregate(count_value ~ stratum_2, data = df, FUN = sum)
@@ -489,6 +507,9 @@
         if (length(legend_labels) > 0) {
           legend("topright", legend = legend_labels, col = legend_colors,
                  lwd = 2, bty = "n", cex = 0.8)
+        } else {
+          plot.new()
+          text(0.5, 0.5, "No trend data available", cex = 1.1, col = "#7f8c8d")
         }
       })
     })

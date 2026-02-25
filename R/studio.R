@@ -32,10 +32,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
 .studio_ui <- function(symbol) {
   function(request) {
     bslib::page_navbar(
-      title = shiny::div(
-        shiny::strong("OMOP Studio"),
-        shiny::uiOutput("cdm_identity", inline = TRUE)
-      ),
+      title = shiny::strong("dsOMOP Studio"),
       id = "main_nav",
       fillable = FALSE,
       theme = bslib::bs_theme(
@@ -93,8 +90,14 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
         .r-string { color: #ce9178; }
         .r-keyword { color: #569cd6; font-weight: bold; }
         .r-number { color: #b5cea8; }
-        .code-output pre { margin: 0; }
-        .code-output code { font-family: inherit; }
+        .r-function { color: #dcdcaa; }
+        .r-operator { color: #d4d4d4; font-weight: bold; }
+        .r-assign { color: #d4d4d4; }
+        .code-output pre { margin: 0; background: transparent;
+                           color: inherit; border: none; padding: 0; }
+        .code-output code { font-family: inherit; color: inherit; }
+        .code-output .shiny-text-output { background: transparent;
+                           color: inherit; border: none; padding: 0; }
       ")),
 
       # --- Tab 1: Connections ---
@@ -192,28 +195,6 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       })
     })
 
-    # CDM source identity badge(s) in navbar
-    output$cdm_identity <- shiny::renderUI({
-      st <- state$status
-      if (is.null(st) || is.null(st$capabilities)) return(NULL)
-
-      badges <- lapply(names(st$capabilities), function(srv) {
-        caps <- st$capabilities[[srv]]
-        cdm_name <- caps$cdm_info$source_name %||% srv
-        cdm_version <- caps$cdm_info$cdm_version %||% ""
-        label <- if (nchar(cdm_version) > 0)
-          paste0(cdm_name, " (", cdm_version, ")")
-        else
-          cdm_name
-        shiny::span(
-          class = "server-badge server-badge-ok ms-2",
-          style = "font-size: 0.7em; vertical-align: middle;",
-          label
-        )
-      })
-      shiny::span(badges)
-    })
-
     # Module servers
     .mod_connections_server("conn", state)
     .mod_table_concepts_server("explore", state, session)
@@ -275,6 +256,23 @@ isTRUE_vec <- function(x) {
     device = "device_exposure",
     "condition_occurrence"  # default fallback
   )
+}
+
+# Utility: format table name for display (condition_occurrence -> Condition Occurrence)
+.format_table_name <- function(x) {
+  vapply(x, function(nm) {
+    words <- strsplit(tolower(nm), "_", fixed = TRUE)[[1]]
+    paste(vapply(words, function(w) {
+      paste0(toupper(substr(w, 1, 1)), substr(w, 2, nchar(w)))
+    }, character(1)), collapse = " ")
+  }, character(1), USE.NAMES = FALSE)
+}
+
+# Utility: create named choices for selectInput (display name -> actual value)
+.table_choices <- function(tables) {
+  choices <- tables
+  names(choices) <- .format_table_name(tables)
+  choices
 }
 
 # Utility: parse comma-separated IDs

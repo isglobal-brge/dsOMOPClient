@@ -12,26 +12,54 @@
   code <- gsub("<", "&lt;", code, fixed = TRUE)
   code <- gsub(">", "&gt;", code, fixed = TRUE)
 
-  # Highlight comments (must be first to avoid conflicts)
-  code <- gsub("(#[^\n]*)", '<span class="r-comment">\\1</span>', code)
+  # Process line by line to handle comments reliably
+  lines <- strsplit(code, "\n", fixed = TRUE)[[1]]
+  processed <- vapply(lines, function(line) {
+    comment_pos <- regexpr("#", line, fixed = TRUE)
+    if (comment_pos > 0) {
+      before <- substr(line, 1, comment_pos - 1)
+      comment <- substr(line, comment_pos, nchar(line))
+      before <- .highlightR_line(before)
+      paste0(before, '<span class="r-comment">', comment, '</span>')
+    } else {
+      .highlightR_line(line)
+    }
+  }, character(1), USE.NAMES = FALSE)
+  paste(processed, collapse = "\n")
+}
 
-  # Highlight strings (double-quoted)
-  code <- gsub('("(?:[^"\\\\]|\\\\.)*")',
-               '<span class="r-string">\\1</span>', code, perl = TRUE)
+# Highlight a single line of R code (no comments)
+.highlightR_line <- function(line) {
+  # Strings (double and single quoted)
+  line <- gsub('("(?:[^"\\\\]|\\\\.)*")',
+               '<span class="r-string">\\1</span>', line, perl = TRUE)
+  line <- gsub("('(?:[^'\\\\]|\\\\.)*')",
+               '<span class="r-string">\\1</span>', line, perl = TRUE)
 
-  # Highlight keywords
-  keywords <- c("library", "function", "if", "else", "for", "while",
-                "return", "TRUE", "FALSE", "NULL", "NA")
+  # Function calls (word followed by open paren)
+  line <- gsub("\\b([a-zA-Z][a-zA-Z0-9._]*)\\s*\\(",
+               '<span class="r-function">\\1</span>(', line, perl = TRUE)
+
+  # Keywords (override function call styling where applicable)
+  keywords <- c("function", "if", "else", "for", "while", "repeat",
+                "return", "TRUE", "FALSE", "NULL", "NA", "NA_real_",
+                "NA_integer_", "NA_character_", "in", "next", "break")
   for (kw in keywords) {
-    pattern <- paste0("\\b(", kw, ")\\b")
-    code <- gsub(pattern, '<span class="r-keyword">\\1</span>', code)
+    line <- gsub(paste0("\\b(", kw, ")\\b"),
+                 paste0('<span class="r-keyword">\\1</span>'), line)
   }
 
-  # Highlight numbers
-  code <- gsub("\\b([0-9]+\\.?[0-9]*[eEL]?)\\b",
-               '<span class="r-number">\\1</span>', code)
+  # Assignment operator (<-)
+  line <- gsub("(&lt;-)", '<span class="r-assign">\\1</span>', line)
 
-  code
+  # Pipe operators
+  line <- gsub("(\\|&gt;|%&gt;%)", '<span class="r-operator">\\1</span>', line)
+
+  # Numbers
+  line <- gsub("\\b([0-9]+\\.?[0-9]*[eEL]?)\\b",
+               '<span class="r-number">\\1</span>', line)
+
+  line
 }
 
 .mod_script_builder_ui <- function(id) {
@@ -75,20 +103,17 @@
 
     script_text <- shiny::reactive({
       lines <- state$script_lines
-      if (length(lines) == 0) return("# No operations recorded yet.\n# Use the Explore, Drilldown, Locator, Vocabulary, or Session tabs\n# to generate reproducible R code.")
-      header <- c(
-        "# ==============================================================================",
-        "# dsOMOP Studio - Reproducible Script",
-        paste0("# Generated: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S")),
-        "# ==============================================================================",
-        "library(dsOMOPClient)",
-        ""
-      )
-      paste(c(header, lines), collapse = "\n")
+      if (length(lines) == 0) return("")
+      paste(lines, collapse = "\n")
     })
 
     output$script_html <- shiny::renderUI({
       code <- script_text()
+      if (nchar(code) == 0) {
+        return(shiny::p(class = "text-muted",
+          "No operations recorded yet. Use the Explore, Vocabulary,",
+          " Data Sources, or Catalog tabs to generate reproducible R code."))
+      }
       highlighted <- .highlightR(code)
       shiny::div(class = "code-output",
         shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))

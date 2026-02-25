@@ -13,7 +13,6 @@
       shiny::selectInput(ns("metric"), "Metric",
         choices = c("Distinct Persons" = "persons",
                     "Total Records" = "records")),
-      shiny::numericInput(ns("top_n"), "Top N", 30, 5, 200, 5),
       shiny::actionButton(ns("run_btn"), "Run",
                           class = "btn-primary w-100"),
       .scope_controls_ui(ns)
@@ -41,7 +40,6 @@
         )
       ),
       bslib::card_body(
-        shiny::plotOutput(ns("bar_chart"), height = "400px"),
         shiny::div(
           DT::DTOutput(ns("results_dt"))
         ),
@@ -63,7 +61,8 @@
                          "measurement", "procedure_occurrence",
                          "observation", "visit_occurrence")
       }
-      shiny::updateSelectInput(session, "table", choices = tbl_choices)
+      shiny::updateSelectInput(session, "table",
+                               choices = .table_choices(tbl_choices))
     })
 
     # When table changes, fetch columns and populate concept column dropdown
@@ -141,7 +140,7 @@
       tryCatch({
         res <- ds.omop.concept.prevalence(
           table = input$table, concept_col = input$concept_col,
-          metric = input$metric, top_n = input$top_n,
+          metric = input$metric, top_n = 99999L,
           scope = scope, pooling_policy = policy,
           symbol = state$symbol
         )
@@ -151,12 +150,20 @@
         }
         last_result(res)
         # Use pooled data if available, otherwise first server
-        if (scope == "pooled" && !is.null(res$pooled) && is.data.frame(res$pooled)) {
-          prevalence_data(res$pooled)
+        df <- if (scope == "pooled" && !is.null(res$pooled) && is.data.frame(res$pooled)) {
+          res$pooled
         } else {
           srv <- names(res$per_site)[1]
-          prevalence_data(res$per_site[[srv]])
+          res$per_site[[srv]]
         }
+        # Remove disclosure-suppressed rows (NA in count columns)
+        if (is.data.frame(df) && nrow(df) > 0) {
+          metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
+          if (metric_col %in% names(df)) {
+            df <- df[!is.na(df[[metric_col]]), , drop = FALSE]
+          }
+        }
+        prevalence_data(df)
         shiny::removeNotification("prev_loading")
       }, error = function(e) {
         shiny::removeNotification("prev_loading")
@@ -167,38 +174,10 @@
     })
 
     output$results_title <- shiny::renderText({
-      paste("Top concepts in", input$table)
+      tbl <- input$table
+      if (is.null(tbl) || nchar(tbl) == 0) return("Concepts")
+      paste("Concepts in", .format_table_name(tbl))
     })
-
-    output$bar_chart <- shiny::renderPlot({
-      df <- prevalence_data()
-      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
-
-      metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
-      if (!metric_col %in% names(df)) return(NULL)
-
-      .safe_plot({
-        label_col <- if ("concept_name" %in% names(df)) "concept_name"
-          else "concept_id"
-        df$label <- substr(as.character(df[[label_col]]), 1, 40)
-        df$y <- as.numeric(df[[metric_col]])
-        df <- df[!is.na(df$y), , drop = FALSE]
-        if (nrow(df) == 0) return(NULL)
-
-        df <- df[order(df$y, decreasing = TRUE), ]
-        n <- min(nrow(df), 20)
-        df <- df[seq_len(n), ]
-
-        par(mar = c(5, 12, 2, 2))
-        barplot(
-          rev(df$y), names.arg = rev(df$label),
-          horiz = TRUE, las = 1, col = "#3498db",
-          xlab = if (input$metric == "persons")
-            "Distinct Persons" else "Records",
-          cex.names = 0.75
-        )
-      })
-    }, res = 96)
 
     output$results_dt <- DT::renderDT({
       df <- prevalence_data()
