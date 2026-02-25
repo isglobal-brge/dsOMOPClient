@@ -58,14 +58,23 @@
         bslib::card_header("Quick Add Filter"),
         bslib::card_body(
           shiny::selectInput(ns("filter_type"), "Filter Type",
-            choices = c("Sex" = "sex", "Age Range" = "age_range",
+            choices = c("Sex" = "sex", "Age Group" = "age_group",
+                        "Age Range" = "age_range",
                         "Has Concept" = "has_concept",
-                        "Date Range" = "date_range",
-                        "Value Threshold" = "value_threshold")),
+                        "Date Range" = "date_range")),
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"), "'] == 'sex'"),
             shiny::selectInput(ns("sex_value"), "Sex",
               choices = c("Female" = "F", "Male" = "M"))
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'age_group'"),
+            shiny::checkboxGroupInput(ns("age_groups"), "Age Groups",
+              choices = c("0-4", "5-9", "10-14", "15-17", "18-24",
+                          "25-34", "35-44", "45-54", "55-64",
+                          "65-74", "75-84", "85+"),
+              selected = NULL, inline = TRUE)
           ),
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"),
@@ -86,14 +95,6 @@
                                "'] == 'date_range'"),
             shiny::dateInput(ns("date_start"), "Start Date"),
             shiny::dateInput(ns("date_end"), "End Date")
-          ),
-          shiny::conditionalPanel(
-            condition = paste0("input['", ns("filter_type"),
-                               "'] == 'value_threshold'"),
-            shiny::selectInput(ns("val_op"), "Operator",
-              choices = c(">=" = ">=", ">" = ">", "<=" = "<=",
-                          "<" = "<", "==" = "==", "!=" = "!=")),
-            shiny::numericInput(ns("val_threshold"), "Value", 0)
           ),
           shiny::actionButton(ns("add_filter_btn"), "Add Filter",
                               class = "btn-warning w-100")
@@ -290,6 +291,15 @@
       tryCatch({
         f <- switch(ftype,
           sex = omop_filter_sex(input$sex_value),
+          age_group = {
+            groups <- input$age_groups
+            if (length(groups) == 0) {
+              shiny::showNotification("Select at least one age group",
+                                      type = "warning")
+              return()
+            }
+            omop_filter_age_group(groups)
+          },
           age_range = omop_filter_age(
             min = input$age_min, max = input$age_max),
           has_concept = {
@@ -298,9 +308,7 @@
           },
           date_range = omop_filter_date_range(
             start = as.character(input$date_start),
-            end = as.character(input$date_end)),
-          value_threshold = omop_filter_value(
-            op = input$val_op, value = input$val_threshold)
+            end = as.character(input$date_end))
         )
         state$cart <- cart_add_filter(state$cart, f)
         shiny::showNotification(
@@ -653,10 +661,28 @@
             paste0("[", f$operator, " group]")
           else
             paste0("[", f$level, "] ", f$type)
+
+          # Safety badge
+          safety_badge <- NULL
+          if (!is_group) {
+            safety <- .classifyFilterClient(f$type, f$params)
+            safety_badge <- switch(safety,
+              "allowed" = shiny::span(
+                class = "badge bg-success ms-1",
+                style = "font-size: 0.7em;", "safe"),
+              "constrained" = shiny::span(
+                class = "badge bg-warning ms-1",
+                style = "font-size: 0.7em;", "constrained"),
+              "blocked" = shiny::span(
+                class = "badge bg-danger ms-1",
+                style = "font-size: 0.7em;", "blocked")
+            )
+          }
+
           shiny::div(
             class = "cart-item d-flex justify-content-between align-items-center",
             shiny::div(
-              shiny::span(class = "cart-item-name", f$label),
+              shiny::span(class = "cart-item-name", f$label, safety_badge),
               shiny::br(),
               shiny::span(class = "cart-item-meta", type_text)
             ),

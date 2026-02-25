@@ -5,17 +5,6 @@
 # statistics. Each follows the existing wrapper pattern from exploration.R.
 # ==============================================================================
 
-# --- Analysis ID helper constants --------------------------------------------
-
-.achilles_person_analyses      <- c(0L, 1L, 2L, 3L, 5L, 8L)
-.achilles_obs_period_analyses  <- c(101L, 108L, 113L, 116L, 117L)
-.achilles_condition_analyses   <- c(400L, 401L, 403L, 404L)
-.achilles_drug_analyses        <- c(700L, 701L)
-.achilles_measurement_analyses <- c(1800L, 1801L)
-.achilles_procedure_analyses   <- c(600L, 601L)
-.achilles_observation_analyses <- c(800L)
-.achilles_visit_analyses       <- c(200L, 201L)
-
 # --- Client Wrappers ---------------------------------------------------------
 
 #' Check Achilles availability
@@ -183,4 +172,33 @@ ds.omop.achilles.distribution <- function(analysis_ids,
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
                 pooling_policy = pooling_policy, warnings = warnings))
+}
+
+#' Get Achilles analysis catalog
+#'
+#' Returns the full catalog of available Achilles analyses from the server.
+#' If the achilles_analysis table exists, returns its contents; otherwise
+#' discovers available analyses from achilles_results.
+#'
+#' @param symbol Character; OMOP session symbol
+#' @param conns DSI connections (NULL = use session)
+#' @return A dsomop_result object
+#' @export
+ds.omop.achilles.catalog <- function(symbol = "omop", conns = NULL) {
+  code <- .build_code("ds.omop.achilles.catalog", symbol = symbol)
+
+  session <- .get_session(symbol)
+  conns <- conns %||% session$conns
+
+  raw <- DSI::datashield.aggregate(
+    conns,
+    expr = call("omopAchillesCatalogDS", session$res_symbol)
+  )
+
+  # Pick first server for pooled (catalog is identical)
+  pooled <- if (length(raw) > 0) raw[[1]] else NULL
+
+  dsomop_result(
+    per_site = raw, pooled = pooled,
+    meta = list(call_code = code, scope = "pooled"))
 }

@@ -32,7 +32,10 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
 .studio_ui <- function(symbol) {
   function(request) {
     bslib::page_navbar(
-      title = "OMOP Studio",
+      title = shiny::div(
+        shiny::strong("OMOP Studio"),
+        shiny::uiOutput("cdm_identity", inline = TRUE)
+      ),
       id = "main_nav",
       fillable = FALSE,
       theme = bslib::bs_theme(
@@ -86,6 +89,12 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
         .cart-badge-output { background: #cce5ff; color: #004085; }
         .btn-quick-action { padding: 0.1em 0.4em; font-size: 0.7em;
                             margin: 0 0.1em; border-radius: 3px; }
+        .r-comment { color: #6a9955; font-style: italic; }
+        .r-string { color: #ce9178; }
+        .r-keyword { color: #569cd6; font-weight: bold; }
+        .r-number { color: #b5cea8; }
+        .code-output pre { margin: 0; }
+        .code-output code { font-family: inherit; }
       ")),
 
       # --- Tab 1: Connections ---
@@ -176,6 +185,28 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
           type = "error", duration = 10
         )
       })
+    })
+
+    # CDM source identity badge(s) in navbar
+    output$cdm_identity <- shiny::renderUI({
+      st <- state$status
+      if (is.null(st) || is.null(st$capabilities)) return(NULL)
+
+      badges <- lapply(names(st$capabilities), function(srv) {
+        caps <- st$capabilities[[srv]]
+        cdm_name <- caps$cdm_info$source_name %||% srv
+        cdm_version <- caps$cdm_info$cdm_version %||% ""
+        label <- if (nchar(cdm_version) > 0)
+          paste0(cdm_name, " (", cdm_version, ")")
+        else
+          cdm_name
+        shiny::span(
+          class = "server-badge server-badge-ok ms-2",
+          style = "font-size: 0.7em; vertical-align: middle;",
+          label
+        )
+      })
+      shiny::span(badges)
     })
 
     # Module servers

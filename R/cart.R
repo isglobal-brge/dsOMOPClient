@@ -192,7 +192,7 @@ print.omop_variable <- function(x, ...) {
 #' @param label Character or NULL; human-readable description
 #' @return An omop_filter object
 #' @export
-omop_filter <- function(type = c("sex", "age_range", "cohort",
+omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
                                   "has_concept", "date_range",
                                   "value_threshold", "concept_set",
                                   "min_count", "top_n", "dedup", "custom"),
@@ -206,6 +206,8 @@ omop_filter <- function(type = c("sex", "age_range", "cohort",
     label <- switch(type,
       sex = paste0("Sex = ", params$value %||% "?"),
       age_range = paste0("Age ", params$min %||% "?", "-", params$max %||% "?"),
+      age_group = paste0("Age groups: ",
+                         paste(params$groups %||% "?", collapse = ", ")),
       cohort = paste0("Cohort #", params$cohort_definition_id %||% "?"),
       has_concept = paste0("Has concept ", params$concept_id %||% "?",
                            " in ", params$table %||% "?"),
@@ -314,6 +316,17 @@ omop_filter_age <- function(min = 0, max = 150) {
 }
 
 #' @rdname omop_filter
+#' @param groups Character vector; age group labels (e.g. c("18-24", "25-34"))
+#' @export
+omop_filter_age_group <- function(groups) {
+  omop_filter(
+    type = "age_group", level = "population",
+    params = list(groups = groups),
+    label = paste0("Age groups: ", paste(groups, collapse = ", "))
+  )
+}
+
+#' @rdname omop_filter
 #' @param concept_id Integer; the concept to check for
 #' @param table Character; which OMOP table to check
 #' @param concept_name Character or NULL; human-readable name
@@ -361,6 +374,25 @@ omop_filter_value <- function(op, value, column = "value_as_number") {
     type = "value_threshold", level = "row",
     params = list(op = op, value = value, column = column)
   )
+}
+
+#' Client-side filter safety classification (informational only)
+#'
+#' Mirrors the server-side classification for UI display purposes.
+#' The server performs the authoritative check.
+#'
+#' @param filter_type Character; filter type
+#' @param params List; filter parameters (unused for now)
+#' @return Character; "allowed", "constrained", or "blocked"
+#' @keywords internal
+.classifyFilterClient <- function(filter_type, params = list()) {
+  always_allowed <- c("sex", "age_group", "cohort", "concept_set")
+  constrained <- c("age_range", "has_concept", "date_range", "min_count")
+  blocked <- c("value_threshold", "custom")
+
+  if (filter_type %in% always_allowed) return("allowed")
+  if (filter_type %in% blocked) return("blocked")
+  "constrained"
 }
 
 # ==============================================================================
@@ -1073,6 +1105,8 @@ cart_to_code <- function(cart) {
 .codegen_filter <- function(f) {
   if (f$type == "sex") {
     .build_code("omop_filter_sex", value = f$params$value)
+  } else if (f$type == "age_group") {
+    .build_code("omop_filter_age_group", groups = f$params$groups)
   } else if (f$type == "age_range") {
     .build_code("omop_filter_age", min = f$params$min, max = f$params$max)
   } else if (f$type == "has_concept") {

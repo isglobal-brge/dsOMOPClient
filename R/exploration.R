@@ -2,6 +2,52 @@
 # dsOMOPClient v2 - Exploration Wrappers (OMOP Studio)
 # ==============================================================================
 
+#' Get safe numeric cutpoints for a column
+#'
+#' Returns bin edges that are safe to use as filter thresholds.
+#' Each bin is guaranteed to contain enough persons to pass disclosure.
+#'
+#' @param table Character; OMOP table name
+#' @param column Character; numeric column name
+#' @param concept_id Integer or NULL; concept filter
+#' @param n_bins Integer; target number of bins (default 10)
+#' @param scope Character; "per_site" or "pooled"
+#' @param symbol Character; session symbol
+#' @param conns DSI connections or NULL
+#' @param execute Logical; if FALSE, return dry-run result with code only
+#' @return dsomop_result with bin edges per server
+#' @export
+ds.omop.safe.cutpoints <- function(table, column, concept_id = NULL,
+                                    n_bins = 10L,
+                                    scope = c("per_site", "pooled"),
+                                    symbol = "omop", conns = NULL,
+                                    execute = TRUE) {
+  scope <- match.arg(scope)
+
+  code <- .build_code("ds.omop.safe.cutpoints",
+    table = table, column = column, concept_id = concept_id,
+    n_bins = n_bins, scope = scope, symbol = symbol)
+
+  if (!execute) {
+    return(dsomop_result(
+      per_site = list(), pooled = NULL,
+      meta = list(call_code = code, scope = scope)))
+  }
+
+  session <- .get_session(symbol)
+  conns <- conns %||% session$conns
+
+  raw <- DSI::datashield.aggregate(
+    conns,
+    expr = call("omopSafeCutpointsDS", session$res_symbol,
+                table, column, concept_id, as.integer(n_bins))
+  )
+
+  dsomop_result(
+    per_site = raw, pooled = NULL,
+    meta = list(call_code = code, scope = scope))
+}
+
 #' Get concept prevalence for a table
 #'
 #' Returns the top concepts in a table ranked by person count or record count.

@@ -2,6 +2,38 @@
 # MODULE 8: Script Builder
 # ==============================================================================
 
+#' Simple R syntax highlighting via regex -> HTML spans
+#' @param code Character; R source code
+#' @return Character; HTML-escaped code with span classes
+#' @keywords internal
+.highlightR <- function(code) {
+  # Escape HTML entities first
+  code <- gsub("&", "&amp;", code, fixed = TRUE)
+  code <- gsub("<", "&lt;", code, fixed = TRUE)
+  code <- gsub(">", "&gt;", code, fixed = TRUE)
+
+  # Highlight comments (must be first to avoid conflicts)
+  code <- gsub("(#[^\n]*)", '<span class="r-comment">\\1</span>', code)
+
+  # Highlight strings (double-quoted)
+  code <- gsub('("(?:[^"\\\\]|\\\\.)*")',
+               '<span class="r-string">\\1</span>', code, perl = TRUE)
+
+  # Highlight keywords
+  keywords <- c("library", "function", "if", "else", "for", "while",
+                "return", "TRUE", "FALSE", "NULL", "NA")
+  for (kw in keywords) {
+    pattern <- paste0("\\b(", kw, ")\\b")
+    code <- gsub(pattern, '<span class="r-keyword">\\1</span>', code)
+  }
+
+  # Highlight numbers
+  code <- gsub("\\b([0-9]+\\.?[0-9]*[eEL]?)\\b",
+               '<span class="r-number">\\1</span>', code)
+
+  code
+}
+
 .mod_script_builder_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::layout_columns(
@@ -22,9 +54,17 @@
         )
       ),
       bslib::card_body(
-        shiny::div(class = "code-output",
-          shiny::verbatimTextOutput(ns("script_output"))
-        )
+        # JS clipboard handler (browser-native, no clipr dependency)
+        shiny::tags$script(shiny::HTML("
+          Shiny.addCustomMessageHandler('copyToClipboard', function(text) {
+            navigator.clipboard.writeText(text).then(function() {
+              Shiny.setInputValue('clipboard_success', true, {priority: 'event'});
+            }).catch(function(err) {
+              Shiny.setInputValue('clipboard_success', false, {priority: 'event'});
+            });
+          });
+        ")),
+        shiny::uiOutput(ns("script_html"))
       )
     )
   )
@@ -47,27 +87,25 @@
       paste(c(header, lines), collapse = "\n")
     })
 
-    output$script_output <- shiny::renderText({
-      script_text()
+    output$script_html <- shiny::renderUI({
+      code <- script_text()
+      highlighted <- .highlightR(code)
+      shiny::div(class = "code-output",
+        shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))
+      )
     })
 
     shiny::observeEvent(input$copy_btn, {
-      code <- script_text()
-      tryCatch({
-        if (requireNamespace("clipr", quietly = TRUE)) {
-          clipr::write_clip(code)
-          shiny::showNotification("Script copied to clipboard!",
-                                  type = "message", duration = 2)
-        } else {
-          shiny::showNotification(
-            "Install 'clipr' package for clipboard support.",
-            type = "warning", duration = 4)
-        }
-      }, error = function(e) {
-        shiny::showNotification(
-          paste("Could not copy:", conditionMessage(e)),
-          type = "warning", duration = 3)
-      })
+      session$sendCustomMessage("copyToClipboard", script_text())
+    })
+
+    shiny::observeEvent(input$clipboard_success, {
+      if (isTRUE(input$clipboard_success)) {
+        shiny::showNotification("Copied!", type = "message", duration = 2)
+      } else {
+        shiny::showNotification("Could not copy to clipboard.",
+                                type = "warning", duration = 3)
+      }
     })
 
     output$download_btn <- shiny::downloadHandler(
@@ -86,4 +124,3 @@
     })
   })
 }
-

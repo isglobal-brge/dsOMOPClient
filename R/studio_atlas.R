@@ -34,29 +34,75 @@
     ns <- session$ns
 
     achilles_available <- shiny::reactiveVal(FALSE)
+    achilles_catalog <- shiny::reactiveVal(NULL)
     page_data <- shiny::reactiveVal(NULL)
 
-    # Check Achilles availability on load
+    # Check Achilles availability and fetch catalog on load
     shiny::observe({
       tryCatch({
         status <- ds.omop.achilles.status(symbol = state$symbol)
         srv <- names(status$per_site)[1]
         avail <- isTRUE(status$per_site[[srv]]$available)
         achilles_available(avail)
-        if (inherits(status, "dsomop_result") && nchar(status$meta$call_code) > 0) {
-          state$script_lines <- c(state$script_lines, status$meta$call_code)
+
+        if (avail) {
+          cat_res <- ds.omop.achilles.catalog(symbol = state$symbol)
+          srv_cat <- cat_res$per_site[[names(cat_res$per_site)[1]]]
+          achilles_catalog(srv_cat)
+
+          shiny::isolate({
+            if (inherits(cat_res, "dsomop_result") &&
+                nchar(cat_res$meta$call_code) > 0) {
+              state$script_lines <- c(state$script_lines, cat_res$meta$call_code)
+            }
+          })
         }
+
+        # Accumulate code (ISOLATED to break reactive loop)
+        shiny::isolate({
+          if (inherits(status, "dsomop_result") &&
+              nchar(status$meta$call_code) > 0) {
+            state$script_lines <- c(state$script_lines, status$meta$call_code)
+          }
+        })
       }, error = function(e) achilles_available(FALSE))
+    })
+
+    # Dynamic navigation choices from catalog
+    shiny::observe({
+      cat <- achilles_catalog()
+      if (is.null(cat)) return()
+
+      domains <- unique(cat$domain)
+      pages <- c("Dashboard")
+      domain_page_map <- c(
+        person = "Person", condition = "Conditions", drug = "Drugs",
+        procedure = "Procedures", measurement = "Measurements",
+        observation = "Observations", visit = "Visits",
+        observation_period = "Observation Period"
+      )
+      for (d in names(domain_page_map)) {
+        if (d %in% domains) pages <- c(pages, domain_page_map[d])
+      }
+      # Add Trends if any domain has time-stratified analyses
+      if (any(!is.na(cat$stratum_2_name) & cat$stratum_2_name == "calendar_month")) {
+        pages <- c(pages, "Trends")
+      }
+      pages <- c(pages, "Data Quality")
+
+      shiny::updateSelectInput(session, "atlas_nav", choices = pages)
     })
 
     # Status display
     output$achilles_status <- shiny::renderUI({
       if (achilles_available()) {
+        cat <- achilles_catalog()
+        n_analyses <- if (!is.null(cat)) nrow(cat) else 0
         shiny::div(
           shiny::span(class = "status-ok", shiny::icon("check-circle"),
                       " Achilles Available"),
           shiny::p(class = "text-muted small mt-1",
-                   "Pre-computed statistics loaded")
+                   paste0(n_analyses, " analyses loaded"))
         )
       } else {
         shiny::div(
@@ -80,23 +126,39 @@
       }
 
       nav <- input$atlas_nav
+      cat <- achilles_catalog()
       scope <- input$scope %||% "per_site"
       policy <- input$pooling_policy %||% "strict"
 
       tryCatch({
-        data <- switch(nav,
-          "Dashboard" = .atlas_fetch_dashboard(state, scope, policy),
-          "Person"    = .atlas_fetch_person(state, scope, policy),
-          "Conditions" = .atlas_fetch_domain(state, 400L, 401L, scope, policy),
-          "Drugs"     = .atlas_fetch_domain(state, 700L, 701L, scope, policy),
-          "Procedures" = .atlas_fetch_domain(state, 600L, 601L, scope, policy),
-          "Measurements" = .atlas_fetch_domain(state, 1800L, 1801L, scope, policy),
-          "Observations" = .atlas_fetch_domain(state, 800L, NULL, scope, policy),
-          "Visits"    = .atlas_fetch_visits(state, scope, policy),
-          "Trends"    = .atlas_fetch_trends(state, scope, policy),
-          "Data Quality" = .atlas_fetch_quality(state, scope, policy),
-          NULL
-        )
+        data <- if (nav == "Dashboard") {
+          .atlas_fetch_dashboard(state, scope, policy)
+        } else if (nav == "Person") {
+          .atlas_fetch_person(state, scope, policy)
+        } else if (nav == "Visits") {
+          .atlas_fetch_visits(state, scope, policy)
+        } else if (nav == "Trends") {
+          .atlas_fetch_trends_dynamic(state, cat, scope, policy)
+        } else if (nav == "Data Quality") {
+          .atlas_fetch_quality(state, scope, policy)
+        } else {
+          # Generic domain page — look up analyses from catalog
+          domain <- .page_to_domain(nav)
+          if (!is.null(cat) && !is.null(domain)) {
+            domain_analyses <- cat[cat$domain == domain, , drop = FALSE]
+            .atlas_fetch_domain_dynamic(state, domain_analyses, scope, policy)
+          } else {
+            # Fallback to hardcoded IDs
+            switch(nav,
+              "Conditions" = .atlas_fetch_domain(state, 400L, 401L, scope, policy),
+              "Drugs"     = .atlas_fetch_domain(state, 700L, 701L, scope, policy),
+              "Procedures" = .atlas_fetch_domain(state, 600L, 601L, scope, policy),
+              "Measurements" = .atlas_fetch_domain(state, 1800L, 1801L, scope, policy),
+              "Observations" = .atlas_fetch_domain(state, 800L, NULL, scope, policy),
+              NULL
+            )
+          }
+        }
         page_data(data)
       }, error = function(e) {
         page_data(list(error = conditionMessage(e)))
@@ -613,6 +675,78 @@
 }
 
 # ==============================================================================
+# Dynamic fetch helpers (catalog-driven)
+# ==============================================================================
+
+.page_to_domain <- function(page_name) {
+  map <- c(
+    "Conditions" = "condition", "Drugs" = "drug",
+    "Procedures" = "procedure", "Measurements" = "measurement",
+    "Observations" = "observation", "Visits" = "visit",
+    "Person" = "person", "Observation Period" = "observation_period"
+  )
+  map[page_name]
+}
+
+.atlas_fetch_domain_dynamic <- function(state, analyses_df, scope, policy) {
+  # Find the "count by concept" analysis (stratum_1 = concept_id, no stratum_2)
+  count_row <- analyses_df[!is.na(analyses_df$stratum_1_name) &
+                            analyses_df$stratum_1_name == "concept_id" &
+                            (is.na(analyses_df$stratum_2_name) |
+                             analyses_df$stratum_2_name == ""),
+                           , drop = FALSE]
+  count_id <- if (nrow(count_row) > 0) count_row$analysis_id[1] else NULL
+
+  # Find the "trend by concept+month" analysis
+  trend_row <- analyses_df[!is.na(analyses_df$stratum_2_name) &
+                            analyses_df$stratum_2_name == "calendar_month",
+                           , drop = FALSE]
+  trend_id <- if (nrow(trend_row) > 0) trend_row$analysis_id[1] else NULL
+
+  # Delegate to existing fetch logic with dynamically discovered IDs
+  if (!is.null(count_id)) {
+    .atlas_fetch_domain(state, count_id, trend_id, scope, policy)
+  } else {
+    NULL
+  }
+}
+
+.atlas_fetch_trends_dynamic <- function(state, cat, scope, policy) {
+  if (is.null(cat)) return(.atlas_fetch_trends(state, scope, policy))
+
+  # Find all trend analyses (stratum_2 = calendar_month)
+  trend_rows <- cat[!is.na(cat$stratum_2_name) &
+                     cat$stratum_2_name == "calendar_month", , drop = FALSE]
+
+  if (nrow(trend_rows) == 0) return(.atlas_fetch_trends(state, scope, policy))
+
+  result <- list()
+  domain_labels <- c(
+    condition = "Conditions", drug = "Drugs",
+    procedure = "Procedures", measurement = "Measurements",
+    visit = "Visits", observation = "Observations"
+  )
+
+  for (i in seq_len(nrow(trend_rows))) {
+    domain <- trend_rows$domain[i]
+    label <- domain_labels[domain]
+    if (is.na(label)) label <- domain
+    if (label %in% names(result)) next  # one per domain
+
+    tryCatch({
+      res <- ds.omop.achilles.results(
+        analysis_ids = trend_rows$analysis_id[i], scope = scope,
+        pooling_policy = policy, symbol = state$symbol)
+      .atlas_accumulate_code(state, res)
+      srv <- names(res$per_site)[1]
+      result[[label]] <- .atlas_pick_result(res, scope, srv)
+    }, error = function(e) NULL)
+  }
+
+  result
+}
+
+# ==============================================================================
 # Render helpers (return shiny::tagList for each page)
 # ==============================================================================
 
@@ -745,7 +879,9 @@
 
 .atlas_accumulate_code <- function(state, res) {
   if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
-    state$script_lines <- c(state$script_lines, res$meta$call_code)
+    shiny::isolate({
+      state$script_lines <- c(state$script_lines, res$meta$call_code)
+    })
   }
 }
 

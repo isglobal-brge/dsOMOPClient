@@ -209,14 +209,13 @@ test_that("pooling achilles_distribution sets median/percentiles to NA", {
   expect_true(any(grepl("percentiles", result$warnings)))
 })
 
-# --- Analysis helper constants ------------------------------------------------
+# --- Catalog client function ---------------------------------------------------
 
-test_that("analysis helper constants have expected values", {
-  expect_true(0L %in% .achilles_person_analyses)
-  expect_true(400L %in% .achilles_condition_analyses)
-  expect_true(700L %in% .achilles_drug_analyses)
-  expect_true(1800L %in% .achilles_measurement_analyses)
-  expect_true(600L %in% .achilles_procedure_analyses)
-  expect_true(200L %in% .achilles_visit_analyses)
-  expect_true(800L %in% .achilles_observation_analyses)
+test_that("ds.omop.achilles.catalog has expected signature", {
+  expect_true(is.function(ds.omop.achilles.catalog))
+  args <- formals(ds.omop.achilles.catalog)
+  expect_true("symbol" %in% names(args))
+  expect_true("conns" %in% names(args))
+  expect_equal(args$symbol, "omop")
+  expect_null(args$conns)
 })

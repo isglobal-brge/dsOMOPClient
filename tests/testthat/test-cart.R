@@ -1232,3 +1232,61 @@ test_that("cart meta tracks modification time", {
   t2 <- c$meta$modified
   expect_true(t2 >= t1)
 })
+
+# ==============================================================================
+# Phase 4: Age Group Filter + Filter Safety Classification
+# ==============================================================================
+
+test_that("omop_filter_age_group creates valid filter", {
+  f <- omop_filter_age_group(c("18-24", "25-34"))
+  expect_s3_class(f, "omop_filter")
+  expect_equal(f$type, "age_group")
+  expect_equal(f$level, "population")
+  expect_equal(f$params$groups, c("18-24", "25-34"))
+  expect_true(grepl("18-24", f$label))
+  expect_true(grepl("25-34", f$label))
+})
+
+test_that("omop_filter_age_group can be added to cart", {
+  c <- omop_cart()
+  f <- omop_filter_age_group(c("45-54", "55-64", "65-74"))
+  c <- cart_add_filter(c, f)
+  expect_equal(length(c$filters), 1)
+  expect_equal(c$filters[[1]]$type, "age_group")
+})
+
+test_that("classifyFilterClient returns correct safety level", {
+  expect_equal(.classifyFilterClient("sex"), "allowed")
+  expect_equal(.classifyFilterClient("age_group"), "allowed")
+  expect_equal(.classifyFilterClient("cohort"), "allowed")
+  expect_equal(.classifyFilterClient("concept_set"), "allowed")
+  expect_equal(.classifyFilterClient("value_threshold"), "blocked")
+  expect_equal(.classifyFilterClient("custom"), "blocked")
+  expect_equal(.classifyFilterClient("has_concept"), "constrained")
+  expect_equal(.classifyFilterClient("age_range"), "constrained")
+  expect_equal(.classifyFilterClient("date_range"), "constrained")
+  expect_equal(.classifyFilterClient("min_count"), "constrained")
+})
+
+test_that("ds.omop.safe.cutpoints has expected signature", {
+  expect_true(is.function(ds.omop.safe.cutpoints))
+  args <- formals(ds.omop.safe.cutpoints)
+  expect_true("table" %in% names(args))
+  expect_true("column" %in% names(args))
+  expect_true("symbol" %in% names(args))
+  expect_true("concept_id" %in% names(args))
+  expect_true("n_bins" %in% names(args))
+})
+
+test_that("age_group filter generates correct code", {
+  c <- omop_cart()
+  c <- cart_add_filter(c, omop_filter_age_group(c("18-24", "25-34")))
+  code <- cart_to_code(c)
+  expect_true(grepl("omop_filter_age_group", code))
+})
+
+test_that("omop_filter accepts age_group type", {
+  f <- omop_filter(type = "age_group", level = "population",
+                   params = list(groups = c("0-4", "5-9")))
+  expect_equal(f$type, "age_group")
+})
