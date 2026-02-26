@@ -48,6 +48,48 @@ ds.omop.safe.cutpoints <- function(table, column, concept_id = NULL,
     meta = list(call_code = code, scope = scope))
 }
 
+#' Create a safe numeric value filter using server-computed bins
+#'
+#' Convenience wrapper that first calls \code{ds.omop.safe.cutpoints()} to
+#' obtain disclosure-safe bin edges, then creates an \code{omop_filter_value()}
+#' filter that snaps to those bin boundaries.
+#'
+#' @param table Character; OMOP table name
+#' @param column Character; numeric column name
+#' @param threshold Numeric; desired threshold value
+#' @param direction Character; "above" or "below"
+#' @param concept_id Integer or NULL; concept filter
+#' @param n_bins Integer; number of bins for cutpoints
+#' @param symbol Character; session symbol
+#' @param conns DSI connections or NULL
+#' @return An omop_filter object (value_bin type)
+#' @export
+ds.omop.safe.filter.value <- function(table, column, threshold,
+                                       direction = c("above", "below"),
+                                       concept_id = NULL,
+                                       n_bins = 10L,
+                                       symbol = "omop", conns = NULL) {
+  direction <- match.arg(direction)
+  cuts <- ds.omop.safe.cutpoints(table, column,
+    concept_id = concept_id, n_bins = n_bins,
+    scope = "per_site", symbol = symbol, conns = conns)
+  # Use first server's breaks (all should be compatible)
+  breaks <- NULL
+  for (srv in names(cuts$per_site)) {
+    srv_data <- cuts$per_site[[srv]]
+    if (is.list(srv_data) && !is.null(srv_data$breaks)) {
+      breaks <- srv_data$breaks
+      break
+    }
+  }
+  if (is.null(breaks)) {
+    stop("Could not obtain safe cutpoints for ", table, ".", column, call. = FALSE)
+  }
+  omop_filter_value(column = column, threshold = threshold,
+                     direction = direction,
+                     safe_bins = list(breaks = breaks))
+}
+
 #' Get concept prevalence for a table
 #'
 #' Returns the top concepts in a table ranked by person count or record count.
@@ -145,19 +187,65 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
-    conns,
-    expr = call("omopNumericHistogramDS", session$res_symbol,
-                table, value_col, as.integer(bins),
-                cohort_table, window)
-  )
-
   pooled <- NULL
   warnings <- character(0)
+
   if (scope == "pooled") {
-    pool_out <- .pool_result(raw, "histogram", pooling_policy)
-    pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    # Two-pass pooling: compute shared bin edges across servers
+    # Pass 1: Get p05/p95 ranges from each server
+    range_raw <- DSI::datashield.aggregate(
+      conns,
+      expr = call("omopNumericRangeDS", session$res_symbol,
+                  table, value_col, cohort_table, window)
+    )
+
+    # Compute shared breaks from global p05/p95
+    p05s <- vapply(range_raw, function(s) {
+      if (is.list(s) && !is.null(s$p05)) s$p05 else NA_real_
+    }, numeric(1))
+    p95s <- vapply(range_raw, function(s) {
+      if (is.list(s) && !is.null(s$p95)) s$p95 else NA_real_
+    }, numeric(1))
+
+    global_p05 <- min(p05s, na.rm = TRUE)
+    global_p95 <- max(p95s, na.rm = TRUE)
+
+    if (is.finite(global_p05) && is.finite(global_p95) &&
+        global_p05 < global_p95) {
+      shared_breaks <- seq(global_p05, global_p95, length.out = as.integer(bins) + 1L)
+
+      # Pass 2: Histogram with shared breaks
+      raw <- DSI::datashield.aggregate(
+        conns,
+        expr = call("omopNumericHistogramDS", session$res_symbol,
+                    table, value_col, as.integer(bins),
+                    cohort_table, window, shared_breaks)
+      )
+
+      pool_out <- .pool_result(raw, "histogram", pooling_policy)
+      pooled <- pool_out$result
+      warnings <- pool_out$warnings
+    } else {
+      # Fallback: single-pass (ranges are degenerate)
+      raw <- DSI::datashield.aggregate(
+        conns,
+        expr = call("omopNumericHistogramDS", session$res_symbol,
+                    table, value_col, as.integer(bins),
+                    cohort_table, window)
+      )
+      pool_out <- .pool_result(raw, "histogram", pooling_policy)
+      pooled <- pool_out$result
+      warnings <- c(pool_out$warnings,
+                     "Degenerate range: fell back to single-pass histogram")
+    }
+  } else {
+    # Per-site: single pass (no pooling needed)
+    raw <- DSI::datashield.aggregate(
+      conns,
+      expr = call("omopNumericHistogramDS", session$res_symbol,
+                  table, value_col, as.integer(bins),
+                  cohort_table, window)
+    )
   }
 
   dsomop_result(

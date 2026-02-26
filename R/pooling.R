@@ -202,26 +202,38 @@
     bin_start = ref$bin_start,
     bin_end = ref$bin_end,
     count = rep(0, nrow(ref)),
-    suppressed = rep(FALSE, nrow(ref)),
     stringsAsFactors = FALSE
   )
 
+  eps <- 1e-6  # tolerance for floating point bin edge comparison
+
   for (srv in names(valid)) {
     df <- valid[[srv]]
-    # Match bins by index (assumes identical bin edges)
+    # Validate bin count match
     if (nrow(df) != nrow(pooled)) {
       if (policy == "strict") {
         return(list(
           result = NULL,
-          warnings = paste0("Strict pooling failed: mismatched bins from server ", srv)
+          warnings = paste0("Strict pooling failed: mismatched bin count from server ", srv)
         ))
       }
       warnings <- c(warnings, paste0("Skipped server with mismatched bins: ", srv))
       next
     }
-    sup <- if ("suppressed" %in% names(df)) df$suppressed else rep(FALSE, nrow(df))
+    # Validate bin edges match within epsilon tolerance
+    edges_ok <- all(abs(df$bin_start - pooled$bin_start) < eps) &&
+                all(abs(df$bin_end - pooled$bin_end) < eps)
+    if (!edges_ok) {
+      if (policy == "strict") {
+        return(list(
+          result = NULL,
+          warnings = paste0("Strict pooling failed: mismatched bin edges from server ", srv)
+        ))
+      }
+      warnings <- c(warnings, paste0("Skipped server with mismatched bin edges: ", srv))
+      next
+    }
     pooled$count <- pooled$count + ifelse(is.na(df$count), 0, df$count)
-    pooled$suppressed <- pooled$suppressed | sup | is.na(df$count)
   }
 
   list(result = pooled, warnings = warnings)
@@ -269,20 +281,37 @@
   has_names <- any(vapply(valid, function(df) "concept_name" %in% names(df), logical(1)))
   if (has_names) merged$concept_name <- NA_character_
 
+  # Track which concepts appear in each server (for suppression propagation)
+  n_servers <- length(valid)
+  concept_server_count <- rep(0L, nrow(merged))
+  names(concept_server_count) <- as.character(merged$concept_id)
+
   for (srv in names(valid)) {
     df <- valid[[srv]]
     idx <- match(df$concept_id, merged$concept_id)
     vals <- as.numeric(df[[metric_col]])
-    vals[is.na(vals)] <- 0
+    has_na <- is.na(vals)
+    vals[has_na] <- 0
     merged[[metric_col]][idx] <- merged[[metric_col]][idx] + vals
+    # Count servers that have this concept with a non-NA value
+    present_idx <- idx[!has_na]
+    concept_server_count[as.character(merged$concept_id[present_idx])] <-
+      concept_server_count[as.character(merged$concept_id[present_idx])] + 1L
     if (has_names && "concept_name" %in% names(df)) {
       na_names <- is.na(merged$concept_name[idx])
       merged$concept_name[idx[na_names]] <- as.character(df$concept_name[na_names])
     }
   }
 
-  # Pass 2: Re-rank and take top K
-  merged <- merged[order(merged[[metric_col]], decreasing = TRUE), ]
+  # Mark concepts as suppressed if missing from any server or having NA counts
+  suppressed <- concept_server_count < n_servers
+  merged$suppressed <- suppressed[as.character(merged$concept_id)]
+  # Set suppressed concept counts to NA
+  merged[[metric_col]][merged$suppressed] <- NA_real_
+
+  # Pass 2: Re-rank and take top K (non-suppressed first, then suppressed)
+  merged <- merged[order(merged$suppressed, -merged[[metric_col]],
+                          na.last = TRUE), ]
   n <- min(nrow(merged), k)
   merged <- merged[seq_len(n), , drop = FALSE]
   rownames(merged) <- NULL
@@ -372,17 +401,19 @@
       combined <- do.call(rbind, all_dfs)
       rownames(combined) <- NULL
 
-      # Sum counts per table
+      # Sum counts per table (propagate NA if any server has NA)
       tables <- unique(combined$table_name)
       pooled_rows <- list()
       for (tbl in tables) {
         sub <- combined[combined$table_name == tbl, , drop = FALSE]
         row <- list(table_name = tbl)
         if ("n_records" %in% names(sub)) {
-          row$n_records <- sum(sub$n_records, na.rm = TRUE)
+          row$n_records <- if (any(is.na(sub$n_records))) NA_real_
+                           else sum(sub$n_records)
         }
         if ("n_persons" %in% names(sub)) {
-          row$n_persons <- sum(sub$n_persons, na.rm = TRUE)
+          row$n_persons <- if (any(is.na(sub$n_persons))) NA_real_
+                           else sum(sub$n_persons)
         }
         pooled_rows[[length(pooled_rows) + 1]] <- as.data.frame(row,
           stringsAsFactors = FALSE)

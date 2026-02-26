@@ -365,14 +365,34 @@ omop_filter_date_range <- function(start = NULL, end = NULL) {
 }
 
 #' @rdname omop_filter
-#' @param op Character; comparison operator
-#' @param value Numeric; threshold value
 #' @param column Character; column to compare
+#' @param threshold Numeric; threshold value
+#' @param direction Character; "above" or "below"
+#' @param safe_bins List with $breaks numeric vector from ds.omop.safe.cutpoints()
 #' @export
-omop_filter_value <- function(op, value, column = "value_as_number") {
+omop_filter_value <- function(column = "value_as_number", threshold,
+                               direction = c("above", "below"),
+                               safe_bins = NULL) {
+  direction <- match.arg(direction)
+  stopifnot(!is.null(safe_bins), length(safe_bins$breaks) >= 2)
+  breaks <- safe_bins$breaks
+  bin_idx <- max(1L, min(
+    findInterval(threshold, breaks, rightmost.closed = TRUE),
+    length(breaks) - 1L
+  ))
+  if (direction == "above") {
+    lower <- breaks[bin_idx]
+    upper <- breaks[length(breaks)]
+  } else {
+    lower <- breaks[1]
+    upper <- breaks[bin_idx + 1L]
+  }
   omop_filter(
-    type = "value_threshold", level = "row",
-    params = list(op = op, value = value, column = column)
+    type = "value_bin", level = "row",
+    params = list(var = column, op = "value_bin",
+                  value = list(lower = lower, upper = upper)),
+    label = paste0(column, " ", direction, " ~", threshold,
+                   " [bin: ", lower, "-", upper, ")")
   )
 }
 
@@ -386,7 +406,7 @@ omop_filter_value <- function(op, value, column = "value_as_number") {
 #' @return Character; "allowed", "constrained", or "blocked"
 #' @keywords internal
 .classifyFilterClient <- function(filter_type, params = list()) {
-  always_allowed <- c("sex", "age_group", "cohort", "concept_set")
+  always_allowed <- c("sex", "age_group", "cohort", "concept_set", "value_bin")
   constrained <- c("age_range", "has_concept", "date_range", "min_count")
   blocked <- c("value_threshold", "custom")
 
@@ -958,22 +978,12 @@ cart_to_plan <- function(cart) {
     }
   }
 
-  # Apply row-level filters to relevant outputs
-  row_filters <- .collect_row_filters(cart)
-  if (length(row_filters) > 0) {
+  # Apply row-level filters to relevant outputs (preserving AND/OR tree)
+  row_filter_items <- .extract_filters_by_level(cart$filters, "row")
+  if (length(row_filter_items) > 0) {
+    filter_tree <- .compile_filter_tree(row_filter_items)
     for (out_name in names(plan$outputs)) {
-      out <- plan$outputs[[out_name]]
-      if (is.null(out$filters)) out$filters <- list()
-      for (rf in row_filters) {
-        if (rf$type == "date_range") {
-          out$filters$time_window <- rf$params
-        } else if (rf$type == "value_threshold") {
-          out$filters$value_threshold <- rf$params
-        } else if (rf$type == "concept_set") {
-          out$filters$concept_set <- list(ids = rf$params$concept_ids)
-        }
-      }
-      plan$outputs[[out_name]] <- out
+      plan$outputs[[out_name]]$filter <- filter_tree
     }
   }
 
@@ -1003,6 +1013,82 @@ cart_to_plan <- function(cart) {
     }
   }
   result
+}
+
+# --- Filter tree compilation (preserves AND/OR structure) ---
+
+#' Compile a list of filters into an AND/OR tree for the server filter DSL
+#' @keywords internal
+.compile_filter_tree <- function(filters, default_operator = "and") {
+  if (length(filters) == 0) return(NULL)
+  children <- lapply(filters, .compile_filter_node)
+  children <- Filter(Negate(is.null), children)
+  if (length(children) == 0) return(NULL)
+  if (length(children) == 1) return(children[[1]])
+  setNames(list(children), default_operator)
+}
+
+#' Compile a single filter or filter group into the server filter DSL
+#' @keywords internal
+.compile_filter_node <- function(f) {
+  if (inherits(f, "omop_filter_group")) {
+    op <- tolower(f$operator)
+    children <- lapply(f$children, .compile_filter_node)
+    children <- Filter(Negate(is.null), children)
+    if (length(children) == 0) return(NULL)
+    if (length(children) == 1) return(children[[1]])
+    return(setNames(list(children), op))
+  }
+  if (inherits(f, "omop_filter")) return(.filter_to_leaf(f))
+  NULL
+}
+
+#' Convert an omop_filter to a leaf node matching the server's .compileFilter()
+#' @keywords internal
+.filter_to_leaf <- function(f) {
+  switch(f$type,
+    "sex" = list(var = "gender_concept_id", op = "==",
+                 value = if (toupper(f$params$value) %in% c("M", "MALE")) 8507L else 8532L),
+    "age_range" = list(and = list(
+      list(var = "age_at_index", op = ">=", value = f$params$min),
+      list(var = "age_at_index", op = "<=", value = f$params$max))),
+    "date_range" = list(and = list(
+      list(var = f$params$date_column %||% "start_date", op = ">=", value = f$params$start),
+      list(var = f$params$date_column %||% "start_date", op = "<=", value = f$params$end))),
+    "has_concept" =, "concept_set" = list(
+      var = f$params$concept_col %||% "concept_id",
+      op = "in", value = f$params$concept_ids),
+    "value_bin" = list(var = f$params$var, op = "value_bin", value = f$params$value),
+    {
+      if (!is.null(f$params$var))
+        list(var = f$params$var, op = f$params$op, value = f$params$value)
+      else
+        NULL
+    }
+  )
+}
+
+#' Extract filters (or groups containing filters) at a given level
+#' @keywords internal
+.extract_filters_by_level <- function(filters, level) {
+  result <- list()
+  for (f in filters) {
+    if (inherits(f, "omop_filter_group") && .group_has_level(f, level))
+      result <- c(result, list(f))
+    else if (inherits(f, "omop_filter") && f$level == level)
+      result <- c(result, list(f))
+  }
+  result
+}
+
+#' Check if a filter group contains any filter at a given level
+#' @keywords internal
+.group_has_level <- function(group, level) {
+  for (ch in group$children) {
+    if (inherits(ch, "omop_filter_group") && .group_has_level(ch, level)) return(TRUE)
+    if (inherits(ch, "omop_filter") && ch$level == level) return(TRUE)
+  }
+  FALSE
 }
 
 # ==============================================================================
