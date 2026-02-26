@@ -17,7 +17,7 @@
       shiny::numericInput(ns("limit"), "Max results", 50, 10, 500, 10),
       shiny::actionButton(ns("search_btn"), "Search",
                           class = "btn-primary w-100"),
-      shiny::hr(),
+      .server_selector_ui(ns),
       shiny::h6("Concept Set"),
       shiny::verbatimTextOutput(ns("concept_set_ids")),
       shiny::actionButton(ns("clear_set"), "Clear Set",
@@ -54,6 +54,9 @@
 .mod_vocab_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     search_results <- shiny::reactiveVal(NULL)
+    raw_search_result <- shiny::reactiveVal(NULL)
+
+    .scope_sync_servers(input, session, state)
 
     shiny::observeEvent(input$search_btn, {
       shiny::req(nchar(input$search_pattern) > 0)
@@ -71,8 +74,10 @@
         if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
           state$script_lines <- c(state$script_lines, res$meta$call_code)
         }
-        srv <- names(res$per_site)[1]
-        search_results(res$per_site[[srv]])
+        raw_search_result(res)
+        search_results(.extract_display_data(res, "all",
+          input$selected_server,
+          intersect_only = isTRUE(input$intersect_only)))
       }, error = function(e) {
         shiny::showNotification(
           paste("Search error:", conditionMessage(e)), type = "error"
@@ -80,11 +85,20 @@
       })
     })
 
+    # Re-extract on server/intersect change
+    shiny::observeEvent(list(input$selected_server, input$intersect_only), {
+      res <- raw_search_result()
+      if (is.null(res)) return()
+      search_results(.extract_display_data(res, "all",
+        input$selected_server,
+        intersect_only = isTRUE(input$intersect_only)))
+    }, ignoreInit = TRUE)
+
     output$results_table <- DT::renderDT({
       df <- search_results()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
       keep <- intersect(c("concept_id", "concept_name", "domain_id",
-                           "vocabulary_id", "standard_concept"),
+                           "vocabulary_id", "standard_concept", "server"),
                         names(df))
       DT::datatable(
         df[, keep, drop = FALSE],
@@ -160,10 +174,15 @@
     output$concept_detail <- shiny::renderUI({
       df <- search_results()
       idx <- input$results_table_rows_selected
-      if (is.null(idx) || is.null(df) || idx > nrow(df)) {
+      if (is.null(idx) || length(idx) == 0 || is.null(df)) {
         return(shiny::p("Click a concept to see details."))
       }
-      row <- df[idx, ]
+      # Show details for the first selected row
+      first_idx <- idx[1]
+      if (first_idx > nrow(df)) {
+        return(shiny::p("Click a concept to see details."))
+      }
+      row <- df[first_idx, ]
       shiny::tags$dl(class = "row",
         shiny::tags$dt(class = "col-sm-4", "Concept ID"),
         shiny::tags$dd(class = "col-sm-8", as.character(row$concept_id)),

@@ -52,8 +52,11 @@
     catalog_df      <- shiny::reactiveVal(NULL)
     selected_query  <- shiny::reactiveVal(NULL)
     display_data    <- shiny::reactiveVal(NULL)
+    raw_results     <- shiny::reactiveVal(NULL)
     concept_search_results <- shiny::reactiveVal(NULL)
     last_exec_meta  <- shiny::reactiveVal(NULL)
+
+    .scope_sync_servers(input, session, state)
 
     # ── Load catalog list ──────────────────────────────────────────────────────
     load_catalog <- function() {
@@ -308,30 +311,33 @@
           mode = mode, symbol = state$symbol)
         state$script_lines <- c(state$script_lines, code)
 
-        # Determine display data
-        if (scope == "pooled" && isTRUE(q$poolable)) {
-          pooled <- ds.omop.catalog.pool(
-            results, query_id = q$id,
-            policy = policy, symbol = state$symbol
-          )
-          pool_code <- .build_code("ds.omop.catalog.pool",
-            results = "results", query_id = q$id,
-            policy = policy, symbol = state$symbol)
-          state$script_lines <- c(state$script_lines, pool_code)
+        # Store raw results for scope switching without re-query
+        raw_results(results)
 
-          if (!is.null(pooled) && is.data.frame(pooled)) {
-            display_data(pooled)
-            last_exec_meta(list(scope = "pooled", servers = names(results)))
-          } else {
-            srv <- names(results)[1]
-            display_data(if (is.data.frame(results[[srv]])) results[[srv]] else NULL)
-            last_exec_meta(list(scope = "per_site", servers = names(results),
-              warnings = "Pooling returned NULL; showing first server."))
-          }
+        # Also pre-compute pooled if query is poolable
+        pooled_df <- NULL
+        if (isTRUE(q$poolable)) {
+          tryCatch({
+            pooled_df <- ds.omop.catalog.pool(
+              results, query_id = q$id,
+              policy = policy, symbol = state$symbol
+            )
+            pool_code <- .build_code("ds.omop.catalog.pool",
+              results = "results", query_id = q$id,
+              policy = policy, symbol = state$symbol)
+            state$script_lines <- c(state$script_lines, pool_code)
+          }, error = function(e) NULL)
+        }
+
+        # Determine display data based on current scope
+        if (scope == "pooled" && !is.null(pooled_df) && is.data.frame(pooled_df)) {
+          display_data(pooled_df)
+          last_exec_meta(list(scope = "pooled", servers = names(results)))
         } else {
-          srv <- names(results)[1]
-          display_data(if (is.data.frame(results[[srv]])) results[[srv]] else NULL)
-          last_exec_meta(list(scope = "per_site", servers = names(results)))
+          display_data(.extract_display_data(results, scope,
+            input$selected_server,
+            intersect_only = isTRUE(input$intersect_only)))
+          last_exec_meta(list(scope = scope, servers = names(results)))
         }
 
         shiny::removeNotification("catalog_loading")
@@ -343,6 +349,40 @@
         )
       })
     })
+
+    # ── Re-extract on scope/server/intersect change (no re-query) ─────────────
+    shiny::observeEvent(list(input$scope, input$selected_server,
+                             input$intersect_only), {
+      results <- raw_results()
+      if (is.null(results)) return()
+      scope <- input$scope %||% "per_site"
+      q <- selected_query()
+
+      if (scope == "pooled" && isTRUE(q$poolable)) {
+        policy <- input$pooling_policy %||% "strict"
+        tryCatch({
+          pooled_df <- ds.omop.catalog.pool(
+            results, query_id = q$id,
+            policy = policy, symbol = state$symbol
+          )
+          if (!is.null(pooled_df) && is.data.frame(pooled_df)) {
+            display_data(pooled_df)
+          } else {
+            display_data(.extract_display_data(results, "per_site",
+                                                input$selected_server))
+          }
+        }, error = function(e) {
+          display_data(.extract_display_data(results, "per_site",
+                                              input$selected_server))
+        })
+        last_exec_meta(list(scope = "pooled", servers = names(results)))
+      } else {
+        display_data(.extract_display_data(results, scope,
+          input$selected_server,
+          intersect_only = isTRUE(input$intersect_only)))
+        last_exec_meta(list(scope = scope, servers = names(results)))
+      }
+    }, ignoreInit = TRUE)
 
     # ── Results table ──────────────────────────────────────────────────────────
     output$results_dt <- DT::renderDT({
@@ -377,7 +417,8 @@
       tags <- lapply(meta$servers, function(srv) {
         shiny::span(class = "server-badge server-badge-ok", srv)
       })
-      scope_text <- if (meta$scope == "pooled") "Pooled" else "Per-site"
+      scope_text <- switch(meta$scope,
+        "pooled" = "Pooled", "all" = "All Servers", "Per-site")
       warns <- meta$warnings
       warn_ui <- if (!is.null(warns) && length(warns) > 0) {
         shiny::div(class = "text-warning mt-1",

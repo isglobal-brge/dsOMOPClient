@@ -179,13 +179,17 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       plan_outputs = list(),
       script_lines = character(0),
       scope = "per_site",
-      pooling_policy = "strict"
+      pooling_policy = "strict",
+      server_names = character(0)
     )
 
     # Load initial data on startup
     shiny::observe({
       tryCatch({
         state$status <- ds.omop.status(symbol = state$symbol)
+        if (!is.null(state$status$servers)) {
+          state$server_names <- state$status$servers
+        }
         state$tables <- ds.omop.tables(symbol = state$symbol)
       }, error = function(e) {
         shiny::showNotification(
@@ -268,10 +272,10 @@ isTRUE_vec <- function(x) {
   }, character(1), USE.NAMES = FALSE)
 }
 
-# Utility: create named choices for selectInput (display name -> actual value)
+# Utility: create named choices for selectInput (use raw table names)
 .table_choices <- function(tables) {
   choices <- tables
-  names(choices) <- .format_table_name(tables)
+  names(choices) <- tables
   choices
 }
 
@@ -305,13 +309,21 @@ isTRUE_vec <- function(x) {
 }
 
 # Scope control UI (reusable across modules)
-.scope_controls_ui <- function(ns) {
+# show_pooled: whether to offer the "Pooled" radio option
+.scope_controls_ui <- function(ns, default = "per_site", show_pooled = TRUE) {
+  scope_choices <- c("All Servers" = "all", "Per Site" = "per_site")
+  if (show_pooled) scope_choices <- c(scope_choices, "Pooled" = "pooled")
   shiny::tagList(
     shiny::hr(),
     shiny::h6("Data Scope"),
     shiny::radioButtons(ns("scope"), NULL,
-      choices = c("Per Site" = "per_site", "Pooled" = "pooled"),
-      selected = "per_site", inline = TRUE),
+      choices = scope_choices,
+      selected = default, inline = TRUE),
+    shiny::selectizeInput(ns("selected_server"), "Servers",
+      choices = NULL, multiple = TRUE,
+      options = list(placeholder = "All servers")),
+    shiny::checkboxInput(ns("intersect_only"),
+      "Intersection only (common to selected)", FALSE),
     shiny::conditionalPanel(
       condition = paste0("input['", ns("scope"), "'] == 'pooled'"),
       shiny::radioButtons(ns("pooling_policy"), "Pooling Policy",
@@ -319,5 +331,92 @@ isTRUE_vec <- function(x) {
         selected = "strict", inline = TRUE)
     )
   )
+}
+
+# Simple server selector for modules that don't need full scope radio
+# (session, drilldown, vocab)
+.server_selector_ui <- function(ns) {
+  shiny::tagList(
+    shiny::hr(),
+    shiny::selectizeInput(ns("selected_server"), "Servers",
+      choices = NULL, multiple = TRUE,
+      options = list(placeholder = "All servers")),
+    shiny::checkboxInput(ns("intersect_only"),
+      "Intersection only (common to selected)", FALSE)
+  )
+}
+
+# Server dropdown synchroniser — called once per module server
+.scope_sync_servers <- function(input, session, state) {
+  shiny::observe({
+    srvs <- state$server_names
+    if (length(srvs) > 0) {
+      shiny::updateSelectizeInput(session, "selected_server",
+                                  choices = srvs, selected = srvs,
+                                  server = FALSE)
+    }
+  })
+}
+
+# Map UI scope to backend scope ("all" → "per_site" since backend only knows per_site/pooled)
+.backend_scope <- function(scope) {
+  if (is.null(scope) || scope == "all") "per_site" else scope
+}
+
+# Resolve which server names to include based on selected_server input
+# Returns character vector of server names
+.resolve_servers <- function(per_site, selected_server) {
+  all_srvs <- names(per_site)
+  if (is.null(selected_server) || length(selected_server) == 0)
+    return(all_srvs)
+  intersect(selected_server, all_srvs)
+}
+
+# Utility: extract display data from dsomop_result or raw named list
+# selected_server: character vector of selected server names (NULL = all)
+# intersect_only: if TRUE and scope is "all", only keep rows whose key
+#   (e.g. concept_id) appears in ALL selected servers
+.extract_display_data <- function(res, scope, selected_server = NULL,
+                                   intersect_only = FALSE,
+                                   intersect_col = "concept_id",
+                                   server_col = "server") {
+  if (is.null(res)) return(NULL)
+  per_site <- if (inherits(res, "dsomop_result")) res$per_site else res
+
+  if (scope == "pooled" && inherits(res, "dsomop_result") &&
+      !is.null(res$pooled) && is.data.frame(res$pooled)) {
+    return(res$pooled)
+  }
+
+  srvs <- .resolve_servers(per_site, selected_server)
+  if (length(srvs) == 0) return(NULL)
+
+  if (scope == "per_site") {
+    srv <- srvs[1]
+    if (srv %in% names(per_site)) return(per_site[[srv]])
+    return(NULL)
+  }
+
+  # scope == "all" (or any non-pooled, non-per_site)
+  dfs <- list()
+  for (nm in srvs) {
+    df <- per_site[[nm]]
+    if (is.data.frame(df) && nrow(df) > 0) {
+      df[[server_col]] <- nm
+      dfs[[nm]] <- df
+    }
+  }
+  if (length(dfs) == 0) return(NULL)
+  combined <- do.call(rbind, dfs)
+  rownames(combined) <- NULL
+
+  # Intersection filter: keep only rows with key present in ALL selected servers
+  if (isTRUE(intersect_only) && length(dfs) > 1 &&
+      intersect_col %in% names(combined)) {
+    id_sets <- lapply(dfs, function(d) unique(d[[intersect_col]]))
+    common_ids <- Reduce(intersect, id_sets)
+    combined <- combined[combined[[intersect_col]] %in% common_ids, , drop = FALSE]
+  }
+  combined
 }
 

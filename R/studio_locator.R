@@ -21,7 +21,8 @@
       DT::DTOutput(ns("search_results_dt")),
       shiny::hr(),
       shiny::actionButton(ns("locate_btn"), "Locate",
-                          class = "btn-primary w-100")
+                          class = "btn-primary w-100"),
+      .scope_controls_ui(ns, default = "all")
     ),
     bslib::card(
       bslib::card_header("Concept Presence Matrix"),
@@ -36,6 +37,9 @@
   shiny::moduleServer(id, function(input, output, session) {
     locate_data <- shiny::reactiveVal(NULL)
     search_results <- shiny::reactiveVal(NULL)
+    raw_locate_result <- shiny::reactiveVal(NULL)
+
+    .scope_sync_servers(input, session, state)
 
     # Auto-populate from selected concept
     shiny::observe({
@@ -118,25 +122,14 @@
         if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
           state$script_lines <- c(state$script_lines, res$meta$call_code)
         }
-        # Combine results from all servers with server column
-        all_results <- data.frame(
-          table_name = character(0), concept_column = character(0),
-          concept_id = integer(0), n_records = numeric(0),
-          n_persons = numeric(0), server = character(0),
-          stringsAsFactors = FALSE
-        )
-        for (srv in names(res$per_site)) {
-          df <- res$per_site[[srv]]
-          if (is.data.frame(df) && nrow(df) > 0) {
-            df$server <- srv
-            all_results <- rbind(all_results, df)
-          }
-        }
-        # Format table names for display
-        if (nrow(all_results) > 0 && "table_name" %in% names(all_results)) {
-          all_results$table_display <- .format_table_name(all_results$table_name)
-        }
-        locate_data(all_results)
+        # Store raw result for scope switching
+        raw_locate_result(res)
+
+        # Extract based on current scope
+        scope <- input$scope %||% "all"
+        df <- .locator_extract(res, scope, input$selected_server,
+                                intersect_only = isTRUE(input$intersect_only))
+        locate_data(df)
         shiny::removeNotification("locate_loading")
       }, error = function(e) {
         shiny::removeNotification("locate_loading")
@@ -146,18 +139,76 @@
       })
     })
 
+    # Re-extract on scope/server/intersect change
+    shiny::observeEvent(list(input$scope, input$selected_server,
+                             input$intersect_only), {
+      res <- raw_locate_result()
+      if (is.null(res)) return()
+      scope <- input$scope %||% "all"
+      df <- .locator_extract(res, scope, input$selected_server,
+                              intersect_only = isTRUE(input$intersect_only))
+      locate_data(df)
+    }, ignoreInit = TRUE)
+
     output$presence_dt <- DT::renderDT({
       df <- locate_data()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
-      # Show formatted table name instead of raw
-      show_df <- df
-      if ("table_display" %in% names(show_df)) {
-        show_df$table_name <- show_df$table_display
-        show_df$table_display <- NULL
-      }
-      DT::datatable(show_df,
+      DT::datatable(df,
         options = list(pageLength = 25, dom = "ftip", scrollX = TRUE),
         rownames = FALSE, selection = "none")
     })
   })
+}
+
+# Helper: extract locator data with scope support
+# selected_server: character vector of server names (NULL = all)
+.locator_extract <- function(res, scope, selected_server = NULL,
+                              intersect_only = FALSE) {
+  if (is.null(res)) return(NULL)
+  per_site <- if (inherits(res, "dsomop_result")) res$per_site else res
+  srvs <- .resolve_servers(per_site, selected_server)
+  if (length(srvs) == 0) return(NULL)
+
+  if (scope == "per_site") {
+    srv <- srvs[1]
+    if (srv %in% names(per_site)) return(per_site[[srv]])
+    return(NULL)
+  }
+
+  if (scope == "pooled") {
+    # Aggregate across selected servers
+    all_df <- .locator_extract(res, "all", selected_server)
+    if (is.null(all_df) || !is.data.frame(all_df) || nrow(all_df) == 0)
+      return(NULL)
+    group_cols <- intersect(c("table_name", "concept_column", "concept_id"),
+                            names(all_df))
+    if (length(group_cols) == 0) return(all_df)
+    agg <- stats::aggregate(
+      cbind(n_records, n_persons) ~ table_name + concept_column + concept_id,
+      data = all_df, FUN = sum, na.rm = TRUE
+    )
+    return(agg)
+  }
+
+  # scope == "all" (default): rbind selected servers with server column
+  dfs <- list()
+  for (srv in srvs) {
+    df <- per_site[[srv]]
+    if (is.data.frame(df) && nrow(df) > 0) {
+      df$server <- srv
+      dfs[[srv]] <- df
+    }
+  }
+  if (length(dfs) == 0) return(NULL)
+  combined <- do.call(rbind, dfs)
+  rownames(combined) <- NULL
+
+  # Intersection filter
+  if (isTRUE(intersect_only) && length(dfs) > 1 &&
+      "concept_id" %in% names(combined)) {
+    id_sets <- lapply(dfs, function(d) unique(d$concept_id))
+    common_ids <- Reduce(intersect, id_sets)
+    combined <- combined[combined$concept_id %in% common_ids, , drop = FALSE]
+  }
+  combined
 }

@@ -20,6 +20,7 @@
                           class = "btn-outline-warning w-100 mb-2"),
       shiny::actionButton(ns("add_to_plan"), "Add to Plan",
                           class = "btn-outline-info w-100 mb-2"),
+      .server_selector_ui(ns),
       shiny::actionButton(ns("reload"), "Reload",
                           class = "btn-outline-secondary w-100")
     ),
@@ -81,20 +82,30 @@
 .mod_concept_drilldown_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     drilldown_data <- shiny::reactiveVal(NULL)
+    raw_drilldown <- shiny::reactiveVal(NULL)
+
+    .scope_sync_servers(input, session, state)
 
     # Auto-trigger when concept changes
     shiny::observeEvent(state$selected_concept_id, {
       cid <- state$selected_concept_id
       tbl <- state$selected_table
       if (is.null(cid) || is.null(tbl)) return()
-      .run_drilldown(state, drilldown_data)
+      .run_drilldown(state, drilldown_data, raw_drilldown, input)
     })
 
     shiny::observeEvent(input$reload, {
-      .run_drilldown(state, drilldown_data)
+      .run_drilldown(state, drilldown_data, raw_drilldown, input)
     })
 
-    .run_drilldown <- function(state, drilldown_data) {
+    # Re-extract on server/intersect change
+    shiny::observeEvent(list(input$selected_server, input$intersect_only), {
+      res <- raw_drilldown()
+      if (is.null(res)) return()
+      drilldown_data(.drilldown_pick_server(res, input$selected_server))
+    }, ignoreInit = TRUE)
+
+    .run_drilldown <- function(state, drilldown_data, raw_drilldown, input) {
       cid <- state$selected_concept_id
       tbl <- state$selected_table
       if (is.null(cid) || is.null(tbl)) return()
@@ -110,8 +121,9 @@
         if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
           state$script_lines <- c(state$script_lines, res$meta$call_code)
         }
-        # Store per_site results for display (modules expect named list)
-        drilldown_data(res$per_site)
+        # Store full result for server switching
+        raw_drilldown(res$per_site)
+        drilldown_data(.drilldown_pick_server(res$per_site, input$selected_server))
         shiny::removeNotification("dd_loading")
       }, error = function(e) {
         shiny::removeNotification("dd_loading")
@@ -119,6 +131,7 @@
           paste("Drilldown error:", conditionMessage(e)), type = "error"
         )
         drilldown_data(NULL)
+        raw_drilldown(NULL)
       })
     }
 
@@ -255,6 +268,28 @@
       if (is.null(dd)) {
         return(shiny::p("Select a concept from the Explore tab."))
       }
+
+      # If multiple servers shown, add a server comparison row
+      server_comparison <- NULL
+      if (length(dd) > 1) {
+        rows <- lapply(names(dd), function(srv) {
+          s <- dd[[srv]]$summary
+          shiny::div(
+            shiny::span(class = "server-badge server-badge-ok", srv),
+            shiny::span(paste0(
+              "Records: ", if (is.null(s$n_records) || is.na(s$n_records))
+                "suppressed" else format(s$n_records, big.mark = ","),
+              " | Persons: ", if (is.null(s$n_persons) || is.na(s$n_persons))
+                "suppressed" else format(s$n_persons, big.mark = ",")
+            ))
+          )
+        })
+        server_comparison <- shiny::div(class = "mb-3 p-2 border rounded",
+          shiny::h6("Server Comparison"),
+          shiny::tagList(rows)
+        )
+      }
+
       srv <- names(dd)[1]
       d <- dd[[srv]]
       s <- d$summary
@@ -302,7 +337,10 @@
         ))
       }
 
-      shiny::div(class = "d-flex flex-wrap justify-content-center", metrics)
+      shiny::tagList(
+        server_comparison,
+        shiny::div(class = "d-flex flex-wrap justify-content-center", metrics)
+      )
     })
 
     # --- Numeric histogram ---
@@ -445,5 +483,14 @@
       })
     }, res = 96)
   })
+}
+
+# Helper: pick server(s) from drilldown per_site list
+# selected_server: character vector of server names (NULL = all)
+.drilldown_pick_server <- function(per_site, selected_server) {
+  if (is.null(per_site)) return(NULL)
+  srvs <- .resolve_servers(per_site, selected_server)
+  if (length(srvs) == 0) return(per_site)
+  per_site[srvs]
 }
 

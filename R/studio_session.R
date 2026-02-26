@@ -11,6 +11,7 @@
       bslib::card_body(
         shiny::actionButton(ns("refresh"), "Refresh",
                             class = "btn-sm btn-outline-primary mb-3"),
+        .server_selector_ui(ns),
         shiny::uiOutput(ns("session_info"))
       )
     ),
@@ -39,9 +40,20 @@
 
 .mod_session_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
+
+    .scope_sync_servers(input, session, state)
+
+    raw_coverage <- shiny::reactiveVal(NULL)
+    raw_miss     <- shiny::reactiveVal(NULL)
+    coverage_data <- shiny::reactiveVal(NULL)
+    miss_data     <- shiny::reactiveVal(NULL)
+
     shiny::observeEvent(input$refresh, {
       tryCatch({
         state$status <- ds.omop.status(symbol = state$symbol)
+        if (!is.null(state$status$servers)) {
+          state$server_names <- state$status$servers
+        }
       }, error = function(e) {
         shiny::showNotification(
           paste("Error:", conditionMessage(e)), type = "error"
@@ -79,21 +91,32 @@
       shiny::tags$dl(class = "row", items)
     })
 
-    coverage_data <- shiny::reactiveVal(NULL)
+    # Load coverage
     shiny::observeEvent(input$coverage_btn, {
       tryCatch({
         res <- ds.omop.domain.coverage(symbol = state$symbol)
         if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
           state$script_lines <- c(state$script_lines, res$meta$call_code)
         }
-        srv <- names(res$per_site)[1]
-        coverage_data(res$per_site[[srv]])
+        raw_coverage(res)
+        coverage_data(.extract_display_data(res, "all",
+          input$selected_server,
+          intersect_only = isTRUE(input$intersect_only)))
       }, error = function(e) {
         shiny::showNotification(
           paste("Error:", conditionMessage(e)), type = "error"
         )
       })
     })
+
+    # Re-extract coverage on server/intersect change
+    shiny::observeEvent(list(input$selected_server, input$intersect_only), {
+      res <- raw_coverage()
+      if (is.null(res)) return()
+      coverage_data(.extract_display_data(res, "all",
+        input$selected_server,
+        intersect_only = isTRUE(input$intersect_only)))
+    }, ignoreInit = TRUE)
 
     output$coverage_dt <- DT::renderDT({
       df <- coverage_data()
@@ -102,7 +125,7 @@
                     rownames = FALSE, selection = "none")
     })
 
-    miss_data <- shiny::reactiveVal(NULL)
+    # Load missingness
     shiny::observeEvent(input$miss_btn, {
       tryCatch({
         res <- ds.omop.missingness(input$miss_table,
@@ -110,14 +133,25 @@
         if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
           state$script_lines <- c(state$script_lines, res$meta$call_code)
         }
-        srv <- names(res$per_site)[1]
-        miss_data(res$per_site[[srv]])
+        raw_miss(res)
+        miss_data(.extract_display_data(res, "all",
+          input$selected_server,
+          intersect_only = isTRUE(input$intersect_only)))
       }, error = function(e) {
         shiny::showNotification(
           paste("Error:", conditionMessage(e)), type = "error"
         )
       })
     })
+
+    # Re-extract missingness on server/intersect change
+    shiny::observeEvent(list(input$selected_server, input$intersect_only), {
+      res <- raw_miss()
+      if (is.null(res)) return()
+      miss_data(.extract_display_data(res, "all",
+        input$selected_server,
+        intersect_only = isTRUE(input$intersect_only)))
+    }, ignoreInit = TRUE)
 
     output$miss_dt <- DT::renderDT({
       df <- miss_data()

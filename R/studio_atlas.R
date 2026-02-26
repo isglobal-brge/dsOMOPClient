@@ -37,6 +37,8 @@
     achilles_catalog <- shiny::reactiveVal(NULL)
     page_data <- shiny::reactiveVal(NULL)
 
+    .scope_sync_servers(input, session, state)
+
     # Check Achilles availability and fetch catalog on load
     shiny::observe({
       tryCatch({
@@ -118,6 +120,55 @@
       paste("Data Sources:", input$atlas_nav)
     })
 
+    # Re-fetch when scope, server, or intersect changes
+    shiny::observeEvent(list(input$scope, input$selected_server,
+                             input$intersect_only), {
+      if (!achilles_available() || is.null(input$atlas_nav)) return()
+      nav <- input$atlas_nav
+      cat <- achilles_catalog()
+      scope <- input$scope %||% "per_site"
+      policy <- input$pooling_policy %||% "strict"
+
+      tryCatch({
+        data <- if (nav == "Dashboard") {
+          .atlas_fetch_dashboard(state, scope, policy, input$selected_server)
+        } else if (nav == "Person") {
+          .atlas_fetch_person(state, scope, policy, input$selected_server)
+        } else if (nav == "Visits") {
+          .atlas_fetch_visits(state, scope, policy, input$selected_server)
+        } else if (nav == "Trends") {
+          .atlas_fetch_trends_dynamic(state, cat, scope, policy,
+                                       input$selected_server)
+        } else if (nav == "Data Quality") {
+          .atlas_fetch_quality(state, scope, policy)
+        } else {
+          domain <- .page_to_domain(nav)
+          if (!is.null(cat) && !is.null(domain)) {
+            domain_analyses <- cat[cat$domain == domain, , drop = FALSE]
+            .atlas_fetch_domain_dynamic(state, domain_analyses, scope, policy,
+                                         input$selected_server)
+          } else {
+            switch(nav,
+              "Conditions" = .atlas_fetch_domain(state, 400L, 401L, scope,
+                               policy, input$selected_server),
+              "Drugs"     = .atlas_fetch_domain(state, 700L, 701L, scope,
+                               policy, input$selected_server),
+              "Procedures" = .atlas_fetch_domain(state, 600L, 601L, scope,
+                               policy, input$selected_server),
+              "Measurements" = .atlas_fetch_domain(state, 1800L, 1801L, scope,
+                               policy, input$selected_server),
+              "Observations" = .atlas_fetch_domain(state, 800L, NULL, scope,
+                               policy, input$selected_server),
+              NULL
+            )
+          }
+        }
+        page_data(data %||% list(no_data = TRUE))
+      }, error = function(e) {
+        page_data(list(error = conditionMessage(e)))
+      })
+    }, ignoreInit = TRUE)
+
     # Reactive: fetch data when page changes
     shiny::observeEvent(input$atlas_nav, {
       if (!achilles_available()) {
@@ -129,16 +180,17 @@
       cat <- achilles_catalog()
       scope <- input$scope %||% "per_site"
       policy <- input$pooling_policy %||% "strict"
+      selected_srv <- input$selected_server
 
       tryCatch({
         data <- if (nav == "Dashboard") {
-          .atlas_fetch_dashboard(state, scope, policy)
+          .atlas_fetch_dashboard(state, scope, policy, selected_srv)
         } else if (nav == "Person") {
-          .atlas_fetch_person(state, scope, policy)
+          .atlas_fetch_person(state, scope, policy, selected_srv)
         } else if (nav == "Visits") {
-          .atlas_fetch_visits(state, scope, policy)
+          .atlas_fetch_visits(state, scope, policy, selected_srv)
         } else if (nav == "Trends") {
-          .atlas_fetch_trends_dynamic(state, cat, scope, policy)
+          .atlas_fetch_trends_dynamic(state, cat, scope, policy, selected_srv)
         } else if (nav == "Data Quality") {
           .atlas_fetch_quality(state, scope, policy)
         } else {
@@ -146,15 +198,21 @@
           domain <- .page_to_domain(nav)
           if (!is.null(cat) && !is.null(domain)) {
             domain_analyses <- cat[cat$domain == domain, , drop = FALSE]
-            .atlas_fetch_domain_dynamic(state, domain_analyses, scope, policy)
+            .atlas_fetch_domain_dynamic(state, domain_analyses, scope, policy,
+                                         selected_srv)
           } else {
             # Fallback to hardcoded IDs
             switch(nav,
-              "Conditions" = .atlas_fetch_domain(state, 400L, 401L, scope, policy),
-              "Drugs"     = .atlas_fetch_domain(state, 700L, 701L, scope, policy),
-              "Procedures" = .atlas_fetch_domain(state, 600L, 601L, scope, policy),
-              "Measurements" = .atlas_fetch_domain(state, 1800L, 1801L, scope, policy),
-              "Observations" = .atlas_fetch_domain(state, 800L, NULL, scope, policy),
+              "Conditions" = .atlas_fetch_domain(state, 400L, 401L, scope,
+                               policy, selected_srv),
+              "Drugs"     = .atlas_fetch_domain(state, 700L, 701L, scope,
+                               policy, selected_srv),
+              "Procedures" = .atlas_fetch_domain(state, 600L, 601L, scope,
+                               policy, selected_srv),
+              "Measurements" = .atlas_fetch_domain(state, 1800L, 1801L, scope,
+                               policy, selected_srv),
+              "Observations" = .atlas_fetch_domain(state, 800L, NULL, scope,
+                               policy, selected_srv),
               NULL
             )
           }
@@ -528,26 +586,28 @@
 # Data fetching helpers (each returns a list consumed by render functions)
 # ==============================================================================
 
-.atlas_fetch_dashboard <- function(state, scope, policy) {
+.atlas_fetch_dashboard <- function(state, scope, policy,
+                                    selected_server = NULL) {
+  api_scope <- .backend_scope(scope)
   # Total persons (analysis 0)
   persons_res <- ds.omop.achilles.results(
-    analysis_ids = 0L, scope = scope, pooling_policy = policy,
+    analysis_ids = 0L, scope = api_scope, pooling_policy = policy,
     symbol = state$symbol)
   .atlas_accumulate_code(state, persons_res)
 
   # Gender (analysis 1)
   gender_res <- ds.omop.achilles.results(
-    analysis_ids = 1L, scope = scope, pooling_policy = policy,
+    analysis_ids = 1L, scope = api_scope, pooling_policy = policy,
     symbol = state$symbol)
   .atlas_accumulate_code(state, gender_res)
 
   # Age distribution (analysis 113)
   age_res <- ds.omop.achilles.distribution(
-    analysis_ids = 113L, scope = scope, pooling_policy = policy,
+    analysis_ids = 113L, scope = api_scope, pooling_policy = policy,
     symbol = state$symbol)
   .atlas_accumulate_code(state, age_res)
 
-  srv <- names(persons_res$per_site)[1]
+  srv <- selected_server %||% names(persons_res$per_site)[1]
   persons_df <- .atlas_pick_result(persons_res, scope, srv)
   gender_df <- .atlas_pick_result(gender_res, scope, srv)
   age_df <- .atlas_pick_result(age_res, scope, srv)
@@ -566,19 +626,21 @@
        concept_map = concept_map)
 }
 
-.atlas_fetch_person <- function(state, scope, policy) {
+.atlas_fetch_person <- function(state, scope, policy,
+                                 selected_server = NULL) {
+  api_scope <- .backend_scope(scope)
   ids <- c(1L, 2L, 5L, 8L)
   res <- ds.omop.achilles.results(
-    analysis_ids = ids, scope = scope, pooling_policy = policy,
+    analysis_ids = ids, scope = api_scope, pooling_policy = policy,
     symbol = state$symbol)
   .atlas_accumulate_code(state, res)
 
   dist_res <- ds.omop.achilles.distribution(
-    analysis_ids = 113L, scope = scope, pooling_policy = policy,
+    analysis_ids = 113L, scope = api_scope, pooling_policy = policy,
     symbol = state$symbol)
   .atlas_accumulate_code(state, dist_res)
 
-  srv <- names(res$per_site)[1]
+  srv <- selected_server %||% names(res$per_site)[1]
   df <- .atlas_pick_result(res, scope, srv)
   dist_df <- .atlas_pick_result(dist_res, scope, srv)
 
@@ -599,14 +661,15 @@
 }
 
 .atlas_fetch_domain <- function(state, count_analysis, trend_analysis,
-                                 scope, policy) {
+                                 scope, policy, selected_server = NULL) {
+  api_scope <- .backend_scope(scope)
   ids <- count_analysis
   res <- ds.omop.achilles.results(
-    analysis_ids = ids, scope = scope, pooling_policy = policy,
+    analysis_ids = ids, scope = api_scope, pooling_policy = policy,
     symbol = state$symbol)
   .atlas_accumulate_code(state, res)
 
-  srv <- names(res$per_site)[1]
+  srv <- selected_server %||% names(res$per_site)[1]
   concepts_df <- .atlas_pick_result(res, scope, srv)
 
   # Resolve concept names
@@ -625,7 +688,7 @@
   trends_df <- NULL
   if (!is.null(trend_analysis)) {
     trend_res <- ds.omop.achilles.results(
-      analysis_ids = trend_analysis, scope = scope, pooling_policy = policy,
+      analysis_ids = trend_analysis, scope = api_scope, pooling_policy = policy,
       symbol = state$symbol)
     .atlas_accumulate_code(state, trend_res)
     trends_df <- .atlas_pick_result(trend_res, scope, srv)
@@ -645,18 +708,20 @@
        concept_names = concept_names, table_name = table_name)
 }
 
-.atlas_fetch_visits <- function(state, scope, policy) {
+.atlas_fetch_visits <- function(state, scope, policy,
+                                 selected_server = NULL) {
+  api_scope <- .backend_scope(scope)
   type_res <- ds.omop.achilles.results(
-    analysis_ids = 200L, scope = scope, pooling_policy = policy,
+    analysis_ids = 200L, scope = api_scope, pooling_policy = policy,
     symbol = state$symbol)
   .atlas_accumulate_code(state, type_res)
 
   trend_res <- ds.omop.achilles.results(
-    analysis_ids = 201L, scope = scope, pooling_policy = policy,
+    analysis_ids = 201L, scope = api_scope, pooling_policy = policy,
     symbol = state$symbol)
   .atlas_accumulate_code(state, trend_res)
 
-  srv <- names(type_res$per_site)[1]
+  srv <- selected_server %||% names(type_res$per_site)[1]
   types_df <- .atlas_pick_result(type_res, scope, srv)
 
   # Resolve visit type concept IDs
@@ -667,12 +732,15 @@
 
   list(
     types = types_df,
-    trends = .atlas_pick_result(trend_res, scope, srv),
+    trends = .atlas_pick_result(trend_res, scope,
+               selected_server %||% names(trend_res$per_site)[1]),
     concept_map = concept_map
   )
 }
 
-.atlas_fetch_trends <- function(state, scope, policy) {
+.atlas_fetch_trends <- function(state, scope, policy,
+                                 selected_server = NULL) {
+  api_scope <- .backend_scope(scope)
   trend_ids <- c(401L, 701L, 601L, 1801L)
   result <- list()
   domain_names <- c("Conditions", "Drugs", "Procedures", "Measurements")
@@ -680,10 +748,10 @@
   for (i in seq_along(trend_ids)) {
     tryCatch({
       res <- ds.omop.achilles.results(
-        analysis_ids = trend_ids[i], scope = scope, pooling_policy = policy,
+        analysis_ids = trend_ids[i], scope = api_scope, pooling_policy = policy,
         symbol = state$symbol)
       .atlas_accumulate_code(state, res)
-      srv <- names(res$per_site)[1]
+      srv <- selected_server %||% names(res$per_site)[1]
       result[[domain_names[i]]] <- .atlas_pick_result(res, scope, srv)
     }, error = function(e) NULL)
   }
@@ -730,7 +798,8 @@
   map[page_name]
 }
 
-.atlas_fetch_domain_dynamic <- function(state, analyses_df, scope, policy) {
+.atlas_fetch_domain_dynamic <- function(state, analyses_df, scope, policy,
+                                         selected_server = NULL) {
   # Find the "count by concept" analysis (stratum_1 = concept_id, no stratum_2)
   count_row <- analyses_df[!is.na(analyses_df$stratum_1_name) &
                             analyses_df$stratum_1_name == "concept_id" &
@@ -747,21 +816,26 @@
 
   # Delegate to existing fetch logic with dynamically discovered IDs
   if (!is.null(count_id)) {
-    .atlas_fetch_domain(state, count_id, trend_id, scope, policy)
+    .atlas_fetch_domain(state, count_id, trend_id, scope, policy,
+                         selected_server)
   } else {
     NULL
   }
 }
 
-.atlas_fetch_trends_dynamic <- function(state, cat, scope, policy) {
-  if (is.null(cat)) return(.atlas_fetch_trends(state, scope, policy))
+.atlas_fetch_trends_dynamic <- function(state, cat, scope, policy,
+                                         selected_server = NULL) {
+  if (is.null(cat)) return(.atlas_fetch_trends(state, scope, policy,
+                                                 selected_server))
 
   # Find all trend analyses (stratum_2 = calendar_month)
   trend_rows <- cat[!is.na(cat$stratum_2_name) &
                      cat$stratum_2_name == "calendar_month", , drop = FALSE]
 
-  if (nrow(trend_rows) == 0) return(.atlas_fetch_trends(state, scope, policy))
+  if (nrow(trend_rows) == 0) return(.atlas_fetch_trends(state, scope, policy,
+                                                          selected_server))
 
+  api_scope <- .backend_scope(scope)
   result <- list()
   domain_labels <- c(
     condition = "Conditions", drug = "Drugs",
@@ -777,10 +851,10 @@
 
     tryCatch({
       res <- ds.omop.achilles.results(
-        analysis_ids = trend_rows$analysis_id[i], scope = scope,
+        analysis_ids = trend_rows$analysis_id[i], scope = api_scope,
         pooling_policy = policy, symbol = state$symbol)
       .atlas_accumulate_code(state, res)
-      srv <- names(res$per_site)[1]
+      srv <- selected_server %||% names(res$per_site)[1]
       result[[label]] <- .atlas_pick_result(res, scope, srv)
     }, error = function(e) NULL)
   }
@@ -952,12 +1026,31 @@
   }
 }
 
+# srv: character vector of selected server names (multi-select)
 .atlas_pick_result <- function(res, scope, srv) {
   if (scope == "pooled" && !is.null(res$pooled)) {
-    res$pooled
-  } else if (length(res$per_site) > 0) {
-    res$per_site[[srv %||% names(res$per_site)[1]]]
-  } else {
-    NULL
+    return(res$pooled)
   }
+  if (length(res$per_site) == 0) return(NULL)
+
+  srvs <- .resolve_servers(res$per_site, srv)
+  if (length(srvs) == 0) return(NULL)
+
+  if (scope == "per_site") {
+    return(res$per_site[[srvs[1]]])
+  }
+
+  # scope == "all": rbind selected servers with server column
+  dfs <- list()
+  for (nm in srvs) {
+    df <- res$per_site[[nm]]
+    if (is.data.frame(df) && nrow(df) > 0) {
+      df$server <- nm
+      dfs[[nm]] <- df
+    }
+  }
+  if (length(dfs) == 0) return(NULL)
+  combined <- do.call(rbind, dfs)
+  rownames(combined) <- NULL
+  combined
 }

@@ -53,6 +53,8 @@
   shiny::moduleServer(id, function(input, output, session) {
     prevalence_data <- shiny::reactiveVal(NULL)
 
+    .scope_sync_servers(input, session, state)
+
     # Populate table dropdown from state$tables
     shiny::observe({
       tbl_choices <- .get_person_tables(state$tables)
@@ -101,22 +103,53 @@
       tryCatch({
         stats_res <- ds.omop.table.stats(tbl, stats = c("rows", "persons"),
                                           symbol = state$symbol)
-        srv <- names(stats_res$per_site)[1]
-        s <- stats_res$per_site[[srv]]
-        shiny::tags$dl(class = "row",
-          shiny::tags$dt(class = "col-sm-4", "Rows"),
-          shiny::tags$dd(class = "col-sm-8",
-            if (isTRUE(s$rows_suppressed)) shiny::span(
-              class = "suppressed", "suppressed")
-            else format(s$rows, big.mark = ",")),
-          if (!is.null(s$persons)) shiny::tagList(
-            shiny::tags$dt(class = "col-sm-4", "Distinct Persons"),
+        scope <- input$scope %||% "per_site"
+
+        if (scope == "all" && length(stats_res$per_site) > 1) {
+          # Show a comparison table for all servers
+          rows_list <- lapply(names(stats_res$per_site), function(srv) {
+            s <- stats_res$per_site[[srv]]
+            data.frame(
+              server = srv,
+              rows = if (isTRUE(s$rows_suppressed)) NA_real_ else s$rows,
+              persons = if (is.null(s$persons) || isTRUE(s$persons_suppressed))
+                NA_real_ else s$persons,
+              stringsAsFactors = FALSE
+            )
+          })
+          cmp <- do.call(rbind, rows_list)
+          items <- lapply(seq_len(nrow(cmp)), function(i) {
+            row_text <- if (is.na(cmp$rows[i])) "suppressed"
+                        else format(cmp$rows[i], big.mark = ",")
+            person_text <- if (is.na(cmp$persons[i])) "suppressed"
+                           else format(cmp$persons[i], big.mark = ",")
+            shiny::div(
+              shiny::span(class = "server-badge server-badge-ok", cmp$server[i]),
+              shiny::span(paste0("Rows: ", row_text, " | Persons: ", person_text))
+            )
+          })
+          shiny::tagList(items)
+        } else {
+          srv <- if (scope == "per_site" && !is.null(input$selected_server))
+            input$selected_server else names(stats_res$per_site)[1]
+          if (is.null(srv) || !srv %in% names(stats_res$per_site))
+            srv <- names(stats_res$per_site)[1]
+          s <- stats_res$per_site[[srv]]
+          shiny::tags$dl(class = "row",
+            shiny::tags$dt(class = "col-sm-4", "Rows"),
             shiny::tags$dd(class = "col-sm-8",
-              if (isTRUE(s$persons_suppressed)) shiny::span(
+              if (isTRUE(s$rows_suppressed)) shiny::span(
                 class = "suppressed", "suppressed")
-              else format(s$persons, big.mark = ","))
+              else format(s$rows, big.mark = ",")),
+            if (!is.null(s$persons)) shiny::tagList(
+              shiny::tags$dt(class = "col-sm-4", "Distinct Persons"),
+              shiny::tags$dd(class = "col-sm-8",
+                if (isTRUE(s$persons_suppressed)) shiny::span(
+                  class = "suppressed", "suppressed")
+                else format(s$persons, big.mark = ","))
+            )
           )
-        )
+        }
       }, error = function(e) {
         shiny::p(class = "text-danger", conditionMessage(e))
       })
@@ -141,7 +174,7 @@
         res <- ds.omop.concept.prevalence(
           table = input$table, concept_col = input$concept_col,
           metric = input$metric, top_n = 99999L,
-          scope = scope, pooling_policy = policy,
+          scope = .backend_scope(scope), pooling_policy = policy,
           symbol = state$symbol
         )
         # Accumulate code for Script tab
@@ -149,13 +182,11 @@
           state$script_lines <- c(state$script_lines, res$meta$call_code)
         }
         last_result(res)
-        # Use pooled data if available, otherwise first server
-        df <- if (scope == "pooled" && !is.null(res$pooled) && is.data.frame(res$pooled)) {
-          res$pooled
-        } else {
-          srv <- names(res$per_site)[1]
-          res$per_site[[srv]]
-        }
+
+        # Extract display data based on scope
+        df <- .extract_display_data(res, scope, input$selected_server,
+                                     intersect_only = isTRUE(input$intersect_only))
+
         # Remove disclosure-suppressed rows (NA in count columns)
         if (is.data.frame(df) && nrow(df) > 0) {
           metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
@@ -173,10 +204,30 @@
       })
     })
 
+    # Re-extract on scope/server/intersect change (no re-query)
+    shiny::observeEvent(list(input$scope, input$selected_server,
+                             input$intersect_only), {
+      res <- last_result()
+      if (is.null(res)) return()
+      scope <- input$scope %||% "per_site"
+
+      df <- .extract_display_data(res, scope, input$selected_server,
+                                   intersect_only = isTRUE(input$intersect_only))
+
+      # Remove disclosure-suppressed rows
+      if (is.data.frame(df) && nrow(df) > 0) {
+        metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
+        if (metric_col %in% names(df)) {
+          df <- df[!is.na(df[[metric_col]]), , drop = FALSE]
+        }
+      }
+      prevalence_data(df)
+    }, ignoreInit = TRUE)
+
     output$results_title <- shiny::renderText({
       tbl <- input$table
       if (is.null(tbl) || nchar(tbl) == 0) return("Concepts")
-      paste("Concepts in", .format_table_name(tbl))
+      paste("Concepts in", tbl)
     })
 
     output$results_dt <- DT::renderDT({
@@ -295,7 +346,8 @@
           shiny::span(class = "server-badge server-badge-ok", srv)
         ))
       }
-      scope_text <- if (res$meta$scope == "pooled") "Pooled" else "Per-site"
+      scope_text <- switch(input$scope %||% res$meta$scope,
+        "pooled" = "Pooled", "all" = "All Servers", "Per-site")
       warns <- res$meta$warnings
       warn_ui <- if (length(warns) > 0) {
         shiny::div(class = "text-warning mt-1",
