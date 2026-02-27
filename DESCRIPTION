@@ -23,7 +23,9 @@ Imports:
     shiny (>= 1.7.0),
     bslib (>= 0.5.0),
     DT,
-    jsonlite
+    jsonlite,
+    plotly,
+    fontawesome
 Suggests:
     DSLite,
     testthat (>= 3.0.0),

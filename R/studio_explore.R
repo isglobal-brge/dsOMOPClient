@@ -1,41 +1,84 @@
 # ==============================================================================
-# MODULE 2: Explore (Table -> Concepts)
-# Replaces old Query Library + Observed Concepts tabs
+# MODULE: Explore (consolidated)
+# Wraps Prevalence, Drilldown, Locator, and Vocabulary as sub-tabs
 # ==============================================================================
 
-.mod_table_concepts_ui <- function(id) {
+# ------------------------------------------------------------------------------
+# Wrapper UI: navset_pill with 4 sub-tabs
+# ------------------------------------------------------------------------------
+.mod_explore_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::navset_pill(
+    id = ns("explore_nav"),
+    bslib::nav_panel("Prevalence", icon = shiny::icon("chart-simple"),
+      .mod_explore_prevalence_ui(ns("prevalence"))),
+    bslib::nav_panel("Drilldown", icon = shiny::icon("magnifying-glass-chart"),
+      .mod_explore_drilldown_ui(ns("drilldown"))),
+    bslib::nav_panel("Locator", icon = shiny::icon("location-dot"),
+      .mod_explore_locator_ui(ns("locator"))),
+    bslib::nav_panel("Vocabulary", icon = shiny::icon("book"),
+      .mod_explore_vocab_ui(ns("vocab")))
+  )
+}
+
+# ------------------------------------------------------------------------------
+# Wrapper Server: calls all 4 sub-module servers
+# ------------------------------------------------------------------------------
+.mod_explore_server <- function(id, state, parent_session) {
+  shiny::moduleServer(id, function(input, output, session) {
+    .mod_explore_prevalence_server("prevalence", state, session)
+    .mod_explore_drilldown_server("drilldown", state, session)
+    .mod_explore_locator_server("locator", state)
+    .mod_explore_vocab_server("vocab", state)
+  })
+}
+
+
+# ==============================================================================
+# SUB-MODULE 1: Prevalence (was .mod_table_concepts)
+# ==============================================================================
+
+.mod_explore_prevalence_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
-      title = "Explore", width = 300,
+      title = "Explore", width = 260, open = "desktop",
       shiny::selectInput(ns("table"), "Table", choices = NULL),
       shiny::selectInput(ns("concept_col"), "Concept Column", choices = NULL),
       shiny::selectInput(ns("metric"), "Metric",
         choices = c("Distinct Persons" = "persons",
                     "Total Records" = "records")),
       shiny::actionButton(ns("run_btn"), "Run",
-                          class = "btn-primary w-100"),
-      .scope_controls_ui(ns)
+                          icon = shiny::icon("play"),
+                          class = "btn-primary w-100")
     ),
     bslib::card(
+      full_screen = TRUE,
       bslib::card_header("Table Statistics"),
       bslib::card_body(
         shiny::uiOutput(ns("table_stats"))
       )
     ),
     bslib::card(
+      full_screen = TRUE,
       bslib::card_header(
         shiny::div(class = "d-flex justify-content-between align-items-center",
           shiny::textOutput(ns("results_title")),
           shiny::div(
             shiny::actionButton(ns("add_selected_btn"), "Add to Set",
                                 class = "btn-sm btn-outline-primary me-1"),
-            shiny::actionButton(ns("extract_selected_btn"),
-                                shiny::tagList(shiny::icon("plus"), "Extract"),
-                                class = "btn-sm btn-outline-success me-1"),
-            shiny::actionButton(ns("filter_selected_btn"),
-                                shiny::tagList(shiny::icon("filter"), "Filter"),
-                                class = "btn-sm btn-outline-warning")
+            bslib::tooltip(
+              shiny::actionButton(ns("extract_selected_btn"),
+                                  shiny::tagList(shiny::icon("plus"), "Extract"),
+                                  class = "btn-sm btn-success text-white me-1"),
+              "Add selected concepts as variables to cart"
+            ),
+            bslib::tooltip(
+              shiny::actionButton(ns("filter_selected_btn"),
+                                  shiny::tagList(shiny::icon("filter"), "Filter"),
+                                  class = "btn-sm btn-warning text-white"),
+              "Add selected concepts as filters to cart"
+            )
           )
         )
       ),
@@ -49,11 +92,9 @@
   )
 }
 
-.mod_table_concepts_server <- function(id, state, parent_session) {
+.mod_explore_prevalence_server <- function(id, state, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
     prevalence_data <- shiny::reactiveVal(NULL)
-
-    .scope_sync_servers(input, session, state)
 
     # Populate table dropdown from state$tables
     shiny::observe({
@@ -103,50 +144,64 @@
       tryCatch({
         stats_res <- ds.omop.table.stats(tbl, stats = c("rows", "persons"),
                                           symbol = state$symbol)
-        scope <- input$scope %||% "per_site"
+        scope <- state$scope %||% "pooled"
 
-        if (scope == "all" && length(stats_res$per_site) > 1) {
-          # Show a comparison table for all servers
+        if (scope == "pooled" && length(stats_res$per_site) > 1) {
+          # Build a data.frame for DT display
           rows_list <- lapply(names(stats_res$per_site), function(srv) {
             s <- stats_res$per_site[[srv]]
             data.frame(
-              server = srv,
-              rows = if (isTRUE(s$rows_suppressed)) NA_real_ else s$rows,
-              persons = if (is.null(s$persons) || isTRUE(s$persons_suppressed))
-                NA_real_ else s$persons,
+              Server = srv,
+              Rows = if (isTRUE(s$rows_suppressed)) NA_character_
+                     else format(s$rows, big.mark = ","),
+              Persons = if (is.null(s$persons) || isTRUE(s$persons_suppressed))
+                NA_character_ else format(s$persons, big.mark = ","),
               stringsAsFactors = FALSE
             )
           })
           cmp <- do.call(rbind, rows_list)
-          items <- lapply(seq_len(nrow(cmp)), function(i) {
-            row_text <- if (is.na(cmp$rows[i])) "suppressed"
-                        else format(cmp$rows[i], big.mark = ",")
-            person_text <- if (is.na(cmp$persons[i])) "suppressed"
-                           else format(cmp$persons[i], big.mark = ",")
-            shiny::div(
-              shiny::span(class = "server-badge server-badge-ok", cmp$server[i]),
-              shiny::span(paste0("Rows: ", row_text, " | Persons: ", person_text))
+          cmp[is.na(cmp)] <- "\u2014"
+          shiny::tags$table(class = "table table-sm table-borderless mb-0",
+            style = "font-size:0.84rem;",
+            shiny::tags$thead(
+              shiny::tags$tr(
+                shiny::tags$th(class = "text-muted", "Server"),
+                shiny::tags$th(class = "text-muted text-end", "Rows"),
+                shiny::tags$th(class = "text-muted text-end", "Persons")
+              )
+            ),
+            shiny::tags$tbody(
+              shiny::tagList(lapply(seq_len(nrow(cmp)), function(i) {
+                shiny::tags$tr(
+                  shiny::tags$td(shiny::span(class = "server-badge server-badge-ok",
+                                             cmp$Server[i])),
+                  shiny::tags$td(class = "text-end fw-semibold", cmp$Rows[i]),
+                  shiny::tags$td(class = "text-end fw-semibold", cmp$Persons[i])
+                )
+              }))
             )
-          })
-          shiny::tagList(items)
+          )
         } else {
-          srv <- if (scope == "per_site" && length(input$selected_server) > 0)
-            input$selected_server[1] else names(stats_res$per_site)[1]
+          srv <- if (scope == "per_site" && length(state$selected_servers) > 0)
+            state$selected_servers[1] else names(stats_res$per_site)[1]
           if (is.null(srv) || !srv %in% names(stats_res$per_site))
             srv <- names(stats_res$per_site)[1]
           s <- stats_res$per_site[[srv]]
-          shiny::tags$dl(class = "row",
-            shiny::tags$dt(class = "col-sm-4", "Rows"),
-            shiny::tags$dd(class = "col-sm-8",
-              if (isTRUE(s$rows_suppressed)) shiny::span(
-                class = "suppressed", "suppressed")
-              else format(s$rows, big.mark = ",")),
-            if (!is.null(s$persons)) shiny::tagList(
-              shiny::tags$dt(class = "col-sm-4", "Distinct Persons"),
-              shiny::tags$dd(class = "col-sm-8",
-                if (isTRUE(s$persons_suppressed)) shiny::span(
-                  class = "suppressed", "suppressed")
-                else format(s$persons, big.mark = ","))
+          rows_val <- if (isTRUE(s$rows_suppressed)) "\u2014"
+                      else format(s$rows, big.mark = ",")
+          persons_val <- if (is.null(s$persons) || isTRUE(s$persons_suppressed))
+            "\u2014" else format(s$persons, big.mark = ",")
+          shiny::tags$table(class = "table table-sm table-borderless mb-0",
+            style = "font-size:0.84rem;",
+            shiny::tags$tbody(
+              shiny::tags$tr(
+                shiny::tags$td(class = "text-muted", "Rows"),
+                shiny::tags$td(class = "text-end fw-semibold", rows_val)
+              ),
+              if (!is.null(s$persons)) shiny::tags$tr(
+                shiny::tags$td(class = "text-muted", "Persons"),
+                shiny::tags$td(class = "text-end fw-semibold", persons_val)
+              )
             )
           )
         }
@@ -161,58 +216,53 @@
     # Run concept prevalence
     shiny::observeEvent(input$run_btn, {
       shiny::req(input$table, input$concept_col)
-      shiny::showNotification("Querying...", type = "message",
-                              duration = 2, id = "prev_loading")
 
-      scope <- input$scope %||% "per_site"
-      policy <- input$pooling_policy %||% "strict"
-      # Sync scope to shared state
-      state$scope <- scope
-      state$pooling_policy <- policy
+      scope <- state$scope %||% "per_site"
+      policy <- state$pooling_policy %||% "strict"
 
-      tryCatch({
-        res <- ds.omop.concept.prevalence(
-          table = input$table, concept_col = input$concept_col,
-          metric = input$metric, top_n = 99999L,
-          scope = .backend_scope(scope), pooling_policy = policy,
-          symbol = state$symbol
-        )
-        # Accumulate code for Script tab
-        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
-          state$script_lines <- c(state$script_lines, res$meta$call_code)
-        }
-        last_result(res)
-
-        # Extract display data based on scope
-        df <- .extract_display_data(res, scope, input$selected_server,
-                                     intersect_only = isTRUE(input$intersect_only))
-
-        # Remove disclosure-suppressed rows (NA in count columns)
-        if (is.data.frame(df) && nrow(df) > 0) {
-          metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
-          if (metric_col %in% names(df)) {
-            df <- df[!is.na(df[[metric_col]]), , drop = FALSE]
+      shiny::withProgress(message = "Fetching concept prevalence...", value = 0.3, {
+        tryCatch({
+          res <- ds.omop.concept.prevalence(
+            table = input$table, concept_col = input$concept_col,
+            metric = input$metric, top_n = 99999L,
+            scope = .backend_scope(scope), pooling_policy = policy,
+            symbol = state$symbol
+          )
+          shiny::incProgress(0.5)
+          # Accumulate code for Script tab
+          if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+            state$script_lines <- c(state$script_lines, res$meta$call_code)
           }
-        }
-        prevalence_data(df)
-        shiny::removeNotification("prev_loading")
-      }, error = function(e) {
-        shiny::removeNotification("prev_loading")
-        shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error"
-        )
+          last_result(res)
+
+          # Extract display data based on scope
+          df <- .extract_display_data(res, scope, state$selected_servers,
+                                       intersect_only = FALSE)
+
+          # Remove disclosure-suppressed rows (NA in count columns)
+          if (is.data.frame(df) && nrow(df) > 0) {
+            metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
+            if (metric_col %in% names(df)) {
+              df <- df[!is.na(df[[metric_col]]), , drop = FALSE]
+            }
+          }
+          prevalence_data(df)
+        }, error = function(e) {
+          shiny::showNotification(
+            .clean_ds_error(e), type = "error"
+          )
+        })
       })
     })
 
     # Re-extract on scope/server/intersect change (no re-query)
-    shiny::observeEvent(list(input$scope, input$selected_server,
-                             input$intersect_only), {
+    shiny::observeEvent(list(state$scope, state$selected_servers), {
       res <- last_result()
       if (is.null(res)) return()
-      scope <- input$scope %||% "per_site"
+      scope <- state$scope %||% "per_site"
 
-      df <- .extract_display_data(res, scope, input$selected_server,
-                                   intersect_only = isTRUE(input$intersect_only))
+      df <- .extract_display_data(res, scope, state$selected_servers,
+                                   intersect_only = FALSE)
 
       # Remove disclosure-suppressed rows
       if (is.data.frame(df) && nrow(df) > 0) {
@@ -250,8 +300,8 @@
           df$concept_name[idx] %||% ""
         )
         # Navigate to Drilldown tab
-        shiny::updateNavbarPage(parent_session, "main_nav",
-                                selected = "Drilldown")
+        bslib::nav_select("explore_nav", "Drilldown",
+                           session = parent_session)
       }
     })
 
@@ -346,7 +396,7 @@
           shiny::span(class = "server-badge server-badge-ok", srv)
         ))
       }
-      scope_text <- switch(input$scope %||% res$meta$scope,
+      scope_text <- switch(state$scope %||% res$meta$scope,
         "pooled" = "Pooled", "all" = "All Servers", "Per-site")
       warns <- res$meta$warnings
       warn_ui <- if (length(warns) > 0) {
@@ -364,3 +414,1001 @@
   })
 }
 
+
+# ==============================================================================
+# SUB-MODULE 2: Drilldown (was .mod_concept_drilldown)
+# ==============================================================================
+
+.mod_explore_drilldown_ui <- function(id) {
+  ns <- shiny::NS(id)
+  shiny::tagList(
+    # Breadcrumb navigation
+    shiny::uiOutput(ns("breadcrumb")),
+    bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Concept Info", width = 260, open = "desktop",
+      shiny::uiOutput(ns("concept_info")),
+      shiny::hr(),
+      shiny::actionButton(ns("add_to_set"), "Add to Concept Set",
+                          class = "btn-outline-primary btn-sm w-100 mb-1"),
+      shiny::actionButton(ns("add_to_cart_extract"),
+                          shiny::tagList(shiny::icon("plus"), "Extract to Builder"),
+                          class = "btn-success text-white btn-sm w-100 mb-1"),
+      shiny::actionButton(ns("add_to_cart_filter"),
+                          shiny::tagList(shiny::icon("filter"), "Filter in Builder"),
+                          class = "btn-warning text-white btn-sm w-100 mb-1"),
+      shiny::actionButton(ns("add_to_plan"), "Add to Plan",
+                          class = "btn-outline-info btn-sm w-100 mb-1"),
+      shiny::actionButton(ns("reload"), "Reload",
+                          icon = shiny::icon("rotate-right"),
+                          class = "btn-outline-secondary btn-sm w-100")
+    ),
+
+    # Summary metrics
+    bslib::card(
+      full_screen = TRUE,
+      bslib::card_header("Summary"),
+      bslib::card_body(
+        shiny::uiOutput(ns("summary_metrics"))
+      )
+    ),
+
+    # Numeric distribution (conditional)
+    shiny::conditionalPanel(
+      condition = paste0("output['", ns("has_numeric"), "']"),
+      bslib::card(
+        full_screen = TRUE,
+        bslib::card_header("Numeric Distribution"),
+        bslib::card_body(
+          plotly::plotlyOutput(ns("histogram_plot"), height = "300px"),
+          DT::DTOutput(ns("quantiles_dt"))
+        )
+      )
+    ),
+
+    # Categorical values (conditional)
+    shiny::conditionalPanel(
+      condition = paste0("output['", ns("has_categorical"), "']"),
+      bslib::card(
+        full_screen = TRUE,
+        bslib::card_header("Categorical Values"),
+        bslib::card_body(
+          plotly::plotlyOutput(ns("categorical_plot"), height = "300px"),
+          DT::DTOutput(ns("categorical_dt"))
+        )
+      )
+    ),
+
+    # Date coverage (conditional)
+    shiny::conditionalPanel(
+      condition = paste0("output['", ns("has_dates"), "']"),
+      bslib::card(
+        full_screen = TRUE,
+        bslib::card_header("Date Coverage"),
+        bslib::card_body(
+          plotly::plotlyOutput(ns("date_plot"), height = "250px"),
+          shiny::uiOutput(ns("date_range_info"))
+        )
+      )
+    ),
+
+    # Missingness (always shown)
+    bslib::card(
+      full_screen = TRUE,
+      bslib::card_header("Missingness"),
+      bslib::card_body(
+        plotly::plotlyOutput(ns("missingness_plot"), height = "250px")
+      )
+    )
+  ))
+}
+
+.mod_explore_drilldown_server <- function(id, state, parent_session = NULL) {
+  shiny::moduleServer(id, function(input, output, session) {
+    drilldown_data <- shiny::reactiveVal(NULL)
+    raw_drilldown <- shiny::reactiveVal(NULL)
+
+    # Breadcrumb
+    output$breadcrumb <- shiny::renderUI({
+      cname <- state$selected_concept_name
+      if (is.null(state$selected_concept_id)) return(NULL)
+      label <- if (!is.null(cname) && nchar(cname) > 0) cname
+               else paste("Concept", state$selected_concept_id)
+      shiny::div(class = "breadcrumb-nav",
+        shiny::actionLink(session$ns("back_to_prevalence"), "Prevalence"),
+        shiny::span(" > Drilldown: "),
+        shiny::strong(label)
+      )
+    })
+
+    # Navigate back to Prevalence tab
+    shiny::observeEvent(input$back_to_prevalence, {
+      if (!is.null(parent_session)) {
+        bslib::nav_select("explore_nav", "Prevalence",
+                          session = parent_session)
+      }
+    })
+
+    # Auto-trigger when concept changes
+    shiny::observeEvent(state$selected_concept_id, {
+      cid <- state$selected_concept_id
+      tbl <- state$selected_table
+      if (is.null(cid) || is.null(tbl)) return()
+      .run_drilldown(state, drilldown_data, raw_drilldown, input)
+    })
+
+    shiny::observeEvent(input$reload, {
+      .run_drilldown(state, drilldown_data, raw_drilldown, input)
+    })
+
+    # Re-extract on server/intersect change
+    shiny::observeEvent(list(state$selected_servers, state$scope), {
+      res <- raw_drilldown()
+      if (is.null(res)) return()
+      drilldown_data(.drilldown_pick_server(res, state$selected_servers))
+    }, ignoreInit = TRUE)
+
+    .run_drilldown <- function(state, drilldown_data, raw_drilldown, input) {
+      cid <- state$selected_concept_id
+      tbl <- state$selected_table
+      if (is.null(cid) || is.null(tbl)) return()
+
+      shiny::withProgress(message = "Loading drilldown...", value = 0.3, {
+        tryCatch({
+          res <- ds.omop.concept.drilldown(
+            table = tbl, concept_id = cid,
+            symbol = state$symbol
+          )
+          shiny::incProgress(0.5)
+          # Accumulate code for Script tab
+          if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+            state$script_lines <- c(state$script_lines, res$meta$call_code)
+          }
+          # Store full result for server switching
+          raw_drilldown(res$per_site)
+          drilldown_data(.drilldown_pick_server(res$per_site, state$selected_servers))
+        }, error = function(e) {
+          shiny::showNotification(.clean_ds_error(e), type = "error")
+          drilldown_data(NULL)
+          raw_drilldown(NULL)
+        })
+      })
+    }
+
+    # Concept info sidebar
+    output$concept_info <- shiny::renderUI({
+      cid <- state$selected_concept_id
+      if (is.null(cid)) {
+        return(shiny::p(class = "text-muted small",
+          "No concept selected. Use the Prevalence tab to select a concept."))
+      }
+      shiny::div(
+        shiny::div(class = "d-flex align-items-center mb-2",
+          shiny::span(class = "badge bg-primary me-2", paste0("#", cid)),
+          shiny::span(style = "font-weight:600; font-size:0.88rem;",
+                      as.character(state$selected_concept_name %||% "Unknown"))
+        ),
+        shiny::div(class = "text-muted", style = "font-size:0.78rem;",
+          shiny::icon("table", class = "me-1"),
+          as.character(state$selected_table %||% "")
+        )
+      )
+    })
+
+    # Add to concept set
+    shiny::observeEvent(input$add_to_set, {
+      cid <- state$selected_concept_id
+      if (is.null(cid)) return()
+      current <- state$concept_set
+      if (!cid %in% current) {
+        state$concept_set <- c(current, cid)
+        shiny::showNotification(
+          paste("Added concept", cid, "to set"),
+          type = "message", duration = 2
+        )
+      }
+    })
+
+    # Add to cart as extraction variable
+    shiny::observeEvent(input$add_to_cart_extract, {
+      cid <- state$selected_concept_id
+      tbl <- state$selected_table
+      if (is.null(cid) || is.null(tbl)) {
+        shiny::showNotification("No concept selected.", type = "warning")
+        return()
+      }
+      cname <- state$selected_concept_name
+      tryCatch({
+        v <- omop_variable(
+          table = tbl, concept_id = cid,
+          concept_name = cname, format = "raw"
+        )
+        state$cart <- cart_add_variable(state$cart, v)
+        shiny::showNotification(
+          paste("Added", v$name, "to cart"),
+          type = "message", duration = 2)
+      }, error = function(e) {
+        shiny::showNotification(
+          .clean_ds_error(e), type = "error")
+      })
+    })
+
+    # Add to cart as filter
+    shiny::observeEvent(input$add_to_cart_filter, {
+      cid <- state$selected_concept_id
+      tbl <- state$selected_table
+      if (is.null(cid) || is.null(tbl)) {
+        shiny::showNotification("No concept selected.", type = "warning")
+        return()
+      }
+      cname <- state$selected_concept_name
+      tryCatch({
+        f <- omop_filter_has_concept(cid, tbl, cname)
+        state$cart <- cart_add_filter(state$cart, f)
+        shiny::showNotification(
+          paste("Added filter for concept", cid, "to cart"),
+          type = "message", duration = 2)
+      }, error = function(e) {
+        shiny::showNotification(
+          .clean_ds_error(e), type = "error")
+      })
+    })
+
+    # Add to plan as events output
+    shiny::observeEvent(input$add_to_plan, {
+      cid <- state$selected_concept_id
+      tbl <- state$selected_table
+      if (is.null(cid) || is.null(tbl)) return()
+      tryCatch({
+        nm <- paste0("events_", cid)
+        state$plan <- ds.omop.plan.events(
+          state$plan, name = nm, table = tbl,
+          concept_set = as.integer(cid)
+        )
+        shiny::showNotification(
+          paste("Added events output for concept", cid),
+          type = "message", duration = 3
+        )
+      }, error = function(e) {
+        shiny::showNotification(
+          .clean_ds_error(e), type = "error"
+        )
+      })
+    })
+
+    # Conditional panel outputs (must be text for JS condition)
+    output$has_numeric <- shiny::reactive({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(FALSE)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      !is.null(d$numeric_summary)
+    })
+    shiny::outputOptions(output, "has_numeric", suspendWhenHidden = FALSE)
+
+    output$has_categorical <- shiny::reactive({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(FALSE)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      !is.null(d$categorical_values) && is.data.frame(d$categorical_values) &&
+        nrow(d$categorical_values) > 0
+    })
+    shiny::outputOptions(output, "has_categorical", suspendWhenHidden = FALSE)
+
+    output$has_dates <- shiny::reactive({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(FALSE)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      !is.null(d$date_range)
+    })
+    shiny::outputOptions(output, "has_dates", suspendWhenHidden = FALSE)
+
+    # --- Summary metrics ---
+    output$summary_metrics <- shiny::renderUI({
+      dd <- drilldown_data()
+      if (is.null(dd)) {
+        return(.empty_state_ui("magnifying-glass-chart", "No concept selected",
+                               "Use the Prevalence tab to select a concept for drilldown."))
+      }
+
+      # If multiple servers shown, add a server comparison row
+      server_comparison <- NULL
+      if (length(dd) > 1) {
+        rows <- lapply(names(dd), function(srv) {
+          s <- dd[[srv]]$summary
+          shiny::div(
+            shiny::span(class = "server-badge server-badge-ok", srv),
+            shiny::span(paste0(
+              "Records: ", if (is.null(s$n_records) || is.na(s$n_records))
+                "suppressed" else format(s$n_records, big.mark = ","),
+              " | Persons: ", if (is.null(s$n_persons) || is.na(s$n_persons))
+                "suppressed" else format(s$n_persons, big.mark = ",")
+            ))
+          )
+        })
+        server_comparison <- shiny::div(class = "mb-3 p-2 border rounded",
+          shiny::h6("Server Comparison"),
+          shiny::tagList(rows)
+        )
+      }
+
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      s <- d$summary
+
+      metrics_list <- list(
+        bslib::value_box(
+          title = "Records",
+          value = .fmt_count(s$n_records),
+          showcase = fontawesome::fa_i("database"),
+          theme = "primary"
+        ),
+        bslib::value_box(
+          title = "Persons",
+          value = .fmt_count(s$n_persons),
+          showcase = fontawesome::fa_i("users"),
+          theme = "info"
+        )
+      )
+
+      if (!is.null(s$records_per_person_mean) && !is.na(s$records_per_person_mean)) {
+        metrics_list <- c(metrics_list, list(
+          bslib::value_box(
+            title = "Records/Person",
+            value = format(round(s$records_per_person_mean, 2), nsmall = 2),
+            showcase = fontawesome::fa_i("chart-line"),
+            theme = "secondary"
+          )
+        ))
+      }
+
+      if (!is.null(s$pct_persons_multi) && !is.na(s$pct_persons_multi)) {
+        # Longitudinal indicator
+        longi_level <- if (s$pct_persons_multi >= 50) "High"
+                       else if (s$pct_persons_multi >= 20) "Medium"
+                       else "Low"
+        longi_theme <- if (longi_level == "High") "success"
+                       else if (longi_level == "Medium") "warning"
+                       else "secondary"
+        metrics_list <- c(metrics_list, list(
+          bslib::value_box(
+            title = "Multi-record %",
+            value = paste0(format(s$pct_persons_multi, nsmall = 1), "%"),
+            showcase = fontawesome::fa_i("layer-group"),
+            theme = "secondary"
+          ),
+          bslib::value_box(
+            title = "Longitudinal",
+            value = longi_level,
+            showcase = fontawesome::fa_i("timeline"),
+            theme = longi_theme
+          )
+        ))
+      }
+
+      shiny::tagList(
+        server_comparison,
+        bslib::layout_columns(fill = FALSE, !!!metrics_list)
+      )
+    })
+
+    # --- Numeric histogram ---
+    output$histogram_plot <- plotly::renderPlotly({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      if (is.null(d$numeric_summary) || is.null(d$numeric_summary$histogram)) {
+        return(NULL)
+      }
+      df <- d$numeric_summary$histogram
+      if (!is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      .safe_plotly({
+        cols <- ifelse(is.na(df$count) | df$suppressed, .studio_colors[4], .studio_colors[1])
+        y <- df$count; y[is.na(y)] <- 0
+        mids <- (df$bin_start + df$bin_end) / 2
+        plotly::plot_ly(x = round(mids, 1), y = y, type = "bar",
+                        marker = list(color = cols)) |>
+          plotly::layout(xaxis = list(title = "value_as_number"),
+                         yaxis = list(title = "Count")) |>
+          .plotly_defaults()
+      })
+    })
+
+    output$quantiles_dt <- DT::renderDT({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      if (is.null(d$numeric_summary) ||
+          is.null(d$numeric_summary$quantiles)) return(NULL)
+      df <- d$numeric_summary$quantiles
+      if (!is.data.frame(df)) return(NULL)
+      DT::datatable(df, options = list(pageLength = 10, dom = "t", scrollX = TRUE),
+                    rownames = FALSE, selection = "none")
+    })
+
+    # --- Categorical values ---
+    output$categorical_plot <- plotly::renderPlotly({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      df <- d$categorical_values
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      .safe_plotly({
+        df$label <- substr(as.character(df$concept_name), 1, 30)
+        df$y <- as.numeric(df$n)
+        df <- df[!is.na(df$y), , drop = FALSE]
+        if (nrow(df) == 0) return(NULL)
+
+        df <- df[order(df$y, decreasing = TRUE), ]
+        n <- min(nrow(df), 15)
+        df <- df[seq_len(n), ]
+
+        plotly::plot_ly(x = df$y, y = df$label, type = "bar", orientation = "h",
+                        marker = list(color = .studio_colors[2])) |>
+          plotly::layout(yaxis = list(categoryorder = "total ascending")) |>
+          .plotly_defaults()
+      })
+    })
+
+    output$categorical_dt <- DT::renderDT({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      df <- d$categorical_values
+      if (is.null(df) || !is.data.frame(df)) return(NULL)
+      DT::datatable(df, options = list(pageLength = 10, dom = "ftip", scrollX = TRUE),
+                    rownames = FALSE, selection = "none")
+    })
+
+    # --- Date coverage ---
+    output$date_plot <- plotly::renderPlotly({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      if (is.null(d$date_range) || is.null(d$date_range$date_counts)) {
+        return(NULL)
+      }
+      df <- d$date_range$date_counts
+      if (!is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      .safe_plotly({
+        df <- df[order(df$period), ]
+        y <- as.numeric(df$n_records); y[is.na(y)] <- 0
+        sup_col <- if ("suppressed" %in% names(df)) df$suppressed else rep(FALSE, nrow(df))
+        cols <- ifelse(is.na(df$n_records) | sup_col,
+                       .studio_colors[4], .studio_colors[1])
+        plotly::plot_ly(x = df$period, y = y, type = "bar",
+                        marker = list(color = cols)) |>
+          plotly::layout(xaxis = list(title = "Period"),
+                         yaxis = list(title = "Records")) |>
+          .plotly_defaults()
+      })
+    })
+
+    output$date_range_info <- shiny::renderUI({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      dr <- d$date_range
+      if (is.null(dr)) return(NULL)
+
+      shiny::tags$dl(class = "row",
+        shiny::tags$dt(class = "col-sm-4", "Date Column"),
+        shiny::tags$dd(class = "col-sm-8",
+                       as.character(dr$column %||% "")),
+        shiny::tags$dt(class = "col-sm-4", "Safe Min"),
+        shiny::tags$dd(class = "col-sm-8",
+                       as.character(dr$min_date_safe %||% "N/A")),
+        shiny::tags$dt(class = "col-sm-4", "Safe Max"),
+        shiny::tags$dd(class = "col-sm-8",
+                       as.character(dr$max_date_safe %||% "N/A"))
+      )
+    })
+
+    # --- Missingness ---
+    output$missingness_plot <- plotly::renderPlotly({
+      dd <- drilldown_data()
+      if (is.null(dd)) return(NULL)
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      df <- d$missingness
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      .safe_plotly({
+        df <- df[order(df$missing_rate, decreasing = TRUE), ]
+        plotly::plot_ly(x = df$missing_rate * 100, y = df$column_name,
+                        type = "bar", orientation = "h",
+                        marker = list(color = .studio_colors[3])) |>
+          plotly::layout(xaxis = list(title = "Missing %", range = c(0, 100)),
+                         yaxis = list(categoryorder = "total ascending")) |>
+          .plotly_defaults()
+      })
+    })
+  })
+}
+
+
+# ==============================================================================
+# SUB-MODULE 3: Locator (was .mod_concept_locator)
+# ==============================================================================
+
+.mod_explore_locator_ui <- function(id) {
+  ns <- shiny::NS(id)
+  shiny::tagList(
+    bslib::card(
+      bslib::card_header(
+        class = "d-flex justify-content-between align-items-center py-2",
+        shiny::span("Concept Locator"),
+        shiny::actionButton(ns("locate_btn"), "Locate",
+                            icon = shiny::icon("location-dot"),
+                            class = "btn-sm btn-primary")
+      ),
+      bslib::card_body(
+        class = "py-2 px-3",
+        shiny::div(class = "row g-2 mb-2",
+          shiny::div(class = "col-md-5",
+            shiny::textInput(ns("concept_ids"), NULL,
+                             placeholder = "Concept IDs: 201820, 255573")
+          ),
+          shiny::div(class = "col-md-5",
+            shiny::textInput(ns("name_search"), NULL,
+                             placeholder = "Search by name: diabetes")
+          ),
+          shiny::div(class = "col-md-2",
+            shiny::actionButton(ns("name_search_btn"), "Search",
+                                icon = shiny::icon("magnifying-glass"),
+                                class = "btn-sm btn-outline-secondary w-100")
+          )
+        ),
+        DT::DTOutput(ns("search_results_dt"))
+      )
+    ),
+    bslib::card(
+      full_screen = TRUE,
+      bslib::card_header("Presence Matrix"),
+      bslib::card_body(
+        DT::DTOutput(ns("presence_dt"))
+      )
+    )
+  )
+}
+
+.mod_explore_locator_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+    locate_data <- shiny::reactiveVal(NULL)
+    search_results <- shiny::reactiveVal(NULL)
+    raw_locate_result <- shiny::reactiveVal(NULL)
+
+    # (Auto-populate removed - was confusing with type concept IDs)
+
+    # Concept name search
+    shiny::observeEvent(input$name_search_btn, {
+      term <- input$name_search
+      if (is.null(term) || nchar(trimws(term)) == 0) return()
+
+      tryCatch({
+        res <- ds.omop.concept.search(
+          pattern = term, standard_only = TRUE,
+          limit = 20, symbol = state$symbol
+        )
+        srv <- names(res$per_site)[1]
+        search_results(res$per_site[[srv]])
+      }, error = function(e) {
+        shiny::showNotification(
+          paste("Search error:", conditionMessage(e)),
+          type = "error"
+        )
+      })
+    })
+
+    output$search_results_dt <- DT::renderDT({
+      df <- search_results()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+      keep <- intersect(c("concept_id", "concept_name", "domain_id"), names(df))
+      DT::datatable(
+        df[, keep, drop = FALSE],
+        options = list(pageLength = 5, dom = "t", scrollX = TRUE,
+                       scrollY = "200px"),
+        rownames = FALSE, selection = "multiple"
+      )
+    })
+
+    # When search results selected, append to concept IDs field
+    shiny::observeEvent(input$search_results_dt_rows_selected, {
+      idx <- input$search_results_dt_rows_selected
+      df <- search_results()
+      if (is.null(idx) || is.null(df) || length(idx) == 0) return()
+      idx <- idx[idx <= nrow(df)]
+      new_ids <- as.integer(df$concept_id[idx])
+
+      current_text <- trimws(input$concept_ids %||% "")
+      existing_ids <- if (nchar(current_text) > 0) {
+        as.integer(trimws(strsplit(current_text, ",")[[1]]))
+      } else integer(0)
+      existing_ids <- existing_ids[!is.na(existing_ids)]
+
+      all_ids <- unique(c(existing_ids, new_ids))
+      shiny::updateTextInput(session, "concept_ids",
+                             value = paste(all_ids, collapse = ", "))
+    })
+
+    shiny::observeEvent(input$locate_btn, {
+      ids <- .parse_ids(input$concept_ids)
+      if (is.null(ids) || length(ids) == 0) {
+        shiny::showNotification("Enter at least one concept ID.",
+                                type = "warning")
+        return()
+      }
+
+      shiny::withProgress(message = "Locating concepts...", value = 0.3, {
+        tryCatch({
+          res <- ds.omop.concept.locate(
+            concept_ids = ids, symbol = state$symbol
+          )
+          shiny::incProgress(0.5)
+          # Accumulate code for Script tab
+          if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+            state$script_lines <- c(state$script_lines, res$meta$call_code)
+          }
+          # Store raw result for scope switching
+          raw_locate_result(res)
+
+          # Extract based on current scope
+          scope <- state$scope %||% "pooled"
+          df <- .locator_extract(res, scope, state$selected_servers,
+                                  intersect_only = FALSE)
+          locate_data(df)
+        }, error = function(e) {
+          shiny::showNotification(
+            .clean_ds_error(e), type = "error"
+          )
+        })
+      })
+    })
+
+    # Re-extract on scope/server/intersect change
+    shiny::observeEvent(list(state$scope, state$selected_servers, state$scope), {
+      res <- raw_locate_result()
+      if (is.null(res)) return()
+      scope <- state$scope %||% "pooled"
+      df <- .locator_extract(res, scope, state$selected_servers,
+                              intersect_only = FALSE)
+      locate_data(df)
+    }, ignoreInit = TRUE)
+
+    output$presence_dt <- DT::renderDT({
+      df <- locate_data()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+      DT::datatable(df,
+        options = list(pageLength = 25, dom = "ftip", scrollX = TRUE),
+        rownames = FALSE, selection = "none")
+    })
+  })
+}
+
+
+# ==============================================================================
+# SUB-MODULE 4: Vocabulary (was .mod_vocab)
+# ==============================================================================
+
+.mod_explore_vocab_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Concept Search", width = 260, open = "desktop",
+      shiny::textInput(ns("search_pattern"), "Search",
+                       placeholder = "e.g. diabetes"),
+      shiny::selectInput(ns("domain_filter"), "Domain",
+        choices = c("All" = "", "Condition", "Drug", "Measurement",
+                    "Observation", "Procedure", "Visit"),
+        selected = ""),
+      shiny::checkboxInput(ns("standard_only"), "Standard only", TRUE),
+      shiny::numericInput(ns("limit"), "Max results", 50, 10, 500, 10),
+      shiny::actionButton(ns("search_btn"), "Search",
+                          icon = shiny::icon("magnifying-glass"),
+                          class = "btn-primary w-100"),
+      shiny::h6("Concept Set"),
+      shiny::verbatimTextOutput(ns("concept_set_ids")),
+      shiny::actionButton(ns("clear_set"), "Clear Set",
+                          class = "btn-sm btn-outline-danger")
+    ),
+    bslib::card(
+      full_screen = TRUE,
+      bslib::card_header(
+        shiny::div(class = "d-flex justify-content-between align-items-center",
+          "Search Results",
+          shiny::div(
+            shiny::actionButton(ns("add_selected_vocab"), "Add to Set",
+                                class = "btn-sm btn-outline-primary me-1"),
+            bslib::tooltip(
+              shiny::actionButton(ns("extract_selected_vocab"),
+                                  shiny::tagList(shiny::icon("plus"), "Extract"),
+                                  class = "btn-sm btn-success text-white"),
+              "Add selected concepts as variables to Builder"
+            ),
+            shiny::span(class = "ms-2",
+              shiny::checkboxInput(ns("group_concepts"), "Group", value = FALSE,
+                                   width = "auto")
+            )
+          )
+        )
+      ),
+      bslib::card_body(
+        shiny::div(
+          DT::DTOutput(ns("results_table"))
+        )
+      )
+    ),
+    bslib::card(
+      full_screen = TRUE,
+      bslib::card_header("Concept Details"),
+      bslib::card_body(
+        shiny::uiOutput(ns("concept_detail"))
+      )
+    )
+  )
+}
+
+.mod_explore_vocab_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+    search_results <- shiny::reactiveVal(NULL)
+    raw_search_result <- shiny::reactiveVal(NULL)
+
+    shiny::observeEvent(input$search_btn, {
+      shiny::req(nchar(input$search_pattern) > 0)
+      tryCatch({
+        domain <- if (nchar(input$domain_filter) > 0)
+          input$domain_filter else NULL
+        res <- ds.omop.concept.search(
+          pattern = input$search_pattern,
+          domain = domain,
+          standard_only = input$standard_only,
+          limit = input$limit,
+          symbol = state$symbol
+        )
+        # Accumulate code for Script tab
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
+        raw_search_result(res)
+        search_results(.extract_display_data(res, "all",
+          state$selected_servers,
+          intersect_only = FALSE))
+      }, error = function(e) {
+        shiny::showNotification(
+          .clean_ds_error(e), type = "error"
+        )
+      })
+    })
+
+    # Re-extract on server/intersect change
+    shiny::observeEvent(list(state$selected_servers, state$scope), {
+      res <- raw_search_result()
+      if (is.null(res)) return()
+      search_results(.extract_display_data(res, "all",
+        state$selected_servers,
+        intersect_only = FALSE))
+    }, ignoreInit = TRUE)
+
+    output$results_table <- DT::renderDT({
+      df <- search_results()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+
+      if (isTRUE(input$group_concepts) && "server" %in% names(df)) {
+        # Group identical concept_ids: replace server with count of servers
+        grp <- stats::aggregate(
+          server ~ concept_id, data = df,
+          FUN = function(x) length(unique(x))
+        )
+        names(grp)[names(grp) == "server"] <- "n_servers"
+        # Keep first row per concept_id for metadata
+        dedup <- df[!duplicated(df$concept_id), , drop = FALSE]
+        dedup$server <- NULL
+        df <- merge(dedup, grp, by = "concept_id", sort = FALSE)
+        keep <- intersect(c("concept_id", "concept_name", "domain_id",
+                             "vocabulary_id", "standard_concept", "n_servers"),
+                          names(df))
+      } else {
+        keep <- intersect(c("concept_id", "concept_name", "domain_id",
+                             "vocabulary_id", "standard_concept", "server"),
+                          names(df))
+      }
+      DT::datatable(
+        df[, keep, drop = FALSE],
+        options = list(pageLength = 15, dom = "ftip", scrollX = TRUE),
+        rownames = FALSE, selection = "multiple"
+      )
+    })
+
+    # Bulk add selected concepts to set
+    shiny::observeEvent(input$add_selected_vocab, {
+      df <- search_results()
+      idx <- input$results_table_rows_selected
+      if (is.null(idx) || length(idx) == 0 || is.null(df)) {
+        shiny::showNotification("Select rows first.", type = "warning")
+        return()
+      }
+      idx <- idx[idx <= nrow(df)]
+      new_ids <- as.integer(df$concept_id[idx])
+      current <- state$concept_set
+      added <- setdiff(new_ids, current)
+      if (length(added) > 0) {
+        state$concept_set <- c(current, added)
+        shiny::showNotification(
+          paste("Added", length(added), "concept(s) to set"),
+          type = "message", duration = 2)
+      }
+    })
+
+    # +Extract: add selected concepts as variables to cart
+    shiny::observeEvent(input$extract_selected_vocab, {
+      df <- search_results()
+      idx <- input$results_table_rows_selected
+      if (is.null(idx) || length(idx) == 0 || is.null(df)) {
+        shiny::showNotification("Select rows first.", type = "warning")
+        return()
+      }
+      idx <- idx[idx <= nrow(df)]
+      added <- 0L
+      for (i in idx) {
+        cid <- as.integer(df$concept_id[i])
+        cname <- if ("concept_name" %in% names(df))
+          as.character(df$concept_name[i]) else NULL
+        domain <- if ("domain_id" %in% names(df))
+          as.character(df$domain_id[i]) else NULL
+        # Infer table from domain
+        tbl <- .domain_to_table(domain)
+        tryCatch({
+          v <- omop_variable(
+            table = tbl, concept_id = cid,
+            concept_name = cname, format = "raw"
+          )
+          state$cart <- cart_add_variable(state$cart, v)
+          added <- added + 1L
+        }, error = function(e) NULL)
+      }
+      if (added > 0) {
+        shiny::showNotification(
+          paste("Added", added, "variable(s) to cart"),
+          type = "message", duration = 2)
+      }
+    })
+
+    shiny::observeEvent(input$clear_set, {
+      state$concept_set <- integer(0)
+    })
+
+    output$concept_set_ids <- shiny::renderText({
+      ids <- state$concept_set
+      if (length(ids) == 0) return("(empty)")
+      paste(ids, collapse = ", ")
+    })
+
+    output$concept_detail <- shiny::renderUI({
+      df <- search_results()
+      idx <- input$results_table_rows_selected
+      if (is.null(idx) || length(idx) == 0 || is.null(df)) {
+        return(.empty_state_ui("hand-pointer", "Select a concept",
+                               "Click a row in the search results to view details."))
+      }
+      # Show details for the first selected row
+      first_idx <- idx[1]
+      if (first_idx > nrow(df)) {
+        return(.empty_state_ui("hand-pointer", "Select a concept",
+                               "Click a row in the search results to view details."))
+      }
+      row <- df[first_idx, ]
+      std <- as.character(row$standard_concept %||% "")
+      std_badge <- if (std == "S") {
+        shiny::span(class = "badge", style = "background:#065f46; color:#ecfdf5;", "Standard")
+      } else if (nchar(std) > 0) {
+        shiny::span(class = "badge bg-warning text-dark", std)
+      }
+      shiny::div(
+        shiny::div(class = "d-flex align-items-center gap-2 mb-2",
+          shiny::span(class = "badge bg-primary", style = "font-size:0.82rem;",
+                      paste0("#", row$concept_id)),
+          std_badge
+        ),
+        shiny::h6(class = "mb-2", style = "font-weight:600;",
+                   as.character(row$concept_name)),
+        shiny::tags$table(class = "table table-sm table-borderless mb-0",
+          style = "font-size:0.84rem;",
+          shiny::tags$tbody(
+            shiny::tags$tr(
+              shiny::tags$td(class = "text-muted", style = "width:35%;", "Domain"),
+              shiny::tags$td(class = "fw-semibold", as.character(row$domain_id))
+            ),
+            shiny::tags$tr(
+              shiny::tags$td(class = "text-muted", "Vocabulary"),
+              shiny::tags$td(class = "fw-semibold",
+                             as.character(row$vocabulary_id %||% ""))
+            ),
+            if ("server" %in% names(row)) shiny::tags$tr(
+              shiny::tags$td(class = "text-muted", "Server"),
+              shiny::tags$td(shiny::span(class = "server-badge server-badge-ok",
+                                         as.character(row$server)))
+            )
+          )
+        )
+      )
+    })
+  })
+}
+
+
+# ==============================================================================
+# Helper functions
+# ==============================================================================
+
+# Helper: pick server(s) from drilldown per_site list
+# selected_server: character vector of server names (NULL = all)
+.drilldown_pick_server <- function(per_site, selected_server) {
+  if (is.null(per_site)) return(NULL)
+  srvs <- .resolve_servers(per_site, selected_server)
+  if (length(srvs) == 0) return(per_site)
+  per_site[srvs]
+}
+
+# Helper: extract locator data with scope support
+# selected_server: character vector of server names (NULL = all)
+.locator_extract <- function(res, scope, selected_server = NULL,
+                              intersect_only = FALSE) {
+  if (is.null(res)) return(NULL)
+  per_site <- if (inherits(res, "dsomop_result")) res$per_site else res
+  srvs <- .resolve_servers(per_site, selected_server)
+  if (length(srvs) == 0) return(NULL)
+
+  if (scope == "per_site") {
+    srv <- srvs[1]
+    if (srv %in% names(per_site)) return(per_site[[srv]])
+    return(NULL)
+  }
+
+  if (scope == "pooled") {
+    # Aggregate across selected servers
+    all_df <- .locator_extract(res, "all", selected_server)
+    if (is.null(all_df) || !is.data.frame(all_df) || nrow(all_df) == 0)
+      return(NULL)
+    group_cols <- intersect(c("table_name", "concept_column", "concept_id"),
+                            names(all_df))
+    if (length(group_cols) == 0) return(all_df)
+    agg <- stats::aggregate(
+      cbind(n_records, n_persons) ~ table_name + concept_column + concept_id,
+      data = all_df, FUN = sum, na.rm = TRUE
+    )
+    return(agg)
+  }
+
+  # scope == "all" (default): rbind selected servers with server column
+  dfs <- list()
+  for (srv in srvs) {
+    df <- per_site[[srv]]
+    if (is.data.frame(df) && nrow(df) > 0) {
+      df$server <- srv
+      dfs[[srv]] <- df
+    }
+  }
+  if (length(dfs) == 0) return(NULL)
+  combined <- do.call(rbind, dfs)
+  rownames(combined) <- NULL
+
+  # Intersection filter
+  if (isTRUE(intersect_only) && length(dfs) > 1 &&
+      "concept_id" %in% names(combined)) {
+    id_sets <- lapply(dfs, function(d) unique(d$concept_id))
+    common_ids <- Reduce(intersect, id_sets)
+    combined <- combined[combined$concept_id %in% common_ids, , drop = FALSE]
+  }
+  combined
+}

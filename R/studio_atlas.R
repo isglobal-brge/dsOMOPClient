@@ -7,20 +7,20 @@
 
 .mod_atlas_ui <- function(id) {
   ns <- shiny::NS(id)
-  bslib::layout_sidebar(
-    sidebar = bslib::sidebar(
-      title = "Data Sources", width = 320,
+  shiny::tagList(
+    # --- Achilles status + page selector (horizontal) ---
+    shiny::div(class = "d-flex align-items-center gap-3 mb-3 flex-wrap",
       shiny::uiOutput(ns("achilles_status")),
-      shiny::hr(),
-      shiny::h6("Navigation"),
-      shiny::selectInput(ns("atlas_nav"), NULL,
-        choices = c("Dashboard", "Person", "Conditions", "Drugs",
-                    "Procedures", "Measurements", "Observations",
-                    "Visits", "Trends", "Data Quality"),
-        selected = "Dashboard"),
-      .scope_controls_ui(ns)
+      shiny::div(style = "min-width: 180px;",
+        shiny::selectInput(ns("atlas_nav"), NULL,
+          choices = c("Dashboard", "Person", "Conditions", "Drugs",
+                      "Procedures", "Measurements", "Observations",
+                      "Visits", "Trends", "Data Quality"),
+          selected = "Dashboard")
+      )
     ),
-    bslib::card(
+    # --- Page content (full width) ---
+    bslib::card(full_screen = TRUE,
       bslib::card_header(shiny::textOutput(ns("page_title"))),
       bslib::card_body(
         shiny::uiOutput(ns("page_content"))
@@ -36,8 +36,6 @@
     achilles_available <- shiny::reactiveVal(FALSE)
     achilles_catalog <- shiny::reactiveVal(NULL)
     page_data <- shiny::reactiveVal(NULL)
-
-    .scope_sync_servers(input, session, state)
 
     # Check Achilles availability and fetch catalog on load
     shiny::observe({
@@ -111,34 +109,33 @@
           shiny::span(class = "status-warn", shiny::icon("exclamation-triangle"),
                       " Achilles Not Found"),
           shiny::p(class = "text-muted small mt-1",
-                   "Run Achilles on the CDM to enable Data Sources")
+                   "Run Achilles on the CDM to enable this tab")
         )
       }
     })
 
     output$page_title <- shiny::renderText({
-      paste("Data Sources:", input$atlas_nav)
+      paste("Achilles:", input$atlas_nav)
     })
 
-    # Re-fetch when scope, server, or intersect changes
-    shiny::observeEvent(list(input$scope, input$selected_server,
-                             input$intersect_only), {
+    # Re-fetch when scope or server changes
+    shiny::observeEvent(list(state$scope, state$selected_servers), {
       if (!achilles_available() || is.null(input$atlas_nav)) return()
       nav <- input$atlas_nav
       cat <- achilles_catalog()
-      scope <- input$scope %||% "per_site"
-      policy <- input$pooling_policy %||% "strict"
+      scope <- state$scope %||% "per_site"
+      policy <- state$pooling_policy %||% "strict"
 
       tryCatch({
         data <- if (nav == "Dashboard") {
-          .atlas_fetch_dashboard(state, scope, policy, input$selected_server)
+          .atlas_fetch_dashboard(state, scope, policy, state$selected_servers)
         } else if (nav == "Person") {
-          .atlas_fetch_person(state, scope, policy, input$selected_server)
+          .atlas_fetch_person(state, scope, policy, state$selected_servers)
         } else if (nav == "Visits") {
-          .atlas_fetch_visits(state, scope, policy, input$selected_server)
+          .atlas_fetch_visits(state, scope, policy, state$selected_servers)
         } else if (nav == "Trends") {
           .atlas_fetch_trends_dynamic(state, cat, scope, policy,
-                                       input$selected_server)
+                                       state$selected_servers)
         } else if (nav == "Data Quality") {
           .atlas_fetch_quality(state, scope, policy)
         } else {
@@ -146,26 +143,26 @@
           if (!is.null(cat) && !is.null(domain)) {
             domain_analyses <- cat[cat$domain == domain, , drop = FALSE]
             .atlas_fetch_domain_dynamic(state, domain_analyses, scope, policy,
-                                         input$selected_server)
+                                         state$selected_servers)
           } else {
             switch(nav,
               "Conditions" = .atlas_fetch_domain(state, 400L, 401L, scope,
-                               policy, input$selected_server),
+                               policy, state$selected_servers),
               "Drugs"     = .atlas_fetch_domain(state, 700L, 701L, scope,
-                               policy, input$selected_server),
+                               policy, state$selected_servers),
               "Procedures" = .atlas_fetch_domain(state, 600L, 601L, scope,
-                               policy, input$selected_server),
+                               policy, state$selected_servers),
               "Measurements" = .atlas_fetch_domain(state, 1800L, 1801L, scope,
-                               policy, input$selected_server),
+                               policy, state$selected_servers),
               "Observations" = .atlas_fetch_domain(state, 800L, NULL, scope,
-                               policy, input$selected_server),
+                               policy, state$selected_servers),
               NULL
             )
           }
         }
         page_data(data %||% list(no_data = TRUE))
       }, error = function(e) {
-        page_data(list(error = conditionMessage(e)))
+        page_data(list(error = .clean_ds_error(e)))
       })
     }, ignoreInit = TRUE)
 
@@ -178,10 +175,11 @@
 
       nav <- input$atlas_nav
       cat <- achilles_catalog()
-      scope <- input$scope %||% "per_site"
-      policy <- input$pooling_policy %||% "strict"
-      selected_srv <- input$selected_server
+      scope <- state$scope %||% "per_site"
+      policy <- state$pooling_policy %||% "strict"
+      selected_srv <- state$selected_servers
 
+      shiny::withProgress(message = paste("Loading", nav, "..."), value = 0.2, {
       tryCatch({
         data <- if (nav == "Dashboard") {
           .atlas_fetch_dashboard(state, scope, policy, selected_srv)
@@ -217,9 +215,11 @@
             )
           }
         }
+        shiny::incProgress(0.6)
         page_data(data %||% list(no_data = TRUE))
       }, error = function(e) {
-        page_data(list(error = conditionMessage(e)))
+        page_data(list(error = .clean_ds_error(e)))
+      })
       })
     })
 
@@ -229,7 +229,7 @@
         return(shiny::div(class = "text-center text-muted py-5",
           shiny::icon("database", class = "fa-3x mb-3"),
           shiny::h5("Achilles statistics not available"),
-          shiny::p("Pre-computed statistics are required for Data Sources.",
+          shiny::p("Pre-computed Achilles statistics are required for this tab.",
                    "Run OHDSI Achilles on your CDM to generate them.")
         ))
       }
@@ -268,116 +268,144 @@
     })
 
     # Dashboard plot outputs
-    output$dashboard_gender_plot <- shiny::renderPlot({
+    output$dashboard_gender_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$gender)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$gender)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$gender
         df$count_value <- as.numeric(df$count_value)
-        if (nrow(df) == 0) return()
+        if (nrow(df) == 0) return(plotly::plotly_empty())
         vals <- df$count_value[!is.na(df$count_value)]
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         labels <- labels[!is.na(df$count_value)]
         if (length(vals) > 0) {
-          pie(vals, labels = paste0(labels, " (", vals, ")"),
-              col = c("#3498db", "#e74c3c", "#2ecc71", "#f39c12"),
-              main = "Gender Distribution")
+          plotly::plot_ly(labels = labels, values = vals, type = "pie",
+                          marker = list(colors = .studio_colors[1:4])) |>
+            plotly::layout(title = list(text = "Gender Distribution")) |>
+            .plotly_defaults("Gender Distribution")
+        } else {
+          plotly::plotly_empty()
         }
       })
     })
 
-    output$dashboard_age_plot <- shiny::renderPlot({
+    output$dashboard_age_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$age_dist)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$age_dist)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$age_dist
-        if (nrow(df) == 0 || all(is.na(df$avg_value))) return()
+        if (nrow(df) == 0 || all(is.na(df$avg_value))) return(plotly::plotly_empty())
         row <- df[1, ]
         vals <- c(row$min_value, row$p10_value, row$p25_value,
                   row$median_value, row$p75_value, row$p90_value,
                   row$max_value)
-        names(vals) <- c("Min", "P10", "P25", "Median", "P75", "P90", "Max")
-        vals <- vals[!is.na(vals)]
+        nms <- c("Min", "P10", "P25", "Median", "P75", "P90", "Max")
+        keep <- !is.na(vals)
+        vals <- vals[keep]
+        nms <- nms[keep]
         if (length(vals) > 0) {
-          barplot(vals, main = "Age at First Observation",
-                  col = "#3498db", ylab = "Age (years)")
+          plotly::plot_ly(x = nms, y = vals, type = "bar",
+                          marker = list(color = .studio_colors[1])) |>
+            plotly::layout(title = list(text = "Age at First Observation"),
+                           xaxis = list(categoryorder = "array",
+                                        categoryarray = nms),
+                           yaxis = list(title = "Age (years)")) |>
+            .plotly_defaults("Age at First Observation")
+        } else {
+          plotly::plotly_empty()
         }
       })
     })
 
     # Person page plots
-    output$person_gender_plot <- shiny::renderPlot({
+    output$person_gender_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$gender)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$gender)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$gender
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return()
+        if (nrow(df) == 0) return(plotly::plotly_empty())
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
-        barplot(df$count_value, names.arg = labels,
-                col = c("#3498db", "#e74c3c", "#2ecc71", "#f39c12"),
-                main = "Gender", ylab = "Persons")
+        plotly::plot_ly(x = labels, y = df$count_value, type = "bar",
+                        marker = list(color = .studio_colors[1:4])) |>
+          plotly::layout(title = list(text = "Gender"),
+                         yaxis = list(title = "Persons")) |>
+          .plotly_defaults("Gender")
       })
     })
 
-    output$person_yob_plot <- shiny::renderPlot({
+    output$person_yob_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$yob)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$yob)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$yob
-        df$count_value <- as.numeric(df$count_value)
-        df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return()
-        barplot(df$count_value, names.arg = df$stratum_1,
-                col = "#3498db", main = "Year of Birth", ylab = "Persons",
-                las = 2, cex.names = 0.7)
+        if (!is.data.frame(df) || nrow(df) == 0) return(plotly::plotly_empty())
+        df$count_value <- suppressWarnings(as.numeric(df$count_value))
+        df <- df[!is.na(df$count_value) & df$count_value > 0, , drop = FALSE]
+        if (nrow(df) == 0) return(plotly::plotly_empty())
+        df <- df[order(as.character(df$stratum_1)), ]
+        labels <- as.character(df$stratum_1)
+        values <- df$count_value
+        plotly::plot_ly(x = labels, y = values, type = "bar",
+                        marker = list(color = .studio_colors[1],
+                          line = list(color = "rgba(0,0,0,0.05)", width = 1)),
+                        hovertemplate = "<b>%{x}</b><br>Persons: %{y:,.0f}<extra></extra>") |>
+          .plotly_defaults("Year of Birth")
       })
     })
 
-    output$person_race_plot <- shiny::renderPlot({
+    output$person_race_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$race)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$race)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$race
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return()
+        if (nrow(df) == 0) return(plotly::plotly_empty())
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
-        barplot(df$count_value, names.arg = labels,
-                col = "#2ecc71", main = "Race", ylab = "Persons",
-                horiz = TRUE, las = 1, cex.names = 0.8)
+        plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
+                        orientation = "h",
+                        marker = list(color = .studio_colors[2])) |>
+          plotly::layout(title = list(text = "Race"),
+                         xaxis = list(title = "Persons"),
+                         yaxis = list(categoryorder = "total ascending")) |>
+          .plotly_defaults("Race")
       })
     })
 
-    output$person_ethnicity_plot <- shiny::renderPlot({
+    output$person_ethnicity_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$ethnicity)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$ethnicity)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$ethnicity
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return()
+        if (nrow(df) == 0) return(plotly::plotly_empty())
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
-        barplot(df$count_value, names.arg = labels,
-                col = "#f39c12", main = "Ethnicity", ylab = "Persons",
-                horiz = TRUE, las = 1, cex.names = 0.8)
+        plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
+                        orientation = "h",
+                        marker = list(color = .studio_colors[3])) |>
+          plotly::layout(title = list(text = "Ethnicity"),
+                         xaxis = list(title = "Persons"),
+                         yaxis = list(categoryorder = "total ascending")) |>
+          .plotly_defaults("Ethnicity")
       })
     })
 
     # Domain plots (used by Conditions, Drugs, Procedures, Measurements, Observations)
-    output$domain_bar_plot <- shiny::renderPlot({
+    output$domain_bar_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$concepts)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$concepts)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$concepts
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return()
+        if (nrow(df) == 0) return(plotly::plotly_empty())
         # Sort by count descending
         df <- df[order(df$count_value, decreasing = TRUE), ]
         n <- min(nrow(df), 20)
@@ -391,32 +419,34 @@
         } else df$stratum_1
         # Truncate labels
         labels <- substr(labels, 1, 30)
-        par(mar = c(5, 12, 3, 2))
-        barplot(rev(df$count_value), names.arg = rev(labels),
-                col = "#3498db", main = paste("Top", n, "Concepts"),
-                xlab = "Persons", horiz = TRUE, las = 1, cex.names = 0.7)
+        plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
+                        orientation = "h",
+                        marker = list(color = .studio_colors[1])) |>
+          plotly::layout(title = list(text = paste("Top", n, "Concepts")),
+                         xaxis = list(title = "Persons"),
+                         yaxis = list(categoryorder = "total ascending")) |>
+          .plotly_defaults(paste("Top", n, "Concepts"))
       })
     })
 
-    output$domain_trend_plot <- shiny::renderPlot({
+    output$domain_trend_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$trends)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$trends)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$trends
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return()
+        if (nrow(df) == 0) return(plotly::plotly_empty())
         # Aggregate by month across concepts
         agg <- stats::aggregate(count_value ~ stratum_2, data = df, FUN = sum)
         agg <- agg[order(agg$stratum_2), ]
-        plot(seq_len(nrow(agg)), agg$count_value, type = "l",
-             xlab = "Time", ylab = "Records", main = "Temporal Trend",
-             xaxt = "n", col = "#2c3e50", lwd = 2)
-        if (nrow(agg) > 0) {
-          at_idx <- seq(1, nrow(agg), length.out = min(10, nrow(agg)))
-          axis(1, at = at_idx, labels = agg$stratum_2[at_idx],
-               las = 2, cex.axis = 0.7)
-        }
+        plotly::plot_ly(x = agg$stratum_2, y = agg$count_value,
+                        type = "scatter", mode = "lines",
+                        line = list(color = .studio_colors[1], width = 2)) |>
+          plotly::layout(title = list(text = "Temporal Trend"),
+                         xaxis = list(title = "Time", tickangle = -45),
+                         yaxis = list(title = "Records")) |>
+          .plotly_defaults("Temporal Trend")
       })
     })
 
@@ -466,7 +496,7 @@
                            concept_name = cname, format = "raw")
         state$cart <- cart_add_variable(state$cart, v)
       }
-      shiny::showNotification(paste(length(sel), "variable(s) added to cart"),
+      shiny::showNotification(paste(length(sel), "variable(s) added to Builder"),
                               type = "message")
     })
 
@@ -481,59 +511,81 @@
       df <- data$concepts
       df <- df[!is.na(df$count_value), , drop = FALSE]
       cids <- as.integer(df$stratum_1[sel])
-      f <- omop_filter_has_concept(concept_ids = cids)
-      state$cart <- cart_add_filter(state$cart, f)
-      shiny::showNotification("Filter added to cart", type = "message")
+      # Determine table from current page context
+      nav <- input$atlas_nav
+      tbl <- switch(tolower(nav %||% ""),
+        condition = "condition_occurrence",
+        drug = "drug_exposure",
+        measurement = "measurement",
+        procedure = "procedure_occurrence",
+        observation = "observation",
+        visit = "visit_occurrence",
+        "condition_occurrence"
+      )
+      added <- 0L
+      for (cid in cids) {
+        cname <- data$concept_map[[as.character(cid)]]
+        tryCatch({
+          f <- omop_filter_has_concept(cid, tbl, cname)
+          state$cart <- cart_add_filter(state$cart, f)
+          added <- added + 1L
+        }, error = function(e) NULL)
+      }
+      if (added > 0) {
+        shiny::showNotification(
+          paste(added, "filter(s) added to Builder"),
+          type = "message", duration = 2)
+      }
     })
 
     # Visits plot
-    output$visits_type_plot <- shiny::renderPlot({
+    output$visits_type_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$types)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$types)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$types
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return()
+        if (nrow(df) == 0) return(plotly::plotly_empty())
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
-        barplot(df$count_value, names.arg = labels,
-                col = c("#3498db", "#2ecc71", "#e74c3c", "#f39c12"),
-                main = "Visit Types", ylab = "Visits")
+        plotly::plot_ly(x = labels, y = df$count_value, type = "bar",
+                        marker = list(color = .studio_colors[1:4])) |>
+          plotly::layout(title = list(text = "Visit Types"),
+                         yaxis = list(title = "Visits")) |>
+          .plotly_defaults("Visit Types")
       })
     })
 
-    output$visits_trend_plot <- shiny::renderPlot({
+    output$visits_trend_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$trends)) return()
-      .safe_plot({
+      if (is.null(data) || is.null(data$trends)) return(plotly::plotly_empty())
+      .safe_plotly({
         df <- data$trends
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return()
+        if (nrow(df) == 0) return(plotly::plotly_empty())
         agg <- stats::aggregate(count_value ~ stratum_2, data = df, FUN = sum)
         agg <- agg[order(agg$stratum_2), ]
-        plot(seq_len(nrow(agg)), agg$count_value, type = "l",
-             xlab = "Time", ylab = "Visits", main = "Visit Trend",
-             xaxt = "n", col = "#2c3e50", lwd = 2)
-        if (nrow(agg) > 0) {
-          at_idx <- seq(1, nrow(agg), length.out = min(10, nrow(agg)))
-          axis(1, at = at_idx, labels = agg$stratum_2[at_idx],
-               las = 2, cex.axis = 0.7)
-        }
+        plotly::plot_ly(x = agg$stratum_2, y = agg$count_value,
+                        type = "scatter", mode = "lines",
+                        line = list(color = .studio_colors[1], width = 2)) |>
+          plotly::layout(title = list(text = "Visit Trend"),
+                         xaxis = list(title = "Time", tickangle = -45),
+                         yaxis = list(title = "Visits")) |>
+          .plotly_defaults("Visit Trend")
       })
     })
 
     # Trends plot
-    output$trends_overlay_plot <- shiny::renderPlot({
+    output$trends_overlay_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || length(data) == 0) return()
-      .safe_plot({
+      if (is.null(data) || length(data) == 0) return(plotly::plotly_empty())
+      .safe_plotly({
         domains <- names(data)
-        colors <- c("#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6")
-        first <- TRUE
-        legend_labels <- character(0)
-        legend_colors <- character(0)
+        colors <- .studio_colors
+        p <- plotly::plot_ly()
+        trace_added <- FALSE
         for (i in seq_along(domains)) {
           df <- data[[domains[i]]]
           if (!is.data.frame(df) || nrow(df) == 0 ||
@@ -543,32 +595,29 @@
           if (nrow(df) == 0) next
           agg <- stats::aggregate(count_value ~ stratum_2, data = df, FUN = sum)
           agg <- agg[order(agg$stratum_2), ]
-          if (first) {
-            plot(seq_len(nrow(agg)), agg$count_value, type = "l",
-                 xlab = "Time", ylab = "Records",
-                 main = "Cross-Domain Trends",
-                 xaxt = "n", col = colors[i], lwd = 2,
-                 ylim = c(0, max(agg$count_value) * 1.2))
-            if (nrow(agg) > 0) {
-              at_idx <- seq(1, nrow(agg), length.out = min(8, nrow(agg)))
-              axis(1, at = at_idx, labels = agg$stratum_2[at_idx],
-                   las = 2, cex.axis = 0.7)
-            }
-            first <- FALSE
-          } else {
-            lines(seq_len(nrow(agg)), agg$count_value,
-                  col = colors[i], lwd = 2)
-          }
-          legend_labels <- c(legend_labels, domains[i])
-          legend_colors <- c(legend_colors, colors[i])
+          col_idx <- ((i - 1) %% length(colors)) + 1
+          p <- p |> plotly::add_trace(
+            x = agg$stratum_2, y = agg$count_value,
+            type = "scatter", mode = "lines",
+            name = domains[i],
+            line = list(color = colors[col_idx], width = 2)
+          )
+          trace_added <- TRUE
         }
-        if (length(legend_labels) > 0) {
-          legend("topright", legend = legend_labels, col = legend_colors,
-                 lwd = 2, bty = "n", cex = 0.8)
+        if (!trace_added) {
+          p <- plotly::plotly_empty() |>
+            plotly::layout(title = list(text = "No trend data available",
+                                        font = list(color = "#7f8c8d",
+                                                    size = 14)))
         } else {
-          plot.new()
-          text(0.5, 0.5, "No trend data available", cex = 1.1, col = "#7f8c8d")
+          p <- p |> plotly::layout(
+            title = list(text = "Cross-Domain Trends"),
+            xaxis = list(title = "Time", tickangle = -45),
+            yaxis = list(title = "Records"),
+            legend = list(orientation = "h", y = -0.2)
+          ) |> .plotly_defaults("Cross-Domain Trends")
         }
+        p
       })
     })
 
@@ -869,44 +918,63 @@
 .atlas_render_dashboard <- function(ns, data) {
   total_txt <- .fmt_count(data$total_persons)
 
+  median_age_val <- {
+    if (is.data.frame(data$age_dist) && nrow(data$age_dist) > 0 &&
+        !is.na(data$age_dist$median_value[1])) {
+      round(data$age_dist$median_value[1], 1)
+    } else "N/A"
+  }
+
+  # Gender ratio: show dominant gender %
+  gender_pct_val <- {
+    if (is.data.frame(data$gender) && nrow(data$gender) > 0) {
+      g <- data$gender
+      g$count_value <- as.numeric(g$count_value)
+      g <- g[!is.na(g$count_value), , drop = FALSE]
+      if (nrow(g) > 0) {
+        total_g <- sum(g$count_value)
+        if (total_g > 0) {
+          cmap <- data$concept_map %||% list()
+          g$label <- vapply(g$stratum_1, function(id) {
+            nm <- cmap[[as.character(id)]]
+            if (!is.null(nm)) nm else id
+          }, character(1))
+          g <- g[order(g$count_value, decreasing = TRUE), ]
+          top_label <- substr(g$label[1], 1, 8)
+          top_pct <- round(g$count_value[1] / total_g * 100)
+          paste0(top_pct, "% ", top_label)
+        } else "N/A"
+      } else "N/A"
+    } else "N/A"
+  }
+
   shiny::tagList(
-    shiny::fluidRow(
-      shiny::column(4,
-        bslib::card(bslib::card_body(
-          shiny::div(class = "metric-card",
-            shiny::div(class = "value", total_txt),
-            shiny::div(class = "label", "Total Persons"))
-        ))
+    bslib::layout_columns(
+      col_widths = c(4, 4, 4), fill = FALSE,
+      bslib::value_box(
+        title = "Total Persons",
+        value = total_txt,
+        showcase = fontawesome::fa_i("users"),
+        theme = "primary"
       ),
-      shiny::column(4,
-        bslib::card(bslib::card_body(
-          shiny::div(class = "metric-card",
-            shiny::div(class = "value", {
-              if (is.data.frame(data$age_dist) && nrow(data$age_dist) > 0 &&
-                  !is.na(data$age_dist$avg_value[1])) {
-                round(data$age_dist$avg_value[1], 1)
-              } else "N/A"
-            }),
-            shiny::div(class = "label", "Avg Age at First Obs"))
-        ))
+      bslib::value_box(
+        title = "Median Age",
+        value = median_age_val,
+        showcase = fontawesome::fa_i("calendar"),
+        theme = "info"
       ),
-      shiny::column(4,
-        bslib::card(bslib::card_body(
-          shiny::div(class = "metric-card",
-            shiny::div(class = "value", {
-              if (is.data.frame(data$gender) && nrow(data$gender) > 0) {
-                nrow(data$gender[!is.na(data$gender$count_value), ])
-              } else "N/A"
-            }),
-            shiny::div(class = "label", "Gender Categories"))
-        ))
+      bslib::value_box(
+        title = "Gender",
+        value = gender_pct_val,
+        showcase = fontawesome::fa_i("venus-mars"),
+        theme = "success"
       )
     ),
     shiny::fluidRow(
-      shiny::column(6, shiny::plotOutput(ns("dashboard_gender_plot"),
-                                          height = "300px")),
-      shiny::column(6, shiny::plotOutput(ns("dashboard_age_plot"),
-                                          height = "300px"))
+      shiny::column(6, plotly::plotlyOutput(ns("dashboard_gender_plot"),
+                                            height = "300px")),
+      shiny::column(6, plotly::plotlyOutput(ns("dashboard_age_plot"),
+                                            height = "300px"))
     )
   )
 }
@@ -914,16 +982,16 @@
 .atlas_render_person <- function(ns, data) {
   shiny::tagList(
     shiny::fluidRow(
-      shiny::column(6, shiny::plotOutput(ns("person_gender_plot"),
-                                          height = "300px")),
-      shiny::column(6, shiny::plotOutput(ns("person_yob_plot"),
-                                          height = "300px"))
+      shiny::column(6, plotly::plotlyOutput(ns("person_gender_plot"),
+                                            height = "300px")),
+      shiny::column(6, plotly::plotlyOutput(ns("person_yob_plot"),
+                                            height = "300px"))
     ),
     shiny::fluidRow(
-      shiny::column(6, shiny::plotOutput(ns("person_race_plot"),
-                                          height = "250px")),
-      shiny::column(6, shiny::plotOutput(ns("person_ethnicity_plot"),
-                                          height = "250px"))
+      shiny::column(6, plotly::plotlyOutput(ns("person_race_plot"),
+                                            height = "250px")),
+      shiny::column(6, plotly::plotlyOutput(ns("person_ethnicity_plot"),
+                                            height = "250px"))
     )
   )
 }
@@ -931,50 +999,50 @@
 .atlas_render_domain <- function(ns, data, domain_label) {
   shiny::tagList(
     shiny::fluidRow(
-      shiny::column(12,
-        shiny::div(class = "d-flex justify-content-end mb-2",
-          shiny::actionButton(ns("domain_extract_btn"),
-            shiny::tagList(shiny::icon("plus"), "Extract"),
-            class = "btn-sm btn-outline-success me-1"),
-          shiny::actionButton(ns("domain_filter_btn"),
-            shiny::tagList(shiny::icon("filter"), "Filter"),
-            class = "btn-sm btn-outline-warning")
-        )
-      )
-    ),
-    shiny::fluidRow(
-      shiny::column(6, shiny::plotOutput(ns("domain_bar_plot"),
-                                          height = "400px")),
+      shiny::column(6, plotly::plotlyOutput(ns("domain_bar_plot"),
+                                            height = "400px")),
       shiny::column(6,
         if (!is.null(data$trends) && is.data.frame(data$trends) &&
             nrow(data$trends) > 0) {
-          shiny::plotOutput(ns("domain_trend_plot"), height = "400px")
+          plotly::plotlyOutput(ns("domain_trend_plot"), height = "400px")
         } else {
           shiny::div(class = "text-muted text-center py-5",
                      "No trend data available")
         }
       )
     ),
-    shiny::fluidRow(
-      shiny::column(12, DT::DTOutput(ns("domain_table")))
-    )
+    shiny::div(class = "d-flex justify-content-end mb-2 mt-3",
+      bslib::tooltip(
+        shiny::actionButton(ns("domain_extract_btn"),
+          shiny::tagList(shiny::icon("plus"), "Extract"),
+          class = "btn-sm btn-success text-white me-1"),
+        "Add selected concepts as variables to Builder"
+      ),
+      bslib::tooltip(
+        shiny::actionButton(ns("domain_filter_btn"),
+          shiny::tagList(shiny::icon("filter"), "Filter"),
+          class = "btn-sm btn-warning text-white"),
+        "Add selected concepts as filters to Builder"
+      )
+    ),
+    DT::DTOutput(ns("domain_table"))
   )
 }
 
 .atlas_render_visits <- function(ns, data) {
   shiny::tagList(
     shiny::fluidRow(
-      shiny::column(6, shiny::plotOutput(ns("visits_type_plot"),
-                                          height = "350px")),
-      shiny::column(6, shiny::plotOutput(ns("visits_trend_plot"),
-                                          height = "350px"))
+      shiny::column(6, plotly::plotlyOutput(ns("visits_type_plot"),
+                                            height = "350px")),
+      shiny::column(6, plotly::plotlyOutput(ns("visits_trend_plot"),
+                                            height = "350px"))
     )
   )
 }
 
 .atlas_render_trends <- function(ns, data) {
   shiny::tagList(
-    shiny::plotOutput(ns("trends_overlay_plot"), height = "500px")
+    plotly::plotlyOutput(ns("trends_overlay_plot"), height = "500px")
   )
 }
 
@@ -1011,10 +1079,12 @@
 }
 
 # Map stratum IDs to concept names, falling back to raw IDs
-.atlas_label_stratum <- function(stratum_ids, concept_map) {
+.atlas_label_stratum <- function(stratum_ids, concept_map, max_len = 28) {
   vapply(as.character(stratum_ids), function(id) {
     nm <- concept_map[[id]]
-    if (!is.null(nm) && nchar(nm) > 0) nm else id
+    label <- if (!is.null(nm) && nchar(nm) > 0) nm else id
+    if (nchar(label) > max_len) paste0(substr(label, 1, max_len - 3), "...")
+    else label
   }, character(1), USE.NAMES = FALSE)
 }
 

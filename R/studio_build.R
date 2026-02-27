@@ -1,28 +1,58 @@
 # ==============================================================================
-# MODULE 6: Basket / Cart (Enhanced)
+# MODULE: Build (consolidated Cart + Plan)
+# ==============================================================================
+# Wraps the Cart (formerly Basket) and Plan (formerly Plan from Explorer)
+# sub-modules into a single navset_pill interface.
+# ==============================================================================
+
+# ==============================================================================
+# Top-level Build wrapper
+# ==============================================================================
+
+.mod_build_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::navset_pill(
+    id = ns("build_nav"),
+    bslib::nav_panel("Builder", icon = shiny::icon("hammer"),
+      .mod_build_cart_ui(ns("cart"))),
+    bslib::nav_panel("Plan", icon = shiny::icon("drafting-compass"),
+      .mod_build_plan_ui(ns("plan")))
+  )
+}
+
+.mod_build_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+    .mod_build_cart_server("cart", state)
+    .mod_build_plan_server("plan", state)
+  })
+}
+
+# ==============================================================================
+# SUB-MODULE: Cart (formerly Basket)
 # ==============================================================================
 # Full cart management: populations, variable blocks, filters (with groups),
 # enhanced outputs, variable wizard, JSON import/export, schema preview.
 # ==============================================================================
 
-.mod_basket_ui <- function(id) {
+.mod_build_cart_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
-      title = "Cart Actions", width = 320,
+      title = "Builder Actions", width = 320,
 
-      # --- Quick Add Variable ---
-      bslib::card(
-        bslib::card_header("Quick Add Variable"),
-        bslib::card_body(
+      bslib::accordion(
+        id = ns("builder_accordion"),
+        multiple = FALSE, open = FALSE,
+
+        # --- Quick Add Variable ---
+        bslib::accordion_panel(
+          "Add Variable", icon = shiny::icon("plus"),
           shiny::selectInput(ns("add_table"), "Table",
             choices = .table_choices(c("condition_occurrence", "drug_exposure",
                         "measurement", "procedure_occurrence",
                         "observation", "visit_occurrence", "person"))),
-          shiny::textInput(ns("add_concept_id"), "Concept ID",
-                           placeholder = "e.g. 201820"),
-          shiny::textInput(ns("add_concept_name"), "Concept Name (optional)",
-                           placeholder = "e.g. Type 2 diabetes"),
+          .concept_picker_ui(ns("add_concept"), label = "Concept",
+                             placeholder = "Type name or ID..."),
           shiny::selectInput(ns("add_format"), "Format",
             choices = c("Raw" = "raw", "Binary (0/1)" = "binary",
                         "Count" = "count", "First Value" = "first_value",
@@ -31,13 +61,11 @@
                         "Time Since" = "time_since")),
           shiny::actionButton(ns("add_var_btn"), "Add Variable",
                               class = "btn-primary w-100")
-        )
-      ),
+        ),
 
-      # --- Variable Block (batch add) ---
-      bslib::card(
-        bslib::card_header("Add Variable Block"),
-        bslib::card_body(
+        # --- Variable Block (batch add) ---
+        bslib::accordion_panel(
+          "Add Variable Block", icon = shiny::icon("layer-group"),
           shiny::selectInput(ns("block_table"), "Table",
             choices = .table_choices(c("condition_occurrence", "drug_exposure",
                         "measurement", "procedure_occurrence",
@@ -50,13 +78,11 @@
                         "Raw" = "raw", "Mean" = "mean")),
           shiny::actionButton(ns("add_block_btn"), "Add Block",
                               class = "btn-primary w-100")
-        )
-      ),
+        ),
 
-      # --- Quick Add Filter ---
-      bslib::card(
-        bslib::card_header("Quick Add Filter"),
-        bslib::card_body(
+        # --- Quick Add Filter ---
+        bslib::accordion_panel(
+          "Add Filter", icon = shiny::icon("filter"),
           shiny::selectInput(ns("filter_type"), "Filter Type",
             choices = c("Sex" = "sex", "Age Group" = "age_group",
                         "Age Range" = "age_range",
@@ -98,13 +124,11 @@
           ),
           shiny::actionButton(ns("add_filter_btn"), "Add Filter",
                               class = "btn-warning w-100")
-        )
-      ),
+        ),
 
-      # --- Add Output ---
-      bslib::card(
-        bslib::card_header("Add Output"),
-        bslib::card_body(
+        # --- Add Output ---
+        bslib::accordion_panel(
+          "Add Output", icon = shiny::icon("table"),
           shiny::textInput(ns("output_name"), "Output Name",
                            value = "output_1"),
           shiny::selectInput(ns("output_type"), "Output Type",
@@ -123,40 +147,39 @@
         )
       ),
 
-      shiny::hr(),
-
-      # --- Import/Export ---
+      # --- Import/Export (compact row) ---
       shiny::div(class = "d-flex gap-1 mb-2",
-        shiny::downloadButton(ns("export_json"), "Export JSON",
-                              class = "btn-sm btn-outline-secondary flex-fill"),
-        shiny::actionButton(ns("import_json_btn"), "Import JSON",
-                            class = "btn-sm btn-outline-secondary flex-fill")
+        shiny::downloadButton(ns("export_json"), "Export",
+          class = "btn-sm btn-outline-secondary flex-fill"),
+        shiny::actionButton(ns("import_json_btn"),
+          shiny::tagList(shiny::icon("upload"), " Import"),
+          class = "btn-sm btn-outline-secondary flex-fill")
       ),
-      # Hidden file input for import
       shiny::conditionalPanel(
         condition = paste0("input['", ns("import_json_btn"), "'] > 0"),
         shiny::fileInput(ns("import_file"), NULL,
-                         accept = ".json",
-                         buttonLabel = "Choose file")
+                         accept = ".json", buttonLabel = "Choose file")
       ),
-
-      shiny::hr(),
-      shiny::actionButton(ns("clear_cart"), "Clear Cart",
-                          class = "btn-outline-danger w-100 mb-2"),
-      shiny::actionButton(ns("cart_to_plan_btn"), "Generate Plan from Cart",
-                          class = "btn-success w-100")
+      # --- Clear ---
+      shiny::actionButton(ns("clear_cart"),
+        shiny::tagList(shiny::icon("trash-can"), " Clear"),
+        class = "btn-sm btn-outline-danger w-100")
     ),
 
     # === Main panel ===
 
     # --- Population Tree ---
     bslib::card(
+      full_screen = TRUE,
       bslib::card_header(
         shiny::div(class = "d-flex justify-content-between align-items-center",
           shiny::span("Populations"),
-          shiny::actionButton(ns("add_pop_btn"),
-            shiny::tagList(shiny::icon("plus"), " Add"),
-            class = "btn-sm btn-outline-primary")
+          bslib::tooltip(
+            shiny::actionButton(ns("add_pop_btn"),
+              shiny::tagList(shiny::icon("plus"), " Add"),
+              class = "btn-sm btn-outline-primary"),
+            "Add a new sub-population with filters"
+          )
         )
       ),
       bslib::card_body(
@@ -166,15 +189,11 @@
 
     # --- Cart Contents ---
     bslib::card(
+      full_screen = TRUE,
       bslib::card_header(
         shiny::div(class = "d-flex justify-content-between align-items-center",
-          shiny::span("Cart Contents"),
-          shiny::div(
-            shiny::uiOutput(ns("cart_counts"), inline = TRUE),
-            shiny::actionButton(ns("wizard_btn"),
-              shiny::tagList(shiny::icon("wand-magic-sparkles"), " Wizard"),
-              class = "btn-sm btn-outline-info ms-2")
-          )
+          shiny::span("Builder Contents"),
+          shiny::uiOutput(ns("cart_counts"), inline = TRUE)
         )
       ),
       bslib::card_body(
@@ -182,11 +201,9 @@
       )
     ),
 
-    # --- Variable Wizard Modal ---
-    shiny::tags$div(id = ns("wizard_container")),
-
     # --- Schema Preview ---
     bslib::card(
+      full_screen = TRUE,
       bslib::card_header("Schema Preview"),
       bslib::card_body(
         DT::DTOutput(ns("schema_preview_dt")),
@@ -196,7 +213,14 @@
 
     # --- Generated Code ---
     bslib::card(
-      bslib::card_header("Generated Code"),
+      full_screen = TRUE,
+      bslib::card_header(
+        class = "d-flex justify-content-between align-items-center",
+        shiny::span("Generated Code"),
+        shiny::actionButton(ns("copy_cart_code"), NULL,
+          icon = shiny::icon("copy"),
+          class = "btn-sm btn-outline-secondary")
+      ),
       bslib::card_body(
         shiny::uiOutput(ns("cart_code_html"))
       )
@@ -204,9 +228,12 @@
   )
 }
 
-.mod_basket_server <- function(id, state) {
+.mod_build_cart_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
+
+    # Concept picker for Quick Add Variable
+    picked_concept <- .concept_picker_server("add_concept", state)
 
     # Populate table dropdowns from state$tables
     shiny::observe({
@@ -226,16 +253,15 @@
     })
 
     # =========================================================================
-    # Add Variable
+    # Add Variable (using concept picker)
     # =========================================================================
     shiny::observeEvent(input$add_var_btn, {
       tbl <- input$add_table
-      cid_text <- trimws(input$add_concept_id)
-      cname <- trimws(input$add_concept_name)
       fmt <- input$add_format
+      picked <- picked_concept()
 
-      cid <- if (nchar(cid_text) > 0) as.integer(cid_text) else NULL
-      cname_val <- if (nchar(cname) > 0) cname else NULL
+      cid <- if (!is.null(picked)) picked$concept_id else NULL
+      cname_val <- if (!is.null(picked)) picked$concept_name else NULL
 
       tryCatch({
         v <- omop_variable(
@@ -245,11 +271,9 @@
         state$cart <- cart_add_variable(state$cart, v)
         shiny::showNotification(
           paste("Added variable:", v$name), type = "message", duration = 2)
-        shiny::updateTextInput(session, "add_concept_id", value = "")
-        shiny::updateTextInput(session, "add_concept_name", value = "")
       }, error = function(e) {
         shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error")
+          .clean_ds_error(e), type = "error")
       })
     })
 
@@ -278,7 +302,7 @@
         shiny::updateTextAreaInput(session, "block_concept_ids", value = "")
       }, error = function(e) {
         shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error")
+          .clean_ds_error(e), type = "error")
       })
     })
 
@@ -314,7 +338,7 @@
           paste("Added filter:", f$label), type = "message", duration = 2)
       }, error = function(e) {
         shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error")
+          .clean_ds_error(e), type = "error")
       })
     })
 
@@ -333,7 +357,7 @@
           paste("Added output:", nm), type = "message", duration = 2)
       }, error = function(e) {
         shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error")
+          .clean_ds_error(e), type = "error")
       })
     })
 
@@ -374,71 +398,8 @@
           paste("Added population:", pid), type = "message", duration = 2)
       }, error = function(e) {
         shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error")
+          .clean_ds_error(e), type = "error")
       })
-    })
-
-    # =========================================================================
-    # Variable Wizard (bulk apply format/time_window)
-    # =========================================================================
-    shiny::observeEvent(input$wizard_btn, {
-      cart <- state$cart
-      var_names <- names(cart$variables)
-      if (length(var_names) == 0) {
-        shiny::showNotification("Cart has no variables to edit.",
-                                type = "warning")
-        return()
-      }
-      shiny::showModal(shiny::modalDialog(
-        title = "Variable Wizard",
-        size = "l",
-        shiny::p("Select variables and apply settings in bulk."),
-        shiny::checkboxGroupInput(ns("wizard_vars"), "Variables",
-          choices = var_names, selected = var_names),
-        shiny::hr(),
-        shiny::selectInput(ns("wizard_format"), "Set Format",
-          choices = c("(no change)" = "", "Raw" = "raw",
-                      "Binary (0/1)" = "binary", "Count" = "count",
-                      "First Value" = "first_value",
-                      "Last Value" = "last_value",
-                      "Mean" = "mean", "Min" = "min", "Max" = "max",
-                      "Time Since" = "time_since")),
-        shiny::selectInput(ns("wizard_type"), "Set Type",
-          choices = c("(no change)" = "", "Auto" = "auto",
-                      "Numeric" = "numeric", "Categorical" = "categorical",
-                      "Date" = "date", "Boolean" = "boolean",
-                      "Integer" = "integer", "Character" = "character")),
-        shiny::textInput(ns("wizard_value_source"), "Set Value Source",
-          placeholder = "e.g. value_as_number (blank = no change)"),
-        easyClose = TRUE,
-        footer = shiny::tagList(
-          shiny::modalButton("Cancel"),
-          shiny::actionButton(ns("wizard_apply"), "Apply",
-                              class = "btn-primary")
-        )
-      ))
-    })
-
-    shiny::observeEvent(input$wizard_apply, {
-      selected <- input$wizard_vars
-      new_fmt <- input$wizard_format
-      new_type <- input$wizard_type
-      new_vs <- trimws(input$wizard_value_source)
-
-      cart <- state$cart
-      for (nm in selected) {
-        if (!nm %in% names(cart$variables)) next
-        if (nchar(new_fmt) > 0) cart$variables[[nm]]$format <- new_fmt
-        if (nchar(new_type) > 0) cart$variables[[nm]]$type <- new_type
-        if (nchar(new_vs) > 0) cart$variables[[nm]]$value_source <- new_vs
-      }
-      cart$meta$modified <- Sys.time()
-      state$cart <- cart
-
-      shiny::removeModal()
-      shiny::showNotification(
-        paste("Updated", length(selected), "variables"),
-        type = "message", duration = 2)
     })
 
     # =========================================================================
@@ -446,27 +407,22 @@
     # =========================================================================
     shiny::observeEvent(input$clear_cart, {
       state$cart <- omop_cart()
-      shiny::showNotification("Cart cleared.", type = "message", duration = 2)
+      shiny::showNotification("Builder cleared.", type = "message", duration = 2)
     })
 
     # =========================================================================
-    # Generate Plan from Cart
+    # Auto-generate Plan from Cart on changes
     # =========================================================================
-    shiny::observeEvent(input$cart_to_plan_btn, {
-      tryCatch({
-        plan <- cart_to_plan(state$cart)
-        state$plan <- plan
-        code <- cart_to_code(state$cart)
-        if (nchar(code) > 0) {
-          state$script_lines <- c(state$script_lines, code)
-        }
-        shiny::showNotification(
-          "Plan generated from cart! See Plan Builder tab.",
-          type = "message", duration = 3)
-      }, error = function(e) {
-        shiny::showNotification(
-          paste("Error:", conditionMessage(e)), type = "error")
-      })
+    shiny::observe({
+      cart <- state$cart
+      has_content <- length(cart$variables) > 0 || length(cart$blocks) > 0 ||
+                     length(cart$filters) > 0 || length(cart$outputs) > 0
+      if (has_content) {
+        tryCatch({
+          plan <- cart_to_plan(cart)
+          state$plan <- plan
+        }, error = function(e) NULL)
+      }
     })
 
     # =========================================================================
@@ -634,11 +590,19 @@
                          paste0(" | ", concept_text) else "",
                        tw_text))
             ),
-            shiny::actionButton(
-              ns(paste0("rm_var_", nm)),
-              shiny::icon("xmark"),
-              class = "btn-sm btn-outline-danger",
-              style = "padding: 0.1em 0.4em;"
+            shiny::div(class = "d-flex gap-1",
+              shiny::actionButton(
+                ns(paste0("edit_var_", nm)),
+                shiny::icon("pen"),
+                class = "btn-sm btn-outline-secondary",
+                style = "padding: 0.1em 0.4em;"
+              ),
+              shiny::actionButton(
+                ns(paste0("rm_var_", nm)),
+                shiny::icon("xmark"),
+                class = "btn-sm btn-outline-danger",
+                style = "padding: 0.1em 0.4em;"
+              )
             )
           )
         })
@@ -728,9 +692,8 @@
       }
 
       if (length(sections) == 0) {
-        return(shiny::p(shiny::em(
-          "Cart is empty. Add variables from the Explore or Vocabulary tabs,",
-          " or use the sidebar controls.")))
+        return(.empty_state_ui("hammer", "Builder is empty",
+          "Add variables from the Explore or Vocabulary tabs, or use the sidebar controls."))
       }
 
       shiny::div(shiny::tagList(sections))
@@ -766,13 +729,28 @@
         })
       }
 
-      # Variable removes
+      # Variable removes + renames
       for (nm in names(cart$variables)) {
         local({
           var_name <- nm
           btn_id <- paste0("rm_var_", var_name)
+          edit_id <- paste0("edit_var_", var_name)
           shiny::observeEvent(input[[btn_id]], {
             state$cart <- cart_remove_variable(state$cart, var_name)
+          }, ignoreInit = TRUE, once = TRUE)
+          shiny::observeEvent(input[[edit_id]], {
+            shiny::showModal(shiny::modalDialog(
+              title = "Rename Variable",
+              shiny::textInput(ns("rename_var_new"), "Variable Name",
+                               value = var_name),
+              size = "s", easyClose = TRUE,
+              footer = shiny::tagList(
+                shiny::modalButton("Cancel"),
+                shiny::actionButton(ns("rename_var_confirm"), "Rename",
+                                    class = "btn-primary")
+              )
+            ))
+            session$userData$renaming_var <- var_name
           }, ignoreInit = TRUE, once = TRUE)
         })
       }
@@ -798,6 +776,33 @@
           }, ignoreInit = TRUE, once = TRUE)
         })
       }
+    })
+
+    # =========================================================================
+    # Variable Rename (confirm from modal)
+    # =========================================================================
+    shiny::observeEvent(input$rename_var_confirm, {
+      old_name <- session$userData$renaming_var
+      new_name <- trimws(input$rename_var_new)
+      if (is.null(old_name) || nchar(new_name) == 0) return()
+      if (new_name == old_name) { shiny::removeModal(); return() }
+      cart <- state$cart
+      if (!old_name %in% names(cart$variables)) {
+        shiny::removeModal(); return()
+      }
+      if (new_name %in% names(cart$variables)) {
+        shiny::showNotification("Name already in use", type = "warning",
+                                duration = 2)
+        return()
+      }
+      cart$variables[[new_name]] <- cart$variables[[old_name]]
+      cart$variables[[new_name]]$name <- new_name
+      cart$variables[[old_name]] <- NULL
+      cart$meta$modified <- Sys.time()
+      state$cart <- cart
+      shiny::removeModal()
+      shiny::showNotification(
+        paste0(old_name, " -> ", new_name), type = "message", duration = 2)
     })
 
     # =========================================================================
@@ -838,14 +843,308 @@
     # =========================================================================
     # Generated Code
     # =========================================================================
+    shiny::observeEvent(input$copy_cart_code, {
+      cart <- state$cart
+      if (length(cart$variables) == 0 && length(cart$filters) == 0 &&
+          length(cart$outputs) == 0 && length(cart$blocks) == 0) {
+        shiny::showNotification("Nothing to copy.", type = "warning",
+                                duration = 2)
+        return()
+      }
+      code <- cart_to_code(cart)
+      session$sendCustomMessage("copyToClipboard", code)
+    })
+
     output$cart_code_html <- shiny::renderUI({
       cart <- state$cart
       if (length(cart$variables) == 0 && length(cart$filters) == 0 &&
           length(cart$outputs) == 0 && length(cart$blocks) == 0) {
-        return(shiny::p(class = "text-muted",
-          "Cart is empty. Add variables, filters, and outputs."))
+        return(.empty_state_ui("code", "No code yet",
+          "Add variables, filters, and outputs to generate code."))
       }
       code <- cart_to_code(cart)
+      highlighted <- .highlightR(code)
+      shiny::div(class = "code-output",
+        shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))
+      )
+    })
+  })
+}
+
+# ==============================================================================
+# SUB-MODULE: Plan (formerly Plan from Explorer)
+# ==============================================================================
+# Merges old Plan Builder + Cohorts with explorer integration.
+# ==============================================================================
+
+.mod_build_plan_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Add Output", width = 320,
+      # Concept set display
+      bslib::card(
+        bslib::card_header("Current Concept Set"),
+        bslib::card_body(
+          shiny::uiOutput(ns("concept_set_display")),
+          shiny::actionButton(ns("add_current_concept"), "Add Current Concept",
+                              class = "btn-sm btn-outline-primary w-100 mb-2"),
+          shiny::actionButton(ns("add_events_for_set"),
+                              "Add Events for Concept Set",
+                              class = "btn-sm btn-outline-info w-100")
+        )
+      ),
+      shiny::hr(),
+      # Cohort management
+      shiny::numericInput(ns("cohort_id"), "Cohort Definition ID",
+                          value = 1, min = 1, step = 1),
+      shiny::actionButton(ns("set_cohort"), "Set Cohort on Plan",
+                          class = "btn-sm btn-outline-primary w-100 mb-2"),
+      shiny::hr(),
+      # Output type
+      shiny::selectInput(ns("output_type"), "Output Type",
+        choices = c("Baseline" = "baseline",
+                    "Events (long)" = "event_level",
+                    "Events (sparse)" = "sparse",
+                    "Survival" = "survival",
+                    "Cohort Membership" = "cohort_membership",
+                    "Intervals Long" = "intervals_long",
+                    "Temporal Covariates" = "temporal_covariates",
+                    "Concept Dictionary" = "concept_dictionary")),
+      shiny::textInput(ns("output_name"), "Output Name",
+                       value = "output_1"),
+      shiny::conditionalPanel(
+        paste0("input['", ns("output_type"),
+               "'] == 'event_level' || input['",
+               ns("output_type"), "'] == 'sparse'"),
+        shiny::selectInput(ns("event_table"), "Table",
+          choices = .table_choices(c("condition_occurrence", "drug_exposure",
+                      "measurement", "procedure_occurrence",
+                      "observation", "visit_occurrence"))),
+        shiny::textInput(ns("concept_ids"), "Concept IDs (comma-sep)",
+                         placeholder = "201820, 255573")
+      ),
+      shiny::conditionalPanel(
+        paste0("input['", ns("output_type"), "'] == 'survival'"),
+        shiny::selectInput(ns("outcome_table"), "Outcome Table",
+          choices = .table_choices(c("condition_occurrence", "drug_exposure",
+                      "measurement"))),
+        shiny::textInput(ns("outcome_concepts"), "Outcome Concepts",
+                         placeholder = "4000002"),
+        shiny::numericInput(ns("tar_end"), "TAR End (days)", 730, 30, 3650)
+      ),
+      shiny::conditionalPanel(
+        paste0("input['", ns("output_type"),
+               "'] == 'temporal_covariates'"),
+        shiny::selectInput(ns("tc_table"), "Table",
+          choices = .table_choices(c("condition_occurrence", "drug_exposure",
+                      "measurement"))),
+        shiny::textInput(ns("tc_concepts"), "Concept IDs",
+                         placeholder = "201820, 255573"),
+        shiny::numericInput(ns("tc_bin"), "Bin Width (days)", 30, 7, 365),
+        shiny::numericInput(ns("tc_start"), "Window Start", -365),
+        shiny::numericInput(ns("tc_end"), "Window End", 0)
+      ),
+      shiny::actionButton(ns("add_output"), "Add Output",
+                          class = "btn-primary w-100 mt-2")
+    ),
+    bslib::card(
+      full_screen = TRUE,
+      bslib::card_header("Current Plan"),
+      bslib::card_body(
+        shiny::verbatimTextOutput(ns("plan_summary")),
+        shiny::actionButton(ns("clear_plan"), "Clear Plan",
+                            class = "btn-sm btn-outline-danger")
+      )
+    ),
+    bslib::card(
+      full_screen = TRUE,
+      bslib::card_header(
+        class = "d-flex justify-content-between align-items-center",
+        shiny::span("Generated R Code"),
+        shiny::div(
+          shiny::actionButton(ns("copy_plan_code"), NULL,
+            icon = shiny::icon("copy"),
+            class = "btn-sm btn-outline-secondary me-1"),
+          shiny::actionButton(ns("reset_plan"), NULL,
+            icon = shiny::icon("rotate-left"),
+            class = "btn-sm btn-outline-danger")
+        )
+      ),
+      bslib::card_body(
+        shiny::uiOutput(ns("code_block"))
+      )
+    )
+  )
+}
+
+.mod_build_plan_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+
+    # Concept set display
+    output$concept_set_display <- shiny::renderUI({
+      ids <- state$concept_set
+      if (length(ids) == 0) return(shiny::p(shiny::em("(empty)")))
+      badges <- lapply(ids, function(cid) {
+        shiny::span(class = "concept-badge", as.character(cid))
+      })
+      shiny::div(badges)
+    })
+
+    # Add current concept from exploration state
+    shiny::observeEvent(input$add_current_concept, {
+      cid <- state$selected_concept_id
+      if (is.null(cid)) {
+        shiny::showNotification("No concept selected in Explore/Drilldown.",
+                                type = "warning")
+        return()
+      }
+      current <- state$concept_set
+      if (!cid %in% current) {
+        state$concept_set <- c(current, cid)
+        shiny::showNotification(
+          paste("Added concept", cid, "to set"),
+          type = "message", duration = 2
+        )
+      }
+    })
+
+    # Add events for concept set
+    shiny::observeEvent(input$add_events_for_set, {
+      ids <- state$concept_set
+      tbl <- state$selected_table
+      if (length(ids) == 0) {
+        shiny::showNotification("Concept set is empty.", type = "warning")
+        return()
+      }
+      if (is.null(tbl)) {
+        tbl <- "condition_occurrence"
+      }
+      tryCatch({
+        nm <- paste0("events_set_", length(state$plan$outputs) + 1)
+        state$plan <- ds.omop.plan.events(
+          state$plan, name = nm, table = tbl,
+          concept_set = as.integer(ids)
+        )
+        shiny::showNotification(
+          paste("Added events output for", length(ids), "concepts"),
+          type = "message", duration = 3
+        )
+      }, error = function(e) {
+        shiny::showNotification(
+          .clean_ds_error(e), type = "error"
+        )
+      })
+    })
+
+    # Set cohort on plan
+    shiny::observeEvent(input$set_cohort, {
+      cid <- as.integer(input$cohort_id)
+      state$plan <- ds.omop.plan.cohort(state$plan,
+                                         cohort_definition_id = cid)
+      shiny::showNotification(
+        paste("Cohort", cid, "set on plan"),
+        type = "message", duration = 3
+      )
+    })
+
+    # Add output (same as old plan builder)
+    shiny::observeEvent(input$add_output, {
+      otype <- input$output_type
+      nm <- input$output_name
+      p <- state$plan
+
+      tryCatch({
+        if (otype == "baseline") {
+          p <- ds.omop.plan.baseline(p, name = nm)
+        } else if (otype == "event_level") {
+          cs <- .parse_ids(input$concept_ids)
+          p <- ds.omop.plan.events(p, name = nm, table = input$event_table,
+                                    concept_set = cs)
+        } else if (otype == "sparse") {
+          cs <- .parse_ids(input$concept_ids)
+          p <- ds.omop.plan.events(p, name = nm, table = input$event_table,
+                                    concept_set = cs,
+                                    representation = list(format = "sparse"))
+        } else if (otype == "survival") {
+          oc <- .parse_ids(input$outcome_concepts)
+          p <- ds.omop.plan.survival(p, outcome_table = input$outcome_table,
+                                      outcome_concepts = oc,
+                                      tar = list(start_offset = 0,
+                                                 end_offset = input$tar_end),
+                                      name = nm)
+        } else if (otype == "cohort_membership") {
+          p <- ds.omop.plan.cohort_membership(p, name = nm)
+        } else if (otype == "intervals_long") {
+          p <- ds.omop.plan.intervals(p, name = nm)
+        } else if (otype == "temporal_covariates") {
+          cs <- .parse_ids(input$tc_concepts)
+          p <- ds.omop.plan.temporal_covariates(
+            p, table = input$tc_table, concept_set = cs,
+            bin_width = as.integer(input$tc_bin),
+            window_start = as.integer(input$tc_start),
+            window_end = as.integer(input$tc_end),
+            name = nm
+          )
+        } else if (otype == "concept_dictionary") {
+          p <- ds.omop.plan.concept_dictionary(p, name = nm)
+        }
+
+        state$plan <- p
+        shiny::showNotification(paste("Added output:", nm),
+                                type = "message", duration = 2)
+      }, error = function(e) {
+        shiny::showNotification(
+          .clean_ds_error(e), type = "error"
+        )
+      })
+    })
+
+    shiny::observeEvent(input$clear_plan, {
+      state$plan <- ds.omop.plan()
+    })
+
+    output$plan_summary <- shiny::renderText({
+      p <- state$plan
+      paste(utils::capture.output(print(p)), collapse = "\n")
+    })
+
+    generated_code <- shiny::reactive({
+      p <- state$plan
+      if (is.null(p) || length(p$outputs) == 0) return("")
+      tryCatch({
+        out_names <- names(p$outputs)
+        out <- stats::setNames(
+          paste0("D_", out_names), out_names
+        )
+        .studio_codegen_plan(p, out, symbol = state$symbol)
+      }, error = function(e) "")
+    })
+
+    # Copy plan code to clipboard
+    shiny::observeEvent(input$copy_plan_code, {
+      code <- generated_code()
+      if (nchar(code) > 0) {
+        session$sendCustomMessage("copyToClipboard", code)
+      } else {
+        shiny::showNotification("Generate code first.", type = "warning",
+                                duration = 2)
+      }
+    })
+
+    # Reset plan
+    shiny::observeEvent(input$reset_plan, {
+      state$plan <- ds.omop.plan()
+      state$plan_outputs <- list()
+      shiny::showNotification("Plan reset.", type = "message", duration = 2)
+    })
+
+    output$code_block <- shiny::renderUI({
+      code <- generated_code()
+      if (nchar(code) == 0) {
+        return(.empty_state_ui("code", "No code generated",
+          "Add outputs to the plan to generate a reproducible R script."))
+      }
       highlighted <- .highlightR(code)
       shiny::div(class = "code-output",
         shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))
