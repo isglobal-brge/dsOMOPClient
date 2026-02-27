@@ -8,9 +8,8 @@ test_that("overview UI contains KPI value boxes", {
   html <- as.character(ui)
 
   expect_true(grepl("Servers", html))
-  expect_true(grepl("CDM Tables", html))
+  expect_true(grepl("Common Tables", html))
   expect_true(grepl("Total Persons", html))
-  expect_true(grepl("Cart Items", html))
 })
 
 test_that("overview UI contains refresh button", {

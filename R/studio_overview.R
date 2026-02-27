@@ -18,7 +18,7 @@
         theme = "primary", full_screen = FALSE
       ),
       bslib::value_box(
-        title = "CDM Tables",
+        title = "Common Tables",
         value = shiny::textOutput(ns("kpi_tables")),
         showcase = fontawesome::fa_i("table"),
         theme = "info", full_screen = FALSE
@@ -74,11 +74,21 @@
     })
 
     output$kpi_tables <- shiny::renderText({
-      tbls <- state$tables
-      if (is.null(tbls)) return("--")
-      srv <- names(tbls)[1]
-      df <- tbls[[srv]]
-      if (is.data.frame(df)) as.character(nrow(df)) else "--"
+      st <- state$status
+      if (is.null(st) || is.null(st$capabilities)) return("--")
+      # Common tables = intersection across all servers (case-insensitive)
+      common <- NULL
+      for (srv in names(st$capabilities)) {
+        caps <- st$capabilities[[srv]]
+        srv_tables <- tolower(caps$tables %||% caps$cdm_tables %||% character(0))
+        if (is.null(common)) {
+          common <- srv_tables
+        } else {
+          common <- intersect(common, srv_tables)
+        }
+      }
+      if (is.null(common)) return("--")
+      as.character(length(common))
     })
 
     output$kpi_persons <- shiny::renderText({
@@ -225,18 +235,18 @@
           btn_id <- paste0("show_tables_", gsub("[^a-zA-Z0-9]", "_", local_srv))
           shiny::observeEvent(input[[btn_id]], {
             caps <- st$capabilities[[local_srv]]
-            cdm_tbls <- caps$cdm_tables %||% caps$tables
-            if (is.null(cdm_tbls) || length(cdm_tbls) == 0) {
+            all_tbls <- caps$tables %||% caps$cdm_tables
+            if (is.null(all_tbls) || length(all_tbls) == 0) {
               shiny::showNotification("No table info available", type = "warning",
                                      duration = 2)
               return()
             }
-            tbl_badges <- lapply(cdm_tbls, function(t) {
+            tbl_badges <- lapply(sort(all_tbls), function(t) {
               shiny::span(class = "badge bg-light text-dark me-1 mb-1",
                           style = "font-size: 0.8rem;", t)
             })
             shiny::showModal(shiny::modalDialog(
-              title = paste(local_srv, "-", length(cdm_tbls), "CDM Tables"),
+              title = paste(local_srv, "-", length(all_tbls), "Tables"),
               size = "m", easyClose = TRUE,
               shiny::div(class = "d-flex flex-wrap gap-1",
                 shiny::tagList(tbl_badges)

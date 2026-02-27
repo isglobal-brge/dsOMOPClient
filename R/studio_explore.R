@@ -71,13 +71,13 @@
               shiny::actionButton(ns("extract_selected_btn"),
                                   shiny::tagList(shiny::icon("plus"), "Extract"),
                                   class = "btn-sm btn-success text-white me-1"),
-              "Add selected concepts as variables to cart"
+              "Add selected concepts as variables to Builder"
             ),
             bslib::tooltip(
               shiny::actionButton(ns("filter_selected_btn"),
                                   shiny::tagList(shiny::icon("filter"), "Filter"),
                                   class = "btn-sm btn-warning text-white"),
-              "Add selected concepts as filters to cart"
+              "Add selected concepts as filters to Builder"
             )
           )
         )
@@ -94,6 +94,7 @@
 
 .mod_explore_prevalence_server <- function(id, state, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
+    ns <- session$ns
     prevalence_data <- shiny::reactiveVal(NULL)
 
     # Populate table dropdown from state$tables
@@ -288,20 +289,47 @@
           ns(paste0("drill_", i)), df$concept_name[i],
           class = "dt-drill-link"))
       }, character(1))
-      display <- df
+      # Add checkbox column
+      chk <- vapply(seq_len(nrow(df)), function(i) {
+        paste0('<input type="checkbox" class="dt-row-chk" data-row="', i, '">')
+      }, character(1))
+      display <- data.frame(sel = chk, df, stringsAsFactors = FALSE)
       display$concept_name <- links
       DT::datatable(display,
         options = list(pageLength = 20, dom = "ftip", scrollX = TRUE,
           columnDefs = list(
-            list(className = "dt-center", targets = 0)
+            list(className = "dt-center", targets = 0,
+                 orderable = FALSE, width = "30px")
           )),
-        rownames = FALSE, selection = "multiple", escape = FALSE,
+        rownames = FALSE, selection = "none", escape = FALSE,
         callback = DT::JS(paste0(
+          # Drill link click -> navigate
           "table.on('click', '.dt-drill-link', function(e) {",
           "  e.stopPropagation();",
           "  Shiny.setInputValue('", ns("drill_row"), "',",
           "    table.row($(this).closest('tr')).index() + 1,",
           "    {priority: 'event'});",
+          "});",
+          # Checkbox change -> track selected rows
+          "var sel = [];",
+          "table.on('change', '.dt-row-chk', function() {",
+          "  var row = parseInt($(this).data('row'));",
+          "  if (this.checked) { if (sel.indexOf(row)===-1) sel.push(row); }",
+          "  else { sel = sel.filter(function(r){return r!==row;}); }",
+          "  Shiny.setInputValue('", ns("chk_selected"), "', sel, {priority:'event'});",
+          "});",
+          # Select-all header checkbox
+          "var hdr = $('<input type=\"checkbox\" class=\"dt-chk-all\">');",
+          "$(table.column(0).header()).empty().append(hdr);",
+          "hdr.on('change', function() {",
+          "  var checked = this.checked;",
+          "  sel = [];",
+          "  table.rows({search:'applied'}).every(function() {",
+          "    var cb = $(this.node()).find('.dt-row-chk');",
+          "    cb.prop('checked', checked);",
+          "    if (checked) sel.push(parseInt(cb.data('row')));",
+          "  });",
+          "  Shiny.setInputValue('", ns("chk_selected"), "', sel, {priority:'event'});",
           "});"
         ))
       )
@@ -326,7 +354,7 @@
     # Bulk add selected concepts to set
     shiny::observeEvent(input$add_selected_btn, {
       df <- prevalence_data()
-      idx <- input$results_dt_rows_selected
+      idx <- input$chk_selected
       if (is.null(idx) || length(idx) == 0 || is.null(df)) {
         shiny::showNotification("Select rows first.", type = "warning")
         return()
@@ -346,7 +374,7 @@
     # +Extract: add selected concepts as variables to cart
     shiny::observeEvent(input$extract_selected_btn, {
       df <- prevalence_data()
-      idx <- input$results_dt_rows_selected
+      idx <- input$chk_selected
       if (is.null(idx) || length(idx) == 0 || is.null(df)) {
         shiny::showNotification("Select rows first.", type = "warning")
         return()
@@ -377,7 +405,7 @@
     # +Filter: add selected concepts as has_concept filters to cart
     shiny::observeEvent(input$filter_selected_btn, {
       df <- prevalence_data()
-      idx <- input$results_dt_rows_selected
+      idx <- input$chk_selected
       if (is.null(idx) || length(idx) == 0 || is.null(df)) {
         shiny::showNotification("Select rows first.", type = "warning")
         return()
@@ -440,7 +468,7 @@
     shiny::uiOutput(ns("breadcrumb")),
     bslib::layout_sidebar(
     sidebar = bslib::sidebar(
-      title = "Concept Info", width = 260, open = "desktop",
+      title = "Concept Info", width = 260, open = "always",
       shiny::uiOutput(ns("concept_info")),
       shiny::hr(),
       shiny::actionButton(ns("add_to_set"), "Add to Concept Set",
@@ -571,6 +599,7 @@
         tryCatch({
           res <- ds.omop.concept.drilldown(
             table = tbl, concept_id = cid,
+            concept_col = state$selected_concept_col,
             symbol = state$symbol
           )
           shiny::incProgress(0.5)
@@ -596,15 +625,16 @@
         return(shiny::p(class = "text-muted small",
           "No concept selected. Use the Prevalence tab to select a concept."))
       }
+      cname <- as.character(state$selected_concept_name %||% "Unknown")
+      tbl <- as.character(state$selected_table %||% "")
       shiny::div(
-        shiny::div(class = "d-flex align-items-center mb-2",
-          shiny::span(class = "badge bg-primary me-2", paste0("#", cid)),
-          shiny::span(style = "font-weight:600; font-size:0.88rem;",
-                      as.character(state$selected_concept_name %||% "Unknown"))
-        ),
-        shiny::div(class = "text-muted", style = "font-size:0.78rem;",
-          shiny::icon("table", class = "me-1"),
-          as.character(state$selected_table %||% "")
+        shiny::p(class = "mb-1", style = "font-weight:600; font-size:0.92rem; line-height:1.3; word-wrap:break-word; overflow-wrap:break-word;",
+          cname),
+        shiny::div(class = "d-flex align-items-center gap-2 flex-wrap",
+          shiny::span(class = "badge bg-light text-dark",
+                      style = "font-size:0.78rem;", paste0("#", cid)),
+          shiny::span(class = "text-muted", style = "font-size:0.78rem;",
+            tbl)
         )
       )
     })
@@ -1184,6 +1214,7 @@
 
 .mod_explore_vocab_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
+    ns <- session$ns
     search_results <- shiny::reactiveVal(NULL)
     raw_search_result <- shiny::reactiveVal(NULL)
 
@@ -1246,17 +1277,47 @@
                              "vocabulary_id", "standard_concept", "server"),
                           names(df))
       }
+      display <- df[, keep, drop = FALSE]
+      chk <- vapply(seq_len(nrow(display)), function(i) {
+        paste0('<input type="checkbox" class="dt-row-chk" data-row="', i, '">')
+      }, character(1))
+      display <- data.frame(sel = chk, display, stringsAsFactors = FALSE)
       DT::datatable(
-        df[, keep, drop = FALSE],
-        options = list(pageLength = 15, dom = "ftip", scrollX = TRUE),
-        rownames = FALSE, selection = "multiple"
+        display,
+        options = list(pageLength = 15, dom = "ftip", scrollX = TRUE,
+          columnDefs = list(
+            list(className = "dt-center", targets = 0,
+                 orderable = FALSE, width = "30px")
+          )),
+        rownames = FALSE, selection = "none", escape = FALSE,
+        callback = DT::JS(paste0(
+          "var sel = [];",
+          "table.on('change', '.dt-row-chk', function() {",
+          "  var row = parseInt($(this).data('row'));",
+          "  if (this.checked) { if (sel.indexOf(row)===-1) sel.push(row); }",
+          "  else { sel = sel.filter(function(r){return r!==row;}); }",
+          "  Shiny.setInputValue('", ns("vocab_chk_selected"), "', sel, {priority:'event'});",
+          "});",
+          "var hdr = $('<input type=\"checkbox\" class=\"dt-chk-all\">');",
+          "$(table.column(0).header()).empty().append(hdr);",
+          "hdr.on('change', function() {",
+          "  var checked = this.checked;",
+          "  sel = [];",
+          "  table.rows({search:'applied'}).every(function() {",
+          "    var cb = $(this.node()).find('.dt-row-chk');",
+          "    cb.prop('checked', checked);",
+          "    if (checked) sel.push(parseInt(cb.data('row')));",
+          "  });",
+          "  Shiny.setInputValue('", ns("vocab_chk_selected"), "', sel, {priority:'event'});",
+          "});"
+        ))
       )
     })
 
     # Bulk add selected concepts to set
     shiny::observeEvent(input$add_selected_vocab, {
       df <- search_results()
-      idx <- input$results_table_rows_selected
+      idx <- input$vocab_chk_selected
       if (is.null(idx) || length(idx) == 0 || is.null(df)) {
         shiny::showNotification("Select rows first.", type = "warning")
         return()
@@ -1276,7 +1337,7 @@
     # +Extract: add selected concepts as variables to cart
     shiny::observeEvent(input$extract_selected_vocab, {
       df <- search_results()
-      idx <- input$results_table_rows_selected
+      idx <- input$vocab_chk_selected
       if (is.null(idx) || length(idx) == 0 || is.null(df)) {
         shiny::showNotification("Select rows first.", type = "warning")
         return()
@@ -1319,7 +1380,7 @@
 
     output$concept_detail <- shiny::renderUI({
       df <- search_results()
-      idx <- input$results_table_rows_selected
+      idx <- input$vocab_chk_selected
       if (is.null(idx) || length(idx) == 0 || is.null(df)) {
         return(.empty_state_ui("hand-pointer", "Select a concept",
                                "Click a row in the search results to view details."))
@@ -1330,8 +1391,11 @@
         return(.empty_state_ui("hand-pointer", "Select a concept",
                                "Click a row in the search results to view details."))
       }
-      row <- df[first_idx, ]
-      std <- as.character(row$standard_concept %||% "")
+      row <- df[first_idx, , drop = FALSE]
+      if (!is.data.frame(row) || nrow(row) == 0) {
+        return(.empty_state_ui("hand-pointer", "Select a concept"))
+      }
+      std <- as.character(row$standard_concept[1] %||% "")
       std_badge <- if (std == "S") {
         shiny::span(class = "badge", style = "background:#065f46; color:#ecfdf5;", "Standard")
       } else if (nchar(std) > 0) {

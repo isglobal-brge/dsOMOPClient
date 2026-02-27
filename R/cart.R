@@ -536,6 +536,8 @@ print.omop_variable_block <- function(x, ...) {
 #' @param variables Character vector; variable names to include (NULL = all)
 #' @param population_id Character; which population to use
 #' @param options Named list; type-specific options
+#' @param result_symbol Character or NULL; R symbol name for the result
+#'   (auto-generated as \code{D_<name>} if NULL)
 #' @return An omop_output object
 #' @export
 omop_output <- function(name = "output_1",
@@ -545,14 +547,19 @@ omop_output <- function(name = "output_1",
                                  "covariates_sparse"),
                         variables = NULL,
                         population_id = "base",
-                        options = list()) {
+                        options = list(),
+                        result_symbol = NULL) {
   type <- match.arg(type)
+  if (is.null(result_symbol)) {
+    result_symbol <- paste0("D_", name)
+  }
   obj <- list(
     name          = name,
     type          = type,
     variables     = variables,
     population_id = population_id,
-    options       = options
+    options       = options,
+    result_symbol = result_symbol
   )
   class(obj) <- c("omop_output", "list")
   obj
@@ -561,7 +568,8 @@ omop_output <- function(name = "output_1",
 #' @export
 print.omop_output <- function(x, ...) {
   cat("omop_output:", x$name, "[", x$type, "]",
-      "pop:", x$population_id, "\n")
+      "pop:", x$population_id,
+      "-> ", x$result_symbol %||% paste0("D_", x$name), "\n")
   if (!is.null(x$variables))
     cat("  Variables:", paste(x$variables, collapse = ", "), "\n")
   invisible(x)
@@ -1179,7 +1187,8 @@ cart_to_code <- function(cart) {
     lines <- c(lines, paste0(
       "cart <- cart_add_output(cart, ",
       .build_code("omop_output",
-        name = o$name, type = o$type, population_id = o$population_id),
+        name = o$name, type = o$type, population_id = o$population_id,
+        result_symbol = o$result_symbol),
       ")"
     ))
   }
@@ -1334,7 +1343,8 @@ cart_import_json <- function(json) {
         name = o$name %||% nm,
         type = o$type %||% "wide",
         variables = o$variables,
-        population_id = o$population_id %||% "base"
+        population_id = o$population_id %||% "base",
+        result_symbol = o$result_symbol
       )
       cart$outputs[[nm]] <- out
     }
@@ -1464,10 +1474,15 @@ cart_execute <- function(cart, out = NULL, symbol = "omop", conns = NULL) {
 
   plan <- cart_to_plan(cart)
 
-  # Auto-generate output symbols if not provided
+  # Build output symbols from result_symbol fields, or auto-generate
   if (is.null(out)) {
     out_names <- names(plan$outputs)
-    out <- stats::setNames(paste0("D_", out_names), out_names)
+    symbols <- vapply(out_names, function(nm) {
+      o <- cart$outputs[[nm]]
+      if (!is.null(o) && !is.null(o$result_symbol)) o$result_symbol
+      else paste0("D_", nm)
+    }, character(1))
+    out <- stats::setNames(symbols, out_names)
   }
 
   ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns)

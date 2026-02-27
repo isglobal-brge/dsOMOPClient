@@ -410,7 +410,7 @@
     output$auto_plot <- plotly::renderPlotly({
       df <- display_data()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0)
-        return(plotly::plotly_empty() |> plotly::config(displayModeBar = FALSE))
+        return(.plotly_empty_silent() |> plotly::config(displayModeBar = FALSE))
 
       q <- selected_query()
       qid <- if (!is.null(q)) (q$id %||% "") else ""
@@ -641,5 +641,5 @@
   }
 
   # Nothing plottable
-  plotly::plotly_empty() |> plotly::config(displayModeBar = FALSE)
+  .plotly_empty_silent() |> plotly::config(displayModeBar = FALSE)
 }

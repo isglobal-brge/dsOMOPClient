@@ -142,6 +142,8 @@
                         "Intervals" = "intervals")),
           shiny::selectInput(ns("output_pop"), "Population",
             choices = c("base")),
+          shiny::textInput(ns("output_symbol"), "Result Symbol",
+                           placeholder = "D_output_1"),
           shiny::actionButton(ns("add_output_btn"), "Add Output",
                               class = "btn-info w-100")
         )
@@ -349,9 +351,11 @@
       nm <- trimws(input$output_name)
       if (nchar(nm) == 0) nm <- "output_1"
       pop_id <- input$output_pop %||% "base"
+      sym <- trimws(input$output_symbol %||% "")
       tryCatch({
         o <- omop_output(name = nm, type = input$output_type,
-                          population_id = pop_id)
+                          population_id = pop_id,
+                          result_symbol = if (nchar(sym) > 0) sym else NULL)
         state$cart <- cart_add_output(state$cart, o)
         shiny::showNotification(
           paste("Added output:", nm), type = "message", duration = 2)
@@ -508,12 +512,18 @@
             shiny::span(class = "cart-item-meta", p$label)
           ),
           if (pid != "base") {
-            shiny::actionButton(
-              ns(paste0("rm_pop_", pid)),
-              shiny::icon("xmark"),
-              class = "btn-sm btn-outline-danger",
-              style = "padding: 0.1em 0.4em;"
-            )
+            local({
+              eid <- gsub("'", "\\\\'", pid)
+              rm_js <- sprintf(
+                "Shiny.setInputValue('%s', JSON.stringify({type:'population',id:'%s'}), {priority:'event'})",
+                ns("cart_remove_item"), eid)
+              shiny::tags$button(
+                class = "btn btn-sm btn-outline-danger",
+                style = "padding: 0.1em 0.4em;",
+                onclick = rm_js,
+                shiny::icon("xmark")
+              )
+            })
           }
         )
 
@@ -533,11 +543,49 @@
     })
 
     # =========================================================================
-    # Cart Display
+    # Cart Display (JS delegation for edit/remove buttons)
     # =========================================================================
     output$cart_display <- shiny::renderUI({
       cart <- state$cart
       sections <- list()
+
+      # Helper: edit + remove buttons via JS delegation
+      .action_btns <- function(item_type, item_id) {
+        eid <- gsub("'", "\\\\'", item_id)
+        edit_js <- sprintf(
+          "Shiny.setInputValue('%s', JSON.stringify({type:'%s',id:'%s'}), {priority:'event'})",
+          ns("cart_edit_item"), item_type, eid)
+        rm_js <- sprintf(
+          "Shiny.setInputValue('%s', JSON.stringify({type:'%s',id:'%s'}), {priority:'event'})",
+          ns("cart_remove_item"), item_type, eid)
+        shiny::div(class = "d-flex gap-1",
+          shiny::tags$button(
+            class = "btn btn-sm btn-outline-secondary",
+            style = "padding: 0.1em 0.4em;",
+            onclick = edit_js,
+            shiny::icon("pen")
+          ),
+          shiny::tags$button(
+            class = "btn btn-sm btn-outline-danger",
+            style = "padding: 0.1em 0.4em;",
+            onclick = rm_js,
+            shiny::icon("xmark")
+          )
+        )
+      }
+      # Remove-only button
+      .rm_btn <- function(item_type, item_id) {
+        eid <- gsub("'", "\\\\'", item_id)
+        rm_js <- sprintf(
+          "Shiny.setInputValue('%s', JSON.stringify({type:'%s',id:'%s'}), {priority:'event'})",
+          ns("cart_remove_item"), item_type, eid)
+        shiny::tags$button(
+          class = "btn btn-sm btn-outline-danger",
+          style = "padding: 0.1em 0.4em;",
+          onclick = rm_js,
+          shiny::icon("xmark")
+        )
+      }
 
       # --- Blocks section ---
       if (length(cart$blocks) > 0) {
@@ -552,12 +600,7 @@
                 paste0(b$table, " | ", length(b$concept_ids),
                        " concepts | ", b$format))
             ),
-            shiny::actionButton(
-              ns(paste0("rm_block_", bid)),
-              shiny::icon("xmark"),
-              class = "btn-sm btn-outline-danger",
-              style = "padding: 0.1em 0.4em;"
-            )
+            .action_btns("block", bid)
           )
         })
         sections <- c(sections, list(
@@ -590,20 +633,7 @@
                          paste0(" | ", concept_text) else "",
                        tw_text))
             ),
-            shiny::div(class = "d-flex gap-1",
-              shiny::actionButton(
-                ns(paste0("edit_var_", nm)),
-                shiny::icon("pen"),
-                class = "btn-sm btn-outline-secondary",
-                style = "padding: 0.1em 0.4em;"
-              ),
-              shiny::actionButton(
-                ns(paste0("rm_var_", nm)),
-                shiny::icon("xmark"),
-                class = "btn-sm btn-outline-danger",
-                style = "padding: 0.1em 0.4em;"
-              )
-            )
+            .action_btns("variable", nm)
           )
         })
         sections <- c(sections, list(
@@ -648,12 +678,7 @@
               shiny::br(),
               shiny::span(class = "cart-item-meta", type_text)
             ),
-            shiny::actionButton(
-              ns(paste0("rm_filter_", fid)),
-              shiny::icon("xmark"),
-              class = "btn-sm btn-outline-danger",
-              style = "padding: 0.1em 0.4em;"
-            )
+            .action_btns("filter", fid)
           )
         })
         sections <- c(sections, list(
@@ -667,6 +692,7 @@
       if (length(cart$outputs) > 0) {
         output_items <- lapply(names(cart$outputs), function(nm) {
           o <- cart$outputs[[nm]]
+          sym <- o$result_symbol %||% paste0("D_", nm)
           shiny::div(
             class = "cart-item d-flex justify-content-between align-items-center",
             shiny::div(
@@ -674,14 +700,10 @@
               shiny::br(),
               shiny::span(class = "cart-item-meta",
                           paste0("Type: ", o$type,
-                                 " | pop: ", o$population_id))
+                                 " | pop: ", o$population_id,
+                                 " | symbol: ", sym))
             ),
-            shiny::actionButton(
-              ns(paste0("rm_output_", nm)),
-              shiny::icon("xmark"),
-              class = "btn-sm btn-outline-danger",
-              style = "padding: 0.1em 0.4em;"
-            )
+            .action_btns("output", nm)
           )
         })
         sections <- c(sections, list(
@@ -700,110 +722,334 @@
     })
 
     # =========================================================================
-    # Dynamic remove buttons
+    # Static remove observer (JS delegation — works for all item types)
     # =========================================================================
-    shiny::observe({
+    shiny::observeEvent(input$cart_remove_item, {
+      data <- jsonlite::fromJSON(input$cart_remove_item)
+      item_type <- data$type
+      item_id <- data$id
+      tryCatch({
+        if (item_type == "population") {
+          state$cart <- cart_remove_population(state$cart, item_id)
+        } else if (item_type == "block") {
+          state$cart$blocks[[item_id]] <- NULL
+          state$cart$meta$modified <- Sys.time()
+        } else if (item_type == "variable") {
+          state$cart <- cart_remove_variable(state$cart, item_id)
+        } else if (item_type == "filter") {
+          state$cart <- cart_remove_filter(state$cart, item_id)
+        } else if (item_type == "output") {
+          state$cart <- cart_remove_output(state$cart, item_id)
+        }
+      }, error = function(e) {
+        shiny::showNotification(
+          paste("Error removing item:", conditionMessage(e)), type = "error")
+      })
+    }, ignoreInit = TRUE)
+
+    # =========================================================================
+    # Static edit observer (JS delegation — universal edit modal)
+    # =========================================================================
+    shiny::observeEvent(input$cart_edit_item, {
+      data <- jsonlite::fromJSON(input$cart_edit_item)
+      item_type <- data$type
+      item_id <- data$id
+      session$userData$edit_context <- list(type = item_type, id = item_id)
+
       cart <- state$cart
+      tbl_choices <- .table_choices(
+        .get_person_tables(state$tables) %||%
+          c("condition_occurrence", "drug_exposure", "measurement",
+            "procedure_occurrence", "observation", "visit_occurrence", "person")
+      )
+      pop_ids <- names(cart$populations)
 
-      # Population removes
-      for (pid in names(cart$populations)) {
-        if (pid == "base") next
-        local({
-          pop_id <- pid
-          btn_id <- paste0("rm_pop_", pop_id)
-          shiny::observeEvent(input[[btn_id]], {
-            state$cart <- cart_remove_population(state$cart, pop_id)
-          }, ignoreInit = TRUE, once = TRUE)
-        })
-      }
-
-      # Block removes
-      for (bid in names(cart$blocks)) {
-        local({
-          block_id <- bid
-          btn_id <- paste0("rm_block_", block_id)
-          shiny::observeEvent(input[[btn_id]], {
-            state$cart$blocks[[block_id]] <- NULL
-            state$cart$meta$modified <- Sys.time()
-          }, ignoreInit = TRUE, once = TRUE)
-        })
-      }
-
-      # Variable removes + renames
-      for (nm in names(cart$variables)) {
-        local({
-          var_name <- nm
-          btn_id <- paste0("rm_var_", var_name)
-          edit_id <- paste0("edit_var_", var_name)
-          shiny::observeEvent(input[[btn_id]], {
-            state$cart <- cart_remove_variable(state$cart, var_name)
-          }, ignoreInit = TRUE, once = TRUE)
-          shiny::observeEvent(input[[edit_id]], {
-            shiny::showModal(shiny::modalDialog(
-              title = "Rename Variable",
-              shiny::textInput(ns("rename_var_new"), "Variable Name",
-                               value = var_name),
-              size = "s", easyClose = TRUE,
-              footer = shiny::tagList(
-                shiny::modalButton("Cancel"),
-                shiny::actionButton(ns("rename_var_confirm"), "Rename",
-                                    class = "btn-primary")
-              )
-            ))
-            session$userData$renaming_var <- var_name
-          }, ignoreInit = TRUE, once = TRUE)
-        })
-      }
-
-      # Filter removes
-      for (fid in names(cart$filters)) {
-        local({
-          filter_id <- fid
-          btn_id <- paste0("rm_filter_", filter_id)
-          shiny::observeEvent(input[[btn_id]], {
-            state$cart <- cart_remove_filter(state$cart, filter_id)
-          }, ignoreInit = TRUE, once = TRUE)
-        })
-      }
-
-      # Output removes
-      for (nm in names(cart$outputs)) {
-        local({
-          out_name <- nm
-          btn_id <- paste0("rm_output_", out_name)
-          shiny::observeEvent(input[[btn_id]], {
-            state$cart <- cart_remove_output(state$cart, out_name)
-          }, ignoreInit = TRUE, once = TRUE)
-        })
-      }
-    })
-
-    # =========================================================================
-    # Variable Rename (confirm from modal)
-    # =========================================================================
-    shiny::observeEvent(input$rename_var_confirm, {
-      old_name <- session$userData$renaming_var
-      new_name <- trimws(input$rename_var_new)
-      if (is.null(old_name) || nchar(new_name) == 0) return()
-      if (new_name == old_name) { shiny::removeModal(); return() }
-      cart <- state$cart
-      if (!old_name %in% names(cart$variables)) {
-        shiny::removeModal(); return()
-      }
-      if (new_name %in% names(cart$variables)) {
-        shiny::showNotification("Name already in use", type = "warning",
-                                duration = 2)
+      # Build type-specific modal content
+      modal_content <- if (item_type == "variable") {
+        v <- cart$variables[[item_id]]
+        if (is.null(v)) return()
+        shiny::tagList(
+          shiny::textInput(ns("edit_name"), "Name", value = v$name),
+          shiny::selectInput(ns("edit_table"), "Table",
+            choices = tbl_choices, selected = v$table),
+          shiny::numericInput(ns("edit_concept_id"), "Concept ID",
+            value = v$concept_id),
+          shiny::textInput(ns("edit_concept_name"), "Concept Name",
+            value = v$concept_name %||% ""),
+          shiny::selectInput(ns("edit_type"), "Type",
+            choices = c("auto", "numeric", "categorical", "date",
+                        "boolean", "integer", "character"),
+            selected = v$type),
+          shiny::selectInput(ns("edit_format"), "Format",
+            choices = c("raw", "binary", "count", "first_value",
+                        "last_value", "mean", "min", "max",
+                        "time_since", "binned"),
+            selected = v$format),
+          shiny::textInput(ns("edit_value_source"), "Value Source",
+            value = v$value_source %||% ""),
+          shiny::fluidRow(
+            shiny::column(6,
+              shiny::numericInput(ns("edit_tw_start"), "Window Start (days)",
+                value = if (!is.null(v$time_window)) v$time_window$start else NA)
+            ),
+            shiny::column(6,
+              shiny::numericInput(ns("edit_tw_end"), "Window End (days)",
+                value = if (!is.null(v$time_window)) v$time_window$end else NA)
+            )
+          ),
+          shiny::selectInput(ns("edit_suffix_mode"), "Suffix Mode",
+            choices = c("index", "range", "label"),
+            selected = v$suffix_mode)
+        )
+      } else if (item_type == "block") {
+        b <- cart$blocks[[item_id]]
+        if (is.null(b)) return()
+        shiny::tagList(
+          shiny::textInput(ns("edit_name"), "Block ID", value = b$id),
+          shiny::selectInput(ns("edit_table"), "Table",
+            choices = tbl_choices, selected = b$table),
+          shiny::textAreaInput(ns("edit_concept_ids_text"), "Concept IDs",
+            value = paste(b$concept_ids, collapse = ", "), rows = 2),
+          shiny::selectInput(ns("edit_format"), "Format",
+            choices = c("raw", "binary", "count", "first_value",
+                        "last_value", "mean", "min", "max",
+                        "time_since", "binned"),
+            selected = b$format),
+          shiny::textInput(ns("edit_value_source"), "Value Source",
+            value = b$value_source %||% ""),
+          shiny::fluidRow(
+            shiny::column(6,
+              shiny::numericInput(ns("edit_tw_start"), "Window Start (days)",
+                value = if (!is.null(b$time_window)) b$time_window$start else NA)
+            ),
+            shiny::column(6,
+              shiny::numericInput(ns("edit_tw_end"), "Window End (days)",
+                value = if (!is.null(b$time_window)) b$time_window$end else NA)
+            )
+          ),
+          shiny::selectInput(ns("edit_suffix_mode"), "Suffix Mode",
+            choices = c("index", "range", "label"),
+            selected = b$suffix_mode)
+        )
+      } else if (item_type == "filter") {
+        f <- cart$filters[[item_id]]
+        if (is.null(f)) return()
+        is_group <- inherits(f, "omop_filter_group")
+        if (is_group) {
+          shiny::tagList(
+            shiny::textInput(ns("edit_label"), "Label",
+              value = f$label %||% ""),
+            shiny::selectInput(ns("edit_filter_operator"), "Operator",
+              choices = c("AND", "OR"), selected = f$operator)
+          )
+        } else {
+          # Base fields
+          base_fields <- shiny::tagList(
+            shiny::textInput(ns("edit_label"), "Label",
+              value = f$label %||% ""),
+            shiny::selectInput(ns("edit_filter_level"), "Level",
+              choices = c("population", "row", "output"),
+              selected = f$level)
+          )
+          # Type-specific param fields
+          param_fields <- switch(f$type,
+            "sex" = shiny::selectInput(ns("edit_sex_value"), "Sex",
+              choices = c("Female" = "F", "Male" = "M"),
+              selected = f$params$value %||% "F"),
+            "age_range" = shiny::tagList(
+              shiny::numericInput(ns("edit_age_min"), "Min Age",
+                value = f$params$min %||% 0, min = 0, max = 150),
+              shiny::numericInput(ns("edit_age_max"), "Max Age",
+                value = f$params$max %||% 150, min = 0, max = 150)
+            ),
+            "age_group" = shiny::checkboxGroupInput(ns("edit_age_groups"),
+              "Age Groups",
+              choices = c("0-4", "5-9", "10-14", "15-17", "18-24",
+                          "25-34", "35-44", "45-54", "55-64",
+                          "65-74", "75-84", "85+"),
+              selected = f$params$groups, inline = TRUE),
+            "has_concept" = shiny::tagList(
+              shiny::numericInput(ns("edit_filter_cid"), "Concept ID",
+                value = f$params$concept_id),
+              shiny::selectInput(ns("edit_filter_table"), "Table",
+                choices = tbl_choices, selected = f$params$table),
+              shiny::numericInput(ns("edit_filter_min_count"),
+                "Min Count", value = f$params$min_count %||% 1L,
+                min = 1)
+            ),
+            "date_range" = shiny::tagList(
+              shiny::dateInput(ns("edit_date_start"), "Start Date",
+                value = f$params$start),
+              shiny::dateInput(ns("edit_date_end"), "End Date",
+                value = f$params$end)
+            ),
+            NULL
+          )
+          shiny::tagList(base_fields, param_fields)
+        }
+      } else if (item_type == "output") {
+        o <- cart$outputs[[item_id]]
+        if (is.null(o)) return()
+        shiny::tagList(
+          shiny::textInput(ns("edit_name"), "Output Name", value = o$name),
+          shiny::selectInput(ns("edit_output_type"), "Type",
+            choices = c("wide", "long", "features", "survival",
+                        "intervals", "baseline", "joined_long",
+                        "covariates_sparse"),
+            selected = o$type),
+          shiny::selectInput(ns("edit_output_pop"), "Population",
+            choices = pop_ids, selected = o$population_id),
+          shiny::textInput(ns("edit_result_symbol"), "Result Symbol",
+            value = o$result_symbol %||% paste0("D_", o$name))
+        )
+      } else {
         return()
       }
-      cart$variables[[new_name]] <- cart$variables[[old_name]]
-      cart$variables[[new_name]]$name <- new_name
-      cart$variables[[old_name]] <- NULL
-      cart$meta$modified <- Sys.time()
-      state$cart <- cart
-      shiny::removeModal()
-      shiny::showNotification(
-        paste0(old_name, " -> ", new_name), type = "message", duration = 2)
-    })
+
+      title <- paste("Edit", tools::toTitleCase(item_type), "-", item_id)
+      shiny::showModal(shiny::modalDialog(
+        title = title, size = "m", easyClose = TRUE,
+        modal_content,
+        footer = shiny::tagList(
+          shiny::modalButton("Cancel"),
+          shiny::actionButton(ns("confirm_edit"), "Save Changes",
+                              class = "btn-primary")
+        )
+      ))
+    }, ignoreInit = TRUE)
+
+    # =========================================================================
+    # Confirm edit (universal handler)
+    # =========================================================================
+    shiny::observeEvent(input$confirm_edit, {
+      ctx <- session$userData$edit_context
+      if (is.null(ctx)) return()
+      item_type <- ctx$type
+      item_id <- ctx$id
+      cart <- state$cart
+
+      tryCatch({
+        if (item_type == "variable") {
+          v <- cart$variables[[item_id]]
+          if (is.null(v)) { shiny::removeModal(); return() }
+          new_name <- trimws(input$edit_name)
+          if (nchar(new_name) == 0) new_name <- item_id
+          # Build updated variable
+          tw_start <- input$edit_tw_start
+          tw_end <- input$edit_tw_end
+          tw <- if (!is.na(tw_start) && !is.na(tw_end))
+            list(start = tw_start, end = tw_end) else NULL
+          cid_val <- input$edit_concept_id
+          cname_val <- input$edit_concept_name
+          vs_val <- input$edit_value_source
+          v$table <- input$edit_table
+          v$concept_id <- if (!is.null(cid_val) && !is.na(cid_val))
+            as.integer(cid_val) else NULL
+          v$concept_name <- if (nchar(cname_val) > 0) cname_val else NULL
+          v$type <- input$edit_type
+          v$format <- input$edit_format
+          v$value_source <- if (nchar(vs_val) > 0) vs_val else NULL
+          v$time_window <- tw
+          v$suffix_mode <- input$edit_suffix_mode
+          # Handle rename
+          if (new_name != item_id) {
+            if (new_name %in% names(cart$variables)) {
+              shiny::showNotification("Name already in use",
+                type = "warning", duration = 2)
+              return()
+            }
+            cart$variables[[item_id]] <- NULL
+            v$name <- new_name
+            cart$variables[[new_name]] <- v
+          } else {
+            v$name <- new_name
+            cart$variables[[item_id]] <- v
+          }
+
+        } else if (item_type == "block") {
+          b <- cart$blocks[[item_id]]
+          if (is.null(b)) { shiny::removeModal(); return() }
+          new_id <- trimws(input$edit_name)
+          if (nchar(new_id) == 0) new_id <- item_id
+          tw_start <- input$edit_tw_start
+          tw_end <- input$edit_tw_end
+          tw <- if (!is.na(tw_start) && !is.na(tw_end))
+            list(start = tw_start, end = tw_end) else NULL
+          vs_val <- input$edit_value_source
+          ids_text <- trimws(input$edit_concept_ids_text)
+          new_ids <- .parse_ids(ids_text)
+          b$table <- input$edit_table
+          b$concept_ids <- if (!is.null(new_ids)) as.integer(new_ids)
+                           else b$concept_ids
+          b$format <- input$edit_format
+          b$value_source <- if (nchar(vs_val) > 0) vs_val else NULL
+          b$time_window <- tw
+          b$suffix_mode <- input$edit_suffix_mode
+          if (new_id != item_id) {
+            cart$blocks[[item_id]] <- NULL
+            b$id <- new_id
+            cart$blocks[[new_id]] <- b
+          } else {
+            cart$blocks[[item_id]] <- b
+          }
+
+        } else if (item_type == "filter") {
+          f <- cart$filters[[item_id]]
+          if (is.null(f)) { shiny::removeModal(); return() }
+          is_group <- inherits(f, "omop_filter_group")
+          if (is_group) {
+            f$label <- trimws(input$edit_label)
+            f$operator <- input$edit_filter_operator
+          } else {
+            f$label <- trimws(input$edit_label)
+            f$level <- input$edit_filter_level
+            # Update type-specific params
+            if (f$type == "sex") {
+              f$params$value <- input$edit_sex_value
+            } else if (f$type == "age_range") {
+              f$params$min <- input$edit_age_min
+              f$params$max <- input$edit_age_max
+            } else if (f$type == "age_group") {
+              f$params$groups <- input$edit_age_groups
+            } else if (f$type == "has_concept") {
+              f$params$concept_id <- as.integer(input$edit_filter_cid)
+              f$params$table <- input$edit_filter_table
+              f$params$min_count <- as.integer(input$edit_filter_min_count)
+            } else if (f$type == "date_range") {
+              f$params$start <- as.character(input$edit_date_start)
+              f$params$end <- as.character(input$edit_date_end)
+            }
+          }
+          cart$filters[[item_id]] <- f
+
+        } else if (item_type == "output") {
+          o <- cart$outputs[[item_id]]
+          if (is.null(o)) { shiny::removeModal(); return() }
+          new_name <- trimws(input$edit_name)
+          if (nchar(new_name) == 0) new_name <- item_id
+          o$type <- input$edit_output_type
+          o$population_id <- input$edit_output_pop
+          o$result_symbol <- trimws(input$edit_result_symbol)
+          if (nchar(o$result_symbol) == 0)
+            o$result_symbol <- paste0("D_", new_name)
+          if (new_name != item_id) {
+            cart$outputs[[item_id]] <- NULL
+            o$name <- new_name
+            cart$outputs[[new_name]] <- o
+          } else {
+            cart$outputs[[item_id]] <- o
+          }
+        }
+
+        cart$meta$modified <- Sys.time()
+        state$cart <- cart
+        shiny::removeModal()
+        shiny::showNotification("Updated.", type = "message", duration = 2)
+      }, error = function(e) {
+        shiny::showNotification(
+          paste("Error:", conditionMessage(e)), type = "error")
+      })
+    }, ignoreInit = TRUE)
 
     # =========================================================================
     # Schema Preview
@@ -1114,9 +1360,14 @@
       if (is.null(p) || length(p$outputs) == 0) return("")
       tryCatch({
         out_names <- names(p$outputs)
-        out <- stats::setNames(
-          paste0("D_", out_names), out_names
-        )
+        # Use result_symbol from cart outputs when available
+        cart <- state$cart
+        symbols <- vapply(out_names, function(nm) {
+          o <- cart$outputs[[nm]]
+          if (!is.null(o) && !is.null(o$result_symbol)) o$result_symbol
+          else paste0("D_", nm)
+        }, character(1))
+        out <- stats::setNames(symbols, out_names)
         .studio_codegen_plan(p, out, symbol = state$symbol)
       }, error = function(e) "")
     })

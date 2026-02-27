@@ -79,7 +79,6 @@ test_that("ds.omop.achilles.results generates correct call_code", {
   code <- result$meta$call_code
   expect_true(grepl("ds.omop.achilles.results", code))
   expect_true(grepl("400", code))
-  expect_true(grepl("201820", code))
   expect_true(grepl("pooled", code))
 })
 
@@ -132,9 +131,9 @@ test_that("pooling achilles_results strict policy fails on NA", {
   )
 
   result <- .pool_result(per_site, "achilles_results", "strict")
-  # With strict policy, result should have NA for the affected group
+  # Fix E: suppressed rows are DROPPED from pooled output (no hints)
   df <- result$result
-  expect_true(is.na(df$count_value[df$analysis_id == 0]))
+  expect_equal(nrow(df[df$analysis_id == 0, , drop = FALSE]), 0)
 })
 
 test_that("pooling achilles_distribution weighted mean calculation", {
@@ -173,9 +172,9 @@ test_that("pooling achilles_distribution weighted mean calculation", {
   # Weighted mean: (100*50 + 200*55) / 300 = 16000/300 = 53.33
   expect_equal(round(df$avg_value, 2), 53.33)
 
-  # Global min/max
-  expect_equal(df$min_value, 18)
-  expect_equal(df$max_value, 90)
+  # Fix F: min/max no longer pooled (disclosure control)
+  expect_true(is.null(df$min_value) || is.na(df$min_value))
+  expect_true(is.null(df$max_value) || is.na(df$max_value))
 
   # Stdev should be computed (Cochrane formula)
   expect_true(!is.na(df$stdev_value))

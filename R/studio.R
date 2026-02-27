@@ -838,18 +838,23 @@ isTRUE_vec <- function(x) {
   }
 }
 
+# Silent plotly_empty: suppresses "No trace type specified" warnings
+.plotly_empty_silent <- function() {
+  suppressWarnings(plotly::plotly_empty())
+}
+
 # Safe plotly wrapper: catches errors and returns a placeholder
 .safe_plotly <- function(expr) {
-  tryCatch(
+  suppressWarnings(tryCatch(
     expr,
     error = function(e) {
-      plotly::plotly_empty() |>
+      .plotly_empty_silent() |>
         plotly::layout(title = list(
           text = paste("Chart unavailable:", conditionMessage(e)),
           font = list(color = "#6b7280", size = 12)
         ))
     }
-  )
+  ))
 }
 
 # ==============================================================================

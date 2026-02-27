@@ -386,6 +386,7 @@ ds.omop.date.counts <- function(table, date_col = NULL,
 #' @return A dsomop_result object
 #' @export
 ds.omop.concept.drilldown <- function(table, concept_id,
+                                       concept_col = NULL,
                                        scope = c("per_site", "pooled"),
                                        pooling_policy = "strict",
                                        symbol = "omop", conns = NULL,
@@ -394,6 +395,7 @@ ds.omop.concept.drilldown <- function(table, concept_id,
 
   code <- .build_code("ds.omop.concept.drilldown",
     table = table, concept_id = concept_id,
+    concept_col = concept_col,
     scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -407,8 +409,13 @@ ds.omop.concept.drilldown <- function(table, concept_id,
 
   raw <- DSI::datashield.aggregate(
     conns,
-    expr = call("omopConceptDrilldownDS", session$res_symbol,
-                table, as.integer(concept_id))
+    expr = if (!is.null(concept_col)) {
+      call("omopConceptDrilldownDS", session$res_symbol,
+           table, as.integer(concept_id), concept_col)
+    } else {
+      call("omopConceptDrilldownDS", session$res_symbol,
+           table, as.integer(concept_id))
+    }
   )
 
   pooled <- NULL

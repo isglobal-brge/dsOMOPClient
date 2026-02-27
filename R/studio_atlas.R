@@ -270,11 +270,11 @@
     # Dashboard plot outputs
     output$dashboard_gender_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$gender)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$gender)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$gender
         df$count_value <- as.numeric(df$count_value)
-        if (nrow(df) == 0) return(plotly::plotly_empty())
+        if (nrow(df) == 0) return(.plotly_empty_silent())
         vals <- df$count_value[!is.na(df$count_value)]
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
@@ -285,17 +285,17 @@
             plotly::layout(title = list(text = "Gender Distribution")) |>
             .plotly_defaults("Gender Distribution")
         } else {
-          plotly::plotly_empty()
+          .plotly_empty_silent()
         }
       })
     })
 
     output$dashboard_age_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$age_dist)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$age_dist)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$age_dist
-        if (nrow(df) == 0 || all(is.na(df$avg_value))) return(plotly::plotly_empty())
+        if (nrow(df) == 0 || all(is.na(df$avg_value))) return(.plotly_empty_silent())
         row <- df[1, ]
         # min/max no longer returned by server (disclosure control Fix B)
         vals <- c(row$p10_value, row$p25_value,
@@ -312,8 +312,26 @@
                                         categoryarray = nms),
                            yaxis = list(title = "Age (years)")) |>
             .plotly_defaults("Age at First Observation")
+        } else if (!is.na(row$avg_value)) {
+          # Pooled: percentiles unavailable, show mean +/- stdev
+          avg <- row$avg_value
+          sd_val <- if ("stdev_value" %in% names(row)) row$stdev_value else NA
+          if (!is.na(sd_val)) {
+            vals <- c(avg - sd_val, avg, avg + sd_val)
+            nms <- c("Mean-SD", "Mean", "Mean+SD")
+          } else {
+            vals <- avg
+            nms <- "Mean"
+          }
+          plotly::plot_ly(x = nms, y = vals, type = "bar",
+                          marker = list(color = .studio_colors[1])) |>
+            plotly::layout(title = list(text = "Age at First Observation (pooled)"),
+                           xaxis = list(categoryorder = "array",
+                                        categoryarray = nms),
+                           yaxis = list(title = "Age (years)")) |>
+            .plotly_defaults("Age at First Observation (pooled)")
         } else {
-          plotly::plotly_empty()
+          .plotly_empty_silent()
         }
       })
     })
@@ -321,12 +339,12 @@
     # Person page plots
     output$person_gender_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$gender)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$gender)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$gender
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(plotly::plotly_empty())
+        if (nrow(df) == 0) return(.plotly_empty_silent())
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = labels, y = df$count_value, type = "bar",
@@ -339,13 +357,13 @@
 
     output$person_yob_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$yob)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$yob)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$yob
-        if (!is.data.frame(df) || nrow(df) == 0) return(plotly::plotly_empty())
+        if (!is.data.frame(df) || nrow(df) == 0) return(.plotly_empty_silent())
         df$count_value <- suppressWarnings(as.numeric(df$count_value))
         df <- df[!is.na(df$count_value) & df$count_value > 0, , drop = FALSE]
-        if (nrow(df) == 0) return(plotly::plotly_empty())
+        if (nrow(df) == 0) return(.plotly_empty_silent())
         df <- df[order(as.character(df$stratum_1)), ]
         labels <- as.character(df$stratum_1)
         values <- df$count_value
@@ -359,12 +377,12 @@
 
     output$person_race_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$race)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$race)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$race
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(plotly::plotly_empty())
+        if (nrow(df) == 0) return(.plotly_empty_silent())
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
@@ -379,12 +397,12 @@
 
     output$person_ethnicity_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$ethnicity)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$ethnicity)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$ethnicity
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(plotly::plotly_empty())
+        if (nrow(df) == 0) return(.plotly_empty_silent())
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
@@ -400,12 +418,12 @@
     # Domain plots (used by Conditions, Drugs, Procedures, Measurements, Observations)
     output$domain_bar_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$concepts)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$concepts)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$concepts
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(plotly::plotly_empty())
+        if (nrow(df) == 0) return(.plotly_empty_silent())
         # Sort by count descending
         df <- df[order(df$count_value, decreasing = TRUE), ]
         n <- min(nrow(df), 20)
@@ -431,12 +449,12 @@
 
     output$domain_trend_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$trends)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$trends)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$trends
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(plotly::plotly_empty())
+        if (nrow(df) == 0) return(.plotly_empty_silent())
         # Aggregate by month across concepts
         agg <- stats::aggregate(count_value ~ stratum_2, data = df, FUN = sum)
         agg <- agg[order(agg$stratum_2), ]
@@ -463,21 +481,51 @@
           if (length(m) > 0) m[1] else ""
         }, character(1))
       }
+      chk <- vapply(seq_len(nrow(df)), function(i) {
+        paste0('<input type="checkbox" class="dt-row-chk" data-row="', i, '">')
+      }, character(1))
       display <- data.frame(
+        sel = chk,
         concept_id = df$stratum_1,
         concept_name = if ("concept_name" %in% names(df)) df$concept_name else "",
         count = df$count_value,
         stringsAsFactors = FALSE
       )
-      DT::datatable(display, selection = "multiple", rownames = FALSE,
-                    options = list(pageLength = 15, dom = "ftp"))
+      DT::datatable(display, selection = "none", rownames = FALSE,
+                    escape = FALSE,
+                    options = list(pageLength = 15, dom = "ftp",
+                      columnDefs = list(
+                        list(className = "dt-center", targets = 0,
+                             orderable = FALSE, width = "30px")
+                      )),
+                    callback = DT::JS(paste0(
+                      "var sel = [];",
+                      "table.on('change', '.dt-row-chk', function() {",
+                      "  var row = parseInt($(this).data('row'));",
+                      "  if (this.checked) { if (sel.indexOf(row)===-1) sel.push(row); }",
+                      "  else { sel = sel.filter(function(r){return r!==row;}); }",
+                      "  Shiny.setInputValue('", ns("domain_chk_selected"), "', sel, {priority:'event'});",
+                      "});",
+                      "var hdr = $('<input type=\"checkbox\" class=\"dt-chk-all\">');",
+                      "$(table.column(0).header()).empty().append(hdr);",
+                      "hdr.on('change', function() {",
+                      "  var checked = this.checked;",
+                      "  sel = [];",
+                      "  table.rows({search:'applied'}).every(function() {",
+                      "    var cb = $(this.node()).find('.dt-row-chk');",
+                      "    cb.prop('checked', checked);",
+                      "    if (checked) sel.push(parseInt(cb.data('row')));",
+                      "  });",
+                      "  Shiny.setInputValue('", ns("domain_chk_selected"), "', sel, {priority:'event'});",
+                      "});"
+                    )))
     })
 
     # Domain extract/filter buttons
     shiny::observeEvent(input$domain_extract_btn, {
       data <- page_data()
       if (is.null(data) || is.null(data$concepts)) return()
-      sel <- input$domain_table_rows_selected
+      sel <- input$domain_chk_selected
       if (is.null(sel) || length(sel) == 0) {
         shiny::showNotification("Select rows first", type = "warning")
         return()
@@ -503,7 +551,7 @@
     shiny::observeEvent(input$domain_filter_btn, {
       data <- page_data()
       if (is.null(data) || is.null(data$concepts)) return()
-      sel <- input$domain_table_rows_selected
+      sel <- input$domain_chk_selected
       if (is.null(sel) || length(sel) == 0) {
         shiny::showNotification("Select rows first", type = "warning")
         return()
@@ -541,12 +589,12 @@
     # Visits plot
     output$visits_type_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$types)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$types)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$types
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(plotly::plotly_empty())
+        if (nrow(df) == 0) return(.plotly_empty_silent())
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = labels, y = df$count_value, type = "bar",
@@ -559,12 +607,12 @@
 
     output$visits_trend_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$trends)) return(plotly::plotly_empty())
+      if (is.null(data) || is.null(data$trends)) return(.plotly_empty_silent())
       .safe_plotly({
         df <- data$trends
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(plotly::plotly_empty())
+        if (nrow(df) == 0) return(.plotly_empty_silent())
         agg <- stats::aggregate(count_value ~ stratum_2, data = df, FUN = sum)
         agg <- agg[order(agg$stratum_2), ]
         plotly::plot_ly(x = agg$stratum_2, y = agg$count_value,
@@ -580,7 +628,7 @@
     # Trends plot
     output$trends_overlay_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || length(data) == 0) return(plotly::plotly_empty())
+      if (is.null(data) || length(data) == 0) return(.plotly_empty_silent())
       .safe_plotly({
         domains <- names(data)
         colors <- .studio_colors
@@ -605,7 +653,7 @@
           trace_added <- TRUE
         }
         if (!trace_added) {
-          p <- plotly::plotly_empty() |>
+          p <- .plotly_empty_silent() |>
             plotly::layout(title = list(text = "No trend data available",
                                         font = list(color = "#7f8c8d",
                                                     size = 14)))
@@ -918,14 +966,20 @@
 .atlas_render_dashboard <- function(ns, data) {
   total_txt <- .fmt_count(data$total_persons)
 
+  # Prefer median; fall back to avg (median is NA when pooled across sites)
   median_age_val <- {
-    if (is.data.frame(data$age_dist) && nrow(data$age_dist) > 0 &&
-        !is.na(data$age_dist$median_value[1])) {
-      round(data$age_dist$median_value[1], 1)
+    if (is.data.frame(data$age_dist) && nrow(data$age_dist) > 0) {
+      med <- data$age_dist$median_value[1]
+      avg <- data$age_dist$avg_value[1]
+      if (!is.na(med)) {
+        round(med, 1)
+      } else if (!is.na(avg)) {
+        paste0("~", round(avg, 1))
+      } else "N/A"
     } else "N/A"
   }
 
-  # Gender ratio: show dominant gender %
+  # Gender ratio: show all genders with percentages
   gender_pct_val <- {
     if (is.data.frame(data$gender) && nrow(data$gender) > 0) {
       g <- data$gender
@@ -940,9 +994,12 @@
             if (!is.null(nm)) nm else id
           }, character(1))
           g <- g[order(g$count_value, decreasing = TRUE), ]
-          top_label <- substr(g$label[1], 1, 8)
-          top_pct <- round(g$count_value[1] / total_g * 100)
-          paste0(top_pct, "% ", top_label)
+          parts <- vapply(seq_len(nrow(g)), function(i) {
+            pct <- round(g$count_value[i] / total_g * 100)
+            lbl <- substr(g$label[i], 1, 8)
+            paste0(pct, "% ", lbl)
+          }, character(1))
+          shiny::HTML(paste(parts, collapse = "<br>"))
         } else "N/A"
       } else "N/A"
     } else "N/A"
