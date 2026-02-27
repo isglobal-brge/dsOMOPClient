@@ -25,22 +25,25 @@ test_that("ds.omop.achilles.results has expected signature", {
   expect_true(is.function(ds.omop.achilles.results))
   args <- formals(ds.omop.achilles.results)
   expect_true("analysis_ids" %in% names(args))
-  expect_true("stratum_filters" %in% names(args))
   expect_true("scope" %in% names(args))
   expect_true("pooling_policy" %in% names(args))
   expect_true("execute" %in% names(args))
   expect_true("symbol" %in% names(args))
   expect_true("conns" %in% names(args))
   expect_true(args$execute)
+  # Fix C/D: stratum_filters and min_cell_count intentionally removed
+  expect_false("stratum_filters" %in% names(args))
+  expect_false("min_cell_count" %in% names(args))
 })
 
 test_that("ds.omop.achilles.distribution has expected signature", {
   expect_true(is.function(ds.omop.achilles.distribution))
   args <- formals(ds.omop.achilles.distribution)
   expect_true("analysis_ids" %in% names(args))
-  expect_true("stratum_filters" %in% names(args))
   expect_true("scope" %in% names(args))
   expect_true("execute" %in% names(args))
+  # Fix C: stratum_filters intentionally removed
+  expect_false("stratum_filters" %in% names(args))
 })
 
 # --- execute=FALSE dry-run tests ----------------------------------------------
@@ -70,7 +73,6 @@ test_that("ds.omop.achilles.distribution execute=FALSE returns dsomop_result", {
 test_that("ds.omop.achilles.results generates correct call_code", {
   result <- ds.omop.achilles.results(
     analysis_ids = c(400, 401),
-    stratum_filters = list(stratum_1 = "201820"),
     scope = "pooled",
     execute = FALSE
   )

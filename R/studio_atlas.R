@@ -297,10 +297,10 @@
         df <- data$age_dist
         if (nrow(df) == 0 || all(is.na(df$avg_value))) return(plotly::plotly_empty())
         row <- df[1, ]
-        vals <- c(row$min_value, row$p10_value, row$p25_value,
-                  row$median_value, row$p75_value, row$p90_value,
-                  row$max_value)
-        nms <- c("Min", "P10", "P25", "Median", "P75", "P90", "Max")
+        # min/max no longer returned by server (disclosure control Fix B)
+        vals <- c(row$p10_value, row$p25_value,
+                  row$median_value, row$p75_value, row$p90_value)
+        nms <- c("P10", "P25", "Median", "P75", "P90")
         keep <- !is.na(vals)
         vals <- vals[keep]
         nms <- nms[keep]

@@ -67,10 +67,9 @@ ds.omop.achilles.analyses <- function(domain = NULL, symbol = "omop",
 #' Get Achilles count results
 #'
 #' Queries achilles_results for specified analysis IDs with optional stratum
-#' filtering. Supports pooling via count summation across servers.
+#' Supports pooling via count summation across servers.
 #'
 #' @param analysis_ids Integer vector; which analysis IDs to retrieve
-#' @param stratum_filters Named list; e.g. list(stratum_1 = "201820")
 #' @param scope Character; "per_site" or "pooled"
 #' @param pooling_policy Character; "strict" or "pooled_only_ok"
 #' @param symbol Character; OMOP session symbol
@@ -79,7 +78,6 @@ ds.omop.achilles.analyses <- function(domain = NULL, symbol = "omop",
 #' @return A dsomop_result object
 #' @export
 ds.omop.achilles.results <- function(analysis_ids,
-                                      stratum_filters = NULL,
                                       scope = c("per_site", "pooled"),
                                       pooling_policy = "strict",
                                       symbol = "omop", conns = NULL,
@@ -87,7 +85,7 @@ ds.omop.achilles.results <- function(analysis_ids,
   scope <- match.arg(scope)
 
   code <- .build_code("ds.omop.achilles.results",
-    analysis_ids = analysis_ids, stratum_filters = stratum_filters,
+    analysis_ids = analysis_ids,
     scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -102,7 +100,7 @@ ds.omop.achilles.results <- function(analysis_ids,
   raw <- DSI::datashield.aggregate(
     conns,
     expr = call("omopAchillesResultsDS", session$res_symbol,
-                as.integer(analysis_ids), stratum_filters, NULL)
+                as.integer(analysis_ids))
   )
 
   pooled <- NULL
@@ -121,11 +119,11 @@ ds.omop.achilles.results <- function(analysis_ids,
 
 #' Get Achilles distribution results
 #'
-#' Queries achilles_results_dist for distribution analyses with optional
-#' stratum filtering. Supports pooling via weighted aggregation.
+#' Queries achilles_results_dist for distribution analyses.
+#' Supports pooling via weighted aggregation. Extreme values (min/max)
+#' are never returned by the server.
 #'
 #' @param analysis_ids Integer vector; distribution analysis IDs
-#' @param stratum_filters Named list; optional stratum filters
 #' @param scope Character; "per_site" or "pooled"
 #' @param pooling_policy Character; "strict" or "pooled_only_ok"
 #' @param symbol Character; OMOP session symbol
@@ -134,7 +132,6 @@ ds.omop.achilles.results <- function(analysis_ids,
 #' @return A dsomop_result object
 #' @export
 ds.omop.achilles.distribution <- function(analysis_ids,
-                                            stratum_filters = NULL,
                                             scope = c("per_site", "pooled"),
                                             pooling_policy = "strict",
                                             symbol = "omop", conns = NULL,
@@ -142,7 +139,7 @@ ds.omop.achilles.distribution <- function(analysis_ids,
   scope <- match.arg(scope)
 
   code <- .build_code("ds.omop.achilles.distribution",
-    analysis_ids = analysis_ids, stratum_filters = stratum_filters,
+    analysis_ids = analysis_ids,
     scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -157,7 +154,7 @@ ds.omop.achilles.distribution <- function(analysis_ids,
   raw <- DSI::datashield.aggregate(
     conns,
     expr = call("omopAchillesDistributionDS", session$res_symbol,
-                as.integer(analysis_ids), stratum_filters)
+                as.integer(analysis_ids))
   )
 
   pooled <- NULL

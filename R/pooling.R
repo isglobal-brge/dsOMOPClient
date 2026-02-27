@@ -691,16 +691,21 @@
       pooled_rows <- lapply(groups, function(sub) {
         row <- sub[1, key_cols, drop = FALSE]
         vals <- sub$count_value
-        has_na <- any(is.na(vals))
-        if (has_na && policy == "strict") {
+        # Fix E: ALWAYS propagate suppression. If any site suppressed a cell
+        # (NA/missing), pooled must be suppressed too — otherwise na.rm=TRUE
+        # would undo per-site disclosure controls and enable subtraction attacks.
+        if (any(is.na(vals))) {
           row$count_value <- NA_real_
         } else {
-          row$count_value <- sum(vals, na.rm = TRUE)
+          row$count_value <- sum(vals)
         }
         row
       })
       result <- do.call(rbind, pooled_rows)
       rownames(result) <- NULL
+
+      # Drop pooled rows that were suppressed (no hints in pooled output either)
+      result <- result[!is.na(result$count_value), , drop = FALSE]
 
       # Restore NA sentinels
       for (kc in key_cols[-1]) {
@@ -748,11 +753,9 @@
       pooled_rows <- lapply(groups, function(sub) {
         row <- sub[1, key_cols, drop = FALSE]
         counts <- sub$count_value
-        has_na <- any(is.na(counts))
-        if (has_na && policy == "strict") {
+        # Fix E: ALWAYS propagate suppression for distributions too
+        if (any(is.na(counts))) {
           row$count_value <- NA_real_
-          row$min_value <- NA_real_
-          row$max_value <- NA_real_
           row$avg_value <- NA_real_
           row$stdev_value <- NA_real_
           row$median_value <- NA_real_
@@ -763,28 +766,22 @@
           return(row)
         }
 
-        valid <- !is.na(counts)
-        n <- counts[valid]
+        n <- counts
         N <- sum(n)
         row$count_value <- N
 
         # Weighted mean
-        avgs <- sub$avg_value[valid]
+        avgs <- sub$avg_value
         row$avg_value <- if (N > 0 && !any(is.na(avgs))) {
           sum(n * avgs) / N
         } else NA_real_
 
-        # Global min/max
-        row$min_value <- if ("min_value" %in% names(sub)) {
-          min(sub$min_value[valid], na.rm = TRUE)
-        } else NA_real_
-        row$max_value <- if ("max_value" %in% names(sub)) {
-          max(sub$max_value[valid], na.rm = TRUE)
-        } else NA_real_
+        # Fix F: min/max are NEVER pooled (extreme values can identify
+        # individuals, and server no longer returns them)
 
         # Pooled stdev via Cochrane formula
         if ("stdev_value" %in% names(sub) && N > 1 && !any(is.na(avgs))) {
-          sds <- sub$stdev_value[valid]
+          sds <- sub$stdev_value
           if (!any(is.na(sds))) {
             pooled_mean <- row$avg_value
             within_ss <- sum((n - 1) * sds^2)
@@ -808,6 +805,9 @@
       })
       result <- do.call(rbind, pooled_rows)
       rownames(result) <- NULL
+
+      # Drop suppressed rows from pooled output (no hints)
+      result <- result[!is.na(result$count_value), , drop = FALSE]
 
       for (kc in key_cols[-1]) {
         result[[kc]][result[[kc]] == "__NA__"] <- NA_character_

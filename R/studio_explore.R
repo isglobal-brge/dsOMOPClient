@@ -282,23 +282,42 @@
     output$results_dt <- DT::renderDT({
       df <- prevalence_data()
       if (is.null(df) || !is.data.frame(df)) return(NULL)
-      DT::datatable(df,
-        options = list(pageLength = 20, dom = "ftip", scrollX = TRUE),
-        rownames = FALSE, selection = "multiple")
+      # Add a drilldown link column
+      links <- vapply(seq_len(nrow(df)), function(i) {
+        as.character(shiny::actionLink(
+          ns(paste0("drill_", i)), df$concept_name[i],
+          class = "dt-drill-link"))
+      }, character(1))
+      display <- df
+      display$concept_name <- links
+      DT::datatable(display,
+        options = list(pageLength = 20, dom = "ftip", scrollX = TRUE,
+          columnDefs = list(
+            list(className = "dt-center", targets = 0)
+          )),
+        rownames = FALSE, selection = "multiple", escape = FALSE,
+        callback = DT::JS(paste0(
+          "table.on('click', '.dt-drill-link', function(e) {",
+          "  e.stopPropagation();",
+          "  Shiny.setInputValue('", ns("drill_row"), "',",
+          "    table.row($(this).closest('tr')).index() + 1,",
+          "    {priority: 'event'});",
+          "});"
+        ))
+      )
     })
 
-    # Single row click -> navigate to Drilldown
-    shiny::observeEvent(input$results_dt_rows_selected, {
+    # Drill link click -> navigate to Drilldown (does NOT affect checkbox selection)
+    shiny::observeEvent(input$drill_row, {
       df <- prevalence_data()
-      idx <- input$results_dt_rows_selected
-      if (!is.null(idx) && !is.null(df) && length(idx) == 1 && idx <= nrow(df)) {
+      idx <- input$drill_row
+      if (!is.null(idx) && !is.null(df) && idx <= nrow(df)) {
         state$selected_table <- input$table
         state$selected_concept_col <- input$concept_col
         state$selected_concept_id <- as.integer(df$concept_id[idx])
         state$selected_concept_name <- as.character(
           df$concept_name[idx] %||% ""
         )
-        # Navigate to Drilldown tab
         bslib::nav_select("explore_nav", "Drilldown",
                            session = parent_session)
       }
@@ -388,13 +407,9 @@
       res <- last_result()
       if (is.null(res) || !inherits(res, "dsomop_result")) return(NULL)
 
-      tags <- list()
-      # Server badges
-      for (srv in res$meta$servers) {
-        tags <- c(tags, list(
-          shiny::span(class = "server-badge server-badge-ok", srv)
-        ))
-      }
+      srv_badges <- lapply(res$meta$servers, function(srv) {
+        shiny::span(class = "badge bg-light text-dark me-1", srv)
+      })
       scope_text <- switch(state$scope %||% res$meta$scope,
         "pooled" = "Pooled", "all" = "All Servers", "Per-site")
       warns <- res$meta$warnings
@@ -405,8 +420,8 @@
         )
       }
       shiny::div(class = "scope-indicator mt-2",
-        shiny::span("Scope: ", scope_text, " | Servers: "),
-        shiny::tagList(tags),
+        shiny::span(class = "text-muted me-1", paste0("Scope: ", scope_text, " |")),
+        shiny::tagList(srv_badges),
         warn_ui
       )
     })
@@ -715,21 +730,30 @@
       # If multiple servers shown, add a server comparison row
       server_comparison <- NULL
       if (length(dd) > 1) {
-        rows <- lapply(names(dd), function(srv) {
+        srv_rows <- lapply(names(dd), function(srv) {
           s <- dd[[srv]]$summary
-          shiny::div(
-            shiny::span(class = "server-badge server-badge-ok", srv),
-            shiny::span(paste0(
-              "Records: ", if (is.null(s$n_records) || is.na(s$n_records))
-                "suppressed" else format(s$n_records, big.mark = ","),
-              " | Persons: ", if (is.null(s$n_persons) || is.na(s$n_persons))
-                "suppressed" else format(s$n_persons, big.mark = ",")
-            ))
+          rec <- if (is.null(s$n_records) || is.na(s$n_records))
+            "suppressed" else format(s$n_records, big.mark = ",")
+          pers <- if (is.null(s$n_persons) || is.na(s$n_persons))
+            "suppressed" else format(s$n_persons, big.mark = ",")
+          shiny::tags$tr(
+            shiny::tags$td(style = "font-weight:500;", srv),
+            shiny::tags$td(class = "text-end", rec),
+            shiny::tags$td(class = "text-end", pers)
           )
         })
-        server_comparison <- shiny::div(class = "mb-3 p-2 border rounded",
-          shiny::h6("Server Comparison"),
-          shiny::tagList(rows)
+        server_comparison <- shiny::div(class = "mb-3",
+          shiny::tags$table(class = "table table-sm table-borderless mb-0",
+            style = "font-size:0.84rem;",
+            shiny::tags$thead(
+              shiny::tags$tr(
+                shiny::tags$th(class = "text-muted", "Server"),
+                shiny::tags$th(class = "text-muted text-end", "Records"),
+                shiny::tags$th(class = "text-muted text-end", "Persons")
+              )
+            ),
+            shiny::tags$tbody(shiny::tagList(srv_rows))
+          )
         )
       }
 
@@ -1335,7 +1359,7 @@
             ),
             if ("server" %in% names(row)) shiny::tags$tr(
               shiny::tags$td(class = "text-muted", "Server"),
-              shiny::tags$td(shiny::span(class = "server-badge server-badge-ok",
+              shiny::tags$td(shiny::span(class = "badge bg-light text-dark",
                                          as.character(row$server)))
             )
           )
