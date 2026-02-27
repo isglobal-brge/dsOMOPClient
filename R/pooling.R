@@ -202,6 +202,7 @@
     bin_start = ref$bin_start,
     bin_end = ref$bin_end,
     count = rep(0, nrow(ref)),
+    suppressed = rep(FALSE, nrow(ref)),
     stringsAsFactors = FALSE
   )
 
@@ -234,6 +235,10 @@
       next
     }
     pooled$count <- pooled$count + ifelse(is.na(df$count), 0, df$count)
+    # Propagate suppressed flags (TRUE if any server suppressed that bin)
+    if ("suppressed" %in% names(df)) {
+      pooled$suppressed <- pooled$suppressed | df$suppressed
+    }
   }
 
   list(result = pooled, warnings = warnings)

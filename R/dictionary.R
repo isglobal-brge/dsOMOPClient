@@ -1,7 +1,7 @@
 # ==============================================================================
 # dsOMOPClient v2 - Schema Browsing (Dictionary)
 # ==============================================================================
-# Replaces catalog.R with blueprint annotations.
+# Replaces queries.R with blueprint annotations.
 # ==============================================================================
 
 #' List tables in the OMOP CDM database

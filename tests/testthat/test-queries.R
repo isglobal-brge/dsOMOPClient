@@ -1,5 +1,5 @@
 # ==============================================================================
-# Unit Tests: dsOMOPClient Catalog (Pooling Logic)
+# Unit Tests: dsOMOPClient Query Templates (Pooling Logic)
 # ==============================================================================
 
 # --- Pooling: .pool_col -------------------------------------------------------
@@ -25,21 +25,21 @@ test_that(".pool_col: sums correctly with no NAs", {
   expect_equal(result, c(5, 7, 9))
 })
 
-# --- Pooling: ds.omop.catalog.pool --------------------------------------------
+# --- Pooling: ds.omop.query.pool -----------------------------------------------
 
-test_that("ds.omop.catalog.pool: returns NULL for empty results", {
-  expect_null(ds.omop.catalog.pool(NULL))
-  expect_null(ds.omop.catalog.pool(list()))
+test_that("ds.omop.query.pool: returns NULL for empty results", {
+  expect_null(ds.omop.query.pool(NULL))
+  expect_null(ds.omop.query.pool(list()))
 })
 
-test_that("ds.omop.catalog.pool: single server returns as-is", {
+test_that("ds.omop.query.pool: single server returns as-is", {
   site_a <- data.frame(
     concept_id = c(1, 2, 3),
     n_persons = c(10, 20, 30),
     stringsAsFactors = FALSE
   )
 
-  result <- ds.omop.catalog.pool(
+  result <- ds.omop.query.pool(
     list(server_a = site_a),
     sensitive_fields = "n_persons"
   )
@@ -47,7 +47,7 @@ test_that("ds.omop.catalog.pool: single server returns as-is", {
   expect_equal(result, site_a)
 })
 
-test_that("ds.omop.catalog.pool: sums counts across sites (strict)", {
+test_that("ds.omop.query.pool: sums counts across sites (strict)", {
   site_a <- data.frame(
     concept_id = c(1, 2, 3),
     concept_name = c("A", "B", "C"),
@@ -61,7 +61,7 @@ test_that("ds.omop.catalog.pool: sums counts across sites (strict)", {
     stringsAsFactors = FALSE
   )
 
-  result <- ds.omop.catalog.pool(
+  result <- ds.omop.query.pool(
     list(server_a = site_a, server_b = site_b),
     sensitive_fields = "n_persons",
     pool_strategy = "sum",
@@ -75,7 +75,7 @@ test_that("ds.omop.catalog.pool: sums counts across sites (strict)", {
   expect_equal(result$n_persons[result$concept_id == 3], 55)
 })
 
-test_that("ds.omop.catalog.pool: strict policy preserves NA", {
+test_that("ds.omop.query.pool: strict policy preserves NA", {
   site_a <- data.frame(
     concept_id = c(1, 2),
     n_persons = c(10, NA),  # NA = suppressed
@@ -87,7 +87,7 @@ test_that("ds.omop.catalog.pool: strict policy preserves NA", {
     stringsAsFactors = FALSE
   )
 
-  result <- ds.omop.catalog.pool(
+  result <- ds.omop.query.pool(
     list(server_a = site_a, server_b = site_b),
     sensitive_fields = "n_persons",
     pool_strategy = "sum",
@@ -99,7 +99,7 @@ test_that("ds.omop.catalog.pool: strict policy preserves NA", {
     info = "Suppressed cell should remain NA in strict mode")
 })
 
-test_that("ds.omop.catalog.pool: pooled_only_ok treats NA as 0", {
+test_that("ds.omop.query.pool: pooled_only_ok treats NA as 0", {
   site_a <- data.frame(
     concept_id = c(1, 2),
     n_persons = c(10, NA),
@@ -111,7 +111,7 @@ test_that("ds.omop.catalog.pool: pooled_only_ok treats NA as 0", {
     stringsAsFactors = FALSE
   )
 
-  result <- ds.omop.catalog.pool(
+  result <- ds.omop.query.pool(
     list(server_a = site_a, server_b = site_b),
     sensitive_fields = "n_persons",
     pool_strategy = "sum",
@@ -122,7 +122,7 @@ test_that("ds.omop.catalog.pool: pooled_only_ok treats NA as 0", {
   expect_equal(result$n_persons[result$concept_id == 2], 20)
 })
 
-test_that("ds.omop.catalog.pool: handles multiple sensitive fields", {
+test_that("ds.omop.query.pool: handles multiple sensitive fields", {
   site_a <- data.frame(
     concept_id = c(1, 2),
     n_persons = c(10, 20),
@@ -136,7 +136,7 @@ test_that("ds.omop.catalog.pool: handles multiple sensitive fields", {
     stringsAsFactors = FALSE
   )
 
-  result <- ds.omop.catalog.pool(
+  result <- ds.omop.query.pool(
     list(server_a = site_a, server_b = site_b),
     sensitive_fields = c("n_persons", "n_records"),
     pool_strategy = "sum",
@@ -147,7 +147,7 @@ test_that("ds.omop.catalog.pool: handles multiple sensitive fields", {
   expect_equal(result$n_records[result$concept_id == 1], 80)
 })
 
-test_that("ds.omop.catalog.pool: handles 3 servers", {
+test_that("ds.omop.query.pool: handles 3 servers", {
   sites <- list(
     a = data.frame(concept_id = 1:2, n_persons = c(10, 20),
                    stringsAsFactors = FALSE),
@@ -157,7 +157,7 @@ test_that("ds.omop.catalog.pool: handles 3 servers", {
                    stringsAsFactors = FALSE)
   )
 
-  result <- ds.omop.catalog.pool(
+  result <- ds.omop.query.pool(
     sites,
     sensitive_fields = "n_persons",
     pool_strategy = "sum",
@@ -168,7 +168,7 @@ test_that("ds.omop.catalog.pool: handles 3 servers", {
   expect_equal(result$n_persons[result$concept_id == 2], 42)
 })
 
-test_that("ds.omop.catalog.pool: filters non-data.frame results", {
+test_that("ds.omop.query.pool: filters non-data.frame results", {
   results <- list(
     server_a = data.frame(x = 1:3, n = c(10, 20, 30),
                           stringsAsFactors = FALSE),
@@ -176,7 +176,7 @@ test_that("ds.omop.catalog.pool: filters non-data.frame results", {
     server_c = NULL
   )
 
-  result <- ds.omop.catalog.pool(
+  result <- ds.omop.query.pool(
     results,
     sensitive_fields = "n"
   )
@@ -186,13 +186,13 @@ test_that("ds.omop.catalog.pool: filters non-data.frame results", {
   expect_equal(nrow(result), 3)
 })
 
-test_that("ds.omop.catalog.pool: pool_strategy 'none' returns first", {
+test_that("ds.omop.query.pool: pool_strategy 'none' returns first", {
   site_a <- data.frame(concept_id = 1, n_persons = 10,
                        stringsAsFactors = FALSE)
   site_b <- data.frame(concept_id = 1, n_persons = 20,
                        stringsAsFactors = FALSE)
 
-  result <- ds.omop.catalog.pool(
+  result <- ds.omop.query.pool(
     list(server_a = site_a, server_b = site_b),
     pool_strategy = "none"
   )
@@ -200,7 +200,7 @@ test_that("ds.omop.catalog.pool: pool_strategy 'none' returns first", {
   expect_equal(result$n_persons, 10)
 })
 
-test_that("ds.omop.catalog.pool: handles sites with different concepts", {
+test_that("ds.omop.query.pool: handles sites with different concepts", {
   site_a <- data.frame(
     concept_id = c(1, 2, 3),
     concept_name = c("A", "B", "C"),
@@ -214,7 +214,7 @@ test_that("ds.omop.catalog.pool: handles sites with different concepts", {
     stringsAsFactors = FALSE
   )
 
-  result <- ds.omop.catalog.pool(
+  result <- ds.omop.query.pool(
     list(server_a = site_a, server_b = site_b),
     sensitive_fields = "n_persons",
     pool_strategy = "sum",

@@ -144,13 +144,15 @@ test_that(".pool_top_k two-pass merge", {
   expect_true(is.data.frame(result$result))
   expect_equal(nrow(result$result), 3)
 
-  # Check top 3: B=130, A=100, D=90
+  # Concepts in BOTH servers get summed; concepts in only one are suppressed
+  # (could be below disclosure threshold in the missing server)
   expect_equal(result$result$concept_id[1], 2)  # B = 50+80 = 130
   expect_equal(result$result$n_persons[1], 130)
-  expect_equal(result$result$concept_id[2], 1)  # A = 100
-  expect_equal(result$result$n_persons[2], 100)
-  expect_equal(result$result$concept_id[3], 4)  # D = 90
-  expect_equal(result$result$n_persons[3], 90)
+  expect_equal(result$result$concept_id[2], 3)  # C = 30+20 = 50
+  expect_equal(result$result$n_persons[2], 50)
+  # A (only in server a) and D (only in server b) are suppressed
+  expect_true(is.na(result$result$n_persons[3]))
+  expect_true(result$result$suppressed[3])
 })
 
 test_that(".pool_top_k strict fails on invalid data", {

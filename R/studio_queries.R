@@ -1,13 +1,13 @@
 # ==============================================================================
-# MODULE: Catalog Browser
-# Browse, parameterise, and execute catalog queries with concept search
+# MODULE: Query Library Browser
+# Browse, parameterise, and execute query templates
 # ==============================================================================
 
-.mod_catalog_ui <- function(id) {
+.mod_queries_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
-      title = "Catalog", width = 300,
+      title = "Queries", width = 300,
       shiny::selectInput(ns("domain_filter"), "Domain",
         choices = c("All" = "", "Condition" = "Condition", "Drug" = "Drug",
                     "Measurement" = "Measurement", "Observation" = "Observation",
@@ -45,11 +45,11 @@
   )
 }
 
-.mod_catalog_server <- function(id, state) {
+.mod_queries_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    catalog_df      <- shiny::reactiveVal(NULL)
+    queries_df      <- shiny::reactiveVal(NULL)
     selected_query  <- shiny::reactiveVal(NULL)
     display_data    <- shiny::reactiveVal(NULL)
     raw_results     <- shiny::reactiveVal(NULL)
@@ -58,24 +58,24 @@
 
     .scope_sync_servers(input, session, state)
 
-    # ── Load catalog list ──────────────────────────────────────────────────────
-    load_catalog <- function() {
+    # ── Load query list ──────────────────────────────────────────────────────
+    load_queries <- function() {
       domain <- input$domain_filter
       if (is.null(domain) || nchar(domain) == 0) domain <- NULL
       tryCatch({
-        df <- ds.omop.catalog.list(domain = domain, symbol = state$symbol)
-        catalog_df(df)
+        df <- ds.omop.query.list(domain = domain, symbol = state$symbol)
+        queries_df(df)
       }, error = function(e) {
         shiny::showNotification(
-          paste("Catalog error:", conditionMessage(e)),
+          paste("Query library error:", conditionMessage(e)),
           type = "error", duration = 5
         )
-        catalog_df(NULL)
+        queries_df(NULL)
       })
     }
 
     shiny::observeEvent(input$domain_filter, {
-      load_catalog()
+      load_queries()
       selected_query(NULL)
       display_data(NULL)
       concept_search_results(NULL)
@@ -83,7 +83,7 @@
 
     # ── Query list table ───────────────────────────────────────────────────────
     output$query_list_dt <- DT::renderDT({
-      df <- catalog_df()
+      df <- queries_df()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
       show_cols <- intersect(c("group", "name"), names(df))
       DT::datatable(
@@ -97,7 +97,7 @@
     # ── Select query → fetch details ───────────────────────────────────────────
     shiny::observeEvent(input$query_list_dt_rows_selected, {
       idx <- input$query_list_dt_rows_selected
-      df <- catalog_df()
+      df <- queries_df()
       if (is.null(idx) || is.null(df) || idx > nrow(df)) return()
 
       qid <- df$id[idx]
@@ -106,7 +106,7 @@
       last_exec_meta(NULL)
 
       tryCatch({
-        meta <- ds.omop.catalog.get(qid, symbol = state$symbol)
+        meta <- ds.omop.query.get(qid, symbol = state$symbol)
         selected_query(meta)
       }, error = function(e) {
         shiny::showNotification(
@@ -296,17 +296,17 @@
       state$pooling_policy <- policy
 
       shiny::showNotification("Running query...", type = "message",
-                              duration = 2, id = "catalog_loading")
+                              duration = 2, id = "query_loading")
 
       tryCatch({
         mode <- q$mode %||% "aggregate"
-        results <- ds.omop.catalog.exec(
+        results <- ds.omop.query.exec(
           query_id = q$id, inputs = params,
           mode = mode, symbol = state$symbol
         )
 
         # Build and accumulate code for Script tab
-        code <- .build_code("ds.omop.catalog.exec",
+        code <- .build_code("ds.omop.query.exec",
           query_id = q$id, inputs = params,
           mode = mode, symbol = state$symbol)
         state$script_lines <- c(state$script_lines, code)
@@ -318,11 +318,11 @@
         pooled_df <- NULL
         if (isTRUE(q$poolable)) {
           tryCatch({
-            pooled_df <- ds.omop.catalog.pool(
+            pooled_df <- ds.omop.query.pool(
               results, query_id = q$id,
               policy = policy, symbol = state$symbol
             )
-            pool_code <- .build_code("ds.omop.catalog.pool",
+            pool_code <- .build_code("ds.omop.query.pool",
               results = "results", query_id = q$id,
               policy = policy, symbol = state$symbol)
             state$script_lines <- c(state$script_lines, pool_code)
@@ -340,9 +340,9 @@
           last_exec_meta(list(scope = scope, servers = names(results)))
         }
 
-        shiny::removeNotification("catalog_loading")
+        shiny::removeNotification("query_loading")
       }, error = function(e) {
-        shiny::removeNotification("catalog_loading")
+        shiny::removeNotification("query_loading")
         shiny::showNotification(
           paste("Query error:", conditionMessage(e)),
           type = "error", duration = 8
@@ -361,7 +361,7 @@
       if (scope == "pooled" && isTRUE(q$poolable)) {
         policy <- input$pooling_policy %||% "strict"
         tryCatch({
-          pooled_df <- ds.omop.catalog.pool(
+          pooled_df <- ds.omop.query.pool(
             results, query_id = q$id,
             policy = policy, symbol = state$symbol
           )

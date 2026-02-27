@@ -112,7 +112,7 @@
       if (nchar(code) == 0) {
         return(shiny::p(class = "text-muted",
           "No operations recorded yet. Use the Explore, Vocabulary,",
-          " Data Sources, or Catalog tabs to generate reproducible R code."))
+          " Data Sources, or Queries tabs to generate reproducible R code."))
       }
       highlighted <- .highlightR(code)
       shiny::div(class = "code-output",

@@ -34,7 +34,12 @@ omop_filter_has_concept(
 
 omop_filter_date_range(start = NULL, end = NULL)
 
-omop_filter_value(op, value, column = "value_as_number")
+omop_filter_value(
+  column = "value_as_number",
+  threshold,
+  direction = c("above", "below"),
+  safe_bins = NULL
+)
 }
 \arguments{
 \item{type}{Character; filter type}
@@ -45,7 +50,7 @@ omop_filter_value(op, value, column = "value_as_number")
 
 \item{label}{Character or NULL; human-readable description}
 
-\item{value}{Numeric; threshold value}
+\item{value}{Character; "M", "F", or concept ID}
 
 \item{min}{Numeric; minimum age (inclusive)}
 
@@ -67,9 +72,13 @@ omop_filter_value(op, value, column = "value_as_number")
 
 \item{end}{Character; end date (YYYY-MM-DD) or NULL}
 
-\item{op}{Character; comparison operator}
-
 \item{column}{Character; column to compare}
+
+\item{threshold}{Numeric; threshold value}
+
+\item{direction}{Character; "above" or "below"}
+
+\item{safe_bins}{List with $breaks numeric vector from ds.omop.safe.cutpoints()}
 }
 \value{
 An omop_filter object

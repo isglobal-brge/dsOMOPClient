@@ -1,6 +1,6 @@
 # ==============================================================================
 # MODULE 2: Explore (Table -> Concepts)
-# Replaces old Catalog + Observed Concepts tabs
+# Replaces old Query Library + Observed Concepts tabs
 # ==============================================================================
 
 .mod_table_concepts_ui <- function(id) {
@@ -130,8 +130,8 @@
           })
           shiny::tagList(items)
         } else {
-          srv <- if (scope == "per_site" && !is.null(input$selected_server))
-            input$selected_server else names(stats_res$per_site)[1]
+          srv <- if (scope == "per_site" && length(input$selected_server) > 0)
+            input$selected_server[1] else names(stats_res$per_site)[1]
           if (is.null(srv) || !srv %in% names(stats_res$per_site))
             srv <- names(stats_res$per_site)[1]
           s <- stats_res$per_site[[srv]]

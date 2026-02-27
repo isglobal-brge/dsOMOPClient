@@ -1,13 +1,13 @@
 # ==============================================================================
-# dsOMOPClient v2 - Catalog Client Wrappers + Pooling
+# dsOMOPClient v2 - Query Library Client Wrappers + Pooling
 # ==============================================================================
-# Client-side functions for listing, executing, and pooling catalog queries
+# Client-side functions for listing, executing, and pooling query templates
 # from the dsOMOP query template repository.
 # ==============================================================================
 
-#' List available catalog queries
+#' List available query templates
 #'
-#' Returns metadata for all available catalog queries on connected servers.
+#' Returns metadata for all available query templates on connected servers.
 #' Queries are classified as SAFE_AGGREGATE, SAFE_ASSIGN, or BLOCKED.
 #' Only non-BLOCKED queries are returned.
 #'
@@ -18,14 +18,14 @@
 #' @return Data frame with query metadata (id, group, name, description,
 #'   mode, class, poolable, cdm_version, n_inputs)
 #' @export
-ds.omop.catalog.list <- function(domain = NULL, provider = "native",
+ds.omop.query.list <- function(domain = NULL, provider = "native",
                                   symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
   results <- DSI::datashield.aggregate(
     conns,
-    expr = call("omopCatalogListDS", session$res_symbol,
+    expr = call("omopQueryListDS", session$res_symbol,
                 domain, provider)
   )
 
@@ -44,36 +44,36 @@ ds.omop.catalog.list <- function(domain = NULL, provider = "native",
   )
 }
 
-#' Get catalog query details
+#' Get query template details
 #'
-#' Returns full metadata for a specific catalog query, including input
+#' Returns full metadata for a specific query template, including input
 #' parameters, output schema, and sensitive field annotations.
 #'
-#' @param query_id Character; the query ID from the catalog
+#' @param query_id Character; the query ID from the query library
 #' @param symbol Character; OMOP session symbol (default "omop")
 #' @param conns DSI connections (default: from session)
 #' @return Named list with query metadata
 #' @export
-ds.omop.catalog.get <- function(query_id, symbol = "omop", conns = NULL) {
+ds.omop.query.get <- function(query_id, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
   results <- DSI::datashield.aggregate(
     conns,
-    expr = call("omopCatalogGetDS", session$res_symbol, query_id)
+    expr = call("omopQueryGetDS", session$res_symbol, query_id)
   )
 
   if (length(results) > 0) return(results[[1]])
   NULL
 }
 
-#' Execute a catalog query
+#' Execute a query template
 #'
-#' Executes a catalog query template against connected servers with
+#' Executes a query template template against connected servers with
 #' DataSHIELD-aligned disclosure controls. Returns per-server results
 #' (for aggregate mode) or TRUE (for assign mode).
 #'
-#' @param query_id Character; the query ID from the catalog
+#' @param query_id Character; the query ID from the query library
 #' @param inputs Named list; parameter values for the query template
 #' @param mode Character; "aggregate" (default) or "assign"
 #' @param symbol Character; OMOP session symbol (default "omop")
@@ -81,7 +81,7 @@ ds.omop.catalog.get <- function(query_id, symbol = "omop", conns = NULL) {
 #' @return For aggregate mode: named list of per-server data frames.
 #'   For assign mode: TRUE.
 #' @export
-ds.omop.catalog.exec <- function(query_id, inputs = list(),
+ds.omop.query.exec <- function(query_id, inputs = list(),
                                   mode = "aggregate",
                                   symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
@@ -91,7 +91,7 @@ ds.omop.catalog.exec <- function(query_id, inputs = list(),
   if (mode == "aggregate") {
     results <- DSI::datashield.aggregate(
       conns,
-      expr = call("omopCatalogExecDS", session$res_symbol,
+      expr = call("omopQueryExecDS", session$res_symbol,
                    query_id, inputs, mode)
     )
     return(results)
@@ -100,16 +100,16 @@ ds.omop.catalog.exec <- function(query_id, inputs = list(),
   # Assign mode
   DSI::datashield.assign.expr(
     conns,
-    symbol = paste0("catalog_", gsub("\\.", "_", query_id)),
-    expr = call("omopCatalogExecDS", session$res_symbol,
+    symbol = paste0("query_", gsub("\\.", "_", query_id)),
+    expr = call("omopQueryExecDS", session$res_symbol,
                 query_id, inputs, mode)
   )
   invisible(TRUE)
 }
 
-#' Pool catalog query results across servers
+#' Pool query template results across servers
 #'
-#' Takes per-server results from \code{ds.omop.catalog.exec()} and safely
+#' Takes per-server results from \code{ds.omop.query.exec()} and safely
 #' pools them according to the query's pool strategy. Supports:
 #' \itemize{
 #'   \item \code{sum}: Sum count columns across servers
@@ -123,7 +123,7 @@ ds.omop.catalog.exec <- function(query_id, inputs = list(),
 #' }
 #'
 #' @param results Named list of per-server data frames (from
-#'   \code{ds.omop.catalog.exec()})
+#'   \code{ds.omop.query.exec()})
 #' @param query_id Character; query ID (to look up pool strategy)
 #' @param sensitive_fields Character vector; columns to apply suppression
 #'   pooling rules to. If NULL, auto-detected from query metadata.
@@ -133,7 +133,7 @@ ds.omop.catalog.exec <- function(query_id, inputs = list(),
 #' @param symbol Character; OMOP session symbol
 #' @return Data frame with pooled results, or NULL if pooling failed
 #' @export
-ds.omop.catalog.pool <- function(results, query_id = NULL,
+ds.omop.query.pool <- function(results, query_id = NULL,
                                   sensitive_fields = NULL,
                                   pool_strategy = "sum",
                                   policy = "strict",
@@ -150,7 +150,7 @@ ds.omop.catalog.pool <- function(results, query_id = NULL,
   # Try to get pool strategy from query metadata
   if (!is.null(query_id) && is.null(sensitive_fields)) {
     tryCatch({
-      meta <- ds.omop.catalog.get(query_id, symbol = symbol)
+      meta <- ds.omop.query.get(query_id, symbol = symbol)
       if (!is.null(meta$sensitive_fields)) {
         sensitive_fields <- meta$sensitive_fields
       }
