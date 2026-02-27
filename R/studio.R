@@ -18,9 +18,15 @@
 #' @return A Shiny app object (runs interactively)
 #' @export
 ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
+  # Eagerly capture the session BEFORE Shiny starts. This protects against
+
+  # namespace reloads (devtools::load_all) that would recreate an empty
+  # .dsomop_client_env, losing the registered session.
+  captured_session <- .get_session(symbol)
+
   app <- shiny::shinyApp(
     ui = .studio_ui(symbol),
-    server = .studio_server(symbol)
+    server = .studio_server(symbol, captured_session)
   )
   shiny::runApp(app, launch.browser = launch.browser)
 }
@@ -162,8 +168,17 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
 # SERVER
 # ==============================================================================
 
-.studio_server <- function(symbol) {
+.studio_server <- function(symbol, captured_session = NULL) {
   function(input, output, session) {
+    # Re-ensure the session is registered in .dsomop_client_env.
+    # This is necessary because devtools::load_all or namespace reloads
+    # can recreate the environment, losing previously registered sessions.
+    if (!is.null(captured_session)) {
+      if (!exists(symbol, envir = .dsomop_client_env)) {
+        assign(symbol, captured_session, envir = .dsomop_client_env)
+      }
+    }
+
     # Shared reactive state
     state <- shiny::reactiveValues(
       symbol = symbol,

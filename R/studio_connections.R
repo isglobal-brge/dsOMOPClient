@@ -146,10 +146,6 @@
         shiny::tags$dd(class = "col-sm-6",
           as.character(getOption("nfilter.levels.max",
             getOption("default.nfilter.levels.max", 40)))),
-        shiny::tags$dt(class = "col-sm-6", "privacy level"),
-        shiny::tags$dd(class = "col-sm-6",
-          as.character(getOption("datashield.privacyControlLevel",
-            "banana")))
       )
     })
   })
