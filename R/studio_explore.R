@@ -173,8 +173,7 @@
             shiny::tags$tbody(
               shiny::tagList(lapply(seq_len(nrow(cmp)), function(i) {
                 shiny::tags$tr(
-                  shiny::tags$td(shiny::span(class = "server-badge server-badge-ok",
-                                             cmp$Server[i])),
+                  shiny::tags$td(cmp$Server[i]),
                   shiny::tags$td(class = "text-end fw-semibold", cmp$Rows[i]),
                   shiny::tags$td(class = "text-end fw-semibold", cmp$Persons[i])
                 )
