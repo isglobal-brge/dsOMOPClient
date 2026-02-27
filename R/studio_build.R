@@ -208,8 +208,7 @@
       full_screen = TRUE,
       bslib::card_header("Schema Preview"),
       bslib::card_body(
-        DT::DTOutput(ns("schema_preview_dt")),
-        shiny::uiOutput(ns("schema_info"))
+        shiny::uiOutput(ns("schema_preview_content"))
       )
     ),
 
@@ -1054,6 +1053,18 @@
     # =========================================================================
     # Schema Preview
     # =========================================================================
+    output$schema_preview_content <- shiny::renderUI({
+      cart <- state$cart
+      if (length(cart$outputs) == 0 || length(cart$variables) == 0) {
+        return(.empty_state_ui("table-columns", "No schema preview",
+          "Add variables and outputs to preview the data schema."))
+      }
+      shiny::tagList(
+        DT::DTOutput(ns("schema_preview_dt")),
+        shiny::uiOutput(ns("schema_info"))
+      )
+    })
+
     output$schema_preview_dt <- DT::renderDT({
       cart <- state$cart
       if (length(cart$outputs) == 0 || length(cart$variables) == 0)
@@ -1198,7 +1209,7 @@
       full_screen = TRUE,
       bslib::card_header("Current Plan"),
       bslib::card_body(
-        shiny::verbatimTextOutput(ns("plan_summary")),
+        shiny::uiOutput(ns("plan_summary_content")),
         shiny::actionButton(ns("clear_plan"), "Clear Plan",
                             class = "btn-sm btn-outline-danger")
       )
@@ -1348,6 +1359,15 @@
 
     shiny::observeEvent(input$clear_plan, {
       state$plan <- ds.omop.plan()
+    })
+
+    output$plan_summary_content <- shiny::renderUI({
+      p <- state$plan
+      if (is.null(p) || length(p$outputs) == 0) {
+        return(.empty_state_ui("drafting-compass", "No plan yet",
+          "Add outputs from the sidebar to build your plan."))
+      }
+      shiny::verbatimTextOutput(session$ns("plan_summary"))
     })
 
     output$plan_summary <- shiny::renderText({

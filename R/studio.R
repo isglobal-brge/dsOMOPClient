@@ -122,7 +122,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       ),
 
       # --- Tab 4: Queries ---
-      bslib::nav_panel("Queries", icon = shiny::icon("book-open"),
+      bslib::nav_panel("Queries", icon = shiny::icon("terminal"),
         .mod_queries_ui("queries")
       ),
 
@@ -131,9 +131,9 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
         .mod_build_ui("build")
       ),
 
-      # --- Tab 6: Execute & Session (consolidated: Script, Session) ---
-      bslib::nav_panel("Execute & Session", icon = shiny::icon("play"),
-        .mod_execute_ui("execute")
+      # --- Tab 6: Session (read-only log) ---
+      bslib::nav_panel("Session", icon = shiny::icon("terminal"),
+        .mod_session_ui("session_log")
       ),
 
       # --- Dark Mode Toggle in navbar ---
@@ -204,7 +204,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     .mod_atlas_server("atlas", state)
     .mod_queries_server("queries", state)
     .mod_build_server("build", state)
-    .mod_execute_server("execute", state)
+    .mod_session_server("session_log", state)
     # .mod_settings_server("settings", state)  # Removed from nav
   }
 }

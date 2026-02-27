@@ -34,18 +34,25 @@
     ns <- session$ns
 
     achilles_available <- shiny::reactiveVal(FALSE)
+    achilles_per_server <- shiny::reactiveVal(list())
     achilles_catalog <- shiny::reactiveVal(NULL)
     page_data <- shiny::reactiveVal(NULL)
 
-    # Check Achilles availability and fetch catalog on load
+    # Check Achilles availability across ALL servers and fetch catalog
     shiny::observe({
       tryCatch({
         status <- ds.omop.achilles.status(symbol = state$symbol)
-        srv <- names(status$per_site)[1]
-        avail <- isTRUE(status$per_site[[srv]]$available)
-        achilles_available(avail)
+        per_srv <- list()
+        any_avail <- FALSE
+        for (srv in names(status$per_site)) {
+          avail <- isTRUE(status$per_site[[srv]]$available)
+          per_srv[[srv]] <- avail
+          if (avail) any_avail <- TRUE
+        }
+        achilles_per_server(per_srv)
+        achilles_available(any_avail)
 
-        if (avail) {
+        if (any_avail) {
           cat_res <- ds.omop.achilles.catalog(symbol = state$symbol)
           srv_cat <- cat_res$per_site[[names(cat_res$per_site)[1]]]
           achilles_catalog(srv_cat)
@@ -226,12 +233,20 @@
     # Render page content
     output$page_content <- shiny::renderUI({
       if (!achilles_available()) {
-        return(shiny::div(class = "text-center text-muted py-5",
-          shiny::icon("database", class = "fa-3x mb-3"),
-          shiny::h5("Achilles statistics not available"),
-          shiny::p("Pre-computed Achilles statistics are required for this tab.",
-                   "Run OHDSI Achilles on your CDM to generate them.")
-        ))
+        return(.empty_state_ui("chart-bar", "Achilles Statistics Not Available",
+          "No connected servers have pre-computed Achilles statistics. Run OHDSI Achilles on your CDM to enable this tab."))
+      }
+
+      # Partial data warning banner
+      per_srv <- achilles_per_server()
+      missing_srvs <- names(per_srv)[!vapply(per_srv, isTRUE, logical(1))]
+      warn_banner <- NULL
+      if (length(missing_srvs) > 0 && length(missing_srvs) < length(per_srv)) {
+        warn_banner <- shiny::div(class = "alert alert-warning py-2 mb-3",
+          shiny::icon("exclamation-triangle"),
+          paste0(" Achilles data missing on: ", paste(missing_srvs, collapse = ", "),
+                 ". Results are based on available servers only.")
+        )
       }
 
       data <- page_data()
@@ -252,7 +267,7 @@
       }
 
       nav <- input$atlas_nav
-      switch(nav,
+      page_ui <- switch(nav,
         "Dashboard"    = .atlas_render_dashboard(ns, data),
         "Person"       = .atlas_render_person(ns, data),
         "Conditions"   = .atlas_render_domain(ns, data, "Conditions"),
@@ -265,6 +280,7 @@
         "Data Quality" = .atlas_render_quality(ns, data),
         shiny::div("Unknown page")
       )
+      shiny::tagList(warn_banner, page_ui)
     })
 
     # Dashboard plot outputs
@@ -474,6 +490,7 @@
       df <- data$concepts
       df$count_value <- as.numeric(df$count_value)
       df <- df[!is.na(df$count_value), , drop = FALSE]
+      if (nrow(df) == 0) return(NULL)
       if (!is.null(data$concept_names)) {
         nm <- data$concept_names
         df$concept_name <- vapply(df$stratum_1, function(id) {
@@ -1054,35 +1071,44 @@
 }
 
 .atlas_render_domain <- function(ns, data, domain_label) {
+  has_concepts <- !is.null(data$concepts) && is.data.frame(data$concepts) &&
+    nrow(data$concepts) > 0
   shiny::tagList(
-    shiny::fluidRow(
-      shiny::column(6, plotly::plotlyOutput(ns("domain_bar_plot"),
-                                            height = "400px")),
-      shiny::column(6,
-        if (!is.null(data$trends) && is.data.frame(data$trends) &&
-            nrow(data$trends) > 0) {
-          plotly::plotlyOutput(ns("domain_trend_plot"), height = "400px")
-        } else {
-          shiny::div(class = "text-muted text-center py-5",
-                     "No trend data available")
-        }
+    if (has_concepts) {
+      shiny::tagList(
+        shiny::fluidRow(
+          shiny::column(6, plotly::plotlyOutput(ns("domain_bar_plot"),
+                                                height = "400px")),
+          shiny::column(6,
+            if (!is.null(data$trends) && is.data.frame(data$trends) &&
+                nrow(data$trends) > 0) {
+              plotly::plotlyOutput(ns("domain_trend_plot"), height = "400px")
+            } else {
+              shiny::div(class = "text-muted text-center py-5",
+                         "No trend data available")
+            }
+          )
+        ),
+        shiny::div(class = "d-flex justify-content-end mb-2 mt-3",
+          bslib::tooltip(
+            shiny::actionButton(ns("domain_extract_btn"),
+              shiny::tagList(shiny::icon("plus"), "Extract"),
+              class = "btn-sm btn-success text-white me-1"),
+            "Add selected concepts as variables to Builder"
+          ),
+          bslib::tooltip(
+            shiny::actionButton(ns("domain_filter_btn"),
+              shiny::tagList(shiny::icon("filter"), "Filter"),
+              class = "btn-sm btn-warning text-white"),
+            "Add selected concepts as filters to Builder"
+          )
+        ),
+        DT::DTOutput(ns("domain_table"))
       )
-    ),
-    shiny::div(class = "d-flex justify-content-end mb-2 mt-3",
-      bslib::tooltip(
-        shiny::actionButton(ns("domain_extract_btn"),
-          shiny::tagList(shiny::icon("plus"), "Extract"),
-          class = "btn-sm btn-success text-white me-1"),
-        "Add selected concepts as variables to Builder"
-      ),
-      bslib::tooltip(
-        shiny::actionButton(ns("domain_filter_btn"),
-          shiny::tagList(shiny::icon("filter"), "Filter"),
-          class = "btn-sm btn-warning text-white"),
-        "Add selected concepts as filters to Builder"
-      )
-    ),
-    DT::DTOutput(ns("domain_table"))
+    } else {
+      .empty_state_ui("chart-bar", "No data available for this domain",
+        "This domain may not have Achilles results or concepts available.")
+    }
   )
 }
 

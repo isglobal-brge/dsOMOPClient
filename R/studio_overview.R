@@ -40,7 +40,40 @@
     # --- Server cards (one per server) ---
     shiny::uiOutput(ns("server_cards")),
     # --- System Notifications ---
-    shiny::uiOutput(ns("notifications_section"))
+    shiny::uiOutput(ns("notifications_section")),
+    # --- Data Quality Section ---
+    shiny::hr(),
+    shiny::tags$h6(class = "text-muted mb-3", "Data Quality"),
+    bslib::card(
+      bslib::card_header(
+        shiny::div(class = "d-flex justify-content-between align-items-center",
+          "Domain Coverage",
+          shiny::actionButton(ns("coverage_btn"), "Load Coverage",
+                              icon = shiny::icon("layer-group"),
+                              class = "btn-sm btn-outline-info")
+        )
+      ),
+      bslib::card_body(
+        shiny::uiOutput(ns("coverage_content"))
+      )
+    ),
+    bslib::card(
+      bslib::card_header(
+        shiny::div(class = "d-flex justify-content-between align-items-center",
+          "Missingness Explorer",
+          shiny::actionButton(ns("miss_btn"), "Check Missingness",
+                              icon = shiny::icon("magnifying-glass-chart"),
+                              class = "btn-sm btn-outline-info")
+        )
+      ),
+      bslib::card_body(
+        shiny::selectInput(ns("miss_table"), "Table",
+          choices = .table_choices(c("person", "condition_occurrence",
+                      "drug_exposure", "measurement",
+                      "observation_period", "visit_occurrence"))),
+        shiny::uiOutput(ns("miss_content"))
+      )
+    )
   )
 }
 
@@ -262,6 +295,106 @@
         fixed_width = FALSE,
         !!!cards
       )
+    })
+
+    # --- Domain Coverage ---
+    raw_coverage <- shiny::reactiveVal(NULL)
+    coverage_data <- shiny::reactiveVal(NULL)
+
+    shiny::observeEvent(input$coverage_btn, {
+      shiny::withProgress(message = "Loading domain coverage...", value = 0.3, {
+        tryCatch({
+          res <- ds.omop.domain.coverage(symbol = state$symbol)
+          shiny::incProgress(0.5)
+          if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+            state$script_lines <- c(state$script_lines, res$meta$call_code)
+          }
+          raw_coverage(res)
+          coverage_data(.extract_display_data(res, "all",
+            state$selected_servers, intersect_only = FALSE))
+        }, error = function(e) {
+          shiny::showNotification(
+            paste("Error:", conditionMessage(e)), type = "error")
+        })
+      })
+    })
+
+    shiny::observeEvent(state$selected_servers, {
+      res <- raw_coverage()
+      if (is.null(res)) return()
+      coverage_data(.extract_display_data(res, "all",
+        state$selected_servers, intersect_only = FALSE))
+    }, ignoreInit = TRUE)
+
+    output$coverage_content <- shiny::renderUI({
+      df <- coverage_data()
+      if (is.null(df) || !is.data.frame(df)) {
+        return(.empty_state_ui("layer-group", "No coverage data",
+          "Click 'Load Coverage' to check domain availability across servers."))
+      }
+      DT::DTOutput(session$ns("coverage_dt"))
+    })
+
+    output$coverage_dt <- DT::renderDT({
+      df <- coverage_data()
+      if (is.null(df) || !is.data.frame(df)) return(NULL)
+      DT::datatable(df, options = list(pageLength = 20, dom = "ft", scrollX = TRUE),
+                    rownames = FALSE, selection = "none")
+    })
+
+    # --- Missingness Explorer ---
+    raw_miss <- shiny::reactiveVal(NULL)
+    miss_data <- shiny::reactiveVal(NULL)
+
+    # Update miss table dropdown from state$tables
+    shiny::observe({
+      tbl_choices <- .get_person_tables(state$tables)
+      if (length(tbl_choices) > 0) {
+        shiny::updateSelectInput(session, "miss_table",
+          choices = .table_choices(tbl_choices))
+      }
+    })
+
+    shiny::observeEvent(input$miss_btn, {
+      shiny::withProgress(message = "Checking missingness...", value = 0.3, {
+        tryCatch({
+          res <- ds.omop.missingness(input$miss_table,
+                                      symbol = state$symbol)
+          shiny::incProgress(0.5)
+          if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+            state$script_lines <- c(state$script_lines, res$meta$call_code)
+          }
+          raw_miss(res)
+          miss_data(.extract_display_data(res, "all",
+            state$selected_servers, intersect_only = FALSE))
+        }, error = function(e) {
+          shiny::showNotification(
+            paste("Error:", conditionMessage(e)), type = "error")
+        })
+      })
+    })
+
+    shiny::observeEvent(state$selected_servers, {
+      res <- raw_miss()
+      if (is.null(res)) return()
+      miss_data(.extract_display_data(res, "all",
+        state$selected_servers, intersect_only = FALSE))
+    }, ignoreInit = TRUE)
+
+    output$miss_content <- shiny::renderUI({
+      df <- miss_data()
+      if (is.null(df) || !is.data.frame(df)) {
+        return(.empty_state_ui("magnifying-glass-chart", "No missingness data",
+          "Select a table and click 'Check Missingness' to analyze missing data patterns."))
+      }
+      DT::DTOutput(session$ns("miss_dt"))
+    })
+
+    output$miss_dt <- DT::renderDT({
+      df <- miss_data()
+      if (is.null(df) || !is.data.frame(df)) return(NULL)
+      DT::datatable(df, options = list(pageLength = 25, dom = "ft", scrollX = TRUE),
+                    rownames = FALSE, selection = "none")
     })
 
     # --- System Notifications ---

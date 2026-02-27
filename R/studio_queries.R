@@ -6,18 +6,36 @@
 .mod_queries_ui <- function(id) {
 
   ns <- shiny::NS(id)
-  bslib::layout_sidebar(
-    sidebar = bslib::sidebar(
-      title = "Query Library", width = 320, open = "desktop",
-      shiny::selectInput(ns("domain_filter"), "Domain",
-        choices = c("All Domains" = "", "Condition" = "Condition",
-                    "Drug" = "Drug", "Measurement" = "Measurement",
-                    "Observation" = "Observation",
-                    "Procedure" = "Procedure", "Person" = "Person",
-                    "Visit" = "Visit", "Death" = "Death",
-                    "General" = "General"),
-        selected = ""),
-      DT::DTOutput(ns("query_list_dt"))
+  shiny::tagList(
+    # --- Top card: domain + query list + search ---
+    bslib::card(
+      bslib::card_body(
+        class = "py-2 px-3",
+        shiny::div(class = "row g-2 align-items-end",
+          shiny::div(class = "col-md-3",
+            shiny::selectInput(ns("domain_filter"), "Domain",
+              choices = c("All Domains" = "", "Condition" = "Condition",
+                          "Drug" = "Drug", "Measurement" = "Measurement",
+                          "Observation" = "Observation",
+                          "Procedure" = "Procedure", "Person" = "Person",
+                          "Visit" = "Visit", "Death" = "Death",
+                          "General" = "General"),
+              selected = "")
+          ),
+          shiny::div(class = "col-md-6",
+            shiny::uiOutput(ns("query_list_content"))
+          ),
+          shiny::div(class = "col-md-3",
+            shiny::div(class = "d-flex gap-1",
+              shiny::textInput(ns("query_search"), NULL,
+                               placeholder = "Filter queries..."),
+              shiny::actionButton(ns("query_search_btn"), NULL,
+                                  icon = shiny::icon("magnifying-glass"),
+                                  class = "btn-sm btn-outline-secondary")
+            )
+          )
+        )
+      )
     ),
 
     # --- Selected query ---
@@ -25,8 +43,8 @@
       bslib::card_header(
         class = "d-flex justify-content-between align-items-center",
         shiny::span("Query"),
-        shiny::actionButton(ns("run_btn"), "Run",
-                            icon = shiny::icon("circle-play"),
+        shiny::actionButton(ns("run_btn"), NULL,
+                            icon = shiny::icon("play"),
                             class = "btn-sm btn-success text-white",
                             style = "font-weight: 600;")
       ),
@@ -40,8 +58,7 @@
       full_screen = TRUE,
       bslib::card_header("Results"),
       bslib::card_body(
-        DT::DTOutput(ns("results_dt")),
-        shiny::uiOutput(ns("scope_info"))
+        shiny::uiOutput(ns("results_content"))
       )
     ),
     # --- Visualization ---
@@ -49,7 +66,7 @@
       full_screen = TRUE,
       bslib::card_header("Visualization"),
       bslib::card_body(
-        plotly::plotlyOutput(ns("auto_plot"), height = "350px")
+        shiny::uiOutput(ns("viz_content"))
       )
     )
   )
@@ -89,23 +106,48 @@
       concept_search_results(NULL)
     }, ignoreNULL = FALSE)
 
-    # -- Query list table ------------------------------------------------------
-    output$query_list_dt <- DT::renderDT({
+    # -- Query list (wrapped in uiOutput for empty state) ---------------------
+    output$query_list_content <- shiny::renderUI({
       df <- queries_df()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        return(.empty_state_ui("terminal", "No queries available",
+          "No queries available for the selected domain."))
+      }
+      DT::DTOutput(ns("query_list_dt"))
+    })
+
+    # Client-side filtering by search term
+    filtered_queries <- shiny::reactive({
+      df <- queries_df()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+      term <- trimws(input$query_search %||% "")
+      if (nchar(term) > 0 && "name" %in% names(df)) {
+        df <- df[grepl(term, df$name, ignore.case = TRUE), , drop = FALSE]
+      }
+      df
+    })
+
+    output$query_list_dt <- DT::renderDT({
+      df <- filtered_queries()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
       show_cols <- intersect(c("group", "name"), names(df))
       DT::datatable(
         df[, show_cols, drop = FALSE],
-        options = list(pageLength = 50, dom = "ft",
-                       scrollX = TRUE, scrollY = "200px"),
+        options = list(pageLength = 50, dom = "t",
+                       scrollX = TRUE, scrollY = "180px"),
         rownames = FALSE, selection = "single"
       )
+    })
+
+    # Trigger filter on search button or enter
+    shiny::observeEvent(input$query_search_btn, {
+      # Just triggers reactivity through filtered_queries
     })
 
     # -- Select query -> fetch details -----------------------------------------
     shiny::observeEvent(input$query_list_dt_rows_selected, {
       idx <- input$query_list_dt_rows_selected
-      df <- queries_df()
+      df <- filtered_queries()
       if (is.null(idx) || is.null(df) || idx > nrow(df)) return()
 
       qid <- df$id[idx]
@@ -129,7 +171,7 @@
     output$query_meta <- shiny::renderUI({
       q <- selected_query()
       if (is.null(q)) {
-        return(.empty_state_ui("book-open", "Select a query",
+        return(.empty_state_ui("terminal", "Select a query",
                                "Choose a query from the library above."))
       }
 
@@ -341,10 +383,21 @@
             last_exec_meta(list(scope = scope, servers = names(results)))
           }
         }, error = function(e) {
-          shiny::showNotification(
-            .clean_ds_error(e),
-            type = "error", duration = 5
-          )
+          msg <- conditionMessage(e)
+          if (grepl("does not exist|relation.*does not exist", msg, ignore.case = TRUE)) {
+            tbl_match <- regmatches(msg, regexpr("[a-z_]+\\.[a-z_]+|\"[^\"]+\"", msg))
+            tbl_name <- if (length(tbl_match) > 0) tbl_match[1] else "unknown"
+            shiny::showNotification(
+              paste0("Table not available: ", tbl_name,
+                     ". This query requires a CDM table that may not exist on all servers."),
+              type = "warning", duration = 8
+            )
+          } else {
+            shiny::showNotification(
+              .clean_ds_error(e),
+              type = "error", duration = 5
+            )
+          }
         })
       })
     })
@@ -381,6 +434,19 @@
       }
     }, ignoreInit = TRUE)
 
+    # -- Results content (wrapped for empty state) -----------------------------
+    output$results_content <- shiny::renderUI({
+      df <- display_data()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        return(.empty_state_ui("table", "No results yet",
+          "Select a query and click Run to see results."))
+      }
+      shiny::tagList(
+        DT::DTOutput(ns("results_dt")),
+        shiny::uiOutput(ns("scope_info"))
+      )
+    })
+
     # -- Results table ---------------------------------------------------------
     output$results_dt <- DT::renderDT({
       df <- display_data()
@@ -404,6 +470,16 @@
         options = list(pageLength = 20, dom = "ftip", scrollX = TRUE),
         rownames = FALSE, selection = "none"
       )
+    })
+
+    # -- Visualization content (wrapped for empty state) -----------------------
+    output$viz_content <- shiny::renderUI({
+      df <- display_data()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        return(.empty_state_ui("chart-simple", "No visualization",
+          "Run a query to see an automatic visualization of the results."))
+      }
+      plotly::plotlyOutput(ns("auto_plot"), height = "350px")
     })
 
     # -- Auto-visualization -----------------------------------------------------

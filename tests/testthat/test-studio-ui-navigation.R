@@ -10,10 +10,10 @@ test_that("studio UI has all navigation tabs", {
   # All nav panel titles should appear
   expect_true(grepl("Overview", ui_html))
   expect_true(grepl("Explore", ui_html))
-  expect_true(grepl("Data Sources", ui_html))
+  expect_true(grepl("Achilles", ui_html))
   expect_true(grepl("Queries", ui_html))
-  expect_true(grepl("Build &amp; Preview", ui_html))
-  expect_true(grepl("Execute &amp; Session", ui_html))
+  expect_true(grepl("Builder", ui_html))
+  expect_true(grepl("Session", ui_html))
 })
 
 test_that("studio UI contains dark mode toggle", {

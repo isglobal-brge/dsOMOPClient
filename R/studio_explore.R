@@ -42,7 +42,7 @@
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
-      title = "Explore", width = 260, open = "desktop",
+      title = "Explore", width = 260, open = "always",
       shiny::selectInput(ns("table"), "Table", choices = NULL),
       shiny::selectInput(ns("concept_col"), "Concept Column", choices = NULL),
       shiny::selectInput(ns("metric"), "Metric",
@@ -83,9 +83,7 @@
         )
       ),
       bslib::card_body(
-        shiny::div(
-          DT::DTOutput(ns("results_dt"))
-        ),
+        shiny::uiOutput(ns("results_content")),
         shiny::uiOutput(ns("scope_info"))
       )
     )
@@ -278,6 +276,15 @@
       tbl <- input$table
       if (is.null(tbl) || nchar(tbl) == 0) return("Concepts")
       paste("Concepts in", tbl)
+    })
+
+    output$results_content <- shiny::renderUI({
+      df <- prevalence_data()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        return(.empty_state_ui("chart-simple", "No concepts found",
+          "Select a table and run the query."))
+      }
+      DT::DTOutput(ns("results_dt"))
     })
 
     output$results_dt <- DT::renderDT({
@@ -1002,35 +1009,30 @@
       bslib::card_header(
         class = "d-flex justify-content-between align-items-center py-2",
         shiny::span("Concept Locator"),
-        shiny::actionButton(ns("locate_btn"), "Locate",
+        shiny::actionButton(ns("locate_btn"), NULL,
                             icon = shiny::icon("location-dot"),
                             class = "btn-sm btn-primary")
       ),
       bslib::card_body(
         class = "py-2 px-3",
-        shiny::div(class = "row g-2 mb-2",
-          shiny::div(class = "col-md-5",
-            shiny::textInput(ns("concept_ids"), NULL,
-                             placeholder = "Concept IDs: 201820, 255573")
+        shiny::div(class = "d-flex gap-2 mb-2",
+          shiny::div(style = "flex: 1;",
+            shiny::textInput(ns("unified_search"), NULL,
+                             placeholder = "Search by name or enter concept IDs")
           ),
-          shiny::div(class = "col-md-5",
-            shiny::textInput(ns("name_search"), NULL,
-                             placeholder = "Search by name: diabetes")
-          ),
-          shiny::div(class = "col-md-2",
-            shiny::actionButton(ns("name_search_btn"), "Search",
-                                icon = shiny::icon("magnifying-glass"),
-                                class = "btn-sm btn-outline-secondary w-100")
-          )
+          shiny::actionButton(ns("name_search_btn"), NULL,
+                              icon = shiny::icon("magnifying-glass"),
+                              class = "btn-sm btn-outline-secondary")
         ),
-        DT::DTOutput(ns("search_results_dt"))
+        DT::DTOutput(ns("search_results_dt")),
+        shiny::uiOutput(ns("selected_badges"))
       )
     ),
     bslib::card(
       full_screen = TRUE,
       bslib::card_header("Presence Matrix"),
       bslib::card_body(
-        DT::DTOutput(ns("presence_dt"))
+        shiny::uiOutput(ns("presence_content"))
       )
     )
   )
@@ -1038,30 +1040,52 @@
 
 .mod_explore_locator_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
+    ns <- session$ns
     locate_data <- shiny::reactiveVal(NULL)
     search_results <- shiny::reactiveVal(NULL)
     raw_locate_result <- shiny::reactiveVal(NULL)
+    selected_ids <- shiny::reactiveVal(list())
 
-    # (Auto-populate removed - was confusing with type concept IDs)
-
-    # Concept name search
+    # Unified search: detect numeric IDs vs text search
     shiny::observeEvent(input$name_search_btn, {
-      term <- input$name_search
-      if (is.null(term) || nchar(trimws(term)) == 0) return()
+      term <- trimws(input$unified_search %||% "")
+      if (nchar(term) == 0) return()
 
-      tryCatch({
-        res <- ds.omop.concept.search(
-          pattern = term, standard_only = TRUE,
-          limit = 20, symbol = state$symbol
-        )
-        srv <- names(res$per_site)[1]
-        search_results(res$per_site[[srv]])
-      }, error = function(e) {
-        shiny::showNotification(
-          paste("Search error:", conditionMessage(e)),
-          type = "error"
-        )
-      })
+      # Check if input looks like numeric IDs
+      tokens <- trimws(strsplit(term, "[,\\s]+")[[1]])
+      numeric_tokens <- suppressWarnings(as.integer(tokens))
+      all_numeric <- all(!is.na(numeric_tokens)) && length(numeric_tokens) > 0
+
+      if (all_numeric) {
+        # Add directly to selected_ids
+        current <- selected_ids()
+        existing_cids <- vapply(current, function(x) x$concept_id, integer(1))
+        for (cid in numeric_tokens) {
+          if (!cid %in% existing_cids) {
+            current <- c(current, list(list(
+              concept_id = as.integer(cid),
+              concept_name = paste0("Concept ", cid)
+            )))
+          }
+        }
+        selected_ids(current)
+        shiny::updateTextInput(session, "unified_search", value = "")
+      } else {
+        # Text search
+        tryCatch({
+          res <- ds.omop.concept.search(
+            pattern = term, standard_only = TRUE,
+            limit = 20, symbol = state$symbol
+          )
+          srv <- names(res$per_site)[1]
+          search_results(res$per_site[[srv]])
+        }, error = function(e) {
+          shiny::showNotification(
+            paste("Search error:", conditionMessage(e)),
+            type = "error"
+          )
+        })
+      }
     })
 
     output$search_results_dt <- DT::renderDT({
@@ -1072,33 +1096,64 @@
         df[, keep, drop = FALSE],
         options = list(pageLength = 5, dom = "t", scrollX = TRUE,
                        scrollY = "200px"),
-        rownames = FALSE, selection = "multiple"
+        rownames = FALSE, selection = "single"
       )
     })
 
-    # When search results selected, append to concept IDs field
+    # Click DT row -> add to selected_ids
     shiny::observeEvent(input$search_results_dt_rows_selected, {
       idx <- input$search_results_dt_rows_selected
       df <- search_results()
       if (is.null(idx) || is.null(df) || length(idx) == 0) return()
-      idx <- idx[idx <= nrow(df)]
-      new_ids <- as.integer(df$concept_id[idx])
+      idx <- idx[1]
+      if (idx > nrow(df)) return()
+      cid <- as.integer(df$concept_id[idx])
+      cname <- as.character(df$concept_name[idx])
+      current <- selected_ids()
+      existing_cids <- vapply(current, function(x) x$concept_id, integer(1))
+      if (!cid %in% existing_cids) {
+        current <- c(current, list(list(concept_id = cid, concept_name = cname)))
+        selected_ids(current)
+      }
+    })
 
-      current_text <- trimws(input$concept_ids %||% "")
-      existing_ids <- if (nchar(current_text) > 0) {
-        as.integer(trimws(strsplit(current_text, ",")[[1]]))
-      } else integer(0)
-      existing_ids <- existing_ids[!is.na(existing_ids)]
+    # Badge removal via JS delegation
+    shiny::observeEvent(input$remove_concept, {
+      cid <- as.integer(input$remove_concept)
+      current <- selected_ids()
+      current <- Filter(function(x) x$concept_id != cid, current)
+      selected_ids(current)
+    })
 
-      all_ids <- unique(c(existing_ids, new_ids))
-      shiny::updateTextInput(session, "concept_ids",
-                             value = paste(all_ids, collapse = ", "))
+    # Render selected concept badges
+    output$selected_badges <- shiny::renderUI({
+      items <- selected_ids()
+      if (length(items) == 0) return(NULL)
+      badges <- lapply(items, function(item) {
+        cid <- item$concept_id
+        label <- if (nchar(item$concept_name) > 25)
+          paste0(substr(item$concept_name, 1, 22), "...") else item$concept_name
+        rm_js <- sprintf(
+          "Shiny.setInputValue('%s', %d, {priority:'event'})",
+          ns("remove_concept"), cid)
+        shiny::span(class = "badge bg-primary me-1 mb-1",
+          style = "font-size: 0.8rem; cursor: default;",
+          paste0("#", cid, " ", label),
+          shiny::tags$span(
+            class = "ms-1", style = "cursor: pointer; opacity: 0.8;",
+            onclick = rm_js,
+            shiny::HTML("&times;")
+          )
+        )
+      })
+      shiny::div(class = "d-flex flex-wrap gap-1 mt-2", shiny::tagList(badges))
     })
 
     shiny::observeEvent(input$locate_btn, {
-      ids <- .parse_ids(input$concept_ids)
-      if (is.null(ids) || length(ids) == 0) {
-        shiny::showNotification("Enter at least one concept ID.",
+      items <- selected_ids()
+      ids <- vapply(items, function(x) x$concept_id, integer(1))
+      if (length(ids) == 0) {
+        shiny::showNotification("Add at least one concept above.",
                                 type = "warning")
         return()
       }
@@ -1109,14 +1164,10 @@
             concept_ids = ids, symbol = state$symbol
           )
           shiny::incProgress(0.5)
-          # Accumulate code for Script tab
           if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
             state$script_lines <- c(state$script_lines, res$meta$call_code)
           }
-          # Store raw result for scope switching
           raw_locate_result(res)
-
-          # Extract based on current scope
           scope <- state$scope %||% "pooled"
           df <- .locator_extract(res, scope, state$selected_servers,
                                   intersect_only = FALSE)
@@ -1129,8 +1180,8 @@
       })
     })
 
-    # Re-extract on scope/server/intersect change
-    shiny::observeEvent(list(state$scope, state$selected_servers, state$scope), {
+    # Re-extract on scope/server change
+    shiny::observeEvent(list(state$scope, state$selected_servers), {
       res <- raw_locate_result()
       if (is.null(res)) return()
       scope <- state$scope %||% "pooled"
@@ -1138,6 +1189,15 @@
                               intersect_only = FALSE)
       locate_data(df)
     }, ignoreInit = TRUE)
+
+    output$presence_content <- shiny::renderUI({
+      df <- locate_data()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        return(.empty_state_ui("table-cells-large", "No presence data",
+          "Add concepts above and click the locate button to see where they appear."))
+      }
+      DT::DTOutput(ns("presence_dt"))
+    })
 
     output$presence_dt <- DT::renderDT({
       df <- locate_data()
@@ -1158,7 +1218,7 @@
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
-      title = "Concept Search", width = 260, open = "desktop",
+      title = "Concept Search", width = 260, open = "always",
       shiny::textInput(ns("search_pattern"), "Search",
                        placeholder = "e.g. diabetes"),
       shiny::selectInput(ns("domain_filter"), "Domain",
@@ -1188,18 +1248,19 @@
                                   shiny::tagList(shiny::icon("plus"), "Extract"),
                                   class = "btn-sm btn-success text-white"),
               "Add selected concepts as variables to Builder"
-            ),
-            shiny::span(class = "ms-2",
-              shiny::checkboxInput(ns("group_concepts"), "Group", value = FALSE,
-                                   width = "auto")
             )
           )
         )
       ),
       bslib::card_body(
-        shiny::div(
-          DT::DTOutput(ns("results_table"))
-        )
+        shiny::div(class = "d-flex justify-content-end mb-2",
+          shiny::div(class = "d-inline-flex align-items-center",
+            style = "transform: scale(0.85); transform-origin: right center;",
+            shiny::checkboxInput(ns("group_concepts"), "Group identical concepts",
+                                 value = FALSE, width = "auto")
+          )
+        ),
+        shiny::uiOutput(ns("results_table_content"))
       )
     ),
     bslib::card(
@@ -1253,6 +1314,15 @@
         state$selected_servers,
         intersect_only = FALSE))
     }, ignoreInit = TRUE)
+
+    output$results_table_content <- shiny::renderUI({
+      df <- search_results()
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        return(.empty_state_ui("book", "No results",
+          "Search for concepts using the sidebar controls."))
+      }
+      DT::DTOutput(ns("results_table"))
+    })
 
     output$results_table <- DT::renderDT({
       df <- search_results()
