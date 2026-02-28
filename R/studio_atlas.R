@@ -244,12 +244,12 @@
 
     output$dash_gender_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$gender)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$gender)) return(.plotly_no_data("No sex/gender data available"))
       .safe_plotly({
         df <- data$gender
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Sex data suppressed (small cell counts)", "\U0001F6E1"))
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         df <- df[order(df$count_value, decreasing = TRUE), ]
@@ -265,14 +265,14 @@
 
     output$dash_age_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data)) return(.plotly_empty_silent())
+      if (is.null(data)) return(.plotly_no_data("No age data available"))
       toggle <- input$dash_age_toggle %||% "Age Bands"
 
       .safe_plotly({
         if (toggle == "Percentiles") {
           # Percentile bar from analysis 103 dist
           df <- data$age_dist
-          if (!is.data.frame(df) || nrow(df) == 0) return(.plotly_empty_silent())
+          if (!is.data.frame(df) || nrow(df) == 0) return(.plotly_no_data("No age distribution data available"))
           row <- df[1, ]
           vals <- c(row$p10_value, row$p25_value,
                     row$median_value, row$p75_value, row$p90_value)
@@ -282,7 +282,7 @@
           if (length(vals) == 0) {
             if (!is.na(row$avg_value)) {
               vals <- row$avg_value; nms <- "Mean"
-            } else return(.plotly_empty_silent())
+            } else return(.plotly_no_data("Age percentiles suppressed (pooled data)", "\U0001F6E1"))
           }
           plotly::plot_ly(x = nms, y = vals, type = "bar",
                           marker = list(color = .studio_colors[1])) |>
@@ -336,7 +336,7 @@
                                categoryarray = bands$label)) |>
                 .plotly_defaults("Age Distribution (estimated)")
             } else {
-              .plotly_empty_silent()
+              .plotly_no_data("No age distribution data available")
             }
           }
         }
@@ -345,10 +345,10 @@
 
     output$dash_birth_cohort_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$birth_cohorts)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$birth_cohorts)) return(.plotly_no_data("Birth cohort data suppressed (small cell counts)", "\U0001F6E1"))
       .safe_plotly({
         df <- data$birth_cohorts
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Birth cohort data suppressed (small cell counts)", "\U0001F6E1"))
         plotly::plot_ly(x = df$label, y = df$count, type = "bar",
                         marker = list(color = .studio_colors[5]),
                         hovertemplate = "<b>%{x}</b><br>Persons: %{y:,.0f}<extra></extra>") |>
@@ -360,12 +360,12 @@
 
     output$dash_race_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$race)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$race)) return(.plotly_no_data("No race data available"))
       .safe_plotly({
         df <- data$race
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Race data suppressed (small cell counts)", "\U0001F6E1"))
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
@@ -379,12 +379,12 @@
 
     output$dash_ethnicity_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$ethnicity)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$ethnicity)) return(.plotly_no_data("No ethnicity data available"))
       .safe_plotly({
         df <- data$ethnicity
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Ethnicity data suppressed (small cell counts)", "\U0001F6E1"))
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
@@ -398,12 +398,12 @@
 
     output$dash_obs_year_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$obs_by_year)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$obs_by_year)) return(.plotly_no_data("No observation period data available"))
       .safe_plotly({
         df <- data$obs_by_year
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Observation data suppressed", "\U0001F6E1"))
         df <- df[order(as.character(df$stratum_1)), ]
         plotly::plot_ly(x = as.character(df$stratum_1), y = df$count_value,
                         type = "scatter", mode = "lines+markers",
@@ -419,17 +419,17 @@
 
     output$dash_obs_length_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$obs_length_dist)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$obs_length_dist)) return(.plotly_no_data("No observation length data available"))
       .safe_plotly({
         df <- data$obs_length_dist
-        if (!is.data.frame(df) || nrow(df) == 0) return(.plotly_empty_silent())
+        if (!is.data.frame(df) || nrow(df) == 0) return(.plotly_no_data("No observation length data available"))
         row <- df[1, ]
         vals <- c(row$p10_value, row$p25_value,
                   row$median_value, row$p75_value, row$p90_value)
         nms <- c("P10", "P25", "Median", "P75", "P90")
         keep <- !is.na(vals)
         vals <- vals[keep]; nms <- nms[keep]
-        if (length(vals) == 0) return(.plotly_empty_silent())
+        if (length(vals) == 0) return(.plotly_no_data("Observation length percentiles suppressed (pooled data)", "\U0001F6E1"))
         # Convert days to human-readable hover
         hover <- vapply(vals, function(d) {
           yrs <- floor(d / 365.25)
@@ -449,15 +449,15 @@
 
     output$dash_coverage_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$domain_coverage)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$domain_coverage)) return(.plotly_no_data("No domain coverage data available"))
       .safe_plotly({
         df <- data$domain_coverage
-        if (!is.data.frame(df) || nrow(df) == 0) return(.plotly_empty_silent())
+        if (!is.data.frame(df) || nrow(df) == 0) return(.plotly_no_data("No domain coverage data available"))
         total <- as.numeric(data$total_persons)
-        if (is.na(total) || total == 0) return(.plotly_empty_silent())
+        if (is.na(total) || total == 0) return(.plotly_no_data("Total persons unknown — cannot compute coverage"))
         df$n_persons <- as.numeric(df$n_persons)
         df <- df[!is.na(df$n_persons), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Coverage data suppressed", "\U0001F6E1"))
         df$pct <- round(df$n_persons / total * 100, 1)
         df <- df[order(df$pct, decreasing = TRUE), ]
         labels <- .format_table_name(df$table_name)
@@ -479,12 +479,12 @@
 
     output$domain_bar_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$concepts)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$concepts)) return(.plotly_no_data("No concept data available for this domain"))
       .safe_plotly({
         df <- data$concepts
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Concept data suppressed (small cell counts)", "\U0001F6E1"))
         df <- df[order(df$count_value, decreasing = TRUE), ]
         n <- min(nrow(df), 20)
         df <- df[seq_len(n), , drop = FALSE]
@@ -508,12 +508,12 @@
 
     output$domain_trend_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$trends)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$trends)) return(.plotly_no_data("No temporal trend data available"))
       .safe_plotly({
         df <- data$trends
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Trend data suppressed (small cell counts)", "\U0001F6E1"))
         agg <- stats::aggregate(count_value ~ stratum_2, data = df, FUN = sum)
         agg <- agg[order(agg$stratum_2), ]
         plotly::plot_ly(x = agg$stratum_2, y = agg$count_value,
@@ -650,12 +650,12 @@
 
     output$visits_type_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$types)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$types)) return(.plotly_no_data("No visit type data available"))
       .safe_plotly({
         df <- data$types
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Visit type data suppressed", "\U0001F6E1"))
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = labels, y = df$count_value, type = "bar",
@@ -668,12 +668,12 @@
 
     output$visits_trend_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$trends)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$trends)) return(.plotly_no_data("No visit trend data available"))
       .safe_plotly({
         df <- data$trends
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Visit trend data suppressed", "\U0001F6E1"))
         # Analysis 220: stratum_1 = YYYYMM
         if ("stratum_1" %in% names(df) &&
             (!"stratum_2" %in% names(df) || all(is.na(df$stratum_2)))) {
@@ -706,12 +706,12 @@
 
     output$death_cause_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$causes)) return(.plotly_empty_silent())
+      if (is.null(data) || is.null(data$causes)) return(.plotly_no_data("No cause-of-death data available"))
       .safe_plotly({
         df <- data$causes
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_empty_silent())
+        if (nrow(df) == 0) return(.plotly_no_data("Death data suppressed (small cell counts)", "\U0001F6E1"))
         df <- df[order(df$count_value, decreasing = TRUE), ]
         n <- min(nrow(df), 20)
         df <- df[seq_len(n), , drop = FALSE]
@@ -739,7 +739,7 @@
 
     output$trends_overlay_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || length(data) == 0) return(.plotly_empty_silent())
+      if (is.null(data) || length(data) == 0) return(.plotly_no_data("No trend data available"))
       .safe_plotly({
         domains <- names(data)
         colors <- .studio_colors
@@ -764,10 +764,7 @@
           trace_added <- TRUE
         }
         if (!trace_added) {
-          p <- .plotly_empty_silent() |>
-            plotly::layout(title = list(text = "No trend data available",
-                                        font = list(color = "#7f8c8d",
-                                                    size = 14)))
+          p <- .plotly_no_data("No trend data available for any domain")
         } else {
           p <- p |> plotly::layout(
             title = list(text = "Cross-Domain Trends"),

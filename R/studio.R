@@ -875,6 +875,22 @@ isTRUE_vec <- function(x) {
   suppressWarnings(plotly::plotly_empty())
 }
 
+# Informative empty plotly: shows a centred message explaining why data is absent
+.plotly_no_data <- function(msg = "No data available",
+                            icon = "\U0001F6C8") {
+  suppressWarnings(plotly::plotly_empty()) |>
+    plotly::layout(
+      annotations = list(list(
+        text = paste(icon, msg),
+        xref = "paper", yref = "paper", x = 0.5, y = 0.5,
+        showarrow = FALSE,
+        font = list(color = "#94a3b8", size = 13)
+      )),
+      xaxis = list(visible = FALSE),
+      yaxis = list(visible = FALSE)
+    )
+}
+
 # Safe plotly wrapper: catches errors and returns a placeholder
 .safe_plotly <- function(expr) {
   suppressWarnings(tryCatch(
