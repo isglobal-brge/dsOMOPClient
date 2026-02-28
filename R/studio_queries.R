@@ -82,6 +82,7 @@
     raw_results     <- shiny::reactiveVal(NULL)
     concept_search_results <- shiny::reactiveVal(NULL)
     last_exec_meta  <- shiny::reactiveVal(NULL)
+    query_executed  <- shiny::reactiveVal(FALSE)  # tracks whether Run was clicked
 
     # -- Load query list -------------------------------------------------------
     load_queries <- function() {
@@ -104,6 +105,7 @@
       selected_query(NULL)
       display_data(NULL)
       concept_search_results(NULL)
+      query_executed(FALSE)
     }, ignoreNULL = FALSE)
 
     # -- Query list (wrapped in uiOutput for empty state) ---------------------
@@ -154,6 +156,7 @@
       display_data(NULL)
       concept_search_results(NULL)
       last_exec_meta(NULL)
+      query_executed(FALSE)
 
       tryCatch({
         meta <- ds.omop.query.get(qid, symbol = state$symbol)
@@ -347,6 +350,8 @@
           )
           shiny::incProgress(0.4)
 
+          query_executed(TRUE)
+
           # Build and accumulate code for Script tab
           code <- .build_code("ds.omop.query.exec",
             query_id = q$id, inputs = params,
@@ -355,6 +360,34 @@
 
           # Store raw results for scope switching without re-query
           raw_results(results)
+
+          # Detect partial server failures and build warnings
+          exec_warnings <- character(0)
+          all_servers <- names(state$session$conns %||% list())
+          returned_servers <- names(results)
+          valid_servers <- character(0)
+          empty_servers <- character(0)
+          for (srv in returned_servers) {
+            r <- results[[srv]]
+            if (is.data.frame(r) && nrow(r) > 0) {
+              valid_servers <- c(valid_servers, srv)
+            } else if (is.data.frame(r) && nrow(r) == 0) {
+              empty_servers <- c(empty_servers, srv)
+            }
+          }
+          missing_servers <- setdiff(all_servers, returned_servers)
+          if (length(missing_servers) > 0) {
+            exec_warnings <- c(exec_warnings,
+              paste0("No response from: ", paste(missing_servers, collapse = ", ")))
+          }
+          if (length(empty_servers) > 0 && length(valid_servers) > 0) {
+            exec_warnings <- c(exec_warnings,
+              paste0("No data on: ", paste(empty_servers, collapse = ", ")))
+          }
+          if (length(valid_servers) == 0 && length(empty_servers) > 0) {
+            exec_warnings <- c(exec_warnings,
+              "All servers returned empty results (data may be below disclosure threshold).")
+          }
 
           # Pool results if scope is pooled and query is poolable
           pooled_df <- NULL
@@ -376,14 +409,17 @@
           # Determine display data based on current scope
           if (scope == "pooled" && !is.null(pooled_df) && is.data.frame(pooled_df)) {
             display_data(pooled_df)
-            last_exec_meta(list(scope = "pooled", servers = names(results)))
+            last_exec_meta(list(scope = "pooled", servers = returned_servers,
+                                warnings = exec_warnings))
           } else {
             # per_site: show first selected server
             display_data(.extract_display_data(results, "per_site",
               state$selected_servers))
-            last_exec_meta(list(scope = scope, servers = names(results)))
+            last_exec_meta(list(scope = scope, servers = returned_servers,
+                                warnings = exec_warnings))
           }
         }, error = function(e) {
+          query_executed(TRUE)
           msg <- conditionMessage(e)
           if (grepl("does not exist|relation.*does not exist", msg, ignore.case = TRUE)) {
             tbl_match <- regmatches(msg, regexpr("[a-z_]+\\.[a-z_]+|\"[^\"]+\"", msg))
@@ -438,9 +474,26 @@
     # -- Results content (wrapped for empty state) -----------------------------
     output$results_content <- shiny::renderUI({
       df <- display_data()
+      executed <- query_executed()
+
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
-        return(.empty_state_ui("table", "No results yet",
-          "Select a query and click Run to see results."))
+        if (!executed) {
+          return(.empty_state_ui("table", "No results yet",
+            "Select a query and click Run to see results."))
+        }
+        # Query was executed but returned nothing
+        q <- selected_query()
+        has_params <- !is.null(q$inputs) && is.data.frame(q$inputs) &&
+          nrow(q$inputs) > 0
+        hint <- if (has_params) {
+          "Try different parameter values or use the concept search to find valid IDs."
+        } else {
+          "The required data may not exist in this CDM, or counts were below the disclosure threshold."
+        }
+        return(shiny::tagList(
+          .empty_state_ui("circle-exclamation", "Query returned no results", hint),
+          shiny::uiOutput(ns("scope_info"))
+        ))
       }
       shiny::tagList(
         DT::DTOutput(ns("results_dt")),
@@ -461,13 +514,31 @@
                                      names(df), ignore.case = TRUE)]
       }
 
+      orig_rows <- nrow(df)
       for (col in intersect(sensitive, names(df))) {
         df <- df[!is.na(df[[col]]), , drop = FALSE]
       }
 
-      if (nrow(df) == 0) return(NULL)
+      if (nrow(df) == 0) {
+        # All rows were suppressed — show an explanatory 1-row table
+        return(DT::datatable(
+          data.frame(
+            Message = paste0("All ", orig_rows,
+              " rows suppressed by disclosure control (counts below threshold).")),
+          options = list(dom = "t", paging = FALSE),
+          rownames = FALSE, selection = "none"
+        ))
+      }
+
+      suppressed_n <- orig_rows - nrow(df)
+      caption <- if (suppressed_n > 0) {
+        htmltools::tags$caption(style = "caption-side: bottom; color: #94a3b8; font-size: 0.85em;",
+          shiny::icon("shield-halved"),
+          sprintf(" %d row(s) suppressed by disclosure control.", suppressed_n))
+      }
 
       DT::datatable(df,
+        caption = caption,
         options = list(pageLength = 20, dom = "ftip", scrollX = TRUE),
         rownames = FALSE, selection = "none"
       )
@@ -476,7 +547,12 @@
     # -- Visualization content (wrapped for empty state) -----------------------
     output$viz_content <- shiny::renderUI({
       df <- display_data()
+      executed <- query_executed()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        if (executed) {
+          return(.empty_state_ui("chart-simple", "No data to visualize",
+            "The query returned no results. Adjust parameters and try again."))
+        }
         return(.empty_state_ui("chart-simple", "No visualization",
           "Run a query to see an automatic visualization of the results."))
       }
@@ -487,7 +563,7 @@
     output$auto_plot <- plotly::renderPlotly({
       df <- display_data()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0)
-        return(.plotly_empty_silent() |> plotly::config(displayModeBar = FALSE))
+        return(.plotly_no_data("No data to visualize"))
 
       q <- selected_query()
       qid <- if (!is.null(q)) (q$id %||% "") else ""
@@ -718,5 +794,5 @@
   }
 
   # Nothing plottable
-  .plotly_empty_silent() |> plotly::config(displayModeBar = FALSE)
+  .plotly_no_data("No suitable columns found for visualization")
 }
