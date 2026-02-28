@@ -100,6 +100,25 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
           Shiny.addCustomMessageHandler('showMiniToast', function(msg) {
             showMiniToast(msg);
           });
+          Shiny.addCustomMessageHandler('toggleAchillesTab', function(data) {
+            var tabs = document.querySelectorAll('#main_nav .nav-link');
+            tabs.forEach(function(tab) {
+              if (tab.textContent.trim().indexOf('Achilles') !== -1) {
+                if (data.disabled) {
+                  tab.classList.add('achilles-disabled');
+                  tab.setAttribute('title', data.tooltip || 'Run OHDSI Achilles on your CDM to enable this tab');
+                  tab.setAttribute('data-achilles-disabled', 'true');
+                } else {
+                  tab.classList.remove('achilles-disabled');
+                  tab.removeAttribute('title');
+                  tab.removeAttribute('data-achilles-disabled');
+                }
+              }
+            });
+          });
+          $(document).on('click', '.achilles-disabled', function(e) {
+            e.preventDefault(); e.stopPropagation(); return false;
+          });
         "))
       ),
 
@@ -118,6 +137,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
 
       # --- Tab 3: Achilles ---
       bslib::nav_panel("Achilles", icon = shiny::icon("chart-bar"),
+        value = "achilles_tab",
         .mod_atlas_ui("atlas")
       ),
 
@@ -132,7 +152,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       ),
 
       # --- Tab 6: Session (read-only log) ---
-      bslib::nav_panel("Session", icon = shiny::icon("terminal"),
+      bslib::nav_panel("Session", icon = shiny::icon("scroll"),
         .mod_session_ui("session_log")
       ),
 
@@ -201,7 +221,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     .mod_sidebar_server("sidebar", state, session)
     .mod_overview_server("overview", state)
     .mod_explore_server("explore", state, session)
-    .mod_atlas_server("atlas", state)
+    .mod_atlas_server("atlas", state, session)
     .mod_queries_server("queries", state)
     .mod_build_server("build", state)
     .mod_session_server("session_log", state)
@@ -252,6 +272,15 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       font-weight: 700; letter-spacing: -0.02em;
       display: inline-flex !important; align-items: center;
       gap: 0.5rem; font-size: 1.05rem;
+    }
+
+    /* ========== Disabled Achilles tab ========== */
+    .navbar .nav-link.achilles-disabled {
+      opacity: 0.4 !important; cursor: not-allowed !important;
+      pointer-events: auto !important;
+    }
+    .navbar .nav-link.achilles-disabled:hover {
+      background: transparent !important; color: rgba(255,255,255,0.4) !important;
     }
 
     /* ========== Cards - glassmorphism ========== */

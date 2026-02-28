@@ -546,7 +546,7 @@
       full_screen = TRUE,
       bslib::card_header("Missingness"),
       bslib::card_body(
-        plotly::plotlyOutput(ns("missingness_plot"), height = "250px")
+        shiny::uiOutput(ns("missingness_content"))
       )
     )
   ))
@@ -976,6 +976,22 @@
     })
 
     # --- Missingness ---
+    output$missingness_content <- shiny::renderUI({
+      dd <- drilldown_data()
+      if (is.null(dd)) {
+        return(.empty_state_ui("chart-bar", "No missingness data",
+          "Select a concept from the Prevalence tab to view column-level missingness."))
+      }
+      srv <- names(dd)[1]
+      d <- dd[[srv]]
+      df <- d$missingness
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        return(.empty_state_ui("chart-bar", "No missingness data",
+          "Missingness analysis is not available for this concept."))
+      }
+      plotly::plotlyOutput(session$ns("missingness_plot"), height = "250px")
+    })
+
     output$missingness_plot <- plotly::renderPlotly({
       dd <- drilldown_data()
       if (is.null(dd)) return(NULL)
@@ -1009,7 +1025,7 @@
       bslib::card_header(
         class = "d-flex justify-content-between align-items-center py-2",
         shiny::span("Concept Locator"),
-        shiny::actionButton(ns("locate_btn"), NULL,
+        shiny::actionButton(ns("locate_btn"), "Locate",
                             icon = shiny::icon("location-dot"),
                             class = "btn-sm btn-primary")
       ),
@@ -1018,13 +1034,13 @@
         shiny::div(class = "d-flex gap-2 mb-2",
           shiny::div(style = "flex: 1;",
             shiny::textInput(ns("unified_search"), NULL,
-                             placeholder = "Search by name or enter concept IDs")
+                             placeholder = "Search by name or enter concept IDs (comma-separated)")
           ),
           shiny::actionButton(ns("name_search_btn"), NULL,
                               icon = shiny::icon("magnifying-glass"),
                               class = "btn-sm btn-outline-secondary")
         ),
-        DT::DTOutput(ns("search_results_dt")),
+        shiny::uiOutput(ns("search_content")),
         shiny::uiOutput(ns("selected_badges"))
       )
     ),
@@ -1088,10 +1104,24 @@
       }
     })
 
+    output$search_content <- shiny::renderUI({
+      df <- search_results()
+      items <- selected_ids()
+      if (is.null(df) && length(items) == 0) {
+        return(shiny::p(class = "text-muted small mt-2",
+          "Search for concepts by name, or enter concept IDs directly.",
+          " Click a search result to add it, then press Locate."))
+      }
+      DT::DTOutput(ns("search_results_dt"))
+    })
+
     output$search_results_dt <- DT::renderDT({
       df <- search_results()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
-      keep <- intersect(c("concept_id", "concept_name", "domain_id"), names(df))
+      # Show available columns (prefer concept_id, concept_name, domain_id)
+      preferred <- c("concept_id", "concept_name", "domain_id")
+      keep <- intersect(preferred, names(df))
+      if (length(keep) == 0) keep <- names(df)
       DT::datatable(
         df[, keep, drop = FALSE],
         options = list(pageLength = 5, dom = "t", scrollX = TRUE,
@@ -1107,10 +1137,26 @@
       if (is.null(idx) || is.null(df) || length(idx) == 0) return()
       idx <- idx[1]
       if (idx > nrow(df)) return()
-      cid <- as.integer(df$concept_id[idx])
-      cname <- as.character(df$concept_name[idx])
+      # Safely extract concept_id and concept_name
+      cid <- if ("concept_id" %in% names(df)) {
+        as.integer(df$concept_id[idx])
+      } else {
+        # Try first numeric column as ID
+        num_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        if (length(num_cols) > 0) as.integer(df[[num_cols[1]]][idx]) else idx
+      }
+      cname <- if ("concept_name" %in% names(df)) {
+        as.character(df$concept_name[idx])
+      } else {
+        # Try first character column
+        char_cols <- names(df)[vapply(df, is.character, logical(1))]
+        if (length(char_cols) > 0) as.character(df[[char_cols[1]]][idx])
+        else paste0("Concept ", cid)
+      }
       current <- selected_ids()
-      existing_cids <- vapply(current, function(x) x$concept_id, integer(1))
+      existing_cids <- if (length(current) > 0) {
+        vapply(current, function(x) x$concept_id, integer(1))
+      } else integer(0)
       if (!cid %in% existing_cids) {
         current <- c(current, list(list(concept_id = cid, concept_name = cname)))
         selected_ids(current)
@@ -1257,7 +1303,7 @@
           shiny::div(class = "d-inline-flex align-items-center",
             style = "transform: scale(0.85); transform-origin: right center;",
             shiny::checkboxInput(ns("group_concepts"), "Group identical concepts",
-                                 value = FALSE, width = "auto")
+                                 value = TRUE, width = "auto")
           )
         ),
         shiny::uiOutput(ns("results_table_content"))
@@ -1328,7 +1374,8 @@
       df <- search_results()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
 
-      if (isTRUE(input$group_concepts) && "server" %in% names(df)) {
+      if (isTRUE(input$group_concepts) && "server" %in% names(df) &&
+          "concept_id" %in% names(df)) {
         # Group identical concept_ids: replace server with count of servers
         grp <- stats::aggregate(
           server ~ concept_id, data = df,
@@ -1339,14 +1386,10 @@
         dedup <- df[!duplicated(df$concept_id), , drop = FALSE]
         dedup$server <- NULL
         df <- merge(dedup, grp, by = "concept_id", sort = FALSE)
-        keep <- intersect(c("concept_id", "concept_name", "domain_id",
-                             "vocabulary_id", "standard_concept", "n_servers"),
-                          names(df))
-      } else {
-        keep <- intersect(c("concept_id", "concept_name", "domain_id",
-                             "vocabulary_id", "standard_concept", "server"),
-                          names(df))
       }
+      # Show all meaningful columns (exclude internal/redundant ones)
+      exclude <- c("concept_code")
+      keep <- setdiff(names(df), exclude)
       display <- df[, keep, drop = FALSE]
       chk <- vapply(seq_len(nrow(display)), function(i) {
         paste0('<input type="checkbox" class="dt-row-chk" data-row="', i, '">')
@@ -1453,51 +1496,68 @@
       idx <- input$vocab_chk_selected
       if (is.null(idx) || length(idx) == 0 || is.null(df)) {
         return(.empty_state_ui("hand-pointer", "Select a concept",
-                               "Click a row in the search results to view details."))
+                               "Tick a row in the search results to view details."))
       }
       # Show details for the first selected row
       first_idx <- idx[1]
       if (first_idx > nrow(df)) {
         return(.empty_state_ui("hand-pointer", "Select a concept",
-                               "Click a row in the search results to view details."))
+                               "Tick a row in the search results to view details."))
       }
       row <- df[first_idx, , drop = FALSE]
       if (!is.data.frame(row) || nrow(row) == 0) {
         return(.empty_state_ui("hand-pointer", "Select a concept"))
       }
-      std <- as.character(row$standard_concept[1] %||% "")
+      # Safely extract fields (may not exist in all results)
+      .safe_col <- function(r, col) {
+        if (col %in% names(r)) as.character(r[[col]][1]) else ""
+      }
+      cid <- .safe_col(row, "concept_id")
+      cname <- .safe_col(row, "concept_name")
+      std <- .safe_col(row, "standard_concept")
+      domain <- .safe_col(row, "domain_id")
+      vocab <- .safe_col(row, "vocabulary_id")
+      srv <- .safe_col(row, "server")
+
       std_badge <- if (std == "S") {
         shiny::span(class = "badge", style = "background:#065f46; color:#ecfdf5;", "Standard")
       } else if (nchar(std) > 0) {
         shiny::span(class = "badge bg-warning text-dark", std)
       }
+
+      detail_rows <- list()
+      if (nchar(domain) > 0) {
+        detail_rows <- c(detail_rows, list(shiny::tags$tr(
+          shiny::tags$td(class = "text-muted", style = "width:35%;", "Domain"),
+          shiny::tags$td(class = "fw-semibold", domain)
+        )))
+      }
+      if (nchar(vocab) > 0) {
+        detail_rows <- c(detail_rows, list(shiny::tags$tr(
+          shiny::tags$td(class = "text-muted", "Vocabulary"),
+          shiny::tags$td(class = "fw-semibold", vocab)
+        )))
+      }
+      if (nchar(srv) > 0) {
+        detail_rows <- c(detail_rows, list(shiny::tags$tr(
+          shiny::tags$td(class = "text-muted", "Server"),
+          shiny::tags$td(shiny::span(class = "badge bg-light text-dark", srv))
+        )))
+      }
+
       shiny::div(
         shiny::div(class = "d-flex align-items-center gap-2 mb-2",
-          shiny::span(class = "badge bg-primary", style = "font-size:0.82rem;",
-                      paste0("#", row$concept_id)),
+          if (nchar(cid) > 0) shiny::span(class = "badge bg-primary",
+            style = "font-size:0.82rem;", paste0("#", cid)),
           std_badge
         ),
-        shiny::h6(class = "mb-2", style = "font-weight:600;",
-                   as.character(row$concept_name)),
-        shiny::tags$table(class = "table table-sm table-borderless mb-0",
-          style = "font-size:0.84rem;",
-          shiny::tags$tbody(
-            shiny::tags$tr(
-              shiny::tags$td(class = "text-muted", style = "width:35%;", "Domain"),
-              shiny::tags$td(class = "fw-semibold", as.character(row$domain_id))
-            ),
-            shiny::tags$tr(
-              shiny::tags$td(class = "text-muted", "Vocabulary"),
-              shiny::tags$td(class = "fw-semibold",
-                             as.character(row$vocabulary_id %||% ""))
-            ),
-            if ("server" %in% names(row)) shiny::tags$tr(
-              shiny::tags$td(class = "text-muted", "Server"),
-              shiny::tags$td(shiny::span(class = "badge bg-light text-dark",
-                                         as.character(row$server)))
-            )
+        if (nchar(cname) > 0) shiny::h6(class = "mb-2",
+          style = "font-weight:600;", cname),
+        if (length(detail_rows) > 0)
+          shiny::tags$table(class = "table table-sm table-borderless mb-0",
+            style = "font-size:0.84rem;",
+            shiny::tags$tbody(shiny::tagList(detail_rows))
           )
-        )
       )
     })
   })

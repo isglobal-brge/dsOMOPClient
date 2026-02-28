@@ -54,6 +54,7 @@
         )
       ),
       bslib::card_body(
+        shiny::uiOutput(ns("coverage_server_ui")),
         shiny::uiOutput(ns("coverage_content"))
       )
     ),
@@ -67,10 +68,17 @@
         )
       ),
       bslib::card_body(
-        shiny::selectInput(ns("miss_table"), "Table",
-          choices = .table_choices(c("person", "condition_occurrence",
-                      "drug_exposure", "measurement",
-                      "observation_period", "visit_occurrence"))),
+        shiny::div(class = "row g-2 mb-2",
+          shiny::div(class = "col-md-6",
+            shiny::selectInput(ns("miss_table"), "Table",
+              choices = .table_choices(c("person", "condition_occurrence",
+                          "drug_exposure", "measurement",
+                          "observation_period", "visit_occurrence")))
+          ),
+          shiny::div(class = "col-md-6",
+            shiny::uiOutput(ns("miss_server_ui"))
+          )
+        ),
         shiny::uiOutput(ns("miss_content"))
       )
     )
@@ -310,8 +318,12 @@
             state$script_lines <- c(state$script_lines, res$meta$call_code)
           }
           raw_coverage(res)
-          coverage_data(.extract_display_data(res, "all",
-            state$selected_servers, intersect_only = FALSE))
+          # Show per-server dropdown
+          per_site <- if (inherits(res, "dsomop_result")) res$per_site else res
+          srv_names <- names(per_site)
+          .update_coverage_server(session, srv_names)
+          # Extract for selected (or all)
+          .reextract_coverage(raw_coverage, coverage_data, input, state)
         }, error = function(e) {
           shiny::showNotification(
             paste("Error:", conditionMessage(e)), type = "error")
@@ -319,11 +331,36 @@
       })
     })
 
-    shiny::observeEvent(state$selected_servers, {
+    .update_coverage_server <- function(session, srv_names) {
+      choices <- c("All Servers" = "__all__", stats::setNames(srv_names, srv_names))
+      shiny::updateSelectInput(session, "coverage_server", choices = choices)
+    }
+
+    .reextract_coverage <- function(raw_coverage, coverage_data, input, state) {
       res <- raw_coverage()
       if (is.null(res)) return()
-      coverage_data(.extract_display_data(res, "all",
-        state$selected_servers, intersect_only = FALSE))
+      sel <- input$coverage_server %||% "__all__"
+      if (sel == "__all__") {
+        coverage_data(.extract_display_data(res, "all",
+          state$selected_servers, intersect_only = FALSE))
+      } else {
+        coverage_data(.extract_display_data(res, "per_site", sel))
+      }
+    }
+
+    output$coverage_server_ui <- shiny::renderUI({
+      res <- raw_coverage()
+      if (is.null(res)) return(NULL)
+      shiny::selectInput(ns("coverage_server"), "Server",
+        choices = c("All Servers" = "__all__"))
+    })
+
+    shiny::observeEvent(input$coverage_server, {
+      .reextract_coverage(raw_coverage, coverage_data, input, state)
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(state$selected_servers, {
+      .reextract_coverage(raw_coverage, coverage_data, input, state)
     }, ignoreInit = TRUE)
 
     output$coverage_content <- shiny::renderUI({
@@ -365,8 +402,11 @@
             state$script_lines <- c(state$script_lines, res$meta$call_code)
           }
           raw_miss(res)
-          miss_data(.extract_display_data(res, "all",
-            state$selected_servers, intersect_only = FALSE))
+          # Show per-server dropdown
+          per_site <- if (inherits(res, "dsomop_result")) res$per_site else res
+          srv_names <- names(per_site)
+          .update_miss_server(session, srv_names)
+          .reextract_miss(raw_miss, miss_data, input, state)
         }, error = function(e) {
           shiny::showNotification(
             paste("Error:", conditionMessage(e)), type = "error")
@@ -374,11 +414,36 @@
       })
     })
 
-    shiny::observeEvent(state$selected_servers, {
+    .update_miss_server <- function(session, srv_names) {
+      choices <- c("All Servers" = "__all__", stats::setNames(srv_names, srv_names))
+      shiny::updateSelectInput(session, "miss_server", choices = choices)
+    }
+
+    .reextract_miss <- function(raw_miss, miss_data, input, state) {
       res <- raw_miss()
       if (is.null(res)) return()
-      miss_data(.extract_display_data(res, "all",
-        state$selected_servers, intersect_only = FALSE))
+      sel <- input$miss_server %||% "__all__"
+      if (sel == "__all__") {
+        miss_data(.extract_display_data(res, "all",
+          state$selected_servers, intersect_only = FALSE))
+      } else {
+        miss_data(.extract_display_data(res, "per_site", sel))
+      }
+    }
+
+    output$miss_server_ui <- shiny::renderUI({
+      res <- raw_miss()
+      if (is.null(res)) return(NULL)
+      shiny::selectInput(ns("miss_server"), "Server",
+        choices = c("All Servers" = "__all__"))
+    })
+
+    shiny::observeEvent(input$miss_server, {
+      .reextract_miss(raw_miss, miss_data, input, state)
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(state$selected_servers, {
+      .reextract_miss(raw_miss, miss_data, input, state)
     }, ignoreInit = TRUE)
 
     output$miss_content <- shiny::renderUI({
