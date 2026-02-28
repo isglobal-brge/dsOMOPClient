@@ -36,9 +36,12 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
 
 .studio_ui <- function(symbol) {
   function(request) {
+    shiny::addResourcePath("dsomop-assets",
+      system.file("www", package = "dsOMOPClient"))
     bslib::page_navbar(
       title = shiny::tags$span(class = "d-inline-flex align-items-center gap-2",
-        shiny::icon("database", class = "text-info"),
+        shiny::tags$img(src = "dsomop-assets/logo.png", height = "32px",
+          style = "margin-right: 4px;"),
         shiny::span("dsOMOP", style = "font-weight:700;"),
         shiny::span("Studio", style = "font-weight:400; opacity:0.8;")),
       id = "main_nav",

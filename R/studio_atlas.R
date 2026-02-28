@@ -1499,7 +1499,13 @@
       bslib::card(
         bslib::card_header("Birth Cohorts"),
         bslib::card_body(
-          plotly::plotlyOutput(ns("dash_birth_cohort_plot"), height = "350px")
+          if (is.data.frame(data$birth_cohorts) && nrow(data$birth_cohorts) > 0) {
+            plotly::plotlyOutput(ns("dash_birth_cohort_plot"), height = "350px")
+          } else {
+            shiny::div(class = "text-muted text-center py-4",
+              shiny::icon("shield-halved", class = "me-1"),
+              "Birth cohort data suppressed (small cell counts)")
+          }
         )
       )
     ),
