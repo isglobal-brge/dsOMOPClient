@@ -152,7 +152,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       ),
 
       # --- Tab 6: Session (read-only log) ---
-      bslib::nav_panel("Session", icon = shiny::icon("scroll"),
+      bslib::nav_panel("Session", icon = shiny::icon("gear"),
         .mod_session_ui("session_log")
       ),
 

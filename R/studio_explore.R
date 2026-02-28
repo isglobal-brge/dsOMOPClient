@@ -1031,14 +1031,13 @@
       ),
       bslib::card_body(
         class = "py-2 px-3",
-        shiny::div(class = "d-flex gap-2 mb-2",
-          shiny::div(style = "flex: 1;",
-            shiny::textInput(ns("unified_search"), NULL,
-                             placeholder = "Search by name or enter concept IDs (comma-separated)")
-          ),
-          shiny::actionButton(ns("name_search_btn"), NULL,
-                              icon = shiny::icon("magnifying-glass"),
-                              class = "btn-sm btn-outline-secondary")
+        shiny::div(class = "input-group mb-2",
+          shiny::tags$input(type = "text", id = ns("unified_search"),
+            class = "form-control",
+            placeholder = "Search by name or enter concept IDs (comma-separated)"),
+          shiny::actionButton(ns("name_search_btn"), "Search",
+            icon = shiny::icon("magnifying-glass"),
+            class = "btn btn-primary")
         ),
         shiny::uiOutput(ns("search_content")),
         shiny::uiOutput(ns("selected_badges"))
@@ -1111,6 +1110,10 @@
         return(shiny::p(class = "text-muted small mt-2",
           "Search for concepts by name, or enter concept IDs directly.",
           " Click a search result to add it, then press Locate."))
+      }
+      if (is.data.frame(df) && nrow(df) == 0) {
+        return(.empty_state_ui("magnifying-glass", "No results found",
+          "Try a different search term or check the concept name."))
       }
       DT::DTOutput(ns("search_results_dt"))
     })
@@ -1324,9 +1327,11 @@
     ns <- session$ns
     search_results <- shiny::reactiveVal(NULL)
     raw_search_result <- shiny::reactiveVal(NULL)
+    has_searched <- shiny::reactiveVal(FALSE)
 
     shiny::observeEvent(input$search_btn, {
       shiny::req(nchar(input$search_pattern) > 0)
+      has_searched(TRUE)
       tryCatch({
         domain <- if (nchar(input$domain_filter) > 0)
           input$domain_filter else NULL
@@ -1364,6 +1369,10 @@
     output$results_table_content <- shiny::renderUI({
       df <- search_results()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        if (isTRUE(has_searched())) {
+          return(.empty_state_ui("magnifying-glass", "No results found",
+            "No concepts matched your search criteria. Try different terms or filters."))
+        }
         return(.empty_state_ui("book", "No results",
           "Search for concepts using the sidebar controls."))
       }

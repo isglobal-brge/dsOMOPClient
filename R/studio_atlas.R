@@ -806,28 +806,45 @@
   } else if (nav == "Data Quality") {
     .atlas_fetch_quality(state, scope, policy)
   } else {
-    # Generic domain page
+    # Generic domain page — try dynamic catalog first, then hardcoded fallback
     domain <- .page_to_domain(nav)
-    if (!is.null(cat) && !is.null(domain)) {
+
+    # Hardcoded domain config (standard OHDSI Achilles IDs)
+    domain_config <- list(
+      "Conditions"   = list(count = 400L, trend = 402L),
+      "Drugs"        = list(count = 700L, trend = 702L),
+      "Procedures"   = list(count = 600L, trend = 602L),
+      "Measurements" = list(count = 1800L, trend = 1802L),
+      "Observations" = list(count = 800L, trend = NULL)
+    )
+    config <- domain_config[[nav]]
+
+    result <- NULL
+    if (!is.null(cat) && !is.null(domain) && !is.na(domain)) {
       domain_analyses <- cat[cat$domain == domain, , drop = FALSE]
-      .atlas_fetch_domain_dynamic(state, domain_analyses, scope, policy,
-                                   selected_srv)
-    } else {
-      # Fallback to hardcoded IDs (fixed: use 402/702/602/1802 for trends)
-      switch(nav,
-        "Conditions"   = .atlas_fetch_domain(state, 400L, 402L, scope,
-                           policy, selected_srv),
-        "Drugs"        = .atlas_fetch_domain(state, 700L, 702L, scope,
-                           policy, selected_srv),
-        "Procedures"   = .atlas_fetch_domain(state, 600L, 602L, scope,
-                           policy, selected_srv),
-        "Measurements" = .atlas_fetch_domain(state, 1800L, 1802L, scope,
-                           policy, selected_srv),
-        "Observations" = .atlas_fetch_domain(state, 800L, NULL, scope,
-                           policy, selected_srv),
-        NULL
-      )
+      if (nrow(domain_analyses) > 0) {
+        result <- .atlas_fetch_domain_dynamic(state, domain_analyses, scope,
+                                               policy, selected_srv)
+      }
     }
+    if (is.null(result) && !is.null(config)) {
+      # Full fallback to hardcoded IDs
+      result <- .atlas_fetch_domain(state, config$count, config$trend, scope,
+                                     policy, selected_srv)
+    } else if (!is.null(result) && is.null(result$trends) &&
+               !is.null(config) && !is.null(config$trend)) {
+      # Dynamic found concepts but missed trends — supplement with hardcoded
+      tryCatch({
+        api_scope <- .backend_scope(scope)
+        trend_res <- ds.omop.achilles.results(
+          analysis_ids = config$trend, scope = api_scope,
+          pooling_policy = policy, symbol = state$symbol)
+        .atlas_accumulate_code(state, trend_res)
+        srv <- selected_srv %||% names(trend_res$per_site)[1]
+        result$trends <- .atlas_pick_result(trend_res, scope, srv)
+      }, error = function(e) NULL)
+    }
+    result
   }
 }
 
@@ -917,13 +934,17 @@
   genders <- unique(as.character(df$stratum_1))
   gender_labels <- vapply(genders, function(g) {
     nm <- concept_map[[g]]
-    if (!is.null(nm)) tolower(nm) else g
+    if (!is.null(nm) && !is.na(nm)) tolower(nm) else g
   }, character(1))
 
   # Identify male and female concept IDs
   male_id <- genders[grepl("\\bmale\\b", gender_labels, ignore.case = TRUE) &
                       !grepl("female", gender_labels, ignore.case = TRUE)]
   female_id <- genders[grepl("female", gender_labels, ignore.case = TRUE)]
+
+  # Fallback: standard OMOP concept IDs (8507=MALE, 8532=FEMALE)
+  if (length(male_id) == 0 && "8507" %in% genders) male_id <- "8507"
+  if (length(female_id) == 0 && "8532" %in% genders) female_id <- "8532"
 
   if (length(male_id) == 0 || length(female_id) == 0) return(NULL)
   male_id <- male_id[1]
@@ -984,6 +1005,7 @@
   .atlas_accumulate_code(state, count_res)
 
   # Batch 2: distributions (103=age at first obs, 105=obs period length)
+  # Always request per_site so we can fall back when pooled percentiles are NA
   dist_res <- ds.omop.achilles.distribution(
     analysis_ids = c(103L, 105L), scope = api_scope, pooling_policy = policy,
     symbol = state$symbol)
@@ -1003,8 +1025,36 @@
   count_df <- .atlas_pick_result(count_res, scope, srv)
   dist_df <- .atlas_pick_result(dist_res, scope, srv)
 
-  if (!is.data.frame(count_df)) count_df <- data.frame()
-  if (!is.data.frame(dist_df)) dist_df <- data.frame()
+  # Fix: when pooled, percentiles are set to NA by pooling logic.
+  # Fall back to first server's per-site data for distributions (already
+  # disclosure-controlled by server).
+  if (scope == "pooled" && is.data.frame(dist_df) && nrow(dist_df) > 0) {
+    all_pct_na <- all(is.na(dist_df$median_value)) &&
+                  all(is.na(dist_df$p10_value))
+    if (all_pct_na && length(dist_res$per_site) > 0) {
+      fallback_srv <- names(dist_res$per_site)[1]
+      dist_df_fb <- dist_res$per_site[[fallback_srv]]
+      if (is.data.frame(dist_df_fb) && nrow(dist_df_fb) > 0 &&
+          !all(is.na(dist_df_fb$median_value))) {
+        dist_df <- dist_df_fb
+      }
+    }
+  }
+
+  if (!is.data.frame(count_df) || nrow(count_df) == 0) {
+    count_df <- data.frame(
+      analysis_id = integer(0), stratum_1 = character(0),
+      stratum_2 = character(0), count_value = numeric(0),
+      stringsAsFactors = FALSE)
+  }
+  if (!is.data.frame(dist_df) || nrow(dist_df) == 0) {
+    dist_df <- data.frame(
+      analysis_id = integer(0), count_value = numeric(0),
+      avg_value = numeric(0), stdev_value = numeric(0),
+      median_value = numeric(0), p10_value = numeric(0),
+      p25_value = numeric(0), p75_value = numeric(0),
+      p90_value = numeric(0), stringsAsFactors = FALSE)
+  }
 
   # Split count results by analysis_id
   total_persons <- {
@@ -1068,7 +1118,12 @@
 
   srv <- selected_server %||% names(res$per_site)[1]
   all_df <- .atlas_pick_result(res, scope, srv)
-  if (!is.data.frame(all_df)) all_df <- data.frame()
+  if (!is.data.frame(all_df) || nrow(all_df) == 0) {
+    all_df <- data.frame(
+      analysis_id = integer(0), stratum_1 = character(0),
+      stratum_2 = character(0), count_value = numeric(0),
+      stringsAsFactors = FALSE)
+  }
 
   total_persons <- {
     r <- all_df[all_df$analysis_id == 1L, , drop = FALSE]
@@ -1145,7 +1200,12 @@
 
   srv <- selected_server %||% names(type_res$per_site)[1]
   all_df <- .atlas_pick_result(type_res, scope, srv)
-  if (!is.data.frame(all_df)) all_df <- data.frame()
+  if (!is.data.frame(all_df) || nrow(all_df) == 0) {
+    all_df <- data.frame(
+      analysis_id = integer(0), stratum_1 = character(0),
+      stratum_2 = character(0), count_value = numeric(0),
+      stringsAsFactors = FALSE)
+  }
 
   total_persons <- {
     r <- all_df[all_df$analysis_id == 1L, , drop = FALSE]
@@ -1687,7 +1747,8 @@
 .atlas_label_stratum <- function(stratum_ids, concept_map, max_len = 28) {
   vapply(as.character(stratum_ids), function(id) {
     nm <- concept_map[[id]]
-    label <- if (!is.null(nm) && nchar(nm) > 0) nm else id
+    label <- if (!is.null(nm) && !is.na(nm) && nchar(nm) > 0) nm else id
+    if (is.na(label)) label <- id
     if (nchar(label) > max_len) paste0(substr(label, 1, max_len - 3), "...")
     else label
   }, character(1), USE.NAMES = FALSE)

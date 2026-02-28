@@ -231,8 +231,9 @@
                 shiny::textInput(ns("concept_search_term"), NULL,
                   placeholder = "Search concept name...",
                   width = "100%"),
-                shiny::actionButton(ns("concept_search_btn"), "Search",
-                  class = "btn-sm btn-outline-secondary")
+                shiny::actionButton(ns("concept_search_btn"), NULL,
+                  icon = shiny::icon("magnifying-glass"),
+                  class = "btn-sm btn-primary")
               ),
               DT::DTOutput(ns("concept_search_dt"))
             )
