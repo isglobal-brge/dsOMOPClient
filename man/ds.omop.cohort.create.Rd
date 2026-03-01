@@ -15,23 +15,48 @@ ds.omop.cohort.create(
 )
 }
 \arguments{
-\item{spec}{Named list defining the cohort}
+\item{spec}{Named list defining the cohort. Must contain at least
+\code{type} (character) and \code{concept_set} (integer vector or
+\code{omop_concept_set} object).}
 
-\item{mode}{Character; "temporary" or "persistent"}
+\item{mode}{Character; \code{"temporary"} (the default) creates a
+session-scoped temp table, \code{"persistent"} writes to the cohort
+schema for reuse across sessions.}
 
-\item{cohort_id}{Integer; cohort definition ID}
+\item{cohort_id}{Integer; cohort definition ID. If \code{NULL}, an
+auto-generated ID is used.}
 
-\item{name}{Character; human-readable name}
+\item{name}{Character; human-readable cohort name for display purposes.
+Optional.}
 
-\item{overwrite}{Logical; overwrite existing}
+\item{overwrite}{Logical; if \code{TRUE}, an existing cohort with the
+same \code{cohort_id} will be replaced. Default: \code{FALSE}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-Character (per server); temp table name or confirmation
+Invisibly; the server-side symbol name for the created cohort
+  table (character). Assigned via \code{DSI::datashield.assign.expr}.
 }
 \description{
-Create a cohort from a structured specification
+Creates a cohort definition on each connected server based on the provided
+cohort specification. The cohort is stored as a temporary or persistent
+table server-side and can be used to filter subsequent queries and plan
+executions. The specification must include a \code{type} field and a
+\code{concept_set} defining the clinical events that constitute cohort
+entry.
+}
+\examples{
+\dontrun{
+ds.omop.cohort.create(
+  spec = list(type = "event",
+              concept_set = c(201820, 201826)),
+  cohort_id = 1,
+  name = "Type 2 Diabetes"
+)
+}
 }

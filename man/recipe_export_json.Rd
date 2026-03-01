@@ -7,13 +7,26 @@
 recipe_export_json(recipe, file = NULL)
 }
 \arguments{
-\item{recipe}{An omop_recipe object}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{file}{Character or NULL; file path to write (NULL returns string)}
+\item{file}{Character or \code{NULL}; file path to write. If \code{NULL},
+returns the JSON string directly.}
 }
 \value{
-If file is NULL, returns JSON string; otherwise writes to file
+If \code{file} is \code{NULL}, returns a JSON string (invisibly).
+  Otherwise writes to \code{file} and returns the file path invisibly.
 }
 \description{
-Export a recipe to JSON
+Serializes the recipe to a JSON string or file. All object classes are
+stripped for clean serialization. The JSON format includes a version tag
+(\code{"2.0"}) and can be re-imported with \code{\link{recipe_import_json}}.
+}
+\examples{
+\dontrun{
+json <- recipe_export_json(recipe)
+recipe_export_json(recipe, file = "my_recipe.json")
+}
+}
+\seealso{
+\code{\link{recipe_import_json}}, \code{\link{recipe_to_code}}
 }

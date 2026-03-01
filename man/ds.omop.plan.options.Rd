@@ -12,17 +12,37 @@ ds.omop.plan.options(
 )
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{translate_concepts}{Logical}
+\item{translate_concepts}{Logical; if \code{TRUE}, concept ID columns
+are automatically translated to human-readable concept names in
+output tables.}
 
-\item{block_sensitive}{Logical}
+\item{block_sensitive}{Logical; if \code{TRUE}, sensitive columns
+(e.g. exact dates, free-text notes) are excluded from outputs.}
 
-\item{min_persons}{Integer}
+\item{min_persons}{Integer; minimum person count threshold for
+disclosure control. Cells with fewer persons are suppressed.
+If \code{NULL}, no suppression is applied.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with updated options.
 }
 \description{
-Set plan-wide options
+Configures global options that apply to all outputs in the plan.
+Only non-NULL arguments are updated; existing option values are
+preserved for omitted arguments.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.options(plan,
+  translate_concepts = TRUE,
+  block_sensitive = TRUE,
+  min_persons = 5L
+)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan}}, \code{\link{ds.omop.plan.execute}}
 }

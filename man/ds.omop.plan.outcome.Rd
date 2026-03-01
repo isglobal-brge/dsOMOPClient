@@ -2,22 +2,43 @@
 % Please edit documentation in R/plan.R
 \name{ds.omop.plan.outcome}
 \alias{ds.omop.plan.outcome}
-\title{Add an outcome extraction (convenience)}
+\title{Add an outcome extraction (convenience wrapper)}
 \usage{
 ds.omop.plan.outcome(plan, name, concept_set, table = "condition_occurrence")
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list.}
 
-\item{concept_set}{Numeric vector; outcome concept IDs}
+\item{concept_set}{Numeric vector; concept IDs that define the
+outcome event.}
 
-\item{table}{Character; source table}
+\item{table}{Character; source OMOP table containing the outcome
+events.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the outcome output appended.
 }
 \description{
-Add an outcome extraction (convenience)
+Convenience function that wraps \code{\link{ds.omop.plan.events}} with
+\code{representation = list(format = "features")} to produce a
+person-level binary outcome indicator for the given concept set.
+This is a shorthand for defining an event-level features output
+focused on outcome identification.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.outcome(plan,
+  name = "diabetes_outcome",
+  concept_set = c(201826),
+  table = "condition_occurrence"
+)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.events}},
+  \code{\link{ds.omop.plan.survival}}
 }

@@ -7,10 +7,31 @@
 omop_recipe()
 }
 \value{
-An omop_recipe object
+An \code{omop_recipe} object containing empty populations, blocks,
+  variables, filters, outputs, and metadata.
 }
 \description{
-The recipe holds all selections for an OMOP extraction recipe:
-populations (who), variable blocks (what, grouped), individual variables,
-filters (constraints), and output specs (how to shape).
+The recipe is the central data structure for the Recipe Builder workflow.
+It holds all selections for an OMOP data extraction: populations (who),
+variable blocks (what, grouped), individual variables, filters (constraints),
+and output specifications (how to shape the result). A recipe is built
+incrementally using \code{recipe_add_*} / \code{recipe_remove_*} functions,
+then compiled to a server-side plan via \code{\link{recipe_to_plan}} and
+executed via \code{\link{recipe_execute}}.
+}
+\examples{
+\dontrun{
+recipe <- omop_recipe()
+recipe <- recipe_add_block(recipe, omop_variable_block(
+  table = "condition_occurrence",
+  concept_ids = c(201820),
+  format = "binary"
+))
+recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
+plan <- recipe_to_plan(recipe)
+}
+}
+\seealso{
+\code{\link{recipe_add_block}}, \code{\link{recipe_add_filter}},
+  \code{\link{recipe_to_plan}}, \code{\link{recipe_execute}}
 }

@@ -12,18 +12,30 @@ recipe_preview_stats(
 )
 }
 \arguments{
-\item{recipe}{An omop_recipe object}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{scope}{Character; "per_site", "pooled", or "both"}
+\item{scope}{Character; \code{"per_site"}, \code{"pooled"}, or
+\code{"both"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; OMOP session symbol on the server (default
+\code{"omop"}).}
 
-\item{conns}{DSI connections or NULL}
+\item{conns}{DSI connections or \code{NULL} (uses active connections).}
 }
 \value{
-A dsomop_result with aggregate stats per output
+A \code{dsomop_result} with aggregate stats per table.
 }
 \description{
-Runs aggregate-only queries to show safe counts and distributions
-for the variables in the recipe.
+Runs aggregate-only queries via \code{\link{ds.omop.table.stats}} to show
+safe row and person counts for the tables referenced by the recipe's
+variables. This provides a quick sanity check without materializing any
+server-side datasets.
+}
+\examples{
+\dontrun{
+stats <- recipe_preview_stats(recipe, scope = "pooled")
+}
+}
+\seealso{
+\code{\link{recipe_execute}}, \code{\link{recipe_preview_schema}}
 }

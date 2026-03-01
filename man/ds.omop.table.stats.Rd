@@ -15,23 +15,42 @@ ds.omop.table.stats(
 )
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name (e.g.,
+\code{"condition_occurrence"}, \code{"person"}).}
 
-\item{stats}{Character vector; which stats to include}
+\item{stats}{Character vector; which statistics to compute. Supported
+values are \code{"rows"} (total row count) and \code{"persons"}
+(distinct person count). Default: \code{c("rows", "persons")}.}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) requires all
+servers to succeed, \code{"pooled_only_ok"} allows partial results.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of data frames with columns \code{statistic} and \code{value}),
+  \code{$pooled} (combined statistics when pooled), and \code{$meta}.
 }
 \description{
-Get table-level statistics
+Returns row counts and person counts for the specified OMOP CDM table.
+Results are disclosure-controlled on the server side (counts below the
+minimum cell threshold are suppressed) and returned per-site with
+optional pooled totals that sum counts across servers.
+}
+\examples{
+\dontrun{
+result <- ds.omop.table.stats("condition_occurrence")
+result$per_site$server1
+
+pooled <- ds.omop.table.stats("drug_exposure", scope = "pooled")
+pooled$pooled
+}
 }

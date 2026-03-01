@@ -16,29 +16,53 @@ ds.omop.plan.temporal_covariates(
 )
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{table}{Character; source OMOP table}
+\item{table}{Character; source OMOP table to extract covariates from.}
 
-\item{concept_set}{Numeric vector; concept IDs to include}
+\item{concept_set}{Numeric vector; concept IDs to include in the
+covariate computation.}
 
-\item{bin_width}{Integer; bin width in days}
+\item{bin_width}{Integer; width of each time bin in days.}
 
-\item{window_start}{Integer; start of window (days from index)}
+\item{window_start}{Integer; start of the observation window in days
+relative to the cohort index date (negative = before index).}
 
-\item{window_end}{Integer; end of window (days from index)}
+\item{window_end}{Integer; end of the observation window in days
+relative to the cohort index date (0 = index date).}
 
-\item{analyses}{Character vector; analyses to compute
-(\code{"binary"}, \code{"count"})}
+\item{analyses}{Character vector; types of analyses to compute.
+Supported values include \code{"binary"} and \code{"count"}.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the temporal covariates
+  output appended.
 }
 \description{
 Produces FeatureExtraction-compatible sparse covariates binned into
-time windows relative to the cohort index date. Returns 3 symbols:
-\code{<name>.temporalCovariates}, \code{<name>.covariateRef},
-\code{<name>.timeRef}. Requires a cohort to be set.
+time windows relative to the cohort index date. Returns three symbols
+on the server: \code{<name>.temporalCovariates},
+\code{<name>.covariateRef}, and \code{<name>.timeRef}. Requires a
+cohort to be set.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.cohort(plan, cohort_definition_id = 1)
+plan <- ds.omop.plan.temporal_covariates(plan,
+  table = "condition_occurrence",
+  concept_set = c(201826, 443238),
+  bin_width = 30L,
+  window_start = -365L,
+  window_end = 0L,
+  analyses = c("binary", "count")
+)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.intervals}},
+  \code{\link{ds.omop.plan.features}}
 }

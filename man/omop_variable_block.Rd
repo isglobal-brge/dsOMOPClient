@@ -18,31 +18,56 @@ omop_variable_block(
 )
 }
 \arguments{
-\item{id}{Character; block ID}
+\item{id}{Character or \code{NULL}; block ID (auto-generated from table and
+concept count if \code{NULL}).}
 
-\item{table}{Character; shared source table}
+\item{table}{Character; shared source OMOP CDM table
+(e.g. \code{"condition_occurrence"}).}
 
-\item{concept_ids}{Integer vector; concept IDs for all variables in block}
+\item{concept_ids}{Integer vector; concept IDs for all variables in the block.}
 
-\item{concept_names}{Character vector or NULL; names matching concept_ids}
+\item{concept_names}{Character vector or \code{NULL}; human-readable names
+matching \code{concept_ids} positionally.}
 
-\item{time_window}{Named list with start/end offsets, or NULL}
+\item{time_window}{Named list with \code{start}/\code{end} offsets, or
+\code{NULL} for no window.}
 
-\item{format}{Character; default format for variables in this block}
+\item{format}{Character; default output format for variables in this block
+(e.g. \code{"binary"}, \code{"count"}).}
 
-\item{value_source}{Character or NULL; default value source column}
+\item{value_source}{Character or \code{NULL}; default value source column
+(e.g. \code{"value_as_number"}).}
 
-\item{suffix_mode}{Character; naming mode for multi-column expansion}
+\item{suffix_mode}{Character; naming mode for multi-column expansion
+(\code{"index"}, \code{"range"}, or \code{"label"}).}
 
-\item{filters}{List of omop_filter objects; row-level filters for the block}
+\item{filters}{List of \code{\link{omop_filter}} objects; row-level filters
+applied to all variables in the block.}
 
-\item{population_id}{Character; which population this block belongs to}
+\item{population_id}{Character; which population this block belongs to
+(default \code{"base"}).}
 }
 \value{
-An omop_variable_block object
+An \code{omop_variable_block} object.
 }
 \description{
 A variable block groups variables that share a source table, time window,
-and row-level filters. Variables within a block inherit these defaults
-but can override individually.
+and row-level filters. When added to a recipe via
+\code{\link{recipe_add_block}}, the block's \code{concept_ids} are expanded
+into individual \code{\link{omop_variable}} objects that inherit the block's
+defaults. This is the primary way the Builder UI adds concepts to a recipe.
+}
+\examples{
+\dontrun{
+block <- omop_variable_block(
+  table = "condition_occurrence",
+  concept_ids = c(201820, 320128),
+  concept_names = c("Type 2 diabetes", "Essential hypertension"),
+  format = "binary"
+)
+recipe <- recipe_add_block(recipe, block)
+}
+}
+\seealso{
+\code{\link{recipe_add_block}}, \code{\link{omop_variable}}
 }

@@ -12,17 +12,44 @@ omop.date_handling(
 )
 }
 \arguments{
-\item{mode}{Character; "absolute", "relative", "binned", or "remove"}
+\item{mode}{Character; transformation mode. One of \code{"absolute"}
+(keep original dates), \code{"relative"} (convert to days from
+reference), \code{"binned"} (aggregate into calendar bins), or
+\code{"remove"} (drop all date columns).}
 
-\item{reference}{Character; reference for relative mode ("index")}
+\item{reference}{Character; reference point for relative mode.
+Currently only \code{"index"} (cohort index date) is supported.}
 
-\item{bin_width}{Character; for binned mode ("week", "month", "year")}
+\item{bin_width}{Character; bin granularity for binned mode. One of
+\code{"week"}, \code{"month"}, or \code{"year"}.}
 
-\item{date_columns}{Character vector; specific columns (NULL = all)}
+\item{date_columns}{Character vector; specific date columns to
+transform. If \code{NULL}, all date columns in the output are
+transformed.}
 }
 \value{
-A date handling spec list
+A list with elements \code{mode}, \code{reference},
+  \code{bin_width}, and \code{date_columns}.
 }
 \description{
-Build a date handling specification
+Creates a specification controlling how date columns are transformed
+in event-level outputs. Dates can be kept as-is, converted to
+relative days from an index date, binned into calendar periods, or
+removed entirely for privacy.
+}
+\examples{
+\dontrun{
+# Convert dates to days relative to cohort index
+dh <- omop.date_handling(mode = "relative", reference = "index")
+
+# Bin dates by month, remove exact dates
+dh <- omop.date_handling(mode = "binned", bin_width = "month")
+
+plan <- ds.omop.plan.events(plan, "conditions",
+  "condition_occurrence", date_handling = dh)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.events}},
+  \code{\link{omop.temporal}}
 }

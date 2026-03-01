@@ -2,7 +2,7 @@
 % Please edit documentation in R/exploration.R
 \name{ds.omop.value.quantiles}
 \alias{ds.omop.value.quantiles}
-\title{Get safe numeric quantiles}
+\title{Get disclosure-safe numeric quantiles}
 \usage{
 ds.omop.value.quantiles(
   table,
@@ -19,31 +19,54 @@ ds.omop.value.quantiles(
 )
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name (e.g., \code{"measurement"}).}
 
-\item{value_col}{Character; numeric column name}
+\item{value_col}{Character; the numeric column name (e.g.,
+\code{"value_as_number"}).}
 
-\item{probs}{Numeric vector; quantile probabilities}
+\item{probs}{Numeric vector; the quantile probabilities to compute
+(default: \code{c(0.05, 0.25, 0.5, 0.75, 0.95)}).}
 
-\item{cohort_table}{Character; cohort temp table (NULL)}
+\item{cohort_table}{Character; name of a server-side cohort temp table
+for filtering, or NULL (default: NULL).}
 
-\item{window}{List with start/end dates (NULL)}
+\item{window}{List with \code{start}/\code{end} date strings for
+temporal filtering, or NULL (default: NULL).}
 
-\item{rounding}{Integer; decimal places}
+\item{rounding}{Integer; number of decimal places to round quantile
+values to (default: 2).}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.
+Pooled quantiles are not computed (see Description).}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of named numeric vectors or data frames with quantile values),
+  \code{$pooled} (always NULL since quantiles cannot be safely pooled),
+  and \code{$meta} (includes warnings when pooled scope is requested).
 }
 \description{
-Get safe numeric quantiles
+Computes quantiles for a numeric column in an OMOP CDM table. Quantile
+computation happens entirely on the server side to avoid exposing
+individual-level data. Note that quantiles are inherently non-poolable
+from summary statistics alone; when \code{scope = "pooled"} is
+requested, per-site quantiles are still returned but a warning is
+emitted and the \code{$pooled} slot remains NULL.
+}
+\examples{
+\dontrun{
+q <- ds.omop.value.quantiles("measurement", "value_as_number",
+                              probs = c(0.25, 0.5, 0.75))
+q$per_site$server1
+}
 }

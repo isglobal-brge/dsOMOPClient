@@ -1,9 +1,11 @@
-# ==============================================================================
-# MODULE: Settings
-# ==============================================================================
-# Disclosure settings, session/theme info, about.
-# ==============================================================================
+# Module: Studio - Settings
+# Shiny module for configuring studio preferences and session options.
 
+#' Studio Settings UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @return A Shiny UI element.
+#' @keywords internal
 .mod_settings_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::layout_columns(
@@ -32,6 +34,12 @@
   )
 }
 
+#' Studio Settings Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @return NULL (Shiny module server, called for side effects).
+#' @keywords internal
 .mod_settings_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
 

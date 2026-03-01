@@ -7,13 +7,22 @@
 recipe_remove_population(recipe, id)
 }
 \arguments{
-\item{recipe}{An omop_recipe}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{id}{Character; population ID to remove}
+\item{id}{Character; population ID to remove (must not be \code{"base"}).}
 }
 \value{
-The modified recipe
+The modified \code{omop_recipe} object.
 }
 \description{
-Remove a population from the recipe
+Removes a population node from the recipe's population DAG. The base
+population cannot be removed.
+}
+\examples{
+\dontrun{
+recipe <- recipe_remove_population(recipe, "adults")
+}
+}
+\seealso{
+\code{\link{recipe_add_population}}
 }

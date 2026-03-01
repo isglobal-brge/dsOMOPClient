@@ -1,9 +1,11 @@
-# ==============================================================================
-# MODULE: Overview (Landing Dashboard)
-# ==============================================================================
-# KPI value_boxes, unified server cards, notifications.
-# ==============================================================================
+# Module: Studio - Overview
+# Shiny module for displaying CDM overview and data quality summary.
 
+#' Studio Overview UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @return A Shiny UI element.
+#' @keywords internal
 .mod_overview_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -85,6 +87,12 @@
   )
 }
 
+#' Studio Overview Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @return NULL (Shiny module server, called for side effects).
+#' @keywords internal
 .mod_overview_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns

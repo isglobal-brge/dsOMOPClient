@@ -1,11 +1,11 @@
-# ==============================================================================
-# MODULE: Explore (consolidated)
-# Wraps Prevalence, Drilldown, Locator, and Vocabulary as sub-tabs
-# ==============================================================================
+# Module: Studio - Data Explorer
+# Shiny module for interactive data profiling and exploration.
 
-# ------------------------------------------------------------------------------
-# Wrapper UI: navset_pill with 4 sub-tabs
-# ------------------------------------------------------------------------------
+#' Studio Data Explorer UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @return A Shiny UI element.
+#' @keywords internal
 .mod_explore_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::navset_pill(
@@ -21,9 +21,13 @@
   )
 }
 
-# ------------------------------------------------------------------------------
-# Wrapper Server: calls all 4 sub-module servers
-# ------------------------------------------------------------------------------
+#' Studio Data Explorer Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @param parent_session Shiny session; the parent session for tab navigation.
+#' @return NULL (Shiny module server, called for side effects).
+#' @keywords internal
 .mod_explore_server <- function(id, state, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
     .mod_explore_prevalence_server("prevalence", state, session)
@@ -34,9 +38,7 @@
 }
 
 
-# ==============================================================================
 # SUB-MODULE 1: Prevalence (was .mod_table_concepts)
-# ==============================================================================
 
 .mod_explore_prevalence_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -464,9 +466,7 @@
 }
 
 
-# ==============================================================================
 # SUB-MODULE 2: Drilldown (was .mod_concept_drilldown)
-# ==============================================================================
 
 .mod_explore_drilldown_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -1014,9 +1014,7 @@
 }
 
 
-# ==============================================================================
 # SUB-MODULE 3: Locator (was .mod_concept_locator)
-# ==============================================================================
 
 .mod_explore_locator_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -1259,9 +1257,7 @@
 }
 
 
-# ==============================================================================
 # SUB-MODULE 4: Vocabulary (was .mod_vocab)
-# ==============================================================================
 
 .mod_explore_vocab_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -1573,9 +1569,7 @@
 }
 
 
-# ==============================================================================
 # Helper functions
-# ==============================================================================
 
 # Helper: pick server(s) from drilldown per_site list
 # selected_server: character vector of server names (NULL = all)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/feature.R
 \name{omop.feature.first_value}
 \alias{omop.feature.first_value}
-\title{First recorded value feature}
+\title{Create a first-recorded-value feature specification}
 \usage{
 omop.feature.first_value(
   concept_set,
@@ -11,15 +11,35 @@ omop.feature.first_value(
 )
 }
 \arguments{
-\item{concept_set}{Numeric vector or omop_concept_set}
+\item{concept_set}{Numeric vector of concept IDs, or an
+\code{omop_concept_set} object defining the concepts to match.}
 
-\item{value_column}{Character; column to extract value from}
+\item{value_column}{Character; name of the column from which to
+extract the value (default \code{"value_as_number"}).}
 
-\item{name}{Character; feature name}
+\item{name}{Character; optional custom name for the feature column.
+If \code{NULL}, auto-generated from the concept and table context.}
 }
 \value{
-An omop_feature_spec list
+An \code{omop_feature_spec} object with
+  \code{type = "first_value"}.
 }
 \description{
-First recorded value feature
+Produces a feature spec that extracts the value from the earliest
+record matching the concept set. Ordered by the table's date column,
+the first record's \code{value_column} is returned. Useful for
+capturing baseline measurements at initial presentation.
+}
+\examples{
+\dontrun{
+spec <- omop.feature.first_value(c(3004410),
+  value_column = "value_as_number")
+plan <- ds.omop.plan.features(plan, "labs",
+  "measurement", specs = list(initial_glucose = spec))
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.features}},
+  \code{\link{omop.feature.latest_value}},
+  \code{\link{omop.feature.mean_value}}
 }

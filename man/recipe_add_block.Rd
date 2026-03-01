@@ -7,14 +7,29 @@
 recipe_add_block(recipe, block)
 }
 \arguments{
-\item{recipe}{An omop_recipe}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{block}{An omop_variable_block object}
+\item{block}{An \code{\link{omop_variable_block}} object.}
 }
 \value{
-The modified recipe
+The modified \code{omop_recipe} object.
 }
 \description{
-Expands concept_ids into individual omop_variable objects using the block's
-defaults, and ensures unique naming.
+Registers the block and expands its \code{concept_ids} into individual
+\code{\link{omop_variable}} objects using the block's default settings
+(table, format, time window, filters). Variable names are auto-generated
+from concept names or IDs with uniqueness enforcement.
+}
+\examples{
+\dontrun{
+recipe <- omop_recipe()
+recipe <- recipe_add_block(recipe, omop_variable_block(
+  table = "condition_occurrence",
+  concept_ids = c(201820, 320128),
+  format = "binary"
+))
+}
+}
+\seealso{
+\code{\link{omop_variable_block}}, \code{\link{recipe_add_variable}}
 }

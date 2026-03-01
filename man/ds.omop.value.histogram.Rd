@@ -2,7 +2,7 @@
 % Please edit documentation in R/exploration.R
 \name{ds.omop.value.histogram}
 \alias{ds.omop.value.histogram}
-\title{Get a safe numeric histogram}
+\title{Get a disclosure-safe numeric histogram}
 \usage{
 ds.omop.value.histogram(
   table,
@@ -18,29 +18,49 @@ ds.omop.value.histogram(
 )
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name (e.g., \code{"measurement"}).}
 
-\item{value_col}{Character; numeric column name}
+\item{value_col}{Character; the numeric column to histogram (e.g.,
+\code{"value_as_number"}).}
 
-\item{bins}{Integer; number of bins}
+\item{bins}{Integer; the number of histogram bins (default: 20).}
 
-\item{cohort_table}{Character; cohort temp table (NULL)}
+\item{cohort_table}{Character; name of a server-side cohort temp table
+for filtering, or NULL (default: NULL).}
 
-\item{window}{List with start/end dates (NULL)}
+\item{window}{List with \code{start}/\code{end} date strings for
+temporal filtering, or NULL (default: NULL).}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of data frames with columns \code{bin_start}, \code{bin_end},
+  \code{count_value}), \code{$pooled} (combined histogram when pooled),
+  and \code{$meta}.
 }
 \description{
-Get a safe numeric histogram
+Computes a binned histogram for a numeric column in an OMOP CDM table.
+When scope is \code{"pooled"}, a two-pass algorithm is used: the first
+pass collects p05/p95 ranges from each server to compute shared bin
+edges, and the second pass counts records per bin using those shared
+edges so that results are directly comparable and summable across
+servers. Bins with counts below the disclosure threshold are suppressed.
+}
+\examples{
+\dontrun{
+hist_result <- ds.omop.value.histogram("measurement", "value_as_number",
+                                        bins = 30, scope = "pooled")
+hist_result$pooled
+}
 }

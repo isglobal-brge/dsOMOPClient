@@ -1,8 +1,11 @@
-# ==============================================================================
-# MODULE: Query Library Browser
-# Browse, parameterise, and execute query templates
-# ==============================================================================
+# Module: Studio - Query Library
+# Shiny module for browsing and executing curated SQL queries.
 
+#' Studio Query Library UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @return A Shiny UI element.
+#' @keywords internal
 .mod_queries_ui <- function(id) {
 
   ns <- shiny::NS(id)
@@ -60,6 +63,12 @@
   )
 }
 
+#' Studio Query Library Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @return NULL (Shiny module server, called for side effects).
+#' @keywords internal
 .mod_queries_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -586,10 +595,13 @@
   })
 }
 
-# ==============================================================================
-# Auto-plot: intelligently pick chart type from query result columns
-# ==============================================================================
-
+#' Auto-plot query results
+#'
+#' Intelligently picks chart type from query result columns.
+#' @param df Data frame of query results.
+#' @param qid Character; query ID (optional hint).
+#' @return A plotly object.
+#' @keywords internal
 .auto_plot_query <- function(df, qid = "") {
   cols <- names(df)
 

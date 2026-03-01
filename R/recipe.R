@@ -1,24 +1,18 @@
-# ==============================================================================
-# dsOMOPClient v2 - Recipe Infrastructure
-# ==============================================================================
-# The recipe is the single source of truth for an OMOP extraction recipe.
-# It holds: populations (who), variables (what), filters (constraints),
-# variable blocks (grouped variables), and output specs (how to shape).
-#
-# Architecture:
-#   Population DAG: base cohort -> filter chains -> subpopulations
-#   Variable blocks: groups sharing table/time_window/row_filters
-#   Filter groups: AND/OR nested condition chains
-#   Outputs: multiple tables (wide, long, features, joined_long, etc.)
-#
-# Everything is reproducible via recipe_to_code() and recipe_export_json().
-# ==============================================================================
+# Module: Recipe Builder
+# Functions for building extraction recipes with concept blocks, feature specs,
+# population filters, and output configuration.
 
-# ==============================================================================
-# Naming engine
-# ==============================================================================
+# --- Naming engine ---
 
-# Sanitize a concept name into a valid R variable name
+#' Sanitize a concept name into a valid R variable name
+#'
+#' Converts a human-readable concept name into a safe R variable name by
+#' lowercasing, replacing non-alphanumeric characters with underscores, and
+#' truncating to 50 characters.
+#'
+#' @param x Character; the name to sanitize.
+#' @return Character; a valid R variable name.
+#' @keywords internal
 .sanitize_name <- function(x) {
   x <- tolower(x)
   x <- gsub("[^a-z0-9]+", "_", x)
@@ -38,9 +32,12 @@
 
 #' Ensure a variable name is unique within existing names
 #'
-#' @param name Character; proposed name
-#' @param existing Character vector; existing names
-#' @return Character; unique name (with _2, _3 suffixes if needed)
+#' Appends numeric suffixes (\_2, \_3, etc.) to resolve collisions with
+#' existing names. Also escapes R reserved words by appending "\_var".
+#'
+#' @param name Character; proposed name.
+#' @param existing Character vector; existing names to check against.
+#' @return Character; a unique name (with \_2, \_3 suffixes if needed).
 #' @keywords internal
 .ensure_unique_name <- function(name, existing) {
   if (name %in% .r_reserved) name <- paste0(name, "_var")
@@ -52,12 +49,16 @@
 
 #' Generate suffixed names for multi-column variables
 #'
-#' @param base_name Character; base variable name
-#' @param n Integer; number of columns
-#' @param mode Character; suffix mode
-#' @param labels Character vector; labels for "label" mode (optional)
-#' @param ranges Numeric matrix; start/end for "range" mode (optional)
-#' @return Character vector of suffixed names
+#' Produces a vector of column names from a base name by appending index,
+#' range, or label suffixes. Used when a single variable expands into
+#' multiple output columns.
+#'
+#' @param base_name Character; base variable name.
+#' @param n Integer; number of columns to generate.
+#' @param mode Character; suffix mode ("index", "range", or "label").
+#' @param labels Character vector; labels for "label" mode (optional).
+#' @param ranges Numeric matrix; start/end for "range" mode (optional).
+#' @return Character vector of suffixed names.
 #' @keywords internal
 .suffix_names <- function(base_name, n,
                           mode = c("index", "range", "label"),
@@ -84,30 +85,47 @@
   )
 }
 
-# ==============================================================================
-# omop_variable: What to extract
-# ==============================================================================
+# --- omop_variable: What to extract ---
 
 #' Create a variable specification
 #'
 #' Describes a single variable to extract from the CDM. Variables reference
 #' a source table and column, and may include concept-level filtering and
-#' output formatting options.
+#' output formatting options. Variables are the atomic units added to an
+#' \code{omop_recipe} either individually via \code{\link{recipe_add_variable}}
+#' or in bulk via \code{\link{recipe_add_block}}.
 #'
-#' @param name Character; output column name (auto-generated if NULL)
-#' @param table Character; source OMOP table
-#' @param column Character; source column to extract
-#' @param concept_id Integer or NULL; concept ID filter (for concept columns)
-#' @param concept_name Character or NULL; human-readable concept name
-#' @param type Character; variable type hint
-#' @param format Character; output format
-#' @param value_source Character or NULL; column to extract value from
-#'   (e.g. "value_as_number" for measurements)
-#' @param time_window Named list with start/end offsets relative to index,
-#'   or NULL for no window constraint
+#' @param name Character; output column name (auto-generated from
+#'   \code{concept_name}, \code{concept_id}, or \code{column} if \code{NULL}).
+#' @param table Character; source OMOP CDM table (e.g. \code{"condition_occurrence"}).
+#' @param column Character or \code{NULL}; source column to extract.
+#' @param concept_id Integer or \code{NULL}; concept ID filter (for concept columns).
+#' @param concept_name Character or \code{NULL}; human-readable concept name.
+#' @param type Character; variable type hint. One of \code{"auto"}, \code{"numeric"},
+#'   \code{"categorical"}, \code{"date"}, \code{"boolean"}, \code{"integer"},
+#'   \code{"character"}.
+#' @param format Character; output format. One of \code{"raw"}, \code{"binary"},
+#'   \code{"count"}, \code{"first_value"}, \code{"last_value"}, \code{"mean"},
+#'   \code{"min"}, \code{"max"}, \code{"time_since"}, \code{"binned"}.
+#' @param value_source Character or \code{NULL}; column to extract value from
+#'   (e.g. \code{"value_as_number"} for measurements).
+#' @param time_window Named list with \code{start}/\code{end} offsets relative
+#'   to index date, or \code{NULL} for no window constraint.
 #' @param suffix_mode Character; how to name multi-column expansions
-#' @param filters List of omop_filter objects to apply to this variable
-#' @return An omop_variable object
+#'   (\code{"index"}, \code{"range"}, or \code{"label"}).
+#' @param filters List of \code{\link{omop_filter}} objects to apply to this variable.
+#' @return An \code{omop_variable} object (a named list with class
+#'   \code{"omop_variable"}).
+#' @examples
+#' \dontrun{
+#' v <- omop_variable(
+#'   table = "condition_occurrence",
+#'   concept_id = 201820,
+#'   concept_name = "Type 2 diabetes",
+#'   format = "binary"
+#' )
+#' }
+#' @seealso \code{\link{recipe_add_variable}}, \code{\link{omop_variable_block}}
 #' @export
 omop_variable <- function(name = NULL,
                           table,
@@ -159,7 +177,13 @@ omop_variable <- function(name = NULL,
   obj
 }
 
+#' Print an omop_variable
+#'
+#' @param x An \code{omop_variable} object.
+#' @param ... Additional arguments (ignored).
+#' @return \code{x}, invisibly.
 #' @export
+#' @method print omop_variable
 print.omop_variable <- function(x, ...) {
   cat("omop_variable:", x$name, "\n")
   cat("  Table:   ", x$table, "\n")
@@ -177,20 +201,38 @@ print.omop_variable <- function(x, ...) {
   invisible(x)
 }
 
-# ==============================================================================
-# omop_filter + omop_filter_group: Conditions & chaining
-# ==============================================================================
+# --- omop_filter + omop_filter_group: Conditions & chaining ---
 
 #' Create a filter specification
 #'
 #' Filters restrict the population or events included in the extraction.
-#' Three levels: population (person-level), row (event-level), output (post-extraction).
+#' There are three levels: \code{"population"} (person-level inclusion criteria),
+#' \code{"row"} (event-level restrictions), and \code{"output"} (post-extraction
+#' transformations). Filters are added to a recipe via
+#' \code{\link{recipe_add_filter}} and can be nested into groups with
+#' \code{\link{omop_filter_group}}.
 #'
-#' @param type Character; filter type
-#' @param level Character; "population", "row", or "output"
-#' @param params Named list; filter-specific parameters
-#' @param label Character or NULL; human-readable description
-#' @return An omop_filter object
+#' Convenience constructors are provided for common filter types:
+#' \code{\link{omop_filter_sex}}, \code{\link{omop_filter_age}},
+#' \code{\link{omop_filter_age_group}}, \code{\link{omop_filter_has_concept}},
+#' \code{\link{omop_filter_date_range}}, \code{\link{omop_filter_value}}.
+#'
+#' @param type Character; filter type. One of \code{"sex"}, \code{"age_range"},
+#'   \code{"age_group"}, \code{"cohort"}, \code{"has_concept"},
+#'   \code{"date_range"}, \code{"value_threshold"}, \code{"concept_set"},
+#'   \code{"min_count"}, \code{"top_n"}, \code{"dedup"}, \code{"custom"}.
+#' @param level Character; \code{"population"}, \code{"row"}, or \code{"output"}.
+#' @param params Named list; filter-specific parameters (varies by type).
+#' @param label Character or \code{NULL}; human-readable description
+#'   (auto-generated from type and params if \code{NULL}).
+#' @return An \code{omop_filter} object (a named list with class
+#'   \code{"omop_filter"}).
+#' @examples
+#' \dontrun{
+#' f <- omop_filter(type = "sex", level = "population",
+#'                  params = list(value = "F"))
+#' }
+#' @seealso \code{\link{recipe_add_filter}}, \code{\link{omop_filter_group}}
 #' @export
 omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
                                   "has_concept", "date_range",
@@ -229,7 +271,13 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
   obj
 }
 
+#' Print an omop_filter
+#'
+#' @param x An \code{omop_filter} object.
+#' @param ... Additional arguments (ignored).
+#' @return \code{x}, invisibly.
 #' @export
+#' @method print omop_filter
 print.omop_filter <- function(x, ...) {
   cat("omop_filter [", x$level, "]:", x$label, "\n")
   invisible(x)
@@ -237,12 +285,26 @@ print.omop_filter <- function(x, ...) {
 
 #' Create an AND/OR group of filters
 #'
-#' Allows nested condition chains. Groups can contain filters or other groups.
+#' Combines multiple filters (or nested groups) using a Boolean operator.
+#' Groups can contain \code{\link{omop_filter}} objects or other
+#' \code{omop_filter_group} objects, allowing arbitrarily nested condition
+#' trees. During plan compilation, these are translated to the server's
+#' filter DSL.
 #'
-#' @param ... omop_filter or omop_filter_group objects
-#' @param operator Character; "AND" or "OR"
-#' @param label Character or NULL; human-readable description
-#' @return An omop_filter_group object
+#' @param ... \code{omop_filter} or \code{omop_filter_group} objects to combine.
+#' @param operator Character; \code{"AND"} or \code{"OR"}.
+#' @param label Character or \code{NULL}; human-readable description
+#'   (auto-generated from children if \code{NULL}).
+#' @return An \code{omop_filter_group} object.
+#' @examples
+#' \dontrun{
+#' grp <- omop_filter_group(
+#'   omop_filter_sex("F"),
+#'   omop_filter_age(min = 18, max = 65),
+#'   operator = "AND"
+#' )
+#' }
+#' @seealso \code{\link{omop_filter}}, \code{\link{recipe_add_filter}}
 #' @export
 omop_filter_group <- function(..., operator = c("AND", "OR"), label = NULL) {
   operator <- match.arg(operator)
@@ -274,7 +336,13 @@ omop_filter_group <- function(..., operator = c("AND", "OR"), label = NULL) {
   obj
 }
 
+#' Print an omop_filter_group
+#'
+#' @param x An \code{omop_filter_group} object.
+#' @param ... Additional arguments (ignored).
+#' @return \code{x}, invisibly.
 #' @export
+#' @method print omop_filter_group
 print.omop_filter_group <- function(x, ...) {
   cat("omop_filter_group [", x$operator, "]:", x$label, "\n")
   for (i in seq_along(x$children)) {
@@ -290,7 +358,7 @@ print.omop_filter_group <- function(x, ...) {
   invisible(x)
 }
 
-# Convenience constructors for common filters
+# --- Convenience filter constructors ---
 
 #' @rdname omop_filter
 #' @param value Character; "M", "F", or concept ID
@@ -415,21 +483,33 @@ omop_filter_value <- function(column = "value_as_number", threshold,
   "constrained"
 }
 
-# ==============================================================================
-# omop_population: DAG of subpopulations
-# ==============================================================================
+# --- omop_population: DAG of subpopulations ---
 
 #' Create a population node
 #'
-#' Populations form a DAG: a base cohort, with derived subpopulations
-#' created by applying filter chains.
+#' Populations form a directed acyclic graph (DAG): a base cohort at the root,
+#' with derived subpopulations created by applying filter chains. Each recipe
+#' starts with a \code{"base"} population representing all persons. Additional
+#' populations can be created as children of existing ones via
+#' \code{\link{recipe_add_population}}.
 #'
-#' @param id Character; population ID
-#' @param label Character; human-readable label
-#' @param parent_id Character or NULL; parent population ID
-#' @param filters List of omop_filter/omop_filter_group objects
-#' @param cohort_definition_id Integer or NULL; base cohort ID
-#' @return An omop_population object
+#' @param id Character; population ID (must be unique within the recipe).
+#' @param label Character; human-readable label.
+#' @param parent_id Character or \code{NULL}; parent population ID (\code{NULL}
+#'   for root).
+#' @param filters List of \code{\link{omop_filter}} or
+#'   \code{\link{omop_filter_group}} objects.
+#' @param cohort_definition_id Integer or \code{NULL}; base cohort definition ID
+#'   (if the population is defined by a pre-existing cohort).
+#' @return An \code{omop_population} object.
+#' @examples
+#' \dontrun{
+#' pop <- omop_population(id = "females",
+#'                        label = "Female patients",
+#'                        parent_id = "base",
+#'                        filters = list(omop_filter_sex("F")))
+#' }
+#' @seealso \code{\link{recipe_add_population}}, \code{\link{omop_recipe}}
 #' @export
 omop_population <- function(id = "base",
                             label = "Base Population",
@@ -448,7 +528,13 @@ omop_population <- function(id = "base",
   obj
 }
 
+#' Print an omop_population
+#'
+#' @param x An \code{omop_population} object.
+#' @param ... Additional arguments (ignored).
+#' @return \code{x}, invisibly.
 #' @export
+#' @method print omop_population
 print.omop_population <- function(x, ...) {
   parent_txt <- if (!is.null(x$parent_id)) paste("->", x$parent_id) else "(root)"
   cat("omop_population:", x$id, parent_txt, "-", x$label, "\n")
@@ -459,27 +545,47 @@ print.omop_population <- function(x, ...) {
   invisible(x)
 }
 
-# ==============================================================================
-# omop_variable_block: Grouped variables
-# ==============================================================================
+# --- omop_variable_block: Grouped variables ---
 
 #' Create a variable block
 #'
 #' A variable block groups variables that share a source table, time window,
-#' and row-level filters. Variables within a block inherit these defaults
-#' but can override individually.
+#' and row-level filters. When added to a recipe via
+#' \code{\link{recipe_add_block}}, the block's \code{concept_ids} are expanded
+#' into individual \code{\link{omop_variable}} objects that inherit the block's
+#' defaults. This is the primary way the Builder UI adds concepts to a recipe.
 #'
-#' @param id Character; block ID
-#' @param table Character; shared source table
-#' @param concept_ids Integer vector; concept IDs for all variables in block
-#' @param concept_names Character vector or NULL; names matching concept_ids
-#' @param time_window Named list with start/end offsets, or NULL
-#' @param format Character; default format for variables in this block
-#' @param value_source Character or NULL; default value source column
+#' @param id Character or \code{NULL}; block ID (auto-generated from table and
+#'   concept count if \code{NULL}).
+#' @param table Character; shared source OMOP CDM table
+#'   (e.g. \code{"condition_occurrence"}).
+#' @param concept_ids Integer vector; concept IDs for all variables in the block.
+#' @param concept_names Character vector or \code{NULL}; human-readable names
+#'   matching \code{concept_ids} positionally.
+#' @param time_window Named list with \code{start}/\code{end} offsets, or
+#'   \code{NULL} for no window.
+#' @param format Character; default output format for variables in this block
+#'   (e.g. \code{"binary"}, \code{"count"}).
+#' @param value_source Character or \code{NULL}; default value source column
+#'   (e.g. \code{"value_as_number"}).
 #' @param suffix_mode Character; naming mode for multi-column expansion
-#' @param filters List of omop_filter objects; row-level filters for the block
+#'   (\code{"index"}, \code{"range"}, or \code{"label"}).
+#' @param filters List of \code{\link{omop_filter}} objects; row-level filters
+#'   applied to all variables in the block.
 #' @param population_id Character; which population this block belongs to
-#' @return An omop_variable_block object
+#'   (default \code{"base"}).
+#' @return An \code{omop_variable_block} object.
+#' @examples
+#' \dontrun{
+#' block <- omop_variable_block(
+#'   table = "condition_occurrence",
+#'   concept_ids = c(201820, 320128),
+#'   concept_names = c("Type 2 diabetes", "Essential hypertension"),
+#'   format = "binary"
+#' )
+#' recipe <- recipe_add_block(recipe, block)
+#' }
+#' @seealso \code{\link{recipe_add_block}}, \code{\link{omop_variable}}
 #' @export
 omop_variable_block <- function(id = NULL,
                                 table,
@@ -511,7 +617,13 @@ omop_variable_block <- function(id = NULL,
   obj
 }
 
+#' Print an omop_variable_block
+#'
+#' @param x An \code{omop_variable_block} object.
+#' @param ... Additional arguments (ignored).
+#' @return \code{x}, invisibly.
 #' @export
+#' @method print omop_variable_block
 print.omop_variable_block <- function(x, ...) {
   cat("omop_variable_block:", x$id, "\n")
   cat("  Table:     ", x$table, "\n")
@@ -525,20 +637,37 @@ print.omop_variable_block <- function(x, ...) {
   invisible(x)
 }
 
-# ==============================================================================
-# omop_output: How to shape the result
-# ==============================================================================
+# --- omop_output: How to shape the result ---
 
 #' Create an output specification
 #'
-#' @param name Character; output table name
-#' @param type Character; output type
-#' @param variables Character vector; variable names to include (NULL = all)
-#' @param population_id Character; which population to use
-#' @param options Named list; type-specific options
-#' @param result_symbol Character or NULL; R symbol name for the result
-#'   (auto-generated as \code{D_<name>} if NULL)
-#' @return An omop_output object
+#' Defines how to shape the extracted data into a result table. Each output
+#' selects a subset of variables from the recipe, targets a population, and
+#' specifies a layout type (e.g. wide person-level, long event-level, or
+#' feature matrix). Outputs are added to a recipe via
+#' \code{\link{recipe_add_output}} and determine the server-side plan structure
+#' produced by \code{\link{recipe_to_plan}}.
+#'
+#' @param name Character; output table name (used as key in the recipe).
+#' @param type Character; output layout type. One of \code{"wide"},
+#'   \code{"long"}, \code{"features"}, \code{"survival"}, \code{"intervals"},
+#'   \code{"baseline"}, \code{"joined_long"}, \code{"covariates_sparse"}.
+#' @param variables Character vector or \code{NULL}; variable names to include
+#'   (\code{NULL} means all variables in the recipe).
+#' @param population_id Character; which population to use (default
+#'   \code{"base"}).
+#' @param options Named list; type-specific options (e.g. \code{tar} for
+#'   survival outputs).
+#' @param result_symbol Character or \code{NULL}; R symbol name for the result
+#'   on the server (auto-generated as \code{D_<name>} if \code{NULL}).
+#' @return An \code{omop_output} object.
+#' @examples
+#' \dontrun{
+#' out <- omop_output(name = "features_wide", type = "wide",
+#'                    population_id = "base")
+#' recipe <- recipe_add_output(recipe, out)
+#' }
+#' @seealso \code{\link{recipe_add_output}}, \code{\link{recipe_to_plan}}
 #' @export
 omop_output <- function(name = "output_1",
                         type = c("wide", "long", "features",
@@ -565,7 +694,13 @@ omop_output <- function(name = "output_1",
   obj
 }
 
+#' Print an omop_output
+#'
+#' @param x An \code{omop_output} object.
+#' @param ... Additional arguments (ignored).
+#' @return \code{x}, invisibly.
 #' @export
+#' @method print omop_output
 print.omop_output <- function(x, ...) {
   cat("omop_output:", x$name, "[", x$type, "]",
       "pop:", x$population_id,
@@ -575,17 +710,33 @@ print.omop_output <- function(x, ...) {
   invisible(x)
 }
 
-# ==============================================================================
-# omop_recipe: The single source of truth
-# ==============================================================================
+# --- omop_recipe: The single source of truth ---
 
 #' Create an empty extraction recipe
 #'
-#' The recipe holds all selections for an OMOP extraction recipe:
-#' populations (who), variable blocks (what, grouped), individual variables,
-#' filters (constraints), and output specs (how to shape).
+#' The recipe is the central data structure for the Recipe Builder workflow.
+#' It holds all selections for an OMOP data extraction: populations (who),
+#' variable blocks (what, grouped), individual variables, filters (constraints),
+#' and output specifications (how to shape the result). A recipe is built
+#' incrementally using \code{recipe_add_*} / \code{recipe_remove_*} functions,
+#' then compiled to a server-side plan via \code{\link{recipe_to_plan}} and
+#' executed via \code{\link{recipe_execute}}.
 #'
-#' @return An omop_recipe object
+#' @return An \code{omop_recipe} object containing empty populations, blocks,
+#'   variables, filters, outputs, and metadata.
+#' @examples
+#' \dontrun{
+#' recipe <- omop_recipe()
+#' recipe <- recipe_add_block(recipe, omop_variable_block(
+#'   table = "condition_occurrence",
+#'   concept_ids = c(201820),
+#'   format = "binary"
+#' ))
+#' recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
+#' plan <- recipe_to_plan(recipe)
+#' }
+#' @seealso \code{\link{recipe_add_block}}, \code{\link{recipe_add_filter}},
+#'   \code{\link{recipe_to_plan}}, \code{\link{recipe_execute}}
 #' @export
 omop_recipe <- function() {
   obj <- list(
@@ -607,9 +758,22 @@ omop_recipe <- function() {
 
 #' Add a population to the recipe
 #'
-#' @param recipe An omop_recipe
-#' @param population An omop_population object
-#' @return The modified recipe
+#' Registers a new population node in the recipe's population DAG. The
+#' population's parent (if any) must already exist in the recipe. The base
+#' population is created automatically by \code{\link{omop_recipe}}.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param population An \code{\link{omop_population}} object to add.
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- omop_recipe()
+#' recipe <- recipe_add_population(recipe,
+#'   omop_population(id = "adults", label = "Adults 18+",
+#'                   parent_id = "base",
+#'                   filters = list(omop_filter_age(min = 18))))
+#' }
+#' @seealso \code{\link{recipe_remove_population}}, \code{\link{omop_population}}
 #' @export
 recipe_add_population <- function(recipe, population) {
   if (!inherits(recipe, "omop_recipe"))
@@ -629,9 +793,17 @@ recipe_add_population <- function(recipe, population) {
 
 #' Remove a population from the recipe
 #'
-#' @param recipe An omop_recipe
-#' @param id Character; population ID to remove
-#' @return The modified recipe
+#' Removes a population node from the recipe's population DAG. The base
+#' population cannot be removed.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param id Character; population ID to remove (must not be \code{"base"}).
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_remove_population(recipe, "adults")
+#' }
+#' @seealso \code{\link{recipe_add_population}}
 #' @export
 recipe_remove_population <- function(recipe, id) {
   if (!inherits(recipe, "omop_recipe"))
@@ -644,12 +816,24 @@ recipe_remove_population <- function(recipe, id) {
 
 #' Add a variable block to the recipe
 #'
-#' Expands concept_ids into individual omop_variable objects using the block's
-#' defaults, and ensures unique naming.
+#' Registers the block and expands its \code{concept_ids} into individual
+#' \code{\link{omop_variable}} objects using the block's default settings
+#' (table, format, time window, filters). Variable names are auto-generated
+#' from concept names or IDs with uniqueness enforcement.
 #'
-#' @param recipe An omop_recipe
-#' @param block An omop_variable_block object
-#' @return The modified recipe
+#' @param recipe An \code{omop_recipe} object.
+#' @param block An \code{\link{omop_variable_block}} object.
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- omop_recipe()
+#' recipe <- recipe_add_block(recipe, omop_variable_block(
+#'   table = "condition_occurrence",
+#'   concept_ids = c(201820, 320128),
+#'   format = "binary"
+#' ))
+#' }
+#' @seealso \code{\link{omop_variable_block}}, \code{\link{recipe_add_variable}}
 #' @export
 recipe_add_block <- function(recipe, block) {
   if (!inherits(recipe, "omop_recipe"))
@@ -688,10 +872,24 @@ recipe_add_block <- function(recipe, block) {
 
 #' Add a variable to the recipe
 #'
-#' @param recipe An omop_recipe
-#' @param variable An omop_variable object, or NULL to construct from ...
-#' @param ... If variable is NULL, arguments passed to omop_variable()
-#' @return The modified recipe
+#' Adds a single variable to the recipe. Either pass a pre-built
+#' \code{\link{omop_variable}} object, or pass arguments directly which
+#' will be forwarded to \code{omop_variable()}. The variable name is
+#' deduplicated if it conflicts with existing names.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param variable An \code{\link{omop_variable}} object, or \code{NULL} to
+#'   construct from \code{...}.
+#' @param ... If \code{variable} is \code{NULL}, arguments passed to
+#'   \code{\link{omop_variable}()}.
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_add_variable(recipe,
+#'   table = "measurement", concept_id = 3004249,
+#'   concept_name = "Systolic BP", format = "mean")
+#' }
+#' @seealso \code{\link{recipe_remove_variable}}, \code{\link{recipe_add_block}}
 #' @export
 recipe_add_variable <- function(recipe, variable = NULL, ...) {
   if (!inherits(recipe, "omop_recipe"))
@@ -713,9 +911,16 @@ recipe_add_variable <- function(recipe, variable = NULL, ...) {
 
 #' Remove a variable from the recipe
 #'
-#' @param recipe An omop_recipe
-#' @param name Character; variable name to remove
-#' @return The modified recipe
+#' Removes a variable by name from the recipe's variable list.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param name Character; variable name to remove.
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_remove_variable(recipe, "condition_occurrence_c201820")
+#' }
+#' @seealso \code{\link{recipe_add_variable}}
 #' @export
 recipe_remove_variable <- function(recipe, name) {
   if (!inherits(recipe, "omop_recipe"))
@@ -727,10 +932,24 @@ recipe_remove_variable <- function(recipe, name) {
 
 #' Add a filter to the recipe
 #'
-#' @param recipe An omop_recipe
-#' @param filter An omop_filter or omop_filter_group object
-#' @param id Character or NULL; filter ID (auto-generated if NULL)
-#' @return The modified recipe
+#' Registers a filter or filter group in the recipe. Filters are applied during
+#' plan compilation: population-level filters restrict the cohort, row-level
+#' filters restrict events. The filter ID is auto-generated from the type if
+#' not provided.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param filter An \code{\link{omop_filter}} or \code{\link{omop_filter_group}}
+#'   object.
+#' @param id Character or \code{NULL}; filter ID (auto-generated from type and
+#'   sequence number if \code{NULL}).
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_add_filter(recipe, omop_filter_sex("F"))
+#' recipe <- recipe_add_filter(recipe,
+#'   omop_filter_age(min = 18, max = 65), id = "adults_only")
+#' }
+#' @seealso \code{\link{recipe_remove_filter}}, \code{\link{omop_filter}}
 #' @export
 recipe_add_filter <- function(recipe, filter, id = NULL) {
   if (!inherits(recipe, "omop_recipe"))
@@ -751,9 +970,16 @@ recipe_add_filter <- function(recipe, filter, id = NULL) {
 
 #' Remove a filter from the recipe
 #'
-#' @param recipe An omop_recipe
-#' @param id Character; filter ID to remove
-#' @return The modified recipe
+#' Removes a filter by its ID from the recipe's filter list.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param id Character; filter ID to remove.
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_remove_filter(recipe, "f1_sex")
+#' }
+#' @seealso \code{\link{recipe_add_filter}}
 #' @export
 recipe_remove_filter <- function(recipe, id) {
   if (!inherits(recipe, "omop_recipe"))
@@ -765,9 +991,19 @@ recipe_remove_filter <- function(recipe, id) {
 
 #' Add an output specification to the recipe
 #'
-#' @param recipe An omop_recipe
-#' @param output An omop_output object
-#' @return The modified recipe
+#' Registers an output specification that defines how extracted data should be
+#' shaped. Multiple outputs can target different subsets of variables and
+#' populations, each producing a separate server-side dataset.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param output An \code{\link{omop_output}} object.
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_add_output(recipe,
+#'   omop_output(name = "wide_data", type = "wide"))
+#' }
+#' @seealso \code{\link{recipe_remove_output}}, \code{\link{omop_output}}
 #' @export
 recipe_add_output <- function(recipe, output) {
   if (!inherits(recipe, "omop_recipe"))
@@ -782,9 +1018,16 @@ recipe_add_output <- function(recipe, output) {
 
 #' Remove an output specification from the recipe
 #'
-#' @param recipe An omop_recipe
-#' @param name Character; output name to remove
-#' @return The modified recipe
+#' Removes an output specification by name from the recipe.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param name Character; output name to remove.
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_remove_output(recipe, "wide_data")
+#' }
+#' @seealso \code{\link{recipe_add_output}}
 #' @export
 recipe_remove_output <- function(recipe, name) {
   if (!inherits(recipe, "omop_recipe"))
@@ -796,8 +1039,16 @@ recipe_remove_output <- function(recipe, name) {
 
 #' Clear the entire recipe
 #'
-#' @param recipe An omop_recipe
-#' @return An empty recipe
+#' Discards all populations, blocks, variables, filters, and outputs,
+#' returning a fresh empty recipe identical to \code{\link{omop_recipe}()}.
+#'
+#' @param recipe An \code{omop_recipe} object (used only for type validation).
+#' @return A new empty \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_clear(recipe)
+#' }
+#' @seealso \code{\link{omop_recipe}}
 #' @export
 recipe_clear <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
@@ -805,7 +1056,13 @@ recipe_clear <- function(recipe) {
   omop_recipe()
 }
 
+#' Print an omop_recipe
+#'
+#' @param x An \code{omop_recipe} object.
+#' @param ... Additional arguments (ignored).
+#' @return \code{x}, invisibly.
 #' @export
+#' @method print omop_recipe
 print.omop_recipe <- function(x, ...) {
   cat("=== omop_recipe ===\n")
 
@@ -853,17 +1110,30 @@ print.omop_recipe <- function(x, ...) {
   invisible(x)
 }
 
-# ==============================================================================
-# Recipe -> Plan conversion
-# ==============================================================================
+# --- Recipe -> Plan conversion ---
 
 #' Convert a recipe to an extraction plan
 #'
-#' Translates the recipe's populations, variables, filters, and outputs into
-#' an omop_plan suitable for server-side execution.
+#' Compiles the recipe into an \code{omop_plan} suitable for server-side
+#' execution via \code{\link{ds.omop.plan.execute}}. The conversion maps
+#' population-level filters to cohort specifications, groups variables by
+#' output and table, selects the appropriate plan builder (person_level,
+#' features, events, survival, intervals) for each output type, and attaches
+#' row-level filter trees.
 #'
-#' @param recipe An omop_recipe object
-#' @return An omop_plan object
+#' @param recipe An \code{omop_recipe} object.
+#' @return An \code{omop_plan} object ready for execution.
+#' @examples
+#' \dontrun{
+#' recipe <- omop_recipe()
+#' recipe <- recipe_add_block(recipe, omop_variable_block(
+#'   table = "condition_occurrence",
+#'   concept_ids = c(201820), format = "binary"))
+#' recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
+#' plan <- recipe_to_plan(recipe)
+#' }
+#' @seealso \code{\link{recipe_execute}}, \code{\link{omop_recipe}},
+#'   \code{\link{ds.omop.plan}}
 #' @export
 recipe_to_plan <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
@@ -1023,7 +1293,14 @@ recipe_to_plan <- function(recipe) {
   plan
 }
 
-# Build feature specs from a list of variables
+#' Build feature specifications from a list of omop_variable objects
+#'
+#' Maps each variable's format to the corresponding \code{omop.feature.*}
+#' constructor and returns a named list of feature spec objects.
+#'
+#' @param vs List of \code{omop_variable} objects.
+#' @return Named list of feature spec objects.
+#' @keywords internal
 .build_feature_specs <- function(vs) {
   specs <- lapply(vs, function(v) {
     fmt <- v$format %||% "binary"
@@ -1047,17 +1324,32 @@ recipe_to_plan <- function(recipe) {
   specs
 }
 
-# Collect all population-level filters (flattening groups)
+#' Collect all population-level filters from a recipe, flattening groups
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @return List of \code{omop_filter} objects at the \code{"population"} level.
+#' @keywords internal
 .collect_pop_filters <- function(recipe) {
   .flatten_filters(recipe$filters, level = "population")
 }
 
-# Collect all row-level filters (flattening groups)
+#' Collect all row-level filters from a recipe, flattening groups
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @return List of \code{omop_filter} objects at the \code{"row"} level.
+#' @keywords internal
 .collect_row_filters <- function(recipe) {
   .flatten_filters(recipe$filters, level = "row")
 }
 
-# Flatten filter groups into a list of individual filters at a given level
+#' Recursively flatten filter groups into individual filters at a given level
+#'
+#' @param filters List of \code{omop_filter} and/or \code{omop_filter_group}
+#'   objects.
+#' @param level Character or \code{NULL}; filter level to keep (\code{NULL}
+#'   keeps all).
+#' @return Flat list of \code{omop_filter} objects.
+#' @keywords internal
 .flatten_filters <- function(filters, level = NULL) {
   result <- list()
   for (f in filters) {
@@ -1075,6 +1367,12 @@ recipe_to_plan <- function(recipe) {
 # --- Filter tree compilation (preserves AND/OR structure) ---
 
 #' Compile a list of filters into an AND/OR tree for the server filter DSL
+#'
+#' @param filters List of \code{omop_filter} or \code{omop_filter_group}
+#'   objects.
+#' @param default_operator Character; default Boolean operator (\code{"and"}).
+#' @return A nested list structure representing the filter tree, or \code{NULL}
+#'   if empty.
 #' @keywords internal
 .compile_filter_tree <- function(filters, default_operator = "and") {
   if (length(filters) == 0) return(NULL)
@@ -1086,6 +1384,9 @@ recipe_to_plan <- function(recipe) {
 }
 
 #' Compile a single filter or filter group into the server filter DSL
+#'
+#' @param f An \code{omop_filter} or \code{omop_filter_group} object.
+#' @return A nested list node for the filter tree, or \code{NULL}.
 #' @keywords internal
 .compile_filter_node <- function(f) {
   if (inherits(f, "omop_filter_group")) {
@@ -1101,6 +1402,10 @@ recipe_to_plan <- function(recipe) {
 }
 
 #' Convert an omop_filter to a leaf node matching the server's .compileFilter()
+#'
+#' @param f An \code{omop_filter} object.
+#' @return A list with \code{var}, \code{op}, and \code{value} fields, or
+#'   \code{NULL} if the filter cannot be converted.
 #' @keywords internal
 .filter_to_leaf <- function(f) {
   switch(f$type,
@@ -1126,6 +1431,13 @@ recipe_to_plan <- function(recipe) {
 }
 
 #' Extract filters (or groups containing filters) at a given level
+#'
+#' @param filters List of \code{omop_filter} and/or \code{omop_filter_group}
+#'   objects.
+#' @param level Character; the filter level to extract (\code{"population"},
+#'   \code{"row"}, or \code{"output"}).
+#' @return List of matching \code{omop_filter} or \code{omop_filter_group}
+#'   objects.
 #' @keywords internal
 .extract_filters_by_level <- function(filters, level) {
   result <- list()
@@ -1139,6 +1451,10 @@ recipe_to_plan <- function(recipe) {
 }
 
 #' Check if a filter group contains any filter at a given level
+#'
+#' @param group An \code{omop_filter_group} object.
+#' @param level Character; the filter level to check for.
+#' @return Logical; \code{TRUE} if any descendant filter matches the level.
 #' @keywords internal
 .group_has_level <- function(group, level) {
   for (ch in group$children) {
@@ -1148,17 +1464,23 @@ recipe_to_plan <- function(recipe) {
   FALSE
 }
 
-# ==============================================================================
-# Recipe -> Code generation (minimal, no library())
-# ==============================================================================
+# --- Recipe -> Code generation ---
 
 #' Generate reproducible R code from a recipe
 #'
-#' Produces minimal R code that recreates the recipe. Does not include
-#' library() calls or header comments.
+#' Produces a minimal R script that, when executed, recreates the recipe from
+#' scratch. The output contains calls to \code{\link{omop_recipe}},
+#' \code{recipe_add_*} functions, and the relevant constructors. Does not
+#' include \code{library()} calls or header comments.
 #'
-#' @param recipe An omop_recipe object
-#' @return Character string of R code
+#' @param recipe An \code{omop_recipe} object.
+#' @return Character string containing executable R code.
+#' @examples
+#' \dontrun{
+#' code <- recipe_to_code(recipe)
+#' cat(code)
+#' }
+#' @seealso \code{\link{recipe_export_json}}, \code{\link{omop_recipe}}
 #' @export
 recipe_to_code <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
@@ -1245,7 +1567,11 @@ recipe_to_code <- function(recipe) {
   paste(lines, collapse = "\n")
 }
 
-# Generate code for a single filter
+#' Generate R code string for a single omop_filter
+#'
+#' @param f An \code{omop_filter} object.
+#' @return Character; R code that recreates the filter.
+#' @keywords internal
 .codegen_filter <- function(f) {
   if (f$type == "sex") {
     .build_code("omop_filter_sex", value = f$params$value)
@@ -1269,7 +1595,11 @@ recipe_to_code <- function(recipe) {
   }
 }
 
-# Generate code for a filter group
+#' Generate R code string for a filter group
+#'
+#' @param fg An \code{omop_filter_group} object.
+#' @return Character; R code that recreates the filter group.
+#' @keywords internal
 .codegen_filter_group <- function(fg) {
   child_code <- vapply(fg$children, function(ch) {
     if (inherits(ch, "omop_filter_group")) .codegen_filter_group(ch)
@@ -1280,15 +1610,25 @@ recipe_to_code <- function(recipe) {
          ', operator = "', fg$operator, '")')
 }
 
-# ==============================================================================
-# JSON import/export
-# ==============================================================================
+# --- JSON import/export ---
 
 #' Export a recipe to JSON
 #'
-#' @param recipe An omop_recipe object
-#' @param file Character or NULL; file path to write (NULL returns string)
-#' @return If file is NULL, returns JSON string; otherwise writes to file
+#' Serializes the recipe to a JSON string or file. All object classes are
+#' stripped for clean serialization. The JSON format includes a version tag
+#' (\code{"2.0"}) and can be re-imported with \code{\link{recipe_import_json}}.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param file Character or \code{NULL}; file path to write. If \code{NULL},
+#'   returns the JSON string directly.
+#' @return If \code{file} is \code{NULL}, returns a JSON string (invisibly).
+#'   Otherwise writes to \code{file} and returns the file path invisibly.
+#' @examples
+#' \dontrun{
+#' json <- recipe_export_json(recipe)
+#' recipe_export_json(recipe, file = "my_recipe.json")
+#' }
+#' @seealso \code{\link{recipe_import_json}}, \code{\link{recipe_to_code}}
 #' @export
 recipe_export_json <- function(recipe, file = NULL) {
   if (!inherits(recipe, "omop_recipe"))
@@ -1321,8 +1661,19 @@ recipe_export_json <- function(recipe, file = NULL) {
 
 #' Import a recipe from JSON
 #'
-#' @param json Character; JSON string or file path
-#' @return An omop_recipe object
+#' Reconstructs an \code{omop_recipe} from a JSON string or file previously
+#' created by \code{\link{recipe_export_json}}. Automatically detects whether
+#' the input is a file path or a raw JSON string. Filter groups are currently
+#' skipped during import.
+#'
+#' @param json Character; a JSON string, or a file path to a JSON file.
+#' @return An \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_import_json("my_recipe.json")
+#' recipe <- recipe_import_json('{"version":"2.0","populations":{...}}')
+#' }
+#' @seealso \code{\link{recipe_export_json}}
 #' @export
 recipe_import_json <- function(json) {
   # Detect if it's a file path
@@ -1402,17 +1753,26 @@ recipe_import_json <- function(json) {
   recipe
 }
 
-# ==============================================================================
-# Preview schema
-# ==============================================================================
+# --- Preview schema ---
 
 #' Preview the output schema for a recipe
 #'
-#' Returns projected columns, join keys, and output shape for each output,
-#' without executing anything.
+#' Returns the projected columns, join keys, source tables, and output shape
+#' for each output defined in the recipe, without executing anything on the
+#' server. Useful for verifying the recipe structure before running it.
 #'
-#' @param recipe An omop_recipe object
-#' @return A list of data.frames, one per output
+#' @param recipe An \code{omop_recipe} object.
+#' @return A named list of \code{data.frame}s (one per output), each with
+#'   columns \code{output}, \code{column}, \code{source}, \code{concept},
+#'   \code{type}, and \code{format}. Attributes \code{"join_key"},
+#'   \code{"tables"}, \code{"output_type"}, and \code{"population_id"} are
+#'   attached to each data.frame.
+#' @examples
+#' \dontrun{
+#' schemas <- recipe_preview_schema(recipe)
+#' print(schemas[["output_1"]])
+#' }
+#' @seealso \code{\link{recipe_to_plan}}, \code{\link{recipe_preview_stats}}
 #' @export
 recipe_preview_schema <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
@@ -1460,20 +1820,27 @@ recipe_preview_schema <- function(recipe) {
   schemas
 }
 
-# ==============================================================================
-# Recipe execution helpers
-# ==============================================================================
+# --- Recipe execution helpers ---
 
 #' Preview aggregate stats for a recipe (without materializing)
 #'
-#' Runs aggregate-only queries to show safe counts and distributions
-#' for the variables in the recipe.
+#' Runs aggregate-only queries via \code{\link{ds.omop.table.stats}} to show
+#' safe row and person counts for the tables referenced by the recipe's
+#' variables. This provides a quick sanity check without materializing any
+#' server-side datasets.
 #'
-#' @param recipe An omop_recipe object
-#' @param scope Character; "per_site", "pooled", or "both"
-#' @param symbol Character; OMOP session symbol
-#' @param conns DSI connections or NULL
-#' @return A dsomop_result with aggregate stats per output
+#' @param recipe An \code{omop_recipe} object.
+#' @param scope Character; \code{"per_site"}, \code{"pooled"}, or
+#'   \code{"both"}.
+#' @param symbol Character; OMOP session symbol on the server (default
+#'   \code{"omop"}).
+#' @param conns DSI connections or \code{NULL} (uses active connections).
+#' @return A \code{dsomop_result} with aggregate stats per table.
+#' @examples
+#' \dontrun{
+#' stats <- recipe_preview_stats(recipe, scope = "pooled")
+#' }
+#' @seealso \code{\link{recipe_execute}}, \code{\link{recipe_preview_schema}}
 #' @export
 recipe_preview_stats <- function(recipe,
                                scope = c("per_site", "pooled", "both"),
@@ -1510,12 +1877,27 @@ recipe_preview_stats <- function(recipe,
 
 #' Execute a recipe: compile to plan and run
 #'
-#' @param recipe An omop_recipe object
-#' @param out Named character vector; output_name -> symbol_name mapping.
-#'   If NULL, auto-generates symbol names.
-#' @param symbol Character; OMOP session symbol
-#' @param conns DSI connections or NULL
-#' @return Invisible; the output symbol mapping
+#' Convenience function that compiles the recipe to an execution plan via
+#' \code{\link{recipe_to_plan}} and immediately executes it via
+#' \code{\link{ds.omop.plan.execute}}. Symbol names for server-side datasets
+#' are derived from the recipe's output \code{result_symbol} fields, or
+#' auto-generated as \code{D_<name>}.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param out Named character vector; \code{output_name -> symbol_name}
+#'   mapping. If \code{NULL}, auto-generates symbol names from the recipe's
+#'   output specifications.
+#' @param symbol Character; OMOP session symbol on the server (default
+#'   \code{"omop"}).
+#' @param conns DSI connections or \code{NULL} (uses active connections).
+#' @return Invisibly, the output symbol mapping (a named character vector).
+#' @examples
+#' \dontrun{
+#' recipe_execute(recipe)
+#' # Or with explicit symbol mapping:
+#' recipe_execute(recipe, out = c(features_wide = "D_features"))
+#' }
+#' @seealso \code{\link{recipe_to_plan}}, \code{\link{ds.omop.plan.execute}}
 #' @export
 recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL) {
   if (!inherits(recipe, "omop_recipe"))

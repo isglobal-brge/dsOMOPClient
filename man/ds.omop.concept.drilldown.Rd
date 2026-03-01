@@ -16,25 +16,46 @@ ds.omop.concept.drilldown(
 )
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name (e.g.,
+\code{"condition_occurrence"}, \code{"measurement"}).}
 
-\item{concept_id}{Integer; concept ID to drill into}
+\item{concept_id}{Integer; the OMOP concept ID to drill into.}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{concept_col}{Character; the concept column to drill into, or NULL
+for automatic detection based on the table's standard concept column
+(default: NULL).}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}.}
 
-\item{conns}{DSI connections}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
+
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of lists containing \code{summary}, \code{numeric}, \code{categorical},
+  \code{date_range}, and \code{missingness} components), \code{$pooled}
+  (combined profile when pooled), and \code{$meta}.
 }
 \description{
-Returns a full drilldown profile for a single concept within a table,
-including summary stats, numeric distribution, categorical values,
-date coverage, and missingness.
+Returns a comprehensive drilldown profile for a single concept within
+an OMOP CDM table. The profile includes summary statistics (record
+count, person count), numeric distribution (if applicable), categorical
+value breakdown, date coverage range, and missingness rates for
+associated columns. All results are disclosure-controlled on the server
+side before being returned.
+}
+\examples{
+\dontrun{
+profile <- ds.omop.concept.drilldown("condition_occurrence",
+                                      concept_id = 201820)
+profile$per_site$server1$summary
+profile$per_site$server1$numeric
+}
 }

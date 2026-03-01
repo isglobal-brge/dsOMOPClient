@@ -6,6 +6,17 @@
 \usage{
 .extract_filters_by_level(filters, level)
 }
+\arguments{
+\item{filters}{List of \code{omop_filter} and/or \code{omop_filter_group}
+objects.}
+
+\item{level}{Character; the filter level to extract (\code{"population"},
+\code{"row"}, or \code{"output"}).}
+}
+\value{
+List of matching \code{omop_filter} or \code{omop_filter_group}
+  objects.
+}
 \description{
 Extract filters (or groups containing filters) at a given level
 }

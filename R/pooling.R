@@ -1,15 +1,5 @@
-# ==============================================================================
-# dsOMOPClient v2 - Client-Side Pooling Engine
-# ==============================================================================
-# Pooling formulas for multi-server aggregation + policy enforcement.
-# ==============================================================================
-
-# --- Policies -----------------------------------------------------------------
-
-# "strict":        Only pool if ALL servers return valid data.
-# "pooled_only_ok": Pool what's available, skip servers with NA/errors.
-
-# --- Pooling Formulas ---------------------------------------------------------
+# Module: Result Pooling
+# Functions for pooling per-site results into combined summaries.
 
 #' Pool counts by summing across servers
 #' @param per_site_counts Named numeric vector or list of counts
@@ -323,8 +313,6 @@
 
   list(result = merged, warnings = warnings)
 }
-
-# --- Dispatcher ---------------------------------------------------------------
 
 #' Dispatch pooling by result type
 #'

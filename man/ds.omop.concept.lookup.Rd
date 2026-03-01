@@ -2,7 +2,7 @@
 % Please edit documentation in R/vocabulary.R
 \name{ds.omop.concept.lookup}
 \alias{ds.omop.concept.lookup}
-\title{Lookup concepts by ID}
+\title{Look up OMOP concepts by ID}
 \usage{
 ds.omop.concept.lookup(
   concept_ids,
@@ -12,17 +12,36 @@ ds.omop.concept.lookup(
 )
 }
 \arguments{
-\item{concept_ids}{Numeric vector of concept IDs}
+\item{concept_ids}{Integer or numeric vector of OMOP concept IDs to look up
+(e.g., \code{c(201826, 4329847)}).}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, returns a dry-run
+\code{dsomop_result} containing only the reproducible R code without
+contacting the servers.}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{scope = "per_site"}.
+  Each server's result is a data frame with concept metadata columns.
 }
 \description{
-Lookup concepts by ID
+Retrieves full concept metadata for one or more concept IDs from the
+vocabulary tables on each connected server. This is useful for resolving
+concept IDs obtained from clinical data tables back to their human-readable
+names, domains, and vocabulary membership.
+}
+\examples{
+\dontrun{
+# Look up a single concept
+info <- ds.omop.concept.lookup(201826)
+info$per_site
+
+# Look up multiple concepts at once
+info <- ds.omop.concept.lookup(c(201826, 4329847, 316139))
+}
 }

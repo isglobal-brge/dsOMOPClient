@@ -2,22 +2,49 @@
 % Please edit documentation in R/plan.R
 \name{ds.omop.plan.features}
 \alias{ds.omop.plan.features}
-\title{Add feature extraction with recipe specs}
+\title{Add feature extraction with feature specifications}
 \usage{
 ds.omop.plan.features(plan, name, table, specs)
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list.}
 
-\item{table}{Character; source table name}
+\item{table}{Character; source OMOP table name
+(e.g. \code{"condition_occurrence"}, \code{"measurement"}).}
 
-\item{specs}{Named list of omop_feature_spec objects}
+\item{specs}{Named list of \code{omop_feature_spec} objects created
+by the \code{omop.feature.*} family of functions (e.g.
+\code{\link{omop.feature.boolean}}, \code{\link{omop.feature.count}}).}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the features output
+  appended.
 }
 \description{
-Add feature extraction with recipe specs
+Adds a feature-extraction output that computes person-level summary
+columns (boolean, count, mean, etc.) from event-level data in a
+single OMOP table. Each \code{omop_feature_spec} in \code{specs}
+produces one column in the resulting data frame. Concept IDs are
+automatically collected from all specs for server-side filtering.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.features(plan,
+  name = "lab_features",
+  table = "measurement",
+  specs = list(
+    has_glucose = omop.feature.boolean(c(3004410)),
+    glucose_mean = omop.feature.mean_value(c(3004410))
+  )
+)
+}
+}
+\seealso{
+\code{\link{omop.feature.boolean}},
+  \code{\link{omop.feature.count}},
+  \code{\link{ds.omop.plan.events}}
 }

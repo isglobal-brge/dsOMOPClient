@@ -13,19 +13,34 @@ ds.omop.domain.coverage(
 )
 }
 \arguments{
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of data frames with columns \code{table_name}, \code{row_count},
+  \code{person_count}), \code{$pooled} (combined coverage when pooled),
+  and \code{$meta}.
 }
 \description{
-Get cross-table domain coverage
+Provides a high-level overview of data coverage across all OMOP CDM
+domain tables. For each clinical domain (conditions, drugs, procedures,
+measurements, etc.), returns row counts, person counts, and date ranges.
+This is useful for quickly assessing which data domains are populated
+and to what extent, without needing to query each table individually.
+}
+\examples{
+\dontrun{
+coverage <- ds.omop.domain.coverage(scope = "pooled")
+coverage$pooled
+}
 }

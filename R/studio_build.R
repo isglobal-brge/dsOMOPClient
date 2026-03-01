@@ -1,14 +1,11 @@
-# ==============================================================================
-# MODULE: Build (consolidated Recipe + Plan)
-# ==============================================================================
-# Wraps the Recipe (formerly Basket) and Plan (formerly Plan from Explorer)
-# sub-modules into a single navset_pill interface.
-# ==============================================================================
+# Module: Studio - Recipe Builder
+# Shiny module for interactive recipe construction.
 
-# ==============================================================================
-# Top-level Build wrapper
-# ==============================================================================
-
+#' Studio Recipe Builder UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @return A Shiny UI element.
+#' @keywords internal
 .mod_build_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::navset_pill(
@@ -20,19 +17,18 @@
   )
 }
 
+#' Studio Recipe Builder Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @return NULL (Shiny module server, called for side effects).
+#' @keywords internal
 .mod_build_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     .mod_build_recipe_server("recipe", state)
     .mod_build_plan_server("plan", state)
   })
 }
-
-# ==============================================================================
-# SUB-MODULE: Recipe (formerly Basket)
-# ==============================================================================
-# Full recipe management: populations, variable blocks, filters (with groups),
-# enhanced outputs, variable wizard, JSON import/export, schema preview.
-# ==============================================================================
 
 .mod_build_recipe_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -253,9 +249,7 @@
       shiny::updateSelectInput(session, "output_pop", choices = pop_ids)
     })
 
-    # =========================================================================
     # Add Variable (using concept picker)
-    # =========================================================================
     shiny::observeEvent(input$add_var_btn, {
       tbl <- input$add_table
       fmt <- input$add_format
@@ -283,9 +277,7 @@
       })
     })
 
-    # =========================================================================
     # Add Variable Block
-    # =========================================================================
     shiny::observeEvent(input$add_block_btn, {
       tbl <- input$block_table
       ids_text <- trimws(input$block_concept_ids)
@@ -312,9 +304,7 @@
       })
     })
 
-    # =========================================================================
     # Add Filter
-    # =========================================================================
     shiny::observeEvent(input$add_filter_btn, {
       ftype <- input$filter_type
       tryCatch({
@@ -363,9 +353,7 @@
       })
     })
 
-    # =========================================================================
     # Add Output
-    # =========================================================================
     shiny::observeEvent(input$add_output_btn, {
       nm <- trimws(input$output_name)
       if (nchar(nm) == 0) {
@@ -387,9 +375,7 @@
       })
     })
 
-    # =========================================================================
     # Add Population (modal)
-    # =========================================================================
     shiny::observeEvent(input$add_pop_btn, {
       shiny::showModal(shiny::modalDialog(
         title = "Add Population",
@@ -428,9 +414,7 @@
       })
     })
 
-    # =========================================================================
     # Clear Recipe (with confirmation)
-    # =========================================================================
     shiny::observeEvent(input$clear_recipe, {
       shiny::showModal(shiny::modalDialog(
         title = "Clear Recipe?",
@@ -449,9 +433,7 @@
       shiny::showNotification("Recipe cleared.", type = "message", duration = 2)
     })
 
-    # =========================================================================
     # Auto-generate Plan from Recipe on changes
-    # =========================================================================
     shiny::observe({
       recipe <- state$recipe
       has_content <- length(recipe$variables) > 0 || length(recipe$blocks) > 0 ||
@@ -464,9 +446,7 @@
       }
     })
 
-    # =========================================================================
     # JSON Export/Import
-    # =========================================================================
     output$export_json <- shiny::downloadHandler(
       filename = function() {
         paste0("omop_recipe_", format(Sys.Date(), "%Y%m%d"), ".json")
@@ -493,9 +473,7 @@
       })
     })
 
-    # =========================================================================
     # Recipe Counts Badge
-    # =========================================================================
     output$recipe_counts <- shiny::renderUI({
       recipe <- state$recipe
       np <- length(recipe$populations)
@@ -519,9 +497,7 @@
       )
     })
 
-    # =========================================================================
     # Population Tree
-    # =========================================================================
     output$pop_tree <- shiny::renderUI({
       recipe <- state$recipe
       pops <- recipe$populations
@@ -577,9 +553,7 @@
       shiny::tagList(lapply(root_ids, .render_pop_node))
     })
 
-    # =========================================================================
     # Recipe Display (JS delegation for edit/remove buttons)
-    # =========================================================================
     output$recipe_display <- shiny::renderUI({
       recipe <- state$recipe
       sections <- list()
@@ -756,9 +730,7 @@
       shiny::div(shiny::tagList(sections))
     })
 
-    # =========================================================================
     # Static remove observer (JS delegation — works for all item types)
-    # =========================================================================
     shiny::observeEvent(input$recipe_remove_item, {
       data <- jsonlite::fromJSON(input$recipe_remove_item)
       item_type <- data$type
@@ -782,9 +754,7 @@
       })
     }, ignoreInit = TRUE)
 
-    # =========================================================================
     # Static edit observer (JS delegation — universal edit modal)
-    # =========================================================================
     shiny::observeEvent(input$recipe_edit_item, {
       data <- jsonlite::fromJSON(input$recipe_edit_item)
       item_type <- data$type
@@ -953,9 +923,7 @@
       ))
     }, ignoreInit = TRUE)
 
-    # =========================================================================
     # Confirm edit (universal handler)
-    # =========================================================================
     shiny::observeEvent(input$confirm_edit, {
       ctx <- session$userData$edit_context
       if (is.null(ctx)) return()
@@ -1086,9 +1054,7 @@
       })
     }, ignoreInit = TRUE)
 
-    # =========================================================================
     # Schema Preview
-    # =========================================================================
     output$schema_preview_content <- shiny::renderUI({
       recipe <- state$recipe
       if (length(recipe$outputs) == 0 || length(recipe$variables) == 0) {
@@ -1133,9 +1099,7 @@
       shiny::div(class = "mt-2", shiny::tagList(info_items))
     })
 
-    # =========================================================================
     # Generated Code
-    # =========================================================================
     shiny::observeEvent(input$copy_recipe_code, {
       recipe <- state$recipe
       if (length(recipe$variables) == 0 && length(recipe$filters) == 0 &&
@@ -1163,12 +1127,6 @@
     })
   })
 }
-
-# ==============================================================================
-# SUB-MODULE: Plan (formerly Plan from Explorer)
-# ==============================================================================
-# Merges old Plan Builder + Cohorts with explorer integration.
-# ==============================================================================
 
 .mod_build_plan_ui <- function(id) {
   ns <- shiny::NS(id)

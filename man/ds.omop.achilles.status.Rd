@@ -7,14 +7,26 @@
 ds.omop.achilles.status(symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections (NULL = use session)}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{scope = "per_site"}.
+  Each server's result is a list or data frame indicating whether the
+  Achilles tables exist and how many rows they contain.
 }
 \description{
-Returns a dsomop_result with per-site availability status and table counts.
-No pooling needed (metadata only).
+Queries each connected server to determine whether Achilles result tables
+(\code{achilles_results} and \code{achilles_results_dist}) are present
+and accessible. Returns per-site availability status and table row counts.
+No pooling is performed because this is metadata-only.
+}
+\examples{
+\dontrun{
+status <- ds.omop.achilles.status()
+status$per_site[["server_a"]]$available
+}
 }

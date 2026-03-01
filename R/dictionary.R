@@ -1,15 +1,31 @@
-# ==============================================================================
-# dsOMOPClient v2 - Schema Browsing (Dictionary)
-# ==============================================================================
-# Replaces queries.R with blueprint annotations.
-# ==============================================================================
+# Module: Data Dictionary
+# Client-side wrappers for CDM schema introspection: tables, columns,
+# relationships, and capabilities.
 
 #' List tables in the OMOP CDM database
 #'
-#' @param schema_category Character; filter by "CDM", "Vocabulary", "Results"
-#' @param symbol Character; OMOP session symbol
-#' @param conns DSI connections
-#' @return Named list (per server) of data frames with table metadata
+#' @description
+#' Queries each connected server for the list of OMOP CDM tables present
+#' in the database. Returns metadata including the schema category
+#' (\code{"CDM"}, \code{"Vocabulary"}, \code{"Results"}) and whether the
+#' table contains a \code{person_id} column. An optional filter allows
+#' restricting results to a single schema category.
+#'
+#' @param schema_category Character; optional filter to restrict results
+#'   to a specific category: \code{"CDM"}, \code{"Vocabulary"}, or
+#'   \code{"Results"}. NULL returns all tables (default: NULL).
+#' @param symbol Character; the session symbol (default: \code{"omop"}).
+#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @return A named list (one element per server) of data frames with
+#'   table metadata columns such as \code{table_name},
+#'   \code{schema_category}, and \code{has_person_id}.
+#' @examples
+#' \dontrun{
+#' tables <- ds.omop.tables()
+#' tables$server1
+#'
+#' cdm_only <- ds.omop.tables(schema_category = "CDM")
+#' }
 #' @export
 ds.omop.tables <- function(schema_category = NULL,
                            symbol = "omop",
@@ -38,10 +54,24 @@ ds.omop.tables <- function(schema_category = NULL,
 
 #' List columns in a table
 #'
-#' @param table Character; table name
-#' @param symbol Character; OMOP session symbol
-#' @param conns DSI connections
-#' @return Named list (per server) of data frames with column metadata
+#' @description
+#' Queries each connected server for the list of columns present in the
+#' specified OMOP CDM table. Returns metadata for each column including
+#' the column name, data type, whether the column is nullable, and
+#' whether it is a concept ID column or a date column.
+#'
+#' @param table Character; the CDM table name to introspect (e.g.,
+#'   \code{"condition_occurrence"}, \code{"person"}).
+#' @param symbol Character; the session symbol (default: \code{"omop"}).
+#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @return A named list (one element per server) of data frames with
+#'   column metadata such as \code{column_name}, \code{data_type},
+#'   \code{is_nullable}, \code{is_concept}, and \code{is_date}.
+#' @examples
+#' \dontrun{
+#' cols <- ds.omop.columns("condition_occurrence")
+#' cols$server1
+#' }
 #' @export
 ds.omop.columns <- function(table, symbol = "omop",
                             conns = NULL) {
@@ -56,9 +86,23 @@ ds.omop.columns <- function(table, symbol = "omop",
 
 #' Get the join relationship graph
 #'
-#' @param symbol Character; OMOP session symbol
-#' @param conns DSI connections
-#' @return Named list (per server) of data frames
+#' @description
+#' Retrieves the join relationship graph for the OMOP CDM schema from
+#' each connected server. The graph describes how tables can be joined
+#' (e.g., via \code{person_id}, \code{visit_occurrence_id}, or concept
+#' foreign keys), which is used by the query builder and extraction
+#' pipeline to construct multi-table joins automatically.
+#'
+#' @param symbol Character; the session symbol (default: \code{"omop"}).
+#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @return A named list (one element per server) of data frames with
+#'   edge metadata such as \code{from_table}, \code{to_table},
+#'   \code{from_column}, and \code{to_column}.
+#' @examples
+#' \dontrun{
+#' joins <- ds.omop.joins()
+#' joins$server1
+#' }
 #' @export
 ds.omop.joins <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
@@ -72,9 +116,28 @@ ds.omop.joins <- function(symbol = "omop", conns = NULL) {
 
 #' Compare schemas across servers
 #'
-#' @param symbol Character; OMOP session symbol
-#' @param conns DSI connections
-#' @return List with common_tables, server_only, column_diffs
+#' @description
+#' Compares the OMOP CDM schemas across all connected servers to identify
+#' structural differences. Returns the set of tables common to all
+#' servers, tables unique to specific servers, and per-table column
+#' differences. This is useful for diagnosing schema mismatches before
+#' running pooled analyses. Requires at least two connected servers for
+#' meaningful comparison; with a single server, returns that server's
+#' tables as the common set.
+#'
+#' @param symbol Character; the session symbol (default: \code{"omop"}).
+#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @return A list with three components: \code{common_tables} (character
+#'   vector of table names present on all servers), \code{server_only}
+#'   (named list of tables unique to each server), and
+#'   \code{column_diffs} (named list of per-table column differences).
+#' @examples
+#' \dontrun{
+#' diff <- ds.omop.compare()
+#' diff$common_tables
+#' diff$server_only
+#' diff$column_diffs
+#' }
 #' @export
 ds.omop.compare <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
@@ -127,9 +190,26 @@ ds.omop.compare <- function(symbol = "omop", conns = NULL) {
 
 #' Get a full schema snapshot
 #'
-#' @param symbol Character; OMOP session symbol
-#' @param conns DSI connections
-#' @return Named list (per server) with tables, cdm_info, edges
+#' @description
+#' Retrieves a comprehensive schema snapshot from each connected server,
+#' combining capabilities metadata (available tables, CDM version info)
+#' with the join relationship graph into a single structure. This
+#' provides a complete picture of the database schema that can be cached
+#' client-side for use by the UI and query builder.
+#'
+#' @param symbol Character; the session symbol (default: \code{"omop"}).
+#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @return A named list (one element per server), where each element is
+#'   a list with \code{tables} (character vector of table names),
+#'   \code{cdm_info} (list with CDM version and DBMS details), and
+#'   \code{edges} (data frame of join relationships).
+#' @examples
+#' \dontrun{
+#' snap <- ds.omop.snapshot()
+#' snap$server1$tables
+#' snap$server1$cdm_info
+#' snap$server1$edges
+#' }
 #' @export
 ds.omop.snapshot <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)

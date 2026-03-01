@@ -11,17 +11,33 @@ ds.omop.plan.concept_dictionary(
 )
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{source_outputs}{Character vector; names of outputs to scan
-(NULL = all non-dictionary outputs)}
+\item{source_outputs}{Character vector; names of outputs to scan for
+concept IDs. If \code{NULL} (the default), all non-dictionary outputs
+in the plan are scanned.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the concept dictionary
+  output appended.
 }
 \description{
-Scans other outputs for concept IDs and produces a lookup table
-with concept names, domains, and which outputs reference each concept.
+Scans other outputs in the plan for concept IDs and produces a lookup
+table with concept names, domains, vocabulary IDs, and which outputs
+reference each concept. Useful for translating numeric concept IDs in
+other output tables into human-readable labels.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.events(plan, "conditions", "condition_occurrence",
+  concept_set = c(201826))
+plan <- ds.omop.plan.concept_dictionary(plan)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.options}}
 }

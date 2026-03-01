@@ -12,20 +12,42 @@ ds.omop.query.list(
 )
 }
 \arguments{
-\item{domain}{Character; optional domain filter (e.g., "Condition", "Drug")}
+\item{domain}{Character; optional domain filter to restrict results
+(e.g., \code{"Condition"}, \code{"Drug"}, \code{"Measurement"}).
+\code{NULL} (the default) returns templates for all domains.}
 
-\item{provider}{Character; query provider ("native" or "all")}
+\item{provider}{Character; query provider filter. \code{"native"} (the
+default) returns only built-in dsOMOP templates; \code{"all"} includes
+any additional registered providers.}
 
-\item{symbol}{Character; OMOP session symbol (default "omop")}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections (default: from session)}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-Data frame with query metadata (id, group, name, description,
-  mode, class, poolable, cdm_version, n_inputs)
+Data frame with query metadata columns: \code{id}, \code{group},
+  \code{name}, \code{description}, \code{mode}, \code{class},
+  \code{poolable}, \code{cdm_version}, \code{n_inputs}. Returns an empty
+  data frame with the correct schema if no templates match.
 }
 \description{
 Returns metadata for all available query templates on connected servers.
-Queries are classified as SAFE_AGGREGATE, SAFE_ASSIGN, or BLOCKED.
-Only non-BLOCKED queries are returned.
+Templates are classified by their DataSHIELD security mode:
+\code{SAFE_AGGREGATE} (returns aggregate results to the client),
+\code{SAFE_ASSIGN} (stores results server-side), or \code{BLOCKED}
+(not permitted). Only non-BLOCKED templates are returned. Since the
+query library is defined by the server package, the catalog is identical
+across servers and the first server's result is returned.
+}
+\examples{
+\dontrun{
+# List all available templates
+templates <- ds.omop.query.list()
+head(templates)
+
+# List only drug-related templates
+drug_queries <- ds.omop.query.list(domain = "Drug")
+}
 }

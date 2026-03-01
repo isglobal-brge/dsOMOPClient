@@ -6,6 +6,14 @@
 \usage{
 .group_has_level(group, level)
 }
+\arguments{
+\item{group}{An \code{omop_filter_group} object.}
+
+\item{level}{Character; the filter level to check for.}
+}
+\value{
+Logical; \code{TRUE} if any descendant filter matches the level.
+}
 \description{
 Check if a filter group contains any filter at a given level
 }

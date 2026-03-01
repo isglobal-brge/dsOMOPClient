@@ -20,35 +20,57 @@ omop_variable(
 )
 }
 \arguments{
-\item{name}{Character; output column name (auto-generated if NULL)}
+\item{name}{Character; output column name (auto-generated from
+\code{concept_name}, \code{concept_id}, or \code{column} if \code{NULL}).}
 
-\item{table}{Character; source OMOP table}
+\item{table}{Character; source OMOP CDM table (e.g. \code{"condition_occurrence"}).}
 
-\item{column}{Character; source column to extract}
+\item{column}{Character or \code{NULL}; source column to extract.}
 
-\item{concept_id}{Integer or NULL; concept ID filter (for concept columns)}
+\item{concept_id}{Integer or \code{NULL}; concept ID filter (for concept columns).}
 
-\item{concept_name}{Character or NULL; human-readable concept name}
+\item{concept_name}{Character or \code{NULL}; human-readable concept name.}
 
-\item{type}{Character; variable type hint}
+\item{type}{Character; variable type hint. One of \code{"auto"}, \code{"numeric"},
+\code{"categorical"}, \code{"date"}, \code{"boolean"}, \code{"integer"},
+\code{"character"}.}
 
-\item{format}{Character; output format}
+\item{format}{Character; output format. One of \code{"raw"}, \code{"binary"},
+\code{"count"}, \code{"first_value"}, \code{"last_value"}, \code{"mean"},
+\code{"min"}, \code{"max"}, \code{"time_since"}, \code{"binned"}.}
 
-\item{value_source}{Character or NULL; column to extract value from
-(e.g. "value_as_number" for measurements)}
+\item{value_source}{Character or \code{NULL}; column to extract value from
+(e.g. \code{"value_as_number"} for measurements).}
 
-\item{time_window}{Named list with start/end offsets relative to index,
-or NULL for no window constraint}
+\item{time_window}{Named list with \code{start}/\code{end} offsets relative
+to index date, or \code{NULL} for no window constraint.}
 
-\item{suffix_mode}{Character; how to name multi-column expansions}
+\item{suffix_mode}{Character; how to name multi-column expansions
+(\code{"index"}, \code{"range"}, or \code{"label"}).}
 
-\item{filters}{List of omop_filter objects to apply to this variable}
+\item{filters}{List of \code{\link{omop_filter}} objects to apply to this variable.}
 }
 \value{
-An omop_variable object
+An \code{omop_variable} object (a named list with class
+  \code{"omop_variable"}).
 }
 \description{
 Describes a single variable to extract from the CDM. Variables reference
 a source table and column, and may include concept-level filtering and
-output formatting options.
+output formatting options. Variables are the atomic units added to an
+\code{omop_recipe} either individually via \code{\link{recipe_add_variable}}
+or in bulk via \code{\link{recipe_add_block}}.
+}
+\examples{
+\dontrun{
+v <- omop_variable(
+  table = "condition_occurrence",
+  concept_id = 201820,
+  concept_name = "Type 2 diabetes",
+  format = "binary"
+)
+}
+}
+\seealso{
+\code{\link{recipe_add_variable}}, \code{\link{omop_variable_block}}
 }

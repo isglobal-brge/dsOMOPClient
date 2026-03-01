@@ -16,27 +16,44 @@ ds.omop.safe.filter.value(
 )
 }
 \arguments{
-\item{table}{Character; OMOP table name}
+\item{table}{Character; the OMOP CDM table name (e.g.,
+\code{"measurement"}).}
 
-\item{column}{Character; numeric column name}
+\item{column}{Character; the numeric column to filter on (e.g.,
+\code{"value_as_number"}).}
 
-\item{threshold}{Numeric; desired threshold value}
+\item{threshold}{Numeric; the desired threshold value. The function
+snaps this to the nearest safe bin boundary.}
 
-\item{direction}{Character; "above" or "below"}
+\item{direction}{Character; \code{"above"} (default) or \code{"below"},
+indicating whether to keep values above or below the threshold.}
 
-\item{concept_id}{Integer or NULL; concept filter}
+\item{concept_id}{Integer or NULL; optional concept ID to restrict
+rows before computing cutpoints (default: NULL).}
 
-\item{n_bins}{Integer; number of bins for cutpoints}
+\item{n_bins}{Integer; the number of bins for cutpoint computation
+(default: 10).}
 
-\item{symbol}{Character; session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections or NULL}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 }
 \value{
-An omop_filter object (value_bin type)
+An \code{omop_filter} object of type \code{value_bin}, suitable
+  for passing to query or extraction functions.
 }
 \description{
-Convenience wrapper that first calls \code{ds.omop.safe.cutpoints()} to
-obtain disclosure-safe bin edges, then creates an \code{omop_filter_value()}
-filter that snaps to those bin boundaries.
+Convenience wrapper that first calls \code{\link{ds.omop.safe.cutpoints}}
+to obtain disclosure-safe bin edges, then creates an
+\code{\link{omop_filter_value}} filter whose boundary is snapped to the
+nearest safe bin edge. This ensures that any subsequent filtering
+operation will not inadvertently create small cells that violate
+disclosure controls.
+}
+\examples{
+\dontrun{
+filt <- ds.omop.safe.filter.value("measurement", "value_as_number",
+                                   threshold = 100, direction = "above",
+                                   concept_id = 3004249)
+}
 }

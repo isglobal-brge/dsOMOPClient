@@ -7,10 +7,21 @@
 \method{print}{dsomop_result}(x, ...)
 }
 \arguments{
-\item{x}{A dsomop_result object}
+\item{x}{A \code{dsomop_result} object.}
 
-\item{...}{Ignored}
+\item{...}{Additional arguments (ignored).}
+}
+\value{
+Invisibly returns \code{x}.
 }
 \description{
-Print a dsomop_result
+Displays a compact summary of a \code{dsomop_result} object, including
+the list of servers, scope, pooling status, any warnings, and a truncated
+preview of the reproducible R code.
+}
+\examples{
+\dontrun{
+res <- ds.omop.achilles.status()
+print(res)
+}
 }

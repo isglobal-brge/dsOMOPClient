@@ -16,25 +16,44 @@ ds.omop.value.counts(
 )
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name (e.g.,
+\code{"condition_occurrence"}).}
 
-\item{column}{Character; column name}
+\item{column}{Character; the column to count distinct values for
+(e.g., \code{"condition_type_concept_id"}).}
 
-\item{top_n}{Integer; number of top values}
+\item{top_n}{Integer; the number of most frequent values to return
+(default: 20).}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of data frames with columns \code{value}, \code{count_value}),
+  \code{$pooled} (combined value counts when pooled), and \code{$meta}.
 }
 \description{
-Get value frequencies for a column
+Returns the top-N most frequent distinct values for a column in an
+OMOP CDM table, along with their counts. This is useful for profiling
+categorical or low-cardinality columns such as \code{type_concept_id}
+or \code{unit_concept_id}. Counts below the disclosure threshold are
+suppressed, and concept names are resolved where available.
+}
+\examples{
+\dontrun{
+vc <- ds.omop.value.counts("condition_occurrence",
+                            "condition_type_concept_id",
+                            top_n = 10, scope = "pooled")
+vc$pooled
+}
 }

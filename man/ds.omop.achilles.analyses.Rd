@@ -7,17 +7,35 @@
 ds.omop.achilles.analyses(domain = NULL, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{domain}{Character; optional domain filter ("person", "condition",
-"drug", "measurement", "procedure", "observation", "visit", "device")}
+\item{domain}{Character; optional domain filter. Valid values include
+\code{"person"}, \code{"condition"}, \code{"drug"}, \code{"measurement"},
+\code{"procedure"}, \code{"observation"}, \code{"visit"}, and
+\code{"device"}. \code{NULL} (the default) returns all domains.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections (NULL = use session)}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{scope = "pooled"}.
+  The pooled result is a data frame listing analysis IDs, names, and
+  associated domains.
 }
 \description{
-Returns the analysis catalog, optionally filtered by domain.
-Pooling picks first server (catalog is identical across servers).
+Returns the catalog of Achilles analyses available on the connected servers,
+optionally filtered by clinical domain. Since the catalog is identical
+across servers (it is defined by the Achilles specification), the pooled
+result is taken from the first responding server.
+}
+\examples{
+\dontrun{
+# All available analyses
+catalog <- ds.omop.achilles.analyses()
+catalog$pooled
+
+# Only condition-related analyses
+cond <- ds.omop.achilles.analyses(domain = "condition")
+}
 }

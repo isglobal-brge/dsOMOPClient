@@ -2,7 +2,7 @@
 % Please edit documentation in R/vocabulary.R
 \name{ds.omop.concept.search}
 \alias{ds.omop.concept.search}
-\title{Search concepts by name pattern}
+\title{Search for OMOP concepts by name}
 \usage{
 ds.omop.concept.search(
   pattern,
@@ -16,25 +16,56 @@ ds.omop.concept.search(
 )
 }
 \arguments{
-\item{pattern}{Character; search pattern}
+\item{pattern}{Character; search term or SQL LIKE pattern to match against
+concept names. Supports partial matching (e.g., \code{"diabetes"} matches
+\code{"Type 2 diabetes mellitus"}).}
 
-\item{domain}{Character; domain filter}
+\item{domain}{Character; restrict results to a specific OMOP domain
+(e.g., \code{"Condition"}, \code{"Drug"}, \code{"Measurement"}).
+\code{NULL} (the default) returns concepts from all domains.}
 
-\item{vocabulary}{Character; vocabulary filter}
+\item{vocabulary}{Character; restrict results to a specific vocabulary
+(e.g., \code{"SNOMED"}, \code{"ICD10CM"}, \code{"RxNorm"}).
+\code{NULL} (the default) searches across all vocabularies.}
 
-\item{standard_only}{Logical; only standard concepts}
+\item{standard_only}{Logical; if \code{TRUE} (the default), only standard
+concepts are returned. Set to \code{FALSE} to include non-standard and
+classification concepts.}
 
-\item{limit}{Integer; max results}
+\item{limit}{Integer; maximum number of results to return per server
+(default: 50). Increase for broader searches, but larger values will
+increase server-side processing time.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, returns a dry-run
+\code{dsomop_result} containing only the reproducible R code without
+contacting the servers.}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{scope = "per_site"}.
+  Each server's result is a data frame with columns such as
+  \code{concept_id}, \code{concept_name}, \code{domain_id},
+  \code{vocabulary_id}, and \code{standard_concept}.
 }
 \description{
-Search concepts by name pattern
+Searches the vocabulary tables across all connected DataSHIELD servers for
+concepts matching the given pattern. Results include concept ID, name,
+domain, vocabulary, and standard concept flag. The search is executed
+server-side via \code{omopSearchConceptsDS} so that vocabulary tables
+never leave the server.
+}
+\examples{
+\dontrun{
+# Search for diabetes-related conditions
+results <- ds.omop.concept.search("diabetes", domain = "Condition")
+results$pooled
+
+# Search across all domains, including non-standard concepts
+all_hits <- ds.omop.concept.search("aspirin", standard_only = FALSE, limit = 100)
+}
 }

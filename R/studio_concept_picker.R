@@ -1,14 +1,14 @@
-# ==============================================================================
-# Reusable Concept Picker Module
-# ==============================================================================
-# Search-as-you-type widget that searches by concept name AND concept ID.
-# Shows results as "Concept Name (ID: 12345)" in a dropdown.
-# Usage:
-#   UI:     .concept_picker_ui(ns("picker"))
-#   Server: selected <- .concept_picker_server("picker", state)
-#           selected() returns list(concept_id, concept_name, domain_id)
-# ==============================================================================
+# Module: Studio - Concept Picker
+# Shiny module for searching and selecting OMOP concepts.
 
+#' Studio Concept Picker UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param label Character; input label.
+#' @param placeholder Character; placeholder text.
+#' @param multiple Logical; allow multiple selections.
+#' @return A Shiny UI element.
+#' @keywords internal
 .concept_picker_ui <- function(id, label = "Search Concept",
                                placeholder = "Type name or ID...",
                                multiple = FALSE) {
@@ -30,6 +30,13 @@
   )
 }
 
+#' Studio Concept Picker Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @param on_select Function; optional callback on concept selection.
+#' @return A reactive returning the last picked concept (list with concept_id, concept_name, domain_id).
+#' @keywords internal
 .concept_picker_server <- function(id, state, on_select = NULL) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -181,11 +188,13 @@
   })
 }
 
-# ==============================================================================
-# Multi-concept picker (for comma-separated ID inputs)
-# ==============================================================================
-# Like concept_picker but accumulates multiple selections into a text field.
-
+#' Studio Multi-Concept Picker UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param label Character; input label.
+#' @param placeholder Character; placeholder text.
+#' @return A Shiny UI element.
+#' @keywords internal
 .concept_multi_picker_ui <- function(id, label = "Concepts",
                                      placeholder = "Search to add concepts...") {
   ns <- shiny::NS(id)
@@ -210,6 +219,12 @@
   )
 }
 
+#' Studio Multi-Concept Picker Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @return A reactive returning integer vector of selected concept IDs.
+#' @keywords internal
 .concept_multi_picker_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns

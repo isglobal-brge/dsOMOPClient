@@ -2,18 +2,35 @@
 % Please edit documentation in R/feature.R
 \name{omop.feature.count}
 \alias{omop.feature.count}
-\title{Count of events per person}
+\title{Create an event count feature specification}
 \usage{
 omop.feature.count(concept_set, name = NULL)
 }
 \arguments{
-\item{concept_set}{Numeric vector of concept IDs or omop_concept_set}
+\item{concept_set}{Numeric vector of concept IDs, or an
+\code{omop_concept_set} object defining the concepts to count.}
 
-\item{name}{Character; feature name}
+\item{name}{Character; optional custom name for the feature column.
+If \code{NULL}, auto-generated from the concept and table context.}
 }
 \value{
-An omop_feature_spec list
+An \code{omop_feature_spec} object with \code{type = "count"}.
 }
 \description{
-Count of events per person
+Produces a feature spec that generates an integer column containing
+the number of records per person matching the concept set. Useful
+for quantifying utilisation (e.g. number of visits, number of drug
+dispensings).
+}
+\examples{
+\dontrun{
+spec <- omop.feature.count(c(9201, 9202, 9203))
+plan <- ds.omop.plan.features(plan, "visit_counts",
+  "visit_occurrence", specs = list(n_visits = spec))
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.features}},
+  \code{\link{omop.feature.boolean}},
+  \code{\link{omop.feature.mean_value}}
 }

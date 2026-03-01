@@ -14,23 +14,53 @@ ds.omop.achilles.distribution(
 )
 }
 \arguments{
-\item{analysis_ids}{Integer vector; distribution analysis IDs}
+\item{analysis_ids}{Integer vector; distribution analysis IDs to retrieve
+(e.g., \code{c(103, 105)} for age and observation length distributions).}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} returns each server's results
+separately, \code{"pooled"} additionally attempts weighted aggregation.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; controls how suppressed (NA) cells are
+handled during pooling. \code{"strict"} (the default) or
+\code{"pooled_only_ok"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections (NULL = use session)}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 
-\item{execute}{Logical; if FALSE, return dry-run with code only}
+\item{execute}{Logical; if \code{FALSE}, returns a dry-run
+\code{dsomop_result} containing only the reproducible R code without
+contacting the servers.}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object. Per-site results contain
+  distribution data frames with columns \code{analysis_id},
+  \code{stratum_1}, \code{count_value}, \code{avg_value},
+  \code{stdev_value}, \code{p10_value}, \code{p25_value},
+  \code{median_value}, \code{p75_value}, \code{p90_value}.
 }
 \description{
-Queries achilles_results_dist for distribution analyses.
-Supports pooling via weighted aggregation. Extreme values (min/max)
-are never returned by the server.
+Queries the \code{achilles_results_dist} table on each connected server
+for the specified distribution analysis IDs (e.g., age distribution,
+observation period length). Distribution analyses store percentile values
+(p10, p25, median, p75, p90) rather than raw counts. Extreme values
+(min/max) are never returned by the server for disclosure protection.
+}
+\details{
+When \code{scope = "pooled"}, pooling is attempted via weighted
+aggregation; however, percentile values cannot be meaningfully combined
+from pre-computed summaries, so all percentile columns in the pooled
+result are set to \code{NA}. Use per-site data for percentile display.
+}
+\examples{
+\dontrun{
+# Age distribution (analysis 103) per site
+age_dist <- ds.omop.achilles.distribution(analysis_ids = 103)
+age_dist$per_site[["server_a"]]
+
+# Multiple distribution analyses
+dists <- ds.omop.achilles.distribution(c(103, 105), scope = "per_site")
+}
 }

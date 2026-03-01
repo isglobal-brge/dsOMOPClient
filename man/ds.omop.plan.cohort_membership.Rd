@@ -7,15 +7,30 @@
 ds.omop.plan.cohort_membership(plan, name = "cohort_membership")
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the cohort membership
+  output appended.
 }
 \description{
 Produces the standard OHDSI cohort table as a named output with
-row_id, subject_id, cohort_definition_id, cohort_start_date,
-cohort_end_date. Requires a cohort to be set.
+row_id, subject_id, cohort_definition_id, cohort_start_date, and
+cohort_end_date. Requires a cohort to be set on the plan via
+\code{\link{ds.omop.plan.cohort}}. This is useful when you need
+the raw cohort membership data alongside other outputs.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.cohort(plan, cohort_definition_id = 1)
+plan <- ds.omop.plan.cohort_membership(plan, name = "my_cohort")
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.cohort}},
+  \code{\link{ds.omop.plan.baseline}}
 }

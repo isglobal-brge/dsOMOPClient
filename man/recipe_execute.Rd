@@ -7,18 +7,34 @@
 recipe_execute(recipe, out = NULL, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{recipe}{An omop_recipe object}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{out}{Named character vector; output_name -> symbol_name mapping.
-If NULL, auto-generates symbol names.}
+\item{out}{Named character vector; \code{output_name -> symbol_name}
+mapping. If \code{NULL}, auto-generates symbol names from the recipe's
+output specifications.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; OMOP session symbol on the server (default
+\code{"omop"}).}
 
-\item{conns}{DSI connections or NULL}
+\item{conns}{DSI connections or \code{NULL} (uses active connections).}
 }
 \value{
-Invisible; the output symbol mapping
+Invisibly, the output symbol mapping (a named character vector).
 }
 \description{
-Execute a recipe: compile to plan and run
+Convenience function that compiles the recipe to an execution plan via
+\code{\link{recipe_to_plan}} and immediately executes it via
+\code{\link{ds.omop.plan.execute}}. Symbol names for server-side datasets
+are derived from the recipe's output \code{result_symbol} fields, or
+auto-generated as \code{D_<name>}.
+}
+\examples{
+\dontrun{
+recipe_execute(recipe)
+# Or with explicit symbol mapping:
+recipe_execute(recipe, out = c(features_wide = "D_features"))
+}
+}
+\seealso{
+\code{\link{recipe_to_plan}}, \code{\link{ds.omop.plan.execute}}
 }

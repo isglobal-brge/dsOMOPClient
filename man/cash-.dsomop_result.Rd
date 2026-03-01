@@ -7,14 +7,25 @@
 \method{$}{dsomop_result}(x, name)
 }
 \arguments{
-\item{x}{A dsomop_result object}
+\item{x}{A \code{dsomop_result} object.}
 
-\item{name}{Element name}
+\item{name}{Character; the element name to access.}
 }
 \value{
-The requested element
+The requested element: a top-level field, or the matching entry
+  from \code{per_site}, or \code{NULL} if not found.
 }
 \description{
-If name is not a top-level field (per_site, pooled, meta), falls through
-to per_site for backward compatibility with code like result$server_a.
+Custom \code{$} operator for \code{dsomop_result} objects. Top-level
+fields (\code{per_site}, \code{pooled}, \code{meta}) are returned
+directly. Any other name falls through to the \code{per_site} list,
+allowing backward-compatible access patterns such as
+\code{result$server_a} instead of \code{result$per_site$server_a}.
+}
+\examples{
+\dontrun{
+res <- ds.omop.achilles.status()
+res$per_site          # top-level access
+res$server_a          # falls through to per_site[["server_a"]]
+}
 }

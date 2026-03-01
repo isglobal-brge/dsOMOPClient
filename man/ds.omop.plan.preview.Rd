@@ -2,20 +2,48 @@
 % Please edit documentation in R/plan.R
 \name{ds.omop.plan.preview}
 \alias{ds.omop.plan.preview}
-\title{Preview a plan (safe aggregate)}
+\title{Preview a plan (server-side dry run)}
 \usage{
 ds.omop.plan.preview(plan, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; name of the OMOP session symbol on the
+server (default \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL}, uses the
+connections stored in the session.}
 }
 \value{
-Named list (per server) with preview info
+A named list (one element per server) containing preview
+  information including expected column names and types, estimated
+  row counts, and generated SQL queries for each output.
 }
 \description{
-Preview a plan (safe aggregate)
+Sends the plan to each connected server for a dry-run preview that
+returns expected output schemas, estimated row counts, and the SQL
+queries that would be executed, without actually creating any data.
+This is useful for verifying that the plan will produce the expected
+structure before committing to a full execution.
+}
+\details{
+Note: both \code{\link{ds.omop.plan.validate}} and
+\code{ds.omop.plan.preview} currently call the same server-side
+endpoint (\code{omopPlanPreviewDS}). The distinction is semantic:
+use validate for pass/fail checking, and preview for inspecting
+expected output details.
+}
+\examples{
+\dontrun{
+preview <- ds.omop.plan.preview(my_plan)
+# Inspect expected columns for the "baseline" output
+preview$server1$outputs$baseline$columns
+# Check estimated row count
+preview$server1$outputs$baseline$estimated_rows
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.validate}},
+  \code{\link{ds.omop.plan.execute}}
 }

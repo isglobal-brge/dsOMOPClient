@@ -7,12 +7,30 @@
 recipe_to_plan(recipe)
 }
 \arguments{
-\item{recipe}{An omop_recipe object}
+\item{recipe}{An \code{omop_recipe} object.}
 }
 \value{
-An omop_plan object
+An \code{omop_plan} object ready for execution.
 }
 \description{
-Translates the recipe's populations, variables, filters, and outputs into
-an omop_plan suitable for server-side execution.
+Compiles the recipe into an \code{omop_plan} suitable for server-side
+execution via \code{\link{ds.omop.plan.execute}}. The conversion maps
+population-level filters to cohort specifications, groups variables by
+output and table, selects the appropriate plan builder (person_level,
+features, events, survival, intervals) for each output type, and attaches
+row-level filter trees.
+}
+\examples{
+\dontrun{
+recipe <- omop_recipe()
+recipe <- recipe_add_block(recipe, omop_variable_block(
+  table = "condition_occurrence",
+  concept_ids = c(201820), format = "binary"))
+recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
+plan <- recipe_to_plan(recipe)
+}
+}
+\seealso{
+\code{\link{recipe_execute}}, \code{\link{omop_recipe}},
+  \code{\link{ds.omop.plan}}
 }

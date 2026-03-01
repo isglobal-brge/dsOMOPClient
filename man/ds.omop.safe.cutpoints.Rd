@@ -16,26 +16,47 @@ ds.omop.safe.cutpoints(
 )
 }
 \arguments{
-\item{table}{Character; OMOP table name}
+\item{table}{Character; the OMOP CDM table name (e.g.,
+\code{"measurement"}, \code{"observation"}).}
 
-\item{column}{Character; numeric column name}
+\item{column}{Character; the numeric column to bin (e.g.,
+\code{"value_as_number"}).}
 
-\item{concept_id}{Integer or NULL; concept filter}
+\item{concept_id}{Integer or NULL; optional concept ID to restrict
+rows before computing bins (default: NULL for all rows).}
 
-\item{n_bins}{Integer; target number of bins (default 10)}
+\item{n_bins}{Integer; the target number of bins (default: 10). The
+server may return fewer bins if disclosure constraints require merging.}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.
+Cutpoints are inherently per-site; pooled scope is accepted but the
+pooled slot will be NULL.}
 
-\item{symbol}{Character; session symbol}
+\item{symbol}{Character; the session symbol identifying the OMOP
+connection (default: \code{"omop"}).}
 
-\item{conns}{DSI connections or NULL}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-dsomop_result with bin edges per server
+A \code{dsomop_result} object with \code{$per_site} (named list
+  where each element contains a list with \code{breaks} and \code{counts}),
+  \code{$pooled} (always NULL for cutpoints), and \code{$meta} (list with
+  \code{call_code} and \code{scope}).
 }
 \description{
-Returns bin edges that are safe to use as filter thresholds.
-Each bin is guaranteed to contain enough persons to pass disclosure.
+Computes disclosure-safe bin edges for a numeric column in an OMOP CDM
+table. Each bin is guaranteed to contain enough persons to satisfy the
+minimum cell count threshold, making the resulting breakpoints safe for
+use as filter boundaries or histogram edges. The cutpoints are computed
+server-side and returned without exposing individual-level data.
+}
+\examples{
+\dontrun{
+cuts <- ds.omop.safe.cutpoints("measurement", "value_as_number",
+                                concept_id = 3004249, n_bins = 5)
+cuts$per_site$server1$breaks
+}
 }

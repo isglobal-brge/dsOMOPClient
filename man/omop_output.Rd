@@ -15,22 +15,42 @@ omop_output(
 )
 }
 \arguments{
-\item{name}{Character; output table name}
+\item{name}{Character; output table name (used as key in the recipe).}
 
-\item{type}{Character; output type}
+\item{type}{Character; output layout type. One of \code{"wide"},
+\code{"long"}, \code{"features"}, \code{"survival"}, \code{"intervals"},
+\code{"baseline"}, \code{"joined_long"}, \code{"covariates_sparse"}.}
 
-\item{variables}{Character vector; variable names to include (NULL = all)}
+\item{variables}{Character vector or \code{NULL}; variable names to include
+(\code{NULL} means all variables in the recipe).}
 
-\item{population_id}{Character; which population to use}
+\item{population_id}{Character; which population to use (default
+\code{"base"}).}
 
-\item{options}{Named list; type-specific options}
+\item{options}{Named list; type-specific options (e.g. \code{tar} for
+survival outputs).}
 
-\item{result_symbol}{Character or NULL; R symbol name for the result
-(auto-generated as \code{D_<name>} if NULL)}
+\item{result_symbol}{Character or \code{NULL}; R symbol name for the result
+on the server (auto-generated as \code{D_<name>} if \code{NULL}).}
 }
 \value{
-An omop_output object
+An \code{omop_output} object.
 }
 \description{
-Create an output specification
+Defines how to shape the extracted data into a result table. Each output
+selects a subset of variables from the recipe, targets a population, and
+specifies a layout type (e.g. wide person-level, long event-level, or
+feature matrix). Outputs are added to a recipe via
+\code{\link{recipe_add_output}} and determine the server-side plan structure
+produced by \code{\link{recipe_to_plan}}.
+}
+\examples{
+\dontrun{
+out <- omop_output(name = "features_wide", type = "wide",
+                   population_id = "base")
+recipe <- recipe_add_output(recipe, out)
+}
+}
+\seealso{
+\code{\link{recipe_add_output}}, \code{\link{recipe_to_plan}}
 }

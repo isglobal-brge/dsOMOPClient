@@ -2,16 +2,25 @@
 % Please edit documentation in R/result.R
 \name{ds.omop.code}
 \alias{ds.omop.code}
-\title{Extract reproducible R code from a dsomop_result}
+\title{Get the R code that produced a result}
 \usage{
 ds.omop.code(x)
 }
 \arguments{
-\item{x}{A dsomop_result object}
+\item{x}{A \code{dsomop_result} object.}
 }
 \value{
-Character string of R code
+Character string containing the reproducible R code. Returns an
+  empty string if no code was captured.
 }
 \description{
-Extract reproducible R code from a dsomop_result
+Extracts the stored R code string from a \code{dsomop_result} object,
+which can be used to reproduce the analysis. The code is captured
+automatically when each client wrapper function is called.
+}
+\examples{
+\dontrun{
+res <- ds.omop.achilles.results(analysis_ids = 1)
+ds.omop.code(res)
+}
 }

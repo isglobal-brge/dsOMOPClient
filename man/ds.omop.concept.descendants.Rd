@@ -2,7 +2,7 @@
 % Please edit documentation in R/vocabulary.R
 \name{ds.omop.concept.descendants}
 \alias{ds.omop.concept.descendants}
-\title{Get descendant concepts via concept_ancestor}
+\title{Get descendant concepts via the concept_ancestor table}
 \usage{
 ds.omop.concept.descendants(
   ancestor_ids,
@@ -13,19 +13,40 @@ ds.omop.concept.descendants(
 )
 }
 \arguments{
-\item{ancestor_ids}{Numeric vector of ancestor concept IDs}
+\item{ancestor_ids}{Integer or numeric vector of ancestor concept IDs
+to expand (e.g., \code{c(201820)}).}
 
-\item{include_self}{Logical; include the ancestors themselves}
+\item{include_self}{Logical; if \code{TRUE} (the default), the ancestor
+concepts themselves are included in the result alongside their
+descendants.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, returns a dry-run
+\code{dsomop_result} containing only the reproducible R code without
+contacting the servers.}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{scope = "per_site"}.
+  Each server's result is a data frame of descendant concept rows.
 }
 \description{
-Get descendant concepts via concept_ancestor
+Traverses the OMOP \code{concept_ancestor} hierarchy on each connected
+server and returns all descendant concepts for the given ancestor IDs.
+This is the standard way to expand a high-level concept (e.g., "Diabetes
+mellitus") into all of its more specific child concepts.
+}
+\examples{
+\dontrun{
+# Get all descendants of "Type 2 diabetes mellitus" (concept 201826)
+desc <- ds.omop.concept.descendants(201826)
+nrow(desc$per_site[[1]])
+
+# Exclude the ancestor itself
+desc <- ds.omop.concept.descendants(201826, include_self = FALSE)
+}
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/exploration.R
 \name{ds.omop.date.counts}
 \alias{ds.omop.date.counts}
-\title{Get date counts by time period}
+\title{Get record counts by time period}
 \usage{
 ds.omop.date.counts(
   table,
@@ -18,29 +18,51 @@ ds.omop.date.counts(
 )
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name (e.g.,
+\code{"condition_occurrence"}, \code{"drug_exposure"}).}
 
-\item{date_col}{Character; date column (NULL = auto-detect)}
+\item{date_col}{Character; the date column to aggregate by, or NULL
+for automatic detection based on the table's standard date column
+(default: NULL).}
 
-\item{granularity}{Character; "year", "quarter", or "month"}
+\item{granularity}{Character; the time granularity for aggregation:
+\code{"year"} (default), \code{"quarter"}, or \code{"month"}.}
 
-\item{cohort_table}{Character; cohort temp table (NULL)}
+\item{cohort_table}{Character; name of a server-side cohort temp table
+for filtering, or NULL (default: NULL).}
 
-\item{window}{List with start/end dates (NULL)}
+\item{window}{List with \code{start}/\code{end} date strings for
+temporal filtering, or NULL (default: NULL).}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of data frames with columns \code{period} and \code{count_value}),
+  \code{$pooled} (combined counts when pooled), and \code{$meta}.
 }
 \description{
-Get date counts by time period
+Aggregates records in an OMOP CDM table by time period (year, quarter,
+or month) and returns disclosure-safe counts. The date column is
+auto-detected from the table schema if not specified. This is useful
+for understanding temporal trends in data coverage and identifying
+gaps or spikes in data collection.
+}
+\examples{
+\dontrun{
+monthly <- ds.omop.date.counts("condition_occurrence",
+                                granularity = "month",
+                                scope = "pooled")
+monthly$pooled
+}
 }

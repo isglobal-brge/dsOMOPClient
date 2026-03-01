@@ -7,15 +7,30 @@
 recipe_add_variable(recipe, variable = NULL, ...)
 }
 \arguments{
-\item{recipe}{An omop_recipe}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{variable}{An omop_variable object, or NULL to construct from ...}
+\item{variable}{An \code{\link{omop_variable}} object, or \code{NULL} to
+construct from \code{...}.}
 
-\item{...}{If variable is NULL, arguments passed to omop_variable()}
+\item{...}{If \code{variable} is \code{NULL}, arguments passed to
+\code{\link{omop_variable}()}.}
 }
 \value{
-The modified recipe
+The modified \code{omop_recipe} object.
 }
 \description{
-Add a variable to the recipe
+Adds a single variable to the recipe. Either pass a pre-built
+\code{\link{omop_variable}} object, or pass arguments directly which
+will be forwarded to \code{omop_variable()}. The variable name is
+deduplicated if it conflicts with existing names.
+}
+\examples{
+\dontrun{
+recipe <- recipe_add_variable(recipe,
+  table = "measurement", concept_id = 3004249,
+  concept_name = "Systolic BP", format = "mean")
+}
+}
+\seealso{
+\code{\link{recipe_remove_variable}}, \code{\link{recipe_add_block}}
 }

@@ -13,20 +13,22 @@
 )
 }
 \arguments{
-\item{base_name}{Character; base variable name}
+\item{base_name}{Character; base variable name.}
 
-\item{n}{Integer; number of columns}
+\item{n}{Integer; number of columns to generate.}
 
-\item{mode}{Character; suffix mode}
+\item{mode}{Character; suffix mode ("index", "range", or "label").}
 
-\item{labels}{Character vector; labels for "label" mode (optional)}
+\item{labels}{Character vector; labels for "label" mode (optional).}
 
-\item{ranges}{Numeric matrix; start/end for "range" mode (optional)}
+\item{ranges}{Numeric matrix; start/end for "range" mode (optional).}
 }
 \value{
-Character vector of suffixed names
+Character vector of suffixed names.
 }
 \description{
-Generate suffixed names for multi-column variables
+Produces a vector of column names from a base name by appending index,
+range, or label suffixes. Used when a single variable expands into
+multiple output columns.
 }
 \keyword{internal}

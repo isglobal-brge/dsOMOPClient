@@ -12,20 +12,40 @@ ds.omop.plan.baseline(
 )
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{columns}{Character vector; person-table columns to include}
+\item{columns}{Character vector; person-table columns to include
+(e.g. \code{"gender_concept_id"}, \code{"year_of_birth"},
+\code{"race_concept_id"}).}
 
-\item{derived}{Character vector; derived fields to compute
-(e.g. \code{"age_at_index"}, \code{"prior_observation"},
-\code{"future_observation"})}
+\item{derived}{Character vector; derived fields to compute.
+Supported values include \code{"age_at_index"},
+\code{"prior_observation"}, and \code{"future_observation"}.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list and as the default symbol name on the server.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the baseline output appended.
 }
 \description{
 Produces one row per cohort member with demographics from the person
 table and optional derived fields. Requires a cohort to be set.
+This is the recommended way to retrieve person-level demographic
+variables when a cohort has been defined, because it can compute
+cohort-relative derived fields such as age at index.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.cohort(plan, cohort_definition_id = 1)
+plan <- ds.omop.plan.baseline(plan,
+  columns = c("gender_concept_id", "year_of_birth"),
+  derived = c("age_at_index", "prior_observation")
+)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.person_level}},
+  \code{\link{ds.omop.plan.cohort}}
 }

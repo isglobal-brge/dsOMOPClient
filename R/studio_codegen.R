@@ -1,13 +1,5 @@
-# ==============================================================================
-# dsOMOPClient v2 - OMOP Studio Code Generator + Syntax Highlighting
-# ==============================================================================
-# Generates reproducible R code from interactive Shiny state.
-# Also provides R syntax highlighting for code display in Studio.
-# ==============================================================================
-
-# ==============================================================================
-# R Syntax Highlighting
-# ==============================================================================
+# Module: Studio - Code Generation
+# Shiny module for generating reproducible R code from studio operations.
 
 #' Simple R syntax highlighting via regex -> HTML spans
 #' @param code Character; R source code
@@ -68,10 +60,6 @@
 
   line
 }
-
-# ==============================================================================
-# Code Generation
-# ==============================================================================
 
 #' Generate R code for a plan
 #'
@@ -190,7 +178,6 @@
          paste(concept_ids, collapse = ", "), "))")
 }
 
-# --- Per-function codegen helpers for Studio modules --------------------------
 
 #' Generate R code for an exploration function call
 #' @param fn_name Character; function name (e.g. "ds.omop.concept.prevalence")

@@ -7,10 +7,22 @@
 ds.omop.disconnect(symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{symbol}{Character; the session symbol to disconnect}
+\item{symbol}{Character; the session symbol to disconnect (default: "omop").}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connections (NULL uses the session's stored connections).}
+}
+\value{
+Invisible TRUE on success.
 }
 \description{
-Disconnect an OMOP session
+Cleans up server-side temporary tables and removes the OMOP handle symbol.
+Should be called when the session is no longer needed to free resources.
+}
+\examples{
+\dontrun{
+ds.omop.disconnect("omop")
+}
+}
+\seealso{
+\code{\link{ds.omop.connect}}
 }

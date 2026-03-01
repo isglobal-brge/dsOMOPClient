@@ -6,6 +6,12 @@
 \usage{
 .compile_filter_node(f)
 }
+\arguments{
+\item{f}{An \code{omop_filter} or \code{omop_filter_group} object.}
+}
+\value{
+A nested list node for the filter tree, or \code{NULL}.
+}
 \description{
 Compile a single filter or filter group into the server filter DSL
 }

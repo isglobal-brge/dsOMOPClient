@@ -15,23 +15,43 @@ ds.omop.missingness(
 )
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name (e.g.,
+\code{"measurement"}, \code{"observation"}).}
 
-\item{columns}{Character vector; columns to check}
+\item{columns}{Character vector; specific column names to check, or
+NULL to check all columns in the table (default: NULL).}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of data frames with columns \code{column_name}, \code{total_count},
+  \code{null_count}, \code{missing_pct}), \code{$pooled} (combined
+  missingness when pooled), and \code{$meta}.
 }
 \description{
-Get missingness rates for columns
+Computes the proportion and count of NULL/missing values for each
+column (or a subset of columns) in an OMOP CDM table. This is
+essential for data quality assessment, helping identify columns with
+high missingness that may affect downstream analyses. Results are
+disclosure-controlled; columns where the non-null count falls below
+the threshold are suppressed.
+}
+\examples{
+\dontrun{
+miss <- ds.omop.missingness("measurement",
+                             columns = c("value_as_number",
+                                         "value_as_concept_id"))
+miss$per_site$server1
+}
 }

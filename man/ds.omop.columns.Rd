@@ -7,15 +7,27 @@
 ds.omop.columns(table, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name to introspect (e.g.,
+\code{"condition_occurrence"}, \code{"person"}).}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 }
 \value{
-Named list (per server) of data frames with column metadata
+A named list (one element per server) of data frames with
+  column metadata such as \code{column_name}, \code{data_type},
+  \code{is_nullable}, \code{is_concept}, and \code{is_date}.
 }
 \description{
-List columns in a table
+Queries each connected server for the list of columns present in the
+specified OMOP CDM table. Returns metadata for each column including
+the column name, data type, whether the column is nullable, and
+whether it is a concept ID column or a date column.
+}
+\examples{
+\dontrun{
+cols <- ds.omop.columns("condition_occurrence")
+cols$server1
+}
 }

@@ -1,22 +1,40 @@
-# ==============================================================================
-# dsOMOPClient v2 - Query Library Client Wrappers + Pooling
-# ==============================================================================
-# Client-side functions for listing, executing, and pooling query templates
-# from the dsOMOP query template repository.
-# ==============================================================================
+# Module: Query Library
+# Client-side wrappers for listing, inspecting, and executing curated SQL
+# query templates from the dsOMOP query library.
 
 #' List available query templates
 #'
 #' Returns metadata for all available query templates on connected servers.
-#' Queries are classified as SAFE_AGGREGATE, SAFE_ASSIGN, or BLOCKED.
-#' Only non-BLOCKED queries are returned.
+#' Templates are classified by their DataSHIELD security mode:
+#' \code{SAFE_AGGREGATE} (returns aggregate results to the client),
+#' \code{SAFE_ASSIGN} (stores results server-side), or \code{BLOCKED}
+#' (not permitted). Only non-BLOCKED templates are returned. Since the
+#' query library is defined by the server package, the catalog is identical
+#' across servers and the first server's result is returned.
 #'
-#' @param domain Character; optional domain filter (e.g., "Condition", "Drug")
-#' @param provider Character; query provider ("native" or "all")
-#' @param symbol Character; OMOP session symbol (default "omop")
-#' @param conns DSI connections (default: from session)
-#' @return Data frame with query metadata (id, group, name, description,
-#'   mode, class, poolable, cdm_version, n_inputs)
+#' @param domain Character; optional domain filter to restrict results
+#'   (e.g., \code{"Condition"}, \code{"Drug"}, \code{"Measurement"}).
+#'   \code{NULL} (the default) returns templates for all domains.
+#' @param provider Character; query provider filter. \code{"native"} (the
+#'   default) returns only built-in dsOMOP templates; \code{"all"} includes
+#'   any additional registered providers.
+#' @param symbol Character; the session symbol used when the OMOP connection
+#'   was initialised (default: \code{"omop"}).
+#' @param conns DSI connection object(s). If \code{NULL} (the default), the
+#'   connections stored in the active session are used.
+#' @return Data frame with query metadata columns: \code{id}, \code{group},
+#'   \code{name}, \code{description}, \code{mode}, \code{class},
+#'   \code{poolable}, \code{cdm_version}, \code{n_inputs}. Returns an empty
+#'   data frame with the correct schema if no templates match.
+#' @examples
+#' \dontrun{
+#' # List all available templates
+#' templates <- ds.omop.query.list()
+#' head(templates)
+#'
+#' # List only drug-related templates
+#' drug_queries <- ds.omop.query.list(domain = "Drug")
+#' }
 #' @export
 ds.omop.query.list <- function(domain = NULL, provider = "native",
                                   symbol = "omop", conns = NULL) {
@@ -46,13 +64,28 @@ ds.omop.query.list <- function(domain = NULL, provider = "native",
 
 #' Get query template details
 #'
-#' Returns full metadata for a specific query template, including input
-#' parameters, output schema, and sensitive field annotations.
+#' Returns the full metadata for a specific query template, including its
+#' input parameter definitions, output column schema, sensitive field
+#' annotations (used by disclosure controls), and the recommended pooling
+#' strategy. This is useful for programmatically building input forms or
+#' understanding what a query will return before executing it.
 #'
-#' @param query_id Character; the query ID from the query library
-#' @param symbol Character; OMOP session symbol (default "omop")
-#' @param conns DSI connections (default: from session)
-#' @return Named list with query metadata
+#' @param query_id Character; the unique query ID from the query library
+#'   (e.g., \code{"condition_prevalence"}).
+#' @param symbol Character; the session symbol used when the OMOP connection
+#'   was initialised (default: \code{"omop"}).
+#' @param conns DSI connection object(s). If \code{NULL} (the default), the
+#'   connections stored in the active session are used.
+#' @return Named list with query metadata, including \code{id}, \code{name},
+#'   \code{description}, \code{inputs}, \code{output_schema},
+#'   \code{sensitive_fields}, and \code{pool_strategy}. Returns \code{NULL}
+#'   if the query ID is not found.
+#' @examples
+#' \dontrun{
+#' meta <- ds.omop.query.get("condition_prevalence")
+#' meta$inputs
+#' meta$sensitive_fields
+#' }
 #' @export
 ds.omop.query.get <- function(query_id, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
@@ -69,17 +102,43 @@ ds.omop.query.get <- function(query_id, symbol = "omop", conns = NULL) {
 
 #' Execute a query template
 #'
-#' Executes a query template template against connected servers with
-#' DataSHIELD-aligned disclosure controls. Returns per-server results
-#' (for aggregate mode) or TRUE (for assign mode).
+#' Executes a query template against all connected servers with
+#' DataSHIELD-aligned disclosure controls applied server-side. In
+#' \code{"aggregate"} mode, results are returned to the client as per-server
+#' data frames. In \code{"assign"} mode, results are stored server-side
+#' under a generated symbol name and the function returns \code{TRUE}
+#' invisibly.
 #'
-#' @param query_id Character; the query ID from the query library
-#' @param inputs Named list; parameter values for the query template
-#' @param mode Character; "aggregate" (default) or "assign"
-#' @param symbol Character; OMOP session symbol (default "omop")
-#' @param conns DSI connections (default: from session)
-#' @return For aggregate mode: named list of per-server data frames.
-#'   For assign mode: TRUE.
+#' Disclosure controls (small-count suppression) are applied by the server
+#' before results leave the server. Rows with counts below the server's
+#' configured threshold are either dropped or have their counts set to NA.
+#'
+#' @param query_id Character; the unique query ID from the query library
+#'   (e.g., \code{"condition_prevalence"}).
+#' @param inputs Named list; parameter values required by the query template.
+#'   Use \code{\link{ds.omop.query.get}} to discover required inputs and
+#'   their types. Default: empty list (for queries with no required inputs).
+#' @param mode Character; \code{"aggregate"} (the default) returns results
+#'   to the client, \code{"assign"} stores results server-side for further
+#'   analysis.
+#' @param symbol Character; the session symbol used when the OMOP connection
+#'   was initialised (default: \code{"omop"}).
+#' @param conns DSI connection object(s). If \code{NULL} (the default), the
+#'   connections stored in the active session are used.
+#' @return For \code{mode = "aggregate"}: a named list of per-server data
+#'   frames. For \code{mode = "assign"}: \code{TRUE} invisibly. Use
+#'   \code{\link{ds.omop.query.pool}} to combine aggregate results.
+#' @examples
+#' \dontrun{
+#' # Execute a query with no inputs
+#' results <- ds.omop.query.exec("gender_distribution")
+#' results[["server_a"]]
+#'
+#' # Execute a query with inputs and pool the results
+#' results <- ds.omop.query.exec("condition_prevalence",
+#'   inputs = list(concept_id = 201826))
+#' pooled <- ds.omop.query.pool(results, query_id = "condition_prevalence")
+#' }
 #' @export
 ds.omop.query.exec <- function(query_id, inputs = list(),
                                   mode = "aggregate",
@@ -109,29 +168,55 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
 
 #' Pool query template results across servers
 #'
-#' Takes per-server results from \code{ds.omop.query.exec()} and safely
-#' pools them according to the query's pool strategy. Supports:
+#' Takes per-server results from \code{\link{ds.omop.query.exec}} and safely
+#' pools them according to the query's pool strategy. Supports two pooling
+#' methods:
 #' \itemize{
-#'   \item \code{sum}: Sum count columns across servers
+#'   \item \code{sum}: Sum count columns across servers (default)
 #'   \item \code{weighted_mean}: Pool means weighted by count
 #' }
 #'
-#' Pooling policy:
-#' \itemize{
-#'   \item If any server suppressed a cell (NA), the pooled cell becomes NA
-#'   \item This prevents "pooling to unmask" small-site counts
-#' }
+#' Suppression-safe pooling policy: if any server suppressed a cell (marked
+#' as NA by the server's disclosure controls), the corresponding pooled cell
+#' also becomes NA under \code{"strict"} policy. This prevents reconstructing
+#' small-site counts by subtracting the pooled total from known large sites.
 #'
-#' @param results Named list of per-server data frames (from
-#'   \code{ds.omop.query.exec()})
-#' @param query_id Character; query ID (to look up pool strategy)
-#' @param sensitive_fields Character vector; columns to apply suppression
-#'   pooling rules to. If NULL, auto-detected from query metadata.
-#' @param pool_strategy Character; "sum" (default), "weighted_mean", or "none"
-#' @param policy Character; "strict" (NA if any site suppressed) or
-#'   "pooled_only_ok" (pool what's available)
-#' @param symbol Character; OMOP session symbol
-#' @return Data frame with pooled results, or NULL if pooling failed
+#' The function auto-detects sensitive (count-like) columns from column names
+#' matching patterns such as \code{n_*}, \code{*_count}, \code{count_value},
+#' and \code{num_*}. Non-sensitive columns are used as join keys for
+#' cross-server merging.
+#'
+#' @param results Named list of per-server data frames, as returned by
+#'   \code{\link{ds.omop.query.exec}}.
+#' @param query_id Character; query ID used to look up the recommended pool
+#'   strategy and sensitive field annotations from the query metadata. If
+#'   \code{NULL}, the function falls back to auto-detection.
+#' @param sensitive_fields Character vector; column names to apply suppression
+#'   pooling rules to. If \code{NULL} (the default), auto-detected from
+#'   query metadata or column name patterns.
+#' @param pool_strategy Character; pooling method. \code{"sum"} (the default)
+#'   sums count columns across servers; \code{"weighted_mean"} pools means
+#'   weighted by count; \code{"none"} returns the first server's result
+#'   without pooling.
+#' @param policy Character; suppression propagation policy. \code{"strict"}
+#'   (the default) sets the pooled value to NA if any server suppressed the
+#'   cell. \code{"pooled_only_ok"} sums only the non-suppressed values.
+#' @param symbol Character; the session symbol used when the OMOP connection
+#'   was initialised (default: \code{"omop"}).
+#' @return A data frame with pooled results, or \code{NULL} if pooling
+#'   failed (no valid data frames, all empty, etc.). For a single server,
+#'   its result is returned as-is.
+#' @examples
+#' \dontrun{
+#' results <- ds.omop.query.exec("gender_distribution")
+#' pooled <- ds.omop.query.pool(results, query_id = "gender_distribution")
+#' pooled
+#'
+#' # Manual sensitive field specification
+#' pooled <- ds.omop.query.pool(results,
+#'   sensitive_fields = c("n_persons", "n_records"),
+#'   policy = "strict")
+#' }
 #' @export
 ds.omop.query.pool <- function(results, query_id = NULL,
                                   sensitive_fields = NULL,

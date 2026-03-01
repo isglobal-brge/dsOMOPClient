@@ -7,11 +7,23 @@
 ds.omop.cohort.ref(cohort_definition_id)
 }
 \arguments{
-\item{cohort_definition_id}{Integer; ID of existing cohort}
+\item{cohort_definition_id}{Integer; the ID of an existing cohort
+definition that has already been created on the server(s).}
 }
 \value{
-List; a cohort reference for plans
+A named list with class-implicit structure containing
+  \code{type = "cohort_table"} and \code{cohort_definition_id}. Intended
+  for use inside plan population specifications.
 }
 \description{
-Create a cohort reference for the plan DSL (client-only)
+Builds a lightweight cohort reference object that can be embedded in a
+plan specification. This is a client-side-only helper that does not
+contact any server; the reference is resolved at plan execution time
+when \code{recipe_execute()} runs on the server.
+}
+\examples{
+\dontrun{
+ref <- ds.omop.cohort.ref(cohort_definition_id = 1)
+# Use in a plan: plan$population <- ref
+}
 }

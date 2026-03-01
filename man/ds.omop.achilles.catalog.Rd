@@ -7,15 +7,28 @@
 ds.omop.achilles.catalog(symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections (NULL = use session)}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{scope = "pooled"}.
+  The pooled result is a data frame listing all available analysis IDs
+  and their descriptions.
 }
 \description{
 Returns the full catalog of available Achilles analyses from the server.
-If the achilles_analysis table exists, returns its contents; otherwise
-discovers available analyses from achilles_results.
+If the \code{achilles_analysis} table exists, its contents are returned
+directly; otherwise, the server discovers available analyses by inspecting
+distinct \code{analysis_id} values in the \code{achilles_results} table.
+Since the catalog is identical across servers, the pooled result is taken
+from the first responding server.
+}
+\examples{
+\dontrun{
+catalog <- ds.omop.achilles.catalog()
+head(catalog$pooled)
+}
 }

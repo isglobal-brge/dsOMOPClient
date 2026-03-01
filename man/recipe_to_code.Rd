@@ -7,12 +7,23 @@
 recipe_to_code(recipe)
 }
 \arguments{
-\item{recipe}{An omop_recipe object}
+\item{recipe}{An \code{omop_recipe} object.}
 }
 \value{
-Character string of R code
+Character string containing executable R code.
 }
 \description{
-Produces minimal R code that recreates the recipe. Does not include
-library() calls or header comments.
+Produces a minimal R script that, when executed, recreates the recipe from
+scratch. The output contains calls to \code{\link{omop_recipe}},
+\code{recipe_add_*} functions, and the relevant constructors. Does not
+include \code{library()} calls or header comments.
+}
+\examples{
+\dontrun{
+code <- recipe_to_code(recipe)
+cat(code)
+}
+}
+\seealso{
+\code{\link{recipe_export_json}}, \code{\link{omop_recipe}}
 }

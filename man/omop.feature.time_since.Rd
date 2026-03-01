@@ -2,7 +2,7 @@
 % Please edit documentation in R/feature.R
 \name{omop.feature.time_since}
 \alias{omop.feature.time_since}
-\title{Time since event feature}
+\title{Create a time-since-event feature specification}
 \usage{
 omop.feature.time_since(
   concept_set,
@@ -12,17 +12,39 @@ omop.feature.time_since(
 )
 }
 \arguments{
-\item{concept_set}{Numeric vector or omop_concept_set}
+\item{concept_set}{Numeric vector of concept IDs, or an
+\code{omop_concept_set} object defining the concepts to match.}
 
-\item{reference_date}{Character; reference date (ISO format)}
+\item{reference_date}{Character; ISO 8601 date string used as the
+reference point for the time calculation. If \code{NULL}, the
+cohort index date is used.}
 
-\item{unit}{Character; "day" or "month"}
+\item{unit}{Character; time unit for the result. One of \code{"day"}
+or \code{"month"}.}
 
-\item{name}{Character; feature name}
+\item{name}{Character; optional custom name for the feature column.
+If \code{NULL}, auto-generated from the concept and table context.}
 }
 \value{
-An omop_feature_spec list
+An \code{omop_feature_spec} object with
+  \code{type = "time_since"}.
 }
 \description{
-Time since event feature
+Produces a feature spec that computes the elapsed time between the
+most recent matching event and a reference date. The result is
+expressed in the specified \code{unit} (days or months). Useful for
+calculating recency of diagnoses, procedures, or measurements.
+}
+\examples{
+\dontrun{
+spec <- omop.feature.time_since(c(201826), unit = "day")
+plan <- ds.omop.plan.features(plan, "recency",
+  "condition_occurrence",
+  specs = list(days_since_diabetes = spec))
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.features}},
+  \code{\link{omop.feature.boolean}},
+  \code{\link{omop.feature.count}}
 }

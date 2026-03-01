@@ -18,29 +18,59 @@ ds.omop.plan.events(
 )
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list.}
 
-\item{table}{Character; source table name}
+\item{table}{Character; source OMOP table name
+(e.g. \code{"condition_occurrence"}, \code{"drug_exposure"}).}
 
-\item{columns}{Character vector; columns to include}
+\item{columns}{Character vector; columns to include from the table.
+If \code{NULL}, the server selects default columns.}
 
-\item{concept_set}{Numeric vector or concept set spec}
+\item{concept_set}{Numeric vector or concept set spec; concept IDs
+used to filter rows via the standard concept ID column of the table.}
 
-\item{time_window}{Named list with start_date, end_date}
+\item{time_window}{Named list with \code{start_date} and
+\code{end_date} for calendar-based filtering.}
 
-\item{temporal}{An omop_temporal_spec or list; temporal filtering}
+\item{temporal}{An \code{omop_temporal_spec} object or list; temporal
+filtering relative to a cohort index date. See
+\code{\link{omop.temporal}}.}
 
-\item{date_handling}{A list; date handling specification}
+\item{date_handling}{A list; date handling specification controlling
+how date columns are transformed. See \code{\link{omop.date_handling}}.}
 
-\item{filters}{Named list; additional filter DSL}
+\item{filters}{Named list; additional custom filter DSL expressions.}
 
-\item{representation}{Named list with format and settings}
+\item{representation}{Named list with \code{format} (one of
+\code{"long"}, \code{"wide"}, \code{"features"}) and optional
+format-specific settings.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the event-level output
+  appended.
 }
 \description{
-Add an event-level extraction to the plan
+Extracts rows from a single OMOP clinical data table, optionally
+filtered by concept set, time window, temporal specification, and
+custom filters. The output format is controlled by the
+\code{representation} parameter (long, wide, or features).
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.events(plan,
+  name = "conditions",
+  table = "condition_occurrence",
+  concept_set = c(201826, 443238),
+  temporal = omop.temporal(index_window = list(start = -365, end = 0)),
+  date_handling = omop.date_handling(mode = "relative")
+)
+}
+}
+\seealso{
+\code{\link{omop.temporal}}, \code{\link{omop.date_handling}},
+  \code{\link{ds.omop.plan.features}}
 }

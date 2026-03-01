@@ -12,17 +12,42 @@ omop.temporal(
 )
 }
 \arguments{
-\item{index_window}{Named list with start/end (days relative to index)}
+\item{index_window}{Named list with \code{start} and \code{end}
+(integer days relative to the cohort index date). Negative values
+denote time before the index date.}
 
-\item{calendar}{Named list with start/end (calendar dates)}
+\item{calendar}{Named list with \code{start} and \code{end}
+(character ISO 8601 dates, e.g. \code{"2020-01-01"}).}
 
-\item{event_select}{Named list with order ("first"/"last") and n}
+\item{event_select}{Named list with \code{order} (\code{"first"} or
+\code{"last"}) and \code{n} (integer; number of events to keep per
+person).}
 
-\item{min_gap}{Integer; minimum days between events}
+\item{min_gap}{Integer; minimum number of days between events. Events
+closer together are collapsed.}
 }
 \value{
-An omop_temporal_spec object
+An \code{omop_temporal_spec} object (a list with class
+  \code{c("omop_temporal_spec", "list")}).
 }
 \description{
-Build a temporal filtering specification
+Creates an \code{omop_temporal_spec} object that defines how events
+are filtered relative to a cohort index date or calendar dates. The
+spec can combine index-relative windows, calendar date ranges, event
+selection (first/last N), and minimum gap requirements.
+}
+\examples{
+\dontrun{
+# Events within 1 year before index, keep first 3 per person
+temporal <- omop.temporal(
+  index_window = list(start = -365, end = 0),
+  event_select = list(order = "first", n = 3)
+)
+plan <- ds.omop.plan.events(plan, "conditions",
+  "condition_occurrence", temporal = temporal)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.events}},
+  \code{\link{omop.date_handling}}
 }

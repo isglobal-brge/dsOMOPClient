@@ -7,16 +7,32 @@
 ds.omop.query.get(query_id, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{query_id}{Character; the query ID from the query library}
+\item{query_id}{Character; the unique query ID from the query library
+(e.g., \code{"condition_prevalence"}).}
 
-\item{symbol}{Character; OMOP session symbol (default "omop")}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections (default: from session)}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-Named list with query metadata
+Named list with query metadata, including \code{id}, \code{name},
+  \code{description}, \code{inputs}, \code{output_schema},
+  \code{sensitive_fields}, and \code{pool_strategy}. Returns \code{NULL}
+  if the query ID is not found.
 }
 \description{
-Returns full metadata for a specific query template, including input
-parameters, output schema, and sensitive field annotations.
+Returns the full metadata for a specific query template, including its
+input parameter definitions, output column schema, sensitive field
+annotations (used by disclosure controls), and the recommended pooling
+strategy. This is useful for programmatically building input forms or
+understanding what a query will return before executing it.
+}
+\examples{
+\dontrun{
+meta <- ds.omop.query.get("condition_prevalence")
+meta$inputs
+meta$sensitive_fields
+}
 }

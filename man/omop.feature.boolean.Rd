@@ -2,18 +2,36 @@
 % Please edit documentation in R/feature.R
 \name{omop.feature.boolean}
 \alias{omop.feature.boolean}
-\title{Binary presence/absence feature}
+\title{Create a binary (presence/absence) feature specification}
 \usage{
 omop.feature.boolean(concept_set, name = NULL)
 }
 \arguments{
-\item{concept_set}{Numeric vector of concept IDs or omop_concept_set}
+\item{concept_set}{Numeric vector of concept IDs, or an
+\code{omop_concept_set} object defining the concepts to match.}
 
-\item{name}{Character; feature name}
+\item{name}{Character; optional custom name for the feature column.
+If \code{NULL}, auto-generated from the concept and table context.}
 }
 \value{
-An omop_feature_spec list
+An \code{omop_feature_spec} object with \code{type = "boolean"}.
 }
 \description{
-Binary presence/absence feature
+Produces a feature spec that generates a boolean column indicating
+whether the person has any records matching the concept set. When
+used in a plan or recipe, the resulting column will contain
+\code{TRUE} (at least one matching record) or \code{FALSE} (no
+matching records).
+}
+\examples{
+\dontrun{
+spec <- omop.feature.boolean(c(201826))
+plan <- ds.omop.plan.features(plan, "has_diabetes",
+  "condition_occurrence", specs = list(diabetes = spec))
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.features}},
+  \code{\link{omop.feature.count}},
+  \code{\link{omop.feature.mean_value}}
 }

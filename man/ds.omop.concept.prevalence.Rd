@@ -19,31 +19,58 @@ ds.omop.concept.prevalence(
 )
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name (e.g.,
+\code{"condition_occurrence"}, \code{"drug_exposure"}).}
 
-\item{concept_col}{Character; concept column (NULL = auto-detect)}
+\item{concept_col}{Character; the concept column name, or NULL for
+automatic detection based on the table's standard concept column
+(default: NULL).}
 
-\item{metric}{Character; "persons" or "records"}
+\item{metric}{Character; \code{"persons"} (default) to rank by distinct
+person count, or \code{"records"} to rank by total record count.}
 
-\item{top_n}{Integer; number of top concepts}
+\item{top_n}{Integer; number of top concepts to return (default: 50).}
 
-\item{cohort_table}{Character; cohort temp table (NULL)}
+\item{cohort_table}{Character; name of a server-side cohort temp table
+to restrict the analysis to a specific cohort (default: NULL).}
 
-\item{window}{List with start/end dates (NULL)}
+\item{window}{List with \code{start} and \code{end} date strings
+(ISO 8601) for temporal filtering, or NULL for no date restriction
+(default: NULL).}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) requires all
+servers to succeed, \code{"pooled_only_ok"} allows partial results.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of data frames with columns \code{concept_id}, \code{concept_name},
+  \code{count_value}, etc.), \code{$pooled} (combined data frame when
+  scope is \code{"pooled"}, otherwise NULL), and \code{$meta}.
 }
 \description{
-Returns the top concepts in a table ranked by person count or record count.
+Retrieves the most frequent concepts in the specified OMOP CDM table,
+ranked by person count or record count. Results are disclosure-controlled
+on the server side (small cells are suppressed) and returned as a
+\code{dsomop_result} with per-site and optionally pooled data. Pooling
+sums counts across servers and re-ranks.
+}
+\examples{
+\dontrun{
+result <- ds.omop.concept.prevalence("condition_occurrence")
+head(result$per_site$server1)
+
+pooled <- ds.omop.concept.prevalence("drug_exposure",
+                                      metric = "records",
+                                      scope = "pooled")
+pooled$pooled
+}
 }

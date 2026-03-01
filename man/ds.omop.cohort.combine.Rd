@@ -14,21 +14,43 @@ ds.omop.cohort.combine(
 )
 }
 \arguments{
-\item{op}{Character; "intersect", "union", or "setdiff"}
+\item{op}{Character; the set operation to apply. One of
+\code{"intersect"} (patients in both cohorts),
+\code{"union"} (patients in either cohort), or
+\code{"setdiff"} (patients in \code{cohort_a} but not \code{cohort_b}).}
 
-\item{cohort_a}{Character; first cohort temp table}
+\item{cohort_a}{Character; server-side symbol name for the first cohort
+temp table.}
 
-\item{cohort_b}{Character; second cohort temp table}
+\item{cohort_b}{Character; server-side symbol name for the second cohort
+temp table.}
 
-\item{new_name}{Character; name for result}
+\item{new_name}{Character; symbol name for the combined result. If
+\code{NULL} (the default), an auto-generated name is used.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-Invisible; combined cohort reference
+Invisibly; the server-side symbol name (character) for the
+  combined cohort table.
 }
 \description{
-Combine two cohorts with set operations
+Combines two existing server-side cohort tables using a set operation
+(intersection, union, or set difference). The result is assigned as a
+new server-side symbol that can be used in subsequent queries or plan
+executions.
+}
+\examples{
+\dontrun{
+# Patients with both diabetes AND hypertension
+combined <- ds.omop.cohort.combine(
+  op = "intersect",
+  cohort_a = ".cohort_1",
+  cohort_b = ".cohort_2"
+)
+}
 }

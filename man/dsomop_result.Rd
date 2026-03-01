@@ -7,16 +7,28 @@
 dsomop_result(per_site, pooled = NULL, meta = list())
 }
 \arguments{
-\item{per_site}{Named list: server_name -> raw result}
+\item{per_site}{Named list mapping server names to their raw results
+(data frames, lists, or scalars).}
 
-\item{pooled}{NULL or single aggregated result}
+\item{pooled}{\code{NULL} (default) or a single aggregated result
+(typically a data frame) combining all servers.}
 
-\item{meta}{List of metadata (call_code, scope, pooling_policy, warnings)}
+\item{meta}{Named list of metadata. Recognised elements:
+\code{call_code} (character; reproducible R code),
+\code{scope} (character; \code{"per_site"} or \code{"pooled"}),
+\code{pooling_policy} (character; \code{"strict"} or
+\code{"pooled_only_ok"}),
+\code{warnings} (character vector of pooling warnings).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object (a list with class
+  \code{c("dsomop_result", "list")}).
 }
 \description{
-Create a dsomop_result object
+Constructs a standardised \code{dsomop_result} S3 object that wraps every
+dsOMOPClient function return value. The object stores per-site results,
+an optional pooled (cross-server aggregated) result, and metadata
+including the reproducible R code that produced the result, the timestamp,
+and any pooling warnings.
 }
 \keyword{internal}

@@ -1,10 +1,11 @@
-# ==============================================================================
-# MODULE: Atlas Data Sources (Achilles-backed statistics)
-# ==============================================================================
-# ATLAS-style interactive pages: Dashboard, Conditions, Drugs,
-# Procedures, Measurements, Observations, Visits, Death, Trends, Data Quality.
-# ==============================================================================
+# Module: Studio - Achilles Atlas
+# Shiny module for displaying Achilles pre-computed analytics.
 
+#' Studio Achilles Atlas UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @return A Shiny UI element.
+#' @keywords internal
 .mod_atlas_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -24,6 +25,13 @@
   )
 }
 
+#' Studio Achilles Atlas Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @param parent_session Shiny session; the parent session for tab navigation.
+#' @return NULL (Shiny module server, called for side effects).
+#' @keywords internal
 .mod_atlas_server <- function(id, state, parent_session = NULL) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -238,9 +246,7 @@
       }
     })
 
-    # ========================================================================
     # Dashboard plot outputs
-    # ========================================================================
 
     output$dash_gender_plot <- plotly::renderPlotly({
       data <- page_data()
@@ -473,9 +479,7 @@
       })
     })
 
-    # ========================================================================
     # Domain plots (Conditions, Drugs, Procedures, Measurements, Observations)
-    # ========================================================================
 
     output$domain_bar_plot <- plotly::renderPlotly({
       data <- page_data()
@@ -644,9 +648,7 @@
       }
     })
 
-    # ========================================================================
     # Visits plot outputs
-    # ========================================================================
 
     output$visits_type_plot <- plotly::renderPlotly({
       data <- page_data()
@@ -700,9 +702,7 @@
       })
     })
 
-    # ========================================================================
     # Death plot output
-    # ========================================================================
 
     output$death_cause_plot <- plotly::renderPlotly({
       data <- page_data()
@@ -733,9 +733,7 @@
       })
     })
 
-    # ========================================================================
     # Trends overlay plot
-    # ========================================================================
 
     output$trends_overlay_plot <- plotly::renderPlotly({
       data <- page_data()
@@ -787,10 +785,8 @@
   })
 }
 
-# ==============================================================================
-# Fetch dispatcher (centralizes nav -> fetch mapping)
-# ==============================================================================
-
+#' Fetch dispatcher (centralizes nav to fetch mapping)
+#' @keywords internal
 .atlas_dispatch_fetch <- function(nav, state, cat, scope, policy, selected_srv) {
   if (nav == "Dashboard") {
     .atlas_fetch_dashboard(state, scope, policy, selected_srv)
@@ -844,10 +840,6 @@
     result
   }
 }
-
-# ==============================================================================
-# Utility functions (age bands, birth cohorts, age pyramid)
-# ==============================================================================
 
 # Compute age bands from analysis 3 (YOB) data with adaptive binning
 # Returns data.frame(label, count) sorted by band
@@ -984,10 +976,6 @@
 
   result
 }
-
-# ==============================================================================
-# Data fetching helpers
-# ==============================================================================
 
 .atlas_fetch_dashboard <- function(state, scope, policy,
                                     selected_server = NULL) {
@@ -1318,10 +1306,6 @@
   })
 }
 
-# ==============================================================================
-# Dynamic fetch helpers (catalog-driven)
-# ==============================================================================
-
 .page_to_domain <- function(page_name) {
   map <- c(
     "Conditions" = "condition", "Drugs" = "drug",
@@ -1391,10 +1375,6 @@
 
   result
 }
-
-# ==============================================================================
-# Render helpers
-# ==============================================================================
 
 .atlas_render_dashboard <- function(ns, data) {
   total_txt <- .fmt_count(data$total_persons)
@@ -1726,10 +1706,6 @@
   }
   DT::DTOutput(ns("quality_table"))
 }
-
-# ==============================================================================
-# Internal utilities
-# ==============================================================================
 
 .atlas_resolve_concept_ids <- function(ids, state) {
   ids <- unique(as.integer(ids[!is.na(ids)]))

@@ -1,11 +1,21 @@
-# ==============================================================================
-# dsOMOPClient v2 - Internal Utilities
-# ==============================================================================
+# Module: Client Utilities
+# Internal utility functions for session management and symbol generation.
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+#' Internal environment for storing dsOMOPClient session state
+#' @keywords internal
 .dsomop_client_env <- new.env(parent = emptyenv())
 
+#' Retrieve a stored OMOP session
+#'
+#' Looks up a previously created \code{omop_session} object by its symbol
+#' name in the internal client environment. Stops with an informative error
+#' if no session with that symbol exists.
+#'
+#' @param symbol Character; the session symbol to look up.
+#' @return The \code{omop_session} object.
+#' @keywords internal
 .get_session <- function(symbol = "omop") {
   if (!exists(symbol, envir = .dsomop_client_env)) {
     stop("No OMOP session '", symbol,
@@ -15,6 +25,15 @@
   get(symbol, envir = .dsomop_client_env)
 }
 
+#' Generate a unique temporary symbol name
+#'
+#' Creates a random symbol by appending six alphanumeric characters to the
+#' given prefix, separated by a dot. Used to create unique server-side
+#' variable names that avoid collisions across sessions.
+#'
+#' @param prefix Character; prefix for the generated symbol.
+#' @return Character; a unique symbol string (e.g., \code{"dsO.aB3xZq"}).
+#' @keywords internal
 .generate_symbol <- function(prefix = "dsO") {
   paste0(prefix, ".",
          paste(sample(c(letters, LETTERS, 0:9), 6,

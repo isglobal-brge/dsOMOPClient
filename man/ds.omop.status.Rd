@@ -7,11 +7,19 @@
 ds.omop.status(symbol = "omop")
 }
 \arguments{
-\item{symbol}{Character; session symbol}
+\item{symbol}{Character; session symbol (default: "omop").}
 }
 \value{
-Named list with per-server status
+Named list with symbol, servers, capabilities, ping results,
+  and errors.
 }
 \description{
-Get OMOP session status
+Pings each connected server and returns the current session status
+including capabilities, server versions, and any connection errors.
+}
+\examples{
+\dontrun{
+status <- ds.omop.status("omop")
+status$ping
+}
 }

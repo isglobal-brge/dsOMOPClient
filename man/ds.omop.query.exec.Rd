@@ -13,22 +13,50 @@ ds.omop.query.exec(
 )
 }
 \arguments{
-\item{query_id}{Character; the query ID from the query library}
+\item{query_id}{Character; the unique query ID from the query library
+(e.g., \code{"condition_prevalence"}).}
 
-\item{inputs}{Named list; parameter values for the query template}
+\item{inputs}{Named list; parameter values required by the query template.
+Use \code{\link{ds.omop.query.get}} to discover required inputs and
+their types. Default: empty list (for queries with no required inputs).}
 
-\item{mode}{Character; "aggregate" (default) or "assign"}
+\item{mode}{Character; \code{"aggregate"} (the default) returns results
+to the client, \code{"assign"} stores results server-side for further
+analysis.}
 
-\item{symbol}{Character; OMOP session symbol (default "omop")}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections (default: from session)}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-For aggregate mode: named list of per-server data frames.
-  For assign mode: TRUE.
+For \code{mode = "aggregate"}: a named list of per-server data
+  frames. For \code{mode = "assign"}: \code{TRUE} invisibly. Use
+  \code{\link{ds.omop.query.pool}} to combine aggregate results.
 }
 \description{
-Executes a query template template against connected servers with
-DataSHIELD-aligned disclosure controls. Returns per-server results
-(for aggregate mode) or TRUE (for assign mode).
+Executes a query template against all connected servers with
+DataSHIELD-aligned disclosure controls applied server-side. In
+\code{"aggregate"} mode, results are returned to the client as per-server
+data frames. In \code{"assign"} mode, results are stored server-side
+under a generated symbol name and the function returns \code{TRUE}
+invisibly.
+}
+\details{
+Disclosure controls (small-count suppression) are applied by the server
+before results leave the server. Rows with counts below the server's
+configured threshold are either dropped or have their counts set to NA.
+}
+\examples{
+\dontrun{
+# Execute a query with no inputs
+results <- ds.omop.query.exec("gender_distribution")
+results[["server_a"]]
+
+# Execute a query with inputs and pool the results
+results <- ds.omop.query.exec("condition_prevalence",
+  inputs = list(concept_id = 201826))
+pooled <- ds.omop.query.pool(results, query_id = "condition_prevalence")
+}
 }

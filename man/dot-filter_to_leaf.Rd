@@ -6,6 +6,13 @@
 \usage{
 .filter_to_leaf(f)
 }
+\arguments{
+\item{f}{An \code{omop_filter} object.}
+}
+\value{
+A list with \code{var}, \code{op}, and \code{value} fields, or
+  \code{NULL} if the filter cannot be converted.
+}
 \description{
 Convert an omop_filter to a leaf node matching the server's .compileFilter()
 }

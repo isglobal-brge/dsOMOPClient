@@ -7,13 +7,24 @@
 \method{as.data.frame}{dsomop_result}(x, ...)
 }
 \arguments{
-\item{x}{A dsomop_result object}
+\item{x}{A \code{dsomop_result} object.}
 
-\item{...}{Ignored}
+\item{...}{Additional arguments (ignored).}
 }
 \value{
-A data.frame
+A data frame: the pooled result, the first server's result, or
+  an empty data frame as fallback.
 }
 \description{
-Returns pooled result if available, otherwise the first server's result.
+Extracts a single data frame from a \code{dsomop_result} object. If a
+pooled result is available and is a data frame, it is returned. Otherwise,
+the first server's result is used. Returns an empty \code{data.frame()}
+if no valid data frame is found.
+}
+\examples{
+\dontrun{
+res <- ds.omop.achilles.results(analysis_ids = 1, scope = "pooled")
+df <- as.data.frame(res)
+head(df)
+}
 }

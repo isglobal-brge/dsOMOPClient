@@ -1,18 +1,33 @@
-# ==============================================================================
-# dsOMOPClient v2 - Connect, Disconnect, Status
-# ==============================================================================
+# Module: Session Management
+# Connect, disconnect, and query status of OMOP CDM DataSHIELD sessions.
 
 #' Connect to an OMOP CDM resource on DataSHIELD servers
 #'
-#' @param resource Character or named list; resource name(s)
-#' @param symbol Character; server-side symbol name (default: "omop")
-#' @param cdm_schema Character; CDM schema override
-#' @param vocab_schema Character; vocabulary schema override
-#' @param results_schema Character; results schema override
-#' @param temp_schema Character; temp schema override
-#' @param strict Logical; fail on any server error
-#' @param conns DSI connections object
-#' @return An omop_session object (invisibly)
+#' Establishes a connection to one or more OMOP CDM databases via DataSHIELD.
+#' Assigns the resource server-side, initializes the OMOP handle, retrieves
+#' capabilities, and returns an \code{omop_session} object. This is the entry
+#' point for all dsOMOPClient operations.
+#'
+#' @param resource Character or named list; resource name(s). A single string
+#'   applies to all servers; a named list maps server names to resource names.
+#' @param symbol Character; server-side symbol name (default: "omop").
+#' @param cdm_schema Character; CDM schema override (NULL uses server default).
+#' @param vocab_schema Character; vocabulary schema override (NULL uses server default).
+#' @param results_schema Character; results schema override (NULL uses server default).
+#' @param temp_schema Character; temp schema override (NULL uses server default).
+#' @param strict Logical; if TRUE, fail immediately on any server error.
+#' @param conns DSI connections object (NULL uses default connections).
+#' @return An \code{omop_session} object (invisibly).
+#' @examples
+#' \dontrun{
+#' library(DSI)
+#' builder <- newDSLoginBuilder()
+#' builder$append(server = "server1", url = "https://opal.example.org",
+#'                resource = "project.omop_cdm", driver = "OpalDriver")
+#' conns <- datashield.login(builder$build())
+#' session <- ds.omop.connect(resource = "project.omop_cdm", conns = conns)
+#' }
+#' @seealso \code{\link{ds.omop.disconnect}}, \code{\link{ds.omop.status}}
 #' @export
 ds.omop.connect <- function(resource,
                             symbol = "omop",
@@ -127,8 +142,17 @@ ds.omop.connect <- function(resource,
 
 #' Disconnect an OMOP session
 #'
-#' @param symbol Character; the session symbol to disconnect
-#' @param conns DSI connections
+#' Cleans up server-side temporary tables and removes the OMOP handle symbol.
+#' Should be called when the session is no longer needed to free resources.
+#'
+#' @param symbol Character; the session symbol to disconnect (default: "omop").
+#' @param conns DSI connections (NULL uses the session's stored connections).
+#' @return Invisible TRUE on success.
+#' @examples
+#' \dontrun{
+#' ds.omop.disconnect("omop")
+#' }
+#' @seealso \code{\link{ds.omop.connect}}
 #' @export
 ds.omop.disconnect <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
@@ -155,8 +179,17 @@ ds.omop.disconnect <- function(symbol = "omop", conns = NULL) {
 
 #' Get OMOP session status
 #'
-#' @param symbol Character; session symbol
-#' @return Named list with per-server status
+#' Pings each connected server and returns the current session status
+#' including capabilities, server versions, and any connection errors.
+#'
+#' @param symbol Character; session symbol (default: "omop").
+#' @return Named list with symbol, servers, capabilities, ping results,
+#'   and errors.
+#' @examples
+#' \dontrun{
+#' status <- ds.omop.status("omop")
+#' status$ping
+#' }
 #' @export
 ds.omop.status <- function(symbol = "omop") {
   session <- .get_session(symbol)

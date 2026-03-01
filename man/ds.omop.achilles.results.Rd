@@ -14,22 +14,50 @@ ds.omop.achilles.results(
 )
 }
 \arguments{
-\item{analysis_ids}{Integer vector; which analysis IDs to retrieve}
+\item{analysis_ids}{Integer vector; the Achilles analysis IDs to retrieve
+(e.g., \code{c(1, 2, 400)} for total persons, gender breakdown, and
+condition frequency).}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} returns each server's results
+separately, \code{"pooled"} additionally aggregates counts across servers.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; controls how suppressed (NA) cells are
+handled during pooling. \code{"strict"} (the default) sets the pooled
+value to NA if any server suppressed the cell. \code{"pooled_only_ok"}
+sums only the non-suppressed values.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections (NULL = use session)}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 
-\item{execute}{Logical; if FALSE, return dry-run with code only}
+\item{execute}{Logical; if \code{FALSE}, returns a dry-run
+\code{dsomop_result} containing only the reproducible R code without
+contacting the servers.}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object. The \code{per_site} element contains
+  per-server data frames with columns \code{analysis_id}, \code{stratum_1}
+  through \code{stratum_5}, and \code{count_value}. The \code{pooled}
+  element (if requested) contains the aggregated data frame.
 }
 \description{
-Queries achilles_results for specified analysis IDs with optional stratum
-Supports pooling via count summation across servers.
+Queries the \code{achilles_results} table on each connected server for
+the specified analysis IDs. These are pre-computed count-based statistics
+(e.g., person counts by gender, condition frequency). When
+\code{scope = "pooled"}, counts are summed across servers with suppression
+propagation: if any server suppressed a cell (NA), the pooled cell is also
+set to NA to prevent disclosure.
+}
+\examples{
+\dontrun{
+# Get total person count (analysis 1) pooled across servers
+res <- ds.omop.achilles.results(analysis_ids = 1, scope = "pooled")
+res$pooled
+
+# Get gender breakdown per site
+gender <- ds.omop.achilles.results(analysis_ids = 2)
+gender$per_site
+}
 }

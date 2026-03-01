@@ -13,19 +13,41 @@ ds.omop.plan.intervals(
 )
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{tables}{Character vector; OMOP tables to extract intervals from}
+\item{tables}{Character vector; OMOP tables to extract intervals from.
+Defaults to observation_period, visit_occurrence, drug_exposure,
+and condition_occurrence.}
 
-\item{concept_filter}{Named list; per-table concept ID filters}
+\item{concept_filter}{Named list; per-table concept ID filters where
+each element maps a table name to a numeric vector of concept IDs.
+If \code{NULL}, no concept filtering is applied.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the intervals output
+  appended.
 }
 \description{
-Extracts interval data (observation periods, visits, drug/condition
-durations) with start/end days relative to the cohort index date.
-Requires a cohort to be set.
+Extracts interval data (observation periods, visits, drug or condition
+durations) with start and end days relative to the cohort index date.
+Requires a cohort to be set. The output contains one row per interval
+per person, with columns for table source, start day, end day, and
+optionally concept IDs filtered by \code{concept_filter}.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.cohort(plan, cohort_definition_id = 1)
+plan <- ds.omop.plan.intervals(plan,
+  tables = c("visit_occurrence", "drug_exposure"),
+  concept_filter = list(drug_exposure = c(1127078, 1127433))
+)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.events}},
+  \code{\link{ds.omop.plan.temporal_covariates}}
 }

@@ -7,17 +7,39 @@
 ds.omop.plan.person_level(plan, tables, name = "person_data")
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{tables}{Named list; table_name = c(column_names)}
+\item{tables}{Named list; each element maps a table name to a
+character vector of column names to include, e.g.
+\code{list(person = c("gender_concept_id"), visit_occurrence = c("visit_concept_id"))}.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list and as the default symbol name on the server.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the person-level output
+  appended.
 }
 \description{
 Joins one or more tables by person_id and merges into a single
 wide data.frame. For cohort-aware demographics with derived fields,
-use \code{\link{ds.omop.plan.baseline}} instead.
+use \code{\link{ds.omop.plan.baseline}} instead. This output type
+is useful when you need raw columns from multiple OMOP tables
+without cohort-relative computations.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.person_level(plan,
+  tables = list(
+    person = c("gender_concept_id", "year_of_birth"),
+    visit_occurrence = c("visit_concept_id", "visit_type_concept_id")
+  ),
+  name = "demographics"
+)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.baseline}},
+  \code{\link{ds.omop.plan.events}}
 }

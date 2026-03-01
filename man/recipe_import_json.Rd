@@ -7,11 +7,23 @@
 recipe_import_json(json)
 }
 \arguments{
-\item{json}{Character; JSON string or file path}
+\item{json}{Character; a JSON string, or a file path to a JSON file.}
 }
 \value{
-An omop_recipe object
+An \code{omop_recipe} object.
 }
 \description{
-Import a recipe from JSON
+Reconstructs an \code{omop_recipe} from a JSON string or file previously
+created by \code{\link{recipe_export_json}}. Automatically detects whether
+the input is a file path or a raw JSON string. Filter groups are currently
+skipped during import.
+}
+\examples{
+\dontrun{
+recipe <- recipe_import_json("my_recipe.json")
+recipe <- recipe_import_json('{"version":"2.0","populations":{...}}')
+}
+}
+\seealso{
+\code{\link{recipe_export_json}}
 }

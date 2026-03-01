@@ -7,13 +7,25 @@
 ds.omop.joins(symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 }
 \value{
-Named list (per server) of data frames
+A named list (one element per server) of data frames with
+  edge metadata such as \code{from_table}, \code{to_table},
+  \code{from_column}, and \code{to_column}.
 }
 \description{
-Get the join relationship graph
+Retrieves the join relationship graph for the OMOP CDM schema from
+each connected server. The graph describes how tables can be joined
+(e.g., via \code{person_id}, \code{visit_occurrence_id}, or concept
+foreign keys), which is used by the query builder and extraction
+pipeline to construct multi-table joins automatically.
+}
+\examples{
+\dontrun{
+joins <- ds.omop.joins()
+joins$server1
+}
 }

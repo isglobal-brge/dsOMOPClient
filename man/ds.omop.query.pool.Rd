@@ -14,36 +14,63 @@ ds.omop.query.pool(
 )
 }
 \arguments{
-\item{results}{Named list of per-server data frames (from
-\code{ds.omop.query.exec()})}
+\item{results}{Named list of per-server data frames, as returned by
+\code{\link{ds.omop.query.exec}}.}
 
-\item{query_id}{Character; query ID (to look up pool strategy)}
+\item{query_id}{Character; query ID used to look up the recommended pool
+strategy and sensitive field annotations from the query metadata. If
+\code{NULL}, the function falls back to auto-detection.}
 
-\item{sensitive_fields}{Character vector; columns to apply suppression
-pooling rules to. If NULL, auto-detected from query metadata.}
+\item{sensitive_fields}{Character vector; column names to apply suppression
+pooling rules to. If \code{NULL} (the default), auto-detected from
+query metadata or column name patterns.}
 
-\item{pool_strategy}{Character; "sum" (default), "weighted_mean", or "none"}
+\item{pool_strategy}{Character; pooling method. \code{"sum"} (the default)
+sums count columns across servers; \code{"weighted_mean"} pools means
+weighted by count; \code{"none"} returns the first server's result
+without pooling.}
 
-\item{policy}{Character; "strict" (NA if any site suppressed) or
-"pooled_only_ok" (pool what's available)}
+\item{policy}{Character; suppression propagation policy. \code{"strict"}
+(the default) sets the pooled value to NA if any server suppressed the
+cell. \code{"pooled_only_ok"} sums only the non-suppressed values.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 }
 \value{
-Data frame with pooled results, or NULL if pooling failed
+A data frame with pooled results, or \code{NULL} if pooling
+  failed (no valid data frames, all empty, etc.). For a single server,
+  its result is returned as-is.
 }
 \description{
-Takes per-server results from \code{ds.omop.query.exec()} and safely
-pools them according to the query's pool strategy. Supports:
+Takes per-server results from \code{\link{ds.omop.query.exec}} and safely
+pools them according to the query's pool strategy. Supports two pooling
+methods:
 \itemize{
-  \item \code{sum}: Sum count columns across servers
+  \item \code{sum}: Sum count columns across servers (default)
   \item \code{weighted_mean}: Pool means weighted by count
 }
 }
 \details{
-Pooling policy:
-\itemize{
-  \item If any server suppressed a cell (NA), the pooled cell becomes NA
-  \item This prevents "pooling to unmask" small-site counts
+Suppression-safe pooling policy: if any server suppressed a cell (marked
+as NA by the server's disclosure controls), the corresponding pooled cell
+also becomes NA under \code{"strict"} policy. This prevents reconstructing
+small-site counts by subtracting the pooled total from known large sites.
+
+The function auto-detects sensitive (count-like) columns from column names
+matching patterns such as \code{n_*}, \code{*_count}, \code{count_value},
+and \code{num_*}. Non-sensitive columns are used as join keys for
+cross-server merging.
+}
+\examples{
+\dontrun{
+results <- ds.omop.query.exec("gender_distribution")
+pooled <- ds.omop.query.pool(results, query_id = "gender_distribution")
+pooled
+
+# Manual sensitive field specification
+pooled <- ds.omop.query.pool(results,
+  sensitive_fields = c("n_persons", "n_records"),
+  policy = "strict")
 }
 }

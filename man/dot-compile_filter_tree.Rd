@@ -6,6 +6,16 @@
 \usage{
 .compile_filter_tree(filters, default_operator = "and")
 }
+\arguments{
+\item{filters}{List of \code{omop_filter} or \code{omop_filter_group}
+objects.}
+
+\item{default_operator}{Character; default Boolean operator (\code{"and"}).}
+}
+\value{
+A nested list structure representing the filter tree, or \code{NULL}
+  if empty.
+}
 \description{
 Compile a list of filters into an AND/OR tree for the server filter DSL
 }

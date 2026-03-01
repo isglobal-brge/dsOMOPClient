@@ -7,8 +7,25 @@
 ds.omop.plan()
 }
 \value{
-A plan list object
+An \code{omop_plan} object (a list with class
+  \code{c("omop_plan", "list")}) containing empty slots for cohort,
+  anchor, outputs, and options.
 }
 \description{
-Create a new extraction plan
+Initialises an empty \code{omop_plan} object that serves as the container
+for cohort definitions, output specifications, and plan-wide options.
+Build up the plan by piping it through \code{ds.omop.plan.*} helpers
+such as \code{\link{ds.omop.plan.cohort}},
+\code{\link{ds.omop.plan.baseline}}, and
+\code{\link{ds.omop.plan.events}}.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.cohort(plan, cohort_definition_id = 1)
+plan <- ds.omop.plan.baseline(plan)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.execute}}, \code{\link{print.omop_plan}}
 }

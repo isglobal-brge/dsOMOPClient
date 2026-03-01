@@ -7,10 +7,22 @@
 \method{print}{omop_plan}(x, ...)
 }
 \arguments{
-\item{x}{An omop_plan object}
+\item{x}{An \code{omop_plan} object.}
 
-\item{...}{Additional arguments}
+\item{...}{Additional arguments (ignored).}
+}
+\value{
+Invisible \code{x}, for use in pipelines.
 }
 \description{
-Print method for extraction plans
+Displays a human-readable summary of an \code{omop_plan} including
+the cohort definition, all configured outputs with their types and
+key parameters, and plan-wide options.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.baseline(plan)
+print(plan)
+}
 }

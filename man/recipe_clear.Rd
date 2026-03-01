@@ -7,11 +7,20 @@
 recipe_clear(recipe)
 }
 \arguments{
-\item{recipe}{An omop_recipe}
+\item{recipe}{An \code{omop_recipe} object (used only for type validation).}
 }
 \value{
-An empty recipe
+A new empty \code{omop_recipe} object.
 }
 \description{
-Clear the entire recipe
+Discards all populations, blocks, variables, filters, and outputs,
+returning a fresh empty recipe identical to \code{\link{omop_recipe}()}.
+}
+\examples{
+\dontrun{
+recipe <- recipe_clear(recipe)
+}
+}
+\seealso{
+\code{\link{omop_recipe}}
 }

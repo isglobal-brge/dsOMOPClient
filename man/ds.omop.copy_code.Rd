@@ -7,11 +7,20 @@
 ds.omop.copy_code(x)
 }
 \arguments{
-\item{x}{A dsomop_result object}
+\item{x}{A \code{dsomop_result} object.}
 }
 \value{
-Invisibly returns the code string
+Invisibly returns the code string (character).
 }
 \description{
-Copy reproducible R code to clipboard
+Extracts the stored R code from a \code{dsomop_result} object and copies
+it to the system clipboard using the \pkg{clipr} package. If \pkg{clipr}
+is not installed or clipboard access fails, the code is printed to the
+console instead.
+}
+\examples{
+\dontrun{
+res <- ds.omop.achilles.results(analysis_ids = 1)
+ds.omop.copy_code(res)  # copies to clipboard
+}
 }

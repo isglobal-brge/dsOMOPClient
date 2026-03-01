@@ -7,13 +7,21 @@
 recipe_remove_variable(recipe, name)
 }
 \arguments{
-\item{recipe}{An omop_recipe}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{name}{Character; variable name to remove}
+\item{name}{Character; variable name to remove.}
 }
 \value{
-The modified recipe
+The modified \code{omop_recipe} object.
 }
 \description{
-Remove a variable from the recipe
+Removes a variable by name from the recipe's variable list.
+}
+\examples{
+\dontrun{
+recipe <- recipe_remove_variable(recipe, "condition_occurrence_c201820")
+}
+}
+\seealso{
+\code{\link{recipe_add_variable}}
 }

@@ -1,7 +1,11 @@
-# ==============================================================================
-# MODULE: Session Log (read-only accumulated script viewer)
-# ==============================================================================
+# Module: Studio - Plan Execution
+# Shiny module for executing extraction plans and displaying results.
 
+#' Studio Session Log UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @return A Shiny UI element.
+#' @keywords internal
 .mod_session_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::card(
@@ -13,6 +17,12 @@
   )
 }
 
+#' Studio Session Log Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @return NULL (Shiny module server, called for side effects).
+#' @keywords internal
 .mod_session_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     output$session_log <- shiny::renderUI({

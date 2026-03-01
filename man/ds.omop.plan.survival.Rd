@@ -14,23 +14,44 @@ ds.omop.plan.survival(
 )
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{outcome_table}{Character; OMOP table containing outcome events}
+\item{outcome_table}{Character; OMOP table containing outcome events
+(e.g. \code{"condition_occurrence"}, \code{"procedure_occurrence"}).}
 
-\item{outcome_concepts}{Numeric vector; concept IDs for the outcome}
+\item{outcome_concepts}{Numeric vector; concept IDs that define the
+outcome event.}
 
-\item{tar}{Named list; time-at-risk with \code{start_offset} and
-\code{end_offset} (days from cohort_start_date)}
+\item{tar}{Named list; time-at-risk window with \code{start_offset}
+and \code{end_offset} (integer days relative to cohort_start_date).}
 
-\item{event_order}{Character; \code{"first"} or \code{"last"} event}
+\item{event_order}{Character; \code{"first"} or \code{"last"} to
+select which event occurrence determines the time-to-event value.}
 
-\item{name}{Character; output name}
+\item{name}{Character; output name used as a key in the plan's
+outputs list.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the survival output appended.
 }
 \description{
-Produces one row per cohort member with event indicator (0/1) and
-time-to-event in days. No calendar dates in output.
+Produces one row per cohort member with an event indicator (0/1) and
+time-to-event in days. No calendar dates appear in the output, making
+it safe for federated disclosure control. Requires a cohort to be set.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.cohort(plan, cohort_definition_id = 1)
+plan <- ds.omop.plan.survival(plan,
+  outcome_table = "condition_occurrence",
+  outcome_concepts = c(201826, 443238),
+  tar = list(start_offset = 0, end_offset = 365),
+  event_order = "first"
+)
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.events}},
+  \code{\link{ds.omop.plan.cohort}}
 }

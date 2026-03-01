@@ -12,17 +12,37 @@ ds.omop.concept.set(
 )
 }
 \arguments{
-\item{concepts}{Numeric vector of concept IDs}
+\item{concepts}{Integer or numeric vector of seed concept IDs that form
+the base of the concept set.}
 
-\item{include_descendants}{Logical; include descendants}
+\item{include_descendants}{Logical; if \code{TRUE}, all descendants of
+the seed concepts (via \code{concept_ancestor}) will be included when
+the set is expanded. Default: \code{FALSE}.}
 
-\item{include_mapped}{Logical; include mapped concepts}
+\item{include_mapped}{Logical; if \code{TRUE}, non-standard concepts
+mapped to the seed concepts (via \code{concept_relationship}) will be
+included when the set is expanded. Default: \code{FALSE}.}
 
-\item{exclude}{Numeric vector; concept IDs to exclude}
+\item{exclude}{Integer or numeric vector of concept IDs to explicitly
+remove from the expanded set. \code{NULL} (the default) excludes
+nothing.}
 }
 \value{
-An omop_concept_set object
+An \code{omop_concept_set} object (a list with class
+  \code{c("omop_concept_set", "list")}).
 }
 \description{
-Build a concept set specification (client-only)
+Creates a local \code{omop_concept_set} object that defines a set of OMOP
+concepts along with expansion rules. This is a client-side-only helper
+that does not contact any server; the resulting object is passed to
+\code{\link{ds.omop.concept.expand}} for server-side resolution.
+}
+\examples{
+\dontrun{
+# Simple concept set with descendants
+cs <- ds.omop.concept.set(c(201826, 316139), include_descendants = TRUE)
+
+# Expand the concept set on the server
+expanded <- ds.omop.concept.expand(cs)
+}
 }

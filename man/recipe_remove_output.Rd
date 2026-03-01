@@ -7,13 +7,21 @@
 recipe_remove_output(recipe, name)
 }
 \arguments{
-\item{recipe}{An omop_recipe}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{name}{Character; output name to remove}
+\item{name}{Character; output name to remove.}
 }
 \value{
-The modified recipe
+The modified \code{omop_recipe} object.
 }
 \description{
-Remove an output specification from the recipe
+Removes an output specification by name from the recipe.
+}
+\examples{
+\dontrun{
+recipe <- recipe_remove_output(recipe, "wide_data")
+}
+}
+\seealso{
+\code{\link{recipe_add_output}}
 }

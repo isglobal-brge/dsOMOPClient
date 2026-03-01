@@ -7,22 +7,44 @@
 ds.omop.plan.execute(plan, out, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{out}{Named character vector; output_name -> symbol_name mapping.
-E.g. \code{c(baseline = "D_base", survival = "D_tte")}}
+\item{out}{Named character vector; maps output names (as defined in
+the plan) to server-side symbol names. For example,
+\code{c(baseline = "D_base", survival = "D_tte")} assigns the
+\code{baseline} output to symbol \code{D_base}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; name of the OMOP session symbol on the
+server (default \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL}, uses the
+connections stored in the session.}
 }
 \value{
-Invisible; the output symbol mapping
+Invisible; the \code{out} symbol mapping (for chaining).
 }
 \description{
-Sends the plan to the server for execution. The server-side
-\code{omopPlanExecuteDS} assigns each output directly into the
-DataSHIELD session as the symbol names specified in \code{out}.
-Sparse outputs are split into two symbols:
-\code{<name>.covariates} and \code{<name>.covariateRef}.
+Sends the plan to each connected server for full execution. The
+server-side \code{omopPlanExecuteDS} function processes the plan and
+assigns each output directly into the DataSHIELD session as named
+symbols specified in the \code{out} mapping. After execution, the
+symbols can be used with standard DataSHIELD analysis functions.
+Sparse outputs (e.g. temporal covariates) are split into multiple
+symbols: \code{<name>.covariates} and \code{<name>.covariateRef}.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.baseline(plan)
+plan <- ds.omop.plan.events(plan, "conditions",
+  "condition_occurrence", concept_set = c(201826))
+ds.omop.plan.execute(plan,
+  out = c(baseline = "D_base", conditions = "D_cond")
+)
+# Now use D_base and D_cond with ds.summary(), ds.table(), etc.
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.validate}},
+  \code{\link{ds.omop.plan.preview}}
 }

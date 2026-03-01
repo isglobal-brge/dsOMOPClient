@@ -15,23 +15,38 @@ ds.omop.column.stats(
 )
 }
 \arguments{
-\item{table}{Character; table name}
+\item{table}{Character; the CDM table name (e.g.,
+\code{"condition_occurrence"}).}
 
-\item{column}{Character; column name}
+\item{column}{Character; the column name to profile (e.g.,
+\code{"condition_start_date"}, \code{"value_as_number"}).}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of data frames or lists with column-level statistics), \code{$pooled}
+  (combined statistics when pooled), and \code{$meta}.
 }
 \description{
-Get column-level statistics
+Returns detailed statistics for a single column in an OMOP CDM table,
+including data type, non-null count, distinct count, and (for numeric
+columns) min, max, mean, and standard deviation. All counts are
+disclosure-controlled on the server side.
+}
+\examples{
+\dontrun{
+col_info <- ds.omop.column.stats("measurement", "value_as_number")
+col_info$per_site$server1
+}
 }

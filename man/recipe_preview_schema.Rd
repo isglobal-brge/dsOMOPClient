@@ -7,12 +7,26 @@
 recipe_preview_schema(recipe)
 }
 \arguments{
-\item{recipe}{An omop_recipe object}
+\item{recipe}{An \code{omop_recipe} object.}
 }
 \value{
-A list of data.frames, one per output
+A named list of \code{data.frame}s (one per output), each with
+  columns \code{output}, \code{column}, \code{source}, \code{concept},
+  \code{type}, and \code{format}. Attributes \code{"join_key"},
+  \code{"tables"}, \code{"output_type"}, and \code{"population_id"} are
+  attached to each data.frame.
 }
 \description{
-Returns projected columns, join keys, and output shape for each output,
-without executing anything.
+Returns the projected columns, join keys, source tables, and output shape
+for each output defined in the recipe, without executing anything on the
+server. Useful for verifying the recipe structure before running it.
+}
+\examples{
+\dontrun{
+schemas <- recipe_preview_schema(recipe)
+print(schemas[["output_1"]])
+}
+}
+\seealso{
+\code{\link{recipe_to_plan}}, \code{\link{recipe_preview_stats}}
 }

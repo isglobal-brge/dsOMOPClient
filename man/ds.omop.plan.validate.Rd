@@ -2,20 +2,49 @@
 % Please edit documentation in R/plan.R
 \name{ds.omop.plan.validate}
 \alias{ds.omop.plan.validate}
-\title{Validate a plan against server schemas}
+\title{Validate an extraction plan}
 \usage{
 ds.omop.plan.validate(plan, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; name of the OMOP session symbol on the
+server (default \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL}, uses the
+connections stored in the session.}
 }
 \value{
-Named list (per server) with validation results
+A named list (one element per server) containing validation
+  results with expected output schemas, row estimates, and any
+  warnings or errors.
 }
 \description{
-Validate a plan against server schemas
+Sends the plan to each connected server for structural validation,
+checking for missing required fields, invalid table references,
+unsupported output types, and schema compatibility issues. This
+performs a server-side check (via \code{omopPlanPreviewDS}) but does
+not execute the plan or create any data. Use this to catch errors
+before calling \code{\link{ds.omop.plan.execute}}.
+}
+\details{
+Note: despite the name difference, both \code{ds.omop.plan.validate}
+and \code{\link{ds.omop.plan.preview}} currently call the same
+server-side endpoint (\code{omopPlanPreviewDS}). Use
+\code{ds.omop.plan.validate} when you want a pass/fail check, and
+\code{ds.omop.plan.preview} when you want to inspect expected schemas
+and row estimates.
+}
+\examples{
+\dontrun{
+result <- ds.omop.plan.validate(my_plan)
+# Check a specific server's result
+result$server1$valid
+result$server1$errors
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.preview}},
+  \code{\link{ds.omop.plan.execute}}
 }

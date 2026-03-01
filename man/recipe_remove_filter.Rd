@@ -7,13 +7,21 @@
 recipe_remove_filter(recipe, id)
 }
 \arguments{
-\item{recipe}{An omop_recipe}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{id}{Character; filter ID to remove}
+\item{id}{Character; filter ID to remove.}
 }
 \value{
-The modified recipe
+The modified \code{omop_recipe} object.
 }
 \description{
-Remove a filter from the recipe
+Removes a filter by its ID from the recipe's filter list.
+}
+\examples{
+\dontrun{
+recipe <- recipe_remove_filter(recipe, "f1_sex")
+}
+}
+\seealso{
+\code{\link{recipe_add_filter}}
 }

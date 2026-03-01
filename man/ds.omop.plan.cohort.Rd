@@ -7,15 +7,35 @@
 ds.omop.plan.cohort(plan, cohort_definition_id = NULL, spec = NULL)
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{cohort_definition_id}{Integer; ID of existing cohort}
+\item{cohort_definition_id}{Integer; ID of an existing cohort in the
+cohort table. Mutually exclusive with \code{spec}.}
 
-\item{spec}{Named list; cohort specification DSL}
+\item{spec}{Named list; inline cohort specification DSL describing
+inclusion criteria. Mutually exclusive with \code{cohort_definition_id}.}
 }
 \value{
-The modified plan
+The modified \code{omop_plan} with the cohort slot populated.
 }
 \description{
-Set a cohort filter on the plan
+Attaches a cohort definition to the plan, restricting all downstream
+outputs to persons who belong to the specified cohort. Exactly one of
+\code{cohort_definition_id} or \code{spec} must be provided. Use
+\code{cohort_definition_id} to reference an existing cohort table row,
+or \code{spec} to define a cohort inline using the DSL.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.cohort(plan, cohort_definition_id = 42)
+
+# Or with an inline spec
+plan <- ds.omop.plan.cohort(plan, spec = list(
+  sex = "Female", age_range = c(40, 65)
+))
+}
+}
+\seealso{
+\code{\link{ds.omop.plan}}, \code{\link{ds.omop.plan.cohort_membership}}
 }

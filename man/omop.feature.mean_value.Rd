@@ -2,7 +2,7 @@
 % Please edit documentation in R/feature.R
 \name{omop.feature.mean_value}
 \alias{omop.feature.mean_value}
-\title{Mean value across events}
+\title{Create a mean value feature specification}
 \usage{
 omop.feature.mean_value(
   concept_set,
@@ -11,15 +11,35 @@ omop.feature.mean_value(
 )
 }
 \arguments{
-\item{concept_set}{Numeric vector or omop_concept_set}
+\item{concept_set}{Numeric vector of concept IDs, or an
+\code{omop_concept_set} object defining the concepts to match.}
 
-\item{value_column}{Character; column to extract value from}
+\item{value_column}{Character; name of the numeric column to
+average (default \code{"value_as_number"}).}
 
-\item{name}{Character; feature name}
+\item{name}{Character; optional custom name for the feature column.
+If \code{NULL}, auto-generated from the concept and table context.}
 }
 \value{
-An omop_feature_spec list
+An \code{omop_feature_spec} object with
+  \code{type = "mean_value"}.
 }
 \description{
-Mean value across events
+Produces a feature spec that computes the arithmetic mean of a
+numeric column across all records matching the concept set for each
+person. Commonly used for averaging repeated lab measurements
+(e.g. mean systolic blood pressure across visits).
+}
+\examples{
+\dontrun{
+spec <- omop.feature.mean_value(c(3004249),
+  value_column = "value_as_number")
+plan <- ds.omop.plan.features(plan, "vitals",
+  "measurement", specs = list(mean_sbp = spec))
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.features}},
+  \code{\link{omop.feature.min_value}},
+  \code{\link{omop.feature.max_value}}
 }

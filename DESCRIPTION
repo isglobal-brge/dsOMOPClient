@@ -9,11 +9,12 @@ Authors@R: c(
 Description: Client-side DataSHIELD package for interacting with OMOP CDM
     databases. Provides an ergonomic plan-based API for safe data extraction,
     schema exploration, vocabulary operations, cohort management, feature
-    engineering, and multi-server harmonization. Absorbs and replaces the
-    former dsOMOPHelper package.
+    engineering, and multi-server harmonization. Includes a recipe builder for
+    point-and-click cohort and feature construction, a curated query library
+    with auto-visualization, Achilles analytics integration, and OMOP Studio —
+    a full Shiny application for interactive federated data exploration.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -23,6 +24,7 @@ Imports:
     shiny (>= 1.7.0),
     bslib (>= 0.5.0),
     DT,
+    htmltools,
     jsonlite,
     plotly,
     fontawesome

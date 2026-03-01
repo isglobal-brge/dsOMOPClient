@@ -7,15 +7,30 @@
 recipe_add_filter(recipe, filter, id = NULL)
 }
 \arguments{
-\item{recipe}{An omop_recipe}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{filter}{An omop_filter or omop_filter_group object}
+\item{filter}{An \code{\link{omop_filter}} or \code{\link{omop_filter_group}}
+object.}
 
-\item{id}{Character or NULL; filter ID (auto-generated if NULL)}
+\item{id}{Character or \code{NULL}; filter ID (auto-generated from type and
+sequence number if \code{NULL}).}
 }
 \value{
-The modified recipe
+The modified \code{omop_recipe} object.
 }
 \description{
-Add a filter to the recipe
+Registers a filter or filter group in the recipe. Filters are applied during
+plan compilation: population-level filters restrict the cohort, row-level
+filters restrict events. The filter ID is auto-generated from the type if
+not provided.
+}
+\examples{
+\dontrun{
+recipe <- recipe_add_filter(recipe, omop_filter_sex("F"))
+recipe <- recipe_add_filter(recipe,
+  omop_filter_age(min = 18, max = 65), id = "adults_only")
+}
+}
+\seealso{
+\code{\link{recipe_remove_filter}}, \code{\link{omop_filter}}
 }

@@ -7,15 +7,31 @@
 ds.omop.tables(schema_category = NULL, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{schema_category}{Character; filter by "CDM", "Vocabulary", "Results"}
+\item{schema_category}{Character; optional filter to restrict results
+to a specific category: \code{"CDM"}, \code{"Vocabulary"}, or
+\code{"Results"}. NULL returns all tables (default: NULL).}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 }
 \value{
-Named list (per server) of data frames with table metadata
+A named list (one element per server) of data frames with
+  table metadata columns such as \code{table_name},
+  \code{schema_category}, and \code{has_person_id}.
 }
 \description{
-List tables in the OMOP CDM database
+Queries each connected server for the list of OMOP CDM tables present
+in the database. Returns metadata including the schema category
+(\code{"CDM"}, \code{"Vocabulary"}, \code{"Results"}) and whether the
+table contains a \code{person_id} column. An optional filter allows
+restricting results to a single schema category.
+}
+\examples{
+\dontrun{
+tables <- ds.omop.tables()
+tables$server1
+
+cdm_only <- ds.omop.tables(schema_category = "CDM")
+}
 }

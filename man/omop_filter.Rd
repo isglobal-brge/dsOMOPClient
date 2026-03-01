@@ -42,13 +42,17 @@ omop_filter_value(
 )
 }
 \arguments{
-\item{type}{Character; filter type}
+\item{type}{Character; filter type. One of \code{"sex"}, \code{"age_range"},
+\code{"age_group"}, \code{"cohort"}, \code{"has_concept"},
+\code{"date_range"}, \code{"value_threshold"}, \code{"concept_set"},
+\code{"min_count"}, \code{"top_n"}, \code{"dedup"}, \code{"custom"}.}
 
-\item{level}{Character; "population", "row", or "output"}
+\item{level}{Character; \code{"population"}, \code{"row"}, or \code{"output"}.}
 
-\item{params}{Named list; filter-specific parameters}
+\item{params}{Named list; filter-specific parameters (varies by type).}
 
-\item{label}{Character or NULL; human-readable description}
+\item{label}{Character or \code{NULL}; human-readable description
+(auto-generated from type and params if \code{NULL}).}
 
 \item{value}{Character; "M", "F", or concept ID}
 
@@ -81,9 +85,29 @@ omop_filter_value(
 \item{safe_bins}{List with $breaks numeric vector from ds.omop.safe.cutpoints()}
 }
 \value{
-An omop_filter object
+An \code{omop_filter} object (a named list with class
+  \code{"omop_filter"}).
 }
 \description{
 Filters restrict the population or events included in the extraction.
-Three levels: population (person-level), row (event-level), output (post-extraction).
+There are three levels: \code{"population"} (person-level inclusion criteria),
+\code{"row"} (event-level restrictions), and \code{"output"} (post-extraction
+transformations). Filters are added to a recipe via
+\code{\link{recipe_add_filter}} and can be nested into groups with
+\code{\link{omop_filter_group}}.
+}
+\details{
+Convenience constructors are provided for common filter types:
+\code{\link{omop_filter_sex}}, \code{\link{omop_filter_age}},
+\code{\link{omop_filter_age_group}}, \code{\link{omop_filter_has_concept}},
+\code{\link{omop_filter_date_range}}, \code{\link{omop_filter_value}}.
+}
+\examples{
+\dontrun{
+f <- omop_filter(type = "sex", level = "population",
+                 params = list(value = "F"))
+}
+}
+\seealso{
+\code{\link{recipe_add_filter}}, \code{\link{omop_filter_group}}
 }

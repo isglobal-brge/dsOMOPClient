@@ -7,13 +7,30 @@
 ds.omop.compare(symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 }
 \value{
-List with common_tables, server_only, column_diffs
+A list with three components: \code{common_tables} (character
+  vector of table names present on all servers), \code{server_only}
+  (named list of tables unique to each server), and
+  \code{column_diffs} (named list of per-table column differences).
 }
 \description{
-Compare schemas across servers
+Compares the OMOP CDM schemas across all connected servers to identify
+structural differences. Returns the set of tables common to all
+servers, tables unique to specific servers, and per-table column
+differences. This is useful for diagnosing schema mismatches before
+running pooled analyses. Requires at least two connected servers for
+meaningful comparison; with a single server, returns that server's
+tables as the common set.
+}
+\examples{
+\dontrun{
+diff <- ds.omop.compare()
+diff$common_tables
+diff$server_only
+diff$column_diffs
+}
 }

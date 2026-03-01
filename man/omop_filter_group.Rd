@@ -7,15 +7,32 @@
 omop_filter_group(..., operator = c("AND", "OR"), label = NULL)
 }
 \arguments{
-\item{...}{omop_filter or omop_filter_group objects}
+\item{...}{\code{omop_filter} or \code{omop_filter_group} objects to combine.}
 
-\item{operator}{Character; "AND" or "OR"}
+\item{operator}{Character; \code{"AND"} or \code{"OR"}.}
 
-\item{label}{Character or NULL; human-readable description}
+\item{label}{Character or \code{NULL}; human-readable description
+(auto-generated from children if \code{NULL}).}
 }
 \value{
-An omop_filter_group object
+An \code{omop_filter_group} object.
 }
 \description{
-Allows nested condition chains. Groups can contain filters or other groups.
+Combines multiple filters (or nested groups) using a Boolean operator.
+Groups can contain \code{\link{omop_filter}} objects or other
+\code{omop_filter_group} objects, allowing arbitrarily nested condition
+trees. During plan compilation, these are translated to the server's
+filter DSL.
+}
+\examples{
+\dontrun{
+grp <- omop_filter_group(
+  omop_filter_sex("F"),
+  omop_filter_age(min = 18, max = 65),
+  operator = "AND"
+)
+}
+}
+\seealso{
+\code{\link{omop_filter}}, \code{\link{recipe_add_filter}}
 }

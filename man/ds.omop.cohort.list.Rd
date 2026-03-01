@@ -7,13 +7,25 @@
 ds.omop.cohort.list(symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-Named list (per server) of data frames
+Named list (one entry per server) of data frames with cohort
+  metadata. Returns an empty list if no cohorts are defined.
 }
 \description{
-List available cohort definitions
+Queries each connected server for existing cohort definitions. Returns a
+named list (one entry per server) of data frames containing cohort IDs,
+names, and row counts. This is useful for discovering cohorts that have
+already been created in persistent storage.
+}
+\examples{
+\dontrun{
+cohorts <- ds.omop.cohort.list()
+cohorts[["server_a"]]
+}
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/feature.R
 \name{omop.feature.min_value}
 \alias{omop.feature.min_value}
-\title{Minimum value across events}
+\title{Create a minimum value feature specification}
 \usage{
 omop.feature.min_value(
   concept_set,
@@ -11,15 +11,35 @@ omop.feature.min_value(
 )
 }
 \arguments{
-\item{concept_set}{Numeric vector or omop_concept_set}
+\item{concept_set}{Numeric vector of concept IDs, or an
+\code{omop_concept_set} object defining the concepts to match.}
 
-\item{value_column}{Character; column to extract value from}
+\item{value_column}{Character; name of the numeric column from
+which to find the minimum (default \code{"value_as_number"}).}
 
-\item{name}{Character; feature name}
+\item{name}{Character; optional custom name for the feature column.
+If \code{NULL}, auto-generated from the concept and table context.}
 }
 \value{
-An omop_feature_spec list
+An \code{omop_feature_spec} object with
+  \code{type = "min_value"}.
 }
 \description{
-Minimum value across events
+Produces a feature spec that computes the minimum of a numeric
+column across all records matching the concept set for each person.
+Useful for identifying the lowest recorded value (e.g. nadir
+hemoglobin, minimum blood pressure).
+}
+\examples{
+\dontrun{
+spec <- omop.feature.min_value(c(3000963),
+  value_column = "value_as_number")
+plan <- ds.omop.plan.features(plan, "labs",
+  "measurement", specs = list(min_hemoglobin = spec))
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.features}},
+  \code{\link{omop.feature.max_value}},
+  \code{\link{omop.feature.mean_value}}
 }

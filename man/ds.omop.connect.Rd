@@ -16,25 +16,42 @@ ds.omop.connect(
 )
 }
 \arguments{
-\item{resource}{Character or named list; resource name(s)}
+\item{resource}{Character or named list; resource name(s). A single string
+applies to all servers; a named list maps server names to resource names.}
 
-\item{symbol}{Character; server-side symbol name (default: "omop")}
+\item{symbol}{Character; server-side symbol name (default: "omop").}
 
-\item{cdm_schema}{Character; CDM schema override}
+\item{cdm_schema}{Character; CDM schema override (NULL uses server default).}
 
-\item{vocab_schema}{Character; vocabulary schema override}
+\item{vocab_schema}{Character; vocabulary schema override (NULL uses server default).}
 
-\item{results_schema}{Character; results schema override}
+\item{results_schema}{Character; results schema override (NULL uses server default).}
 
-\item{temp_schema}{Character; temp schema override}
+\item{temp_schema}{Character; temp schema override (NULL uses server default).}
 
-\item{strict}{Logical; fail on any server error}
+\item{strict}{Logical; if TRUE, fail immediately on any server error.}
 
-\item{conns}{DSI connections object}
+\item{conns}{DSI connections object (NULL uses default connections).}
 }
 \value{
-An omop_session object (invisibly)
+An \code{omop_session} object (invisibly).
 }
 \description{
-Connect to an OMOP CDM resource on DataSHIELD servers
+Establishes a connection to one or more OMOP CDM databases via DataSHIELD.
+Assigns the resource server-side, initializes the OMOP handle, retrieves
+capabilities, and returns an \code{omop_session} object. This is the entry
+point for all dsOMOPClient operations.
+}
+\examples{
+\dontrun{
+library(DSI)
+builder <- newDSLoginBuilder()
+builder$append(server = "server1", url = "https://opal.example.org",
+               resource = "project.omop_cdm", driver = "OpalDriver")
+conns <- datashield.login(builder$build())
+session <- ds.omop.connect(resource = "project.omop_cdm", conns = conns)
+}
+}
+\seealso{
+\code{\link{ds.omop.disconnect}}, \code{\link{ds.omop.status}}
 }

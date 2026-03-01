@@ -20,3 +20,8 @@ browsing, concept drilldown analysis, cohort management, and plan
 authoring. Requires an active DataSHIELD session created via
 \code{\link{ds.omop.connect}}.
 }
+\examples{
+\dontrun{
+ds.omop.studio(session)
+}
+}

@@ -1,10 +1,5 @@
-# ==============================================================================
-# dsOMOPClient v2 - OMOP Studio (Shiny App)
-# ==============================================================================
-# A concept-centric interactive exploration + plan authoring tool.
-# Workflow: Browse -> Tick -> Build (basket-first paradigm).
-# All data fetched via dsOMOPClient CLI -> DataSHIELD aggregate endpoints.
-# ==============================================================================
+# Module: OMOP Studio
+# Main Shiny application for interactive OMOP CDM exploration.
 
 #' Launch OMOP Studio
 #'
@@ -16,6 +11,10 @@
 #' @param symbol Character; OMOP session symbol (default "omop")
 #' @param launch.browser Logical; open in browser (default TRUE)
 #' @return A Shiny app object (runs interactively)
+#' @examples
+#' \dontrun{
+#' ds.omop.studio(session)
+#' }
 #' @export
 ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
   # Eagerly capture the session BEFORE Shiny starts. This protects against
@@ -30,10 +29,11 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
   shiny::runApp(app, launch.browser = launch.browser)
 }
 
-# ==============================================================================
-# UI
-# ==============================================================================
-
+#' OMOP Studio UI
+#'
+#' @param symbol Character; OMOP session symbol.
+#' @return A function returning a Shiny UI definition.
+#' @keywords internal
 .studio_ui <- function(symbol) {
   function(request) {
     shiny::addResourcePath("dsomop-assets",
@@ -165,10 +165,12 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
   }
 }
 
-# ==============================================================================
-# SERVER
-# ==============================================================================
-
+#' OMOP Studio Server
+#'
+#' @param symbol Character; OMOP session symbol.
+#' @param captured_session Captured session object (protection against namespace reloads).
+#' @return A Shiny server function.
+#' @keywords internal
 .studio_server <- function(symbol, captured_session = NULL) {
   function(input, output, session) {
     # Re-ensure the session is registered in .dsomop_client_env.
@@ -232,10 +234,10 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
   }
 }
 
-# ==============================================================================
-# CSS (consolidated)
-# ==============================================================================
-
+#' Studio CSS stylesheet
+#'
+#' @return Character; CSS styles for the Studio app.
+#' @keywords internal
 .studio_css <- function() {
   "
     /* ==========================================================
@@ -762,10 +764,11 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
   "
 }
 
-# ==============================================================================
-# Helper: clean DataSHIELD error messages for UI display
-# ==============================================================================
-
+#' Clean DataSHIELD error messages for UI display
+#'
+#' @param e A condition object.
+#' @return Character; cleaned error message.
+#' @keywords internal
 .clean_ds_error <- function(e) {
   msg <- conditionMessage(e)
   # Strip ANSI escape codes
@@ -788,10 +791,11 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
   substr(msg, 1, 200)
 }
 
-# ==============================================================================
-# Helper: extract CDM table names with has_person_id from state$tables
-# ==============================================================================
-
+#' Extract CDM table names with person_id from state tables
+#'
+#' @param tables Named list of table metadata per server.
+#' @return Character vector of table names.
+#' @keywords internal
 .get_person_tables <- function(tables) {
   if (is.null(tables)) return(character(0))
   srv_name <- names(tables)[1]
@@ -905,10 +909,6 @@ isTRUE_vec <- function(x) {
   ))
 }
 
-# ==============================================================================
-# Scope helpers (centralized — used by sidebar, also available to modules)
-# ==============================================================================
-
 # Map UI scope to backend scope
 .backend_scope <- function(scope) {
   if (is.null(scope)) "pooled" else scope
@@ -971,10 +971,6 @@ isTRUE_vec <- function(x) {
   combined
 }
 
-# ==============================================================================
-# Plotly theme helper (C3)
-# ==============================================================================
-
 .studio_colors <- c("#2563eb", "#059669", "#d97706", "#7c3aed", "#0891b2",
                     "#dc2626", "#65a30d", "#c026d3", "#ea580c", "#0d9488")
 
@@ -1015,10 +1011,6 @@ isTRUE_vec <- function(x) {
   ) |> plotly::config(displayModeBar = FALSE, scrollZoom = FALSE)
 }
 
-# ==============================================================================
-# Empty state UI helper (C4)
-# ==============================================================================
-
 .empty_state_ui <- function(icon_name, title, desc = NULL) {
   shiny::div(class = "empty-state fade-in",
     shiny::icon(icon_name),
@@ -1026,10 +1018,6 @@ isTRUE_vec <- function(x) {
     if (!is.null(desc)) shiny::p(desc)
   )
 }
-
-# ==============================================================================
-# History helper
-# ==============================================================================
 
 .history_add <- function(state, action) {
   entry <- list(time = Sys.time(), action = action)

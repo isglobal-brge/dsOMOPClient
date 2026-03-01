@@ -2,7 +2,7 @@
 % Please edit documentation in R/vocabulary.R
 \name{ds.omop.concept.expand}
 \alias{ds.omop.concept.expand}
-\title{Expand a concept set to full ID list}
+\title{Expand a concept set to a full list of concept IDs}
 \usage{
 ds.omop.concept.expand(
   concept_set,
@@ -12,17 +12,34 @@ ds.omop.concept.expand(
 )
 }
 \arguments{
-\item{concept_set}{An omop_concept_set object}
+\item{concept_set}{An \code{omop_concept_set} object created by
+\code{\link{ds.omop.concept.set}}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, returns a dry-run
+\code{dsomop_result} containing only the reproducible R code without
+contacting the servers.}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{scope = "per_site"}.
+  Each server's result contains the resolved concept IDs.
 }
 \description{
-Expand a concept set to full ID list
+Takes an \code{omop_concept_set} object (built with
+\code{\link{ds.omop.concept.set}}) and resolves it on each connected
+server. Expansion applies descendant inclusion, mapped-concept inclusion,
+and exclusion rules, returning the final flat list of concept IDs that
+the set represents.
+}
+\examples{
+\dontrun{
+cs <- ds.omop.concept.set(c(201826), include_descendants = TRUE)
+expanded <- ds.omop.concept.expand(cs)
+expanded$per_site[[1]]
+}
 }

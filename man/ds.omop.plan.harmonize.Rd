@@ -12,17 +12,40 @@ ds.omop.plan.harmonize(
 )
 }
 \arguments{
-\item{plan}{An omop_plan object}
+\item{plan}{An \code{omop_plan} object.}
 
-\item{mode}{Character; "intersection" or "union_with_missing"}
+\item{mode}{Character; harmonization strategy. \code{"intersection"}
+keeps only tables common to all servers. \code{"union_with_missing"}
+keeps all tables and fills missing columns with NA.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; name of the OMOP session symbol on the
+server (default \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL}, uses the
+connections stored in the session.}
 }
 \value{
-The harmonized plan
+The harmonized \code{omop_plan} with outputs adjusted for
+  cross-server compatibility.
 }
 \description{
-Harmonize a plan for multi-server execution
+Adjusts a plan so that it is compatible across all connected servers
+by resolving schema differences. In \code{"intersection"} mode,
+person-level outputs are trimmed to include only tables present on
+all servers, and warnings are issued for event-level outputs that
+reference missing tables. This ensures consistent output structure
+when executing on heterogeneous OMOP CDM deployments.
+}
+\examples{
+\dontrun{
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.person_level(plan,
+  tables = list(person = c("gender_concept_id"),
+                measurement = c("value_as_number")))
+plan <- ds.omop.plan.harmonize(plan, mode = "intersection")
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.execute}},
+  \code{\link{ds.omop.compare}}
 }

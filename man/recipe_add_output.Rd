@@ -7,13 +7,24 @@
 recipe_add_output(recipe, output)
 }
 \arguments{
-\item{recipe}{An omop_recipe}
+\item{recipe}{An \code{omop_recipe} object.}
 
-\item{output}{An omop_output object}
+\item{output}{An \code{\link{omop_output}} object.}
 }
 \value{
-The modified recipe
+The modified \code{omop_recipe} object.
 }
 \description{
-Add an output specification to the recipe
+Registers an output specification that defines how extracted data should be
+shaped. Multiple outputs can target different subsets of variables and
+populations, each producing a separate server-side dataset.
+}
+\examples{
+\dontrun{
+recipe <- recipe_add_output(recipe,
+  omop_output(name = "wide_data", type = "wide"))
+}
+}
+\seealso{
+\code{\link{recipe_remove_output}}, \code{\link{omop_output}}
 }

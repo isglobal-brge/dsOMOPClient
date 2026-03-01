@@ -7,15 +7,27 @@
 ds.omop.cohort.definition(id, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{id}{Integer; cohort definition ID}
+\item{id}{Integer; the cohort definition ID to retrieve. Must correspond
+to an existing cohort on the server(s).}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol used when the OMOP connection
+was initialised (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s). If \code{NULL} (the default), the
+connections stored in the active session are used.}
 }
 \value{
-Named list (per server) with definition details
+Named list (one entry per server) with definition details,
+  including the cohort specification and member count.
 }
 \description{
-Get a cohort definition by ID
+Retrieves the full definition of a specific cohort from each connected
+server, including the inclusion criteria and any metadata stored with
+the cohort definition.
+}
+\examples{
+\dontrun{
+defn <- ds.omop.cohort.definition(id = 1)
+defn[["server_a"]]
+}
 }

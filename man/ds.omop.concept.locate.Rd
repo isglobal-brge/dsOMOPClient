@@ -14,22 +14,38 @@ ds.omop.concept.locate(
 )
 }
 \arguments{
-\item{concept_ids}{Integer vector; concept IDs to locate}
+\item{concept_ids}{Integer vector; one or more OMOP concept IDs to
+search for across all CDM tables.}
 
-\item{scope}{Character; "per_site" or "pooled"}
+\item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
-\item{pooling_policy}{Character; "strict" or "pooled_only_ok"}
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"}.}
 
-\item{symbol}{Character; OMOP session symbol}
+\item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
-\item{conns}{DSI connections}
+\item{conns}{DSI connection object(s) or NULL to use the session default.}
 
-\item{execute}{Logical; if FALSE, return dry-run result with code only}
+\item{execute}{Logical; if \code{FALSE}, return a dry-run result
+containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
-A dsomop_result object
+A \code{dsomop_result} object with \code{$per_site} (named list
+  of data frames with columns \code{concept_id}, \code{table_name},
+  \code{count_value}), \code{$pooled} (combined presence matrix when
+  pooled), and \code{$meta}.
 }
 \description{
-Searches all CDM tables with concept columns and returns a presence
-matrix showing where given concept IDs appear.
+Searches all OMOP CDM tables that contain concept columns and returns
+a presence matrix showing which tables contain the specified concept
+IDs. This is useful for understanding where a concept appears in the
+database before performing deeper exploration or extraction. Counts
+are disclosure-controlled; tables where a concept appears fewer than
+the threshold number of times are reported as suppressed.
+}
+\examples{
+\dontrun{
+loc <- ds.omop.concept.locate(c(201820, 316139))
+loc$per_site$server1
+}
 }

@@ -1,9 +1,11 @@
-# ==============================================================================
-# MODULE: Persistent Right Sidebar
-# ==============================================================================
-# Global context (scope/servers) and recipe summary.
-# ==============================================================================
+# Module: Studio - Sidebar
+# Shiny module for the main navigation sidebar and scope controls.
 
+#' Studio Sidebar UI
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @return A Shiny sidebar element.
+#' @keywords internal
 .mod_sidebar_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::sidebar(
@@ -64,6 +66,13 @@
   )
 }
 
+#' Studio Sidebar Server
+#'
+#' @param id Character; Shiny module namespace ID.
+#' @param state Reactive values; the shared OMOP session state.
+#' @param parent_session Shiny session; the parent session for tab navigation.
+#' @return NULL (Shiny module server, called for side effects).
+#' @keywords internal
 .mod_sidebar_server <- function(id, state, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
 

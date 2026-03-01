@@ -2,7 +2,7 @@
 % Please edit documentation in R/feature.R
 \name{omop.feature.max_value}
 \alias{omop.feature.max_value}
-\title{Maximum value across events}
+\title{Create a maximum value feature specification}
 \usage{
 omop.feature.max_value(
   concept_set,
@@ -11,15 +11,35 @@ omop.feature.max_value(
 )
 }
 \arguments{
-\item{concept_set}{Numeric vector or omop_concept_set}
+\item{concept_set}{Numeric vector of concept IDs, or an
+\code{omop_concept_set} object defining the concepts to match.}
 
-\item{value_column}{Character; column to extract value from}
+\item{value_column}{Character; name of the numeric column from
+which to find the maximum (default \code{"value_as_number"}).}
 
-\item{name}{Character; feature name}
+\item{name}{Character; optional custom name for the feature column.
+If \code{NULL}, auto-generated from the concept and table context.}
 }
 \value{
-An omop_feature_spec list
+An \code{omop_feature_spec} object with
+  \code{type = "max_value"}.
 }
 \description{
-Maximum value across events
+Produces a feature spec that computes the maximum of a numeric
+column across all records matching the concept set for each person.
+Useful for identifying peak values (e.g. maximum creatinine,
+highest recorded temperature).
+}
+\examples{
+\dontrun{
+spec <- omop.feature.max_value(c(3020891),
+  value_column = "value_as_number")
+plan <- ds.omop.plan.features(plan, "labs",
+  "measurement", specs = list(peak_creatinine = spec))
+}
+}
+\seealso{
+\code{\link{ds.omop.plan.features}},
+  \code{\link{omop.feature.min_value}},
+  \code{\link{omop.feature.mean_value}}
 }

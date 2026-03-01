@@ -13,20 +13,37 @@ omop_population(
 )
 }
 \arguments{
-\item{id}{Character; population ID}
+\item{id}{Character; population ID (must be unique within the recipe).}
 
-\item{label}{Character; human-readable label}
+\item{label}{Character; human-readable label.}
 
-\item{parent_id}{Character or NULL; parent population ID}
+\item{parent_id}{Character or \code{NULL}; parent population ID (\code{NULL}
+for root).}
 
-\item{filters}{List of omop_filter/omop_filter_group objects}
+\item{filters}{List of \code{\link{omop_filter}} or
+\code{\link{omop_filter_group}} objects.}
 
-\item{cohort_definition_id}{Integer or NULL; base cohort ID}
+\item{cohort_definition_id}{Integer or \code{NULL}; base cohort definition ID
+(if the population is defined by a pre-existing cohort).}
 }
 \value{
-An omop_population object
+An \code{omop_population} object.
 }
 \description{
-Populations form a DAG: a base cohort, with derived subpopulations
-created by applying filter chains.
+Populations form a directed acyclic graph (DAG): a base cohort at the root,
+with derived subpopulations created by applying filter chains. Each recipe
+starts with a \code{"base"} population representing all persons. Additional
+populations can be created as children of existing ones via
+\code{\link{recipe_add_population}}.
+}
+\examples{
+\dontrun{
+pop <- omop_population(id = "females",
+                       label = "Female patients",
+                       parent_id = "base",
+                       filters = list(omop_filter_sex("F")))
+}
+}
+\seealso{
+\code{\link{recipe_add_population}}, \code{\link{omop_recipe}}
 }
