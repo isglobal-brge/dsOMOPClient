@@ -42,7 +42,7 @@
 
       bslib::accordion(
         id = ns("builder_accordion"),
-        multiple = FALSE, open = FALSE,
+        multiple = FALSE, open = "Add Variable",
 
         # --- Quick Add Variable ---
         bslib::accordion_panel(
@@ -264,6 +264,11 @@
       cid <- if (!is.null(picked)) picked$concept_id else NULL
       cname_val <- if (!is.null(picked)) picked$concept_name else NULL
 
+      if (is.null(cid)) {
+        shiny::showNotification("Pick a concept first", type = "warning")
+        return()
+      }
+
       tryCatch({
         v <- omop_variable(
           table = tbl, concept_id = cid,
@@ -324,10 +329,25 @@
             }
             omop_filter_age_group(groups)
           },
-          age_range = omop_filter_age(
-            min = input$age_min, max = input$age_max),
+          age_range = {
+            if (!is.null(input$age_min) && !is.null(input$age_max) &&
+                input$age_min > input$age_max) {
+              shiny::showNotification(
+                "Min age must be less than or equal to max age",
+                type = "warning")
+              return()
+            }
+            omop_filter_age(min = input$age_min, max = input$age_max)
+          },
           has_concept = {
-            cid <- as.integer(trimws(input$filter_concept_id))
+            raw_cid <- trimws(input$filter_concept_id)
+            if (nchar(raw_cid) == 0 ||
+                is.na(suppressWarnings(as.integer(raw_cid)))) {
+              shiny::showNotification(
+                "Enter a valid numeric concept ID", type = "warning")
+              return()
+            }
+            cid <- as.integer(raw_cid)
             omop_filter_has_concept(cid, input$filter_table)
           },
           date_range = omop_filter_date_range(
@@ -348,7 +368,10 @@
     # =========================================================================
     shiny::observeEvent(input$add_output_btn, {
       nm <- trimws(input$output_name)
-      if (nchar(nm) == 0) nm <- "output_1"
+      if (nchar(nm) == 0) {
+        shiny::showNotification("Enter an output name", type = "warning")
+        return()
+      }
       pop_id <- input$output_pop %||% "base"
       sym <- trimws(input$output_symbol %||% "")
       tryCatch({
@@ -406,10 +429,23 @@
     })
 
     # =========================================================================
-    # Clear Cart
+    # Clear Cart (with confirmation)
     # =========================================================================
     shiny::observeEvent(input$clear_cart, {
+      shiny::showModal(shiny::modalDialog(
+        title = "Clear Builder?",
+        "This will remove all variables, filters, and outputs. This cannot be undone.",
+        easyClose = TRUE,
+        footer = shiny::tagList(
+          shiny::modalButton("Cancel"),
+          shiny::actionButton(ns("confirm_clear"), "Clear All",
+                              class = "btn-danger")
+        )
+      ))
+    })
+    shiny::observeEvent(input$confirm_clear, {
       state$cart <- omop_cart()
+      shiny::removeModal()
       shiny::showNotification("Builder cleared.", type = "message", duration = 2)
     })
 
