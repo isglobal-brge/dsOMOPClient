@@ -6,54 +6,43 @@
 .mod_queries_ui <- function(id) {
 
   ns <- shiny::NS(id)
-  shiny::tagList(
-    # --- Top card: domain + query list + search ---
-    bslib::card(
-      bslib::card_body(
-        class = "py-2 px-3",
-        shiny::div(class = "row g-2 align-items-end",
-          shiny::div(class = "col-md-3",
-            shiny::selectInput(ns("domain_filter"), "Domain",
-              choices = c("All Domains" = "", "Condition" = "Condition",
-                          "Drug" = "Drug", "Measurement" = "Measurement",
-                          "Observation" = "Observation",
-                          "Procedure" = "Procedure", "Person" = "Person",
-                          "Visit" = "Visit", "Death" = "Death",
-                          "General" = "General"),
-              selected = "")
-          ),
-          shiny::div(class = "col-md-6",
-            shiny::uiOutput(ns("query_list_content"))
-          ),
-          shiny::div(class = "col-md-3",
-            shiny::div(class = "d-flex gap-1",
-              shiny::textInput(ns("query_search"), NULL,
-                               placeholder = "Filter queries..."),
-              shiny::actionButton(ns("query_search_btn"), NULL,
-                                  icon = shiny::icon("magnifying-glass"),
-                                  class = "btn-sm btn-outline-secondary")
-            )
-          )
-        )
-      )
-    ),
-
-    # --- Selected query ---
-    bslib::card(
-      bslib::card_header(
-        class = "d-flex justify-content-between align-items-center",
-        shiny::span("Query"),
-        shiny::actionButton(ns("run_btn"), NULL,
-                            icon = shiny::icon("play"),
-                            class = "btn-sm btn-success text-white",
-                            style = "font-weight: 600;")
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Query Library", width = 320, open = "always",
+      # Domain filter
+      shiny::selectInput(ns("domain_filter"), "Domain",
+        choices = c("All Domains" = "", "Condition" = "Condition",
+                    "Drug" = "Drug", "Measurement" = "Measurement",
+                    "Observation" = "Observation",
+                    "Procedure" = "Procedure", "Person" = "Person",
+                    "Visit" = "Visit", "Death" = "Death",
+                    "General" = "General"),
+        selected = ""),
+      # Search
+      shiny::div(class = "d-flex gap-1 mb-2",
+        shiny::textInput(ns("query_search"), NULL,
+                         placeholder = "Filter queries..."),
+        shiny::actionButton(ns("query_search_btn"), NULL,
+                            icon = shiny::icon("magnifying-glass"),
+                            class = "btn-sm btn-outline-secondary")
       ),
+      # Query list (tall)
+      shiny::uiOutput(ns("query_list_content")),
+      shiny::hr(),
+      # Run button (prominent)
+      shiny::actionButton(ns("run_btn"), "Run Query",
+                          icon = shiny::icon("play"),
+                          class = "btn-success text-white w-100",
+                          style = "font-weight: 600; font-size: 0.95rem; padding: 0.5rem;")
+    ),
+    # --- Main panel ---
+    bslib::card(
+      bslib::card_header("Query"),
       bslib::card_body(
         shiny::uiOutput(ns("query_meta")),
         shiny::uiOutput(ns("input_form"))
       )
     ),
-    # --- Results ---
     bslib::card(
       full_screen = TRUE,
       bslib::card_header("Results"),
@@ -61,7 +50,6 @@
         shiny::uiOutput(ns("results_content"))
       )
     ),
-    # --- Visualization ---
     bslib::card(
       full_screen = TRUE,
       bslib::card_header("Visualization"),
@@ -136,7 +124,7 @@
       DT::datatable(
         df[, show_cols, drop = FALSE],
         options = list(pageLength = 50, dom = "t",
-                       scrollX = TRUE, scrollY = "180px"),
+                       scrollX = TRUE, scrollY = "360px"),
         rownames = FALSE, selection = "single"
       )
     })
