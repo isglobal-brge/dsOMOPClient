@@ -306,3 +306,101 @@ omop.feature.max_value <- function(concept_set,
   class(spec) <- c("omop_feature_spec", "list")
   spec
 }
+
+#' Create a drug duration feature specification
+#'
+#' Produces a feature spec that computes the duration of drug exposure
+#' records (\code{drug_exposure_end_date - drug_exposure_start_date})
+#' and aggregates per person using the specified function.
+#'
+#' @param concept_set Numeric vector of concept IDs, or an
+#'   \code{omop_concept_set} object.
+#' @param agg Character; aggregation function — \code{"mean"},
+#'   \code{"sum"}, or \code{"max"} (default \code{"mean"}).
+#' @param name Character; optional custom name for the feature column.
+#' @return An \code{omop_feature_spec} object with
+#'   \code{type = "drug_duration"}.
+#' @examples
+#' \dontrun{
+#' spec <- omop.feature.drug_duration(c(1124300), agg = "mean")
+#' }
+#' @seealso \code{\link{ds.omop.plan.features}},
+#'   \code{\link{omop.feature.count}}
+#' @export
+omop.feature.drug_duration <- function(concept_set,
+                                        agg = "mean",
+                                        name = NULL) {
+  spec <- list(
+    type = "drug_duration",
+    concept_set = concept_set,
+    agg = agg,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}
+
+#' Create a sum value feature specification
+#'
+#' Produces a feature spec that sums a numeric column across all records
+#' matching the concept set for each person. Useful for computing total
+#' days supply, total quantity, etc.
+#'
+#' @param concept_set Numeric vector of concept IDs, or an
+#'   \code{omop_concept_set} object.
+#' @param value_column Character; name of the numeric column to sum
+#'   (default \code{"days_supply"}).
+#' @param name Character; optional custom name for the feature column.
+#' @return An \code{omop_feature_spec} object with
+#'   \code{type = "sum_value"}.
+#' @examples
+#' \dontrun{
+#' spec <- omop.feature.sum_value(c(1124300),
+#'   value_column = "days_supply")
+#' }
+#' @seealso \code{\link{ds.omop.plan.features}},
+#'   \code{\link{omop.feature.mean_value}}
+#' @export
+omop.feature.sum_value <- function(concept_set,
+                                    value_column = "days_supply",
+                                    name = NULL) {
+  spec <- list(
+    type = "sum_value",
+    concept_set = concept_set,
+    value_column = value_column,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}
+
+#' Create a distinct concept count feature specification
+#'
+#' Produces a feature spec that counts the number of distinct concept IDs
+#' per person across all records in the table. Unlike other features, this
+#' operates across all concepts rather than per-concept.
+#'
+#' @param concept_set Numeric vector of concept IDs (default
+#'   \code{integer(0)}, meaning all concepts in the table).
+#' @param name Character; optional custom name for the feature column.
+#' @return An \code{omop_feature_spec} object with
+#'   \code{type = "n_distinct"}.
+#' @examples
+#' \dontrun{
+#' spec <- omop.feature.n_distinct()
+#' plan <- ds.omop.plan.features(plan, "diversity",
+#'   "condition_occurrence", specs = list(n_conditions = spec))
+#' }
+#' @seealso \code{\link{ds.omop.plan.features}},
+#'   \code{\link{omop.feature.count}}
+#' @export
+omop.feature.n_distinct <- function(concept_set = integer(0),
+                                     name = NULL) {
+  spec <- list(
+    type = "n_distinct",
+    concept_set = concept_set,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}

@@ -54,7 +54,9 @@ omop_filter_value(
 \item{label}{Character or \code{NULL}; human-readable description
 (auto-generated from type and params if \code{NULL}).}
 
-\item{value}{Character; "M", "F", or concept ID}
+\item{value}{Character; sex value. Accepts "F", "f", "female", "Female",
+"FEMALE", "M", "m", "male", "Male", "MALE" — normalized internally to
+"F" or "M".}
 
 \item{min}{Numeric; minimum age (inclusive)}
 

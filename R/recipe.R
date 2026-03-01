@@ -138,7 +138,9 @@ omop_variable <- function(name = NULL,
                           format = c("raw", "binary", "count",
                                      "first_value", "last_value",
                                      "mean", "min", "max", "time_since",
-                                     "binned"),
+                                     "binned", "age", "sex_mf",
+                                     "obs_duration", "drug_duration",
+                                     "sum", "n_distinct"),
                           value_source = NULL,
                           time_window = NULL,
                           suffix_mode = c("index", "range", "label"),
@@ -199,6 +201,195 @@ print.omop_variable <- function(x, ...) {
   if (length(x$filters) > 0)
     cat("  Filters: ", length(x$filters), "\n")
   invisible(x)
+}
+
+# --- Convenience derived variable constructors ---
+
+#' Create an age variable
+#'
+#' Produces a derived variable that computes age from \code{year_of_birth}.
+#' With \code{reference = "today"}, age is \code{current_year - year_of_birth}.
+#' With \code{reference = "index"}, age is computed relative to the cohort
+#' start date.
+#'
+#' @param name Character; output column name (default \code{"age"}).
+#' @param reference Character; \code{"today"} or \code{"index"}.
+#' @param reference_date Date or \code{NULL}; explicit reference date
+#'   (overrides \code{reference}).
+#' @return An \code{omop_variable} object with \code{format = "age"} and
+#'   a \code{$derived} metadata field.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_add_variable(recipe, omop_variable_age())
+#' }
+#' @seealso \code{\link{omop_variable}}, \code{\link{omop_variable_sex}}
+#' @export
+omop_variable_age <- function(name = "age",
+                               reference = c("today", "index"),
+                               reference_date = NULL) {
+  reference <- match.arg(reference)
+  v <- omop_variable(
+    name = name, table = "person", format = "age"
+  )
+  v$derived <- list(
+    kind = "age",
+    reference = reference,
+    reference_date = reference_date
+  )
+  v
+}
+
+#' Create a sex (M/F) variable
+#'
+#' Produces a derived variable that maps \code{gender_concept_id} to
+#' \code{"M"} (8507) or \code{"F"} (8532).
+#'
+#' @param name Character; output column name (default \code{"sex"}).
+#' @return An \code{omop_variable} object with \code{format = "sex_mf"} and
+#'   a \code{$derived} metadata field.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_add_variable(recipe, omop_variable_sex())
+#' }
+#' @seealso \code{\link{omop_variable}}, \code{\link{omop_variable_age}}
+#' @export
+omop_variable_sex <- function(name = "sex") {
+  v <- omop_variable(
+    name = name, table = "person", format = "sex_mf"
+  )
+  v$derived <- list(kind = "sex_mf")
+  v
+}
+
+#' Create an observation duration variable
+#'
+#' Produces a derived variable that computes the number of days between
+#' \code{observation_period_start_date} and
+#' \code{observation_period_end_date}.
+#'
+#' @param name Character; output column name (default \code{"obs_duration"}).
+#' @return An \code{omop_variable} object with \code{format = "obs_duration"}
+#'   and a \code{$derived} metadata field.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_add_variable(recipe, omop_variable_obs_duration())
+#' }
+#' @seealso \code{\link{omop_variable}}, \code{\link{omop_variable_age}}
+#' @export
+omop_variable_obs_duration <- function(name = "obs_duration") {
+  v <- omop_variable(
+    name = name, table = "observation_period", format = "obs_duration"
+  )
+  v$derived <- list(kind = "obs_duration")
+  v
+}
+
+#' Create a drug duration variable
+#'
+#' Produces a feature variable that computes the duration of drug exposures
+#' (\code{drug_exposure_end_date - drug_exposure_start_date}) and aggregates
+#' per person using the specified function.
+#'
+#' @param concept_id Integer; drug concept ID.
+#' @param concept_name Character or \code{NULL}; human-readable name.
+#' @param name Character or \code{NULL}; output column name (auto-generated
+#'   if \code{NULL}).
+#' @param agg Character; aggregation function — \code{"mean"}, \code{"sum"},
+#'   or \code{"max"}.
+#' @return An \code{omop_variable} object with \code{format = "drug_duration"}
+#'   and a \code{$derived} metadata field.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_add_variable(recipe,
+#'   omop_variable_drug_duration(1124300, concept_name = "Metformin"))
+#' }
+#' @seealso \code{\link{omop_variable}}, \code{\link{omop.feature.drug_duration}}
+#' @export
+omop_variable_drug_duration <- function(concept_id,
+                                         concept_name = NULL,
+                                         name = NULL,
+                                         agg = c("mean", "sum", "max")) {
+  agg <- match.arg(agg)
+  if (is.null(name)) {
+    base <- if (!is.null(concept_name)) .sanitize_name(concept_name)
+            else paste0("drug_c", concept_id)
+    name <- paste0(base, "_duration_", agg)
+  }
+  v <- omop_variable(
+    name = name, table = "drug_exposure",
+    concept_id = concept_id, concept_name = concept_name,
+    format = "drug_duration"
+  )
+  v$derived <- list(kind = "drug_duration", agg = agg)
+  v
+}
+
+#' Create a sum variable
+#'
+#' Produces a feature variable that sums a numeric column per person for
+#' records matching the concept set.
+#'
+#' @param table Character; source OMOP CDM table.
+#' @param column Character; numeric column to sum (e.g.
+#'   \code{"days_supply"}, \code{"quantity"}).
+#' @param concept_id Integer or \code{NULL}; concept ID filter.
+#' @param concept_name Character or \code{NULL}; human-readable name.
+#' @param name Character or \code{NULL}; output column name (auto-generated
+#'   if \code{NULL}).
+#' @return An \code{omop_variable} object with \code{format = "sum"} and
+#'   a \code{$derived} metadata field.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_add_variable(recipe,
+#'   omop_variable_sum("drug_exposure", "days_supply",
+#'                     concept_id = 1124300))
+#' }
+#' @seealso \code{\link{omop_variable}}, \code{\link{omop.feature.sum_value}}
+#' @export
+omop_variable_sum <- function(table, column,
+                               concept_id = NULL,
+                               concept_name = NULL,
+                               name = NULL) {
+  if (is.null(name)) {
+    base <- if (!is.null(concept_name)) .sanitize_name(concept_name)
+            else if (!is.null(concept_id)) paste0(table, "_c", concept_id)
+            else table
+    name <- paste0(base, "_sum_", column)
+  }
+  v <- omop_variable(
+    name = name, table = table,
+    concept_id = concept_id, concept_name = concept_name,
+    format = "sum", value_source = column
+  )
+  v$derived <- list(kind = "sum", column = column)
+  v
+}
+
+#' Create a distinct-concept-count variable
+#'
+#' Produces a feature variable that counts the number of distinct concept
+#' IDs per person in the specified table.
+#'
+#' @param table Character; source OMOP CDM table (e.g.
+#'   \code{"condition_occurrence"}).
+#' @param name Character or \code{NULL}; output column name (auto-generated
+#'   as \code{"n_distinct_<table>"} if \code{NULL}).
+#' @return An \code{omop_variable} object with \code{format = "n_distinct"}
+#'   and a \code{$derived} metadata field.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_add_variable(recipe,
+#'   omop_variable_n_distinct("condition_occurrence"))
+#' }
+#' @seealso \code{\link{omop_variable}}, \code{\link{omop.feature.n_distinct}}
+#' @export
+omop_variable_n_distinct <- function(table, name = NULL) {
+  if (is.null(name)) name <- paste0("n_distinct_", table)
+  v <- omop_variable(
+    name = name, table = table, format = "n_distinct"
+  )
+  v$derived <- list(kind = "n_distinct")
+  v
 }
 
 # --- omop_filter + omop_filter_group: Conditions & chaining ---
@@ -361,13 +552,21 @@ print.omop_filter_group <- function(x, ...) {
 # --- Convenience filter constructors ---
 
 #' @rdname omop_filter
-#' @param value Character; "M", "F", or concept ID
+#' @param value Character; sex value. Accepts "F", "f", "female", "Female",
+#'   "FEMALE", "M", "m", "male", "Male", "MALE" — normalized internally to
+#'   "F" or "M".
 #' @export
 omop_filter_sex <- function(value) {
+  normalized <- switch(toupper(trimws(value)),
+    "F" =, "FEMALE" = "F",
+    "M" =, "MALE" = "M",
+    stop("Invalid sex value '", value,
+         "'. Use 'F'/'female' or 'M'/'male'.", call. = FALSE)
+  )
   omop_filter(
     type = "sex", level = "population",
-    params = list(value = value),
-    label = paste("Sex =", value)
+    params = list(value = normalized),
+    label = paste("Sex =", normalized)
   )
 }
 
@@ -1191,33 +1390,67 @@ recipe_to_plan <- function(recipe) {
             "year_of_birth", "race_concept_id"),
           name = out_name)
       } else {
+        # Separate person-derived variables from event/raw variables
+        person_derived_fmts <- c("age", "sex_mf", "obs_duration")
+        derived_vars <- Filter(function(v) {
+          v$format %in% person_derived_fmts
+        }, vars)
+        event_vars <- Filter(function(v) {
+          !v$format %in% person_derived_fmts
+        }, vars)
+
+        # Build derived_columns specs for plan
+        derived_specs <- NULL
+        if (length(derived_vars) > 0) {
+          derived_specs <- lapply(derived_vars, function(v) {
+            spec <- list(kind = v$format, name = v$name)
+            if (!is.null(v$derived)) {
+              spec <- c(spec, v$derived[setdiff(names(v$derived), "kind")])
+            }
+            spec
+          })
+        }
+
         # "wide" with explicit formats → use features pipeline
-        has_formats <- any(vapply(vars, function(v) {
+        has_formats <- any(vapply(event_vars, function(v) {
           !is.null(v$format) && v$format != "raw"
         }, logical(1)))
 
-        if (has_formats) {
-          if (length(by_table) == 1) {
-            # Single table: use event_level features directly
-            tbl <- names(by_table)[1]
-            vs <- by_table[[tbl]]
+        if (length(event_vars) == 0) {
+          # ALL variables are person-derived — create person_level output
+          # with empty tables but with derived_columns
+          plan$outputs[[out_name]] <- list(
+            type = "person_level",
+            tables = list(),
+            representation = "features",
+            derived_columns = derived_specs
+          )
+        } else if (has_formats) {
+          # Re-group event_vars by table
+          ev_by_table <- list()
+          for (v in event_vars) {
+            tbl <- v$table
+            if (is.null(ev_by_table[[tbl]])) ev_by_table[[tbl]] <- list()
+            ev_by_table[[tbl]] <- c(ev_by_table[[tbl]], list(v))
+          }
+
+          if (length(ev_by_table) == 1 && is.null(derived_specs)) {
+            # Single table, no derived: use event_level features directly
+            tbl <- names(ev_by_table)[1]
+            vs <- ev_by_table[[tbl]]
             specs <- .build_feature_specs(vs)
             plan <- ds.omop.plan.features(plan, name = out_name, table = tbl,
                                            specs = specs)
           } else {
-            # Multi-table: use person_level with features per table
-            # This merges all tables into a single dataset on person_id
-            # Tables with only raw-format variables → column extraction
-            # Tables with feature formats → feature pipeline
+            # Multi-table or has derived: use person_level with features
             tables_spec <- list()
-            for (tbl in names(by_table)) {
-              vs <- by_table[[tbl]]
+            for (tbl in names(ev_by_table)) {
+              vs <- ev_by_table[[tbl]]
               has_feature_fmts <- any(vapply(vs, function(v) {
                 !is.null(v$format) && v$format != "raw"
               }, logical(1)))
 
               if (has_feature_fmts) {
-                # Filter to only feature variables for this table
                 feat_vs <- Filter(function(v) {
                   !is.null(v$format) && v$format != "raw"
                 }, vs)
@@ -1229,7 +1462,6 @@ recipe_to_plan <- function(recipe) {
                   features = specs
                 )
               } else {
-                # All raw: extract as column names
                 cols <- unique(unlist(lapply(vs, function(v) {
                   c(v$column, v$value_source)
                 })))
@@ -1240,19 +1472,34 @@ recipe_to_plan <- function(recipe) {
             plan$outputs[[out_name]] <- list(
               type = "person_level",
               tables = tables_spec,
-              representation = "features"
+              representation = "features",
+              derived_columns = derived_specs
             )
           }
         } else {
           # Raw format: use person_level join
-          tables_spec <- lapply(by_table, function(vs) {
+          ev_by_table <- list()
+          for (v in event_vars) {
+            tbl <- v$table
+            if (is.null(ev_by_table[[tbl]])) ev_by_table[[tbl]] <- list()
+            ev_by_table[[tbl]] <- c(ev_by_table[[tbl]], list(v))
+          }
+          tables_spec <- lapply(ev_by_table, function(vs) {
             cols <- unique(unlist(lapply(vs, function(v) {
               c(v$column, v$value_source)
             })))
             cols[!is.null(cols)]
           })
-          plan <- ds.omop.plan.person_level(plan, tables = tables_spec,
-                                             name = out_name)
+          if (!is.null(derived_specs)) {
+            plan$outputs[[out_name]] <- list(
+              type = "person_level",
+              tables = tables_spec,
+              derived_columns = derived_specs
+            )
+          } else {
+            plan <- ds.omop.plan.person_level(plan, tables = tables_spec,
+                                               name = out_name)
+          }
         }
       }
     } else if (out$type %in% c("long", "joined_long")) {
@@ -1324,14 +1571,17 @@ recipe_to_plan <- function(recipe) {
   specs <- lapply(vs, function(v) {
     fmt <- v$format %||% "binary"
     feat_fn <- switch(fmt,
-      binary      = omop.feature.boolean,
-      count       = omop.feature.count,
-      first_value = omop.feature.first_value,
-      last_value  = omop.feature.latest_value,
-      mean        = omop.feature.mean_value,
-      min         = omop.feature.min_value,
-      max         = omop.feature.max_value,
-      time_since  = omop.feature.time_since,
+      binary        = omop.feature.boolean,
+      count         = omop.feature.count,
+      first_value   = omop.feature.first_value,
+      last_value    = omop.feature.latest_value,
+      mean          = omop.feature.mean_value,
+      min           = omop.feature.min_value,
+      max           = omop.feature.max_value,
+      time_since    = omop.feature.time_since,
+      drug_duration = omop.feature.drug_duration,
+      sum           = omop.feature.sum_value,
+      n_distinct    = omop.feature.n_distinct,
       omop.feature.boolean
     )
     args <- list(
@@ -1340,8 +1590,12 @@ recipe_to_plan <- function(recipe) {
     )
     # Pass value_column for feature types that support it
     if (!is.null(v$value_source) && fmt %in% c("mean", "min", "max",
-        "first_value", "last_value")) {
+        "first_value", "last_value", "sum")) {
       args$value_column <- v$value_source
+    }
+    # Pass agg for drug_duration
+    if (fmt == "drug_duration" && !is.null(v$derived$agg)) {
+      args$agg <- v$derived$agg
     }
     do.call(feat_fn, args)
   })
@@ -1551,6 +1805,36 @@ recipe_to_code <- function(recipe) {
   for (nm in names(recipe$variables)) {
     if (nm %in% block_vars) next
     v <- recipe$variables[[nm]]
+
+    # Use convenience constructors for derived variables
+    if (!is.null(v$derived)) {
+      code <- switch(v$derived$kind,
+        "age" = .build_code("omop_variable_age",
+          name = v$name,
+          reference = v$derived$reference %||% "today",
+          reference_date = v$derived$reference_date),
+        "sex_mf" = .build_code("omop_variable_sex", name = v$name),
+        "obs_duration" = .build_code("omop_variable_obs_duration",
+          name = v$name),
+        "drug_duration" = .build_code("omop_variable_drug_duration",
+          concept_id = v$concept_id,
+          concept_name = v$concept_name,
+          name = v$name, agg = v$derived$agg %||% "mean"),
+        "sum" = .build_code("omop_variable_sum",
+          table = v$table, column = v$derived$column,
+          concept_id = v$concept_id, concept_name = v$concept_name,
+          name = v$name),
+        "n_distinct" = .build_code("omop_variable_n_distinct",
+          table = v$table, name = v$name),
+        NULL
+      )
+      if (!is.null(code)) {
+        lines <- c(lines, paste0(
+          "recipe <- recipe_add_variable(recipe, ", code, ")"))
+        next
+      }
+    }
+
     lines <- c(lines, paste0(
       "recipe <- recipe_add_variable(recipe, ",
       .build_code("omop_variable",
@@ -1738,6 +2022,10 @@ recipe_import_json <- function(json) {
         format = v$format %||% "raw",
         value_source = v$value_source
       )
+      # Restore derived metadata if present
+      if (!is.null(v$derived)) {
+        var$derived <- v$derived
+      }
       recipe$variables[[nm]] <- var
     }
   }

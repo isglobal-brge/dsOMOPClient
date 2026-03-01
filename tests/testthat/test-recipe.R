@@ -114,6 +114,172 @@ test_that("omop_filter print works", {
   expect_true(any(grepl("population", out)))
 })
 
+# --- convenience derived variable constructors --------------------------------
+
+test_that("omop_variable_age creates correct structure", {
+  v <- omop_variable_age()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$name, "age")
+  expect_equal(v$table, "person")
+  expect_equal(v$format, "age")
+  expect_equal(v$derived$kind, "age")
+  expect_equal(v$derived$reference, "today")
+
+  v2 <- omop_variable_age(name = "age_at_index", reference = "index")
+  expect_equal(v2$name, "age_at_index")
+  expect_equal(v2$derived$reference, "index")
+})
+
+test_that("omop_variable_sex creates correct structure", {
+  v <- omop_variable_sex()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$name, "sex")
+  expect_equal(v$format, "sex_mf")
+  expect_equal(v$derived$kind, "sex_mf")
+})
+
+test_that("omop_variable_obs_duration creates correct structure", {
+  v <- omop_variable_obs_duration()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$name, "obs_duration")
+  expect_equal(v$format, "obs_duration")
+  expect_equal(v$derived$kind, "obs_duration")
+})
+
+test_that("omop_variable_drug_duration creates correct structure", {
+  v <- omop_variable_drug_duration(concept_id = 1124300,
+    concept_name = "Metformin", agg = "sum")
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$table, "drug_exposure")
+  expect_equal(v$concept_id, 1124300L)
+  expect_equal(v$format, "drug_duration")
+  expect_equal(v$derived$kind, "drug_duration")
+  expect_equal(v$derived$agg, "sum")
+  expect_true(grepl("metformin", v$name))
+  expect_true(grepl("sum", v$name))
+})
+
+test_that("omop_variable_sum creates correct structure", {
+  v <- omop_variable_sum("drug_exposure", "days_supply",
+    concept_id = 1124300)
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "sum")
+  expect_equal(v$value_source, "days_supply")
+  expect_equal(v$derived$kind, "sum")
+  expect_equal(v$derived$column, "days_supply")
+})
+
+test_that("omop_variable_n_distinct creates correct structure", {
+  v <- omop_variable_n_distinct("condition_occurrence")
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$name, "n_distinct_condition_occurrence")
+  expect_equal(v$format, "n_distinct")
+  expect_equal(v$derived$kind, "n_distinct")
+})
+
+test_that("omop_filter_sex normalizes case-insensitively", {
+  expect_equal(omop_filter_sex("F")$params$value, "F")
+  expect_equal(omop_filter_sex("f")$params$value, "F")
+  expect_equal(omop_filter_sex("female")$params$value, "F")
+  expect_equal(omop_filter_sex("Female")$params$value, "F")
+  expect_equal(omop_filter_sex("FEMALE")$params$value, "F")
+  expect_equal(omop_filter_sex("M")$params$value, "M")
+  expect_equal(omop_filter_sex("m")$params$value, "M")
+  expect_equal(omop_filter_sex("male")$params$value, "M")
+  expect_equal(omop_filter_sex("Male")$params$value, "M")
+  expect_equal(omop_filter_sex("MALE")$params$value, "M")
+  expect_error(omop_filter_sex("unknown"), "Invalid sex value")
+})
+
+test_that("derived variables can be added to recipe", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_age())
+  r <- recipe_add_variable(r, omop_variable_sex())
+  r <- recipe_add_variable(r, omop_variable_obs_duration())
+  expect_equal(length(r$variables), 3)
+  expect_true("age" %in% names(r$variables))
+  expect_true("sex" %in% names(r$variables))
+  expect_true("obs_duration" %in% names(r$variables))
+})
+
+test_that("recipe_to_plan routes derived variables correctly", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_age())
+  r <- recipe_add_variable(r, omop_variable_sex())
+  r <- recipe_add_variable(r, omop_variable(
+    table = "condition_occurrence", concept_id = 201820, format = "binary",
+    name = "diabetes"))
+  r <- recipe_add_output(r, omop_output(name = "out1", type = "wide"))
+  plan <- recipe_to_plan(r)
+  out <- plan$outputs[["out1"]]
+  expect_equal(out$type, "person_level")
+  expect_true(!is.null(out$derived_columns))
+  expect_equal(length(out$derived_columns), 2)
+  kinds <- vapply(out$derived_columns, function(s) s$kind, character(1))
+  expect_true("age" %in% kinds)
+  expect_true("sex_mf" %in% kinds)
+})
+
+test_that("recipe_to_plan handles only-derived recipes", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_age())
+  r <- recipe_add_variable(r, omop_variable_sex())
+  r <- recipe_add_output(r, omop_output(name = "demog", type = "wide"))
+  plan <- recipe_to_plan(r)
+  out <- plan$outputs[["demog"]]
+  expect_equal(out$type, "person_level")
+  expect_equal(length(out$tables), 0)
+  expect_equal(length(out$derived_columns), 2)
+})
+
+test_that("recipe_to_code emits convenience constructors for derived", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_age())
+  r <- recipe_add_variable(r, omop_variable_sex())
+  r <- recipe_add_variable(r, omop_variable_n_distinct("condition_occurrence"))
+  r <- recipe_add_output(r, omop_output(name = "out", type = "wide"))
+  code <- recipe_to_code(r)
+  expect_true(grepl("omop_variable_age", code))
+  expect_true(grepl("omop_variable_sex", code))
+  expect_true(grepl("omop_variable_n_distinct", code))
+})
+
+test_that("JSON round-trip preserves derived metadata", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_age(reference = "index"))
+  r <- recipe_add_variable(r, omop_variable_sex())
+  r <- recipe_add_output(r, omop_output(name = "out", type = "wide"))
+  json <- recipe_export_json(r)
+  r2 <- recipe_import_json(json)
+  expect_equal(r2$variables[["age"]]$derived$kind, "age")
+  expect_equal(r2$variables[["age"]]$derived$reference, "index")
+  expect_equal(r2$variables[["sex"]]$derived$kind, "sex_mf")
+})
+
+# --- new feature spec constructors --------------------------------------------
+
+test_that("omop.feature.drug_duration creates correct spec", {
+  spec <- omop.feature.drug_duration(c(1124300), agg = "sum", name = "met_dur")
+  expect_s3_class(spec, "omop_feature_spec")
+  expect_equal(spec$type, "drug_duration")
+  expect_equal(spec$agg, "sum")
+  expect_equal(spec$name, "met_dur")
+})
+
+test_that("omop.feature.sum_value creates correct spec", {
+  spec <- omop.feature.sum_value(c(1124300), value_column = "quantity")
+  expect_s3_class(spec, "omop_feature_spec")
+  expect_equal(spec$type, "sum_value")
+  expect_equal(spec$value_column, "quantity")
+})
+
+test_that("omop.feature.n_distinct creates correct spec", {
+  spec <- omop.feature.n_distinct(name = "n_cond")
+  expect_s3_class(spec, "omop_feature_spec")
+  expect_equal(spec$type, "n_distinct")
+  expect_equal(spec$name, "n_cond")
+})
+
 # --- omop_output -------------------------------------------------------------
 
 test_that("omop_output creates correct class", {
