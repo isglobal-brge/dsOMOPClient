@@ -147,7 +147,8 @@ omop_variable <- function(name = NULL,
                                      "duration_sum",
                                      "prior_obs", "followup",
                                      "demo_missingness",
-                                     "charlson", "chadsvasc"),
+                                     "charlson", "chads2", "chadsvasc",
+                                     "dcsi", "hfrs"),
                           value_source = NULL,
                           time_window = NULL,
                           suffix_mode = c("index", "range", "label"),
@@ -572,6 +573,61 @@ omop_variable_chadsvasc <- function(name = "chadsvasc") {
     name = name, table = "condition_occurrence", format = "chadsvasc"
   )
   v$derived <- list(kind = "chadsvasc")
+  v
+}
+
+#' Create a CHADS2 score variable
+#'
+#' Produces a derived variable computing the CHADS2 stroke risk score
+#' (analysis_id 903 in FeatureExtraction).
+#' Components: CHF, Hypertension, Age >= 75, Diabetes, Stroke/TIA (x2).
+#'
+#' @param name Character; output column name (default \code{"chads2"}).
+#' @return An \code{omop_variable} with \code{format = "chads2"}.
+#' @export
+omop_variable_chads2 <- function(name = "chads2") {
+  v <- omop_variable(
+    name = name, table = "condition_occurrence", format = "chads2"
+  )
+  v$derived <- list(kind = "chads2")
+  v
+}
+
+#' Create a DCSI score variable
+#'
+#' The Diabetes Complications Severity Index (analysis_id 902) uses ICD9CM
+#' source codes mapped via concept_relationship to SNOMED targets (tiered
+#' scoring: MAX tier per category, SUM across 7 categories, max total 13).
+#' Requires ICD9CM vocabulary loaded in the CDM. Returns 0 for all persons
+#' if concept_relationship mappings are not available.
+#'
+#' @param name Character; output column name (default \code{"dcsi"}).
+#' @return An \code{omop_variable} with \code{format = "dcsi"}.
+#' @export
+omop_variable_dcsi <- function(name = "dcsi") {
+  v <- omop_variable(
+    name = name, table = "condition_occurrence", format = "dcsi"
+  )
+  v$derived <- list(kind = "dcsi")
+  v
+}
+
+#' Create an HFRS score variable
+#'
+#' The Hospital Frailty Risk Score (analysis_id 926) uses ICD-10 source codes
+#' mapped via concept_relationship to SNOMED targets (109 weighted categories,
+#' decimal weights 0.1-7.1, binary presence x weight). Supports both ICD10CM
+#' and ICD10 vocabularies. Returns 0 for all persons if concept_relationship
+#' mappings are not available.
+#'
+#' @param name Character; output column name (default \code{"hfrs"}).
+#' @return An \code{omop_variable} with \code{format = "hfrs"}.
+#' @export
+omop_variable_hfrs <- function(name = "hfrs") {
+  v <- omop_variable(
+    name = name, table = "condition_occurrence", format = "hfrs"
+  )
+  v$derived <- list(kind = "hfrs")
   v
 }
 
@@ -1720,7 +1776,8 @@ recipe_to_plan <- function(recipe) {
         person_derived_fmts <- c("age", "sex_mf", "obs_duration",
                                        "prior_obs", "followup",
                                        "demo_missingness",
-                                       "charlson", "chadsvasc")
+                                       "charlson", "chads2", "chadsvasc",
+                                       "dcsi", "hfrs")
         derived_vars <- Filter(function(v) {
           v$format %in% person_derived_fmts
         }, vars)
@@ -2185,7 +2242,13 @@ recipe_to_code <- function(recipe) {
           value_source = v$value_source),
         "charlson" = .build_code("omop_variable_charlson",
           name = v$name),
+        "chads2" = .build_code("omop_variable_chads2",
+          name = v$name),
         "chadsvasc" = .build_code("omop_variable_chadsvasc",
+          name = v$name),
+        "dcsi" = .build_code("omop_variable_dcsi",
+          name = v$name),
+        "hfrs" = .build_code("omop_variable_hfrs",
           name = v$name),
         NULL
       )

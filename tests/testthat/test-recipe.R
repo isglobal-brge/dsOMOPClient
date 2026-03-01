@@ -1567,6 +1567,34 @@ test_that("omop_variable_chadsvasc creates correct structure", {
   expect_equal(v$derived$kind, "chadsvasc")
 })
 
+test_that("omop_variable_chads2 creates correct structure", {
+  v <- omop_variable_chads2()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "chads2")
+  expect_equal(v$derived$kind, "chads2")
+  expect_equal(v$name, "chads2")
+})
+
+test_that("omop_variable_chads2 accepts custom name", {
+  v <- omop_variable_chads2(name = "stroke_risk")
+  expect_equal(v$name, "stroke_risk")
+  expect_equal(v$derived$kind, "chads2")
+})
+
+test_that("omop_variable_dcsi creates correct structure", {
+  v <- omop_variable_dcsi()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "dcsi")
+  expect_equal(v$derived$kind, "dcsi")
+})
+
+test_that("omop_variable_hfrs creates correct structure", {
+  v <- omop_variable_hfrs()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "hfrs")
+  expect_equal(v$derived$kind, "hfrs")
+})
+
 # === New filter constructors ===
 
 test_that("omop_filter_not_has_concept creates correct filter", {
@@ -1679,6 +1707,34 @@ test_that("recipe_to_plan routes followup to derived_columns", {
   expect_equal(dc[[1]]$kind, "followup")
 })
 
+test_that("recipe_to_plan routes chads2 to derived_columns", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_chads2())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  plan <- recipe_to_plan(r)
+  dc <- plan$outputs$output_1$derived_columns
+  expect_true(length(dc) > 0)
+  expect_equal(dc[[1]]$kind, "chads2")
+})
+
+test_that("recipe_to_plan routes dcsi to derived_columns", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_dcsi())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  plan <- recipe_to_plan(r)
+  dc <- plan$outputs$output_1$derived_columns
+  expect_equal(dc[[1]]$kind, "dcsi")
+})
+
+test_that("recipe_to_plan routes hfrs to derived_columns", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_hfrs())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  plan <- recipe_to_plan(r)
+  dc <- plan$outputs$output_1$derived_columns
+  expect_equal(dc[[1]]$kind, "hfrs")
+})
+
 test_that("recipe_to_plan routes charlson to derived_columns", {
   r <- omop_recipe()
   r <- recipe_add_variable(r, omop_variable_charlson())
@@ -1713,6 +1769,30 @@ test_that("recipe_to_code generates charlson constructor", {
   r <- recipe_add_output(r, omop_output(type = "wide"))
   code <- recipe_to_code(r)
   expect_true(grepl("omop_variable_charlson", code))
+})
+
+test_that("recipe_to_code generates chads2 constructor", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_chads2())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  code <- recipe_to_code(r)
+  expect_true(grepl("omop_variable_chads2", code))
+})
+
+test_that("recipe_to_code generates dcsi constructor", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_dcsi())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  code <- recipe_to_code(r)
+  expect_true(grepl("omop_variable_dcsi", code))
+})
+
+test_that("recipe_to_code generates hfrs constructor", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_hfrs())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  code <- recipe_to_code(r)
+  expect_true(grepl("omop_variable_hfrs", code))
 })
 
 test_that("recipe_to_code generates sd constructor", {
@@ -1753,7 +1833,10 @@ test_that("JSON round-trip preserves new derived variables", {
   r <- recipe_add_variable(r, omop_variable_followup())
   r <- recipe_add_variable(r, omop_variable_demo_missingness())
   r <- recipe_add_variable(r, omop_variable_charlson())
+  r <- recipe_add_variable(r, omop_variable_chads2())
   r <- recipe_add_variable(r, omop_variable_chadsvasc())
+  r <- recipe_add_variable(r, omop_variable_dcsi())
+  r <- recipe_add_variable(r, omop_variable_hfrs())
   r <- recipe_add_output(r, omop_output(type = "wide"))
   json <- recipe_export_json(r)
   r2 <- recipe_import_json(json)
@@ -1761,7 +1844,10 @@ test_that("JSON round-trip preserves new derived variables", {
   expect_equal(r2$variables$followup$derived$kind, "followup")
   expect_equal(r2$variables$demo_missingness$derived$kind, "demo_missingness")
   expect_equal(r2$variables$charlson$derived$kind, "charlson")
+  expect_equal(r2$variables$chads2$derived$kind, "chads2")
   expect_equal(r2$variables$chadsvasc$derived$kind, "chadsvasc")
+  expect_equal(r2$variables$dcsi$derived$kind, "dcsi")
+  expect_equal(r2$variables$hfrs$derived$kind, "hfrs")
 })
 
 test_that("JSON round-trip preserves new filter types", {
