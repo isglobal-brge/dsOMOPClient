@@ -8,11 +8,20 @@
 \alias{omop_filter_has_concept}
 \alias{omop_filter_date_range}
 \alias{omop_filter_value}
+\alias{omop_filter_not_has_concept}
+\alias{omop_filter_concept_count}
+\alias{omop_filter_prior_observation}
+\alias{omop_filter_followup}
+\alias{omop_filter_visit_count}
+\alias{omop_filter_has_measurement}
+\alias{omop_filter_missing_measurement}
 \title{Create a filter specification}
 \usage{
 omop_filter(
   type = c("sex", "age_range", "age_group", "cohort", "has_concept", "date_range",
-    "value_threshold", "concept_set", "min_count", "top_n", "dedup", "custom"),
+    "value_threshold", "concept_set", "min_count", "top_n", "dedup", "custom",
+    "not_has_concept", "concept_count", "prior_observation", "followup", "visit_count",
+    "has_measurement", "missing_measurement"),
   level = c("population", "row", "output"),
   params = list(),
   label = NULL
@@ -40,6 +49,25 @@ omop_filter_value(
   direction = c("above", "below"),
   safe_bins = NULL
 )
+
+omop_filter_not_has_concept(concept_id, table, concept_name = NULL)
+
+omop_filter_concept_count(
+  concept_id,
+  table,
+  min_count = 2L,
+  concept_name = NULL
+)
+
+omop_filter_prior_observation(min_days = 365L)
+
+omop_filter_followup(min_days = 30L)
+
+omop_filter_visit_count(min_count = 1L, visit_concept_id = NULL)
+
+omop_filter_has_measurement(concept_id, min_value = NULL, max_value = NULL)
+
+omop_filter_missing_measurement(concept_id)
 }
 \arguments{
 \item{type}{Character; filter type. One of \code{"sex"}, \code{"age_range"},
@@ -64,7 +92,7 @@ omop_filter_value(
 
 \item{groups}{Character vector; age group labels (e.g. c("18-24", "25-34"))}
 
-\item{concept_id}{Integer; the concept to check for}
+\item{concept_id}{Integer; measurement concept ID to check absence of}
 
 \item{table}{Character; which OMOP table to check}
 
@@ -72,7 +100,7 @@ omop_filter_value(
 
 \item{window}{Named list with start/end offsets, or NULL}
 
-\item{min_count}{Integer; minimum number of occurrences (default 1)}
+\item{min_count}{Integer; minimum number of visits}
 
 \item{start}{Character; start date (YYYY-MM-DD) or NULL}
 
@@ -85,6 +113,14 @@ omop_filter_value(
 \item{direction}{Character; "above" or "below"}
 
 \item{safe_bins}{List with $breaks numeric vector from ds.omop.safe.cutpoints()}
+
+\item{min_days}{Integer; minimum days of followup}
+
+\item{visit_concept_id}{Integer or NULL; visit type filter}
+
+\item{min_value}{Numeric or NULL; minimum value}
+
+\item{max_value}{Numeric or NULL; maximum value}
 }
 \value{
 An \code{omop_filter} object (a named list with class

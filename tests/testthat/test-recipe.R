@@ -1456,3 +1456,334 @@ test_that("omop_filter accepts age_group type", {
                    params = list(groups = c("0-4", "5-9")))
   expect_equal(f$type, "age_group")
 })
+
+# === New feature spec constructors ===
+
+test_that("omop.feature.sd_value creates correct spec", {
+  s <- omop.feature.sd_value(c(3004410))
+  expect_s3_class(s, "omop_feature_spec")
+  expect_equal(s$type, "sd_value")
+  expect_equal(s$value_column, "value_as_number")
+})
+
+test_that("omop.feature.cv_value creates correct spec", {
+  s <- omop.feature.cv_value(c(3004410))
+  expect_s3_class(s, "omop_feature_spec")
+  expect_equal(s$type, "cv_value")
+})
+
+test_that("omop.feature.slope_value creates correct spec", {
+  s <- omop.feature.slope_value(c(3004410))
+  expect_s3_class(s, "omop_feature_spec")
+  expect_equal(s$type, "slope_value")
+})
+
+test_that("omop.feature.abnormal_high creates correct spec", {
+  s <- omop.feature.abnormal_high(c(3004410))
+  expect_s3_class(s, "omop_feature_spec")
+  expect_equal(s$type, "abnormal_high")
+})
+
+test_that("omop.feature.abnormal_low creates correct spec", {
+  s <- omop.feature.abnormal_low(c(3004410))
+  expect_s3_class(s, "omop_feature_spec")
+  expect_equal(s$type, "abnormal_low")
+})
+
+test_that("omop.feature.gap_max_days creates correct spec", {
+  s <- omop.feature.gap_max_days(c(9201, 9202))
+  expect_s3_class(s, "omop_feature_spec")
+  expect_equal(s$type, "gap_max_days")
+})
+
+test_that("omop.feature.gap_mean_days creates correct spec", {
+  s <- omop.feature.gap_mean_days(c(9201, 9202))
+  expect_s3_class(s, "omop_feature_spec")
+  expect_equal(s$type, "gap_mean_days")
+})
+
+test_that("omop.feature.duration_sum creates correct spec", {
+  s <- omop.feature.duration_sum(c(1124300))
+  expect_s3_class(s, "omop_feature_spec")
+  expect_equal(s$type, "duration_sum")
+})
+
+# === New convenience variable constructors ===
+
+test_that("omop_variable_prior_obs creates correct structure", {
+  v <- omop_variable_prior_obs()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "prior_obs")
+  expect_equal(v$derived$kind, "prior_obs")
+  expect_equal(v$name, "prior_obs")
+})
+
+test_that("omop_variable_followup creates correct structure", {
+  v <- omop_variable_followup()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "followup")
+  expect_equal(v$derived$kind, "followup")
+})
+
+test_that("omop_variable_demo_missingness creates correct structure", {
+  v <- omop_variable_demo_missingness()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "demo_missingness")
+  expect_equal(v$derived$kind, "demo_missingness")
+})
+
+test_that("omop_variable_sd creates correct structure", {
+  v <- omop_variable_sd("measurement", 3004410)
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "sd")
+  expect_equal(v$concept_id, 3004410L)
+  expect_true(grepl("_sd$", v$name))
+})
+
+test_that("omop_variable_cv creates correct structure", {
+  v <- omop_variable_cv("measurement", 3004410, concept_name = "HbA1c")
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "cv")
+  expect_equal(v$name, "hba1c_cv")
+})
+
+test_that("omop_variable_slope creates correct structure", {
+  v <- omop_variable_slope("measurement", 3004410)
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "slope")
+})
+
+test_that("omop_variable_charlson creates correct structure", {
+  v <- omop_variable_charlson()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "charlson")
+  expect_equal(v$derived$kind, "charlson")
+})
+
+test_that("omop_variable_chadsvasc creates correct structure", {
+  v <- omop_variable_chadsvasc()
+  expect_s3_class(v, "omop_variable")
+  expect_equal(v$format, "chadsvasc")
+  expect_equal(v$derived$kind, "chadsvasc")
+})
+
+# === New filter constructors ===
+
+test_that("omop_filter_not_has_concept creates correct filter", {
+  f <- omop_filter_not_has_concept(201820, "condition_occurrence")
+  expect_s3_class(f, "omop_filter")
+  expect_equal(f$type, "not_has_concept")
+  expect_equal(f$params$concept_id, 201820L)
+  expect_equal(f$level, "population")
+})
+
+test_that("omop_filter_concept_count creates correct filter", {
+  f <- omop_filter_concept_count(201820, "condition_occurrence", min_count = 3)
+  expect_s3_class(f, "omop_filter")
+  expect_equal(f$type, "concept_count")
+  expect_equal(f$params$min_count, 3L)
+})
+
+test_that("omop_filter_prior_observation creates correct filter", {
+  f <- omop_filter_prior_observation(min_days = 365)
+  expect_s3_class(f, "omop_filter")
+  expect_equal(f$type, "prior_observation")
+  expect_equal(f$params$min_days, 365L)
+})
+
+test_that("omop_filter_followup creates correct filter", {
+  f <- omop_filter_followup(min_days = 90)
+  expect_s3_class(f, "omop_filter")
+  expect_equal(f$type, "followup")
+  expect_equal(f$params$min_days, 90L)
+})
+
+test_that("omop_filter_visit_count creates correct filter", {
+  f <- omop_filter_visit_count(min_count = 3)
+  expect_s3_class(f, "omop_filter")
+  expect_equal(f$type, "visit_count")
+  expect_equal(f$params$min_count, 3L)
+})
+
+test_that("omop_filter_has_measurement creates correct filter", {
+  f <- omop_filter_has_measurement(3004410, min_value = 4.0, max_value = 6.0)
+  expect_s3_class(f, "omop_filter")
+  expect_equal(f$type, "has_measurement")
+  expect_equal(f$params$concept_id, 3004410L)
+  expect_equal(f$params$min_value, 4.0)
+  expect_equal(f$params$max_value, 6.0)
+})
+
+test_that("omop_filter_missing_measurement creates correct filter", {
+  f <- omop_filter_missing_measurement(3004410)
+  expect_s3_class(f, "omop_filter")
+  expect_equal(f$type, "missing_measurement")
+  expect_equal(f$params$concept_id, 3004410L)
+})
+
+# === New format routing in .build_feature_specs() ===
+
+test_that(".build_feature_specs maps sd format to sd_value spec", {
+  v <- omop_variable(table = "measurement", concept_id = 3004410,
+                     format = "sd", value_source = "value_as_number")
+  specs <- dsOMOPClient:::.build_feature_specs(list(v))
+  expect_equal(specs[[1]]$type, "sd_value")
+})
+
+test_that(".build_feature_specs maps cv format to cv_value spec", {
+  v <- omop_variable(table = "measurement", concept_id = 3004410,
+                     format = "cv", value_source = "value_as_number")
+  specs <- dsOMOPClient:::.build_feature_specs(list(v))
+  expect_equal(specs[[1]]$type, "cv_value")
+})
+
+test_that(".build_feature_specs maps slope format to slope_value spec", {
+  v <- omop_variable(table = "measurement", concept_id = 3004410,
+                     format = "slope")
+  specs <- dsOMOPClient:::.build_feature_specs(list(v))
+  expect_equal(specs[[1]]$type, "slope_value")
+})
+
+test_that(".build_feature_specs maps gap_max to gap_max_days", {
+  v <- omop_variable(table = "visit_occurrence", concept_id = 9202,
+                     format = "gap_max")
+  specs <- dsOMOPClient:::.build_feature_specs(list(v))
+  expect_equal(specs[[1]]$type, "gap_max_days")
+})
+
+test_that(".build_feature_specs maps duration_sum correctly", {
+  v <- omop_variable(table = "drug_exposure", concept_id = 1124300,
+                     format = "duration_sum")
+  specs <- dsOMOPClient:::.build_feature_specs(list(v))
+  expect_equal(specs[[1]]$type, "duration_sum")
+})
+
+# === New derived kinds routing in recipe_to_plan() ===
+
+test_that("recipe_to_plan routes prior_obs to derived_columns", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_prior_obs())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  plan <- recipe_to_plan(r)
+  dc <- plan$outputs$output_1$derived_columns
+  expect_true(length(dc) > 0)
+  expect_equal(dc[[1]]$kind, "prior_obs")
+})
+
+test_that("recipe_to_plan routes followup to derived_columns", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_followup())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  plan <- recipe_to_plan(r)
+  dc <- plan$outputs$output_1$derived_columns
+  expect_equal(dc[[1]]$kind, "followup")
+})
+
+test_that("recipe_to_plan routes charlson to derived_columns", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_charlson())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  plan <- recipe_to_plan(r)
+  dc <- plan$outputs$output_1$derived_columns
+  expect_equal(dc[[1]]$kind, "charlson")
+})
+
+test_that("recipe_to_plan routes demo_missingness to derived_columns", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_demo_missingness())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  plan <- recipe_to_plan(r)
+  dc <- plan$outputs$output_1$derived_columns
+  expect_equal(dc[[1]]$kind, "demo_missingness")
+})
+
+# === Code generation for new constructors ===
+
+test_that("recipe_to_code generates prior_obs constructor", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_prior_obs())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  code <- recipe_to_code(r)
+  expect_true(grepl("omop_variable_prior_obs", code))
+})
+
+test_that("recipe_to_code generates charlson constructor", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_charlson())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  code <- recipe_to_code(r)
+  expect_true(grepl("omop_variable_charlson", code))
+})
+
+test_that("recipe_to_code generates sd constructor", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r,
+    omop_variable_sd("measurement", 3004410))
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  code <- recipe_to_code(r)
+  expect_true(grepl("omop_variable_sd", code))
+})
+
+test_that("recipe_to_code generates new filter constructors", {
+  r <- omop_recipe()
+  r <- recipe_add_filter(r, omop_filter_not_has_concept(201820,
+    "condition_occurrence"))
+  r <- recipe_add_filter(r, omop_filter_concept_count(201820,
+    "condition_occurrence", min_count = 2))
+  r <- recipe_add_filter(r, omop_filter_prior_observation(365))
+  r <- recipe_add_filter(r, omop_filter_followup(30))
+  r <- recipe_add_filter(r, omop_filter_visit_count(3))
+  r <- recipe_add_filter(r, omop_filter_has_measurement(3004410, 4, 10))
+  r <- recipe_add_filter(r, omop_filter_missing_measurement(3004410))
+  code <- recipe_to_code(r)
+  expect_true(grepl("omop_filter_not_has_concept", code))
+  expect_true(grepl("omop_filter_concept_count", code))
+  expect_true(grepl("omop_filter_prior_observation", code))
+  expect_true(grepl("omop_filter_followup", code))
+  expect_true(grepl("omop_filter_visit_count", code))
+  expect_true(grepl("omop_filter_has_measurement", code))
+  expect_true(grepl("omop_filter_missing_measurement", code))
+})
+
+# === JSON round-trip for new derived kinds ===
+
+test_that("JSON round-trip preserves new derived variables", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, omop_variable_prior_obs())
+  r <- recipe_add_variable(r, omop_variable_followup())
+  r <- recipe_add_variable(r, omop_variable_demo_missingness())
+  r <- recipe_add_variable(r, omop_variable_charlson())
+  r <- recipe_add_variable(r, omop_variable_chadsvasc())
+  r <- recipe_add_output(r, omop_output(type = "wide"))
+  json <- recipe_export_json(r)
+  r2 <- recipe_import_json(json)
+  expect_equal(r2$variables$prior_obs$derived$kind, "prior_obs")
+  expect_equal(r2$variables$followup$derived$kind, "followup")
+  expect_equal(r2$variables$demo_missingness$derived$kind, "demo_missingness")
+  expect_equal(r2$variables$charlson$derived$kind, "charlson")
+  expect_equal(r2$variables$chadsvasc$derived$kind, "chadsvasc")
+})
+
+test_that("JSON round-trip preserves new filter types", {
+  r <- omop_recipe()
+  r <- recipe_add_filter(r, omop_filter_not_has_concept(201820,
+    "condition_occurrence"))
+  r <- recipe_add_filter(r, omop_filter_prior_observation(365))
+  json <- recipe_export_json(r)
+  r2 <- recipe_import_json(json)
+  types <- vapply(r2$filters, function(f) f$type, character(1))
+  expect_true("not_has_concept" %in% types)
+  expect_true("prior_observation" %in% types)
+})
+
+# === Client-side filter classification ===
+
+test_that("new filters are classified as constrained", {
+  new_types <- c("not_has_concept", "concept_count", "prior_observation",
+                 "followup", "visit_count", "has_measurement",
+                 "missing_measurement")
+  for (ft in new_types) {
+    expect_equal(dsOMOPClient:::.classifyFilterClient(ft), "constrained",
+                 info = paste("Filter type:", ft))
+  }
+})

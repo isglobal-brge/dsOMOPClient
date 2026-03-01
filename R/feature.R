@@ -404,3 +404,168 @@ omop.feature.n_distinct <- function(concept_set = integer(0),
   class(spec) <- c("omop_feature_spec", "list")
   spec
 }
+
+#' Create a standard deviation feature specification
+#'
+#' Produces a feature spec that computes the standard deviation of a numeric
+#' column per person. Requires at least 2 values per person; returns NA
+#' otherwise.
+#'
+#' @param concept_set Numeric vector of concept IDs.
+#' @param value_column Character; numeric column (default
+#'   \code{"value_as_number"}).
+#' @param name Character; optional custom column name.
+#' @return An \code{omop_feature_spec} with \code{type = "sd_value"}.
+#' @export
+omop.feature.sd_value <- function(concept_set,
+                                   value_column = "value_as_number",
+                                   name = NULL) {
+  spec <- list(
+    type = "sd_value",
+    concept_set = concept_set,
+    value_column = value_column,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}
+
+#' Create a coefficient of variation feature specification
+#'
+#' Produces a feature spec that computes \code{sd / mean * 100} per person.
+#'
+#' @param concept_set Numeric vector of concept IDs.
+#' @param value_column Character; numeric column (default
+#'   \code{"value_as_number"}).
+#' @param name Character; optional custom column name.
+#' @return An \code{omop_feature_spec} with \code{type = "cv_value"}.
+#' @export
+omop.feature.cv_value <- function(concept_set,
+                                   value_column = "value_as_number",
+                                   name = NULL) {
+  spec <- list(
+    type = "cv_value",
+    concept_set = concept_set,
+    value_column = value_column,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}
+
+#' Create a slope (linear trend) feature specification
+#'
+#' Produces a feature spec that fits a linear model of value over time per
+#' person and extracts the slope coefficient. Requires at least 2 data points.
+#'
+#' @param concept_set Numeric vector of concept IDs.
+#' @param value_column Character; numeric column (default
+#'   \code{"value_as_number"}).
+#' @param name Character; optional custom column name.
+#' @return An \code{omop_feature_spec} with \code{type = "slope_value"}.
+#' @export
+omop.feature.slope_value <- function(concept_set,
+                                      value_column = "value_as_number",
+                                      name = NULL) {
+  spec <- list(
+    type = "slope_value",
+    concept_set = concept_set,
+    value_column = value_column,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}
+
+#' Create an abnormal-high count feature specification
+#'
+#' Counts records where \code{value_as_number > range_high} per person.
+#'
+#' @param concept_set Numeric vector of concept IDs.
+#' @param name Character; optional custom column name.
+#' @return An \code{omop_feature_spec} with \code{type = "abnormal_high"}.
+#' @export
+omop.feature.abnormal_high <- function(concept_set, name = NULL) {
+  spec <- list(
+    type = "abnormal_high",
+    concept_set = concept_set,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}
+
+#' Create an abnormal-low count feature specification
+#'
+#' Counts records where \code{value_as_number < range_low} per person.
+#'
+#' @param concept_set Numeric vector of concept IDs.
+#' @param name Character; optional custom column name.
+#' @return An \code{omop_feature_spec} with \code{type = "abnormal_low"}.
+#' @export
+omop.feature.abnormal_low <- function(concept_set, name = NULL) {
+  spec <- list(
+    type = "abnormal_low",
+    concept_set = concept_set,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}
+
+#' Create a maximum gap (days) feature specification
+#'
+#' Computes the maximum number of days between consecutive events per person.
+#' Returns NA for persons with only one event.
+#'
+#' @param concept_set Numeric vector of concept IDs.
+#' @param name Character; optional custom column name.
+#' @return An \code{omop_feature_spec} with \code{type = "gap_max_days"}.
+#' @export
+omop.feature.gap_max_days <- function(concept_set, name = NULL) {
+  spec <- list(
+    type = "gap_max_days",
+    concept_set = concept_set,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}
+
+#' Create a mean gap (days) feature specification
+#'
+#' Computes the mean number of days between consecutive events per person.
+#' Returns NA for persons with only one event.
+#'
+#' @param concept_set Numeric vector of concept IDs.
+#' @param name Character; optional custom column name.
+#' @return An \code{omop_feature_spec} with \code{type = "gap_mean_days"}.
+#' @export
+omop.feature.gap_mean_days <- function(concept_set, name = NULL) {
+  spec <- list(
+    type = "gap_mean_days",
+    concept_set = concept_set,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}
+
+#' Create a duration sum feature specification
+#'
+#' Sums \code{end_date - start_date} (in days) for each person across all
+#' records in tables that have start/end date columns.
+#'
+#' @param concept_set Numeric vector of concept IDs.
+#' @param name Character; optional custom column name.
+#' @return An \code{omop_feature_spec} with \code{type = "duration_sum"}.
+#' @export
+omop.feature.duration_sum <- function(concept_set, name = NULL) {
+  spec <- list(
+    type = "duration_sum",
+    concept_set = concept_set,
+    name = name
+  )
+  class(spec) <- c("omop_feature_spec", "list")
+  spec
+}

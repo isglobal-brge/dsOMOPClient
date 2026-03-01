@@ -140,7 +140,14 @@ omop_variable <- function(name = NULL,
                                      "mean", "min", "max", "time_since",
                                      "binned", "age", "sex_mf",
                                      "obs_duration", "drug_duration",
-                                     "sum", "n_distinct"),
+                                     "sum", "n_distinct",
+                                     "sd", "cv", "slope",
+                                     "abnormal_high", "abnormal_low",
+                                     "gap_max", "gap_mean",
+                                     "duration_sum",
+                                     "prior_obs", "followup",
+                                     "demo_missingness",
+                                     "charlson", "chadsvasc"),
                           value_source = NULL,
                           time_window = NULL,
                           suffix_mode = c("index", "range", "label"),
@@ -392,6 +399,182 @@ omop_variable_n_distinct <- function(table, name = NULL) {
   v
 }
 
+#' Create a prior observation duration variable
+#'
+#' Produces a derived variable computing days from observation start to a
+#' reference date (default today).
+#'
+#' @param name Character; output column name (default \code{"prior_obs"}).
+#' @param reference_date Date or \code{NULL}; explicit reference date.
+#' @return An \code{omop_variable} with \code{format = "prior_obs"}.
+#' @export
+omop_variable_prior_obs <- function(name = "prior_obs",
+                                     reference_date = NULL) {
+  v <- omop_variable(
+    name = name, table = "observation_period", format = "prior_obs"
+  )
+  v$derived <- list(kind = "prior_obs", reference_date = reference_date)
+  v
+}
+
+#' Create a followup duration variable
+#'
+#' Produces a derived variable computing days from a reference date (default
+#' today) to observation end.
+#'
+#' @param name Character; output column name (default \code{"followup"}).
+#' @param reference_date Date or \code{NULL}; explicit reference date.
+#' @return An \code{omop_variable} with \code{format = "followup"}.
+#' @export
+omop_variable_followup <- function(name = "followup",
+                                    reference_date = NULL) {
+  v <- omop_variable(
+    name = name, table = "observation_period", format = "followup"
+  )
+  v$derived <- list(kind = "followup", reference_date = reference_date)
+  v
+}
+
+#' Create a demographics missingness variable
+#'
+#' Produces a derived variable counting the number of missing or zero-valued
+#' demographic fields per person (0-6 range).
+#'
+#' @param name Character; output column name (default \code{"demo_missingness"}).
+#' @return An \code{omop_variable} with \code{format = "demo_missingness"}.
+#' @export
+omop_variable_demo_missingness <- function(name = "demo_missingness") {
+  v <- omop_variable(
+    name = name, table = "person", format = "demo_missingness"
+  )
+  v$derived <- list(kind = "demo_missingness")
+  v
+}
+
+#' Create a standard deviation variable
+#'
+#' Produces a feature variable computing the standard deviation of a numeric
+#' column per person for records matching the concept.
+#'
+#' @param table Character; source OMOP CDM table.
+#' @param concept_id Integer; concept ID filter.
+#' @param concept_name Character or \code{NULL}; human-readable name.
+#' @param name Character or \code{NULL}; output column name.
+#' @param value_source Character; value column (default
+#'   \code{"value_as_number"}).
+#' @return An \code{omop_variable} with \code{format = "sd"}.
+#' @export
+omop_variable_sd <- function(table, concept_id,
+                              concept_name = NULL,
+                              name = NULL,
+                              value_source = "value_as_number") {
+  if (is.null(name)) {
+    base <- if (!is.null(concept_name)) .sanitize_name(concept_name)
+            else paste0(table, "_c", concept_id)
+    name <- paste0(base, "_sd")
+  }
+  v <- omop_variable(
+    name = name, table = table,
+    concept_id = concept_id, concept_name = concept_name,
+    format = "sd", value_source = value_source
+  )
+  v$derived <- list(kind = "sd")
+  v
+}
+
+#' Create a coefficient of variation variable
+#'
+#' Produces a feature variable computing \code{sd / mean * 100} per person.
+#'
+#' @param table Character; source OMOP CDM table.
+#' @param concept_id Integer; concept ID filter.
+#' @param concept_name Character or \code{NULL}; human-readable name.
+#' @param name Character or \code{NULL}; output column name.
+#' @param value_source Character; value column (default
+#'   \code{"value_as_number"}).
+#' @return An \code{omop_variable} with \code{format = "cv"}.
+#' @export
+omop_variable_cv <- function(table, concept_id,
+                              concept_name = NULL,
+                              name = NULL,
+                              value_source = "value_as_number") {
+  if (is.null(name)) {
+    base <- if (!is.null(concept_name)) .sanitize_name(concept_name)
+            else paste0(table, "_c", concept_id)
+    name <- paste0(base, "_cv")
+  }
+  v <- omop_variable(
+    name = name, table = table,
+    concept_id = concept_id, concept_name = concept_name,
+    format = "cv", value_source = value_source
+  )
+  v$derived <- list(kind = "cv")
+  v
+}
+
+#' Create a slope (linear trend) variable
+#'
+#' Produces a feature variable fitting a linear model of value over time per
+#' person and extracting the slope.
+#'
+#' @param table Character; source OMOP CDM table.
+#' @param concept_id Integer; concept ID filter.
+#' @param concept_name Character or \code{NULL}; human-readable name.
+#' @param name Character or \code{NULL}; output column name.
+#' @param value_source Character; value column (default
+#'   \code{"value_as_number"}).
+#' @return An \code{omop_variable} with \code{format = "slope"}.
+#' @export
+omop_variable_slope <- function(table, concept_id,
+                                 concept_name = NULL,
+                                 name = NULL,
+                                 value_source = "value_as_number") {
+  if (is.null(name)) {
+    base <- if (!is.null(concept_name)) .sanitize_name(concept_name)
+            else paste0(table, "_c", concept_id)
+    name <- paste0(base, "_slope")
+  }
+  v <- omop_variable(
+    name = name, table = table,
+    concept_id = concept_id, concept_name = concept_name,
+    format = "slope", value_source = value_source
+  )
+  v$derived <- list(kind = "slope")
+  v
+}
+
+#' Create a Charlson Comorbidity Index variable
+#'
+#' Produces a derived variable computing the Charlson Comorbidity Index
+#' (17 categories, standard weights 1-6).
+#'
+#' @param name Character; output column name (default \code{"charlson"}).
+#' @return An \code{omop_variable} with \code{format = "charlson"}.
+#' @export
+omop_variable_charlson <- function(name = "charlson") {
+  v <- omop_variable(
+    name = name, table = "condition_occurrence", format = "charlson"
+  )
+  v$derived <- list(kind = "charlson")
+  v
+}
+
+#' Create a CHA2DS2-VASc score variable
+#'
+#' Produces a derived variable computing the CHA2DS2-VASc stroke risk score
+#' (7 categories for atrial fibrillation).
+#'
+#' @param name Character; output column name (default \code{"chadsvasc"}).
+#' @return An \code{omop_variable} with \code{format = "chadsvasc"}.
+#' @export
+omop_variable_chadsvasc <- function(name = "chadsvasc") {
+  v <- omop_variable(
+    name = name, table = "condition_occurrence", format = "chadsvasc"
+  )
+  v$derived <- list(kind = "chadsvasc")
+  v
+}
+
 # --- omop_filter + omop_filter_group: Conditions & chaining ---
 
 #' Create a filter specification
@@ -428,7 +611,11 @@ omop_variable_n_distinct <- function(table, name = NULL) {
 omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
                                   "has_concept", "date_range",
                                   "value_threshold", "concept_set",
-                                  "min_count", "top_n", "dedup", "custom"),
+                                  "min_count", "top_n", "dedup", "custom",
+                                  "not_has_concept", "concept_count",
+                                  "prior_observation", "followup",
+                                  "visit_count", "has_measurement",
+                                  "missing_measurement"),
                         level = c("population", "row", "output"),
                         params = list(),
                         label = NULL) {
@@ -453,7 +640,19 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
       min_count = paste0("Min ", params$min_count %||% 1, " occurrences"),
       top_n = paste0("Top ", params$n %||% "?"),
       dedup = "Deduplicate",
-      custom = params$description %||% "Custom filter"
+      custom = params$description %||% "Custom filter",
+      not_has_concept = paste0("Not has concept ", params$concept_id %||% "?",
+                               " in ", params$table %||% "?"),
+      concept_count = paste0("Concept ", params$concept_id %||% "?",
+                             " count >= ", params$min_count %||% 1),
+      prior_observation = paste0("Prior obs >= ",
+                                 params$min_days %||% "?", " days"),
+      followup = paste0("Followup >= ", params$min_days %||% "?", " days"),
+      visit_count = paste0("Visits >= ", params$min_count %||% "?"),
+      has_measurement = paste0("Has measurement ", params$concept_id %||% "?",
+                               " in range"),
+      missing_measurement = paste0("Missing measurement ",
+                                   params$concept_id %||% "?")
     )
   }
 
@@ -663,6 +862,130 @@ omop_filter_value <- function(column = "value_as_number", threshold,
   )
 }
 
+#' @rdname omop_filter
+#' @param concept_id Integer; the concept to exclude
+#' @param table Character; which OMOP table to check
+#' @param concept_name Character or NULL; human-readable name
+#' @export
+omop_filter_not_has_concept <- function(concept_id, table,
+                                         concept_name = NULL) {
+  label <- paste0("Not has ",
+                  if (!is.null(concept_name)) concept_name
+                  else paste("concept", concept_id),
+                  " in ", table)
+  omop_filter(
+    type = "not_has_concept", level = "population",
+    params = list(
+      concept_id = as.integer(concept_id),
+      table = table,
+      concept_name = concept_name
+    ),
+    label = label
+  )
+}
+
+#' @rdname omop_filter
+#' @param concept_id Integer; the concept to count
+#' @param table Character; which OMOP table to check
+#' @param min_count Integer; minimum number of records required
+#' @param concept_name Character or NULL; human-readable name
+#' @export
+omop_filter_concept_count <- function(concept_id, table,
+                                       min_count = 2L,
+                                       concept_name = NULL) {
+  label <- paste0("Concept ",
+                  if (!is.null(concept_name)) concept_name
+                  else concept_id,
+                  " count >= ", min_count, " in ", table)
+  omop_filter(
+    type = "concept_count", level = "population",
+    params = list(
+      concept_id = as.integer(concept_id),
+      table = table,
+      min_count = as.integer(min_count),
+      concept_name = concept_name
+    ),
+    label = label
+  )
+}
+
+#' @rdname omop_filter
+#' @param min_days Integer; minimum days of prior observation
+#' @export
+omop_filter_prior_observation <- function(min_days = 365L) {
+  omop_filter(
+    type = "prior_observation", level = "population",
+    params = list(min_days = as.integer(min_days)),
+    label = paste0("Prior obs >= ", min_days, " days")
+  )
+}
+
+#' @rdname omop_filter
+#' @param min_days Integer; minimum days of followup
+#' @export
+omop_filter_followup <- function(min_days = 30L) {
+  omop_filter(
+    type = "followup", level = "population",
+    params = list(min_days = as.integer(min_days)),
+    label = paste0("Followup >= ", min_days, " days")
+  )
+}
+
+#' @rdname omop_filter
+#' @param min_count Integer; minimum number of visits
+#' @param visit_concept_id Integer or NULL; visit type filter
+#' @export
+omop_filter_visit_count <- function(min_count = 1L,
+                                     visit_concept_id = NULL) {
+  omop_filter(
+    type = "visit_count", level = "population",
+    params = list(
+      min_count = as.integer(min_count),
+      visit_concept_id = if (!is.null(visit_concept_id))
+        as.integer(visit_concept_id) else NULL
+    ),
+    label = paste0("Visits >= ", min_count)
+  )
+}
+
+#' @rdname omop_filter
+#' @param concept_id Integer; measurement concept ID
+#' @param min_value Numeric or NULL; minimum value
+#' @param max_value Numeric or NULL; maximum value
+#' @export
+omop_filter_has_measurement <- function(concept_id,
+                                         min_value = NULL,
+                                         max_value = NULL) {
+  label <- paste0("Has measurement ", concept_id)
+  if (!is.null(min_value) || !is.null(max_value)) {
+    label <- paste0(label, " [",
+                    if (!is.null(min_value)) min_value else "",
+                    "-",
+                    if (!is.null(max_value)) max_value else "",
+                    "]")
+  }
+  omop_filter(
+    type = "has_measurement", level = "population",
+    params = list(
+      concept_id = as.integer(concept_id),
+      min_value = min_value,
+      max_value = max_value
+    ),
+    label = label
+  )
+}
+
+#' @rdname omop_filter
+#' @param concept_id Integer; measurement concept ID to check absence of
+#' @export
+omop_filter_missing_measurement <- function(concept_id) {
+  omop_filter(
+    type = "missing_measurement", level = "population",
+    params = list(concept_id = as.integer(concept_id)),
+    label = paste0("Missing measurement ", concept_id)
+  )
+}
+
 #' Client-side filter safety classification (informational only)
 #'
 #' Mirrors the server-side classification for UI display purposes.
@@ -674,7 +997,10 @@ omop_filter_value <- function(column = "value_as_number", threshold,
 #' @keywords internal
 .classifyFilterClient <- function(filter_type, params = list()) {
   always_allowed <- c("sex", "age_group", "cohort", "concept_set", "value_bin")
-  constrained <- c("age_range", "has_concept", "date_range", "min_count")
+  constrained <- c("age_range", "has_concept", "date_range", "min_count",
+                    "not_has_concept", "concept_count", "prior_observation",
+                    "followup", "visit_count", "has_measurement",
+                    "missing_measurement")
   blocked <- c("value_threshold", "custom")
 
   if (filter_type %in% always_allowed) return("allowed")
@@ -1391,7 +1717,10 @@ recipe_to_plan <- function(recipe) {
           name = out_name)
       } else {
         # Separate person-derived variables from event/raw variables
-        person_derived_fmts <- c("age", "sex_mf", "obs_duration")
+        person_derived_fmts <- c("age", "sex_mf", "obs_duration",
+                                       "prior_obs", "followup",
+                                       "demo_missingness",
+                                       "charlson", "chadsvasc")
         derived_vars <- Filter(function(v) {
           v$format %in% person_derived_fmts
         }, vars)
@@ -1582,6 +1911,14 @@ recipe_to_plan <- function(recipe) {
       drug_duration = omop.feature.drug_duration,
       sum           = omop.feature.sum_value,
       n_distinct    = omop.feature.n_distinct,
+      sd            = omop.feature.sd_value,
+      cv            = omop.feature.cv_value,
+      slope         = omop.feature.slope_value,
+      abnormal_high = omop.feature.abnormal_high,
+      abnormal_low  = omop.feature.abnormal_low,
+      gap_max       = omop.feature.gap_max_days,
+      gap_mean      = omop.feature.gap_mean_days,
+      duration_sum  = omop.feature.duration_sum,
       omop.feature.boolean
     )
     args <- list(
@@ -1590,7 +1927,7 @@ recipe_to_plan <- function(recipe) {
     )
     # Pass value_column for feature types that support it
     if (!is.null(v$value_source) && fmt %in% c("mean", "min", "max",
-        "first_value", "last_value", "sum")) {
+        "first_value", "last_value", "sum", "sd", "cv", "slope")) {
       args$value_column <- v$value_source
     }
     # Pass agg for drug_duration
@@ -1826,6 +2163,30 @@ recipe_to_code <- function(recipe) {
           name = v$name),
         "n_distinct" = .build_code("omop_variable_n_distinct",
           table = v$table, name = v$name),
+        "prior_obs" = .build_code("omop_variable_prior_obs",
+          name = v$name,
+          reference_date = v$derived$reference_date),
+        "followup" = .build_code("omop_variable_followup",
+          name = v$name,
+          reference_date = v$derived$reference_date),
+        "demo_missingness" = .build_code("omop_variable_demo_missingness",
+          name = v$name),
+        "sd" = .build_code("omop_variable_sd",
+          table = v$table, concept_id = v$concept_id,
+          concept_name = v$concept_name, name = v$name,
+          value_source = v$value_source),
+        "cv" = .build_code("omop_variable_cv",
+          table = v$table, concept_id = v$concept_id,
+          concept_name = v$concept_name, name = v$name,
+          value_source = v$value_source),
+        "slope" = .build_code("omop_variable_slope",
+          table = v$table, concept_id = v$concept_id,
+          concept_name = v$concept_name, name = v$name,
+          value_source = v$value_source),
+        "charlson" = .build_code("omop_variable_charlson",
+          name = v$name),
+        "chadsvasc" = .build_code("omop_variable_chadsvasc",
+          name = v$name),
         NULL
       )
       if (!is.null(code)) {
@@ -1899,6 +2260,35 @@ recipe_to_code <- function(recipe) {
   } else if (f$type == "value_threshold") {
     .build_code("omop_filter_value",
       op = f$params$op, value = f$params$value)
+  } else if (f$type == "not_has_concept") {
+    .build_code("omop_filter_not_has_concept",
+      concept_id = f$params$concept_id,
+      table = f$params$table,
+      concept_name = f$params$concept_name)
+  } else if (f$type == "concept_count") {
+    .build_code("omop_filter_concept_count",
+      concept_id = f$params$concept_id,
+      table = f$params$table,
+      min_count = f$params$min_count,
+      concept_name = f$params$concept_name)
+  } else if (f$type == "prior_observation") {
+    .build_code("omop_filter_prior_observation",
+      min_days = f$params$min_days)
+  } else if (f$type == "followup") {
+    .build_code("omop_filter_followup",
+      min_days = f$params$min_days)
+  } else if (f$type == "visit_count") {
+    .build_code("omop_filter_visit_count",
+      min_count = f$params$min_count,
+      visit_concept_id = f$params$visit_concept_id)
+  } else if (f$type == "has_measurement") {
+    .build_code("omop_filter_has_measurement",
+      concept_id = f$params$concept_id,
+      min_value = f$params$min_value,
+      max_value = f$params$max_value)
+  } else if (f$type == "missing_measurement") {
+    .build_code("omop_filter_missing_measurement",
+      concept_id = f$params$concept_id)
   } else {
     .build_code("omop_filter", type = f$type, level = f$level)
   }
