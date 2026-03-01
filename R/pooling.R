@@ -806,6 +806,111 @@
       list(result = result, warnings = warnings)
     },
 
+    "ohdsi_results" = {
+      # Row-bind across servers, sum count columns, propagate NA
+      all_dfs <- list()
+      warnings <- character(0)
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        if (is.data.frame(df) && nrow(df) > 0) {
+          df$.server <- srv
+          all_dfs[[srv]] <- df
+        } else {
+          if (policy == "strict") {
+            return(list(
+              result = NULL,
+              warnings = paste0("Strict pooling failed: invalid OHDSI results from server ", srv)
+            ))
+          }
+          warnings <- c(warnings, paste0("Dropped server with invalid data: ", srv))
+        }
+      }
+      if (length(all_dfs) == 0) {
+        return(list(result = NULL, warnings = c(warnings, "No valid OHDSI results to pool")))
+      }
+
+      combined <- do.call(rbind, all_dfs)
+      rownames(combined) <- NULL
+
+      # Detect count columns via heuristic pattern
+      count_pattern <- "^n_|^num_|_count$|_subjects$|_persons$|_records$|_entries$|_outcomes$|^outcomes$|^persons_at_risk|^sum_value$|^count_value$"
+      count_cols <- grep(count_pattern, names(combined), value = TRUE,
+                          ignore.case = TRUE)
+      count_cols <- setdiff(count_cols, ".server")
+
+      # Detect rate/proportion columns (cannot be summed)
+      rate_pattern <- "_rate$|_proportion$|_p100p$|_p100py$|^pct_|^average_value$|_percent$"
+      rate_cols <- grep(rate_pattern, names(combined), value = TRUE,
+                         ignore.case = TRUE)
+
+      # Group by all non-count, non-rate, non-server columns
+      meta_cols <- setdiff(names(combined),
+                            c(count_cols, rate_cols, ".server"))
+
+      # Replace NA in grouping columns with sentinel
+      for (mc in meta_cols) {
+        if (is.character(combined[[mc]])) {
+          combined[[mc]][is.na(combined[[mc]])] <- "__NA__"
+        }
+      }
+
+      groups <- split(combined, combined[meta_cols], drop = TRUE)
+      pooled_rows <- lapply(groups, function(sub) {
+        row <- sub[1, meta_cols, drop = FALSE]
+
+        # Sum count columns, propagate NA if any server suppressed
+        for (cc in count_cols) {
+          if (cc %in% names(sub)) {
+            vals <- sub[[cc]]
+            if (any(is.na(vals))) {
+              row[[cc]] <- NA_real_
+            } else {
+              row[[cc]] <- sum(vals)
+            }
+          }
+        }
+
+        # Set rate/proportion columns to NA (can't sum rates)
+        for (rc in rate_cols) {
+          if (rc %in% names(sub)) {
+            row[[rc]] <- NA_real_
+          }
+        }
+
+        row
+      })
+      result <- do.call(rbind, pooled_rows)
+      rownames(result) <- NULL
+
+      # Drop rows where ALL count columns are NA (fully suppressed)
+      if (length(count_cols) > 0) {
+        existing_count_cols <- intersect(count_cols, names(result))
+        if (length(existing_count_cols) > 0) {
+          all_na <- apply(
+            result[, existing_count_cols, drop = FALSE], 1,
+            function(x) all(is.na(x))
+          )
+          result <- result[!all_na, , drop = FALSE]
+        }
+      }
+
+      # Restore NA sentinels
+      for (mc in meta_cols) {
+        if (is.character(result[[mc]])) {
+          result[[mc]][result[[mc]] == "__NA__"] <- NA_character_
+        }
+      }
+
+      # Remove .server column if present
+      result$.server <- NULL
+
+      if (length(rate_cols) > 0) {
+        warnings <- c(warnings,
+          "Rate/proportion columns set to NA in pooled output (cannot sum rates)")
+      }
+      list(result = result, warnings = warnings)
+    },
+
     # Default: no pooling
     {
       list(result = NULL,
