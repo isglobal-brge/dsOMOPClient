@@ -7,6 +7,7 @@
 ds.omop.concept.drilldown(
   table,
   concept_id,
+  concept_col = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",

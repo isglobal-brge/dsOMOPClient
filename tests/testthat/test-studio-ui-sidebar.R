@@ -16,7 +16,7 @@ test_that("sidebar UI contains all accordion panels", {
   html <- paste(as.character(ui), collapse = " ")
 
   expect_true(grepl("Context", html))
-  expect_true(grepl("Cart", html))
+  expect_true(grepl("Recipe", html))
 })
 
 test_that("sidebar UI contains scope controls", {

@@ -378,7 +378,7 @@
       }
     })
 
-    # +Extract: add selected concepts as variables to cart
+    # +Extract: add selected concepts as variables to recipe
     shiny::observeEvent(input$extract_selected_btn, {
       df <- prevalence_data()
       idx <- input$chk_selected
@@ -398,18 +398,18 @@
             table = tbl, concept_id = cid,
             concept_name = cname, format = "raw"
           )
-          state$cart <- cart_add_variable(state$cart, v)
+          state$recipe <- recipe_add_variable(state$recipe, v)
           added <- added + 1L
         }, error = function(e) NULL)
       }
       if (added > 0) {
         shiny::showNotification(
-          paste("Added", added, "variable(s) to cart"),
+          paste("Added", added, "variable(s) to recipe"),
           type = "message", duration = 2)
       }
     })
 
-    # +Filter: add selected concepts as has_concept filters to cart
+    # +Filter: add selected concepts as has_concept filters to recipe
     shiny::observeEvent(input$filter_selected_btn, {
       df <- prevalence_data()
       idx <- input$chk_selected
@@ -426,13 +426,13 @@
           as.character(df$concept_name[i]) else NULL
         tryCatch({
           f <- omop_filter_has_concept(cid, tbl, cname)
-          state$cart <- cart_add_filter(state$cart, f)
+          state$recipe <- recipe_add_filter(state$recipe, f)
           added <- added + 1L
         }, error = function(e) NULL)
       }
       if (added > 0) {
         shiny::showNotification(
-          paste("Added", added, "filter(s) to cart"),
+          paste("Added", added, "filter(s) to recipe"),
           type = "message", duration = 2)
       }
     })
@@ -480,10 +480,10 @@
       shiny::hr(),
       shiny::actionButton(ns("add_to_set"), "Add to Concept Set",
                           class = "btn-outline-primary btn-sm w-100 mb-1"),
-      shiny::actionButton(ns("add_to_cart_extract"),
+      shiny::actionButton(ns("add_to_recipe_extract"),
                           shiny::tagList(shiny::icon("plus"), "Extract to Builder"),
                           class = "btn-success text-white btn-sm w-100 mb-1"),
-      shiny::actionButton(ns("add_to_cart_filter"),
+      shiny::actionButton(ns("add_to_recipe_filter"),
                           shiny::tagList(shiny::icon("filter"), "Filter in Builder"),
                           class = "btn-warning text-white btn-sm w-100 mb-1"),
       shiny::actionButton(ns("add_to_plan"), "Add to Plan",
@@ -660,8 +660,8 @@
       }
     })
 
-    # Add to cart as extraction variable
-    shiny::observeEvent(input$add_to_cart_extract, {
+    # Add to recipe as extraction variable
+    shiny::observeEvent(input$add_to_recipe_extract, {
       cid <- state$selected_concept_id
       tbl <- state$selected_table
       if (is.null(cid) || is.null(tbl)) {
@@ -674,9 +674,9 @@
           table = tbl, concept_id = cid,
           concept_name = cname, format = "raw"
         )
-        state$cart <- cart_add_variable(state$cart, v)
+        state$recipe <- recipe_add_variable(state$recipe, v)
         shiny::showNotification(
-          paste("Added", v$name, "to cart"),
+          paste("Added", v$name, "to recipe"),
           type = "message", duration = 2)
       }, error = function(e) {
         shiny::showNotification(
@@ -684,8 +684,8 @@
       })
     })
 
-    # Add to cart as filter
-    shiny::observeEvent(input$add_to_cart_filter, {
+    # Add to recipe as filter
+    shiny::observeEvent(input$add_to_recipe_filter, {
       cid <- state$selected_concept_id
       tbl <- state$selected_table
       if (is.null(cid) || is.null(tbl)) {
@@ -695,9 +695,9 @@
       cname <- state$selected_concept_name
       tryCatch({
         f <- omop_filter_has_concept(cid, tbl, cname)
-        state$cart <- cart_add_filter(state$cart, f)
+        state$recipe <- recipe_add_filter(state$recipe, f)
         shiny::showNotification(
-          paste("Added filter for concept", cid, "to cart"),
+          paste("Added filter for concept", cid, "to recipe"),
           type = "message", duration = 2)
       }, error = function(e) {
         shiny::showNotification(
@@ -1456,7 +1456,7 @@
       }
     })
 
-    # +Extract: add selected concepts as variables to cart
+    # +Extract: add selected concepts as variables to recipe
     shiny::observeEvent(input$extract_selected_vocab, {
       df <- search_results()
       idx <- input$vocab_chk_selected
@@ -1479,13 +1479,13 @@
             table = tbl, concept_id = cid,
             concept_name = cname, format = "raw"
           )
-          state$cart <- cart_add_variable(state$cart, v)
+          state$recipe <- recipe_add_variable(state$recipe, v)
           added <- added + 1L
         }, error = function(e) NULL)
       }
       if (added > 0) {
         shiny::showNotification(
-          paste("Added", added, "variable(s) to cart"),
+          paste("Added", added, "variable(s) to recipe"),
           type = "message", duration = 2)
       }
     })

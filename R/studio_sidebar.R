@@ -1,7 +1,7 @@
 # ==============================================================================
 # MODULE: Persistent Right Sidebar
 # ==============================================================================
-# Global context (scope/servers) and cart summary.
+# Global context (scope/servers) and recipe summary.
 # ==============================================================================
 
 .mod_sidebar_ui <- function(id) {
@@ -47,12 +47,12 @@
         )
       ),
 
-      # --- Cart Summary ---
+      # --- Recipe Summary ---
       bslib::accordion_panel(
-        "Builder",
+        "Recipe",
         icon = fontawesome::fa_i("hammer"),
-        shiny::uiOutput(ns("cart_summary")),
-        shiny::actionButton(ns("go_to_cart"), "Go to Builder",
+        shiny::uiOutput(ns("recipe_summary")),
+        shiny::actionButton(ns("go_to_recipe"), "Go to Builder",
                             class = "btn-sm btn-outline-primary w-100 mt-2")
       )
     ),
@@ -123,13 +123,13 @@
       state$pooling_policy <- input$pooling_policy
     })
 
-    # --- Cart Summary ---
-    output$cart_summary <- shiny::renderUI({
-      cart <- state$cart
-      nv <- length(cart$variables)
-      nb <- length(cart$blocks)
-      nf <- length(cart$filters)
-      no <- length(cart$outputs)
+    # --- Recipe Summary ---
+    output$recipe_summary <- shiny::renderUI({
+      recipe <- state$recipe
+      nv <- length(recipe$variables)
+      nb <- length(recipe$blocks)
+      nf <- length(recipe$filters)
+      no <- length(recipe$outputs)
       total <- nv + nb + nf + no
 
       if (total == 0) {
@@ -149,7 +149,7 @@
 
       # Show first few items
       items <- character(0)
-      for (nm in utils::head(names(cart$variables), 5)) {
+      for (nm in utils::head(names(recipe$variables), 5)) {
         items <- c(items, nm)
       }
       if (nv > 5) items <- c(items, paste0("... +", nv - 5, " more"))
@@ -161,8 +161,8 @@
       )
     })
 
-    # --- Navigate to Cart ---
-    shiny::observeEvent(input$go_to_cart, {
+    # --- Navigate to Recipe ---
+    shiny::observeEvent(input$go_to_recipe, {
       bslib::nav_select("main_nav", "Builder",
                         session = parent_session)
     })

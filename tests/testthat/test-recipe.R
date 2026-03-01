@@ -1,5 +1,5 @@
 # ==============================================================================
-# Tests for cart / recipe infrastructure
+# Tests for recipe / recipe infrastructure
 # ==============================================================================
 
 # --- omop_variable -----------------------------------------------------------
@@ -138,193 +138,193 @@ test_that("omop_output print works", {
   expect_true(any(grepl("features", out)))
 })
 
-# --- omop_cart ---------------------------------------------------------------
+# --- omop_recipe ---------------------------------------------------------------
 
-test_that("omop_cart creates empty cart", {
-  c <- omop_cart()
-  expect_s3_class(c, "omop_cart")
+test_that("omop_recipe creates empty recipe", {
+  c <- omop_recipe()
+  expect_s3_class(c, "omop_recipe")
   expect_equal(length(c$variables), 0)
   expect_equal(length(c$filters), 0)
   expect_equal(length(c$outputs), 0)
   expect_true(inherits(c$meta$created, "POSIXct"))
 })
 
-test_that("cart_add_variable adds variable", {
-  c <- omop_cart()
+test_that("recipe_add_variable adds variable", {
+  c <- omop_recipe()
   v <- omop_variable(name = "test", table = "person",
                       column = "year_of_birth")
-  c <- cart_add_variable(c, v)
+  c <- recipe_add_variable(c, v)
   expect_equal(length(c$variables), 1)
   expect_equal(c$variables$test$table, "person")
 })
 
-test_that("cart_add_variable with inline args", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "test", table = "person",
+test_that("recipe_add_variable with inline args", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "test", table = "person",
                           column = "year_of_birth")
   expect_equal(length(c$variables), 1)
   expect_equal(c$variables$test$column, "year_of_birth")
 })
 
-test_that("cart_add_variable rejects non-cart", {
-  expect_error(cart_add_variable(list(), omop_variable(table = "person")),
-               "omop_cart")
+test_that("recipe_add_variable rejects non-recipe", {
+  expect_error(recipe_add_variable(list(), omop_variable(table = "person")),
+               "omop_recipe")
 })
 
-test_that("cart_remove_variable removes by name", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "a", table = "person")
-  c <- cart_add_variable(c, name = "b", table = "person")
+test_that("recipe_remove_variable removes by name", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "a", table = "person")
+  c <- recipe_add_variable(c, name = "b", table = "person")
   expect_equal(length(c$variables), 2)
-  c <- cart_remove_variable(c, "a")
+  c <- recipe_remove_variable(c, "a")
   expect_equal(length(c$variables), 1)
   expect_null(c$variables$a)
   expect_true(!is.null(c$variables$b))
 })
 
-test_that("cart_add_filter adds filter", {
-  c <- omop_cart()
+test_that("recipe_add_filter adds filter", {
+  c <- omop_recipe()
   f <- omop_filter_sex("F")
-  c <- cart_add_filter(c, f)
+  c <- recipe_add_filter(c, f)
   expect_equal(length(c$filters), 1)
 })
 
-test_that("cart_add_filter auto-generates ID", {
-  c <- omop_cart()
-  c <- cart_add_filter(c, omop_filter_sex("F"))
+test_that("recipe_add_filter auto-generates ID", {
+  c <- omop_recipe()
+  c <- recipe_add_filter(c, omop_filter_sex("F"))
   id <- names(c$filters)[1]
   expect_true(grepl("sex", id))
 })
 
-test_that("cart_add_filter with explicit ID", {
-  c <- omop_cart()
-  c <- cart_add_filter(c, omop_filter_sex("F"), id = "my_filter")
+test_that("recipe_add_filter with explicit ID", {
+  c <- omop_recipe()
+  c <- recipe_add_filter(c, omop_filter_sex("F"), id = "my_filter")
   expect_true("my_filter" %in% names(c$filters))
 })
 
-test_that("cart_remove_filter removes by ID", {
-  c <- omop_cart()
-  c <- cart_add_filter(c, omop_filter_sex("F"), id = "f1")
-  c <- cart_add_filter(c, omop_filter_age(18, 65), id = "f2")
-  c <- cart_remove_filter(c, "f1")
+test_that("recipe_remove_filter removes by ID", {
+  c <- omop_recipe()
+  c <- recipe_add_filter(c, omop_filter_sex("F"), id = "f1")
+  c <- recipe_add_filter(c, omop_filter_age(18, 65), id = "f2")
+  c <- recipe_remove_filter(c, "f1")
   expect_equal(length(c$filters), 1)
   expect_null(c$filters$f1)
 })
 
-test_that("cart_add_output adds output", {
-  c <- omop_cart()
+test_that("recipe_add_output adds output", {
+  c <- omop_recipe()
   o <- omop_output(name = "wide_out", type = "wide")
-  c <- cart_add_output(c, o)
+  c <- recipe_add_output(c, o)
   expect_equal(length(c$outputs), 1)
   expect_equal(c$outputs$wide_out$type, "wide")
 })
 
-test_that("cart_remove_output removes by name", {
-  c <- omop_cart()
-  c <- cart_add_output(c, omop_output(name = "a", type = "wide"))
-  c <- cart_add_output(c, omop_output(name = "b", type = "long"))
-  c <- cart_remove_output(c, "a")
+test_that("recipe_remove_output removes by name", {
+  c <- omop_recipe()
+  c <- recipe_add_output(c, omop_output(name = "a", type = "wide"))
+  c <- recipe_add_output(c, omop_output(name = "b", type = "long"))
+  c <- recipe_remove_output(c, "a")
   expect_equal(length(c$outputs), 1)
   expect_null(c$outputs$a)
 })
 
-test_that("cart_clear returns empty cart", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "x", table = "person")
-  c <- cart_add_filter(c, omop_filter_sex("M"))
-  c <- cart_add_output(c, omop_output(name = "o", type = "wide"))
-  c <- cart_clear(c)
-  expect_s3_class(c, "omop_cart")
+test_that("recipe_clear returns empty recipe", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "x", table = "person")
+  c <- recipe_add_filter(c, omop_filter_sex("M"))
+  c <- recipe_add_output(c, omop_output(name = "o", type = "wide"))
+  c <- recipe_clear(c)
+  expect_s3_class(c, "omop_recipe")
   expect_equal(length(c$variables), 0)
   expect_equal(length(c$filters), 0)
   expect_equal(length(c$outputs), 0)
 })
 
-test_that("cart print works", {
-  c <- omop_cart()
-  c <- cart_add_variable(c,
+test_that("recipe print works", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c,
     name = "diab", table = "condition_occurrence",
     concept_id = 201820, concept_name = "Diabetes",
     format = "binary")
-  c <- cart_add_filter(c, omop_filter_sex("F"), id = "sex_f")
-  c <- cart_add_output(c, omop_output(name = "wide_out", type = "wide"))
+  c <- recipe_add_filter(c, omop_filter_sex("F"), id = "sex_f")
+  c <- recipe_add_output(c, omop_output(name = "wide_out", type = "wide"))
   out <- capture.output(print(c))
-  expect_true(any(grepl("omop_cart", out)))
+  expect_true(any(grepl("omop_recipe", out)))
   expect_true(any(grepl("diab", out)))
   expect_true(any(grepl("population", out)))
   expect_true(any(grepl("wide", out)))
 })
 
-# --- cart_to_plan -----------------------------------------------------------
+# --- recipe_to_plan -----------------------------------------------------------
 
-test_that("cart_to_plan generates plan with wide output", {
-  c <- omop_cart()
-  c <- cart_add_variable(c,
+test_that("recipe_to_plan generates plan with wide output", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c,
     name = "yob", table = "person", column = "year_of_birth")
-  c <- cart_add_output(c, omop_output(name = "demographics", type = "wide"))
-  plan <- cart_to_plan(c)
+  c <- recipe_add_output(c, omop_output(name = "demographics", type = "wide"))
+  plan <- recipe_to_plan(c)
   expect_s3_class(plan, "omop_plan")
   expect_true("demographics" %in% names(plan$outputs))
   expect_equal(plan$outputs$demographics$type, "person_level")
 })
 
-test_that("cart_to_plan generates plan with long output", {
-  c <- omop_cart()
-  c <- cart_add_variable(c,
+test_that("recipe_to_plan generates plan with long output", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c,
     name = "cond", table = "condition_occurrence",
     concept_id = 201820, format = "raw")
-  c <- cart_add_output(c, omop_output(name = "events", type = "long"))
-  plan <- cart_to_plan(c)
+  c <- recipe_add_output(c, omop_output(name = "events", type = "long"))
+  plan <- recipe_to_plan(c)
   expect_true("events" %in% names(plan$outputs))
 })
 
-test_that("cart_to_plan applies population filters", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "yob", table = "person",
+test_that("recipe_to_plan applies population filters", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "yob", table = "person",
                           column = "year_of_birth")
-  c <- cart_add_filter(c, omop_filter_sex("F"), id = "sex_filter")
-  c <- cart_add_output(c, omop_output(name = "out", type = "wide"))
-  plan <- cart_to_plan(c)
+  c <- recipe_add_filter(c, omop_filter_sex("F"), id = "sex_filter")
+  c <- recipe_add_output(c, omop_output(name = "out", type = "wide"))
+  plan <- recipe_to_plan(c)
   expect_true(!is.null(plan$cohort))
   expect_equal(plan$cohort$type, "spec")
 })
 
-test_that("cart_to_plan rejects non-cart", {
-  expect_error(cart_to_plan(list()), "omop_cart")
+test_that("recipe_to_plan rejects non-recipe", {
+  expect_error(recipe_to_plan(list()), "omop_recipe")
 })
 
-# --- cart_to_code -----------------------------------------------------------
+# --- recipe_to_code -----------------------------------------------------------
 
-test_that("cart_to_code generates R code", {
-  c <- omop_cart()
-  c <- cart_add_variable(c,
+test_that("recipe_to_code generates R code", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c,
     name = "hba1c", table = "measurement",
     concept_id = 3004249, format = "mean")
-  c <- cart_add_filter(c, omop_filter_sex("F"))
-  c <- cart_add_output(c, omop_output(name = "data", type = "wide"))
-  code <- cart_to_code(c)
+  c <- recipe_add_filter(c, omop_filter_sex("F"))
+  c <- recipe_add_output(c, omop_output(name = "data", type = "wide"))
+  code <- recipe_to_code(c)
   expect_true(nchar(code) > 0)
   expect_true(grepl("omop_variable", code))
   expect_true(grepl("omop_filter_sex", code))
   expect_true(grepl("omop_output", code))
 })
 
-test_that("cart_to_code rejects non-cart", {
-  expect_error(cart_to_code(list()), "omop_cart")
+test_that("recipe_to_code rejects non-recipe", {
+  expect_error(recipe_to_code(list()), "omop_recipe")
 })
 
-# --- cart_preview_schema ----------------------------------------------------
+# --- recipe_preview_schema ----------------------------------------------------
 
-test_that("cart_preview_schema returns schema per output", {
-  c <- omop_cart()
-  c <- cart_add_variable(c,
+test_that("recipe_preview_schema returns schema per output", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c,
     name = "yob", table = "person", column = "year_of_birth",
     type = "numeric")
-  c <- cart_add_variable(c,
+  c <- recipe_add_variable(c,
     name = "diab", table = "condition_occurrence",
     concept_id = 201820, format = "binary")
-  c <- cart_add_output(c, omop_output(name = "out1", type = "wide"))
-  schemas <- cart_preview_schema(c)
+  c <- recipe_add_output(c, omop_output(name = "out1", type = "wide"))
+  schemas <- recipe_preview_schema(c)
   expect_true(is.list(schemas))
   expect_true("out1" %in% names(schemas))
   df <- schemas$out1
@@ -335,21 +335,21 @@ test_that("cart_preview_schema returns schema per output", {
   expect_equal(attr(df, "join_key"), "person_id")
 })
 
-test_that("cart_preview_schema with subset variables", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "a", table = "person", column = "x")
-  c <- cart_add_variable(c, name = "b", table = "person", column = "y")
-  c <- cart_add_output(c, omop_output(name = "out", type = "wide",
+test_that("recipe_preview_schema with subset variables", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "a", table = "person", column = "x")
+  c <- recipe_add_variable(c, name = "b", table = "person", column = "y")
+  c <- recipe_add_output(c, omop_output(name = "out", type = "wide",
                                        variables = c("a")))
-  schemas <- cart_preview_schema(c)
+  schemas <- recipe_preview_schema(c)
   expect_equal(nrow(schemas$out), 1)
   expect_equal(schemas$out$column, "a")
 })
 
-test_that("cart_preview_schema empty cart", {
-  c <- omop_cart()
-  c <- cart_add_output(c, omop_output(name = "empty_out", type = "wide"))
-  schemas <- cart_preview_schema(c)
+test_that("recipe_preview_schema empty recipe", {
+  c <- omop_recipe()
+  c <- recipe_add_output(c, omop_output(name = "empty_out", type = "wide"))
+  schemas <- recipe_preview_schema(c)
   expect_equal(nrow(schemas$empty_out), 0)
 })
 
@@ -678,53 +678,53 @@ test_that("omop_filter_value with custom column", {
   expect_equal(f$params$column, "quantity")
 })
 
-# --- cart populations --------------------------------------------------------
+# --- recipe populations --------------------------------------------------------
 
-test_that("omop_cart has default base population", {
-  c <- omop_cart()
+test_that("omop_recipe has default base population", {
+  c <- omop_recipe()
   expect_true("base" %in% names(c$populations))
   expect_s3_class(c$populations$base, "omop_population")
   expect_equal(c$populations$base$label, "All Persons")
 })
 
-test_that("cart_add_population adds population", {
-  c <- omop_cart()
+test_that("recipe_add_population adds population", {
+  c <- omop_recipe()
   p <- omop_population(id = "adults", label = "Adults", parent_id = "base")
-  c <- cart_add_population(c, p)
+  c <- recipe_add_population(c, p)
   expect_true("adults" %in% names(c$populations))
   expect_equal(c$populations$adults$label, "Adults")
 })
 
-test_that("cart_add_population validates parent exists", {
-  c <- omop_cart()
+test_that("recipe_add_population validates parent exists", {
+  c <- omop_recipe()
   p <- omop_population(id = "sub", label = "Sub", parent_id = "nonexistent")
-  expect_error(cart_add_population(c, p), "not found")
+  expect_error(recipe_add_population(c, p), "not found")
 })
 
-test_that("cart_remove_population works", {
-  c <- omop_cart()
+test_that("recipe_remove_population works", {
+  c <- omop_recipe()
   p <- omop_population(id = "test", label = "Test", parent_id = "base")
-  c <- cart_add_population(c, p)
-  c <- cart_remove_population(c, "test")
+  c <- recipe_add_population(c, p)
+  c <- recipe_remove_population(c, "test")
   expect_null(c$populations$test)
 })
 
-test_that("cart_remove_population cannot remove base", {
-  c <- omop_cart()
-  expect_error(cart_remove_population(c, "base"), "Cannot remove base")
+test_that("recipe_remove_population cannot remove base", {
+  c <- omop_recipe()
+  expect_error(recipe_remove_population(c, "base"), "Cannot remove base")
 })
 
-# --- cart blocks -------------------------------------------------------------
+# --- recipe blocks -------------------------------------------------------------
 
-test_that("cart_add_block expands concepts into variables", {
-  c <- omop_cart()
+test_that("recipe_add_block expands concepts into variables", {
+  c <- omop_recipe()
   b <- omop_variable_block(
     id = "cond_block", table = "condition_occurrence",
     concept_ids = c(201820, 4229440),
     concept_names = c("Diabetes", "Hypertension"),
     format = "binary"
   )
-  c <- cart_add_block(c, b)
+  c <- recipe_add_block(c, b)
   expect_true("cond_block" %in% names(c$blocks))
   expect_equal(length(c$variables), 2)
   # Check naming
@@ -735,21 +735,21 @@ test_that("cart_add_block expands concepts into variables", {
   expect_equal(c$variables$hypertension$format, "binary")
 })
 
-test_that("cart_add_block uses concept_id for naming when no name", {
-  c <- omop_cart()
+test_that("recipe_add_block uses concept_id for naming when no name", {
+  c <- omop_recipe()
   b <- omop_variable_block(
     table = "measurement",
     concept_ids = c(3004249, 3013290)
   )
-  c <- cart_add_block(c, b)
+  c <- recipe_add_block(c, b)
   expect_true("measurement_c3004249" %in% names(c$variables))
   expect_true("measurement_c3013290" %in% names(c$variables))
 })
 
-test_that("cart_add_block deduplicates variable names", {
-  c <- omop_cart()
+test_that("recipe_add_block deduplicates variable names", {
+  c <- omop_recipe()
   # Add a variable with same name that block would generate
-  c <- cart_add_variable(c, name = "diabetes", table = "person")
+  c <- recipe_add_variable(c, name = "diabetes", table = "person")
 
   b <- omop_variable_block(
     table = "condition_occurrence",
@@ -757,27 +757,27 @@ test_that("cart_add_block deduplicates variable names", {
     concept_names = c("Diabetes"),
     format = "binary"
   )
-  c <- cart_add_block(c, b)
+  c <- recipe_add_block(c, b)
   expect_true("diabetes_2" %in% names(c$variables))
 })
 
-test_that("cart_add_block propagates time_window", {
-  c <- omop_cart()
+test_that("recipe_add_block propagates time_window", {
+  c <- omop_recipe()
   b <- omop_variable_block(
     table = "drug_exposure",
     concept_ids = c(1, 2),
     time_window = list(start = -90, end = 0),
     format = "count"
   )
-  c <- cart_add_block(c, b)
+  c <- recipe_add_block(c, b)
   for (v in c$variables) {
     expect_equal(v$time_window$start, -90)
     expect_equal(v$time_window$end, 0)
   }
 })
 
-test_that("cart_add_block propagates filters", {
-  c <- omop_cart()
+test_that("recipe_add_block propagates filters", {
+  c <- omop_recipe()
   f <- omop_filter_date_range(start = "2020-01-01", end = "2023-12-31")
   b <- omop_variable_block(
     table = "measurement",
@@ -785,53 +785,53 @@ test_that("cart_add_block propagates filters", {
     format = "mean",
     filters = list(f)
   )
-  c <- cart_add_block(c, b)
+  c <- recipe_add_block(c, b)
   v <- c$variables[[1]]
   expect_equal(length(v$filters), 1)
 })
 
-# --- cart_add_variable unique naming -----------------------------------------
+# --- recipe_add_variable unique naming -----------------------------------------
 
-test_that("cart_add_variable auto-deduplicates names", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "test", table = "person")
-  c <- cart_add_variable(c, name = "test", table = "person")
+test_that("recipe_add_variable auto-deduplicates names", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "test", table = "person")
+  c <- recipe_add_variable(c, name = "test", table = "person")
   expect_equal(length(c$variables), 2)
   expect_true("test" %in% names(c$variables))
   expect_true("test_2" %in% names(c$variables))
 })
 
-test_that("cart_add_variable continues incrementing", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "x", table = "person")
-  c <- cart_add_variable(c, name = "x", table = "person")
-  c <- cart_add_variable(c, name = "x", table = "person")
+test_that("recipe_add_variable continues incrementing", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "x", table = "person")
+  c <- recipe_add_variable(c, name = "x", table = "person")
+  c <- recipe_add_variable(c, name = "x", table = "person")
   expect_equal(length(c$variables), 3)
   expect_equal(names(c$variables), c("x", "x_2", "x_3"))
 })
 
-# --- cart_add_filter with groups ---------------------------------------------
+# --- recipe_add_filter with groups ---------------------------------------------
 
-test_that("cart_add_filter accepts filter group", {
-  c <- omop_cart()
+test_that("recipe_add_filter accepts filter group", {
+  c <- omop_recipe()
   g <- omop_filter_group(
     omop_filter_sex("F"),
     omop_filter_age(18, 65),
     operator = "AND"
   )
-  c <- cart_add_filter(c, g)
+  c <- recipe_add_filter(c, g)
   expect_equal(length(c$filters), 1)
   expect_s3_class(c$filters[[1]], "omop_filter_group")
 })
 
-test_that("cart_add_filter group auto-generates ID with operator", {
-  c <- omop_cart()
+test_that("recipe_add_filter group auto-generates ID with operator", {
+  c <- omop_recipe()
   g <- omop_filter_group(
     omop_filter_sex("F"),
     omop_filter_age(18, 65),
     operator = "OR"
   )
-  c <- cart_add_filter(c, g)
+  c <- recipe_add_filter(c, g)
   id <- names(c$filters)[1]
   expect_true(grepl("OR", id))
 })
@@ -873,155 +873,155 @@ test_that(".flatten_filters with NULL level returns all", {
   expect_equal(length(all_filters), 2)
 })
 
-# --- cart_to_plan with populations and blocks --------------------------------
+# --- recipe_to_plan with populations and blocks --------------------------------
 
-test_that("cart_to_plan with cohort population", {
-  c <- omop_cart()
+test_that("recipe_to_plan with cohort population", {
+  c <- omop_recipe()
   c$populations$base$cohort_definition_id <- 42L
-  c <- cart_add_variable(c, name = "v", table = "person",
+  c <- recipe_add_variable(c, name = "v", table = "person",
                           column = "year_of_birth")
-  c <- cart_add_output(c, omop_output(name = "out", type = "wide"))
-  plan <- cart_to_plan(c)
+  c <- recipe_add_output(c, omop_output(name = "out", type = "wide"))
+  plan <- recipe_to_plan(c)
   expect_true(!is.null(plan$cohort))
   expect_equal(plan$cohort$cohort_definition_id, 42L)
 })
 
-test_that("cart_to_plan with features output", {
-  c <- omop_cart()
-  c <- cart_add_variable(c,
+test_that("recipe_to_plan with features output", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c,
     name = "diabetes", table = "condition_occurrence",
     concept_id = 201820, format = "binary")
-  c <- cart_add_variable(c,
+  c <- recipe_add_variable(c,
     name = "aspirin_count", table = "drug_exposure",
     concept_id = 1154070, format = "count")
-  c <- cart_add_output(c, omop_output(name = "feat", type = "features"))
-  plan <- cart_to_plan(c)
+  c <- recipe_add_output(c, omop_output(name = "feat", type = "features"))
+  plan <- recipe_to_plan(c)
   # Features from two tables -> two output entries
   feat_names <- grep("feat", names(plan$outputs), value = TRUE)
   expect_true(length(feat_names) >= 1)
 })
 
-test_that("cart_to_plan with row-level date filter", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "v", table = "condition_occurrence",
+test_that("recipe_to_plan with row-level date filter", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "condition_occurrence",
                           concept_id = 201820)
-  c <- cart_add_filter(c, omop_filter_date_range("2020-01-01", "2023-12-31"))
-  c <- cart_add_output(c, omop_output(name = "events", type = "long"))
-  plan <- cart_to_plan(c)
+  c <- recipe_add_filter(c, omop_filter_date_range("2020-01-01", "2023-12-31"))
+  c <- recipe_add_output(c, omop_output(name = "events", type = "long"))
+  plan <- recipe_to_plan(c)
   # Row filter should be attached to the output
   out <- plan$outputs$events
   expect_true(!is.null(out$filters))
   expect_true(!is.null(out$filters$time_window))
 })
 
-test_that("cart_to_plan with baseline output type", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "yob", table = "person",
+test_that("recipe_to_plan with baseline output type", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "yob", table = "person",
                           column = "year_of_birth")
-  c <- cart_add_output(c, omop_output(name = "demo", type = "baseline"))
-  plan <- cart_to_plan(c)
+  c <- recipe_add_output(c, omop_output(name = "demo", type = "baseline"))
+  plan <- recipe_to_plan(c)
   expect_true("demo" %in% names(plan$outputs))
   expect_equal(plan$outputs$demo$type, "baseline")
 })
 
-test_that("cart_to_plan with survival output type", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "event", table = "condition_occurrence",
+test_that("recipe_to_plan with survival output type", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "event", table = "condition_occurrence",
                           concept_id = 201820)
-  c <- cart_add_output(c, omop_output(name = "surv", type = "survival"))
-  plan <- cart_to_plan(c)
+  c <- recipe_add_output(c, omop_output(name = "surv", type = "survival"))
+  plan <- recipe_to_plan(c)
   expect_true("surv" %in% names(plan$outputs))
   expect_equal(plan$outputs$surv$type, "survival")
 })
 
-test_that("cart_to_plan with intervals output type", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "v", table = "condition_occurrence",
+test_that("recipe_to_plan with intervals output type", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "condition_occurrence",
                           concept_id = 201820)
-  c <- cart_add_output(c, omop_output(name = "int", type = "intervals"))
-  plan <- cart_to_plan(c)
+  c <- recipe_add_output(c, omop_output(name = "int", type = "intervals"))
+  plan <- recipe_to_plan(c)
   expect_true("int" %in% names(plan$outputs))
   expect_equal(plan$outputs$int$type, "intervals_long")
 })
 
-# --- cart_to_code enhanced ---------------------------------------------------
+# --- recipe_to_code enhanced ---------------------------------------------------
 
-test_that("cart_to_code includes populations", {
-  c <- omop_cart()
-  c <- cart_add_population(c,
+test_that("recipe_to_code includes populations", {
+  c <- omop_recipe()
+  c <- recipe_add_population(c,
     omop_population(id = "adults", label = "Adults 18+", parent_id = "base"))
-  c <- cart_add_variable(c, name = "v", table = "person")
-  code <- cart_to_code(c)
+  c <- recipe_add_variable(c, name = "v", table = "person")
+  code <- recipe_to_code(c)
   expect_true(grepl("omop_population", code))
   expect_true(grepl("adults", code))
 })
 
-test_that("cart_to_code includes blocks", {
-  c <- omop_cart()
+test_that("recipe_to_code includes blocks", {
+  c <- omop_recipe()
   b <- omop_variable_block(
     id = "cond", table = "condition_occurrence",
     concept_ids = c(201820, 4229440), format = "binary"
   )
-  c <- cart_add_block(c, b)
-  code <- cart_to_code(c)
+  c <- recipe_add_block(c, b)
+  code <- recipe_to_code(c)
   expect_true(grepl("omop_variable_block", code))
-  expect_true(grepl("cart_add_block", code))
+  expect_true(grepl("recipe_add_block", code))
 })
 
-test_that("cart_to_code includes filter groups", {
-  c <- omop_cart()
+test_that("recipe_to_code includes filter groups", {
+  c <- omop_recipe()
   g <- omop_filter_group(
     omop_filter_sex("F"),
     omop_filter_age(18, 65),
     operator = "AND"
   )
-  c <- cart_add_filter(c, g)
-  code <- cart_to_code(c)
+  c <- recipe_add_filter(c, g)
+  code <- recipe_to_code(c)
   expect_true(grepl("omop_filter_group", code))
   expect_true(grepl("AND", code))
 })
 
-test_that("cart_to_code does not include library calls", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "v", table = "person")
-  c <- cart_add_output(c, omop_output(name = "o", type = "wide"))
-  code <- cart_to_code(c)
+test_that("recipe_to_code does not include library calls", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "person")
+  c <- recipe_add_output(c, omop_output(name = "o", type = "wide"))
+  code <- recipe_to_code(c)
   expect_false(grepl("library", code))
 })
 
-test_that("cart_to_code skips base population", {
-  c <- omop_cart()
-  code <- cart_to_code(c)
-  # Should NOT have cart_add_population for base
-  expect_false(grepl("cart_add_population.*base", code))
+test_that("recipe_to_code skips base population", {
+  c <- omop_recipe()
+  code <- recipe_to_code(c)
+  # Should NOT have recipe_add_population for base
+  expect_false(grepl("recipe_add_population.*base", code))
 })
 
-test_that("cart_to_code excludes block-generated variables", {
-  c <- omop_cart()
+test_that("recipe_to_code excludes block-generated variables", {
+  c <- omop_recipe()
   b <- omop_variable_block(
     id = "cond", table = "condition_occurrence",
     concept_ids = c(201820),
     concept_names = c("Diabetes"),
     format = "binary"
   )
-  c <- cart_add_block(c, b)
-  code <- cart_to_code(c)
+  c <- recipe_add_block(c, b)
+  code <- recipe_to_code(c)
   # The block generates a "diabetes" variable, but codegen should NOT
-  # separately emit cart_add_variable for it (block handles it)
-  expect_true(grepl("cart_add_block", code))
-  expect_false(grepl("cart_add_variable.*diabetes", code))
+  # separately emit recipe_add_variable for it (block handles it)
+  expect_true(grepl("recipe_add_block", code))
+  expect_false(grepl("recipe_add_variable.*diabetes", code))
 })
 
-# --- cart_export_json / cart_import_json -------------------------------------
+# --- recipe_export_json / recipe_import_json -------------------------------------
 
-test_that("cart_export_json returns JSON string", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "yob", table = "person",
+test_that("recipe_export_json returns JSON string", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "yob", table = "person",
                           column = "year_of_birth")
-  c <- cart_add_filter(c, omop_filter_sex("F"))
-  c <- cart_add_output(c, omop_output(name = "out", type = "wide"))
+  c <- recipe_add_filter(c, omop_filter_sex("F"))
+  c <- recipe_add_output(c, omop_output(name = "out", type = "wide"))
 
-  json <- cart_export_json(c)
+  json <- recipe_export_json(c)
   expect_true(is.character(json))
   expect_true(nchar(json) > 0)
   parsed <- jsonlite::fromJSON(json, simplifyVector = FALSE)
@@ -1029,29 +1029,29 @@ test_that("cart_export_json returns JSON string", {
   expect_true("yob" %in% names(parsed$variables))
 })
 
-test_that("cart_export_json writes to file", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "v", table = "person")
+test_that("recipe_export_json writes to file", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "person")
   tmp <- tempfile(fileext = ".json")
   on.exit(unlink(tmp))
-  result <- cart_export_json(c, file = tmp)
+  result <- recipe_export_json(c, file = tmp)
   expect_true(file.exists(tmp))
   expect_equal(result, tmp)
 })
 
-test_that("cart_import_json roundtrips from string", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "yob", table = "person",
+test_that("recipe_import_json roundtrips from string", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "yob", table = "person",
                           column = "year_of_birth", type = "numeric")
-  c <- cart_add_variable(c, name = "diabetes", table = "condition_occurrence",
+  c <- recipe_add_variable(c, name = "diabetes", table = "condition_occurrence",
                           concept_id = 201820, format = "binary")
-  c <- cart_add_filter(c, omop_filter_sex("F"), id = "sex_f")
-  c <- cart_add_output(c, omop_output(name = "data", type = "wide"))
+  c <- recipe_add_filter(c, omop_filter_sex("F"), id = "sex_f")
+  c <- recipe_add_output(c, omop_output(name = "data", type = "wide"))
 
-  json <- cart_export_json(c)
-  c2 <- cart_import_json(json)
+  json <- recipe_export_json(c)
+  c2 <- recipe_import_json(json)
 
-  expect_s3_class(c2, "omop_cart")
+  expect_s3_class(c2, "omop_recipe")
   expect_equal(length(c2$variables), 2)
   expect_true("yob" %in% names(c2$variables))
   expect_true("diabetes" %in% names(c2$variables))
@@ -1062,57 +1062,57 @@ test_that("cart_import_json roundtrips from string", {
   expect_equal(c2$outputs$data$type, "wide")
 })
 
-test_that("cart_import_json roundtrips from file", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "v", table = "measurement",
+test_that("recipe_import_json roundtrips from file", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "measurement",
                           concept_id = 3004249, format = "mean")
-  c <- cart_add_output(c, omop_output(name = "o", type = "long"))
+  c <- recipe_add_output(c, omop_output(name = "o", type = "long"))
 
   tmp <- tempfile(fileext = ".json")
   on.exit(unlink(tmp))
-  cart_export_json(c, file = tmp)
-  c2 <- cart_import_json(tmp)
+  recipe_export_json(c, file = tmp)
+  c2 <- recipe_import_json(tmp)
 
-  expect_s3_class(c2, "omop_cart")
+  expect_s3_class(c2, "omop_recipe")
   expect_equal(length(c2$variables), 1)
   expect_equal(c2$variables$v$format, "mean")
 })
 
-test_that("cart_import_json preserves populations", {
-  c <- omop_cart()
-  c <- cart_add_population(c,
+test_that("recipe_import_json preserves populations", {
+  c <- omop_recipe()
+  c <- recipe_add_population(c,
     omop_population(id = "adults", label = "Adults", parent_id = "base"))
 
-  json <- cart_export_json(c)
-  c2 <- cart_import_json(json)
+  json <- recipe_export_json(c)
+  c2 <- recipe_import_json(json)
 
   expect_true("base" %in% names(c2$populations))
   expect_true("adults" %in% names(c2$populations))
   expect_equal(c2$populations$adults$label, "Adults")
 })
 
-# --- cart_preview_schema with enhanced outputs --------------------------------
+# --- recipe_preview_schema with enhanced outputs --------------------------------
 
-test_that("cart_preview_schema includes population_id attribute", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "v", table = "person")
-  c <- cart_add_output(c,
+test_that("recipe_preview_schema includes population_id attribute", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "person")
+  c <- recipe_add_output(c,
     omop_output(name = "adult_data", type = "wide", population_id = "base"))
-  schemas <- cart_preview_schema(c)
+  schemas <- recipe_preview_schema(c)
   expect_equal(attr(schemas$adult_data, "population_id"), "base")
 })
 
-test_that("cart_preview_schema with multiple outputs", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "yob", table = "person",
+test_that("recipe_preview_schema with multiple outputs", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "yob", table = "person",
                           column = "year_of_birth")
-  c <- cart_add_variable(c, name = "cond", table = "condition_occurrence",
+  c <- recipe_add_variable(c, name = "cond", table = "condition_occurrence",
                           concept_id = 201820)
-  c <- cart_add_output(c, omop_output(name = "demo", type = "baseline",
+  c <- recipe_add_output(c, omop_output(name = "demo", type = "baseline",
                                        variables = "yob"))
-  c <- cart_add_output(c, omop_output(name = "events", type = "long",
+  c <- recipe_add_output(c, omop_output(name = "events", type = "long",
                                        variables = "cond"))
-  schemas <- cart_preview_schema(c)
+  schemas <- recipe_preview_schema(c)
   expect_equal(length(schemas), 2)
   expect_equal(nrow(schemas$demo), 1)
   expect_equal(nrow(schemas$events), 1)
@@ -1162,19 +1162,19 @@ test_that(".codegen_filter_group generates nested code", {
   expect_true(grepl("AND", code))
 })
 
-# --- cart_clear with enhanced fields -----------------------------------------
+# --- recipe_clear with enhanced fields -----------------------------------------
 
-test_that("cart_clear resets populations/blocks too", {
-  c <- omop_cart()
-  c <- cart_add_population(c,
+test_that("recipe_clear resets populations/blocks too", {
+  c <- omop_recipe()
+  c <- recipe_add_population(c,
     omop_population(id = "adults", parent_id = "base"))
-  c <- cart_add_block(c,
+  c <- recipe_add_block(c,
     omop_variable_block(table = "condition_occurrence",
                          concept_ids = c(1, 2)))
-  c <- cart_add_filter(c, omop_filter_sex("F"))
-  c <- cart_add_output(c, omop_output(name = "o", type = "wide"))
+  c <- recipe_add_filter(c, omop_filter_sex("F"))
+  c <- recipe_add_output(c, omop_output(name = "o", type = "wide"))
 
-  c <- cart_clear(c)
+  c <- recipe_clear(c)
   expect_equal(length(c$populations), 1)  # only base
   expect_equal(length(c$blocks), 0)
   expect_equal(length(c$variables), 0)
@@ -1182,11 +1182,11 @@ test_that("cart_clear resets populations/blocks too", {
   expect_equal(length(c$outputs), 0)
 })
 
-# --- cart print enhanced fields ----------------------------------------------
+# --- recipe print enhanced fields ----------------------------------------------
 
-test_that("cart print shows populations and blocks", {
-  c <- omop_cart()
-  c <- cart_add_population(c,
+test_that("recipe print shows populations and blocks", {
+  c <- omop_recipe()
+  c <- recipe_add_population(c,
     omop_population(id = "adults", label = "Adults 18+", parent_id = "base"))
   b <- omop_variable_block(
     id = "cond_block", table = "condition_occurrence",
@@ -1194,8 +1194,8 @@ test_that("cart print shows populations and blocks", {
     concept_names = c("Diabetes", "Hypertension"),
     format = "binary"
   )
-  c <- cart_add_block(c, b)
-  c <- cart_add_output(c, omop_output(name = "out", type = "wide"))
+  c <- recipe_add_block(c, b)
+  c <- recipe_add_output(c, omop_output(name = "out", type = "wide"))
   out <- capture.output(print(c))
   expect_true(any(grepl("Populations", out)))
   expect_true(any(grepl("adults", out)))
@@ -1205,30 +1205,30 @@ test_that("cart print shows populations and blocks", {
 
 # --- edge cases --------------------------------------------------------------
 
-test_that("cart_to_plan with no outputs returns empty plan", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "v", table = "person")
-  plan <- cart_to_plan(c)
+test_that("recipe_to_plan with no outputs returns empty plan", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "person")
+  plan <- recipe_to_plan(c)
   expect_s3_class(plan, "omop_plan")
   expect_equal(length(plan$outputs), 0)
 })
 
-test_that("cart_to_plan with output referencing nonexistent variables", {
-  c <- omop_cart()
-  c <- cart_add_variable(c, name = "a", table = "person")
-  c <- cart_add_output(c,
+test_that("recipe_to_plan with output referencing nonexistent variables", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "a", table = "person")
+  c <- recipe_add_output(c,
     omop_output(name = "out", type = "wide",
                 variables = c("a", "nonexistent")))
   # Should not error, just filters to available variables
-  plan <- cart_to_plan(c)
+  plan <- recipe_to_plan(c)
   expect_s3_class(plan, "omop_plan")
 })
 
-test_that("cart meta tracks modification time", {
-  c <- omop_cart()
+test_that("recipe meta tracks modification time", {
+  c <- omop_recipe()
   t1 <- c$meta$modified
   Sys.sleep(0.01)
-  c <- cart_add_variable(c, name = "v", table = "person")
+  c <- recipe_add_variable(c, name = "v", table = "person")
   t2 <- c$meta$modified
   expect_true(t2 >= t1)
 })
@@ -1247,10 +1247,10 @@ test_that("omop_filter_age_group creates valid filter", {
   expect_true(grepl("25-34", f$label))
 })
 
-test_that("omop_filter_age_group can be added to cart", {
-  c <- omop_cart()
+test_that("omop_filter_age_group can be added to recipe", {
+  c <- omop_recipe()
   f <- omop_filter_age_group(c("45-54", "55-64", "65-74"))
-  c <- cart_add_filter(c, f)
+  c <- recipe_add_filter(c, f)
   expect_equal(length(c$filters), 1)
   expect_equal(c$filters[[1]]$type, "age_group")
 })
@@ -1279,9 +1279,9 @@ test_that("ds.omop.safe.cutpoints has expected signature", {
 })
 
 test_that("age_group filter generates correct code", {
-  c <- omop_cart()
-  c <- cart_add_filter(c, omop_filter_age_group(c("18-24", "25-34")))
-  code <- cart_to_code(c)
+  c <- omop_recipe()
+  c <- recipe_add_filter(c, omop_filter_age_group(c("18-24", "25-34")))
+  code <- recipe_to_code(c)
   expect_true(grepl("omop_filter_age_group", code))
 })
 

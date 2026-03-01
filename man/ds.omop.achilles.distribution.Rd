@@ -6,7 +6,6 @@
 \usage{
 ds.omop.achilles.distribution(
   analysis_ids,
-  stratum_filters = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",
@@ -16,8 +15,6 @@ ds.omop.achilles.distribution(
 }
 \arguments{
 \item{analysis_ids}{Integer vector; distribution analysis IDs}
-
-\item{stratum_filters}{Named list; optional stratum filters}
 
 \item{scope}{Character; "per_site" or "pooled"}
 
@@ -33,6 +30,7 @@ ds.omop.achilles.distribution(
 A dsomop_result object
 }
 \description{
-Queries achilles_results_dist for distribution analyses with optional
-stratum filtering. Supports pooling via weighted aggregation.
+Queries achilles_results_dist for distribution analyses.
+Supports pooling via weighted aggregation. Extreme values (min/max)
+are never returned by the server.
 }

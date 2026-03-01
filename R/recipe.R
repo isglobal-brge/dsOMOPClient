@@ -1,7 +1,7 @@
 # ==============================================================================
-# dsOMOPClient v2 - Cart / Recipe Infrastructure
+# dsOMOPClient v2 - Recipe Infrastructure
 # ==============================================================================
-# The cart is the single source of truth for an OMOP extraction recipe.
+# The recipe is the single source of truth for an OMOP extraction recipe.
 # It holds: populations (who), variables (what), filters (constraints),
 # variable blocks (grouped variables), and output specs (how to shape).
 #
@@ -11,7 +11,7 @@
 #   Filter groups: AND/OR nested condition chains
 #   Outputs: multiple tables (wide, long, features, joined_long, etc.)
 #
-# Everything is reproducible via cart_to_code() and cart_export_json().
+# Everything is reproducible via recipe_to_code() and recipe_export_json().
 # ==============================================================================
 
 # ==============================================================================
@@ -576,18 +576,18 @@ print.omop_output <- function(x, ...) {
 }
 
 # ==============================================================================
-# omop_cart: The single source of truth
+# omop_recipe: The single source of truth
 # ==============================================================================
 
-#' Create an empty cart (recipe)
+#' Create an empty extraction recipe
 #'
-#' The cart holds all selections for an OMOP extraction recipe:
+#' The recipe holds all selections for an OMOP extraction recipe:
 #' populations (who), variable blocks (what, grouped), individual variables,
 #' filters (constraints), and output specs (how to shape).
 #'
-#' @return An omop_cart object
+#' @return An omop_recipe object
 #' @export
-omop_cart <- function() {
+omop_recipe <- function() {
   obj <- list(
     populations = list(
       base = omop_population(id = "base", label = "All Persons")
@@ -601,66 +601,66 @@ omop_cart <- function() {
       modified  = Sys.time()
     )
   )
-  class(obj) <- c("omop_cart", "list")
+  class(obj) <- c("omop_recipe", "list")
   obj
 }
 
-#' Add a population to the cart
+#' Add a population to the recipe
 #'
-#' @param cart An omop_cart
+#' @param recipe An omop_recipe
 #' @param population An omop_population object
-#' @return The modified cart
+#' @return The modified recipe
 #' @export
-cart_add_population <- function(cart, population) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_add_population <- function(recipe, population) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
   if (!inherits(population, "omop_population"))
     stop("population must be an omop_population object", call. = FALSE)
   # Validate parent exists
   if (!is.null(population$parent_id) &&
-      !population$parent_id %in% names(cart$populations)) {
-    stop("Parent population '", population$parent_id, "' not found in cart",
+      !population$parent_id %in% names(recipe$populations)) {
+    stop("Parent population '", population$parent_id, "' not found in recipe",
          call. = FALSE)
   }
-  cart$populations[[population$id]] <- population
-  cart$meta$modified <- Sys.time()
-  cart
+  recipe$populations[[population$id]] <- population
+  recipe$meta$modified <- Sys.time()
+  recipe
 }
 
-#' Remove a population from the cart
+#' Remove a population from the recipe
 #'
-#' @param cart An omop_cart
+#' @param recipe An omop_recipe
 #' @param id Character; population ID to remove
-#' @return The modified cart
+#' @return The modified recipe
 #' @export
-cart_remove_population <- function(cart, id) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_remove_population <- function(recipe, id) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
   if (id == "base") stop("Cannot remove base population", call. = FALSE)
-  cart$populations[[id]] <- NULL
-  cart$meta$modified <- Sys.time()
-  cart
+  recipe$populations[[id]] <- NULL
+  recipe$meta$modified <- Sys.time()
+  recipe
 }
 
-#' Add a variable block to the cart
+#' Add a variable block to the recipe
 #'
 #' Expands concept_ids into individual omop_variable objects using the block's
 #' defaults, and ensures unique naming.
 #'
-#' @param cart An omop_cart
+#' @param recipe An omop_recipe
 #' @param block An omop_variable_block object
-#' @return The modified cart
+#' @return The modified recipe
 #' @export
-cart_add_block <- function(cart, block) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_add_block <- function(recipe, block) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
   if (!inherits(block, "omop_variable_block"))
     stop("block must be an omop_variable_block object", call. = FALSE)
 
-  cart$blocks[[block$id]] <- block
+  recipe$blocks[[block$id]] <- block
 
   # Expand concepts into variables
-  existing_names <- names(cart$variables)
+  existing_names <- names(recipe$variables)
   for (i in seq_along(block$concept_ids)) {
     cid <- block$concept_ids[i]
     cname <- if (!is.null(block$concept_names) && i <= length(block$concept_names))
@@ -678,24 +678,24 @@ cart_add_block <- function(cart, block) {
       suffix_mode = block$suffix_mode,
       filters = block$filters
     )
-    cart$variables[[var_name]] <- v
+    recipe$variables[[var_name]] <- v
     existing_names <- c(existing_names, var_name)
   }
 
-  cart$meta$modified <- Sys.time()
-  cart
+  recipe$meta$modified <- Sys.time()
+  recipe
 }
 
-#' Add a variable to the cart
+#' Add a variable to the recipe
 #'
-#' @param cart An omop_cart
+#' @param recipe An omop_recipe
 #' @param variable An omop_variable object, or NULL to construct from ...
 #' @param ... If variable is NULL, arguments passed to omop_variable()
-#' @return The modified cart
+#' @return The modified recipe
 #' @export
-cart_add_variable <- function(cart, variable = NULL, ...) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_add_variable <- function(recipe, variable = NULL, ...) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
 
   if (is.null(variable)) {
     variable <- omop_variable(...)
@@ -704,37 +704,37 @@ cart_add_variable <- function(cart, variable = NULL, ...) {
   }
 
   # Ensure unique name
-  variable$name <- .ensure_unique_name(variable$name, names(cart$variables))
+  variable$name <- .ensure_unique_name(variable$name, names(recipe$variables))
 
-  cart$variables[[variable$name]] <- variable
-  cart$meta$modified <- Sys.time()
-  cart
+  recipe$variables[[variable$name]] <- variable
+  recipe$meta$modified <- Sys.time()
+  recipe
 }
 
-#' Remove a variable from the cart
+#' Remove a variable from the recipe
 #'
-#' @param cart An omop_cart
+#' @param recipe An omop_recipe
 #' @param name Character; variable name to remove
-#' @return The modified cart
+#' @return The modified recipe
 #' @export
-cart_remove_variable <- function(cart, name) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
-  cart$variables[[name]] <- NULL
-  cart$meta$modified <- Sys.time()
-  cart
+recipe_remove_variable <- function(recipe, name) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  recipe$variables[[name]] <- NULL
+  recipe$meta$modified <- Sys.time()
+  recipe
 }
 
-#' Add a filter to the cart
+#' Add a filter to the recipe
 #'
-#' @param cart An omop_cart
+#' @param recipe An omop_recipe
 #' @param filter An omop_filter or omop_filter_group object
 #' @param id Character or NULL; filter ID (auto-generated if NULL)
-#' @return The modified cart
+#' @return The modified recipe
 #' @export
-cart_add_filter <- function(cart, filter, id = NULL) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_add_filter <- function(recipe, filter, id = NULL) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
   if (!inherits(filter, "omop_filter") && !inherits(filter, "omop_filter_group"))
     stop("filter must be an omop_filter or omop_filter_group object",
          call. = FALSE)
@@ -742,72 +742,72 @@ cart_add_filter <- function(cart, filter, id = NULL) {
   if (is.null(id)) {
     ftype <- if (inherits(filter, "omop_filter_group")) filter$operator
              else filter$type
-    id <- paste0("f", length(cart$filters) + 1L, "_", ftype)
+    id <- paste0("f", length(recipe$filters) + 1L, "_", ftype)
   }
-  cart$filters[[id]] <- filter
-  cart$meta$modified <- Sys.time()
-  cart
+  recipe$filters[[id]] <- filter
+  recipe$meta$modified <- Sys.time()
+  recipe
 }
 
-#' Remove a filter from the cart
+#' Remove a filter from the recipe
 #'
-#' @param cart An omop_cart
+#' @param recipe An omop_recipe
 #' @param id Character; filter ID to remove
-#' @return The modified cart
+#' @return The modified recipe
 #' @export
-cart_remove_filter <- function(cart, id) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
-  cart$filters[[id]] <- NULL
-  cart$meta$modified <- Sys.time()
-  cart
+recipe_remove_filter <- function(recipe, id) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  recipe$filters[[id]] <- NULL
+  recipe$meta$modified <- Sys.time()
+  recipe
 }
 
-#' Add an output specification to the cart
+#' Add an output specification to the recipe
 #'
-#' @param cart An omop_cart
+#' @param recipe An omop_recipe
 #' @param output An omop_output object
-#' @return The modified cart
+#' @return The modified recipe
 #' @export
-cart_add_output <- function(cart, output) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_add_output <- function(recipe, output) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
   if (!inherits(output, "omop_output"))
     stop("output must be an omop_output object", call. = FALSE)
 
-  cart$outputs[[output$name]] <- output
-  cart$meta$modified <- Sys.time()
-  cart
+  recipe$outputs[[output$name]] <- output
+  recipe$meta$modified <- Sys.time()
+  recipe
 }
 
-#' Remove an output specification from the cart
+#' Remove an output specification from the recipe
 #'
-#' @param cart An omop_cart
+#' @param recipe An omop_recipe
 #' @param name Character; output name to remove
-#' @return The modified cart
+#' @return The modified recipe
 #' @export
-cart_remove_output <- function(cart, name) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
-  cart$outputs[[name]] <- NULL
-  cart$meta$modified <- Sys.time()
-  cart
+recipe_remove_output <- function(recipe, name) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  recipe$outputs[[name]] <- NULL
+  recipe$meta$modified <- Sys.time()
+  recipe
 }
 
-#' Clear the entire cart
+#' Clear the entire recipe
 #'
-#' @param cart An omop_cart
-#' @return An empty cart
+#' @param recipe An omop_recipe
+#' @return An empty recipe
 #' @export
-cart_clear <- function(cart) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
-  omop_cart()
+recipe_clear <- function(recipe) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  omop_recipe()
 }
 
 #' @export
-print.omop_cart <- function(x, ...) {
-  cat("=== omop_cart ===\n")
+print.omop_recipe <- function(x, ...) {
+  cat("=== omop_recipe ===\n")
 
   cat("Populations (", length(x$populations), "):\n")
   for (pid in names(x$populations)) {
@@ -854,32 +854,32 @@ print.omop_cart <- function(x, ...) {
 }
 
 # ==============================================================================
-# Cart -> Plan conversion
+# Recipe -> Plan conversion
 # ==============================================================================
 
-#' Convert a cart to an extraction plan
+#' Convert a recipe to an extraction plan
 #'
-#' Translates the cart's populations, variables, filters, and outputs into
+#' Translates the recipe's populations, variables, filters, and outputs into
 #' an omop_plan suitable for server-side execution.
 #'
-#' @param cart An omop_cart object
+#' @param recipe An omop_recipe object
 #' @return An omop_plan object
 #' @export
-cart_to_plan <- function(cart) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_to_plan <- function(recipe) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
 
   plan <- ds.omop.plan()
 
   # Build cohort from base population + population-level filters
-  base_pop <- cart$populations[["base"]]
+  base_pop <- recipe$populations[["base"]]
   if (!is.null(base_pop$cohort_definition_id)) {
     plan <- ds.omop.plan.cohort(plan,
       cohort_definition_id = base_pop$cohort_definition_id)
   }
 
   # Collect all population-level filters
-  pop_filters <- .collect_pop_filters(cart)
+  pop_filters <- .collect_pop_filters(recipe)
   if (length(pop_filters) > 0) {
     spec <- lapply(pop_filters, function(f) {
       list(type = f$type, params = f$params)
@@ -892,10 +892,10 @@ cart_to_plan <- function(cart) {
   }
 
   # Group variables by output
-  for (out_name in names(cart$outputs)) {
-    out <- cart$outputs[[out_name]]
-    var_names <- out$variables %||% names(cart$variables)
-    vars <- cart$variables[var_names]
+  for (out_name in names(recipe$outputs)) {
+    out <- recipe$outputs[[out_name]]
+    var_names <- out$variables %||% names(recipe$variables)
+    vars <- recipe$variables[var_names]
     vars <- Filter(Negate(is.null), vars)
 
     if (length(vars) == 0) next
@@ -1012,7 +1012,7 @@ cart_to_plan <- function(cart) {
   }
 
   # Apply row-level filters to relevant outputs (preserving AND/OR tree)
-  row_filter_items <- .extract_filters_by_level(cart$filters, "row")
+  row_filter_items <- .extract_filters_by_level(recipe$filters, "row")
   if (length(row_filter_items) > 0) {
     filter_tree <- .compile_filter_tree(row_filter_items)
     for (out_name in names(plan$outputs)) {
@@ -1048,13 +1048,13 @@ cart_to_plan <- function(cart) {
 }
 
 # Collect all population-level filters (flattening groups)
-.collect_pop_filters <- function(cart) {
-  .flatten_filters(cart$filters, level = "population")
+.collect_pop_filters <- function(recipe) {
+  .flatten_filters(recipe$filters, level = "population")
 }
 
 # Collect all row-level filters (flattening groups)
-.collect_row_filters <- function(cart) {
-  .flatten_filters(cart$filters, level = "row")
+.collect_row_filters <- function(recipe) {
+  .flatten_filters(recipe$filters, level = "row")
 }
 
 # Flatten filter groups into a list of individual filters at a given level
@@ -1149,29 +1149,29 @@ cart_to_plan <- function(cart) {
 }
 
 # ==============================================================================
-# Cart -> Code generation (minimal, no library())
+# Recipe -> Code generation (minimal, no library())
 # ==============================================================================
 
-#' Generate reproducible R code from a cart
+#' Generate reproducible R code from a recipe
 #'
-#' Produces minimal R code that recreates the cart. Does not include
+#' Produces minimal R code that recreates the recipe. Does not include
 #' library() calls or header comments.
 #'
-#' @param cart An omop_cart object
+#' @param recipe An omop_recipe object
 #' @return Character string of R code
 #' @export
-cart_to_code <- function(cart) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_to_code <- function(recipe) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
 
-  lines <- c("cart <- omop_cart()")
+  lines <- c("recipe <- omop_recipe()")
 
   # Populations (skip base)
-  for (pid in names(cart$populations)) {
+  for (pid in names(recipe$populations)) {
     if (pid == "base") next
-    p <- cart$populations[[pid]]
+    p <- recipe$populations[[pid]]
     lines <- c(lines, paste0(
-      "cart <- cart_add_population(cart, ",
+      "recipe <- recipe_add_population(recipe, ",
       .build_code("omop_population",
         id = p$id, label = p$label, parent_id = p$parent_id,
         cohort_definition_id = p$cohort_definition_id),
@@ -1180,10 +1180,10 @@ cart_to_code <- function(cart) {
   }
 
   # Blocks
-  for (bid in names(cart$blocks)) {
-    b <- cart$blocks[[bid]]
+  for (bid in names(recipe$blocks)) {
+    b <- recipe$blocks[[bid]]
     lines <- c(lines, paste0(
-      "cart <- cart_add_block(cart, ",
+      "recipe <- recipe_add_block(recipe, ",
       .build_code("omop_variable_block",
         id = b$id, table = b$table,
         concept_ids = b$concept_ids,
@@ -1193,7 +1193,7 @@ cart_to_code <- function(cart) {
   }
 
   # Individual variables (not from blocks)
-  block_vars <- unlist(lapply(cart$blocks, function(b) {
+  block_vars <- unlist(lapply(recipe$blocks, function(b) {
     vapply(seq_along(b$concept_ids), function(i) {
       cname <- if (!is.null(b$concept_names) && i <= length(b$concept_names))
         b$concept_names[i] else NULL
@@ -1201,11 +1201,11 @@ cart_to_code <- function(cart) {
       else paste0(b$table, "_c", b$concept_ids[i])
     }, character(1))
   }))
-  for (nm in names(cart$variables)) {
+  for (nm in names(recipe$variables)) {
     if (nm %in% block_vars) next
-    v <- cart$variables[[nm]]
+    v <- recipe$variables[[nm]]
     lines <- c(lines, paste0(
-      "cart <- cart_add_variable(cart, ",
+      "recipe <- recipe_add_variable(recipe, ",
       .build_code("omop_variable",
         name = v$name, table = v$table, column = v$column,
         concept_id = v$concept_id, concept_name = v$concept_name,
@@ -1215,26 +1215,26 @@ cart_to_code <- function(cart) {
   }
 
   # Filters
-  for (id in names(cart$filters)) {
-    f <- cart$filters[[id]]
+  for (id in names(recipe$filters)) {
+    f <- recipe$filters[[id]]
     if (inherits(f, "omop_filter_group")) {
       lines <- c(lines, paste0(
-        "cart <- cart_add_filter(cart, ",
+        "recipe <- recipe_add_filter(recipe, ",
         .codegen_filter_group(f), ', id = "', id, '")'
       ))
     } else {
       lines <- c(lines, paste0(
-        "cart <- cart_add_filter(cart, ",
+        "recipe <- recipe_add_filter(recipe, ",
         .codegen_filter(f), ', id = "', id, '")'
       ))
     }
   }
 
   # Outputs
-  for (nm in names(cart$outputs)) {
-    o <- cart$outputs[[nm]]
+  for (nm in names(recipe$outputs)) {
+    o <- recipe$outputs[[nm]]
     lines <- c(lines, paste0(
-      "cart <- cart_add_output(cart, ",
+      "recipe <- recipe_add_output(recipe, ",
       .build_code("omop_output",
         name = o$name, type = o$type, population_id = o$population_id,
         result_symbol = o$result_symbol),
@@ -1284,15 +1284,15 @@ cart_to_code <- function(cart) {
 # JSON import/export
 # ==============================================================================
 
-#' Export a cart to JSON
+#' Export a recipe to JSON
 #'
-#' @param cart An omop_cart object
+#' @param recipe An omop_recipe object
 #' @param file Character or NULL; file path to write (NULL returns string)
 #' @return If file is NULL, returns JSON string; otherwise writes to file
 #' @export
-cart_export_json <- function(cart, file = NULL) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_export_json <- function(recipe, file = NULL) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
 
   # Strip classes for clean JSON serialization
   strip <- function(x) {
@@ -1305,11 +1305,11 @@ cart_export_json <- function(cart, file = NULL) {
 
   export <- list(
     version     = "2.0",
-    populations = strip(cart$populations),
-    blocks      = strip(cart$blocks),
-    variables   = strip(cart$variables),
-    filters     = strip(cart$filters),
-    outputs     = strip(cart$outputs)
+    populations = strip(recipe$populations),
+    blocks      = strip(recipe$blocks),
+    variables   = strip(recipe$variables),
+    filters     = strip(recipe$filters),
+    outputs     = strip(recipe$outputs)
   )
 
   json <- jsonlite::toJSON(export, auto_unbox = TRUE, pretty = TRUE,
@@ -1319,12 +1319,12 @@ cart_export_json <- function(cart, file = NULL) {
   invisible(file)
 }
 
-#' Import a cart from JSON
+#' Import a recipe from JSON
 #'
 #' @param json Character; JSON string or file path
-#' @return An omop_cart object
+#' @return An omop_recipe object
 #' @export
-cart_import_json <- function(json) {
+recipe_import_json <- function(json) {
   # Detect if it's a file path
   if (length(json) == 1 && file.exists(json)) {
     json <- paste(readLines(json, warn = FALSE), collapse = "\n")
@@ -1332,7 +1332,7 @@ cart_import_json <- function(json) {
 
   data <- jsonlite::fromJSON(json, simplifyVector = FALSE)
 
-  cart <- omop_cart()
+  recipe <- omop_recipe()
 
   # Restore populations
   if (!is.null(data$populations)) {
@@ -1344,7 +1344,7 @@ cart_import_json <- function(json) {
         parent_id = p$parent_id,
         cohort_definition_id = p$cohort_definition_id
       )
-      cart$populations[[pid]] <- pop
+      recipe$populations[[pid]] <- pop
     }
   }
 
@@ -1362,7 +1362,7 @@ cart_import_json <- function(json) {
         format = v$format %||% "raw",
         value_source = v$value_source
       )
-      cart$variables[[nm]] <- var
+      recipe$variables[[nm]] <- var
     }
   }
 
@@ -1380,7 +1380,7 @@ cart_import_json <- function(json) {
         params = f$params %||% list(),
         label = f$label
       )
-      cart$filters[[fid]] <- filt
+      recipe$filters[[fid]] <- filt
     }
   }
 
@@ -1395,34 +1395,34 @@ cart_import_json <- function(json) {
         population_id = o$population_id %||% "base",
         result_symbol = o$result_symbol
       )
-      cart$outputs[[nm]] <- out
+      recipe$outputs[[nm]] <- out
     }
   }
 
-  cart
+  recipe
 }
 
 # ==============================================================================
 # Preview schema
 # ==============================================================================
 
-#' Preview the output schema for a cart
+#' Preview the output schema for a recipe
 #'
 #' Returns projected columns, join keys, and output shape for each output,
 #' without executing anything.
 #'
-#' @param cart An omop_cart object
+#' @param recipe An omop_recipe object
 #' @return A list of data.frames, one per output
 #' @export
-cart_preview_schema <- function(cart) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_preview_schema <- function(recipe) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
 
   schemas <- list()
-  for (out_name in names(cart$outputs)) {
-    out <- cart$outputs[[out_name]]
-    var_names <- out$variables %||% names(cart$variables)
-    vars <- cart$variables[var_names]
+  for (out_name in names(recipe$outputs)) {
+    out <- recipe$outputs[[out_name]]
+    var_names <- out$variables %||% names(recipe$variables)
+    vars <- recipe$variables[var_names]
     vars <- Filter(Negate(is.null), vars)
 
     rows <- lapply(vars, function(v) {
@@ -1461,29 +1461,29 @@ cart_preview_schema <- function(cart) {
 }
 
 # ==============================================================================
-# Cart execution helpers
+# Recipe execution helpers
 # ==============================================================================
 
-#' Preview aggregate stats for a cart (without materializing)
+#' Preview aggregate stats for a recipe (without materializing)
 #'
 #' Runs aggregate-only queries to show safe counts and distributions
-#' for the variables in the cart.
+#' for the variables in the recipe.
 #'
-#' @param cart An omop_cart object
+#' @param recipe An omop_recipe object
 #' @param scope Character; "per_site", "pooled", or "both"
 #' @param symbol Character; OMOP session symbol
 #' @param conns DSI connections or NULL
 #' @return A dsomop_result with aggregate stats per output
 #' @export
-cart_preview_stats <- function(cart,
+recipe_preview_stats <- function(recipe,
                                scope = c("per_site", "pooled", "both"),
                                symbol = "omop", conns = NULL) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
   scope <- match.arg(scope)
 
   # Collect tables referenced
-  tables <- unique(vapply(cart$variables, function(v) v$table, character(1)))
+  tables <- unique(vapply(recipe$variables, function(v) v$table, character(1)))
 
   results <- list()
   for (tbl in tables) {
@@ -1501,47 +1501,47 @@ cart_preview_stats <- function(cart,
   dsomop_result(
     per_site = results,
     meta = list(
-      call_code = .build_code("cart_preview_stats",
+      call_code = .build_code("recipe_preview_stats",
         scope = scope, symbol = symbol),
       scope = scope
     )
   )
 }
 
-#' Execute a cart: compile to plan and run
+#' Execute a recipe: compile to plan and run
 #'
-#' @param cart An omop_cart object
+#' @param recipe An omop_recipe object
 #' @param out Named character vector; output_name -> symbol_name mapping.
 #'   If NULL, auto-generates symbol names.
 #' @param symbol Character; OMOP session symbol
 #' @param conns DSI connections or NULL
 #' @return Invisible; the output symbol mapping
 #' @export
-cart_execute <- function(cart, out = NULL, symbol = "omop", conns = NULL) {
-  if (!inherits(cart, "omop_cart"))
-    stop("cart must be an omop_cart object", call. = FALSE)
+recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
 
-  plan <- cart_to_plan(cart)
+  plan <- recipe_to_plan(recipe)
 
-  # Detect split outputs: plan output names that don't match cart output names
-  # e.g., cart output "my_data" → plan outputs "my_data_condition", "my_data_measurement"
-  cart_out_names <- names(cart$outputs)
+  # Detect split outputs: plan output names that don't match recipe output names
+  # e.g., recipe output "my_data" → plan outputs "my_data_condition", "my_data_measurement"
+  recipe_out_names <- names(recipe$outputs)
   plan_out_names <- names(plan$outputs)
 
-  # Map plan outputs back to cart outputs for symbol generation
+  # Map plan outputs back to recipe outputs for symbol generation
   if (is.null(out)) {
     symbols <- vapply(plan_out_names, function(nm) {
       # Direct match
-      o <- cart$outputs[[nm]]
+      o <- recipe$outputs[[nm]]
       if (!is.null(o) && !is.null(o$result_symbol)) return(o$result_symbol)
       if (!is.null(o)) return(paste0("D_", nm))
-      # Check if this is a split output (e.g., "mydata_condition" from cart "mydata")
-      for (cart_nm in cart_out_names) {
-        if (startsWith(nm, paste0(cart_nm, "_"))) {
-          o <- cart$outputs[[cart_nm]]
+      # Check if this is a split output (e.g., "mydata_condition" from recipe "mydata")
+      for (recipe_nm in recipe_out_names) {
+        if (startsWith(nm, paste0(recipe_nm, "_"))) {
+          o <- recipe$outputs[[recipe_nm]]
           sym_base <- if (!is.null(o$result_symbol)) o$result_symbol
-                      else paste0("D_", cart_nm)
-          suffix <- sub(paste0("^", cart_nm, "_"), "", nm)
+                      else paste0("D_", recipe_nm)
+          suffix <- sub(paste0("^", recipe_nm, "_"), "", nm)
           return(paste0(sym_base, "_", suffix))
         }
       }

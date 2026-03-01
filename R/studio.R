@@ -190,7 +190,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       selected_concept_id = NULL,
       selected_concept_name = NULL,
       concept_set = integer(0),
-      cart = omop_cart(),
+      recipe = omop_recipe(),
       plan = ds.omop.plan(),
       plan_outputs = list(),
       script_lines = character(0),
@@ -512,37 +512,37 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     .cdm-info { font-size: 0.875rem; }
     .cdm-info dt { font-weight: 600; color: #374151; }
 
-    /* Cart items */
-    .cart-item {
+    /* Recipe items */
+    .recipe-item {
       padding: 0.6em 0.75em; margin: 0.35em 0;
       border: 1px solid #e5e7eb; border-radius: 0.5rem;
       background: #fff; font-size: 0.84em;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .cart-item:hover {
+    .recipe-item:hover {
       border-color: #cbd5e1; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
-    .cart-item .cart-item-name {
+    .recipe-item .recipe-item-name {
       font-weight: 600; color: #1e293b;
       max-width: 260px; overflow: hidden;
       text-overflow: ellipsis; white-space: nowrap;
       display: inline-block;
     }
-    .cart-item .cart-item-meta { color: #64748b; font-size: 0.82em; }
-    .cart-section-header {
+    .recipe-item .recipe-item-meta { color: #64748b; font-size: 0.82em; }
+    .recipe-section-header {
       font-weight: 600; font-size: 0.85em; color: #475569;
       border-bottom: 1px solid #e5e7eb;
       padding-bottom: 0.35em; margin-top: 1em; margin-bottom: 0.4em;
       text-transform: uppercase; letter-spacing: 0.04em;
     }
-    .cart-badge {
+    .recipe-badge {
       display: inline-block; padding: 0.15em 0.55em;
       border-radius: 9999px; font-size: 0.7em;
       font-weight: 600; margin-left: 0.25em;
     }
-    .cart-badge-var { background: #ecfdf5; color: #065f46; }
-    .cart-badge-filter { background: #fffbeb; color: #92400e; }
-    .cart-badge-output { background: #eff6ff; color: #1e40af; }
+    .recipe-badge-var { background: #ecfdf5; color: #065f46; }
+    .recipe-badge-filter { background: #fffbeb; color: #92400e; }
+    .recipe-badge-output { background: #eff6ff; color: #1e40af; }
     .btn-quick-action {
       padding: 0.1em 0.4em; font-size: 0.7em;
       margin: 0 0.1em; border-radius: 0.25rem;
@@ -694,15 +694,15 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       border-color: rgba(255,255,255,0.04); }
     [data-bs-theme='dark'] .metric-card .value { color: #e2e8f0; }
     [data-bs-theme='dark'] .metric-card .label { color: #94a3b8; }
-    [data-bs-theme='dark'] .cart-item {
+    [data-bs-theme='dark'] .recipe-item {
       background: rgba(30,41,59,0.8); border-color: #334155;
     }
-    [data-bs-theme='dark'] .cart-item:hover {
+    [data-bs-theme='dark'] .recipe-item:hover {
       border-color: #475569; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
     }
-    [data-bs-theme='dark'] .cart-item .cart-item-name { color: #e2e8f0; }
-    [data-bs-theme='dark'] .cart-item .cart-item-meta { color: #94a3b8; }
-    [data-bs-theme='dark'] .cart-section-header { color: #94a3b8; border-color: #334155; }
+    [data-bs-theme='dark'] .recipe-item .recipe-item-name { color: #e2e8f0; }
+    [data-bs-theme='dark'] .recipe-item .recipe-item-meta { color: #94a3b8; }
+    [data-bs-theme='dark'] .recipe-section-header { color: #94a3b8; border-color: #334155; }
     [data-bs-theme='dark'] .cdm-info dt { color: #e2e8f0; }
     [data-bs-theme='dark'] .clickable-row:hover { background-color: #1e293b !important; }
     [data-bs-theme='dark'] .server-badge-ok { background: #064e3b; color: #6ee7b7; }
@@ -756,9 +756,9 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     [data-bs-theme='dark'] .concept-badge {
       background: linear-gradient(135deg, #3b82f6, #2563eb);
     }
-    [data-bs-theme='dark'] .cart-badge-var { background: #064e3b; color: #6ee7b7; }
-    [data-bs-theme='dark'] .cart-badge-filter { background: #78350f; color: #fcd34d; }
-    [data-bs-theme='dark'] .cart-badge-output { background: #1e3a5f; color: #93c5fd; }
+    [data-bs-theme='dark'] .recipe-badge-var { background: #064e3b; color: #6ee7b7; }
+    [data-bs-theme='dark'] .recipe-badge-filter { background: #78350f; color: #fcd34d; }
+    [data-bs-theme='dark'] .recipe-badge-output { background: #1e3a5f; color: #93c5fd; }
   "
 }
 

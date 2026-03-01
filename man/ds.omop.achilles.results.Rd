@@ -6,7 +6,6 @@
 \usage{
 ds.omop.achilles.results(
   analysis_ids,
-  stratum_filters = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",
@@ -16,8 +15,6 @@ ds.omop.achilles.results(
 }
 \arguments{
 \item{analysis_ids}{Integer vector; which analysis IDs to retrieve}
-
-\item{stratum_filters}{Named list; e.g. list(stratum_1 = "201820")}
 
 \item{scope}{Character; "per_site" or "pooled"}
 
@@ -34,5 +31,5 @@ A dsomop_result object
 }
 \description{
 Queries achilles_results for specified analysis IDs with optional stratum
-filtering. Supports pooling via count summation across servers.
+Supports pooling via count summation across servers.
 }

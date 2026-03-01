@@ -601,7 +601,7 @@
         } else paste0("concept_", cid)
         v <- omop_variable(table = tbl, concept_id = cid,
                            concept_name = cname, format = "raw")
-        state$cart <- cart_add_variable(state$cart, v)
+        state$recipe <- recipe_add_variable(state$recipe, v)
       }
       shiny::showNotification(paste(length(sel), "variable(s) added to Builder"),
                               type = "message")
@@ -633,7 +633,7 @@
         cname <- data$concept_map[[as.character(cid)]]
         tryCatch({
           f <- omop_filter_has_concept(cid, tbl, cname)
-          state$cart <- cart_add_filter(state$cart, f)
+          state$recipe <- recipe_add_filter(state$recipe, f)
           added <- added + 1L
         }, error = function(e) NULL)
       }

@@ -1,7 +1,7 @@
 # ==============================================================================
-# MODULE: Build (consolidated Cart + Plan)
+# MODULE: Build (consolidated Recipe + Plan)
 # ==============================================================================
-# Wraps the Cart (formerly Basket) and Plan (formerly Plan from Explorer)
+# Wraps the Recipe (formerly Basket) and Plan (formerly Plan from Explorer)
 # sub-modules into a single navset_pill interface.
 # ==============================================================================
 
@@ -13,8 +13,8 @@
   ns <- shiny::NS(id)
   bslib::navset_pill(
     id = ns("build_nav"),
-    bslib::nav_panel("Builder", icon = shiny::icon("hammer"),
-      .mod_build_cart_ui(ns("cart"))),
+    bslib::nav_panel("Recipe", icon = shiny::icon("hammer"),
+      .mod_build_recipe_ui(ns("recipe"))),
     bslib::nav_panel("Plan", icon = shiny::icon("drafting-compass"),
       .mod_build_plan_ui(ns("plan")))
   )
@@ -22,23 +22,23 @@
 
 .mod_build_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
-    .mod_build_cart_server("cart", state)
+    .mod_build_recipe_server("recipe", state)
     .mod_build_plan_server("plan", state)
   })
 }
 
 # ==============================================================================
-# SUB-MODULE: Cart (formerly Basket)
+# SUB-MODULE: Recipe (formerly Basket)
 # ==============================================================================
-# Full cart management: populations, variable blocks, filters (with groups),
+# Full recipe management: populations, variable blocks, filters (with groups),
 # enhanced outputs, variable wizard, JSON import/export, schema preview.
 # ==============================================================================
 
-.mod_build_cart_ui <- function(id) {
+.mod_build_recipe_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
-      title = "Builder Actions", width = 320,
+      title = "Recipe Actions", width = 320,
 
       bslib::accordion(
         id = ns("builder_accordion"),
@@ -163,7 +163,7 @@
                          accept = ".json", buttonLabel = "Choose file")
       ),
       # --- Clear ---
-      shiny::actionButton(ns("clear_cart"),
+      shiny::actionButton(ns("clear_recipe"),
         shiny::tagList(shiny::icon("trash-can"), " Clear"),
         class = "btn-sm btn-outline-danger w-100")
     ),
@@ -189,17 +189,17 @@
       )
     ),
 
-    # --- Cart Contents ---
+    # --- Recipe Contents ---
     bslib::card(
       full_screen = TRUE,
       bslib::card_header(
         shiny::div(class = "d-flex justify-content-between align-items-center",
-          shiny::span("Builder Contents"),
-          shiny::uiOutput(ns("cart_counts"), inline = TRUE)
+          shiny::span("Recipe Contents"),
+          shiny::uiOutput(ns("recipe_counts"), inline = TRUE)
         )
       ),
       bslib::card_body(
-        shiny::uiOutput(ns("cart_display"))
+        shiny::uiOutput(ns("recipe_display"))
       )
     ),
 
@@ -218,18 +218,18 @@
       bslib::card_header(
         class = "d-flex justify-content-between align-items-center",
         shiny::span("Generated Code"),
-        shiny::actionButton(ns("copy_cart_code"), NULL,
+        shiny::actionButton(ns("copy_recipe_code"), NULL,
           icon = shiny::icon("copy"),
           class = "btn-sm btn-outline-secondary")
       ),
       bslib::card_body(
-        shiny::uiOutput(ns("cart_code_html"))
+        shiny::uiOutput(ns("recipe_code_html"))
       )
     )
   )
 }
 
-.mod_build_cart_server <- function(id, state) {
+.mod_build_recipe_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -249,7 +249,7 @@
 
     # Update population dropdown when populations change
     shiny::observe({
-      pop_ids <- names(state$cart$populations)
+      pop_ids <- names(state$recipe$populations)
       shiny::updateSelectInput(session, "output_pop", choices = pop_ids)
     })
 
@@ -274,7 +274,7 @@
           table = tbl, concept_id = cid,
           concept_name = cname_val, format = fmt
         )
-        state$cart <- cart_add_variable(state$cart, v)
+        state$recipe <- recipe_add_variable(state$recipe, v)
         shiny::showNotification(
           paste("Added variable:", v$name), type = "message", duration = 2)
       }, error = function(e) {
@@ -301,7 +301,7 @@
         b <- omop_variable_block(
           table = tbl, concept_ids = ids, format = fmt
         )
-        state$cart <- cart_add_block(state$cart, b)
+        state$recipe <- recipe_add_block(state$recipe, b)
         shiny::showNotification(
           paste("Added block with", length(ids), "concepts"),
           type = "message", duration = 2)
@@ -354,7 +354,7 @@
             start = as.character(input$date_start),
             end = as.character(input$date_end))
         )
-        state$cart <- cart_add_filter(state$cart, f)
+        state$recipe <- recipe_add_filter(state$recipe, f)
         shiny::showNotification(
           paste("Added filter:", f$label), type = "message", duration = 2)
       }, error = function(e) {
@@ -378,7 +378,7 @@
         o <- omop_output(name = nm, type = input$output_type,
                           population_id = pop_id,
                           result_symbol = if (nchar(sym) > 0) sym else NULL)
-        state$cart <- cart_add_output(state$cart, o)
+        state$recipe <- recipe_add_output(state$recipe, o)
         shiny::showNotification(
           paste("Added output:", nm), type = "message", duration = 2)
       }, error = function(e) {
@@ -398,7 +398,7 @@
         shiny::textInput(ns("pop_label"), "Label",
                          placeholder = "e.g. Adults 18-65"),
         shiny::selectInput(ns("pop_parent"), "Parent Population",
-          choices = names(state$cart$populations)),
+          choices = names(state$recipe$populations)),
         easyClose = TRUE,
         footer = shiny::tagList(
           shiny::modalButton("Cancel"),
@@ -418,7 +418,7 @@
       }
       tryCatch({
         p <- omop_population(id = pid, label = plabel, parent_id = parent)
-        state$cart <- cart_add_population(state$cart, p)
+        state$recipe <- recipe_add_population(state$recipe, p)
         shiny::removeModal()
         shiny::showNotification(
           paste("Added population:", pid), type = "message", duration = 2)
@@ -429,11 +429,11 @@
     })
 
     # =========================================================================
-    # Clear Cart (with confirmation)
+    # Clear Recipe (with confirmation)
     # =========================================================================
-    shiny::observeEvent(input$clear_cart, {
+    shiny::observeEvent(input$clear_recipe, {
       shiny::showModal(shiny::modalDialog(
-        title = "Clear Builder?",
+        title = "Clear Recipe?",
         "This will remove all variables, filters, and outputs. This cannot be undone.",
         easyClose = TRUE,
         footer = shiny::tagList(
@@ -444,21 +444,21 @@
       ))
     })
     shiny::observeEvent(input$confirm_clear, {
-      state$cart <- omop_cart()
+      state$recipe <- omop_recipe()
       shiny::removeModal()
-      shiny::showNotification("Builder cleared.", type = "message", duration = 2)
+      shiny::showNotification("Recipe cleared.", type = "message", duration = 2)
     })
 
     # =========================================================================
-    # Auto-generate Plan from Cart on changes
+    # Auto-generate Plan from Recipe on changes
     # =========================================================================
     shiny::observe({
-      cart <- state$cart
-      has_content <- length(cart$variables) > 0 || length(cart$blocks) > 0 ||
-                     length(cart$filters) > 0 || length(cart$outputs) > 0
+      recipe <- state$recipe
+      has_content <- length(recipe$variables) > 0 || length(recipe$blocks) > 0 ||
+                     length(recipe$filters) > 0 || length(recipe$outputs) > 0
       if (has_content) {
         tryCatch({
-          plan <- cart_to_plan(cart)
+          plan <- recipe_to_plan(recipe)
           state$plan <- plan
         }, error = function(e) NULL)
       }
@@ -469,20 +469,20 @@
     # =========================================================================
     output$export_json <- shiny::downloadHandler(
       filename = function() {
-        paste0("omop_cart_", format(Sys.Date(), "%Y%m%d"), ".json")
+        paste0("omop_recipe_", format(Sys.Date(), "%Y%m%d"), ".json")
       },
       content = function(file) {
-        cart_export_json(state$cart, file = file)
+        recipe_export_json(state$recipe, file = file)
       }
     )
 
     shiny::observeEvent(input$import_file, {
       req(input$import_file)
       tryCatch({
-        imported <- cart_import_json(input$import_file$datapath)
-        state$cart <- imported
+        imported <- recipe_import_json(input$import_file$datapath)
+        state$recipe <- imported
         shiny::showNotification(
-          paste("Imported cart:",
+          paste("Imported recipe:",
                 length(imported$variables), "variables,",
                 length(imported$filters), "filters,",
                 length(imported$outputs), "outputs"),
@@ -494,27 +494,27 @@
     })
 
     # =========================================================================
-    # Cart Counts Badge
+    # Recipe Counts Badge
     # =========================================================================
-    output$cart_counts <- shiny::renderUI({
-      cart <- state$cart
-      np <- length(cart$populations)
-      nb <- length(cart$blocks)
-      nv <- length(cart$variables)
-      nf <- length(cart$filters)
-      no <- length(cart$outputs)
+    output$recipe_counts <- shiny::renderUI({
+      recipe <- state$recipe
+      np <- length(recipe$populations)
+      nb <- length(recipe$blocks)
+      nv <- length(recipe$variables)
+      nf <- length(recipe$filters)
+      no <- length(recipe$outputs)
       shiny::tagList(
-        if (np > 1) shiny::span(class = "cart-badge",
+        if (np > 1) shiny::span(class = "recipe-badge",
           style = "background: #e8daef; color: #6c3483;",
           paste(np, "pop")),
-        if (nb > 0) shiny::span(class = "cart-badge",
+        if (nb > 0) shiny::span(class = "recipe-badge",
           style = "background: #d6eaf8; color: #1a5276;",
           paste(nb, "block")),
-        shiny::span(class = "cart-badge cart-badge-var",
+        shiny::span(class = "recipe-badge recipe-badge-var",
                     paste(nv, "var")),
-        shiny::span(class = "cart-badge cart-badge-filter",
+        shiny::span(class = "recipe-badge recipe-badge-filter",
                     paste(nf, "filter")),
-        shiny::span(class = "cart-badge cart-badge-output",
+        shiny::span(class = "recipe-badge recipe-badge-output",
                     paste(no, "output"))
       )
     })
@@ -523,8 +523,8 @@
     # Population Tree
     # =========================================================================
     output$pop_tree <- shiny::renderUI({
-      cart <- state$cart
-      pops <- cart$populations
+      recipe <- state$recipe
+      pops <- recipe$populations
       if (length(pops) == 0) return(shiny::p("No populations."))
 
       # Build tree (simple indented list)
@@ -537,21 +537,21 @@
 
         node <- shiny::div(
           style = indent,
-          class = "cart-item d-flex justify-content-between align-items-center",
+          class = "recipe-item d-flex justify-content-between align-items-center",
           shiny::div(
-            shiny::span(class = "cart-item-name",
+            shiny::span(class = "recipe-item-name",
               if (depth > 0) shiny::icon("arrow-right", class = "me-1"),
               pid
             ),
             shiny::br(),
-            shiny::span(class = "cart-item-meta", p$label)
+            shiny::span(class = "recipe-item-meta", p$label)
           ),
           if (pid != "base") {
             local({
               eid <- gsub("'", "\\\\'", pid)
               rm_js <- sprintf(
                 "Shiny.setInputValue('%s', JSON.stringify({type:'population',id:'%s'}), {priority:'event'})",
-                ns("cart_remove_item"), eid)
+                ns("recipe_remove_item"), eid)
               shiny::tags$button(
                 class = "btn btn-sm btn-outline-danger",
                 style = "padding: 0.1em 0.4em;",
@@ -578,10 +578,10 @@
     })
 
     # =========================================================================
-    # Cart Display (JS delegation for edit/remove buttons)
+    # Recipe Display (JS delegation for edit/remove buttons)
     # =========================================================================
-    output$cart_display <- shiny::renderUI({
-      cart <- state$cart
+    output$recipe_display <- shiny::renderUI({
+      recipe <- state$recipe
       sections <- list()
 
       # Helper: edit + remove buttons via JS delegation
@@ -589,10 +589,10 @@
         eid <- gsub("'", "\\\\'", item_id)
         edit_js <- sprintf(
           "Shiny.setInputValue('%s', JSON.stringify({type:'%s',id:'%s'}), {priority:'event'})",
-          ns("cart_edit_item"), item_type, eid)
+          ns("recipe_edit_item"), item_type, eid)
         rm_js <- sprintf(
           "Shiny.setInputValue('%s', JSON.stringify({type:'%s',id:'%s'}), {priority:'event'})",
-          ns("cart_remove_item"), item_type, eid)
+          ns("recipe_remove_item"), item_type, eid)
         shiny::div(class = "d-flex gap-1",
           shiny::tags$button(
             class = "btn btn-sm btn-outline-secondary",
@@ -613,7 +613,7 @@
         eid <- gsub("'", "\\\\'", item_id)
         rm_js <- sprintf(
           "Shiny.setInputValue('%s', JSON.stringify({type:'%s',id:'%s'}), {priority:'event'})",
-          ns("cart_remove_item"), item_type, eid)
+          ns("recipe_remove_item"), item_type, eid)
         shiny::tags$button(
           class = "btn btn-sm btn-outline-danger",
           style = "padding: 0.1em 0.4em;",
@@ -623,15 +623,15 @@
       }
 
       # --- Blocks section ---
-      if (length(cart$blocks) > 0) {
-        block_items <- lapply(names(cart$blocks), function(bid) {
-          b <- cart$blocks[[bid]]
+      if (length(recipe$blocks) > 0) {
+        block_items <- lapply(names(recipe$blocks), function(bid) {
+          b <- recipe$blocks[[bid]]
           shiny::div(
-            class = "cart-item d-flex justify-content-between align-items-center",
+            class = "recipe-item d-flex justify-content-between align-items-center",
             shiny::div(
-              shiny::span(class = "cart-item-name", bid),
+              shiny::span(class = "recipe-item-name", bid),
               shiny::br(),
-              shiny::span(class = "cart-item-meta",
+              shiny::span(class = "recipe-item-meta",
                 paste0(b$table, " | ", length(b$concept_ids),
                        " concepts | ", b$format))
             ),
@@ -639,16 +639,16 @@
           )
         })
         sections <- c(sections, list(
-          shiny::div(class = "cart-section-header",
+          shiny::div(class = "recipe-section-header",
             shiny::icon("layer-group"), " Variable Blocks"),
           shiny::tagList(block_items)
         ))
       }
 
       # --- Variables section ---
-      if (length(cart$variables) > 0) {
-        var_items <- lapply(names(cart$variables), function(nm) {
-          v <- cart$variables[[nm]]
+      if (length(recipe$variables) > 0) {
+        var_items <- lapply(names(recipe$variables), function(nm) {
+          v <- recipe$variables[[nm]]
           concept_text <- if (!is.null(v$concept_id))
             paste0("concept ", v$concept_id,
                    if (!is.null(v$concept_name))
@@ -658,11 +658,11 @@
             paste0(" | window: ", v$time_window$start, " to ",
                    v$time_window$end) else ""
           shiny::div(
-            class = "cart-item d-flex justify-content-between align-items-center",
+            class = "recipe-item d-flex justify-content-between align-items-center",
             shiny::div(
-              shiny::span(class = "cart-item-name", nm),
+              shiny::span(class = "recipe-item-name", nm),
               shiny::br(),
-              shiny::span(class = "cart-item-meta",
+              shiny::span(class = "recipe-item-meta",
                 paste0(v$table, " | ", v$format,
                        if (nchar(concept_text) > 0)
                          paste0(" | ", concept_text) else "",
@@ -672,17 +672,17 @@
           )
         })
         sections <- c(sections, list(
-          shiny::div(class = "cart-section-header",
+          shiny::div(class = "recipe-section-header",
             shiny::icon("table-columns"), " Variables (",
-            length(cart$variables), ")"),
+            length(recipe$variables), ")"),
           shiny::tagList(var_items)
         ))
       }
 
       # --- Filters section ---
-      if (length(cart$filters) > 0) {
-        filter_items <- lapply(names(cart$filters), function(fid) {
-          f <- cart$filters[[fid]]
+      if (length(recipe$filters) > 0) {
+        filter_items <- lapply(names(recipe$filters), function(fid) {
+          f <- recipe$filters[[fid]]
           is_group <- inherits(f, "omop_filter_group")
           type_text <- if (is_group)
             paste0("[", f$operator, " group]")
@@ -707,33 +707,33 @@
           }
 
           shiny::div(
-            class = "cart-item d-flex justify-content-between align-items-center",
+            class = "recipe-item d-flex justify-content-between align-items-center",
             shiny::div(
-              shiny::span(class = "cart-item-name", f$label, safety_badge),
+              shiny::span(class = "recipe-item-name", f$label, safety_badge),
               shiny::br(),
-              shiny::span(class = "cart-item-meta", type_text)
+              shiny::span(class = "recipe-item-meta", type_text)
             ),
             .action_btns("filter", fid)
           )
         })
         sections <- c(sections, list(
-          shiny::div(class = "cart-section-header",
+          shiny::div(class = "recipe-section-header",
             shiny::icon("filter"), " Filters"),
           shiny::tagList(filter_items)
         ))
       }
 
       # --- Outputs section ---
-      if (length(cart$outputs) > 0) {
-        output_items <- lapply(names(cart$outputs), function(nm) {
-          o <- cart$outputs[[nm]]
+      if (length(recipe$outputs) > 0) {
+        output_items <- lapply(names(recipe$outputs), function(nm) {
+          o <- recipe$outputs[[nm]]
           sym <- o$result_symbol %||% paste0("D_", nm)
           shiny::div(
-            class = "cart-item d-flex justify-content-between align-items-center",
+            class = "recipe-item d-flex justify-content-between align-items-center",
             shiny::div(
-              shiny::span(class = "cart-item-name", nm),
+              shiny::span(class = "recipe-item-name", nm),
               shiny::br(),
-              shiny::span(class = "cart-item-meta",
+              shiny::span(class = "recipe-item-meta",
                           paste0("Type: ", o$type,
                                  " | pop: ", o$population_id,
                                  " | symbol: ", sym))
@@ -742,14 +742,14 @@
           )
         })
         sections <- c(sections, list(
-          shiny::div(class = "cart-section-header",
+          shiny::div(class = "recipe-section-header",
             shiny::icon("table"), " Outputs"),
           shiny::tagList(output_items)
         ))
       }
 
       if (length(sections) == 0) {
-        return(.empty_state_ui("hammer", "Builder is empty",
+        return(.empty_state_ui("hammer", "Recipe is empty",
           "Add variables from the Explore or Vocabulary tabs, or use the sidebar controls."))
       }
 
@@ -759,22 +759,22 @@
     # =========================================================================
     # Static remove observer (JS delegation — works for all item types)
     # =========================================================================
-    shiny::observeEvent(input$cart_remove_item, {
-      data <- jsonlite::fromJSON(input$cart_remove_item)
+    shiny::observeEvent(input$recipe_remove_item, {
+      data <- jsonlite::fromJSON(input$recipe_remove_item)
       item_type <- data$type
       item_id <- data$id
       tryCatch({
         if (item_type == "population") {
-          state$cart <- cart_remove_population(state$cart, item_id)
+          state$recipe <- recipe_remove_population(state$recipe, item_id)
         } else if (item_type == "block") {
-          state$cart$blocks[[item_id]] <- NULL
-          state$cart$meta$modified <- Sys.time()
+          state$recipe$blocks[[item_id]] <- NULL
+          state$recipe$meta$modified <- Sys.time()
         } else if (item_type == "variable") {
-          state$cart <- cart_remove_variable(state$cart, item_id)
+          state$recipe <- recipe_remove_variable(state$recipe, item_id)
         } else if (item_type == "filter") {
-          state$cart <- cart_remove_filter(state$cart, item_id)
+          state$recipe <- recipe_remove_filter(state$recipe, item_id)
         } else if (item_type == "output") {
-          state$cart <- cart_remove_output(state$cart, item_id)
+          state$recipe <- recipe_remove_output(state$recipe, item_id)
         }
       }, error = function(e) {
         shiny::showNotification(
@@ -785,23 +785,23 @@
     # =========================================================================
     # Static edit observer (JS delegation — universal edit modal)
     # =========================================================================
-    shiny::observeEvent(input$cart_edit_item, {
-      data <- jsonlite::fromJSON(input$cart_edit_item)
+    shiny::observeEvent(input$recipe_edit_item, {
+      data <- jsonlite::fromJSON(input$recipe_edit_item)
       item_type <- data$type
       item_id <- data$id
       session$userData$edit_context <- list(type = item_type, id = item_id)
 
-      cart <- state$cart
+      recipe <- state$recipe
       tbl_choices <- .table_choices(
         .get_person_tables(state$tables) %||%
           c("condition_occurrence", "drug_exposure", "measurement",
             "procedure_occurrence", "observation", "visit_occurrence", "person")
       )
-      pop_ids <- names(cart$populations)
+      pop_ids <- names(recipe$populations)
 
       # Build type-specific modal content
       modal_content <- if (item_type == "variable") {
-        v <- cart$variables[[item_id]]
+        v <- recipe$variables[[item_id]]
         if (is.null(v)) return()
         shiny::tagList(
           shiny::textInput(ns("edit_name"), "Name", value = v$name),
@@ -837,7 +837,7 @@
             selected = v$suffix_mode)
         )
       } else if (item_type == "block") {
-        b <- cart$blocks[[item_id]]
+        b <- recipe$blocks[[item_id]]
         if (is.null(b)) return()
         shiny::tagList(
           shiny::textInput(ns("edit_name"), "Block ID", value = b$id),
@@ -867,7 +867,7 @@
             selected = b$suffix_mode)
         )
       } else if (item_type == "filter") {
-        f <- cart$filters[[item_id]]
+        f <- recipe$filters[[item_id]]
         if (is.null(f)) return()
         is_group <- inherits(f, "omop_filter_group")
         if (is_group) {
@@ -923,7 +923,7 @@
           shiny::tagList(base_fields, param_fields)
         }
       } else if (item_type == "output") {
-        o <- cart$outputs[[item_id]]
+        o <- recipe$outputs[[item_id]]
         if (is.null(o)) return()
         shiny::tagList(
           shiny::textInput(ns("edit_name"), "Output Name", value = o$name),
@@ -961,11 +961,11 @@
       if (is.null(ctx)) return()
       item_type <- ctx$type
       item_id <- ctx$id
-      cart <- state$cart
+      recipe <- state$recipe
 
       tryCatch({
         if (item_type == "variable") {
-          v <- cart$variables[[item_id]]
+          v <- recipe$variables[[item_id]]
           if (is.null(v)) { shiny::removeModal(); return() }
           new_name <- trimws(input$edit_name)
           if (nchar(new_name) == 0) new_name <- item_id
@@ -988,21 +988,21 @@
           v$suffix_mode <- input$edit_suffix_mode
           # Handle rename
           if (new_name != item_id) {
-            if (new_name %in% names(cart$variables)) {
+            if (new_name %in% names(recipe$variables)) {
               shiny::showNotification("Name already in use",
                 type = "warning", duration = 2)
               return()
             }
-            cart$variables[[item_id]] <- NULL
+            recipe$variables[[item_id]] <- NULL
             v$name <- new_name
-            cart$variables[[new_name]] <- v
+            recipe$variables[[new_name]] <- v
           } else {
             v$name <- new_name
-            cart$variables[[item_id]] <- v
+            recipe$variables[[item_id]] <- v
           }
 
         } else if (item_type == "block") {
-          b <- cart$blocks[[item_id]]
+          b <- recipe$blocks[[item_id]]
           if (is.null(b)) { shiny::removeModal(); return() }
           new_id <- trimws(input$edit_name)
           if (nchar(new_id) == 0) new_id <- item_id
@@ -1021,15 +1021,15 @@
           b$time_window <- tw
           b$suffix_mode <- input$edit_suffix_mode
           if (new_id != item_id) {
-            cart$blocks[[item_id]] <- NULL
+            recipe$blocks[[item_id]] <- NULL
             b$id <- new_id
-            cart$blocks[[new_id]] <- b
+            recipe$blocks[[new_id]] <- b
           } else {
-            cart$blocks[[item_id]] <- b
+            recipe$blocks[[item_id]] <- b
           }
 
         } else if (item_type == "filter") {
-          f <- cart$filters[[item_id]]
+          f <- recipe$filters[[item_id]]
           if (is.null(f)) { shiny::removeModal(); return() }
           is_group <- inherits(f, "omop_filter_group")
           if (is_group) {
@@ -1055,10 +1055,10 @@
               f$params$end <- as.character(input$edit_date_end)
             }
           }
-          cart$filters[[item_id]] <- f
+          recipe$filters[[item_id]] <- f
 
         } else if (item_type == "output") {
-          o <- cart$outputs[[item_id]]
+          o <- recipe$outputs[[item_id]]
           if (is.null(o)) { shiny::removeModal(); return() }
           new_name <- trimws(input$edit_name)
           if (nchar(new_name) == 0) new_name <- item_id
@@ -1068,16 +1068,16 @@
           if (nchar(o$result_symbol) == 0)
             o$result_symbol <- paste0("D_", new_name)
           if (new_name != item_id) {
-            cart$outputs[[item_id]] <- NULL
+            recipe$outputs[[item_id]] <- NULL
             o$name <- new_name
-            cart$outputs[[new_name]] <- o
+            recipe$outputs[[new_name]] <- o
           } else {
-            cart$outputs[[item_id]] <- o
+            recipe$outputs[[item_id]] <- o
           }
         }
 
-        cart$meta$modified <- Sys.time()
-        state$cart <- cart
+        recipe$meta$modified <- Sys.time()
+        state$recipe <- recipe
         shiny::removeModal()
         shiny::showNotification("Updated.", type = "message", duration = 2)
       }, error = function(e) {
@@ -1090,8 +1090,8 @@
     # Schema Preview
     # =========================================================================
     output$schema_preview_content <- shiny::renderUI({
-      cart <- state$cart
-      if (length(cart$outputs) == 0 || length(cart$variables) == 0) {
+      recipe <- state$recipe
+      if (length(recipe$outputs) == 0 || length(recipe$variables) == 0) {
         return(.empty_state_ui("table-columns", "No schema preview",
           "Add variables and outputs to preview the data schema."))
       }
@@ -1102,10 +1102,10 @@
     })
 
     output$schema_preview_dt <- DT::renderDT({
-      cart <- state$cart
-      if (length(cart$outputs) == 0 || length(cart$variables) == 0)
+      recipe <- state$recipe
+      if (length(recipe$outputs) == 0 || length(recipe$variables) == 0)
         return(NULL)
-      schemas <- cart_preview_schema(cart)
+      schemas <- recipe_preview_schema(recipe)
       all_dfs <- lapply(names(schemas), function(nm) schemas[[nm]])
       df <- do.call(rbind, all_dfs)
       if (is.null(df) || nrow(df) == 0) return(NULL)
@@ -1115,9 +1115,9 @@
     })
 
     output$schema_info <- shiny::renderUI({
-      cart <- state$cart
-      if (length(cart$outputs) == 0) return(NULL)
-      schemas <- cart_preview_schema(cart)
+      recipe <- state$recipe
+      if (length(recipe$outputs) == 0) return(NULL)
+      schemas <- recipe_preview_schema(recipe)
       info_items <- lapply(names(schemas), function(nm) {
         s <- schemas[[nm]]
         tables <- attr(s, "tables") %||% character(0)
@@ -1136,26 +1136,26 @@
     # =========================================================================
     # Generated Code
     # =========================================================================
-    shiny::observeEvent(input$copy_cart_code, {
-      cart <- state$cart
-      if (length(cart$variables) == 0 && length(cart$filters) == 0 &&
-          length(cart$outputs) == 0 && length(cart$blocks) == 0) {
+    shiny::observeEvent(input$copy_recipe_code, {
+      recipe <- state$recipe
+      if (length(recipe$variables) == 0 && length(recipe$filters) == 0 &&
+          length(recipe$outputs) == 0 && length(recipe$blocks) == 0) {
         shiny::showNotification("Nothing to copy.", type = "warning",
                                 duration = 2)
         return()
       }
-      code <- cart_to_code(cart)
+      code <- recipe_to_code(recipe)
       session$sendCustomMessage("copyToClipboard", code)
     })
 
-    output$cart_code_html <- shiny::renderUI({
-      cart <- state$cart
-      if (length(cart$variables) == 0 && length(cart$filters) == 0 &&
-          length(cart$outputs) == 0 && length(cart$blocks) == 0) {
+    output$recipe_code_html <- shiny::renderUI({
+      recipe <- state$recipe
+      if (length(recipe$variables) == 0 && length(recipe$filters) == 0 &&
+          length(recipe$outputs) == 0 && length(recipe$blocks) == 0) {
         return(.empty_state_ui("code", "No code yet",
           "Add variables, filters, and outputs to generate code."))
       }
-      code <- cart_to_code(cart)
+      code <- recipe_to_code(recipe)
       highlighted <- .highlightR(code)
       shiny::div(class = "code-output",
         shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))
@@ -1416,10 +1416,10 @@
       if (is.null(p) || length(p$outputs) == 0) return("")
       tryCatch({
         out_names <- names(p$outputs)
-        # Use result_symbol from cart outputs when available
-        cart <- state$cart
+        # Use result_symbol from recipe outputs when available
+        recipe <- state$recipe
         symbols <- vapply(out_names, function(nm) {
-          o <- cart$outputs[[nm]]
+          o <- recipe$outputs[[nm]]
           if (!is.null(o) && !is.null(o$result_symbol)) o$result_symbol
           else paste0("D_", nm)
         }, character(1))
