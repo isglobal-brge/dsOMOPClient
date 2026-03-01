@@ -1207,16 +1207,35 @@ recipe_to_plan <- function(recipe) {
           } else {
             # Multi-table: use person_level with features per table
             # This merges all tables into a single dataset on person_id
+            # Tables with only raw-format variables → column extraction
+            # Tables with feature formats → feature pipeline
             tables_spec <- list()
             for (tbl in names(by_table)) {
               vs <- by_table[[tbl]]
-              specs <- .build_feature_specs(vs)
-              concept_ids <- unique(unlist(lapply(vs, function(v) v$concept_id)))
-              concept_ids <- concept_ids[!is.null(concept_ids)]
-              tables_spec[[tbl]] <- list(
-                concept_set = as.integer(concept_ids),
-                features = specs
-              )
+              has_feature_fmts <- any(vapply(vs, function(v) {
+                !is.null(v$format) && v$format != "raw"
+              }, logical(1)))
+
+              if (has_feature_fmts) {
+                # Filter to only feature variables for this table
+                feat_vs <- Filter(function(v) {
+                  !is.null(v$format) && v$format != "raw"
+                }, vs)
+                specs <- .build_feature_specs(feat_vs)
+                concept_ids <- unique(unlist(lapply(feat_vs, function(v) v$concept_id)))
+                concept_ids <- concept_ids[!is.null(concept_ids)]
+                tables_spec[[tbl]] <- list(
+                  concept_set = if (length(concept_ids) > 0) as.integer(concept_ids) else NULL,
+                  features = specs
+                )
+              } else {
+                # All raw: extract as column names
+                cols <- unique(unlist(lapply(vs, function(v) {
+                  c(v$column, v$value_source)
+                })))
+                cols <- cols[!is.null(cols)]
+                tables_spec[[tbl]] <- cols
+              }
             }
             plan$outputs[[out_name]] <- list(
               type = "person_level",
@@ -1315,10 +1334,16 @@ recipe_to_plan <- function(recipe) {
       time_since  = omop.feature.time_since,
       omop.feature.boolean
     )
-    feat_fn(
+    args <- list(
       name = v$name,
       concept_set = if (!is.null(v$concept_id)) v$concept_id else integer(0)
     )
+    # Pass value_column for feature types that support it
+    if (!is.null(v$value_source) && fmt %in% c("mean", "min", "max",
+        "first_value", "last_value")) {
+      args$value_column <- v$value_source
+    }
+    do.call(feat_fn, args)
   })
   names(specs) <- vapply(vs, function(v) v$name, character(1))
   specs
