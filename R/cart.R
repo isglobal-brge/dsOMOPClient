@@ -909,20 +909,62 @@ cart_to_plan <- function(cart) {
     }
 
     if (out$type %in% c("wide", "baseline")) {
-      tables_spec <- lapply(by_table, function(vs) {
-        cols <- unique(unlist(lapply(vs, function(v) {
-          c(v$column, v$value_source)
-        })))
-        cols[!is.null(cols)]
-      })
       if (out$type == "baseline") {
+        tables_spec <- lapply(by_table, function(vs) {
+          cols <- unique(unlist(lapply(vs, function(v) {
+            c(v$column, v$value_source)
+          })))
+          cols[!is.null(cols)]
+        })
         plan <- ds.omop.plan.baseline(plan,
           columns = tables_spec[["person"]] %||% c("gender_concept_id",
             "year_of_birth", "race_concept_id"),
           name = out_name)
       } else {
-        plan <- ds.omop.plan.person_level(plan, tables = tables_spec,
-                                           name = out_name)
+        # "wide" with explicit formats → use features pipeline
+        has_formats <- any(vapply(vars, function(v) {
+          !is.null(v$format) && v$format != "raw"
+        }, logical(1)))
+
+        if (has_formats) {
+          if (length(by_table) == 1) {
+            # Single table: use event_level features directly
+            tbl <- names(by_table)[1]
+            vs <- by_table[[tbl]]
+            specs <- .build_feature_specs(vs)
+            plan <- ds.omop.plan.features(plan, name = out_name, table = tbl,
+                                           specs = specs)
+          } else {
+            # Multi-table: use person_level with features per table
+            # This merges all tables into a single dataset on person_id
+            tables_spec <- list()
+            for (tbl in names(by_table)) {
+              vs <- by_table[[tbl]]
+              specs <- .build_feature_specs(vs)
+              concept_ids <- unique(unlist(lapply(vs, function(v) v$concept_id)))
+              concept_ids <- concept_ids[!is.null(concept_ids)]
+              tables_spec[[tbl]] <- list(
+                concept_set = as.integer(concept_ids),
+                features = specs
+              )
+            }
+            plan$outputs[[out_name]] <- list(
+              type = "person_level",
+              tables = tables_spec,
+              representation = "features"
+            )
+          }
+        } else {
+          # Raw format: use person_level join
+          tables_spec <- lapply(by_table, function(vs) {
+            cols <- unique(unlist(lapply(vs, function(v) {
+              c(v$column, v$value_source)
+            })))
+            cols[!is.null(cols)]
+          })
+          plan <- ds.omop.plan.person_level(plan, tables = tables_spec,
+                                             name = out_name)
+        }
       }
     } else if (out$type %in% c("long", "joined_long")) {
       for (tbl in names(by_table)) {
@@ -945,24 +987,7 @@ cart_to_plan <- function(cart) {
     } else if (out$type %in% c("features", "covariates_sparse")) {
       for (tbl in names(by_table)) {
         vs <- by_table[[tbl]]
-        specs <- lapply(vs, function(v) {
-          feat_fn <- switch(v$format,
-            binary = omop.feature.boolean,
-            count = omop.feature.count,
-            first_value = omop.feature.first_value,
-            last_value = omop.feature.latest_value,
-            mean = omop.feature.mean_value,
-            min = omop.feature.min_value,
-            max = omop.feature.max_value,
-            time_since = omop.feature.time_since,
-            omop.feature.boolean
-          )
-          feat_fn(
-            name = v$name,
-            concept_set = if (!is.null(v$concept_id)) v$concept_id else integer(0)
-          )
-        })
-        names(specs) <- vapply(vs, function(v) v$name, character(1))
+        specs <- .build_feature_specs(vs)
 
         nm <- if (length(by_table) > 1) paste0(out_name, "_", tbl)
               else out_name
@@ -996,6 +1021,30 @@ cart_to_plan <- function(cart) {
   }
 
   plan
+}
+
+# Build feature specs from a list of variables
+.build_feature_specs <- function(vs) {
+  specs <- lapply(vs, function(v) {
+    fmt <- v$format %||% "binary"
+    feat_fn <- switch(fmt,
+      binary      = omop.feature.boolean,
+      count       = omop.feature.count,
+      first_value = omop.feature.first_value,
+      last_value  = omop.feature.latest_value,
+      mean        = omop.feature.mean_value,
+      min         = omop.feature.min_value,
+      max         = omop.feature.max_value,
+      time_since  = omop.feature.time_since,
+      omop.feature.boolean
+    )
+    feat_fn(
+      name = v$name,
+      concept_set = if (!is.null(v$concept_id)) v$concept_id else integer(0)
+    )
+  })
+  names(specs) <- vapply(vs, function(v) v$name, character(1))
+  specs
 }
 
 # Collect all population-level filters (flattening groups)
@@ -1474,15 +1523,31 @@ cart_execute <- function(cart, out = NULL, symbol = "omop", conns = NULL) {
 
   plan <- cart_to_plan(cart)
 
-  # Build output symbols from result_symbol fields, or auto-generate
+  # Detect split outputs: plan output names that don't match cart output names
+  # e.g., cart output "my_data" → plan outputs "my_data_condition", "my_data_measurement"
+  cart_out_names <- names(cart$outputs)
+  plan_out_names <- names(plan$outputs)
+
+  # Map plan outputs back to cart outputs for symbol generation
   if (is.null(out)) {
-    out_names <- names(plan$outputs)
-    symbols <- vapply(out_names, function(nm) {
+    symbols <- vapply(plan_out_names, function(nm) {
+      # Direct match
       o <- cart$outputs[[nm]]
-      if (!is.null(o) && !is.null(o$result_symbol)) o$result_symbol
-      else paste0("D_", nm)
+      if (!is.null(o) && !is.null(o$result_symbol)) return(o$result_symbol)
+      if (!is.null(o)) return(paste0("D_", nm))
+      # Check if this is a split output (e.g., "mydata_condition" from cart "mydata")
+      for (cart_nm in cart_out_names) {
+        if (startsWith(nm, paste0(cart_nm, "_"))) {
+          o <- cart$outputs[[cart_nm]]
+          sym_base <- if (!is.null(o$result_symbol)) o$result_symbol
+                      else paste0("D_", cart_nm)
+          suffix <- sub(paste0("^", cart_nm, "_"), "", nm)
+          return(paste0(sym_base, "_", suffix))
+        }
+      }
+      paste0("D_", nm)
     }, character(1))
-    out <- stats::setNames(symbols, out_names)
+    out <- stats::setNames(symbols, plan_out_names)
   }
 
   ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns)
