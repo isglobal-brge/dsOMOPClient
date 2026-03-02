@@ -144,7 +144,7 @@
           shiny::span(class = "status-ok", shiny::icon("check-circle"),
                       " OHDSI Results Available"),
           shiny::p(class = "text-muted small mt-1",
-                   paste0(n_tools, " of 8 tools detected"))
+                   paste0(n_tools, " of ", length(tool_avail), " tools detected"))
         )
       } else {
         shiny::div(
@@ -606,10 +606,14 @@
         if (!all(needed %in% names(df))) {
           return(.plotly_no_data("Expected distribution columns not found"))
         }
-        name_col <- if ("covariate_name" %in% names(df)) "covariate_name" else "covariate_id"
+        if (nrow(df) == 0) return(.plotly_no_data("No continuous covariate data", ""))
+        name_col <- if ("covariate_name" %in% names(df)) "covariate_name"
+                     else if ("covariate_id" %in% names(df)) "covariate_id"
+                     else NULL
         n <- min(nrow(df), 15)
         df <- df[seq_len(n), , drop = FALSE]
-        labels <- substr(as.character(df[[name_col]]), 1, 35)
+        labels <- if (!is.null(name_col)) substr(as.character(df[[name_col]]), 1, 35)
+                  else paste("Covariate", seq_len(n))
         plotly::plot_ly(y = labels, type = "box",
                         lowerfence = as.numeric(df$min_value),
                         q1 = as.numeric(df$p25_value),
@@ -677,14 +681,20 @@
         if (!all(needed %in% names(df))) {
           return(.plotly_no_data("Expected columns not found"))
         }
+        dech_att <- as.numeric(df$num_dechallenge_attempt)
+        dech_suc <- as.numeric(df$num_dechallenge_success)
         df$dechallenge_rate <- ifelse(
-          as.numeric(df$num_dechallenge_attempt) > 0,
-          as.numeric(df$num_dechallenge_success) / as.numeric(df$num_dechallenge_attempt) * 100,
-          0)
-        df$rechallenge_rate <- ifelse(
-          "num_rechallenge_attempt" %in% names(df) & as.numeric(df$num_rechallenge_attempt) > 0,
-          as.numeric(df$num_rechallenge_success) / as.numeric(df$num_rechallenge_attempt) * 100,
-          0)
+          !is.na(dech_att) & dech_att > 0,
+          dech_suc / dech_att * 100, 0)
+        df$rechallenge_rate <- if ("num_rechallenge_attempt" %in% names(df) &&
+                                     "num_rechallenge_success" %in% names(df)) {
+          rech_att <- as.numeric(df$num_rechallenge_attempt)
+          rech_suc <- as.numeric(df$num_rechallenge_success)
+          ifelse(!is.na(rech_att) & rech_att > 0,
+                 rech_suc / rech_att * 100, 0)
+        } else {
+          rep(0, nrow(df))
+        }
         label <- if ("cohort_id" %in% names(df)) paste("Cohort", df$cohort_id)
                  else paste("Row", seq_len(nrow(df)))
         plotly::plot_ly(x = label, y = df$dechallenge_rate, type = "bar",
@@ -1189,6 +1199,10 @@
 # ==============================================================================
 
 .ohdsi_render_overview <- function(ns, data) {
+  if (isTRUE(data$no_data) || is.null(data$tools_summary)) {
+    return(.empty_state_ui("database", "OHDSI Overview Not Available",
+      "Could not load tool status information. Check server connections."))
+  }
   tools <- data$tools_summary
 
   tool_cards <- lapply(names(tools), function(tid) {
@@ -1491,9 +1505,10 @@
                                     policy, selected_srv, "characterization")
   if (is.list(df) && isTRUE(df$no_data)) return(df)
 
-  total_cases <- sum(as.numeric(df$num_cases), na.rm = TRUE)
-  total_dech <- sum(as.numeric(df$num_dechallenge_attempt), na.rm = TRUE)
-  total_dech_success <- sum(as.numeric(df$num_dechallenge_success), na.rm = TRUE)
+  .safe_sum <- function(col) if (col %in% names(df)) sum(as.numeric(df[[col]]), na.rm = TRUE) else 0
+  total_cases <- .safe_sum("num_cases")
+  total_dech <- .safe_sum("num_dechallenge_attempt")
+  total_dech_success <- .safe_sum("num_dechallenge_success")
   dech_rate <- if (total_dech > 0) round(total_dech_success / total_dech * 100, 1) else 0
 
   list(
@@ -1589,15 +1604,20 @@
   if (is.list(df) && isTRUE(df$no_data)) return(df)
 
   n_models <- if ("model_design_id" %in% names(df)) length(unique(df$model_design_id)) else nrow(df)
-  best_auc <- max(as.numeric(df$auc), na.rm = TRUE)
-  best_model <- if ("model_design_id" %in% names(df)) {
-    idx <- which.max(as.numeric(df$auc))
-    paste("Model", df$model_design_id[idx])
+
+  auc_vals <- if ("auc" %in% names(df)) as.numeric(df$auc) else numeric(0)
+  auc_valid <- auc_vals[!is.na(auc_vals)]
+  best_auc <- if (length(auc_valid) > 0) max(auc_valid) else NA_real_
+
+  best_model <- if ("model_design_id" %in% names(df) && length(auc_valid) > 0) {
+    idx <- which.max(auc_vals)
+    if (length(idx) > 0) paste("Model", df$model_design_id[idx]) else "N/A"
   } else "N/A"
 
   list(
     plp_results = df, n_models = n_models,
-    best_auc = round(best_auc, 3), best_model = best_model
+    best_auc = if (!is.na(best_auc)) round(best_auc, 3) else NA,
+    best_model = best_model
   )
 }
 
@@ -1889,9 +1909,9 @@
         showcase = fontawesome::fa_i("brain"), theme = "primary"
       ),
       bslib::value_box(
-        title = "Best AUC", value = data$best_auc,
+        title = "Best AUC", value = if (is.na(data$best_auc)) "N/A" else data$best_auc,
         showcase = fontawesome::fa_i("trophy"),
-        theme = if (data$best_auc >= 0.8) "success" else "warning"
+        theme = if (!is.na(data$best_auc) && data$best_auc >= 0.8) "success" else "warning"
       ),
       bslib::value_box(
         title = "Best Model", value = data$best_model,
@@ -1923,6 +1943,8 @@
   df$lower <- as.numeric(df[[lower_col]])
   df$upper <- as.numeric(df[[upper_col]])
   df <- df[!is.na(df$estimate) & !is.na(df$lower) & !is.na(df$upper), , drop = FALSE]
+  # Filter non-positive values (log scale can't handle zero/negative)
+  df <- df[df$estimate > 0 & df$lower > 0 & df$upper > 0, , drop = FALSE]
   if (nrow(df) == 0) return(.plotly_no_data("No valid estimates for forest plot", ""))
 
   # Build labels
@@ -1944,8 +1966,8 @@
                   marker = list(size = 8, color = .studio_colors[1]),
                   error_x = list(type = "data",
                                  symmetric = FALSE,
-                                 arrayminus = df$estimate - df$lower,
-                                 array = df$upper - df$estimate,
+                                 arrayminus = pmax(0, df$estimate - df$lower),
+                                 array = pmax(0, df$upper - df$estimate),
                                  color = .studio_colors[1]),
                   hovertemplate = paste0("<b>%{y}</b><br>",
                                          "Estimate: %{x:.3f}<br>",
@@ -1967,9 +1989,10 @@
 }
 
 .ohdsi_accumulate_code <- function(state, res) {
-  if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+  code <- if (inherits(res, "dsomop_result")) res$meta$call_code else NULL
+  if (!is.null(code) && is.character(code) && length(code) == 1 && nchar(code) > 0) {
     shiny::isolate({
-      state$script_lines <- c(state$script_lines, res$meta$call_code)
+      state$script_lines <- c(state$script_lines, code)
     })
   }
 }
