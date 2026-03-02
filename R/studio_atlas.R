@@ -255,11 +255,11 @@
         df <- data$gender
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Sex data suppressed (small cell counts)", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Sex data suppressed (small cell counts)", ""))
         cmap <- data$concept_map %||% list()
+        sort_idx <- order(df$count_value, decreasing = TRUE)
+        df <- df[sort_idx, , drop = FALSE]
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
-        df <- df[order(df$count_value, decreasing = TRUE), ]
-        labels <- labels[order(as.numeric(df$count_value), decreasing = TRUE)]
         plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
                         orientation = "h",
                         marker = list(color = .studio_colors[c(1, 3, 2, 4)]),
@@ -288,7 +288,7 @@
           if (length(vals) == 0) {
             if (!is.na(row$avg_value)) {
               vals <- row$avg_value; nms <- "Mean"
-            } else return(.plotly_no_data("Age percentiles suppressed (pooled data)", "\U0001F6E1"))
+            } else return(.plotly_no_data("Age percentiles suppressed (pooled data)", ""))
           }
           plotly::plot_ly(x = nms, y = vals, type = "bar",
                           marker = list(color = .studio_colors[1])) |>
@@ -351,10 +351,10 @@
 
     output$dash_birth_cohort_plot <- plotly::renderPlotly({
       data <- page_data()
-      if (is.null(data) || is.null(data$birth_cohorts)) return(.plotly_no_data("Birth cohort data suppressed (small cell counts)", "\U0001F6E1"))
+      if (is.null(data) || is.null(data$birth_cohorts)) return(.plotly_no_data("Birth cohort data suppressed (small cell counts)", ""))
       .safe_plotly({
         df <- data$birth_cohorts
-        if (nrow(df) == 0) return(.plotly_no_data("Birth cohort data suppressed (small cell counts)", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Birth cohort data suppressed (small cell counts)", ""))
         plotly::plot_ly(x = df$label, y = df$count, type = "bar",
                         marker = list(color = .studio_colors[5]),
                         hovertemplate = "<b>%{x}</b><br>Persons: %{y:,.0f}<extra></extra>") |>
@@ -371,7 +371,7 @@
         df <- data$race
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Race data suppressed (small cell counts)", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Race data suppressed (small cell counts)", ""))
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
@@ -390,7 +390,7 @@
         df <- data$ethnicity
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Ethnicity data suppressed (small cell counts)", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Ethnicity data suppressed (small cell counts)", ""))
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = df$count_value, y = labels, type = "bar",
@@ -409,7 +409,7 @@
         df <- data$obs_by_year
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Observation data suppressed", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Observation data suppressed", ""))
         df <- df[order(as.character(df$stratum_1)), ]
         plotly::plot_ly(x = as.character(df$stratum_1), y = df$count_value,
                         type = "scatter", mode = "lines+markers",
@@ -435,7 +435,7 @@
         nms <- c("P10", "P25", "Median", "P75", "P90")
         keep <- !is.na(vals)
         vals <- vals[keep]; nms <- nms[keep]
-        if (length(vals) == 0) return(.plotly_no_data("Observation length percentiles suppressed (pooled data)", "\U0001F6E1"))
+        if (length(vals) == 0) return(.plotly_no_data("Observation length percentiles suppressed (pooled data)", ""))
         # Convert days to human-readable hover
         hover <- vapply(vals, function(d) {
           yrs <- floor(d / 365.25)
@@ -463,7 +463,7 @@
         if (is.na(total) || total == 0) return(.plotly_no_data("Total persons unknown — cannot compute coverage"))
         df$n_persons <- as.numeric(df$n_persons)
         df <- df[!is.na(df$n_persons), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Coverage data suppressed", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Coverage data suppressed", ""))
         df$pct <- round(df$n_persons / total * 100, 1)
         df <- df[order(df$pct, decreasing = TRUE), ]
         labels <- .format_table_name(df$table_name)
@@ -488,7 +488,7 @@
         df <- data$concepts
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Concept data suppressed (small cell counts)", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Concept data suppressed (small cell counts)", ""))
         df <- df[order(df$count_value, decreasing = TRUE), ]
         n <- min(nrow(df), 20)
         df <- df[seq_len(n), , drop = FALSE]
@@ -517,7 +517,7 @@
         df <- data$trends
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Trend data suppressed (small cell counts)", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Trend data suppressed (small cell counts)", ""))
         agg <- stats::aggregate(count_value ~ stratum_2, data = df, FUN = sum)
         agg <- agg[order(agg$stratum_2), ]
         plotly::plot_ly(x = agg$stratum_2, y = agg$count_value,
@@ -657,7 +657,7 @@
         df <- data$types
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Visit type data suppressed", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Visit type data suppressed", ""))
         cmap <- data$concept_map %||% list()
         labels <- .atlas_label_stratum(df$stratum_1, cmap)
         plotly::plot_ly(x = labels, y = df$count_value, type = "bar",
@@ -675,7 +675,7 @@
         df <- data$trends
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Visit trend data suppressed", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Visit trend data suppressed", ""))
         # Analysis 220: stratum_1 = YYYYMM
         if ("stratum_1" %in% names(df) &&
             (!"stratum_2" %in% names(df) || all(is.na(df$stratum_2)))) {
@@ -711,7 +711,7 @@
         df <- data$causes
         df$count_value <- as.numeric(df$count_value)
         df <- df[!is.na(df$count_value), , drop = FALSE]
-        if (nrow(df) == 0) return(.plotly_no_data("Death data suppressed (small cell counts)", "\U0001F6E1"))
+        if (nrow(df) == 0) return(.plotly_no_data("Death data suppressed (small cell counts)", ""))
         df <- df[order(df$count_value, decreasing = TRUE), ]
         n <- min(nrow(df), 20)
         df <- df[seq_len(n), , drop = FALSE]

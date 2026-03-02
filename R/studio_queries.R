@@ -418,18 +418,35 @@
         }, error = function(e) {
           query_executed(TRUE)
           msg <- conditionMessage(e)
-          if (grepl("does not exist|relation.*does not exist", msg, ignore.case = TRUE)) {
-            tbl_match <- regmatches(msg, regexpr("[a-z_]+\\.[a-z_]+|\"[^\"]+\"", msg))
-            tbl_name <- if (length(tbl_match) > 0) tbl_match[1] else "unknown"
+          # Check both the condition message and detailed server errors
+          detail <- tryCatch({
+            errs <- DSI::datashield.errors()
+            if (length(errs) > 0)
+              paste(as.character(errs), collapse = " ")
+            else ""
+          }, error = function(e2) "")
+          full_msg <- paste(msg, detail)
+          if (grepl("does not exist|relation.*does not exist",
+                    full_msg, ignore.case = TRUE)) {
+            tbl_match <- regmatches(full_msg,
+              regexpr("[a-z_]+\\.[a-z_]+", full_msg))
+            tbl_name <- if (length(tbl_match) > 0) {
+              tbl_match[1]
+            } else "unknown"
             shiny::showNotification(
-              paste0("Table not available: ", tbl_name,
-                     ". This query requires a CDM table that may not exist on all servers."),
+              shiny::tagList(
+                shiny::tags$b("Table not available"),
+                shiny::tags$br(),
+                paste0(tbl_name,
+                  " - this query requires a CDM table ",
+                  "not present on all servers.")
+              ),
               type = "warning", duration = 8
             )
           } else {
             shiny::showNotification(
               .clean_ds_error(e),
-              type = "error", duration = 5
+              type = "error", duration = 8
             )
           }
         })

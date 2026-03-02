@@ -104,9 +104,10 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
             showMiniToast(msg);
           });
           Shiny.addCustomMessageHandler('toggleAchillesTab', function(data) {
-            var tabs = document.querySelectorAll('#main_nav .nav-link');
+            var tabs = document.querySelectorAll('#main_nav .nav-link, #main_nav .dropdown-item');
             tabs.forEach(function(tab) {
-              if (tab.textContent.trim().indexOf('Achilles') !== -1) {
+              if (tab.textContent.trim().indexOf('Achilles') !== -1 &&
+                  tab.textContent.trim().indexOf('OHDSI') === -1) {
                 if (data.disabled) {
                   tab.classList.add('achilles-disabled');
                   tab.setAttribute('title', data.tooltip || 'Run OHDSI Achilles on your CDM to enable this tab');
@@ -119,7 +120,23 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
               }
             });
           });
-          $(document).on('click', '.achilles-disabled', function(e) {
+          Shiny.addCustomMessageHandler('toggleOhdsiResultsTab', function(data) {
+            var tabs = document.querySelectorAll('#main_nav .nav-link, #main_nav .dropdown-item');
+            tabs.forEach(function(tab) {
+              if (tab.textContent.trim().indexOf('OHDSI Results') !== -1) {
+                if (data.disabled) {
+                  tab.classList.add('ohdsi-results-disabled');
+                  tab.setAttribute('title', data.tooltip || 'No OHDSI result tables found');
+                  tab.setAttribute('data-ohdsi-disabled', 'true');
+                } else {
+                  tab.classList.remove('ohdsi-results-disabled');
+                  tab.removeAttribute('title');
+                  tab.removeAttribute('data-ohdsi-disabled');
+                }
+              }
+            });
+          });
+          $(document).on('click', '.achilles-disabled, .ohdsi-results-disabled', function(e) {
             e.preventDefault(); e.stopPropagation(); return false;
           });
         "))
@@ -138,10 +155,14 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
         .mod_explore_ui("explore")
       ),
 
-      # --- Tab 3: Achilles ---
-      bslib::nav_panel("Achilles", icon = shiny::icon("chart-bar"),
-        value = "achilles_tab",
-        .mod_atlas_ui("atlas")
+      # --- Tab 3: Analytics dropdown (Achilles + OHDSI Results) ---
+      bslib::nav_menu("Analytics", icon = shiny::icon("chart-bar"),
+        bslib::nav_panel("Achilles", value = "achilles_tab",
+          .mod_atlas_ui("atlas")
+        ),
+        bslib::nav_panel("OHDSI Results", value = "ohdsi_results_tab",
+          .mod_ohdsi_results_ui("ohdsi_results")
+        )
       ),
 
       # --- Tab 4: Queries ---
@@ -227,6 +248,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     .mod_overview_server("overview", state)
     .mod_explore_server("explore", state, session)
     .mod_atlas_server("atlas", state, session)
+    .mod_ohdsi_results_server("ohdsi_results", state, session)
     .mod_queries_server("queries", state)
     .mod_build_server("build", state)
     .mod_session_server("session_log", state)
@@ -279,13 +301,21 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       gap: 0.5rem; font-size: 1.05rem;
     }
 
-    /* ========== Disabled Achilles tab ========== */
-    .navbar .nav-link.achilles-disabled {
+    /* ========== Disabled Achilles / OHDSI Results tabs ========== */
+    .navbar .nav-link.achilles-disabled,
+    .navbar .dropdown-item.achilles-disabled,
+    .navbar .nav-link.ohdsi-results-disabled,
+    .navbar .dropdown-item.ohdsi-results-disabled {
       opacity: 0.4 !important; cursor: not-allowed !important;
       pointer-events: auto !important;
     }
-    .navbar .nav-link.achilles-disabled:hover {
+    .navbar .nav-link.achilles-disabled:hover,
+    .navbar .nav-link.ohdsi-results-disabled:hover {
       background: transparent !important; color: rgba(255,255,255,0.4) !important;
+    }
+    .navbar .dropdown-item.achilles-disabled:hover,
+    .navbar .dropdown-item.ohdsi-results-disabled:hover {
+      background: rgba(0,0,0,0.04) !important; color: rgba(0,0,0,0.35) !important;
     }
 
     /* ========== Cards - glassmorphism ========== */
@@ -761,6 +791,10 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     [data-bs-theme='dark'] .recipe-badge-var { background: #064e3b; color: #6ee7b7; }
     [data-bs-theme='dark'] .recipe-badge-filter { background: #78350f; color: #fcd34d; }
     [data-bs-theme='dark'] .recipe-badge-output { background: #1e3a5f; color: #93c5fd; }
+    [data-bs-theme='dark'] .dropdown-item.achilles-disabled:hover,
+    [data-bs-theme='dark'] .dropdown-item.ohdsi-results-disabled:hover {
+      background: rgba(255,255,255,0.04) !important; color: rgba(255,255,255,0.35) !important;
+    }
   "
 }
 
@@ -881,11 +915,12 @@ isTRUE_vec <- function(x) {
 
 # Informative empty plotly: shows a centred message explaining why data is absent
 .plotly_no_data <- function(msg = "No data available",
-                            icon = "\U0001F6C8") {
+                            icon = "") {
+  label <- if (nzchar(icon)) paste(icon, msg) else msg
   suppressWarnings(plotly::plotly_empty()) |>
     plotly::layout(
       annotations = list(list(
-        text = paste(icon, msg),
+        text = label,
         xref = "paper", yref = "paper", x = 0.5, y = 0.5,
         showarrow = FALSE,
         font = list(color = "#94a3b8", size = 13)
