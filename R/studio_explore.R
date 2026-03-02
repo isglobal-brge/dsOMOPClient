@@ -966,12 +966,12 @@
         shiny::tags$dt(class = "col-sm-4", "Date Column"),
         shiny::tags$dd(class = "col-sm-8",
                        as.character(dr$column %||% "")),
-        shiny::tags$dt(class = "col-sm-4", "Safe Min"),
+        shiny::tags$dt(class = "col-sm-4", "Safe Min (month)"),
         shiny::tags$dd(class = "col-sm-8",
-                       as.character(dr$min_date_safe %||% "N/A")),
-        shiny::tags$dt(class = "col-sm-4", "Safe Max"),
+                       as.character(dr$min_month_safe %||% dr$min_date_safe %||% "N/A")),
+        shiny::tags$dt(class = "col-sm-4", "Safe Max (month)"),
         shiny::tags$dd(class = "col-sm-8",
-                       as.character(dr$max_date_safe %||% "N/A"))
+                       as.character(dr$max_month_safe %||% dr$max_date_safe %||% "N/A"))
       )
     })
 
