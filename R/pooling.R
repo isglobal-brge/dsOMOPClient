@@ -854,15 +854,23 @@
         }
       }
 
+      n_servers <- length(all_dfs)
       groups <- split(combined, combined[meta_cols], drop = TRUE)
       pooled_rows <- lapply(groups, function(sub) {
         row <- sub[1, meta_cols, drop = FALSE]
 
-        # Sum count columns, propagate NA if any server suppressed
+        # If a group is missing data from any server, the absent rows may
+        # have been suppressed server-side. Treat count columns as NA to
+        # prevent subtraction attacks (inferring suppressed site's count
+        # from pooled - other_site).
+        servers_in_group <- length(unique(sub$.server))
+        group_incomplete <- servers_in_group < n_servers
+
+        # Sum count columns, propagate NA if any server suppressed or absent
         for (cc in count_cols) {
           if (cc %in% names(sub)) {
             vals <- sub[[cc]]
-            if (any(is.na(vals))) {
+            if (group_incomplete || any(is.na(vals))) {
               row[[cc]] <- NA_real_
             } else {
               row[[cc]] <- sum(vals)

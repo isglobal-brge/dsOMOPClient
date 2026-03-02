@@ -1547,7 +1547,7 @@
 
   n_analyses <- if ("analysis_id" %in% names(cm_df)) length(unique(cm_df$analysis_id)) else 0
   n_outcomes <- if ("outcome_id" %in% names(cm_df)) length(unique(cm_df$outcome_id)) else 0
-  n_sig <- sum(as.numeric(cm_df$p) < 0.05, na.rm = TRUE)
+  n_sig <- if ("p" %in% names(cm_df)) sum(as.numeric(cm_df$p) < 0.05, na.rm = TRUE) else 0L
   has_es <- is.data.frame(es_df) && nrow(es_df) > 0
 
   list(
