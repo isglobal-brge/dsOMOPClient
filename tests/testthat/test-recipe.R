@@ -110,6 +110,83 @@ test_that("omop_filter_value constructor with safe_bins", {
   expect_equal(f$params$value$upper, 20)
 })
 
+test_that("omop_filter_value rejects NULL safe_bins", {
+  expect_error(
+    omop_filter_value(threshold = 5, direction = "above", safe_bins = NULL),
+    "safe_bins"
+  )
+})
+
+test_that("omop_filter_value rejects degenerate bins", {
+  # Single break point → fewer than 2 breaks
+ expect_error(
+    omop_filter_value(threshold = 5, direction = "above",
+                       safe_bins = list(breaks = c(5))),
+    "safe_bins"
+  )
+  # Empty breaks
+  expect_error(
+    omop_filter_value(threshold = 5, direction = "above",
+                       safe_bins = list(breaks = numeric(0))),
+    "safe_bins"
+  )
+})
+
+test_that("omop_filter_value direction=below reverses bin range", {
+  bins <- list(breaks = c(0, 5, 10, 15, 20))
+  f <- omop_filter_value(threshold = 12, direction = "below", safe_bins = bins)
+  # threshold 12 → findInterval in [10,15) → bin_idx=3 → lower=0, upper=breaks[4]=15
+  expect_equal(f$params$value$lower, 0)
+  expect_equal(f$params$value$upper, 15)
+})
+
+test_that("omop_filter_value label is human-readable", {
+  bins <- list(breaks = c(0, 5, 10, 15, 20))
+  f <- omop_filter_value(column = "quantity", threshold = 7,
+                          direction = "above", safe_bins = bins)
+  expect_true(grepl("quantity", f$label))
+  expect_true(grepl("above", f$label))
+})
+
+test_that("omop_filter_value round-trip through recipe_to_plan", {
+  bins <- list(breaks = c(0, 5, 10, 15, 20))
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, name = "v", table = "measurement",
+                            concept_id = 3004249)
+  r <- recipe_add_filter(r, omop_filter_value(
+    column = "value_as_number", threshold = 7,
+    direction = "above", safe_bins = bins
+  ))
+  r <- recipe_add_output(r, omop_output(name = "out", type = "long"))
+  plan <- recipe_to_plan(r)
+  out <- plan$outputs$out
+  # Row-level value_bin filter should compile into the filter tree
+ expect_true(!is.null(out$filter))
+  # Should contain a value_bin leaf node
+  leaf <- if ("and" %in% names(out$filter)) out$filter$and[[1]] else out$filter
+  expect_equal(leaf$op, "value_bin")
+  expect_equal(leaf$var, "value_as_number")
+})
+
+test_that("date_range filter compiles to two conditions (>= start, <= end)", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, name = "v", table = "condition_occurrence",
+                            concept_id = 201820)
+  r <- recipe_add_filter(r, omop_filter_date_range("2020-01-01", "2023-12-31"))
+  r <- recipe_add_output(r, omop_output(name = "ev", type = "long"))
+  plan <- recipe_to_plan(r)
+  ft <- plan$outputs$ev$filter
+  expect_true("and" %in% names(ft))
+  # Two conditions: >= start, <= end
+  expect_equal(length(ft$and), 2)
+  ops <- vapply(ft$and, function(x) x$op, character(1))
+  expect_true(">=" %in% ops)
+  expect_true("<=" %in% ops)
+  vals <- vapply(ft$and, function(x) as.character(x$value), character(1))
+  expect_true("2020-01-01" %in% vals)
+  expect_true("2023-12-31" %in% vals)
+})
+
 test_that("omop_filter print works", {
   f <- omop_filter_sex("F")
   out <- capture.output(print(f))
