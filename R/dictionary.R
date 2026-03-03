@@ -33,7 +33,7 @@ ds.omop.tables <- function(schema_category = NULL,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  result <- DSI::datashield.aggregate(
+  result <- .ds_safe_aggregate(
     conns,
     expr = call("omopListTablesDS", session$res_symbol)
   )
@@ -78,7 +78,7 @@ ds.omop.columns <- function(table, symbol = "omop",
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  DSI::datashield.aggregate(
+  .ds_safe_aggregate(
     conns,
     expr = call("omopListColumnsDS", session$res_symbol, table)
   )
@@ -108,7 +108,7 @@ ds.omop.joins <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  DSI::datashield.aggregate(
+  .ds_safe_aggregate(
     conns,
     expr = call("omopRelationshipGraphDS", session$res_symbol)
   )
@@ -215,12 +215,12 @@ ds.omop.snapshot <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  caps <- DSI::datashield.aggregate(
+  caps <- .ds_safe_aggregate(
     conns,
     expr = call("omopGetCapabilitiesDS", session$res_symbol)
   )
 
-  graph <- DSI::datashield.aggregate(
+  graph <- .ds_safe_aggregate(
     conns,
     expr = call("omopRelationshipGraphDS", session$res_symbol)
   )

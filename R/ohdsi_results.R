@@ -21,7 +21,7 @@ ds.omop.ohdsi.status <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopOhdsiStatusDS", session$res_symbol)
   )
@@ -51,7 +51,7 @@ ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopOhdsiTablesDS", session$res_symbol)
   )
@@ -117,7 +117,7 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopOhdsiResultsDS", session$res_symbol,
                 table_name, columns, .ds_encode(filters), order_by,
@@ -161,7 +161,7 @@ ds.omop.ohdsi.summary <- function(tool_id, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopOhdsiSummaryDS", session$res_symbol, tool_id)
   )

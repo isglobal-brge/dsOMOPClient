@@ -25,7 +25,7 @@ ds.omop.cohort.list <- function(symbol = "omop",
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  DSI::datashield.aggregate(
+  .ds_safe_aggregate(
     conns,
     expr = call("omopCohortListDS", session$res_symbol)
   )
@@ -57,7 +57,7 @@ ds.omop.cohort.definition <- function(id,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  DSI::datashield.aggregate(
+  .ds_safe_aggregate(
     conns,
     expr = call("omopCohortGetDefinitionDS",
                 session$res_symbol,

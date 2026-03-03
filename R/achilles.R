@@ -27,7 +27,7 @@ ds.omop.achilles.status <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopAchillesStatusDS", session$res_symbol)
   )
@@ -73,7 +73,7 @@ ds.omop.achilles.analyses <- function(domain = NULL, symbol = "omop",
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopAchillesAnalysesDS", session$res_symbol, domain)
   )
@@ -146,10 +146,10 @@ ds.omop.achilles.results <- function(analysis_ids,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopAchillesResultsDS", session$res_symbol,
-                as.integer(analysis_ids))
+                .ds_encode(as.integer(analysis_ids)))
   )
 
   pooled <- NULL
@@ -228,10 +228,10 @@ ds.omop.achilles.distribution <- function(analysis_ids,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopAchillesDistributionDS", session$res_symbol,
-                as.integer(analysis_ids))
+                .ds_encode(as.integer(analysis_ids)))
   )
 
   pooled <- NULL
@@ -276,7 +276,7 @@ ds.omop.achilles.catalog <- function(symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopAchillesCatalogDS", session$res_symbol)
   )

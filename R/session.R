@@ -30,6 +30,34 @@
   }
 }
 
+#' Resilient datashield.aggregate that tolerates per-server failures
+#'
+#' Calls each server individually and returns partial results when some
+#' servers fail (e.g., table not present on one server). Failed servers
+#' are omitted from the result and their errors are attached as an attribute.
+#'
+#' @param conns DSI connections object.
+#' @param expr The call expression to evaluate.
+#' @return Named list of results (only successful servers).
+#' @keywords internal
+.ds_safe_aggregate <- function(conns, expr) {
+  server_names <- names(conns)
+  results <- list()
+  errors <- list()
+  for (srv in server_names) {
+    tryCatch({
+      res <- DSI::datashield.aggregate(conns[srv], expr = expr)
+      results[[srv]] <- res[[srv]]
+    }, error = function(e) {
+      errors[[srv]] <<- e$message
+    })
+  }
+  if (length(errors) > 0) {
+    attr(results, "ds_errors") <- errors
+  }
+  results
+}
+
 #' Connect to an OMOP CDM resource on DataSHIELD servers
 #'
 #' Establishes a connection to one or more OMOP CDM databases via DataSHIELD.

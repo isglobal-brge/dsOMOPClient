@@ -56,18 +56,23 @@ ds.omop.table.stats <- function(table,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopTableStatsDS", session$res_symbol,
                 table, .ds_encode(stats))
   )
 
+  ds_errors <- attr(raw, "ds_errors")
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
+  if (scope == "pooled" && length(raw) > 0) {
     pool_out <- .pool_result(raw, "table_stats", pooling_policy)
     pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    warnings <- c(warnings, pool_out$warnings)
   }
 
   dsomop_result(
@@ -125,18 +130,23 @@ ds.omop.column.stats <- function(table, column,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopColumnStatsDS", session$res_symbol,
                 table, column)
   )
 
+  ds_errors <- attr(raw, "ds_errors")
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
+  if (scope == "pooled" && length(raw) > 0) {
     pool_out <- .pool_result(raw, "column_stats", pooling_policy)
     pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    warnings <- c(warnings, pool_out$warnings)
   }
 
   dsomop_result(
@@ -190,17 +200,22 @@ ds.omop.domain.coverage <- function(scope = c("per_site", "pooled"),
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopDomainCoverageDS", session$res_symbol)
   )
 
+  ds_errors <- attr(raw, "ds_errors")
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
+  if (scope == "pooled" && length(raw) > 0) {
     pool_out <- .pool_result(raw, "domain_coverage", pooling_policy)
     pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    warnings <- c(warnings, pool_out$warnings)
   }
 
   dsomop_result(
@@ -263,18 +278,23 @@ ds.omop.missingness <- function(table, columns = NULL,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopMissingnessDS", session$res_symbol,
-                table, columns)
+                table, .ds_encode(columns))
   )
 
+  ds_errors <- attr(raw, "ds_errors")
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
+  if (scope == "pooled" && length(raw) > 0) {
     pool_out <- .pool_result(raw, "missingness", pooling_policy)
     pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    warnings <- c(warnings, pool_out$warnings)
   }
 
   dsomop_result(
@@ -337,18 +357,23 @@ ds.omop.value.counts <- function(table, column, top_n = 20,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopValueCountsDS", session$res_symbol,
                 table, column, as.integer(top_n), TRUE)
   )
 
+  ds_errors <- attr(raw, "ds_errors")
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
+  if (scope == "pooled" && length(raw) > 0) {
     pool_out <- .pool_result(raw, "value_counts", pooling_policy)
     pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    warnings <- c(warnings, pool_out$warnings)
   }
 
   dsomop_result(

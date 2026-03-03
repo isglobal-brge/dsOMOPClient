@@ -145,6 +145,10 @@
       tryCatch({
         stats_res <- ds.omop.table.stats(tbl, stats = c("rows", "persons"),
                                           symbol = state$symbol)
+        if (length(stats_res$per_site) == 0) {
+          return(shiny::p(class = "text-muted",
+            "Table not available on any server."))
+        }
         scope <- state$scope %||% "pooled"
 
         if (scope == "pooled" && length(stats_res$per_site) > 1) {

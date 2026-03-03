@@ -648,17 +648,22 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       position: fixed; z-index: 9998;
     }
     .shiny-notification {
-      border-radius: 9999px; font-size: 0.78rem; font-weight: 500;
-      padding: 0.45rem 0.9rem; border: none;
+      border-radius: 10px; font-size: 0.78rem; font-weight: 500;
+      padding: 0.5rem 0.85rem; border: none;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       background: #0f172a; color: #e2e8f0;
       animation: toastIn 0.2s ease-out;
-      margin-bottom: 0.35rem; width: fit-content;
-      max-width: 380px; overflow: hidden;
-      text-overflow: ellipsis; white-space: nowrap;
+      margin-bottom: 0.35rem; width: auto;
+      max-width: min(420px, calc(100vw - 2rem)); overflow: hidden;
+      word-wrap: break-word; white-space: normal;
+      line-height: 1.35;
     }
     .shiny-notification-close { display: none; }
-    .shiny-notification-message { background: #0f172a; color: #e2e8f0; }
+    .shiny-notification-message {
+      background: #0f172a; color: #e2e8f0;
+      border-radius: 9999px; white-space: nowrap;
+      text-overflow: ellipsis; padding: 0.45rem 0.9rem;
+    }
     .shiny-notification-warning { background: #78350f; color: #fef3c7; }
     .shiny-notification-error { background: #991b1b; color: #fee2e2; }
 
@@ -807,22 +812,36 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
   msg <- conditionMessage(e)
   # Strip ANSI escape codes
   msg <- gsub("\033\\[[0-9;]*m", "", msg)
-  msg <- gsub("\\[1m|\\[22m|\\[0m|\\[31m|\\[39m", "", msg)
+  msg <- gsub("\\[1m|\\[22m|\\[0m|\\[31m|\\[39m|\\[33m", "", msg)
   # Try to get actual datashield errors
   if (grepl("datashield\\.errors", msg, ignore.case = TRUE)) {
     errs <- tryCatch(DSI::datashield.errors(), error = function(e2) NULL)
     if (!is.null(errs) && length(errs) > 0) {
-      err_txt <- paste(vapply(seq_along(errs), function(i) {
+      # Extract the meaningful part of each server error
+      parts <- vapply(seq_along(errs), function(i) {
         srv <- names(errs)[i]
         detail <- gsub("\033\\[[0-9;]*m", "", as.character(errs[[i]]))
-        detail <- gsub("\\[1m|\\[22m|\\[0m|\\[31m|\\[39m", "", detail)
-        paste0(srv, ": ", substr(trimws(detail), 1, 120))
-      }, character(1)), collapse = " | ")
-      return(err_txt)
+        detail <- gsub("\\[1m|\\[22m|\\[0m|\\[31m|\\[39m|\\[33m", "", detail)
+        # Extract "Error : <message>" from the full command trace
+        core <- sub(".*Error\\s*:\\s*", "", detail)
+        core <- trimws(core)
+        if (nchar(core) > 100) core <- paste0(substr(core, 1, 97), "...")
+        paste0(srv, ": ", core)
+      }, character(1))
+      # If all servers have the same error, show it once
+      cores <- sub("^[^:]+:\\s*", "", parts)
+      if (length(unique(cores)) == 1) {
+        return(cores[1])
+      }
+      return(paste(parts, collapse = " | "))
     }
     return("Server error (check connection)")
   }
-  substr(msg, 1, 200)
+  # Clean up common verbose patterns
+  msg <- sub("^.*Error\\s*:\\s*", "", msg)
+  msg <- trimws(msg)
+  if (nchar(msg) > 150) msg <- paste0(substr(msg, 1, 147), "...")
+  msg
 }
 
 #' Extract CDM table names with person_id from state tables

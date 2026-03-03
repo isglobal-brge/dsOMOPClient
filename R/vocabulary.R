@@ -66,7 +66,7 @@ ds.omop.concept.search <- function(pattern, domain = NULL,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopSearchConceptsDS", session$res_symbol,
                 pattern, domain, vocabulary,
@@ -122,7 +122,7 @@ ds.omop.concept.lookup <- function(concept_ids,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopLookupConceptsDS", session$res_symbol,
                 .ds_encode(as.integer(concept_ids)))
@@ -182,10 +182,10 @@ ds.omop.concept.descendants <- function(ancestor_ids,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopGetDescendantsDS", session$res_symbol,
-                as.integer(ancestor_ids), include_self)
+                .ds_encode(as.integer(ancestor_ids)), include_self)
   )
 
   dsomop_result(
@@ -278,7 +278,7 @@ ds.omop.concept.expand <- function(concept_set,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopExpandConceptSetDS", session$res_symbol,
                 .ds_encode(concept_set))

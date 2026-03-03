@@ -148,7 +148,7 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
   mode <- match.arg(mode, c("aggregate", "assign"))
 
   if (mode == "aggregate") {
-    results <- DSI::datashield.aggregate(
+    results <- .ds_safe_aggregate(
       conns,
       expr = call("omopQueryExecDS", session$res_symbol,
                    query_id, .ds_encode(inputs), mode)

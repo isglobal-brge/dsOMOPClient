@@ -57,15 +57,21 @@ ds.omop.safe.cutpoints <- function(table, column, concept_id = NULL,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopSafeCutpointsDS", session$res_symbol,
                 table, column, concept_id, as.integer(n_bins))
   )
 
+  ds_errors <- attr(raw, "ds_errors")
+  warnings <- if (!is.null(ds_errors)) {
+    paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  } else character(0)
+
   dsomop_result(
     per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = scope))
+    meta = list(call_code = code, scope = scope, warnings = warnings))
 }
 
 #' Create a safe numeric value filter using server-computed bins
@@ -194,19 +200,24 @@ ds.omop.concept.prevalence <- function(table, concept_col = NULL,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopConceptPrevalenceDS", session$res_symbol,
                 table, concept_col, metric, as.integer(top_n),
                 cohort_table, window)
   )
 
+  ds_errors <- attr(raw, "ds_errors")
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
+  if (scope == "pooled" && length(raw) > 0) {
     pool_out <- .pool_result(raw, "concept_prevalence", pooling_policy)
     pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    warnings <- c(warnings, pool_out$warnings)
   }
 
   dsomop_result(
@@ -279,7 +290,7 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
   if (scope == "pooled") {
     # Two-pass pooling: compute shared bin edges across servers
     # Pass 1: Get p05/p95 ranges from each server
-    range_raw <- DSI::datashield.aggregate(
+    range_raw <- .ds_safe_aggregate(
       conns,
       expr = call("omopNumericRangeDS", session$res_symbol,
                   table, value_col, cohort_table, window)
@@ -301,7 +312,7 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
       shared_breaks <- seq(global_p05, global_p95, length.out = as.integer(bins) + 1L)
 
       # Pass 2: Histogram with shared breaks
-      raw <- DSI::datashield.aggregate(
+      raw <- .ds_safe_aggregate(
         conns,
         expr = call("omopNumericHistogramDS", session$res_symbol,
                     table, value_col, as.integer(bins),
@@ -313,7 +324,7 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
       warnings <- pool_out$warnings
     } else {
       # Fallback: single-pass (ranges are degenerate)
-      raw <- DSI::datashield.aggregate(
+      raw <- .ds_safe_aggregate(
         conns,
         expr = call("omopNumericHistogramDS", session$res_symbol,
                     table, value_col, as.integer(bins),
@@ -326,7 +337,7 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
     }
   } else {
     # Per-site: single pass (no pooling needed)
-    raw <- DSI::datashield.aggregate(
+    raw <- .ds_safe_aggregate(
       conns,
       expr = call("omopNumericHistogramDS", session$res_symbol,
                   table, value_col, as.integer(bins),
@@ -404,17 +415,23 @@ ds.omop.value.quantiles <- function(table, value_col,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopNumericQuantilesDS", session$res_symbol,
                 table, value_col, .ds_encode(probs),
                 cohort_table, window, as.integer(rounding))
   )
 
+  ds_errors <- attr(raw, "ds_errors")
   # Quantiles are NOT safely poolable without individual-level data
   warnings <- character(0)
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
   if (scope == "pooled") {
-    warnings <- "Quantiles cannot be safely pooled without individual-level data"
+    warnings <- c(warnings,
+      "Quantiles cannot be safely pooled without individual-level data")
   }
 
   dsomop_result(
@@ -484,19 +501,24 @@ ds.omop.date.counts <- function(table, date_col = NULL,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopDateCountsDS", session$res_symbol,
                 table, date_col, granularity,
                 cohort_table, window)
   )
 
+  ds_errors <- attr(raw, "ds_errors")
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
+  if (scope == "pooled" && length(raw) > 0) {
     pool_out <- .pool_result(raw, "date_counts", pooling_policy)
     pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    warnings <- c(warnings, pool_out$warnings)
   }
 
   dsomop_result(
@@ -562,23 +584,26 @@ ds.omop.concept.drilldown <- function(table, concept_id,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
-    conns,
-    expr = if (!is.null(concept_col)) {
-      call("omopConceptDrilldownDS", session$res_symbol,
-           table, as.integer(concept_id), concept_col)
-    } else {
-      call("omopConceptDrilldownDS", session$res_symbol,
-           table, as.integer(concept_id))
-    }
-  )
+  the_expr <- if (!is.null(concept_col)) {
+    call("omopConceptDrilldownDS", session$res_symbol,
+         table, as.integer(concept_id), concept_col)
+  } else {
+    call("omopConceptDrilldownDS", session$res_symbol,
+         table, as.integer(concept_id))
+  }
+  raw <- .ds_safe_aggregate(conns, expr = the_expr)
 
+  ds_errors <- attr(raw, "ds_errors")
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
+  if (scope == "pooled" && length(raw) > 0) {
     pool_out <- .pool_result(raw, "concept_drilldown", pooling_policy)
     pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    warnings <- c(warnings, pool_out$warnings)
   }
 
   dsomop_result(
@@ -636,18 +661,23 @@ ds.omop.concept.locate <- function(concept_ids,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  raw <- DSI::datashield.aggregate(
+  raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopLocateConceptDS", session$res_symbol,
-                as.integer(concept_ids))
+                .ds_encode(as.integer(concept_ids)))
   )
 
+  ds_errors <- attr(raw, "ds_errors")
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (!is.null(ds_errors)) {
+    warnings <- paste0("Server errors: ",
+      paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
+  }
+  if (scope == "pooled" && length(raw) > 0) {
     pool_out <- .pool_result(raw, "concept_locate", pooling_policy)
     pooled <- pool_out$result
-    warnings <- pool_out$warnings
+    warnings <- c(warnings, pool_out$warnings)
   }
 
   dsomop_result(

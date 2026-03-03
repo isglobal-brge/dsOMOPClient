@@ -729,7 +729,7 @@ ds.omop.plan.validate <- function(plan, symbol = "omop",
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  DSI::datashield.aggregate(
+  .ds_safe_aggregate(
     conns,
     expr = call("omopPlanPreviewDS",
                 session$res_symbol, .ds_encode(plan))
@@ -774,7 +774,7 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  DSI::datashield.aggregate(
+  .ds_safe_aggregate(
     conns,
     expr = call("omopPlanPreviewDS",
                 session$res_symbol, .ds_encode(plan))
