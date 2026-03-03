@@ -15,7 +15,7 @@ omop_variable(
     "time_since", "binned", "age", "sex_mf", "obs_duration", "drug_duration", "sum",
     "n_distinct", "sd", "cv", "slope", "abnormal_high", "abnormal_low", "gap_max",
     "gap_mean", "duration_sum", "prior_obs", "followup", "demo_missingness", "charlson",
-    "chadsvasc"),
+    "chads2", "chadsvasc", "dcsi", "hfrs"),
   value_source = NULL,
   time_window = NULL,
   suffix_mode = c("index", "range", "label"),
