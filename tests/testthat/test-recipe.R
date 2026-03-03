@@ -98,13 +98,16 @@ test_that("omop_filter_date_range constructor", {
   expect_equal(f$params$start, "2020-01-01")
 })
 
-test_that("omop_filter_value constructor", {
-  f <- omop_filter_value(op = ">=", value = 6.5)
+test_that("omop_filter_value constructor with safe_bins", {
+  bins <- list(breaks = c(0, 5, 10, 15, 20))
+  f <- omop_filter_value(column = "value_as_number", threshold = 6.5,
+                          direction = "above", safe_bins = bins)
   expect_s3_class(f, "omop_filter")
-  expect_equal(f$type, "value_threshold")
+  expect_equal(f$type, "value_bin")
   expect_equal(f$level, "row")
-  expect_equal(f$params$op, ">=")
-  expect_equal(f$params$value, 6.5)
+  # Threshold 6.5 falls in bin [5, 10), direction "above" → lower=5, upper=20
+  expect_equal(f$params$value$lower, 5)
+  expect_equal(f$params$value$upper, 20)
 })
 
 test_that("omop_filter print works", {
@@ -795,7 +798,8 @@ test_that("omop_variable with all type options", {
 })
 
 test_that("omop_variable with row-level filters", {
-  f <- omop_filter_value(op = ">=", value = 6.5)
+  bins <- list(breaks = c(0, 5, 10, 15, 20))
+  f <- omop_filter_value(threshold = 6.5, direction = "above", safe_bins = bins)
   v <- omop_variable(name = "hba1c_high", table = "measurement",
                       concept_id = 3004249, filters = list(f))
   expect_equal(length(v$filters), 1)
@@ -839,9 +843,10 @@ test_that("omop_filter_has_concept with window", {
 })
 
 test_that("omop_filter_value with custom column", {
-  f <- omop_filter_value(op = ">", value = 100,
-                          column = "quantity")
-  expect_equal(f$params$column, "quantity")
+  bins <- list(breaks = c(0, 50, 100, 150, 200))
+  f <- omop_filter_value(column = "quantity", threshold = 100,
+                          direction = "above", safe_bins = bins)
+  expect_equal(f$params$var, "quantity")
 })
 
 # --- recipe populations --------------------------------------------------------
@@ -1074,10 +1079,11 @@ test_that("recipe_to_plan with row-level date filter", {
   c <- recipe_add_filter(c, omop_filter_date_range("2020-01-01", "2023-12-31"))
   c <- recipe_add_output(c, omop_output(name = "events", type = "long"))
   plan <- recipe_to_plan(c)
-  # Row filter should be attached to the output
+  # Row filter compiled into filter tree and attached to output
   out <- plan$outputs$events
-  expect_true(!is.null(out$filters))
-  expect_true(!is.null(out$filters$time_window))
+  expect_true(!is.null(out$filter))
+  # Filter tree contains date bounds via compiled AND node
+  expect_true("and" %in% names(out$filter))
 })
 
 test_that("recipe_to_plan with baseline output type", {
@@ -1301,7 +1307,9 @@ test_that(".codegen_filter generates correct code for each type", {
   f_dr <- omop_filter_date_range("2020-01-01", "2023-12-31")
   expect_true(grepl("omop_filter_date_range", .codegen_filter(f_dr)))
 
-  f_val <- omop_filter_value(">=", 6.5)
+  bins <- list(breaks = c(0, 5, 10, 15, 20))
+  f_val <- omop_filter_value(threshold = 6.5, direction = "above",
+                              safe_bins = bins)
   expect_true(grepl("omop_filter_value", .codegen_filter(f_val)))
 })
 

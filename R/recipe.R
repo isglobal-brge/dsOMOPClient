@@ -671,7 +671,7 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
                                   "not_has_concept", "concept_count",
                                   "prior_observation", "followup",
                                   "visit_count", "has_measurement",
-                                  "missing_measurement"),
+                                  "missing_measurement", "value_bin"),
                         level = c("population", "row", "output"),
                         params = list(),
                         label = NULL) {
@@ -708,7 +708,10 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
       has_measurement = paste0("Has measurement ", params$concept_id %||% "?",
                                " in range"),
       missing_measurement = paste0("Missing measurement ",
-                                   params$concept_id %||% "?")
+                                   params$concept_id %||% "?"),
+      value_bin = paste0(params$var %||% "value", " bin [",
+                         params$value$lower %||% "?", ", ",
+                         params$value$upper %||% "?", ")")
     )
   }
 
@@ -2323,6 +2326,13 @@ recipe_to_code <- function(recipe) {
   } else if (f$type == "value_threshold") {
     .build_code("omop_filter_value",
       op = f$params$op, value = f$params$value)
+  } else if (f$type == "value_bin") {
+    .build_code("omop_filter_value",
+      column = f$params$var,
+      threshold = mean(c(f$params$value$lower, f$params$value$upper)),
+      direction = if (f$params$value$upper == max(f$params$value$upper))
+                    "above" else "below",
+      safe_bins = "# requires safe_bins from ds.omop.safe.cutpoints()")
   } else if (f$type == "not_has_concept") {
     .build_code("omop_filter_not_has_concept",
       concept_id = f$params$concept_id,
