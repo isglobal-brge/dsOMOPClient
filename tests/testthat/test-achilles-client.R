@@ -62,7 +62,7 @@ test_that("ds.omop.achilles.results execute=FALSE returns dsomop_result", {
 
 test_that("ds.omop.achilles.distribution execute=FALSE returns dsomop_result", {
   result <- ds.omop.achilles.distribution(
-    analysis_ids = c(3, 113),
+    analysis_ids = c(3, 103),
     execute = FALSE
   )
   expect_s3_class(result, "dsomop_result")
@@ -87,14 +87,14 @@ test_that("ds.omop.achilles.results generates correct call_code", {
 test_that("pooling achilles_results sums counts correctly", {
   per_site <- list(
     server_a = data.frame(
-      analysis_id = c(0L, 1L, 1L),
+      analysis_id = c(1L, 2L, 2L),
       stratum_1 = c(NA, "8507", "8532"),
       stratum_2 = NA_character_,
       count_value = c(100, 55, 45),
       stringsAsFactors = FALSE
     ),
     server_b = data.frame(
-      analysis_id = c(0L, 1L, 1L),
+      analysis_id = c(1L, 2L, 2L),
       stratum_1 = c(NA, "8507", "8532"),
       stratum_2 = NA_character_,
       count_value = c(200, 110, 90),
@@ -106,25 +106,25 @@ test_that("pooling achilles_results sums counts correctly", {
   expect_false(is.null(result$result))
   df <- result$result
 
-  total <- df[df$analysis_id == 0, ]
+  total <- df[df$analysis_id == 1, ]
   expect_equal(total$count_value, 300)
 
-  male <- df[df$analysis_id == 1 & df$stratum_1 == "8507", ]
+  male <- df[df$analysis_id == 2 & df$stratum_1 == "8507", ]
   expect_equal(male$count_value, 165)
 
-  female <- df[df$analysis_id == 1 & df$stratum_1 == "8532", ]
+  female <- df[df$analysis_id == 2 & df$stratum_1 == "8532", ]
   expect_equal(female$count_value, 135)
 })
 
 test_that("pooling achilles_results strict policy fails on NA", {
   per_site <- list(
     server_a = data.frame(
-      analysis_id = 0L, stratum_1 = NA_character_,
+      analysis_id = 1L, stratum_1 = NA_character_,
       stratum_2 = NA_character_,
       count_value = 100, stringsAsFactors = FALSE
     ),
     server_b = data.frame(
-      analysis_id = 0L, stratum_1 = NA_character_,
+      analysis_id = 1L, stratum_1 = NA_character_,
       stratum_2 = NA_character_,
       count_value = NA_real_, stringsAsFactors = FALSE
     )
@@ -133,13 +133,13 @@ test_that("pooling achilles_results strict policy fails on NA", {
   result <- .pool_result(per_site, "achilles_results", "strict")
   # Fix E: suppressed rows are DROPPED from pooled output (no hints)
   df <- result$result
-  expect_equal(nrow(df[df$analysis_id == 0, , drop = FALSE]), 0)
+  expect_equal(nrow(df[df$analysis_id == 1, , drop = FALSE]), 0)
 })
 
 test_that("pooling achilles_distribution weighted mean calculation", {
   per_site <- list(
     server_a = data.frame(
-      analysis_id = 113L,
+      analysis_id = 103L,
       stratum_1 = NA_character_,
       stratum_2 = NA_character_,
       count_value = 100,
@@ -150,7 +150,7 @@ test_that("pooling achilles_distribution weighted mean calculation", {
       stringsAsFactors = FALSE
     ),
     server_b = data.frame(
-      analysis_id = 113L,
+      analysis_id = 103L,
       stratum_1 = NA_character_,
       stratum_2 = NA_character_,
       count_value = 200,
@@ -184,7 +184,7 @@ test_that("pooling achilles_distribution weighted mean calculation", {
 test_that("pooling achilles_distribution sets median/percentiles to NA", {
   per_site <- list(
     server_a = data.frame(
-      analysis_id = 113L,
+      analysis_id = 103L,
       stratum_1 = NA_character_,
       stratum_2 = NA_character_,
       count_value = 100,
