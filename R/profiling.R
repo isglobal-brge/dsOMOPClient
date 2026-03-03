@@ -59,7 +59,7 @@ ds.omop.table.stats <- function(table,
   raw <- DSI::datashield.aggregate(
     conns,
     expr = call("omopTableStatsDS", session$res_symbol,
-                table, stats)
+                table, .ds_encode(stats))
   )
 
   pooled <- NULL

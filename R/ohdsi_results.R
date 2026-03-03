@@ -120,7 +120,7 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
   raw <- DSI::datashield.aggregate(
     conns,
     expr = call("omopOhdsiResultsDS", session$res_symbol,
-                table_name, columns, filters, order_by,
+                table_name, columns, .ds_encode(filters), order_by,
                 as.integer(limit), tool_id)
   )
 

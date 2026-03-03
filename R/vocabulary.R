@@ -125,7 +125,7 @@ ds.omop.concept.lookup <- function(concept_ids,
   raw <- DSI::datashield.aggregate(
     conns,
     expr = call("omopLookupConceptsDS", session$res_symbol,
-                as.integer(concept_ids))
+                .ds_encode(as.integer(concept_ids)))
   )
 
   dsomop_result(
@@ -281,7 +281,7 @@ ds.omop.concept.expand <- function(concept_set,
   raw <- DSI::datashield.aggregate(
     conns,
     expr = call("omopExpandConceptSetDS", session$res_symbol,
-                concept_set)
+                .ds_encode(concept_set))
   )
 
   dsomop_result(

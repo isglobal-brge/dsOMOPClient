@@ -305,7 +305,7 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
         conns,
         expr = call("omopNumericHistogramDS", session$res_symbol,
                     table, value_col, as.integer(bins),
-                    cohort_table, window, shared_breaks)
+                    cohort_table, window, .ds_encode(shared_breaks))
       )
 
       pool_out <- .pool_result(raw, "histogram", pooling_policy)
@@ -407,7 +407,7 @@ ds.omop.value.quantiles <- function(table, value_col,
   raw <- DSI::datashield.aggregate(
     conns,
     expr = call("omopNumericQuantilesDS", session$res_symbol,
-                table, value_col, probs,
+                table, value_col, .ds_encode(probs),
                 cohort_table, window, as.integer(rounding))
   )
 

@@ -17,7 +17,7 @@
 #' @return A JSON string if x is a list, or x unchanged if scalar.
 #' @keywords internal
 .ds_encode <- function(x) {
-  if (is.list(x) || (is.vector(x) && length(x) > 1 && !is.character(x))) {
+  if (is.list(x) || (is.vector(x) && length(x) > 1)) {
     json <- as.character(jsonlite::toJSON(x, auto_unbox = TRUE, null = "null"))
     # URL-safe base64: no +/= that could confuse Opal's R expression parser
     b64 <- gsub("[\r\n]", "", jsonlite::base64_enc(charToRaw(json)))
@@ -99,7 +99,7 @@ ds.omop.connect <- function(resource,
     }
     tryCatch({
       DSI::datashield.assign.resource(
-        conns, symbol = res_symbol,
+        conns[srv], symbol = res_symbol,
         resource = res_name
       )
     }, error = function(e) {
