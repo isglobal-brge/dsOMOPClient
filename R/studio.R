@@ -300,6 +300,11 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       display: inline-flex !important; align-items: center;
       gap: 0.5rem; font-size: 1.05rem;
     }
+    /* Dark mode toggle always visible on dark navbar */
+    .navbar bslib-input-dark-mode {
+      --text-1: rgba(255,255,255,0.7) !important;
+      --text-2: rgba(255,255,255,0.4) !important;
+    }
 
     /* ========== Disabled Achilles / OHDSI Results tabs ========== */
     .navbar .nav-link.achilles-disabled,
