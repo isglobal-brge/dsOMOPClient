@@ -1,6 +1,35 @@
 # Module: Session Management
 # Connect, disconnect, and query status of OMOP CDM DataSHIELD sessions.
 
+# --- JSON transport for Opal compatibility ---
+
+#' Encode a complex R object as JSON for DataSHIELD transport
+#'
+#' When passing complex R objects (lists, named vectors) through
+#' datashield.assign.expr() or datashield.aggregate(), Opal serializes them
+#' via deparse(), which generates structure()/c() calls not in the
+#' DataSHIELD whitelist. This helper wraps them as JSON strings.
+#' The server-side .ds_arg() transparently deserializes them.
+#' In DSLite, call() handles native R objects directly, so this
+#' function only encodes lists/complex objects — scalars pass through.
+#'
+#' @param x An R object to encode.
+#' @return A JSON string if x is a list, or x unchanged if scalar.
+#' @keywords internal
+.ds_encode <- function(x) {
+  if (is.list(x) || (is.vector(x) && length(x) > 1 && !is.character(x))) {
+    json <- as.character(jsonlite::toJSON(x, auto_unbox = TRUE, null = "null"))
+    # URL-safe base64: no +/= that could confuse Opal's R expression parser
+    b64 <- gsub("[\r\n]", "", jsonlite::base64_enc(charToRaw(json)))
+    b64 <- gsub("\\+", "-", b64)
+    b64 <- gsub("/", "_", b64)
+    b64 <- gsub("=+$", "", b64)
+    paste0("B64:", b64)
+  } else {
+    x
+  }
+}
+
 #' Connect to an OMOP CDM resource on DataSHIELD servers
 #'
 #' Establishes a connection to one or more OMOP CDM databases via DataSHIELD.
@@ -42,7 +71,7 @@ ds.omop.connect <- function(resource,
     stop("No DataSHIELD connections available.", call. = FALSE)
   }
 
-  server_names <- DSI::datashield.connections_find(conns)
+  server_names <- names(conns)
 
   if (is.character(resource) && length(resource) == 1) {
     resource_map <- stats::setNames(

@@ -151,7 +151,7 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
     results <- DSI::datashield.aggregate(
       conns,
       expr = call("omopQueryExecDS", session$res_symbol,
-                   query_id, inputs, mode)
+                   query_id, .ds_encode(inputs), mode)
     )
     return(results)
   }
@@ -161,7 +161,7 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
     conns,
     symbol = paste0("query_", gsub("\\.", "_", query_id)),
     expr = call("omopQueryExecDS", session$res_symbol,
-                query_id, inputs, mode)
+                query_id, .ds_encode(inputs), mode)
   )
   invisible(TRUE)
 }

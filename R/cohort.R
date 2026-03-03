@@ -125,7 +125,7 @@ ds.omop.cohort.create <- function(spec,
     symbol = paste0(".cohort_", cohort_id %||% "tmp"),
     expr = call("omopCohortCreateDS",
                 session$res_symbol,
-                spec, mode,
+                .ds_encode(spec), mode,
                 as.integer(cohort_id %||% 0L),
                 name %||% "",
                 overwrite)
