@@ -983,7 +983,7 @@
   tool_themes <- list(
     dqd = "success", cohort_diagnostics = "primary",
     cohort_incidence = "info", characterization = "warning",
-    cohort_method = "danger", sccs = "purple",
+    cohort_method = "danger", sccs = "info",
     plp = "dark", evidence_synthesis = "secondary"
   )
 
