@@ -791,6 +791,11 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' Sparse outputs (e.g. temporal covariates) are split into multiple
 #' symbols: \code{<name>.covariates} and \code{<name>.covariateRef}.
 #'
+#' When \code{output_mode = "staged"}, outputs are written to Parquet
+#' files on the server and assigned as \code{FlowerDatasetDescriptor}
+#' objects instead of data.frames. This avoids loading large datasets
+#' into R memory and enables zero-copy column projection with dsFlower.
+#'
 #' @param plan An \code{omop_plan} object.
 #' @param out Named character vector; maps output names (as defined in
 #'   the plan) to server-side symbol names. For example,
@@ -800,6 +805,9 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #'   server (default \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL}, uses the
 #'   connections stored in the session.
+#' @param output_mode Character; \code{"memory"} (default, backwards
+#'   compatible) or \code{"staged"} (writes to Parquet, returns
+#'   descriptors). Staged mode requires \code{arrow} on the server.
 #' @return Invisible; the \code{out} symbol mapping (for chaining).
 #' @examples
 #' \dontrun{
@@ -810,14 +818,21 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' ds.omop.plan.execute(plan,
 #'   out = c(baseline = "D_base", conditions = "D_cond")
 #' )
-#' # Now use D_base and D_cond with ds.summary(), ds.table(), etc.
+#'
+#' # Staged mode for large extractions
+#' ds.omop.plan.execute(plan,
+#'   out = c(features = "D_features"),
+#'   output_mode = "staged"
+#' )
+#' # D_features is now a FlowerDatasetDescriptor on the server
 #' }
 #' @seealso \code{\link{ds.omop.plan.validate}},
 #'   \code{\link{ds.omop.plan.preview}}
 #' @export
 ds.omop.plan.execute <- function(plan, out,
                                  symbol = "omop",
-                                 conns = NULL) {
+                                 conns = NULL,
+                                 output_mode = "memory") {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
@@ -828,7 +843,8 @@ ds.omop.plan.execute <- function(plan, out,
     conns,
     symbol = exec_symbol,
     expr = call("omopPlanExecuteDS",
-                session$res_symbol, .ds_encode(plan), .ds_encode(out))
+                session$res_symbol, .ds_encode(plan), .ds_encode(out),
+                output_mode)
   )
 
   # exec_symbol holds TRUE (return value); clean up
