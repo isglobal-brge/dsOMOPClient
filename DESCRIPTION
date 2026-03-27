@@ -21,6 +21,7 @@ Imports:
     DSI,
     methods,
     stats,
+    utils,
     shiny (>= 1.7.0),
     bslib (>= 0.5.0),
     DT,
