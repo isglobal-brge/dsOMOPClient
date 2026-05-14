@@ -27,5 +27,6 @@ recipe_export_yaml(recipe, file = "my_recipe.yml")
 }
 }
 \seealso{
-\code{\link{recipe_import_yaml}}, \code{\link{recipe_export_json}}
+\code{\link{recipe_import_yaml}}, \code{\link{recipe_save}},
+\code{\link{recipe_export_json}}
 }

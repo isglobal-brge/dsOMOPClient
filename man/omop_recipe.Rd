@@ -11,13 +11,14 @@ An \code{omop_recipe} object containing empty populations, blocks,
   variables, filters, outputs, and metadata.
 }
 \description{
-The recipe is the central data structure for the Recipe Builder workflow.
-It holds all selections for an OMOP data extraction: populations (who),
-variable blocks (what, grouped), individual variables, filters (constraints),
-and output specifications (how to shape the result). A recipe is built
-incrementally using \code{recipe_add_*} / \code{recipe_remove_*} functions,
-then compiled to a server-side plan via \code{\link{recipe_to_plan}} and
-executed via \code{\link{recipe_execute}}.
+The recipe is the central user-facing data structure for the Recipe Builder
+workflow. It holds all selections for an OMOP data extraction: populations
+(who), variable blocks (what, grouped), individual variables, filters
+(constraints), and output specifications (how to shape the result). Most
+users can keep working at this level with \code{\link{recipe_preview}},
+\code{\link{recipe_execute}}, \code{\link{recipe_save}}, and
+\code{\link{recipe_load}}; \code{\link{recipe_to_plan}} exists as the
+lower-level execution contract sent to the server.
 }
 \examples{
 \dontrun{
@@ -28,10 +29,11 @@ recipe <- recipe_add_block(recipe, omop_variable_block(
   format = "binary"
 ))
 recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
-plan <- recipe_to_plan(recipe)
+recipe_execute(recipe)
 }
 }
 \seealso{
 \code{\link{recipe_add_block}}, \code{\link{recipe_add_filter}},
-  \code{\link{recipe_to_plan}}, \code{\link{recipe_execute}}
+  \code{\link{recipe_preview}}, \code{\link{recipe_execute}},
+  \code{\link{recipe_save}}, \code{\link{recipe_to_plan}}
 }

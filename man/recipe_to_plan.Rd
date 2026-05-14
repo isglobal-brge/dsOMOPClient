@@ -19,6 +19,11 @@ population-level filters to cohort specifications, groups variables by
 output and table, selects the appropriate plan builder (person_level,
 features, events, survival, intervals) for each output type, and attaches
 row-level filter trees.
+
+Recipes are the recommended interface for ordinary analysis code. Plans are
+retained as an explicit lower-level contract so advanced users, the Shiny
+builder, tests, and the server can inspect the exact payload before it is
+executed.
 }
 \examples{
 \dontrun{
@@ -27,7 +32,8 @@ recipe <- recipe_add_block(recipe, omop_variable_block(
   table = "condition_occurrence",
   concept_ids = c(201820), format = "binary"))
 recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
-plan <- recipe_to_plan(recipe)
+recipe_execute(recipe)
+plan <- recipe_to_plan(recipe)  # advanced: inspect the server payload
 }
 }
 \seealso{

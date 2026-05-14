@@ -28,5 +28,6 @@ print(schemas[["output_1"]])
 }
 }
 \seealso{
-\code{\link{recipe_to_plan}}, \code{\link{recipe_preview_stats}}
+\code{\link{recipe_to_plan}}, \code{\link{recipe_preview}},
+\code{\link{recipe_preview_stats}}
 }

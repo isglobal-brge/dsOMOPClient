@@ -4,7 +4,13 @@
 \alias{recipe_execute}
 \title{Execute a recipe: compile to plan and run}
 \usage{
-recipe_execute(recipe, out = NULL, symbol = "omop", conns = NULL)
+recipe_execute(
+  recipe,
+  out = NULL,
+  symbol = "omop",
+  conns = NULL,
+  output_mode = "memory"
+)
 }
 \arguments{
 \item{recipe}{An \code{omop_recipe} object.}
@@ -17,6 +23,9 @@ output specifications.}
 \code{"omop"}).}
 
 \item{conns}{DSI connections or \code{NULL} (uses active connections).}
+
+\item{output_mode}{Character; \code{"memory"} (default) or \code{"staged"}.
+Passed through to \code{\link{ds.omop.plan.execute}}.}
 }
 \value{
 Invisibly, the output symbol mapping (a named character vector).
@@ -31,6 +40,7 @@ auto-generated as \code{D_<name>}.
 \examples{
 \dontrun{
 recipe_execute(recipe)
+recipe_execute(recipe, output_mode = "staged")
 # Or with explicit symbol mapping:
 recipe_execute(recipe, out = c(features_wide = "D_features"))
 }

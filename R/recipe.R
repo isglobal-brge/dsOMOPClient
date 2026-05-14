@@ -1310,13 +1310,14 @@ print.omop_output <- function(x, ...) {
 
 #' Create an empty extraction recipe
 #'
-#' The recipe is the central data structure for the Recipe Builder workflow.
-#' It holds all selections for an OMOP data extraction: populations (who),
-#' variable blocks (what, grouped), individual variables, filters (constraints),
-#' and output specifications (how to shape the result). A recipe is built
-#' incrementally using \code{recipe_add_*} / \code{recipe_remove_*} functions,
-#' then compiled to a server-side plan via \code{\link{recipe_to_plan}} and
-#' executed via \code{\link{recipe_execute}}.
+#' The recipe is the central user-facing data structure for the Recipe Builder
+#' workflow. It holds all selections for an OMOP data extraction: populations
+#' (who), variable blocks (what, grouped), individual variables, filters
+#' (constraints), and output specifications (how to shape the result). Most
+#' users can keep working at this level with \code{\link{recipe_preview}},
+#' \code{\link{recipe_execute}}, \code{\link{recipe_save}}, and
+#' \code{\link{recipe_load}}; \code{\link{recipe_to_plan}} exists as the
+#' lower-level execution contract sent to the server.
 #'
 #' @return An \code{omop_recipe} object containing empty populations, blocks,
 #'   variables, filters, outputs, and metadata.
@@ -1329,10 +1330,11 @@ print.omop_output <- function(x, ...) {
 #'   format = "binary"
 #' ))
 #' recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
-#' plan <- recipe_to_plan(recipe)
+#' recipe_execute(recipe)
 #' }
 #' @seealso \code{\link{recipe_add_block}}, \code{\link{recipe_add_filter}},
-#'   \code{\link{recipe_to_plan}}, \code{\link{recipe_execute}}
+#'   \code{\link{recipe_preview}}, \code{\link{recipe_execute}},
+#'   \code{\link{recipe_save}}, \code{\link{recipe_to_plan}}
 #' @export
 omop_recipe <- function() {
   obj <- list(
@@ -1745,6 +1747,11 @@ print.omop_recipe <- function(x, ...) {
 #' features, events, survival, intervals) for each output type, and attaches
 #' row-level filter trees.
 #'
+#' Recipes are the recommended interface for ordinary analysis code. Plans are
+#' retained as an explicit lower-level contract so advanced users, the Shiny
+#' builder, tests, and the server can inspect the exact payload before it is
+#' executed.
+#'
 #' @param recipe An \code{omop_recipe} object.
 #' @return An \code{omop_plan} object ready for execution.
 #' @examples
@@ -1754,7 +1761,8 @@ print.omop_recipe <- function(x, ...) {
 #'   table = "condition_occurrence",
 #'   concept_ids = c(201820), format = "binary"))
 #' recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
-#' plan <- recipe_to_plan(recipe)
+#' recipe_execute(recipe)
+#' plan <- recipe_to_plan(recipe)  # advanced: inspect the server payload
 #' }
 #' @seealso \code{\link{recipe_execute}}, \code{\link{omop_recipe}},
 #'   \code{\link{ds.omop.plan}}
@@ -2724,6 +2732,85 @@ recipe_import_yaml <- function(yaml) {
   .recipe_from_plain(yaml::yaml.load(yaml))
 }
 
+#' Save a recipe to JSON or YAML
+#'
+#' Convenience wrapper around \code{\link{recipe_export_json}} and
+#' \code{\link{recipe_export_yaml}}. The format is inferred from the file
+#' extension unless supplied explicitly.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param file Character; destination path ending in \code{.json},
+#'   \code{.yml}, or \code{.yaml}.
+#' @param format Character or \code{NULL}; optional explicit format:
+#'   \code{"json"} or \code{"yaml"}.
+#' @return The file path invisibly.
+#' @examples
+#' \dontrun{
+#' recipe_save(recipe, "analysis_recipe.yml")
+#' recipe_save(recipe, "analysis_recipe.json")
+#' }
+#' @seealso \code{\link{recipe_load}}, \code{\link{recipe_export_json}},
+#'   \code{\link{recipe_export_yaml}}
+#' @export
+recipe_save <- function(recipe, file, format = NULL) {
+  if (missing(file) || length(file) != 1L || !nzchar(file)) {
+    stop("file must be a single non-empty path.", call. = FALSE)
+  }
+  fmt <- .recipe_file_format(file, format)
+  switch(fmt,
+    json = recipe_export_json(recipe, file = file),
+    yaml = recipe_export_yaml(recipe, file = file)
+  )
+}
+
+#' Load a recipe from JSON or YAML
+#'
+#' Convenience wrapper around \code{\link{recipe_import_json}} and
+#' \code{\link{recipe_import_yaml}}. The parser is selected from the file
+#' extension.
+#'
+#' @param file Character; source path ending in \code{.json}, \code{.yml}, or
+#'   \code{.yaml}.
+#' @return An \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_load("analysis_recipe.yml")
+#' }
+#' @seealso \code{\link{recipe_save}}, \code{\link{recipe_import_json}},
+#'   \code{\link{recipe_import_yaml}}
+#' @export
+recipe_load <- function(file) {
+  if (missing(file) || length(file) != 1L || !nzchar(file)) {
+    stop("file must be a single non-empty path.", call. = FALSE)
+  }
+  fmt <- .recipe_file_format(file)
+  switch(fmt,
+    json = recipe_import_json(file),
+    yaml = recipe_import_yaml(file)
+  )
+}
+
+.recipe_file_format <- function(file, format = NULL) {
+  fmt <- format
+  if (is.null(fmt)) {
+    ext <- tolower(tools::file_ext(file))
+    fmt <- switch(ext,
+      json = "json",
+      yml = "yaml",
+      yaml = "yaml",
+      NULL
+    )
+  } else {
+    fmt <- tolower(fmt)
+    if (length(fmt) == 1L && fmt == "yml") fmt <- "yaml"
+  }
+  if (is.null(fmt) || length(fmt) != 1L || !fmt %in% c("json", "yaml")) {
+    stop("Recipe format must be 'json' or 'yaml', or file must end in ",
+         ".json, .yml, or .yaml.", call. = FALSE)
+  }
+  fmt
+}
+
 # --- Preview schema ---
 
 #' Preview the output schema for a recipe
@@ -2793,6 +2880,52 @@ recipe_preview_schema <- function(recipe) {
 
 # --- Recipe execution helpers ---
 
+#' Preview a recipe on the server
+#'
+#' Compiles a recipe to a plan and calls \code{\link{ds.omop.plan.preview}}.
+#' This keeps the plan layer available for advanced users while allowing the
+#' usual recipe workflow to stay one-step.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param symbol Character; OMOP session symbol on the server (default
+#'   \code{"omop"}).
+#' @param conns DSI connections or \code{NULL} (uses active connections).
+#' @return A named list of server-side plan preview results.
+#' @examples
+#' \dontrun{
+#' preview <- recipe_preview(recipe)
+#' }
+#' @seealso \code{\link{recipe_validate}}, \code{\link{recipe_execute}},
+#'   \code{\link{recipe_to_plan}}
+#' @export
+recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  ds.omop.plan.preview(recipe_to_plan(recipe), symbol = symbol, conns = conns)
+}
+
+#' Validate a recipe on the server
+#'
+#' Compiles a recipe to a plan and calls \code{\link{ds.omop.plan.validate}}.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param symbol Character; OMOP session symbol on the server (default
+#'   \code{"omop"}).
+#' @param conns DSI connections or \code{NULL} (uses active connections).
+#' @return A named list of server-side validation results.
+#' @examples
+#' \dontrun{
+#' validation <- recipe_validate(recipe)
+#' }
+#' @seealso \code{\link{recipe_preview}}, \code{\link{recipe_execute}},
+#'   \code{\link{recipe_to_plan}}
+#' @export
+recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  ds.omop.plan.validate(recipe_to_plan(recipe), symbol = symbol, conns = conns)
+}
+
 #' Preview aggregate stats for a recipe (without materializing)
 #'
 #' Runs aggregate-only queries via \code{\link{ds.omop.table.stats}} to show
@@ -2829,7 +2962,8 @@ recipe_preview_stats <- function(recipe,
       stats_res <- ds.omop.table.stats(tbl, stats = c("rows", "persons"),
                                         scope = if (scope == "both") "pooled"
                                                 else scope,
-                                        symbol = symbol)
+                                        symbol = symbol,
+                                        conns = conns)
       results[[tbl]] <- stats_res
     }, error = function(e) {
       results[[tbl]] <<- list(error = conditionMessage(e))
@@ -2861,16 +2995,20 @@ recipe_preview_stats <- function(recipe,
 #' @param symbol Character; OMOP session symbol on the server (default
 #'   \code{"omop"}).
 #' @param conns DSI connections or \code{NULL} (uses active connections).
+#' @param output_mode Character; \code{"memory"} (default) or \code{"staged"}.
+#'   Passed through to \code{\link{ds.omop.plan.execute}}.
 #' @return Invisibly, the output symbol mapping (a named character vector).
 #' @examples
 #' \dontrun{
 #' recipe_execute(recipe)
+#' recipe_execute(recipe, output_mode = "staged")
 #' # Or with explicit symbol mapping:
 #' recipe_execute(recipe, out = c(features_wide = "D_features"))
 #' }
 #' @seealso \code{\link{recipe_to_plan}}, \code{\link{ds.omop.plan.execute}}
 #' @export
-recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL) {
+recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
+                           output_mode = "memory") {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
 
@@ -2903,5 +3041,6 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL) {
     out <- stats::setNames(symbols, plan_out_names)
   }
 
-  ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns)
+  ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns,
+                       output_mode = output_mode)
 }

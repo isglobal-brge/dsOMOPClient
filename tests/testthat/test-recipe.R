@@ -1556,6 +1556,120 @@ test_that("recipe YAML export/import preserves nested recipe fields", {
   expect_equal(c3$outputs$features$result_symbol, "D_features_custom")
 })
 
+test_that("recipe_save and recipe_load auto-detect JSON and YAML", {
+  skip_if_not_installed("yaml")
+
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "age", table = "person",
+                           column = "year_of_birth")
+  c <- recipe_add_output(c, omop_output(name = "demo", type = "wide"))
+
+  json_path <- tempfile(fileext = ".json")
+  yaml_path <- tempfile(fileext = ".yaml")
+  on.exit(unlink(c(json_path, yaml_path)), add = TRUE)
+
+  expect_equal(recipe_save(c, json_path), json_path)
+  expect_equal(recipe_save(c, yaml_path), yaml_path)
+
+  json_recipe <- recipe_load(json_path)
+  yaml_recipe <- recipe_load(yaml_path)
+
+  expect_s3_class(json_recipe, "omop_recipe")
+  expect_s3_class(yaml_recipe, "omop_recipe")
+  expect_true("age" %in% names(json_recipe$variables))
+  expect_true("age" %in% names(yaml_recipe$variables))
+})
+
+test_that("recipe_save supports explicit format and rejects unknown extensions", {
+  skip_if_not_installed("yaml")
+
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "person")
+
+  path <- tempfile(fileext = ".recipe")
+  on.exit(unlink(path), add = TRUE)
+
+  expect_equal(recipe_save(c, path, format = "yaml"), path)
+  expect_s3_class(recipe_import_yaml(path), "omop_recipe")
+  expect_error(recipe_save(c, tempfile(fileext = ".txt")), "Recipe format")
+  expect_error(recipe_load(tempfile(fileext = ".txt")), "Recipe format")
+})
+
+test_that("recipe_preview and recipe_validate compile recipes before plan calls", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "person")
+  c <- recipe_add_output(c, omop_output(name = "demo", type = "wide"))
+
+  seen <- list()
+  testthat::local_mocked_bindings(
+    ds.omop.plan.preview = function(plan, symbol = "omop", conns = NULL) {
+      seen$preview <<- list(plan = plan, symbol = symbol, conns = conns)
+      list(server = list(valid = TRUE))
+    },
+    ds.omop.plan.validate = function(plan, symbol = "omop", conns = NULL) {
+      seen$validate <<- list(plan = plan, symbol = symbol, conns = conns)
+      list(server = list(valid = TRUE))
+    },
+    .package = "dsOMOPClient"
+  )
+
+  expect_equal(recipe_preview(c, symbol = "x", conns = list(a = NULL))$server$valid,
+               TRUE)
+  expect_equal(recipe_validate(c, symbol = "x", conns = list(a = NULL))$server$valid,
+               TRUE)
+  expect_s3_class(seen$preview$plan, "omop_plan")
+  expect_s3_class(seen$validate$plan, "omop_plan")
+  expect_equal(seen$preview$symbol, "x")
+  expect_equal(seen$validate$symbol, "x")
+})
+
+test_that("recipe_execute forwards output_mode to plan execution", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "person")
+  c <- recipe_add_output(c, omop_output(name = "demo", type = "wide"))
+
+  seen <- NULL
+  testthat::local_mocked_bindings(
+    ds.omop.plan.execute = function(plan, out, symbol = "omop", conns = NULL,
+                                    output_mode = "memory") {
+      seen <<- list(plan = plan, out = out, symbol = symbol,
+                    output_mode = output_mode)
+      invisible(out)
+    },
+    .package = "dsOMOPClient"
+  )
+
+  out <- recipe_execute(c, symbol = "x", output_mode = "staged")
+
+  expect_equal(out, c(demo = "D_demo"))
+  expect_s3_class(seen$plan, "omop_plan")
+  expect_equal(seen$symbol, "x")
+  expect_equal(seen$output_mode, "staged")
+})
+
+test_that("recipe_preview_stats forwards explicit connections", {
+  c <- omop_recipe()
+  c <- recipe_add_variable(c, name = "v", table = "person")
+
+  seen <- NULL
+  testthat::local_mocked_bindings(
+    ds.omop.table.stats = function(table, stats, scope = "per_site",
+                                   symbol = "omop", conns = NULL) {
+      seen <<- list(table = table, stats = stats, scope = scope,
+                    symbol = symbol, conns = conns)
+      list(server = data.frame(table = table, row_count = 10))
+    },
+    .package = "dsOMOPClient"
+  )
+
+  conns <- list(server = "connection")
+  recipe_preview_stats(c, symbol = "x", conns = conns)
+
+  expect_equal(seen$table, "person")
+  expect_equal(seen$symbol, "x")
+  expect_identical(seen$conns, conns)
+})
+
 # --- recipe_preview_schema with enhanced outputs --------------------------------
 
 test_that("recipe_preview_schema includes population_id attribute", {
