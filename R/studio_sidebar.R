@@ -36,7 +36,7 @@
         # Pooled: all-servers checkbox + optional server list
         shiny::conditionalPanel(
           condition = paste0("input['", ns("scope"), "'] == 'pooled'"),
-          shiny::checkboxInput(ns("all_servers"), "All servers", TRUE),
+          shiny::checkboxInput(ns("all_servers"), "All Servers", TRUE),
           shiny::conditionalPanel(
             condition = paste0("!input['", ns("all_servers"), "']"),
             shiny::checkboxGroupInput(ns("pool_servers"), "Include servers",

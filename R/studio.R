@@ -349,7 +349,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
     .bslib-value-box:hover {
-      transform: translateY(-3px);
+      transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(0,0,0,0.1);
     }
     .bslib-value-box .value-box-title {
@@ -1082,4 +1082,3 @@ isTRUE_vec <- function(x) {
   entry <- list(time = Sys.time(), action = action)
   state$history <- c(state$history, list(entry))
 }
-
