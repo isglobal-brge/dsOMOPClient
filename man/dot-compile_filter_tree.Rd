@@ -4,13 +4,16 @@
 \alias{.compile_filter_tree}
 \title{Compile a list of filters into an AND/OR tree for the server filter DSL}
 \usage{
-.compile_filter_tree(filters, default_operator = "and")
+.compile_filter_tree(filters, default_operator = "and", level = NULL)
 }
 \arguments{
 \item{filters}{List of \code{omop_filter} or \code{omop_filter_group}
 objects.}
 
 \item{default_operator}{Character; default Boolean operator (\code{"and"}).}
+
+\item{level}{Character or \code{NULL}; if provided, filters at other levels
+are skipped while preserving valid descendants inside groups.}
 }
 \value{
 A nested list structure representing the filter tree, or \code{NULL}

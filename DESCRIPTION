@@ -27,6 +27,7 @@ Imports:
     DT,
     htmltools,
     jsonlite,
+    yaml,
     plotly,
     fontawesome
 Suggests:

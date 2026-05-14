@@ -5,6 +5,7 @@
 \alias{omop_filter_sex}
 \alias{omop_filter_age}
 \alias{omop_filter_age_group}
+\alias{omop_filter_cohort}
 \alias{omop_filter_has_concept}
 \alias{omop_filter_date_range}
 \alias{omop_filter_value}
@@ -32,6 +33,8 @@ omop_filter_sex(value)
 omop_filter_age(min = 0, max = 150)
 
 omop_filter_age_group(groups)
+
+omop_filter_cohort(cohort_definition_id)
 
 omop_filter_has_concept(
   concept_id,
@@ -92,6 +95,9 @@ omop_filter_missing_measurement(concept_id)
 
 \item{groups}{Character vector; age group labels (e.g. c("18-24", "25-34"))}
 
+\item{cohort_definition_id}{Integer; existing OMOP cohort_definition_id to
+require for membership.}
+
 \item{concept_id}{Integer; measurement concept ID to check absence of}
 
 \item{table}{Character; which OMOP table to check}
@@ -137,8 +143,9 @@ transformations). Filters are added to a recipe via
 \details{
 Convenience constructors are provided for common filter types:
 \code{\link{omop_filter_sex}}, \code{\link{omop_filter_age}},
-\code{\link{omop_filter_age_group}}, \code{\link{omop_filter_has_concept}},
-\code{\link{omop_filter_date_range}}, \code{\link{omop_filter_value}}.
+\code{\link{omop_filter_age_group}}, \code{\link{omop_filter_cohort}},
+\code{\link{omop_filter_has_concept}}, \code{\link{omop_filter_date_range}},
+\code{\link{omop_filter_value}}.
 }
 \examples{
 \dontrun{

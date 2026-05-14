@@ -852,6 +852,18 @@ omop_filter_age_group <- function(groups) {
 }
 
 #' @rdname omop_filter
+#' @param cohort_definition_id Integer; existing OMOP cohort_definition_id to
+#'   require for membership.
+#' @export
+omop_filter_cohort <- function(cohort_definition_id) {
+  omop_filter(
+    type = "cohort", level = "population",
+    params = list(cohort_definition_id = as.integer(cohort_definition_id)),
+    label = paste0("Cohort #", as.integer(cohort_definition_id))
+  )
+}
+
+#' @rdname omop_filter
 #' @param concept_id Integer; the concept to check for
 #' @param table Character; which OMOP table to check
 #' @param concept_name Character or NULL; human-readable name
@@ -1375,6 +1387,34 @@ recipe_add_population <- function(recipe, population) {
   recipe
 }
 
+#' Set the base cohort definition for a recipe
+#'
+#' Updates the base population to reference an existing OMOP cohort definition.
+#' During \code{\link{recipe_to_plan}}, this is compiled to
+#' \code{\link{ds.omop.plan.cohort}} with \code{cohort_definition_id}.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param cohort_definition_id Integer or \code{NULL}; cohort definition ID to
+#'   use as the recipe base population. Use \code{NULL} to clear the reference.
+#' @return The modified \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- omop_recipe()
+#' recipe <- recipe_set_cohort(recipe, 42)
+#' plan <- recipe_to_plan(recipe)
+#' }
+#' @seealso \code{\link{omop_population}}, \code{\link{recipe_to_plan}},
+#'   \code{\link{ds.omop.plan.cohort}}
+#' @export
+recipe_set_cohort <- function(recipe, cohort_definition_id) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  recipe$populations$base$cohort_definition_id <-
+    if (!is.null(cohort_definition_id)) as.integer(cohort_definition_id) else NULL
+  recipe$meta$modified <- Sys.time()
+  recipe
+}
+
 #' Remove a population from the recipe
 #'
 #' Removes a population node from the recipe's population DAG. The base
@@ -1732,17 +1772,22 @@ recipe_to_plan <- function(recipe) {
       cohort_definition_id = base_pop$cohort_definition_id)
   }
 
-  # Collect all population-level filters
-  pop_filters <- .collect_pop_filters(recipe)
+  # Collect all population-level filters. `spec` stays as the legacy flat
+  # AND list for older servers; `filter_tree` preserves nested AND/OR groups
+  # for servers that support the richer cohort filter DSL.
+  pop_filter_items <- .collect_pop_filter_items(recipe)
+  pop_filters <- .flatten_filters(pop_filter_items, level = "population")
   if (length(pop_filters) > 0) {
     spec <- lapply(pop_filters, function(f) {
       list(type = f$type, params = f$params)
     })
+    filter_tree <- .compile_population_filter_tree(pop_filter_items)
     if (is.null(plan$cohort)) {
       plan$cohort <- list(type = "spec", spec = spec)
     } else {
       plan$cohort$spec <- spec
     }
+    if (!is.null(filter_tree)) plan$cohort$filter_tree <- filter_tree
   }
 
   # Group variables by output
@@ -1939,7 +1984,7 @@ recipe_to_plan <- function(recipe) {
   # Apply row-level filters to relevant outputs (preserving AND/OR tree)
   row_filter_items <- .extract_filters_by_level(recipe$filters, "row")
   if (length(row_filter_items) > 0) {
-    filter_tree <- .compile_filter_tree(row_filter_items)
+    filter_tree <- .compile_filter_tree(row_filter_items, level = "row")
     for (out_name in names(plan$outputs)) {
       plan$outputs[[out_name]]$filter <- filter_tree
     }
@@ -2006,7 +2051,21 @@ recipe_to_plan <- function(recipe) {
 #' @return List of \code{omop_filter} objects at the \code{"population"} level.
 #' @keywords internal
 .collect_pop_filters <- function(recipe) {
-  .flatten_filters(recipe$filters, level = "population")
+  filters <- .flatten_filters(recipe$filters, level = "population")
+  base_filters <- recipe$populations$base$filters %||% list()
+  c(filters, .flatten_filters(base_filters, level = "population"))
+}
+
+#' Collect population-level filter items while preserving groups
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @return List of matching \code{omop_filter} or \code{omop_filter_group}
+#'   objects.
+#' @keywords internal
+.collect_pop_filter_items <- function(recipe) {
+  filters <- .extract_filters_by_level(recipe$filters, "population")
+  base_filters <- recipe$populations$base$filters %||% list()
+  c(filters, .extract_filters_by_level(base_filters, "population"))
 }
 
 #' Collect all row-level filters from a recipe, flattening groups
@@ -2047,12 +2106,14 @@ recipe_to_plan <- function(recipe) {
 #' @param filters List of \code{omop_filter} or \code{omop_filter_group}
 #'   objects.
 #' @param default_operator Character; default Boolean operator (\code{"and"}).
+#' @param level Character or \code{NULL}; if provided, filters at other levels
+#'   are skipped while preserving valid descendants inside groups.
 #' @return A nested list structure representing the filter tree, or \code{NULL}
 #'   if empty.
 #' @keywords internal
-.compile_filter_tree <- function(filters, default_operator = "and") {
+.compile_filter_tree <- function(filters, default_operator = "and", level = NULL) {
   if (length(filters) == 0) return(NULL)
-  children <- lapply(filters, .compile_filter_node)
+  children <- lapply(filters, .compile_filter_node, level = level)
   children <- Filter(Negate(is.null), children)
   if (length(children) == 0) return(NULL)
   if (length(children) == 1) return(children[[1]])
@@ -2062,18 +2123,47 @@ recipe_to_plan <- function(recipe) {
 #' Compile a single filter or filter group into the server filter DSL
 #'
 #' @param f An \code{omop_filter} or \code{omop_filter_group} object.
+#' @param level Character or \code{NULL}; if provided, filters at other levels
+#'   are skipped.
 #' @return A nested list node for the filter tree, or \code{NULL}.
 #' @keywords internal
-.compile_filter_node <- function(f) {
+.compile_filter_node <- function(f, level = NULL) {
   if (inherits(f, "omop_filter_group")) {
     op <- tolower(f$operator)
-    children <- lapply(f$children, .compile_filter_node)
+    children <- lapply(f$children, .compile_filter_node, level = level)
     children <- Filter(Negate(is.null), children)
     if (length(children) == 0) return(NULL)
     if (length(children) == 1) return(children[[1]])
     return(setNames(list(children), op))
   }
-  if (inherits(f, "omop_filter")) return(.filter_to_leaf(f))
+  if (inherits(f, "omop_filter")) {
+    if (!is.null(level) && f$level != level) return(NULL)
+    return(.filter_to_leaf(f))
+  }
+  NULL
+}
+
+.compile_population_filter_tree <- function(filters, default_operator = "and") {
+  if (length(filters) == 0) return(NULL)
+  children <- lapply(filters, .compile_population_filter_node)
+  children <- Filter(Negate(is.null), children)
+  if (length(children) == 0) return(NULL)
+  if (length(children) == 1) return(children[[1]])
+  setNames(list(children), default_operator)
+}
+
+.compile_population_filter_node <- function(f) {
+  if (inherits(f, "omop_filter_group")) {
+    op <- tolower(f$operator)
+    children <- lapply(f$children, .compile_population_filter_node)
+    children <- Filter(Negate(is.null), children)
+    if (length(children) == 0) return(NULL)
+    if (length(children) == 1) return(children[[1]])
+    return(setNames(list(children), op))
+  }
+  if (inherits(f, "omop_filter") && f$level == "population") {
+    return(list(type = f$type, params = f$params))
+  }
   NULL
 }
 
@@ -2311,6 +2401,9 @@ recipe_to_code <- function(recipe) {
 .codegen_filter <- function(f) {
   if (f$type == "sex") {
     .build_code("omop_filter_sex", value = f$params$value)
+  } else if (f$type == "cohort") {
+    .build_code("omop_filter_cohort",
+      cohort_definition_id = f$params$cohort_definition_id)
   } else if (f$type == "age_group") {
     .build_code("omop_filter_age_group", groups = f$params$groups)
   } else if (f$type == "age_range") {
@@ -2382,7 +2475,155 @@ recipe_to_code <- function(recipe) {
          ', operator = "', fg$operator, '")')
 }
 
-# --- JSON import/export ---
+# --- Recipe import/export ---
+
+.recipe_strip_classes <- function(x) {
+  if (is.list(x) && !is.data.frame(x)) {
+    x <- lapply(x, .recipe_strip_classes)
+    class(x) <- "list"
+  }
+  x
+}
+
+.recipe_plain <- function(recipe) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+
+  list(
+    version     = "2.0",
+    populations = .recipe_strip_classes(recipe$populations),
+    blocks      = .recipe_strip_classes(recipe$blocks),
+    variables   = .recipe_strip_classes(recipe$variables),
+    filters     = .recipe_strip_classes(recipe$filters),
+    outputs     = .recipe_strip_classes(recipe$outputs),
+    meta        = .recipe_strip_classes(recipe$meta)
+  )
+}
+
+.recipe_restore_filter <- function(f) {
+  if (is.null(f)) return(NULL)
+
+  if (!is.null(f$operator) || !is.null(f$children)) {
+    children <- .recipe_restore_filter_list(f$children %||% list())
+    if (length(children) == 0) return(NULL)
+    args <- c(
+      unname(children),
+      list(operator = toupper(f$operator %||% "AND"), label = f$label)
+    )
+    return(do.call(omop_filter_group, args))
+  }
+
+  omop_filter(
+    type = f$type %||% "custom",
+    level = f$level %||% "population",
+    params = f$params %||% list(),
+    label = f$label
+  )
+}
+
+.recipe_restore_filter_list <- function(filters) {
+  if (is.null(filters) || length(filters) == 0) return(list())
+  ids <- names(filters)
+  restored <- lapply(filters, .recipe_restore_filter)
+  keep <- !vapply(restored, is.null, logical(1))
+  restored <- restored[keep]
+  if (!is.null(ids)) names(restored) <- ids[keep]
+  restored
+}
+
+.recipe_restore_int <- function(x) {
+  if (is.null(x)) return(NULL)
+  as.integer(x)
+}
+
+.recipe_restore_chr <- function(x) {
+  if (is.null(x)) return(NULL)
+  as.character(x)
+}
+
+.recipe_from_plain <- function(data) {
+  recipe <- omop_recipe()
+
+  if (!is.null(data$populations)) {
+    recipe$populations <- list()
+    for (pid in names(data$populations)) {
+      p <- data$populations[[pid]]
+      recipe$populations[[pid]] <- omop_population(
+        id = p$id %||% pid,
+        label = p$label %||% pid,
+        parent_id = p$parent_id,
+        filters = .recipe_restore_filter_list(p$filters),
+        cohort_definition_id = p$cohort_definition_id
+      )
+    }
+  }
+
+  if (!is.null(data$blocks)) {
+    recipe$blocks <- list()
+    for (bid in names(data$blocks)) {
+      b <- data$blocks[[bid]]
+      recipe$blocks[[bid]] <- omop_variable_block(
+        id = b$id %||% bid,
+        table = b$table,
+        concept_ids = .recipe_restore_int(b$concept_ids) %||% integer(0),
+        concept_names = .recipe_restore_chr(b$concept_names),
+        time_window = b$time_window,
+        format = b$format %||% "raw",
+        value_source = b$value_source,
+        suffix_mode = b$suffix_mode %||% "index",
+        filters = .recipe_restore_filter_list(b$filters),
+        population_id = b$population_id %||% "base"
+      )
+    }
+  }
+
+  if (!is.null(data$variables)) {
+    recipe$variables <- list()
+    for (nm in names(data$variables)) {
+      v <- data$variables[[nm]]
+      var <- omop_variable(
+        name = v$name %||% nm,
+        table = v$table,
+        column = v$column,
+        concept_id = v$concept_id,
+        concept_name = v$concept_name,
+        type = v$type %||% "auto",
+        format = v$format %||% "raw",
+        value_source = v$value_source,
+        time_window = v$time_window,
+        suffix_mode = v$suffix_mode %||% "index",
+        filters = .recipe_restore_filter_list(v$filters)
+      )
+      if (!is.null(v$derived)) var$derived <- v$derived
+      recipe$variables[[nm]] <- var
+    }
+  }
+
+  if (!is.null(data$filters)) {
+    recipe$filters <- .recipe_restore_filter_list(data$filters)
+  }
+
+  if (!is.null(data$outputs)) {
+    recipe$outputs <- list()
+    for (nm in names(data$outputs)) {
+      o <- data$outputs[[nm]]
+      recipe$outputs[[nm]] <- omop_output(
+        name = o$name %||% nm,
+        type = o$type %||% "wide",
+        variables = o$variables,
+        population_id = o$population_id %||% "base",
+        options = o$options %||% list(),
+        result_symbol = o$result_symbol
+      )
+    }
+  }
+
+  if (!is.null(data$meta)) {
+    recipe$meta <- data$meta
+  }
+  recipe$meta$modified <- Sys.time()
+  recipe
+}
 
 #' Export a recipe to JSON
 #'
@@ -2403,28 +2644,7 @@ recipe_to_code <- function(recipe) {
 #' @seealso \code{\link{recipe_import_json}}, \code{\link{recipe_to_code}}
 #' @export
 recipe_export_json <- function(recipe, file = NULL) {
-  if (!inherits(recipe, "omop_recipe"))
-    stop("recipe must be an omop_recipe object", call. = FALSE)
-
-  # Strip classes for clean JSON serialization
-  strip <- function(x) {
-    if (is.list(x) && !is.data.frame(x)) {
-      x <- lapply(x, strip)
-      class(x) <- "list"
-    }
-    x
-  }
-
-  export <- list(
-    version     = "2.0",
-    populations = strip(recipe$populations),
-    blocks      = strip(recipe$blocks),
-    variables   = strip(recipe$variables),
-    filters     = strip(recipe$filters),
-    outputs     = strip(recipe$outputs)
-  )
-
-  json <- jsonlite::toJSON(export, auto_unbox = TRUE, pretty = TRUE,
+  json <- jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
                             null = "null")
   if (is.null(file)) return(as.character(json))
   writeLines(as.character(json), file)
@@ -2435,8 +2655,9 @@ recipe_export_json <- function(recipe, file = NULL) {
 #'
 #' Reconstructs an \code{omop_recipe} from a JSON string or file previously
 #' created by \code{\link{recipe_export_json}}. Automatically detects whether
-#' the input is a file path or a raw JSON string. Filter groups are currently
-#' skipped during import.
+#' the input is a file path or a raw JSON string. Nested filter groups, blocks,
+#' output options, population filters, variable filters, and metadata are
+#' preserved.
 #'
 #' @param json Character; a JSON string, or a file path to a JSON file.
 #' @return An \code{omop_recipe} object.
@@ -2448,85 +2669,59 @@ recipe_export_json <- function(recipe, file = NULL) {
 #' @seealso \code{\link{recipe_export_json}}
 #' @export
 recipe_import_json <- function(json) {
-  # Detect if it's a file path
   if (length(json) == 1 && file.exists(json)) {
     json <- paste(readLines(json, warn = FALSE), collapse = "\n")
   }
-
   data <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+  .recipe_from_plain(data)
+}
 
-  recipe <- omop_recipe()
+#' Export a recipe to YAML
+#'
+#' Serializes the same portable recipe representation as
+#' \code{\link{recipe_export_json}} to a YAML string or file.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param file Character or \code{NULL}; file path to write. If \code{NULL},
+#'   returns the YAML string directly.
+#' @return If \code{file} is \code{NULL}, returns a YAML string. Otherwise
+#'   writes to \code{file} and returns the file path invisibly.
+#' @examples
+#' \dontrun{
+#' yaml <- recipe_export_yaml(recipe)
+#' recipe_export_yaml(recipe, file = "my_recipe.yml")
+#' }
+#' @seealso \code{\link{recipe_import_yaml}}, \code{\link{recipe_export_json}}
+#' @export
+recipe_export_yaml <- function(recipe, file = NULL) {
+  if (!requireNamespace("yaml", quietly = TRUE))
+    stop("Package 'yaml' is required for YAML export.", call. = FALSE)
+  text <- yaml::as.yaml(.recipe_plain(recipe))
+  if (is.null(file)) return(text)
+  writeLines(text, file)
+  invisible(file)
+}
 
-  # Restore populations
-  if (!is.null(data$populations)) {
-    for (pid in names(data$populations)) {
-      p <- data$populations[[pid]]
-      pop <- omop_population(
-        id = p$id %||% pid,
-        label = p$label %||% pid,
-        parent_id = p$parent_id,
-        cohort_definition_id = p$cohort_definition_id
-      )
-      recipe$populations[[pid]] <- pop
-    }
+#' Import a recipe from YAML
+#'
+#' Reconstructs an \code{omop_recipe} from a YAML string or file previously
+#' created by \code{\link{recipe_export_yaml}}.
+#'
+#' @param yaml Character; a YAML string, or a file path to a YAML file.
+#' @return An \code{omop_recipe} object.
+#' @examples
+#' \dontrun{
+#' recipe <- recipe_import_yaml("my_recipe.yml")
+#' }
+#' @seealso \code{\link{recipe_export_yaml}}, \code{\link{recipe_import_json}}
+#' @export
+recipe_import_yaml <- function(yaml) {
+  if (!requireNamespace("yaml", quietly = TRUE))
+    stop("Package 'yaml' is required for YAML import.", call. = FALSE)
+  if (length(yaml) == 1 && file.exists(yaml)) {
+    yaml <- paste(readLines(yaml, warn = FALSE), collapse = "\n")
   }
-
-  # Restore variables
-  if (!is.null(data$variables)) {
-    for (nm in names(data$variables)) {
-      v <- data$variables[[nm]]
-      var <- omop_variable(
-        name = v$name %||% nm,
-        table = v$table,
-        column = v$column,
-        concept_id = v$concept_id,
-        concept_name = v$concept_name,
-        type = v$type %||% "auto",
-        format = v$format %||% "raw",
-        value_source = v$value_source
-      )
-      # Restore derived metadata if present
-      if (!is.null(v$derived)) {
-        var$derived <- v$derived
-      }
-      recipe$variables[[nm]] <- var
-    }
-  }
-
-  # Restore filters (simple filters only for now)
-  if (!is.null(data$filters)) {
-    for (fid in names(data$filters)) {
-      f <- data$filters[[fid]]
-      if (!is.null(f$operator)) {
-        # Skip filter groups in JSON import for now
-        next
-      }
-      filt <- omop_filter(
-        type = f$type %||% "custom",
-        level = f$level %||% "population",
-        params = f$params %||% list(),
-        label = f$label
-      )
-      recipe$filters[[fid]] <- filt
-    }
-  }
-
-  # Restore outputs
-  if (!is.null(data$outputs)) {
-    for (nm in names(data$outputs)) {
-      o <- data$outputs[[nm]]
-      out <- omop_output(
-        name = o$name %||% nm,
-        type = o$type %||% "wide",
-        variables = o$variables,
-        population_id = o$population_id %||% "base",
-        result_symbol = o$result_symbol
-      )
-      recipe$outputs[[nm]] <- out
-    }
-  }
-
-  recipe
+  .recipe_from_plain(yaml::yaml.load(yaml))
 }
 
 # --- Preview schema ---

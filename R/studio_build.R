@@ -147,6 +147,9 @@
 
       # --- Import/Export (compact row) ---
       shiny::div(class = "d-flex gap-1 mb-2",
+        shiny::selectInput(ns("recipe_export_format"), NULL,
+          choices = c("JSON" = "json", "YAML" = "yaml"),
+          selected = "json", width = "92px"),
         shiny::downloadButton(ns("export_json"), "Export",
           class = "btn-sm btn-outline-secondary flex-fill"),
         shiny::actionButton(ns("import_json_btn"),
@@ -156,7 +159,8 @@
       shiny::conditionalPanel(
         condition = paste0("input['", ns("import_json_btn"), "'] > 0"),
         shiny::fileInput(ns("import_file"), NULL,
-                         accept = ".json", buttonLabel = "Choose file")
+                         accept = c(".json", ".yml", ".yaml"),
+                         buttonLabel = "Choose file")
       ),
       # --- Clear ---
       shiny::actionButton(ns("clear_recipe"),
@@ -446,20 +450,31 @@
       }
     })
 
-    # JSON Export/Import
+    # Recipe Export/Import
     output$export_json <- shiny::downloadHandler(
       filename = function() {
-        paste0("omop_recipe_", format(Sys.Date(), "%Y%m%d"), ".json")
+        ext <- if (identical(input$recipe_export_format, "yaml")) "yml" else "json"
+        paste0("omop_recipe_", format(Sys.Date(), "%Y%m%d"), ".", ext)
       },
       content = function(file) {
-        recipe_export_json(state$recipe, file = file)
+        if (identical(input$recipe_export_format, "yaml")) {
+          recipe_export_yaml(state$recipe, file = file)
+        } else {
+          recipe_export_json(state$recipe, file = file)
+        }
       }
     )
 
     shiny::observeEvent(input$import_file, {
       req(input$import_file)
       tryCatch({
-        imported <- recipe_import_json(input$import_file$datapath)
+        import_name <- input$import_file$name %||% ""
+        ext <- tolower(sub("^.*\\.([^.]+)$", "\\1", import_name))
+        imported <- if (ext %in% c("yml", "yaml")) {
+          recipe_import_yaml(input$import_file$datapath)
+        } else {
+          recipe_import_json(input$import_file$datapath)
+        }
         state$recipe <- imported
         shiny::showNotification(
           paste("Imported recipe:",

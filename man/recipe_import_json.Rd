@@ -15,8 +15,9 @@ An \code{omop_recipe} object.
 \description{
 Reconstructs an \code{omop_recipe} from a JSON string or file previously
 created by \code{\link{recipe_export_json}}. Automatically detects whether
-the input is a file path or a raw JSON string. Filter groups are currently
-skipped during import.
+the input is a file path or a raw JSON string. Nested filter groups, blocks,
+output options, population filters, variable filters, and metadata are
+preserved.
 }
 \examples{
 \dontrun{

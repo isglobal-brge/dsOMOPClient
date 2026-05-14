@@ -4,10 +4,13 @@
 \alias{.compile_filter_node}
 \title{Compile a single filter or filter group into the server filter DSL}
 \usage{
-.compile_filter_node(f)
+.compile_filter_node(f, level = NULL)
 }
 \arguments{
 \item{f}{An \code{omop_filter} or \code{omop_filter_group} object.}
+
+\item{level}{Character or \code{NULL}; if provided, filters at other levels
+are skipped.}
 }
 \value{
 A nested list node for the filter tree, or \code{NULL}.

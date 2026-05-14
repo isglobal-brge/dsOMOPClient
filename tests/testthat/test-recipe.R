@@ -81,6 +81,14 @@ test_that("omop_filter_age convenience constructor", {
   expect_equal(f$params$max, 65)
 })
 
+test_that("omop_filter_cohort convenience constructor", {
+  f <- omop_filter_cohort(42)
+  expect_s3_class(f, "omop_filter")
+  expect_equal(f$type, "cohort")
+  expect_equal(f$level, "population")
+  expect_equal(f$params$cohort_definition_id, 42L)
+})
+
 test_that("omop_filter_has_concept convenience constructor", {
   f <- omop_filter_has_concept(201820, "condition_occurrence", "Diabetes")
   expect_s3_class(f, "omop_filter")
@@ -759,6 +767,15 @@ test_that("omop_population with cohort ID", {
   expect_equal(p$cohort_definition_id, 42L)
 })
 
+test_that("recipe_set_cohort updates the base population", {
+  r <- omop_recipe()
+  r <- recipe_set_cohort(r, 42)
+  expect_equal(r$populations$base$cohort_definition_id, 42L)
+
+  r <- recipe_set_cohort(r, NULL)
+  expect_null(r$populations$base$cohort_definition_id)
+})
+
 test_that("omop_population with filters", {
   f <- omop_filter_age(18, 65)
   p <- omop_population(id = "working_age", parent_id = "base",
@@ -1125,13 +1142,81 @@ test_that(".flatten_filters with NULL level returns all", {
 
 test_that("recipe_to_plan with cohort population", {
   c <- omop_recipe()
-  c$populations$base$cohort_definition_id <- 42L
+  c <- recipe_set_cohort(c, 42L)
   c <- recipe_add_variable(c, name = "v", table = "person",
                           column = "year_of_birth")
   c <- recipe_add_output(c, omop_output(name = "out", type = "wide"))
   plan <- recipe_to_plan(c)
   expect_true(!is.null(plan$cohort))
   expect_equal(plan$cohort$cohort_definition_id, 42L)
+})
+
+test_that("recipe_to_plan includes base population filters", {
+  c <- omop_recipe()
+  c$populations$base$filters <- list(omop_filter_age(18, 65))
+  c <- recipe_add_variable(c, name = "v", table = "person",
+                          column = "year_of_birth")
+  c <- recipe_add_output(c, omop_output(name = "out", type = "wide"))
+
+  plan <- recipe_to_plan(c)
+
+  expect_equal(plan$cohort$type, "spec")
+  expect_equal(plan$cohort$spec[[1]]$type, "age_range")
+  expect_equal(plan$cohort$filter_tree$type, "age_range")
+})
+
+test_that("recipe_to_plan preserves population filter group tree", {
+  c <- omop_recipe()
+  c <- recipe_add_filter(c, omop_filter_group(
+    omop_filter_sex("F"),
+    omop_filter_group(
+      omop_filter_age(18, 65),
+      omop_filter_has_concept(201820, "condition_occurrence"),
+      operator = "AND"
+    ),
+    operator = "OR"
+  ))
+  c <- recipe_add_variable(c, name = "v", table = "person",
+                          column = "year_of_birth")
+  c <- recipe_add_output(c, omop_output(name = "out", type = "wide"))
+
+  plan <- recipe_to_plan(c)
+
+  expect_equal(length(plan$cohort$spec), 3)
+  expect_true("or" %in% names(plan$cohort$filter_tree))
+  expect_true("and" %in% names(plan$cohort$filter_tree$or[[2]]))
+})
+
+test_that("recipe_to_plan supports cohort definition filters", {
+  c <- omop_recipe()
+  c <- recipe_add_filter(c, omop_filter_cohort(42))
+  c <- recipe_add_variable(c, name = "v", table = "person",
+                          column = "year_of_birth")
+  c <- recipe_add_output(c, omop_output(name = "out", type = "wide"))
+
+  plan <- recipe_to_plan(c)
+
+  expect_equal(plan$cohort$spec[[1]]$type, "cohort")
+  expect_equal(plan$cohort$filter_tree$params$cohort_definition_id, 42L)
+})
+
+test_that("row filter tree skips population filters inside mixed groups", {
+  c <- omop_recipe()
+  c <- recipe_add_filter(c, omop_filter_group(
+    omop_filter_sex("F"),
+    omop_filter_date_range("2020-01-01", "2023-12-31"),
+    operator = "AND"
+  ))
+  c <- recipe_add_variable(c, name = "cond", table = "condition_occurrence",
+                          concept_id = 201820)
+  c <- recipe_add_output(c, omop_output(name = "events", type = "long"))
+
+  plan <- recipe_to_plan(c)
+
+  expect_equal(plan$cohort$filter_tree$type, "sex")
+  expect_true("and" %in% names(plan$outputs$events$filter))
+  vars <- vapply(plan$outputs$events$filter$and, `[[`, character(1), "var")
+  expect_equal(vars, c("start_date", "start_date"))
 })
 
 test_that("recipe_to_plan with features output", {
@@ -1338,6 +1423,137 @@ test_that("recipe_import_json preserves populations", {
   expect_true("base" %in% names(c2$populations))
   expect_true("adults" %in% names(c2$populations))
   expect_equal(c2$populations$adults$label, "Adults")
+})
+
+test_that("recipe_import_json preserves nested filter groups", {
+  c <- omop_recipe()
+  nested <- omop_filter_group(
+    omop_filter_sex("F"),
+    omop_filter_group(
+      omop_filter_age(18, 65),
+      omop_filter_has_concept(201820, "condition_occurrence"),
+      operator = "AND"
+    ),
+    operator = "OR"
+  )
+  c <- recipe_add_filter(c, nested, id = "eligibility")
+
+  c2 <- recipe_import_json(recipe_export_json(c))
+
+  expect_s3_class(c2$filters$eligibility, "omop_filter_group")
+  expect_equal(c2$filters$eligibility$operator, "OR")
+  expect_s3_class(c2$filters$eligibility$children[[2]], "omop_filter_group")
+  expect_equal(c2$filters$eligibility$children[[2]]$operator, "AND")
+  expect_equal(c2$filters$eligibility$children[[2]]$children[[2]]$type,
+               "has_concept")
+})
+
+test_that("recipe_import_json preserves full recipe fields", {
+  c <- omop_recipe()
+  c <- recipe_set_cohort(c, 42)
+  c <- recipe_add_population(c, omop_population(
+    id = "adults",
+    label = "Adults",
+    parent_id = "base",
+    filters = list(omop_filter_age(18, 80))
+  ))
+
+  row_filter <- omop_filter_date_range("2020-01-01", "2023-12-31")
+  c <- recipe_add_block(c, omop_variable_block(
+    id = "labs",
+    table = "measurement",
+    concept_ids = c(3004249),
+    concept_names = c("Hemoglobin"),
+    time_window = list(start = -90, end = 0),
+    format = "mean",
+    value_source = "value_as_number",
+    suffix_mode = "range",
+    filters = list(row_filter),
+    population_id = "adults"
+  ))
+  c <- recipe_add_variable(c,
+    name = "bp_max",
+    table = "measurement",
+    concept_id = 3004249,
+    format = "max",
+    value_source = "value_as_number",
+    time_window = list(start = -30, end = 0),
+    suffix_mode = "label",
+    filters = list(row_filter)
+  )
+  c <- recipe_add_output(c, omop_output(
+    name = "surv",
+    type = "survival",
+    variables = "bp_max",
+    population_id = "adults",
+    options = list(tar = list(start_offset = 0, end_offset = 365)),
+    result_symbol = "D_surv_custom"
+  ))
+
+  c2 <- recipe_import_json(recipe_export_json(c))
+
+  expect_equal(c2$populations$base$cohort_definition_id, 42L)
+  expect_equal(length(c2$populations$adults$filters), 1)
+  expect_equal(c2$blocks$labs$time_window$start, -90)
+  expect_equal(c2$blocks$labs$suffix_mode, "range")
+  expect_equal(length(c2$blocks$labs$filters), 1)
+  expect_equal(c2$variables$bp_max$time_window$start, -30)
+  expect_equal(c2$variables$bp_max$suffix_mode, "label")
+  expect_equal(length(c2$variables$bp_max$filters), 1)
+  expect_equal(c2$outputs$surv$options$tar$end_offset, 365)
+  expect_equal(c2$outputs$surv$result_symbol, "D_surv_custom")
+})
+
+test_that("recipe YAML export/import preserves nested recipe fields", {
+  skip_if_not_installed("yaml")
+
+  c <- omop_recipe()
+  c <- recipe_set_cohort(c, 77)
+  nested <- omop_filter_group(
+    omop_filter_date_range("2020-01-01", "2023-12-31"),
+    omop_filter_value(
+      column = "value_as_number",
+      threshold = 6.5,
+      direction = "above",
+      safe_bins = list(breaks = c(0, 5, 10, 20))
+    ),
+    operator = "AND"
+  )
+  c <- recipe_add_filter(c, nested, id = "row_filters")
+  c <- recipe_add_variable(c,
+    name = "hb",
+    table = "measurement",
+    concept_id = 3004249,
+    format = "mean",
+    value_source = "value_as_number",
+    time_window = list(start = -180, end = 0),
+    filters = list(nested)
+  )
+  c <- recipe_add_output(c, omop_output(
+    name = "features",
+    type = "features",
+    variables = "hb",
+    options = list(sparse = TRUE),
+    result_symbol = "D_features_custom"
+  ))
+
+  yaml <- recipe_export_yaml(c)
+  expect_true(is.character(yaml))
+  expect_match(yaml, "populations")
+
+  c2 <- recipe_import_yaml(yaml)
+  expect_equal(c2$populations$base$cohort_definition_id, 77L)
+  expect_s3_class(c2$filters$row_filters, "omop_filter_group")
+  expect_equal(c2$variables$hb$time_window$start, -180)
+  expect_equal(c2$outputs$features$options$sparse, TRUE)
+
+  tmp <- tempfile(fileext = ".yml")
+  on.exit(unlink(tmp), add = TRUE)
+  result <- recipe_export_yaml(c, file = tmp)
+  expect_equal(result, tmp)
+  expect_true(file.exists(tmp))
+  c3 <- recipe_import_yaml(tmp)
+  expect_equal(c3$outputs$features$result_symbol, "D_features_custom")
 })
 
 # --- recipe_preview_schema with enhanced outputs --------------------------------
@@ -1891,6 +2107,7 @@ test_that("recipe_to_code generates sd constructor", {
 
 test_that("recipe_to_code generates new filter constructors", {
   r <- omop_recipe()
+  r <- recipe_add_filter(r, omop_filter_cohort(42))
   r <- recipe_add_filter(r, omop_filter_not_has_concept(201820,
     "condition_occurrence"))
   r <- recipe_add_filter(r, omop_filter_concept_count(201820,
@@ -1901,6 +2118,7 @@ test_that("recipe_to_code generates new filter constructors", {
   r <- recipe_add_filter(r, omop_filter_has_measurement(3004410, 4, 10))
   r <- recipe_add_filter(r, omop_filter_missing_measurement(3004410))
   code <- recipe_to_code(r)
+  expect_true(grepl("omop_filter_cohort", code))
   expect_true(grepl("omop_filter_not_has_concept", code))
   expect_true(grepl("omop_filter_concept_count", code))
   expect_true(grepl("omop_filter_prior_observation", code))
