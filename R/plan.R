@@ -80,6 +80,38 @@ ds.omop.plan.cohort <- function(plan,
   plan
 }
 
+#' Normalise an aliasing spec so it survives the DataSHIELD JSON transport
+#'
+#' Raw-column specs may be passed as named vectors to alias the output
+#' columns, e.g. \code{c(sex = "gender_concept_id", "year_of_birth")}. Two
+#' things must hold for the aliases to reach the server intact:
+#' \enumerate{
+#'   \item No blank object keys: any element left unnamed is given a name
+#'     equal to its value, so a partially named vector becomes fully named.
+#'   \item A \emph{named} spec must serialise as a JSON object, not an array.
+#'     \code{jsonlite::toJSON(auto_unbox = TRUE)} drops the names of a named
+#'     \emph{atomic} vector (it emits a bare \code{[...]} array), but keeps
+#'     the names of a \emph{list}. So a named atomic vector is converted to a
+#'     named list here.
+#' }
+#' A fully unnamed vector is returned unchanged (stays a plain array = no
+#' aliasing). A spec that is already a list (e.g. a features spec) is left
+#' alone.
+#'
+#' @param x A character vector (possibly partially named) or a list.
+#' @return The normalised spec: unnamed vectors unchanged; named vectors
+#'   filled and returned as a named list.
+#' @keywords internal
+.fill_alias_names <- function(x) {
+  if (is.null(x)) return(x)
+  nm <- names(x)
+  if (is.null(nm)) return(x)
+  blank <- !nzchar(nm)
+  if (any(blank)) names(x)[blank] <- as.character(x)[blank]
+  if (is.atomic(x)) x <- as.list(x)
+  x
+}
+
 #' Add a baseline demographics output to the plan
 #'
 #' Produces one row per cohort member with demographics from the person
@@ -91,7 +123,11 @@ ds.omop.plan.cohort <- function(plan,
 #' @param plan An \code{omop_plan} object.
 #' @param columns Character vector; person-table columns to include
 #'   (e.g. \code{"gender_concept_id"}, \code{"year_of_birth"},
-#'   \code{"race_concept_id"}).
+#'   \code{"race_concept_id"}). Pass a \emph{named} vector to rename columns
+#'   in the output, e.g. \code{c(sex = "gender_concept_id", birth_year =
+#'   "year_of_birth")} yields columns \code{sex} and \code{birth_year}.
+#'   Unnamed entries keep their source name. Identifier columns cannot be
+#'   renamed (they are stripped server-side regardless).
 #' @param derived Character vector; derived fields to compute.
 #'   Supported values include \code{"age_at_index"},
 #'   \code{"prior_observation"}, and \code{"future_observation"}.
@@ -118,7 +154,7 @@ ds.omop.plan.baseline <- function(plan,
                                   name = "baseline") {
   plan$outputs[[name]] <- list(
     type = "baseline",
-    columns = columns,
+    columns = .fill_alias_names(columns),
     derived = derived
   )
   plan
@@ -136,6 +172,11 @@ ds.omop.plan.baseline <- function(plan,
 #' @param tables Named list; each element maps a table name to a
 #'   character vector of column names to include, e.g.
 #'   \code{list(person = c("gender_concept_id"), visit_occurrence = c("visit_concept_id"))}.
+#'   Each column vector may be \emph{named} to rename columns in the output:
+#'   \code{c(sex = "gender_concept_id", birth_year = "year_of_birth")} yields
+#'   output columns \code{sex} and \code{birth_year}. Unnamed entries keep
+#'   their source name. Identifier columns cannot be renamed (they are
+#'   stripped server-side regardless).
 #' @param name Character; output name used as a key in the plan's
 #'   outputs list and as the default symbol name on the server.
 #' @return The modified \code{omop_plan} with the person-level output
@@ -150,6 +191,13 @@ ds.omop.plan.baseline <- function(plan,
 #'   ),
 #'   name = "demographics"
 #' )
+#'
+#' # Rename columns at request time with a named vector
+#' plan <- ds.omop.plan.person_level(plan,
+#'   tables = list(person = c(sex = "gender_concept_id",
+#'                            birth_year = "year_of_birth")),
+#'   name = "demographics"
+#' )
 #' }
 #' @seealso \code{\link{ds.omop.plan.baseline}},
 #'   \code{\link{ds.omop.plan.events}}
@@ -158,7 +206,7 @@ ds.omop.plan.person_level <- function(plan, tables,
                                       name = "person_data") {
   plan$outputs[[name]] <- list(
     type = "person_level",
-    tables = tables
+    tables = lapply(tables, .fill_alias_names)
   )
   plan
 }

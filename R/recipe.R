@@ -679,13 +679,14 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
   level <- match.arg(level)
 
   if (is.null(label)) {
+    cid <- paste(unlist(params$concept_id) %||% "?", collapse = ", ")
     label <- switch(type,
       sex = paste0("Sex = ", params$value %||% "?"),
       age_range = paste0("Age ", params$min %||% "?", "-", params$max %||% "?"),
       age_group = paste0("Age groups: ",
                          paste(params$groups %||% "?", collapse = ", ")),
       cohort = paste0("Cohort #", params$cohort_definition_id %||% "?"),
-      has_concept = paste0("Has concept ", params$concept_id %||% "?",
+      has_concept = paste0("Has concept ", cid,
                            " in ", params$table %||% "?"),
       date_range = paste0("Dates ", params$start %||% "?",
                           " to ", params$end %||% "?"),
@@ -697,18 +698,18 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
       top_n = paste0("Top ", params$n %||% "?"),
       dedup = "Deduplicate",
       custom = params$description %||% "Custom filter",
-      not_has_concept = paste0("Not has concept ", params$concept_id %||% "?",
+      not_has_concept = paste0("Not has concept ", cid,
                                " in ", params$table %||% "?"),
-      concept_count = paste0("Concept ", params$concept_id %||% "?",
+      concept_count = paste0("Concept ", cid,
                              " count >= ", params$min_count %||% 1),
       prior_observation = paste0("Prior obs >= ",
                                  params$min_days %||% "?", " days"),
       followup = paste0("Followup >= ", params$min_days %||% "?", " days"),
       visit_count = paste0("Visits >= ", params$min_count %||% "?"),
-      has_measurement = paste0("Has measurement ", params$concept_id %||% "?",
+      has_measurement = paste0("Has measurement ", cid,
                                " in range"),
       missing_measurement = paste0("Missing measurement ",
-                                   params$concept_id %||% "?"),
+                                   cid),
       value_bin = paste0(params$var %||% "value", " bin [",
                          params$value$lower %||% "?", ", ",
                          params$value$upper %||% "?", ")")
@@ -863,8 +864,22 @@ omop_filter_cohort <- function(cohort_definition_id) {
   )
 }
 
+#' Format a concept label for filter display (vector-safe)
+#'
+#' @param concept_id Integer scalar or vector of concept IDs
+#' @param concept_name Character or NULL; human-readable name(s)
+#' @return Character scalar suitable for a filter label
+#' @keywords internal
+.concept_label <- function(concept_id, concept_name = NULL) {
+  if (!is.null(concept_name)) return(paste(concept_name, collapse = ", "))
+  ids <- as.integer(concept_id)
+  if (length(ids) <= 1L) paste("concept", ids) else
+    paste("concepts", paste(ids, collapse = ", "))
+}
+
 #' @rdname omop_filter
-#' @param concept_id Integer; the concept to check for
+#' @param concept_id Integer scalar or vector; the concept(s) to check for
+#'   (a vector matches if any concept is present)
 #' @param table Character; which OMOP table to check
 #' @param concept_name Character or NULL; human-readable name
 #' @param window Named list with start/end offsets, or NULL
@@ -872,9 +887,7 @@ omop_filter_cohort <- function(cohort_definition_id) {
 #' @export
 omop_filter_has_concept <- function(concept_id, table, concept_name = NULL,
                                      window = NULL, min_count = 1L) {
-  label <- paste0("Has ",
-                  if (!is.null(concept_name)) concept_name
-                  else paste("concept", concept_id),
+  label <- paste0("Has ", .concept_label(concept_id, concept_name),
                   " in ", table)
   if (min_count > 1L) label <- paste0(label, " (>=", min_count, "x)")
   omop_filter(
@@ -934,15 +947,14 @@ omop_filter_value <- function(column = "value_as_number", threshold,
 }
 
 #' @rdname omop_filter
-#' @param concept_id Integer; the concept to exclude
+#' @param concept_id Integer scalar or vector; the concept(s) to exclude
+#'   (a vector excludes persons having any of them)
 #' @param table Character; which OMOP table to check
 #' @param concept_name Character or NULL; human-readable name
 #' @export
 omop_filter_not_has_concept <- function(concept_id, table,
                                          concept_name = NULL) {
-  label <- paste0("Not has ",
-                  if (!is.null(concept_name)) concept_name
-                  else paste("concept", concept_id),
+  label <- paste0("Not has ", .concept_label(concept_id, concept_name),
                   " in ", table)
   omop_filter(
     type = "not_has_concept", level = "population",
@@ -956,7 +968,8 @@ omop_filter_not_has_concept <- function(concept_id, table,
 }
 
 #' @rdname omop_filter
-#' @param concept_id Integer; the concept to count
+#' @param concept_id Integer scalar or vector; the concept(s) to count
+#'   (a vector counts records matching any of them)
 #' @param table Character; which OMOP table to check
 #' @param min_count Integer; minimum number of records required
 #' @param concept_name Character or NULL; human-readable name
@@ -964,9 +977,7 @@ omop_filter_not_has_concept <- function(concept_id, table,
 omop_filter_concept_count <- function(concept_id, table,
                                        min_count = 2L,
                                        concept_name = NULL) {
-  label <- paste0("Concept ",
-                  if (!is.null(concept_name)) concept_name
-                  else concept_id,
+  label <- paste0(.concept_label(concept_id, concept_name),
                   " count >= ", min_count, " in ", table)
   omop_filter(
     type = "concept_count", level = "population",
@@ -1004,7 +1015,8 @@ omop_filter_followup <- function(min_days = 30L) {
 
 #' @rdname omop_filter
 #' @param min_count Integer; minimum number of visits
-#' @param visit_concept_id Integer or NULL; visit type filter
+#' @param visit_concept_id Integer scalar or vector, or NULL; visit type
+#'   filter (a vector counts visits of any of the given types)
 #' @export
 omop_filter_visit_count <- function(min_count = 1L,
                                      visit_concept_id = NULL) {
@@ -1020,14 +1032,16 @@ omop_filter_visit_count <- function(min_count = 1L,
 }
 
 #' @rdname omop_filter
-#' @param concept_id Integer; measurement concept ID
+#' @param concept_id Integer scalar or vector; measurement concept ID(s)
+#'   (a vector matches if any measurement is present)
 #' @param min_value Numeric or NULL; minimum value
 #' @param max_value Numeric or NULL; maximum value
 #' @export
 omop_filter_has_measurement <- function(concept_id,
                                          min_value = NULL,
                                          max_value = NULL) {
-  label <- paste0("Has measurement ", concept_id)
+  label <- paste0("Has measurement ",
+                  paste(as.integer(concept_id), collapse = ", "))
   if (!is.null(min_value) || !is.null(max_value)) {
     label <- paste0(label, " [",
                     if (!is.null(min_value)) min_value else "",
@@ -1047,13 +1061,15 @@ omop_filter_has_measurement <- function(concept_id,
 }
 
 #' @rdname omop_filter
-#' @param concept_id Integer; measurement concept ID to check absence of
+#' @param concept_id Integer scalar or vector; measurement concept ID(s) to
+#'   check absence of (a vector requires all of them to be absent)
 #' @export
 omop_filter_missing_measurement <- function(concept_id) {
   omop_filter(
     type = "missing_measurement", level = "population",
     params = list(concept_id = as.integer(concept_id)),
-    label = paste0("Missing measurement ", concept_id)
+    label = paste0("Missing measurement ",
+                   paste(as.integer(concept_id), collapse = ", "))
   )
 }
 
@@ -1738,6 +1754,33 @@ print.omop_recipe <- function(x, ...) {
 
 # --- Recipe -> Plan conversion ---
 
+# Build the raw-column spec for one table's variables as a NAMED list: names
+# are the per-variable aliases (`v$name`), values are the OMOP source columns.
+# The server renames source -> alias, so this is what carries raw-column naming
+# through the recipe/YAML path (the fluent API carries it via named
+# `tables=`/`columns=` vectors). A named list (not a named atomic vector) is
+# used so the aliases survive jsonlite serialisation as a JSON object rather
+# than being dropped to a bare array (see `.fill_alias_names`). Every element is
+# named; `value_source` columns keep their own name. De-duplicated by source
+# column (first alias wins).
+.raw_table_columns <- function(vs) {
+  src <- character(0)
+  alias <- character(0)
+  for (v in vs) {
+    if (!is.null(v$column)) {
+      src <- c(src, v$column)
+      alias <- c(alias, v$name %||% v$column)
+    }
+    if (!is.null(v$value_source)) {
+      src <- c(src, v$value_source)
+      alias <- c(alias, v$value_source)
+    }
+  }
+  if (length(src) == 0) return(NULL)
+  keep <- !duplicated(src)
+  as.list(stats::setNames(src[keep], alias[keep]))
+}
+
 #' Convert a recipe to an extraction plan
 #'
 #' Compiles the recipe into an \code{omop_plan} suitable for server-side
@@ -1817,12 +1860,7 @@ recipe_to_plan <- function(recipe) {
 
     if (out$type %in% c("wide", "baseline")) {
       if (out$type == "baseline") {
-        tables_spec <- lapply(by_table, function(vs) {
-          cols <- unique(unlist(lapply(vs, function(v) {
-            c(v$column, v$value_source)
-          })))
-          cols[!is.null(cols)]
-        })
+        tables_spec <- lapply(by_table, .raw_table_columns)
         plan <- ds.omop.plan.baseline(plan,
           columns = tables_spec[["person"]] %||% c("gender_concept_id",
             "year_of_birth", "race_concept_id"),
@@ -1904,11 +1942,7 @@ recipe_to_plan <- function(recipe) {
                   features = specs
                 )
               } else {
-                cols <- unique(unlist(lapply(vs, function(v) {
-                  c(v$column, v$value_source)
-                })))
-                cols <- cols[!is.null(cols)]
-                tables_spec[[tbl]] <- cols
+                tables_spec[[tbl]] <- .raw_table_columns(vs)
               }
             }
             plan$outputs[[out_name]] <- list(
@@ -1926,12 +1960,7 @@ recipe_to_plan <- function(recipe) {
             if (is.null(ev_by_table[[tbl]])) ev_by_table[[tbl]] <- list()
             ev_by_table[[tbl]] <- c(ev_by_table[[tbl]], list(v))
           }
-          tables_spec <- lapply(ev_by_table, function(vs) {
-            cols <- unique(unlist(lapply(vs, function(v) {
-              c(v$column, v$value_source)
-            })))
-            cols[!is.null(cols)]
-          })
+          tables_spec <- lapply(ev_by_table, .raw_table_columns)
           if (!is.null(derived_specs)) {
             plan$outputs[[out_name]] <- list(
               type = "person_level",
