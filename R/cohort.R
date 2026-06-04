@@ -120,6 +120,13 @@ ds.omop.cohort.create <- function(spec,
          call. = FALSE)
   }
 
+  # Opal's DataSHIELD expression grammar cannot lex an empty string literal
+  # (its string token requires >= 1 character), so a blank name would abort
+  # the assign with a server-side "Lexical error" before the call even runs.
+  # Fall back to a non-empty, human-readable default derived from the id.
+  cohort_name <- if (is.null(name) || !nzchar(trimws(name)))
+    paste0("cohort_", cohort_id %||% "tmp") else name
+
   DSI::datashield.assign.expr(
     conns,
     symbol = paste0(".cohort_", cohort_id %||% "tmp"),
@@ -127,7 +134,7 @@ ds.omop.cohort.create <- function(spec,
                 session$res_symbol,
                 .ds_encode(spec), mode,
                 as.integer(cohort_id %||% 0L),
-                name %||% "",
+                cohort_name,
                 overwrite)
   )
 }
