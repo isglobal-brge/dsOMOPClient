@@ -115,6 +115,15 @@ ds.omop.connect <- function(resource,
 
   res_symbol <- .generate_symbol("dsO")
 
+  # Load dsOMOP server-side before assigning the resource. Opal invokes methods
+  # as `dsOMOP::fn`, so the namespace (and the resource resolver it registers in
+  # .onLoad) is not loaded until the first dsOMOP call. Without this ping, the
+  # assign below runs first and fails with "No resolver could be found".
+  tryCatch(
+    DSI::datashield.aggregate(conns, call("omopPingDS")),
+    error = function(e) NULL
+  )
+
   errors <- list()
   for (srv in server_names) {
     res_name <- resource_map[[srv]]
