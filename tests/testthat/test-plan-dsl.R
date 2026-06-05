@@ -130,6 +130,35 @@ test_that("multiple outputs can be added to a plan", {
   expect_true(all(c("demo", "meds", "outcome") %in% names(plan$outputs)))
 })
 
+test_that(".ds_encode preserves names of a multi-element out-mapping", {
+  # Regression: a named character vector (the execute out-mapping with >1
+  # entry) used to serialize to a JSON array, dropping its names, so the
+  # server could not match plan outputs to symbols and assigned nothing.
+  # Decode exactly as the server's .ds_arg does.
+  ds_arg_decode <- function(x) {
+    b64 <- substring(x, 5)
+    b64 <- gsub("-", "+", b64)
+    b64 <- gsub("_", "/", b64)
+    pad <- (4 - nchar(b64) %% 4) %% 4
+    if (pad > 0) b64 <- paste0(b64, strrep("=", pad))
+    jsonlite::fromJSON(rawToChar(jsonlite::base64_dec(b64)),
+                       simplifyVector = FALSE)
+  }
+
+  out <- c(demo = "D", drugs = "X", outcome = "Y")
+  decoded <- ds_arg_decode(dsOMOPClient:::.ds_encode(out))
+  expect_equal(sort(names(decoded)), c("demo", "drugs", "outcome"))
+  expect_equal(decoded[["demo"]], "D")
+  expect_equal(decoded[["drugs"]], "X")
+  expect_equal(decoded[["outcome"]], "Y")
+
+  # Unnamed vectors (e.g. concept-id sets) must remain JSON arrays.
+  ids <- dsOMOPClient:::.ds_encode(c(19059056L, 19078461L))
+  decoded_ids <- ds_arg_decode(ids)
+  expect_null(names(decoded_ids))
+  expect_equal(as.integer(unlist(decoded_ids)), c(19059056L, 19078461L))
+})
+
 test_that("print.omop_plan works", {
   plan <- ds.omop.plan()
   plan <- ds.omop.plan.cohort(plan, cohort_definition_id = 1)

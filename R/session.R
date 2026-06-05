@@ -3,6 +3,25 @@
 
 # --- JSON transport for Opal compatibility ---
 
+#' Recursively coerce named atomic vectors to lists
+#'
+#' \code{jsonlite::toJSON} drops the names of a named atomic vector (it emits a
+#' bare array), but keeps the names of a list (as object keys). Walking the
+#' structure and converting every named atomic vector to a list makes names
+#' survive the JSON round-trip at any nesting depth. Unnamed atomic vectors are
+#' left untouched so they stay JSON arrays, and data frames are left to
+#' \code{toJSON}'s native row-wise encoding.
+#'
+#' @param x An R object (list, vector, or scalar).
+#' @return \code{x} with every named atomic vector turned into a named list.
+#' @keywords internal
+.ds_coerce_names <- function(x) {
+  if (is.data.frame(x)) return(x)
+  if (is.list(x)) return(lapply(x, .ds_coerce_names))
+  if (is.atomic(x) && !is.null(names(x))) return(as.list(x))
+  x
+}
+
 #' Encode a complex R object as JSON for DataSHIELD transport
 #'
 #' When passing complex R objects (lists, named vectors) through
@@ -18,6 +37,14 @@
 #' @keywords internal
 .ds_encode <- function(x) {
   if (is.list(x) || (is.vector(x) && length(x) > 1)) {
+    # jsonlite::toJSON serializes a named ATOMIC vector as a bare JSON array,
+    # silently dropping its names (a named LIST keeps them as object keys).
+    # This bites the execute out-mapping c(demo = "D", drugs = "X") and any
+    # named vector a caller nests inside a plan/spec (e.g. a tar or
+    # time_window written as c(start = 0, end = 365)). Recursively coerce
+    # every named atomic vector to a list so names survive transport; the
+    # server-side .ds_arg() reads them back as object keys.
+    x <- .ds_coerce_names(x)
     json <- as.character(jsonlite::toJSON(x, auto_unbox = TRUE, null = "null"))
     # URL-safe base64: no +/= that could confuse Opal's R expression parser
     b64 <- gsub("[\r\n]", "", jsonlite::base64_enc(charToRaw(json)))
