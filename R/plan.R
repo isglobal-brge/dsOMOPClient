@@ -30,7 +30,8 @@ ds.omop.plan <- function() {
     options = list(
       translate_concepts = FALSE,
       block_sensitive = TRUE,
-      min_persons = NULL
+      min_persons = NULL,
+      factor_concepts = TRUE
     )
   )
   class(plan) <- c("omop_plan", "list")
@@ -627,6 +628,13 @@ ds.omop.plan.temporal_covariates <- function(plan,
 #' @param min_persons Integer; minimum person count threshold for
 #'   disclosure control. Cells with fewer persons are suppressed.
 #'   If \code{NULL}, no suppression is applied.
+#' @param factor_concepts Logical; if \code{TRUE} (default), after a
+#'   memory-mode execution every \code{_concept_id} column is converted
+#'   into a factor whose levels are harmonized across all connected
+#'   servers, so pooled \code{ds.glm}/\code{ds.glmSLMA}/\code{ds.table}
+#'   see an identical level coding. Columns whose distinct values exceed
+#'   the server disclosure cap are left raw. Set \code{FALSE} to keep the
+#'   raw integer ids (or translated character names) unchanged.
 #' @return The modified \code{omop_plan} with updated options.
 #' @examples
 #' \dontrun{
@@ -634,7 +642,8 @@ ds.omop.plan.temporal_covariates <- function(plan,
 #' plan <- ds.omop.plan.options(plan,
 #'   translate_concepts = TRUE,
 #'   block_sensitive = TRUE,
-#'   min_persons = 5L
+#'   min_persons = 5L,
+#'   factor_concepts = TRUE
 #' )
 #' }
 #' @seealso \code{\link{ds.omop.plan}}, \code{\link{ds.omop.plan.execute}}
@@ -642,7 +651,8 @@ ds.omop.plan.temporal_covariates <- function(plan,
 ds.omop.plan.options <- function(plan,
                                  translate_concepts = NULL,
                                  block_sensitive = NULL,
-                                 min_persons = NULL) {
+                                 min_persons = NULL,
+                                 factor_concepts = NULL) {
   if (!is.null(translate_concepts)) {
     plan$options$translate_concepts <- translate_concepts
   }
@@ -651,6 +661,9 @@ ds.omop.plan.options <- function(plan,
   }
   if (!is.null(min_persons)) {
     plan$options$min_persons <- min_persons
+  }
+  if (!is.null(factor_concepts)) {
+    plan$options$factor_concepts <- factor_concepts
   }
   plan
 }
@@ -901,7 +914,181 @@ ds.omop.plan.execute <- function(plan, out,
     error = function(e) NULL
   )
 
+  # Coordination layer: harmonize concept-id columns into factors with one
+  # shared level ordering across the federation. Only meaningful in memory
+  # mode (staged outputs are Parquet descriptors, not in-R data frames).
+  if (identical(output_mode, "memory") &&
+        isTRUE(plan$options$factor_concepts %||% TRUE)) {
+    .harmonizeConceptFactors(out, conns)
+  }
+
   invisible(out)
+}
+
+#' Harmonize concept-id columns into federation-wide factors
+#'
+#' Cross-server coordination layer invoked after a memory-mode plan
+#' execution. For each freshly assigned output symbol it collects every
+#' server's disclosure-safe \code{_concept_id} levels, computes their union
+#' in one deterministic order client-side, and broadcasts that ordering back
+#' so each server recodes the columns as factors that share identical level
+#' coding. This is what makes pooled \code{ds.glm}, \code{ds.glmSLMA}, and
+#' \code{ds.table} behave correctly on the federated factor.
+#'
+#' A value present on only some sites becomes an empty level on the sites
+#' that lack it (valid base R; the modelling functions tolerate it). Symbols
+#' absent on a server are skipped there, and any error harmonizing one symbol
+#' is downgraded to a warning so the remaining outputs are unaffected.
+#'
+#' @param out Named character vector mapping plan outputs to server symbols.
+#' @param conns DSI connections object.
+#' @return \code{NULL} invisibly; the server symbols are modified in place.
+#' @keywords internal
+.harmonizeConceptFactors <- function(out, conns) {
+  requested <- unique(unname(unlist(out, use.names = FALSE)))
+  requested <- requested[nzchar(requested)]
+  if (length(requested) == 0L) {
+    return(invisible(NULL))
+  }
+  # A single execute can split one output into several symbols
+  # (e.g. <sym>.covariates / <sym>.covariateRef / <sym>.temporalCovariates).
+  # Expand each requested name to the concrete symbols that surfaced
+  # server-side; without a listing, fall back to the requested names as-is.
+  existing <- tryCatch(DSI::datashield.symbols(conns), error = function(e) NULL)
+  if (is.null(existing)) {
+    symbols <- requested
+  } else {
+    present <- unique(unlist(existing, use.names = FALSE))
+    symbols <- unique(unlist(lapply(requested, function(sym) {
+      present[present == sym | startsWith(present, paste0(sym, "."))]
+    }), use.names = FALSE))
+  }
+  if (length(symbols) == 0L) {
+    return(invisible(NULL))
+  }
+  for (sym in symbols) {
+    sub <- conns
+    if (!is.null(existing)) {
+      srv <- names(existing)[vapply(existing,
+                                    function(s) sym %in% s, logical(1))]
+      if (length(srv) == 0L) {
+        next
+      }
+      sub <- conns[srv]
+    }
+    tryCatch(
+      .harmonizeOneSymbol(sym, sub),
+      error = function(e) {
+        warning("Concept-factor harmonization skipped for '", sym,
+                "': ", conditionMessage(e), call. = FALSE)
+      }
+    )
+  }
+  invisible(NULL)
+}
+
+#' Harmonize the concept-id columns of one server-side symbol
+#'
+#' Implements the three-phase coordination for a single symbol: (1) aggregate
+#' each server's safe levels via \code{omopFactorLevelsDS}; (2) union them
+#' client-side into one deterministic ordering (numeric ids sorted
+#' numerically, character names sorted lexically), dropping any column flagged
+#' unsafe on \emph{any} server and any union exceeding the smallest server
+#' cap; (3) broadcast the shared spec back via \code{omopAsFactorColumnsDS}.
+#'
+#' @param sym Character; the server-side symbol to harmonize.
+#' @param conns DSI connections object restricted to servers holding
+#'   \code{sym}.
+#' @return \code{NULL} invisibly.
+#' @keywords internal
+.harmonizeOneSymbol <- function(sym, conns) {
+  per_server <- DSI::datashield.aggregate(
+    conns,
+    call("omopFactorLevelsDS", as.symbol(sym))
+  )
+  spec <- .unionConceptLevels(per_server)
+  if (length(spec) == 0L) {
+    return(invisible(NULL))
+  }
+  DSI::datashield.assign.expr(
+    conns,
+    symbol = sym,
+    expr = call("omopAsFactorColumnsDS", as.symbol(sym), .ds_encode(spec))
+  )
+  invisible(NULL)
+}
+
+#' Merge per-server concept levels into one shared ordered spec
+#'
+#' Pure reduction at the heart of the coordination layer: given each server's
+#' \code{omopFactorLevelsDS} report, it computes, per concept-id column, the
+#' union of safe levels in one deterministic order. A column flagged unsafe on
+#' \emph{any} server is dropped entirely (left raw everywhere), and a union
+#' exceeding the smallest reported server cap is dropped (no server would
+#' accept it). Numeric-looking ids sort numerically so the shared coding is
+#' intuitive; other labels use a locale-independent radix sort so every client
+#' derives the identical ordering.
+#'
+#' Kept side-effect-free (no DSI calls) so the union semantics are unit
+#' testable in isolation.
+#'
+#' @param per_server List of per-server results, each a list with
+#'   \code{levels} (named list of column -> character levels), \code{unsafe}
+#'   (character vector of disclosive columns), and \code{nfilter_levels_max}
+#'   (numeric server cap). \code{NULL} entries are ignored.
+#' @return A named list mapping each harmonizable column to its shared,
+#'   ordered character levels. Empty list when nothing is harmonizable.
+#' @keywords internal
+.unionConceptLevels <- function(per_server) {
+  per_server <- Filter(Negate(is.null), per_server)
+  if (length(per_server) == 0L) {
+    return(list())
+  }
+  all_cols <- unique(unlist(
+    lapply(per_server, function(r) c(names(r$levels), as.character(r$unsafe))),
+    use.names = FALSE
+  ))
+  if (length(all_cols) == 0L) {
+    return(list())
+  }
+  caps <- vapply(per_server,
+                 function(r) as.numeric(r$nfilter_levels_max %||% NA_real_),
+                 numeric(1))
+  cap <- suppressWarnings(min(caps, na.rm = TRUE))
+  if (!is.finite(cap)) {
+    cap <- 40
+  }
+  spec <- list()
+  for (col in all_cols) {
+    # If any server deemed this column disclosive, leave it raw everywhere.
+    flagged_unsafe <- any(vapply(
+      per_server,
+      function(r) col %in% as.character(r$unsafe), logical(1)
+    ))
+    if (flagged_unsafe) {
+      next
+    }
+    lv <- unique(unlist(
+      lapply(per_server, function(r) as.character(r$levels[[col]])),
+      use.names = FALSE
+    ))
+    lv <- lv[!is.na(lv) & nzchar(lv)]
+    if (length(lv) == 0L) {
+      next
+    }
+    # Deterministic ordering: numeric-looking ids sort numerically so the
+    # shared coding is intuitive; otherwise a locale-independent radix sort.
+    if (all(grepl("^-?[0-9]+$", lv))) {
+      lv <- lv[order(as.numeric(lv))]
+    } else {
+      lv <- sort(lv, method = "radix")
+    }
+    if (length(lv) > cap) {
+      next
+    }
+    spec[[col]] <- lv
+  }
+  spec
 }
 
 #' Harmonize a plan for multi-server execution
@@ -1060,6 +1247,8 @@ print.omop_plan <- function(x, ...) {
   cat("Options: translate=",
       x$options$translate_concepts %||% FALSE,
       " block_sensitive=",
-      x$options$block_sensitive %||% TRUE, "\n")
+      x$options$block_sensitive %||% TRUE,
+      " factor_concepts=",
+      x$options$factor_concepts %||% TRUE, "\n")
   invisible(x)
 }

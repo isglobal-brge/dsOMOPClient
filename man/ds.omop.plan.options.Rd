@@ -8,7 +8,8 @@ ds.omop.plan.options(
   plan,
   translate_concepts = NULL,
   block_sensitive = NULL,
-  min_persons = NULL
+  min_persons = NULL,
+  factor_concepts = NULL
 )
 }
 \arguments{
@@ -24,6 +25,14 @@ output tables.}
 \item{min_persons}{Integer; minimum person count threshold for
 disclosure control. Cells with fewer persons are suppressed.
 If \code{NULL}, no suppression is applied.}
+
+\item{factor_concepts}{Logical; if \code{TRUE} (default), after a
+memory-mode execution every \code{_concept_id} column is converted
+into a factor whose levels are harmonized across all connected
+servers, so pooled \code{ds.glm}/\code{ds.glmSLMA}/\code{ds.table}
+see an identical level coding. Columns whose distinct values exceed
+the server disclosure cap are left raw. Set \code{FALSE} to keep the
+raw integer ids (or translated character names) unchanged.}
 }
 \value{
 The modified \code{omop_plan} with updated options.
@@ -39,7 +48,8 @@ plan <- ds.omop.plan()
 plan <- ds.omop.plan.options(plan,
   translate_concepts = TRUE,
   block_sensitive = TRUE,
-  min_persons = 5L
+  min_persons = 5L,
+  factor_concepts = TRUE
 )
 }
 }
