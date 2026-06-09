@@ -219,6 +219,23 @@
                               class = "btn-warning w-100")
         ),
 
+        # --- Group Filters (combine existing filters with AND/OR) ---
+        bslib::accordion_panel(
+          "Group Filters", icon = shiny::icon("object-group"),
+          shiny::helpText(
+            "Combine two or more existing filters into one AND/OR group."),
+          shiny::selectInput(ns("group_operator"), "Combine with",
+            choices = c("AND (all must match)" = "AND",
+                        "OR (any may match)" = "OR"),
+            selected = "AND"),
+          shiny::checkboxGroupInput(ns("group_members"),
+            "Filters to group", choices = character(0)),
+          shiny::textInput(ns("group_label"), "Group label (optional)",
+            placeholder = "auto-generated from members"),
+          shiny::actionButton(ns("combine_filters_btn"),
+            "Combine into Group", class = "btn-warning w-100")
+        ),
+
         # --- Add Output ---
         bslib::accordion_panel(
           "Add Output", icon = shiny::icon("table"),
@@ -599,6 +616,67 @@
       }, error = function(e) {
         shiny::showNotification(
           .clean_ds_error(e), type = "error")
+      })
+    })
+
+    # Keep the 'Group Filters' checkbox choices in sync with the recipe's
+    # current TOP-LEVEL plain filters (exclude existing groups; you cannot
+    # nest a group into a new group from this simple control).
+    shiny::observe({
+      fl <- state$recipe$filters
+      plain_ids <- Filter(function(fid)
+        !inherits(fl[[fid]], "omop_filter_group"), names(fl))
+      choices <- stats::setNames(
+        plain_ids,
+        vapply(plain_ids, function(fid) {
+          lbl <- fl[[fid]]$label %||% fid
+          paste0(lbl, "  (", fid, ")")
+        }, character(1)))
+      shiny::updateCheckboxGroupInput(session, "group_members",
+        choices = choices)
+    })
+
+    # Combine the checked filters into a single omop_filter_group, remove the
+    # originals, and add the group back. The group flows through
+    # recipe_to_plan() -> plan$cohort$filter_tree automatically.
+    shiny::observeEvent(input$combine_filters_btn, {
+      member_ids <- input$group_members
+      if (length(member_ids) < 2) {
+        shiny::showNotification(
+          "Select at least two filters to combine", type = "warning")
+        return()
+      }
+      tryCatch({
+        recipe <- state$recipe
+        # Preserve display order as shown in the recipe list.
+        member_ids <- names(recipe$filters)[
+          names(recipe$filters) %in% member_ids]
+        children <- unname(recipe$filters[member_ids])
+        # Guard: only plain filters (defensive; UI already excludes groups).
+        if (any(vapply(children,
+                       function(ch) inherits(ch, "omop_filter_group"),
+                       logical(1)))) {
+          shiny::showNotification(
+            "Cannot nest an existing group; select plain filters only",
+            type = "warning")
+          return()
+        }
+        lbl <- trimws(input$group_label %||% "")
+        grp <- do.call(omop_filter_group, c(
+          children,
+          list(operator = input$group_operator,
+               label = if (nchar(lbl) > 0) lbl else NULL)))
+        # Remove originals, then add the group (auto-id f{N}_{operator}).
+        for (mid in member_ids)
+          recipe <- recipe_remove_filter(recipe, mid)
+        recipe <- recipe_add_filter(recipe, grp)
+        state$recipe <- recipe
+        shiny::showNotification(
+          paste("Grouped", length(children), "filters with",
+                input$group_operator),
+          type = "message", duration = 2)
+      }, error = function(e) {
+        shiny::showNotification(.clean_ds_error(e), type = "error")
       })
     })
 
