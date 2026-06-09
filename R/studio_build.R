@@ -54,7 +54,16 @@
                         "Count" = "count", "First Value" = "first_value",
                         "Last Value" = "last_value", "Mean" = "mean",
                         "Min" = "min", "Max" = "max",
-                        "Time Since" = "time_since")),
+                        "Time Since" = "time_since", "Binned" = "binned",
+                        "Sum" = "sum", "Distinct Concepts" = "n_distinct",
+                        "Std Dev" = "sd", "Coeff. of Variation" = "cv",
+                        "Slope (trend)" = "slope",
+                        "Drug Duration" = "drug_duration",
+                        "Abnormal High (count)" = "abnormal_high",
+                        "Abnormal Low (count)" = "abnormal_low",
+                        "Max Gap (days)" = "gap_max",
+                        "Mean Gap (days)" = "gap_mean",
+                        "Duration Sum (days)" = "duration_sum")),
           shiny::actionButton(ns("add_var_btn"), "Add Variable",
                               class = "btn-primary w-100")
         ),
@@ -71,8 +80,40 @@
             placeholder = "201820, 4229440, 316139", rows = 2),
           shiny::selectInput(ns("block_format"), "Format for All",
             choices = c("Binary (0/1)" = "binary", "Count" = "count",
-                        "Raw" = "raw", "Mean" = "mean")),
+                        "Raw" = "raw", "Mean" = "mean", "Min" = "min",
+                        "Max" = "max", "Sum" = "sum",
+                        "Distinct Concepts" = "n_distinct",
+                        "Std Dev" = "sd", "Coeff. of Variation" = "cv",
+                        "Slope (trend)" = "slope",
+                        "Drug Duration" = "drug_duration",
+                        "Abnormal High (count)" = "abnormal_high",
+                        "Abnormal Low (count)" = "abnormal_low",
+                        "Max Gap (days)" = "gap_max",
+                        "Mean Gap (days)" = "gap_mean",
+                        "Duration Sum (days)" = "duration_sum")),
           shiny::actionButton(ns("add_block_btn"), "Add Block",
+                              class = "btn-primary w-100")
+        ),
+
+        # --- Add Derived Variable (no concept picker needed) ---
+        bslib::accordion_panel(
+          "Add Derived Variable", icon = shiny::icon("calculator"),
+          shiny::selectInput(ns("derived_type"), "Derived Variable",
+            choices = c(
+              "Age" = "age",
+              "Sex (M/F)" = "sex_mf",
+              "Observation duration (days)" = "obs_duration",
+              "Prior observation (days)" = "prior_obs",
+              "Follow-up (days)" = "followup",
+              "Demographics missingness" = "demo_missingness",
+              "Charlson Comorbidity Index" = "charlson",
+              "CHADS2 score" = "chads2",
+              "CHA2DS2-VASc score" = "chadsvasc",
+              "DCSI (diabetes complications)" = "dcsi",
+              "HFRS (hospital frailty)" = "hfrs")),
+          shiny::textInput(ns("derived_name"), "Name (optional)",
+            placeholder = "leave blank for default"),
+          shiny::actionButton(ns("add_derived_btn"), "Add Derived Variable",
                               class = "btn-primary w-100")
         ),
 
@@ -218,12 +259,26 @@
       bslib::card_header(
         class = "d-flex justify-content-between align-items-center",
         shiny::span("Generated Code"),
-        shiny::actionButton(ns("copy_recipe_code"), NULL,
-          icon = shiny::icon("copy"),
-          class = "btn-sm btn-outline-secondary")
+        shiny::div(class = "d-flex gap-1",
+          shiny::actionButton(ns("run_recipe"),
+            shiny::tagList(shiny::icon("play"), " Run"),
+            class = "btn-sm btn-primary"),
+          shiny::actionButton(ns("copy_recipe_code"), NULL,
+            icon = shiny::icon("copy"),
+            class = "btn-sm btn-outline-secondary")
+        )
       ),
       bslib::card_body(
         shiny::uiOutput(ns("recipe_code_html"))
+      )
+    ),
+
+    # --- Execution Results ---
+    bslib::card(
+      full_screen = TRUE,
+      bslib::card_header("Execution Results"),
+      bslib::card_body(
+        shiny::uiOutput(ns("run_results"))
       )
     )
   )
@@ -305,6 +360,32 @@
       }, error = function(e) {
         shiny::showNotification(
           .clean_ds_error(e), type = "error")
+      })
+    })
+
+    # Add Derived Variable (person-level, no concept picker)
+    shiny::observeEvent(input$add_derived_btn, {
+      dtype <- input$derived_type
+      nm <- trimws(input$derived_name %||% "")
+      tryCatch({
+        v <- switch(dtype,
+          age              = if (nchar(nm) > 0) omop_variable_age(name = nm) else omop_variable_age(),
+          sex_mf           = if (nchar(nm) > 0) omop_variable_sex(name = nm) else omop_variable_sex(),
+          obs_duration     = if (nchar(nm) > 0) omop_variable_obs_duration(name = nm) else omop_variable_obs_duration(),
+          prior_obs        = if (nchar(nm) > 0) omop_variable_prior_obs(name = nm) else omop_variable_prior_obs(),
+          followup         = if (nchar(nm) > 0) omop_variable_followup(name = nm) else omop_variable_followup(),
+          demo_missingness = if (nchar(nm) > 0) omop_variable_demo_missingness(name = nm) else omop_variable_demo_missingness(),
+          charlson         = if (nchar(nm) > 0) omop_variable_charlson(name = nm) else omop_variable_charlson(),
+          chads2           = if (nchar(nm) > 0) omop_variable_chads2(name = nm) else omop_variable_chads2(),
+          chadsvasc        = if (nchar(nm) > 0) omop_variable_chadsvasc(name = nm) else omop_variable_chadsvasc(),
+          dcsi             = if (nchar(nm) > 0) omop_variable_dcsi(name = nm) else omop_variable_dcsi(),
+          hfrs             = if (nchar(nm) > 0) omop_variable_hfrs(name = nm) else omop_variable_hfrs()
+        )
+        state$recipe <- recipe_add_variable(state$recipe, v)
+        shiny::showNotification(paste("Added derived variable:", v$name), type = "message", duration = 2)
+        shiny::updateTextInput(session, "derived_name", value = "")
+      }, error = function(e) {
+        shiny::showNotification(.clean_ds_error(e), type = "error")
       })
     })
 
@@ -803,7 +884,10 @@
           shiny::selectInput(ns("edit_format"), "Format",
             choices = c("raw", "binary", "count", "first_value",
                         "last_value", "mean", "min", "max",
-                        "time_since", "binned"),
+                        "time_since", "binned", "sum", "n_distinct",
+                        "sd", "cv", "slope", "drug_duration",
+                        "abnormal_high", "abnormal_low", "gap_max",
+                        "gap_mean", "duration_sum"),
             selected = v$format),
           shiny::textInput(ns("edit_value_source"), "Value Source",
             value = v$value_source %||% ""),
@@ -833,7 +917,10 @@
           shiny::selectInput(ns("edit_format"), "Format",
             choices = c("raw", "binary", "count", "first_value",
                         "last_value", "mean", "min", "max",
-                        "time_since", "binned"),
+                        "time_since", "binned", "sum", "n_distinct",
+                        "sd", "cv", "slope", "drug_duration",
+                        "abnormal_high", "abnormal_low", "gap_max",
+                        "gap_mean", "duration_sum"),
             selected = b$format),
           shiny::textInput(ns("edit_value_source"), "Value Source",
             value = b$value_source %||% ""),
@@ -1138,6 +1225,176 @@
       highlighted <- .highlightR(code)
       shiny::div(class = "code-output",
         shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))
+      )
+    })
+
+    # --- Recipe execution (Run button) ---
+    # Holds the last execution outcome for the run_results renderUI.
+    run_state <- shiny::reactiveVal(NULL)
+
+    shiny::observeEvent(input$run_recipe, {
+      recipe <- state$recipe
+
+      if (length(recipe$variables) == 0 && length(recipe$filters) == 0 &&
+          length(recipe$blocks) == 0 && length(recipe$outputs) == 0) {
+        shiny::showNotification(
+          "Recipe is empty - add variables and at least one output first.",
+          type = "warning", duration = 4)
+        return()
+      }
+
+      if (length(recipe$outputs) == 0) {
+        shiny::showNotification(
+          "Recipe has no outputs - add an output (e.g. a 'wide' table) to materialize a result.",
+          type = "warning", duration = 5)
+        return()
+      }
+
+      session_obj <- tryCatch(.get_session(state$symbol), error = function(e) NULL)
+      conns <- session_obj$conns
+      if (is.null(session_obj) || is.null(conns) || length(conns) == 0) {
+        shiny::showNotification(
+          "No active DataSHIELD connection. Connect with ds.omop.connect() first.",
+          type = "error", duration = 6)
+        return()
+      }
+
+      # Execute federated: assigns result data frames SERVER-SIDE and returns
+      # only the output->symbol mapping (metadata, never row-level data).
+      have_dsbase <- requireNamespace("dsBaseClient", quietly = TRUE)
+      shiny::withProgress(message = "Executing recipe on server...", value = 0.5, {
+        res <- tryCatch({
+          out_map <- recipe_execute(recipe, symbol = state$symbol, conns = conns)
+          if (length(out_map) == 0) {
+            list(ok = FALSE, empty = TRUE,
+                 message = "Recipe produced no outputs - add at least one variable to your output table before running.")
+          } else {
+            symbols_per_server <- tryCatch(
+              DSI::datashield.symbols(conns), error = function(e) NULL)
+            dims <- NULL; cols <- NULL
+            if (have_dsbase) {
+              dims <- lapply(unname(out_map), function(sym) tryCatch(
+                dsBaseClient::ds.dim(sym, type = "both", datasources = conns),
+                error = function(e) NULL))
+              cols <- lapply(unname(out_map), function(sym) tryCatch(
+                dsBaseClient::ds.colnames(sym, datasources = conns),
+                error = function(e) NULL))
+              names(dims) <- unname(out_map); names(cols) <- unname(out_map)
+            }
+            list(ok = TRUE, out = out_map, server_names = names(conns),
+                 symbols = symbols_per_server, dims = dims, cols = cols,
+                 have_dsbase = have_dsbase)
+          }
+        }, error = function(e) {
+          list(ok = FALSE, message = conditionMessage(e))
+        })
+      })
+
+      run_state(res)
+
+      if (isTRUE(res$ok)) {
+        n_sym <- length(res$out)
+        shiny::showNotification(
+          sprintf("Recipe executed. %d result table%s assigned server-side: %s",
+                  n_sym, if (n_sym == 1) "" else "s",
+                  paste(unname(res$out), collapse = ", ")),
+          type = "message", duration = 5)
+        .history_add(state, "Executed recipe via Run button")
+      } else if (isTRUE(res$empty)) {
+        shiny::showNotification(res$message, type = "warning", duration = 6)
+      } else {
+        shiny::showNotification(
+          paste("Execution failed:", res$message),
+          type = "error", duration = 8)
+      }
+    })
+
+    output$run_results <- shiny::renderUI({
+      res <- run_state()
+      if (is.null(res)) {
+        return(.empty_state_ui("play", "No execution yet",
+          "Build a recipe with an output, then click Run. Results are materialized on the server; only dimensions and column names are shown here."))
+      }
+
+      if (isTRUE(res$empty)) {
+        return(shiny::div(class = "alert alert-warning",
+          shiny::strong("No result tables produced. "),
+          shiny::span(res$message)))
+      }
+
+      if (!isTRUE(res$ok)) {
+        return(shiny::div(class = "alert alert-danger",
+          shiny::strong("Execution failed. "),
+          shiny::span(res$message)))
+      }
+
+      out_map <- res$out                 # named: output_name -> server_symbol
+      server_names <- res$server_names %||% names(res$symbols) %||% character(0)
+
+      blocks <- lapply(seq_along(out_map), function(i) {
+        sym <- unname(out_map)[i]
+        out_nm <- names(out_map)[i]
+
+        rows_per_server <- lapply(server_names, function(srv) {
+          present <- !is.null(res$symbols) &&
+            sym %in% (res$symbols[[srv]] %||% character(0))
+          dimtxt <- NA_character_
+          if (!is.null(res$dims[[sym]])) {
+            key <- paste0("dimensions of ", sym, " in ", srv)
+            d <- res$dims[[sym]][[key]]
+            if (!is.null(d) && length(d) >= 2)
+              dimtxt <- paste0(d[1], " rows x ", d[2], " cols")
+          }
+          shiny::tags$tr(
+            shiny::tags$td(srv),
+            shiny::tags$td(if (present)
+              shiny::span(class = "badge bg-success", "assigned")
+              else shiny::span(class = "badge bg-secondary", "not found")),
+            shiny::tags$td(if (is.na(dimtxt)) shiny::em("-") else dimtxt)
+          )
+        })
+
+        colnames_vec <- NULL
+        if (!is.null(res$cols[[sym]])) {
+          cl <- res$cols[[sym]]
+          non_null <- which(!vapply(cl, is.null, logical(1)))
+          if (length(non_null) > 0) colnames_vec <- cl[[non_null[1]]]
+        }
+
+        bslib::card(class = "mb-2",
+          bslib::card_header(
+            shiny::tagList(shiny::icon("table"), " ",
+              shiny::strong(sym),
+              shiny::span(class = "text-muted",
+                paste0("  (output: ", out_nm, ")")))),
+          bslib::card_body(
+            shiny::tags$table(class = "table table-sm mb-2",
+              shiny::tags$thead(shiny::tags$tr(
+                shiny::tags$th("Server"), shiny::tags$th("Status"),
+                shiny::tags$th("Dimensions"))),
+              shiny::tags$tbody(rows_per_server)),
+            if (!is.null(colnames_vec))
+              shiny::div(
+                shiny::strong("Columns: "),
+                shiny::span(paste(colnames_vec, collapse = ", ")))
+            else if (isTRUE(res$have_dsbase))
+              shiny::div(class = "text-muted",
+                shiny::em("Column names unavailable for this symbol."))
+            else
+              shiny::div(class = "text-muted",
+                shiny::em("Install dsBaseClient to show dimensions and column names."))
+          )
+        )
+      })
+
+      shiny::tagList(
+        shiny::div(class = "alert alert-success",
+          shiny::strong("Execution complete. "),
+          sprintf("%d result table(s) assigned server-side.", length(out_map))),
+        blocks,
+        shiny::p(class = "text-muted small",
+          shiny::icon("shield-halved"),
+          " Row-level data never leaves the server. Use ds.* functions (e.g. ds.summary, ds.glm) on these symbols for federated analysis.")
       )
     })
   })
