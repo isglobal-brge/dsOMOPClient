@@ -124,6 +124,13 @@
             choices = c("Sex" = "sex", "Age Group" = "age_group",
                         "Age Range" = "age_range",
                         "Has Concept" = "has_concept",
+                        "Not Has Concept" = "not_has_concept",
+                        "Concept Count" = "concept_count",
+                        "Prior Observation" = "prior_observation",
+                        "Follow-up" = "followup",
+                        "Visit Count" = "visit_count",
+                        "Has Measurement" = "has_measurement",
+                        "Missing Measurement" = "missing_measurement",
                         "Date Range" = "date_range")),
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"), "'] == 'sex'"),
@@ -152,6 +159,55 @@
             shiny::selectInput(ns("filter_table"), "In Table",
               choices = .table_choices(c("condition_occurrence", "drug_exposure",
                           "measurement", "procedure_occurrence")))
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'not_has_concept'"),
+            shiny::textInput(ns("nhc_concept_id"), "Concept ID"),
+            shiny::selectInput(ns("nhc_table"), "In Table",
+              choices = .table_choices(c("condition_occurrence", "drug_exposure",
+                          "measurement", "procedure_occurrence")))
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'concept_count'"),
+            shiny::textInput(ns("cc_concept_id"), "Concept ID"),
+            shiny::selectInput(ns("cc_table"), "In Table",
+              choices = .table_choices(c("condition_occurrence", "drug_exposure",
+                          "measurement", "procedure_occurrence"))),
+            shiny::numericInput(ns("cc_min_count"), "Min Count", 2, 1, NA)
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'prior_observation'"),
+            shiny::numericInput(ns("po_min_days"), "Min Prior Observation (days)",
+              365, 0, NA)
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'followup'"),
+            shiny::numericInput(ns("fu_min_days"), "Min Follow-up (days)",
+              30, 0, NA)
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'visit_count'"),
+            shiny::numericInput(ns("vc_min_count"), "Min Visits", 1, 1, NA),
+            shiny::textInput(ns("vc_visit_concept_id"), "Visit Concept ID (optional)")
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'has_measurement'"),
+            shiny::textInput(ns("hm_concept_id"), "Measurement Concept ID"),
+            shiny::numericInput(ns("hm_min_value"), "Min Value (optional)",
+              value = NA),
+            shiny::numericInput(ns("hm_max_value"), "Max Value (optional)",
+              value = NA)
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'missing_measurement'"),
+            shiny::textInput(ns("mm_concept_id"), "Measurement Concept ID")
           ),
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"),
@@ -424,6 +480,66 @@
             }
             cid <- as.integer(raw_cid)
             omop_filter_has_concept(cid, input$filter_table)
+          },
+          not_has_concept = {
+            raw_cid <- trimws(input$nhc_concept_id)
+            if (nchar(raw_cid) == 0 ||
+                is.na(suppressWarnings(as.integer(raw_cid)))) {
+              shiny::showNotification(
+                "Enter a valid numeric concept ID", type = "warning")
+              return()
+            }
+            omop_filter_not_has_concept(as.integer(raw_cid), input$nhc_table)
+          },
+          concept_count = {
+            raw_cid <- trimws(input$cc_concept_id)
+            if (nchar(raw_cid) == 0 ||
+                is.na(suppressWarnings(as.integer(raw_cid)))) {
+              shiny::showNotification(
+                "Enter a valid numeric concept ID", type = "warning")
+              return()
+            }
+            omop_filter_concept_count(as.integer(raw_cid), input$cc_table,
+              min_count = as.integer(input$cc_min_count))
+          },
+          prior_observation =
+            omop_filter_prior_observation(
+              min_days = as.integer(input$po_min_days)),
+          followup =
+            omop_filter_followup(min_days = as.integer(input$fu_min_days)),
+          visit_count = {
+            raw_vcid <- trimws(input$vc_visit_concept_id %||% "")
+            vcid <- if (nchar(raw_vcid) > 0 &&
+                        !is.na(suppressWarnings(as.integer(raw_vcid))))
+              as.integer(raw_vcid) else NULL
+            omop_filter_visit_count(
+              min_count = as.integer(input$vc_min_count),
+              visit_concept_id = vcid)
+          },
+          has_measurement = {
+            raw_cid <- trimws(input$hm_concept_id)
+            if (nchar(raw_cid) == 0 ||
+                is.na(suppressWarnings(as.integer(raw_cid)))) {
+              shiny::showNotification(
+                "Enter a valid numeric concept ID", type = "warning")
+              return()
+            }
+            minv <- if (!is.null(input$hm_min_value) &&
+                        !is.na(input$hm_min_value)) input$hm_min_value else NULL
+            maxv <- if (!is.null(input$hm_max_value) &&
+                        !is.na(input$hm_max_value)) input$hm_max_value else NULL
+            omop_filter_has_measurement(as.integer(raw_cid),
+              min_value = minv, max_value = maxv)
+          },
+          missing_measurement = {
+            raw_cid <- trimws(input$mm_concept_id)
+            if (nchar(raw_cid) == 0 ||
+                is.na(suppressWarnings(as.integer(raw_cid)))) {
+              shiny::showNotification(
+                "Enter a valid numeric concept ID", type = "warning")
+              return()
+            }
+            omop_filter_missing_measurement(as.integer(raw_cid))
           },
           date_range = omop_filter_date_range(
             start = as.character(input$date_start),
@@ -990,6 +1106,44 @@
               shiny::dateInput(ns("edit_date_end"), "End Date",
                 value = f$params$end)
             ),
+            "not_has_concept" = shiny::tagList(
+              shiny::numericInput(ns("edit_filter_cid"), "Concept ID",
+                value = f$params$concept_id),
+              shiny::selectInput(ns("edit_filter_table"), "Table",
+                choices = tbl_choices, selected = f$params$table)
+            ),
+            "concept_count" = shiny::tagList(
+              shiny::numericInput(ns("edit_filter_cid"), "Concept ID",
+                value = f$params$concept_id),
+              shiny::selectInput(ns("edit_filter_table"), "Table",
+                choices = tbl_choices, selected = f$params$table),
+              shiny::numericInput(ns("edit_filter_min_count"), "Min Count",
+                value = f$params$min_count %||% 2L, min = 1)
+            ),
+            "prior_observation" = shiny::numericInput(
+              ns("edit_min_days"), "Min Prior Observation (days)",
+              value = f$params$min_days %||% 365L, min = 0),
+            "followup" = shiny::numericInput(
+              ns("edit_min_days"), "Min Follow-up (days)",
+              value = f$params$min_days %||% 30L, min = 0),
+            "visit_count" = shiny::tagList(
+              shiny::numericInput(ns("edit_visit_min_count"), "Min Visits",
+                value = f$params$min_count %||% 1L, min = 1),
+              shiny::numericInput(ns("edit_visit_concept_id"),
+                "Visit Concept ID (optional)",
+                value = f$params$visit_concept_id)
+            ),
+            "has_measurement" = shiny::tagList(
+              shiny::numericInput(ns("edit_meas_cid"),
+                "Measurement Concept ID", value = f$params$concept_id),
+              shiny::numericInput(ns("edit_meas_min"), "Min Value",
+                value = f$params$min_value %||% NA),
+              shiny::numericInput(ns("edit_meas_max"), "Max Value",
+                value = f$params$max_value %||% NA)
+            ),
+            "missing_measurement" = shiny::numericInput(
+              ns("edit_meas_cid"), "Measurement Concept ID",
+              value = f$params$concept_id),
             NULL
           )
           shiny::tagList(base_fields, param_fields)
@@ -1123,6 +1277,29 @@
             } else if (f$type == "date_range") {
               f$params$start <- as.character(input$edit_date_start)
               f$params$end <- as.character(input$edit_date_end)
+            } else if (f$type == "not_has_concept") {
+              f$params$concept_id <- as.integer(input$edit_filter_cid)
+              f$params$table <- input$edit_filter_table
+            } else if (f$type == "concept_count") {
+              f$params$concept_id <- as.integer(input$edit_filter_cid)
+              f$params$table <- input$edit_filter_table
+              f$params$min_count <- as.integer(input$edit_filter_min_count)
+            } else if (f$type == "prior_observation" ||
+                       f$type == "followup") {
+              f$params$min_days <- as.integer(input$edit_min_days)
+            } else if (f$type == "visit_count") {
+              f$params$min_count <- as.integer(input$edit_visit_min_count)
+              vcid <- input$edit_visit_concept_id
+              f$params$visit_concept_id <- if (!is.null(vcid) && !is.na(vcid))
+                as.integer(vcid) else NULL
+            } else if (f$type == "has_measurement") {
+              f$params$concept_id <- as.integer(input$edit_meas_cid)
+              f$params$min_value <- if (!is.null(input$edit_meas_min) &&
+                !is.na(input$edit_meas_min)) input$edit_meas_min else NULL
+              f$params$max_value <- if (!is.null(input$edit_meas_max) &&
+                !is.na(input$edit_meas_max)) input$edit_meas_max else NULL
+            } else if (f$type == "missing_measurement") {
+              f$params$concept_id <- as.integer(input$edit_meas_cid)
             }
           }
           recipe$filters[[item_id]] <- f
