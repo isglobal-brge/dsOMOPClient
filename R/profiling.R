@@ -360,7 +360,7 @@ ds.omop.value.counts <- function(table, column, top_n = 20,
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopValueCountsDS", session$res_symbol,
-                table, column, as.integer(top_n), TRUE)
+                table, column, as.integer(top_n))
   )
 
   ds_errors <- attr(raw, "ds_errors")
