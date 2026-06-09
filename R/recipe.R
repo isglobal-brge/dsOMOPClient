@@ -1361,6 +1361,12 @@ omop_recipe <- function() {
     variables = list(),     # Named list of omop_variable
     filters   = list(),     # Named list of omop_filter / omop_filter_group
     outputs   = list(),     # Named list of omop_output
+    options   = list(       # Plan-wide options applied at recipe_to_plan()
+      translate_concepts = FALSE,
+      block_sensitive    = TRUE,
+      min_persons        = NULL,
+      factor_concepts    = TRUE
+    ),
     meta      = list(
       created   = Sys.time(),
       modified  = Sys.time()
@@ -1816,6 +1822,18 @@ recipe_to_plan <- function(recipe) {
 
   plan <- ds.omop.plan()
 
+  # Apply recipe-level plan options (single source of truth). Read defensively
+  # with `%||%` so recipes created before the `options` slot existed (or
+  # imported from older JSON) degrade to the constructor defaults.
+  opts <- recipe$options %||% list()
+  plan <- ds.omop.plan.options(
+    plan,
+    translate_concepts = opts$translate_concepts,
+    block_sensitive    = opts$block_sensitive,
+    min_persons        = opts$min_persons,
+    factor_concepts    = opts$factor_concepts
+  )
+
   # Build cohort from base population + population-level filters
   base_pop <- recipe$populations[["base"]]
   if (!is.null(base_pop$cohort_definition_id)) {
@@ -2028,6 +2046,50 @@ recipe_to_plan <- function(recipe) {
   }
 
   plan
+}
+
+#' Set plan-wide options on a recipe
+#'
+#' Stores global execution options on the recipe itself, the single source of
+#' truth. These options are applied to the compiled plan by
+#' \code{\link{recipe_to_plan}} and therefore reach every downstream path
+#' (\code{\link{recipe_execute}}, \code{\link{recipe_preview}},
+#' \code{\link{recipe_validate}}). Only non-NULL arguments are updated;
+#' existing option values are preserved for omitted arguments. Mirrors
+#' \code{\link{ds.omop.plan.options}}.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param translate_concepts Logical; if \code{TRUE}, concept ID columns are
+#'   translated to human-readable concept names in output tables.
+#' @param block_sensitive Logical; if \code{TRUE}, sensitive columns
+#'   (e.g. exact dates, free-text notes) are excluded from outputs.
+#' @param min_persons Integer; minimum person count threshold for disclosure
+#'   control. Cells with fewer persons are suppressed. \code{NULL} = no
+#'   suppression.
+#' @param factor_concepts Logical; if \code{TRUE}, after a memory-mode
+#'   execution every \code{_concept_id} column is converted to a factor whose
+#'   levels are harmonized across all connected servers.
+#' @return The modified \code{omop_recipe} with updated options.
+#' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_to_plan}},
+#'   \code{\link{ds.omop.plan.options}}
+#' @export
+recipe_set_options <- function(recipe,
+                               translate_concepts = NULL,
+                               block_sensitive = NULL,
+                               min_persons = NULL,
+                               factor_concepts = NULL) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  if (is.null(recipe$options)) recipe$options <- list()
+  if (!is.null(translate_concepts))
+    recipe$options$translate_concepts <- translate_concepts
+  if (!is.null(block_sensitive))
+    recipe$options$block_sensitive <- block_sensitive
+  if (!is.null(min_persons))
+    recipe$options$min_persons <- min_persons
+  if (!is.null(factor_concepts))
+    recipe$options$factor_concepts <- factor_concepts
+  recipe
 }
 
 #' Build feature specifications from a list of omop_variable objects
@@ -2427,6 +2489,27 @@ recipe_to_code <- function(recipe) {
     ))
   }
 
+  # Plan options (only when something differs from the constructor defaults,
+  # so empty/default recipes stay clean). .build_code drops NULL args, so a
+  # NULL min_persons is simply omitted.
+  o <- recipe$options %||% list()
+  def <- list(translate_concepts = FALSE, block_sensitive = TRUE,
+              min_persons = NULL, factor_concepts = TRUE)
+  if (!identical(o$translate_concepts %||% FALSE, def$translate_concepts) ||
+      !identical(o$block_sensitive    %||% TRUE,  def$block_sensitive) ||
+      !identical(o$min_persons,                   def$min_persons) ||
+      !identical(o$factor_concepts    %||% TRUE,  def$factor_concepts)) {
+    opt_args <- .build_code("recipe_set_options",
+      translate_concepts = o$translate_concepts %||% FALSE,
+      block_sensitive    = o$block_sensitive    %||% TRUE,
+      min_persons        = o$min_persons,
+      factor_concepts    = o$factor_concepts    %||% TRUE)
+    # Inject the positional `recipe` arg that .build_code cannot emit.
+    opt_args <- sub("^recipe_set_options\\(", "recipe_set_options(recipe, ",
+                    opt_args)
+    lines <- c(lines, paste0("recipe <- ", opt_args))
+  }
+
   paste(lines, collapse = "\n")
 }
 
@@ -2533,6 +2616,7 @@ recipe_to_code <- function(recipe) {
     variables   = .recipe_strip_classes(recipe$variables),
     filters     = .recipe_strip_classes(recipe$filters),
     outputs     = .recipe_strip_classes(recipe$outputs),
+    options     = recipe$options %||% list(),
     meta        = .recipe_strip_classes(recipe$meta)
   )
 }
@@ -2653,6 +2737,13 @@ recipe_to_code <- function(recipe) {
         result_symbol = o$result_symbol
       )
     }
+  }
+
+  if (!is.null(data$options)) {
+    # Restore plan options, falling back to constructor defaults for any
+    # missing key so older exports degrade gracefully.
+    recipe$options <- utils::modifyList(recipe$options %||% list(),
+                                        data$options)
   }
 
   if (!is.null(data$meta)) {

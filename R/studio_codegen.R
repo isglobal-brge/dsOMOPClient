@@ -83,6 +83,24 @@
     }
   }
 
+  # Plan options (only emit when something differs from ds.omop.plan()
+  # defaults, so default plans stay clean). .build_code drops NULL args, so a
+  # NULL min_persons is simply omitted.
+  o <- plan$options %||% list()
+  if (!identical(o$translate_concepts %||% FALSE, FALSE) ||
+      !identical(o$block_sensitive    %||% TRUE,  TRUE) ||
+      !identical(o$min_persons,                   NULL) ||
+      !identical(o$factor_concepts    %||% TRUE,  TRUE)) {
+    opt_args <- .build_code("ds.omop.plan.options",
+      translate_concepts = o$translate_concepts %||% FALSE,
+      block_sensitive    = o$block_sensitive    %||% TRUE,
+      min_persons        = o$min_persons,
+      factor_concepts    = o$factor_concepts    %||% TRUE)
+    opt_args <- sub("^ds.omop.plan.options\\(", "ds.omop.plan.options(plan, ",
+                    opt_args)
+    lines <- c(lines, paste0("plan <- ", opt_args))
+  }
+
   # Outputs
   for (nm in names(plan$outputs)) {
     out_spec <- plan$outputs[[nm]]

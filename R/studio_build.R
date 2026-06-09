@@ -239,6 +239,35 @@
                            placeholder = "D_output_1"),
           shiny::actionButton(ns("add_output_btn"), "Add Output",
                               class = "btn-info w-100")
+        ),
+
+        # --- Plan Options ---
+        bslib::accordion_panel(
+          "Plan Options", icon = shiny::icon("sliders"),
+          bslib::tooltip(
+            shiny::checkboxInput(ns("opt_translate_concepts"),
+              "Translate concept IDs to labels",
+              value = FALSE),
+            "Replace numeric *_concept_id columns with human-readable concept names. Recommended for categorical data."
+          ),
+          bslib::tooltip(
+            shiny::checkboxInput(ns("opt_block_sensitive"),
+              "Block sensitive columns",
+              value = TRUE),
+            "Exclude exact dates and free-text note columns from outputs (disclosure safety)."
+          ),
+          bslib::tooltip(
+            shiny::checkboxInput(ns("opt_factor_concepts"),
+              "Harmonize concept factors across servers",
+              value = TRUE),
+            "Recode *_concept_id columns as factors with identical level coding on every server, so pooled ds.glm / ds.table align."
+          ),
+          bslib::tooltip(
+            shiny::numericInput(ns("opt_min_persons"),
+              "Minimum persons per cell (blank = none)",
+              value = NA, min = 0, step = 1),
+            "Suppress cells/rows backed by fewer than this many persons. Leave blank for no extra suppression."
+          )
         )
       ),
 
@@ -444,6 +473,25 @@
         shiny::showNotification(.clean_ds_error(e), type = "error")
       })
     })
+
+    # --- Plan Options -> persist onto the recipe (single source of truth) ---
+    # recipe_to_plan reads recipe$options, so the existing recipe_execute call
+    # carries these automatically with no signature change.
+    shiny::observeEvent(
+      list(input$opt_translate_concepts, input$opt_block_sensitive,
+           input$opt_factor_concepts, input$opt_min_persons),
+      {
+        mp <- suppressWarnings(as.integer(input$opt_min_persons))
+        if (length(mp) == 0 || is.na(mp)) mp <- NULL
+        state$recipe$options <- list(
+          translate_concepts = isTRUE(input$opt_translate_concepts),
+          block_sensitive    = isTRUE(input$opt_block_sensitive),
+          min_persons        = mp,
+          factor_concepts    = isTRUE(input$opt_factor_concepts)
+        )
+      },
+      ignoreInit = TRUE
+    )
 
     # Add Filter
     shiny::observeEvent(input$add_filter_btn, {
