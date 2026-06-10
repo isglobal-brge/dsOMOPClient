@@ -587,14 +587,21 @@
             omop_filter_age_group(groups)
           },
           age_range = {
-            if (!is.null(input$age_min) && !is.null(input$age_max) &&
-                input$age_min > input$age_max) {
+            amin <- input$age_min
+            amax <- input$age_max
+            if (is.null(amin) || is.null(amax) ||
+                is.na(amin) || is.na(amax)) {
+              shiny::showNotification(
+                "Enter both a min and max age", type = "warning")
+              return()
+            }
+            if (amin > amax) {
               shiny::showNotification(
                 "Min age must be less than or equal to max age",
                 type = "warning")
               return()
             }
-            omop_filter_age(min = input$age_min, max = input$age_max)
+            omop_filter_age(min = amin, max = amax)
           },
           has_concept = {
             raw_cid <- trimws(input$filter_concept_id)
@@ -1205,12 +1212,12 @@
                         "boolean", "integer", "character"),
             selected = v$type),
           shiny::selectInput(ns("edit_format"), "Format",
-            choices = c("raw", "binary", "count", "first_value",
+            choices = union(c("raw", "binary", "count", "first_value",
                         "last_value", "mean", "min", "max",
                         "time_since", "binned", "sum", "n_distinct",
                         "sd", "cv", "slope", "drug_duration",
                         "abnormal_high", "abnormal_low", "gap_max",
-                        "gap_mean", "duration_sum"),
+                        "gap_mean", "duration_sum"), v$format),
             selected = v$format),
           shiny::textInput(ns("edit_value_source"), "Value Source",
             value = v$value_source %||% ""),
@@ -1440,7 +1447,8 @@
           # Build updated variable
           tw_start <- input$edit_tw_start
           tw_end <- input$edit_tw_end
-          tw <- if (!is.na(tw_start) && !is.na(tw_end))
+          tw <- if (!is.null(tw_start) && !is.null(tw_end) &&
+                    !is.na(tw_start) && !is.na(tw_end))
             list(start = tw_start, end = tw_end) else NULL
           cid_val <- input$edit_concept_id
           cname_val <- input$edit_concept_name
@@ -1448,10 +1456,10 @@
           v$table <- input$edit_table
           v$concept_id <- if (!is.null(cid_val) && !is.na(cid_val))
             as.integer(cid_val) else NULL
-          v$concept_name <- if (nchar(cname_val) > 0) cname_val else NULL
+          v$concept_name <- if (!is.null(cname_val) && nchar(cname_val) > 0) cname_val else NULL
           v$type <- input$edit_type
           v$format <- input$edit_format
-          v$value_source <- if (nchar(vs_val) > 0) vs_val else NULL
+          v$value_source <- if (!is.null(vs_val) && nchar(vs_val) > 0) vs_val else NULL
           v$time_window <- tw
           v$suffix_mode <- input$edit_suffix_mode
           v$expand <- isTRUE(input$edit_include_descendants)
@@ -1477,16 +1485,17 @@
           if (nchar(new_id) == 0) new_id <- item_id
           tw_start <- input$edit_tw_start
           tw_end <- input$edit_tw_end
-          tw <- if (!is.na(tw_start) && !is.na(tw_end))
+          tw <- if (!is.null(tw_start) && !is.null(tw_end) &&
+                    !is.na(tw_start) && !is.na(tw_end))
             list(start = tw_start, end = tw_end) else NULL
           vs_val <- input$edit_value_source
-          ids_text <- trimws(input$edit_concept_ids_text)
+          ids_text <- trimws(input$edit_concept_ids_text %||% "")
           new_ids <- .parse_ids(ids_text)
           b$table <- input$edit_table
           b$concept_ids <- if (!is.null(new_ids)) as.integer(new_ids)
                            else b$concept_ids
           b$format <- input$edit_format
-          b$value_source <- if (nchar(vs_val) > 0) vs_val else NULL
+          b$value_source <- if (!is.null(vs_val) && nchar(vs_val) > 0) vs_val else NULL
           b$time_window <- tw
           b$suffix_mode <- input$edit_suffix_mode
           b$expand <- isTRUE(input$edit_block_include_descendants)
