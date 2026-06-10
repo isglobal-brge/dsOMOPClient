@@ -339,16 +339,24 @@
         )
       ),
 
-      # --- Import/Export (compact row) ---
+      # --- Save / load recipe (download as YAML/JSON, or upload one) ---
+      shiny::hr(class = "my-2"),
+      shiny::div(class = "fw-semibold small mb-1",
+        shiny::icon("floppy-disk"), " Save / load recipe"),
       shiny::div(class = "d-flex gap-1 mb-2",
         shiny::selectInput(ns("recipe_export_format"), NULL,
-          choices = c("JSON" = "json", "YAML" = "yaml"),
-          selected = "json", width = "92px"),
-        shiny::downloadButton(ns("export_json"), "Export",
-          class = "btn-sm btn-outline-secondary flex-fill"),
-        shiny::actionButton(ns("import_json_btn"),
-          shiny::tagList(shiny::icon("upload"), " Import"),
-          class = "btn-sm btn-outline-secondary flex-fill")
+          choices = c("YAML" = "yaml", "JSON" = "json"),
+          selected = "yaml", width = "92px"),
+        bslib::tooltip(
+          shiny::downloadButton(ns("export_json"),
+            shiny::tagList(shiny::icon("download"), " Download"),
+            class = "btn-sm btn-outline-primary flex-fill"),
+          "Download this recipe as a YAML or JSON file to re-load later or share."),
+        bslib::tooltip(
+          shiny::actionButton(ns("import_json_btn"),
+            shiny::tagList(shiny::icon("upload"), " Load"),
+            class = "btn-sm btn-outline-secondary flex-fill"),
+          "Load a recipe from a .yml / .yaml / .json file.")
       ),
       shiny::conditionalPanel(
         condition = paste0("input['", ns("import_json_btn"), "'] > 0"),
