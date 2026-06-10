@@ -1510,6 +1510,7 @@ recipe_add_block <- function(recipe, block) {
       suffix_mode = block$suffix_mode,
       filters = block$filters
     )
+    if (isTRUE(block$expand)) v$expand <- TRUE
     recipe$variables[[var_name]] <- v
     existing_names <- c(existing_names, var_name)
   }
@@ -1956,7 +1957,7 @@ recipe_to_plan <- function(recipe) {
                 concept_ids <- unique(unlist(lapply(feat_vs, function(v) v$concept_id)))
                 concept_ids <- concept_ids[!is.null(concept_ids)]
                 tables_spec[[tbl]] <- list(
-                  concept_set = if (length(concept_ids) > 0) as.integer(concept_ids) else NULL,
+                  concept_set = .concept_set_arg(feat_vs, concept_ids),
                   features = specs
                 )
               } else {
@@ -2006,7 +2007,9 @@ recipe_to_plan <- function(recipe) {
         plan <- ds.omop.plan.events(
           plan, name = nm, table = tbl,
           columns = if (length(columns) > 0) columns else NULL,
-          concept_set = if (length(concept_ids) > 0) concept_ids else NULL
+          concept_set = .concept_set_arg(vs, concept_ids),
+          temporal = out$options$temporal,
+          date_handling = out$options$date_handling
         )
       }
     } else if (out$type %in% c("features", "covariates_sparse")) {
@@ -2092,6 +2095,26 @@ recipe_set_options <- function(recipe,
   recipe
 }
 
+#' Build a concept_set argument, expanding descendants when requested
+#'
+#' Returns a bare integer vector by default, or a concept-set spec of the form
+#' \code{list(concepts = ids, include_descendants = TRUE)} when any contributing
+#' variable carries \code{$expand = TRUE}. The server expands the spec via
+#' \code{.vocabExpandConceptSet} at execution time.
+#'
+#' @param vs List of \code{omop_variable} objects contributing the concepts.
+#' @param ids Integer vector of concept IDs.
+#' @return Either an integer vector, a concept-set spec list, or \code{NULL}.
+#' @keywords internal
+.concept_set_arg <- function(vs, ids) {
+  ids <- as.integer(ids[!is.na(ids)])
+  if (length(ids) == 0) return(NULL)
+  if (any(vapply(vs, function(v) isTRUE(v$expand), logical(1)))) {
+    return(list(concepts = ids, include_descendants = TRUE))
+  }
+  ids
+}
+
 #' Build feature specifications from a list of omop_variable objects
 #'
 #' Maps each variable's format to the corresponding \code{omop.feature.*}
@@ -2127,7 +2150,10 @@ recipe_set_options <- function(recipe,
     )
     args <- list(
       name = v$name,
-      concept_set = if (!is.null(v$concept_id)) v$concept_id else integer(0)
+      concept_set = if (isTRUE(v$expand) && !is.null(v$concept_id))
+        list(concepts = as.integer(v$concept_id), include_descendants = TRUE)
+      else if (!is.null(v$concept_id)) v$concept_id
+      else integer(0)
     )
     # Pass value_column for feature types that support it
     if (!is.null(v$value_source) && fmt %in% c("mean", "min", "max",
@@ -2683,7 +2709,7 @@ recipe_to_code <- function(recipe) {
     recipe$blocks <- list()
     for (bid in names(data$blocks)) {
       b <- data$blocks[[bid]]
-      recipe$blocks[[bid]] <- omop_variable_block(
+      blk <- omop_variable_block(
         id = b$id %||% bid,
         table = b$table,
         concept_ids = .recipe_restore_int(b$concept_ids) %||% integer(0),
@@ -2695,6 +2721,8 @@ recipe_to_code <- function(recipe) {
         filters = .recipe_restore_filter_list(b$filters),
         population_id = b$population_id %||% "base"
       )
+      if (isTRUE(b$expand)) blk$expand <- TRUE
+      recipe$blocks[[bid]] <- blk
     }
   }
 
@@ -2716,6 +2744,7 @@ recipe_to_code <- function(recipe) {
         filters = .recipe_restore_filter_list(v$filters)
       )
       if (!is.null(v$derived)) var$derived <- v$derived
+      if (isTRUE(v$expand)) var$expand <- TRUE
       recipe$variables[[nm]] <- var
     }
   }

@@ -155,7 +155,13 @@
     } else if (otype == "event_level") {
       cs_str <- ""
       cs <- out_spec$concept_set %||% out_spec$filters$concept_set$ids
-      if (!is.null(cs) && length(cs) > 0) {
+      if (is.list(cs) && !is.null(cs$concepts)) {
+        # Concept-set spec with descendant expansion
+        cs_str <- paste0(", concept_set = ds.omop.concept.set(c(",
+          paste(cs$concepts, collapse = ", "), ")",
+          if (isTRUE(cs$include_descendants))
+            ", include_descendants = TRUE" else "", ")")
+      } else if (!is.null(cs) && length(cs) > 0) {
         cs_str <- paste0(", concept_set = c(",
           paste(cs, collapse = ", "), ")")
       }

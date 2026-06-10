@@ -64,6 +64,11 @@
                         "Max Gap (days)" = "gap_max",
                         "Mean Gap (days)" = "gap_mean",
                         "Duration Sum (days)" = "duration_sum")),
+          bslib::tooltip(
+            shiny::checkboxInput(ns("add_include_descendants"),
+              "Include descendant concepts", value = FALSE),
+            "Match this concept plus all of its hierarchical descendants (via concept_ancestor). Resolved server-side at execution time."
+          ),
           shiny::actionButton(ns("add_var_btn"), "Add Variable",
                               class = "btn-primary w-100")
         ),
@@ -91,6 +96,11 @@
                         "Max Gap (days)" = "gap_max",
                         "Mean Gap (days)" = "gap_mean",
                         "Duration Sum (days)" = "duration_sum")),
+          bslib::tooltip(
+            shiny::checkboxInput(ns("block_include_descendants"),
+              "Include descendant concepts", value = FALSE),
+            "Match each concept plus all of its hierarchical descendants (via concept_ancestor). Resolved server-side at execution time."
+          ),
           shiny::actionButton(ns("add_block_btn"), "Add Block",
                               class = "btn-primary w-100")
         ),
@@ -252,6 +262,42 @@
                         "Intervals" = "intervals")),
           shiny::selectInput(ns("output_pop"), "Population",
             choices = c("base")),
+          # --- Event-output knobs (long / joined_long only) ---
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("output_type"),
+              "'] == 'long' || input['", ns("output_type"),
+              "'] == 'joined_long'"),
+            bslib::tooltip(
+              shiny::selectInput(ns("output_date_handling"), "Date handling",
+                choices = c("Relative days from index" = "relative",
+                            "Binned (calendar period)" = "binned",
+                            "Remove all dates" = "remove"),
+                selected = "relative"),
+              "How event date columns are transformed. Absolute dates are omitted here because they require server disclosure permission."
+            ),
+            shiny::conditionalPanel(
+              condition = paste0("input['", ns("output_date_handling"),
+                "'] == 'binned'"),
+              shiny::selectInput(ns("output_date_bin"), "Bin width",
+                choices = c("Month" = "month", "Week" = "week",
+                            "Year" = "year"),
+                selected = "month")
+            ),
+            bslib::tooltip(
+              shiny::selectInput(ns("output_event_select"),
+                "Keep events per person",
+                choices = c("All events" = "all", "First N" = "first",
+                            "Last N" = "last"),
+                selected = "all"),
+              "Restrict to the first or last N qualifying events per person (temporal event_select). Resolved server-side."
+            ),
+            shiny::conditionalPanel(
+              condition = paste0("input['", ns("output_event_select"),
+                "'] != 'all'"),
+              shiny::numericInput(ns("output_event_n"), "N events",
+                value = 1, min = 1, step = 1)
+            )
+          ),
           shiny::textInput(ns("output_symbol"), "Result Symbol",
                            placeholder = "D_output_1"),
           shiny::actionButton(ns("add_output_btn"), "Add Output",
@@ -284,6 +330,11 @@
               "Minimum persons per cell (blank = none)",
               value = NA, min = 0, step = 1),
             "Suppress cells/rows backed by fewer than this many persons. Leave blank for no extra suppression."
+          ),
+          bslib::tooltip(
+            shiny::checkboxInput(ns("opt_output_mode_staged"),
+              "Staged output (Parquet, zero-copy)", value = FALSE),
+            "Write each output to a Parquet file on the server and return a FlowerDatasetDescriptor instead of an in-memory data.frame. Use for very large extractions; requires arrow on the server. Results panel shows descriptor metadata, not ds.dim."
           )
         )
       ),
@@ -429,6 +480,7 @@
           table = tbl, concept_id = cid,
           concept_name = cname_val, format = fmt
         )
+        v$expand <- isTRUE(input$add_include_descendants)
         state$recipe <- recipe_add_variable(state$recipe, v)
         shiny::showNotification(
           paste("Added variable:", v$name), type = "message", duration = 2)
@@ -454,6 +506,7 @@
         b <- omop_variable_block(
           table = tbl, concept_ids = ids, format = fmt
         )
+        b$expand <- isTRUE(input$block_include_descendants)
         state$recipe <- recipe_add_block(state$recipe, b)
         shiny::showNotification(
           paste("Added block with", length(ids), "concepts"),
@@ -690,8 +743,23 @@
       pop_id <- input$output_pop %||% "base"
       sym <- trimws(input$output_symbol %||% "")
       tryCatch({
+        # Event-output knobs (long / joined_long only): date_handling + temporal
+        opts <- list()
+        if (input$output_type %in% c("long", "joined_long")) {
+          dmode <- input$output_date_handling %||% "relative"
+          opts$date_handling <- omop.date_handling(
+            mode = dmode, reference = "index",
+            bin_width = if (identical(dmode, "binned"))
+                          input$output_date_bin else NULL)
+          esel <- input$output_event_select %||% "all"
+          if (!identical(esel, "all")) {
+            opts$temporal <- omop.temporal(
+              event_select = list(order = esel,
+                                  n = as.integer(input$output_event_n %||% 1)))
+          }
+        }
         o <- omop_output(name = nm, type = input$output_type,
-                          population_id = pop_id,
+                          population_id = pop_id, options = opts,
                           result_symbol = if (nchar(sym) > 0) sym else NULL)
         state$recipe <- recipe_add_output(state$recipe, o)
         shiny::showNotification(
@@ -1145,7 +1213,9 @@
           ),
           shiny::selectInput(ns("edit_suffix_mode"), "Suffix Mode",
             choices = c("index", "range", "label"),
-            selected = v$suffix_mode)
+            selected = v$suffix_mode),
+          shiny::checkboxInput(ns("edit_include_descendants"),
+            "Include descendant concepts", value = isTRUE(v$expand))
         )
       } else if (item_type == "block") {
         b <- recipe$blocks[[item_id]]
@@ -1178,7 +1248,9 @@
           ),
           shiny::selectInput(ns("edit_suffix_mode"), "Suffix Mode",
             choices = c("index", "range", "label"),
-            selected = b$suffix_mode)
+            selected = b$suffix_mode),
+          shiny::checkboxInput(ns("edit_block_include_descendants"),
+            "Include descendant concepts", value = isTRUE(b$expand))
         )
       } else if (item_type == "filter") {
         f <- recipe$filters[[item_id]]
@@ -1277,6 +1349,38 @@
       } else if (item_type == "output") {
         o <- recipe$outputs[[item_id]]
         if (is.null(o)) return()
+        cur_dh <- o$options$date_handling$mode %||% "relative"
+        cur_bin <- o$options$date_handling$bin_width %||% "month"
+        cur_esel <- o$options$temporal$event_select$order %||% "all"
+        cur_en <- o$options$temporal$event_select$n %||% 1
+        event_knobs <- if (o$type %in% c("long", "joined_long")) {
+          shiny::tagList(
+            shiny::selectInput(ns("edit_output_date_handling"), "Date handling",
+              choices = c("Relative days from index" = "relative",
+                          "Binned (calendar period)" = "binned",
+                          "Remove all dates" = "remove"),
+              selected = cur_dh),
+            shiny::conditionalPanel(
+              condition = paste0("input['", ns("edit_output_date_handling"),
+                "'] == 'binned'"),
+              shiny::selectInput(ns("edit_output_date_bin"), "Bin width",
+                choices = c("Month" = "month", "Week" = "week",
+                            "Year" = "year"),
+                selected = cur_bin)
+            ),
+            shiny::selectInput(ns("edit_output_event_select"),
+              "Keep events per person",
+              choices = c("All events" = "all", "First N" = "first",
+                          "Last N" = "last"),
+              selected = cur_esel),
+            shiny::conditionalPanel(
+              condition = paste0("input['", ns("edit_output_event_select"),
+                "'] != 'all'"),
+              shiny::numericInput(ns("edit_output_event_n"), "N events",
+                value = cur_en, min = 1, step = 1)
+            )
+          )
+        } else NULL
         shiny::tagList(
           shiny::textInput(ns("edit_name"), "Output Name", value = o$name),
           shiny::selectInput(ns("edit_output_type"), "Type",
@@ -1286,6 +1390,7 @@
             selected = o$type),
           shiny::selectInput(ns("edit_output_pop"), "Population",
             choices = pop_ids, selected = o$population_id),
+          event_knobs,
           shiny::textInput(ns("edit_result_symbol"), "Result Symbol",
             value = o$result_symbol %||% paste0("D_", o$name))
         )
@@ -1336,6 +1441,7 @@
           v$value_source <- if (nchar(vs_val) > 0) vs_val else NULL
           v$time_window <- tw
           v$suffix_mode <- input$edit_suffix_mode
+          v$expand <- isTRUE(input$edit_include_descendants)
           # Handle rename
           if (new_name != item_id) {
             if (new_name %in% names(recipe$variables)) {
@@ -1370,6 +1476,7 @@
           b$value_source <- if (nchar(vs_val) > 0) vs_val else NULL
           b$time_window <- tw
           b$suffix_mode <- input$edit_suffix_mode
+          b$expand <- isTRUE(input$edit_block_include_descendants)
           if (new_id != item_id) {
             recipe$blocks[[item_id]] <- NULL
             b$id <- new_id
@@ -1437,6 +1544,22 @@
           if (nchar(new_name) == 0) new_name <- item_id
           o$type <- input$edit_output_type
           o$population_id <- input$edit_output_pop
+          # Event-output knobs (long / joined_long only)
+          if (o$type %in% c("long", "joined_long")) {
+            dmode <- input$edit_output_date_handling %||% "relative"
+            o$options$date_handling <- omop.date_handling(
+              mode = dmode, reference = "index",
+              bin_width = if (identical(dmode, "binned"))
+                            input$edit_output_date_bin else NULL)
+            esel <- input$edit_output_event_select %||% "all"
+            o$options$temporal <- if (!identical(esel, "all"))
+              omop.temporal(event_select = list(order = esel,
+                n = as.integer(input$edit_output_event_n %||% 1)))
+              else NULL
+          } else {
+            o$options$date_handling <- NULL
+            o$options$temporal <- NULL
+          }
           o$result_symbol <- trimws(input$edit_result_symbol)
           if (nchar(o$result_symbol) == 0)
             o$result_symbol <- paste0("D_", new_name)
@@ -1565,9 +1688,14 @@
       # Execute federated: assigns result data frames SERVER-SIDE and returns
       # only the output->symbol mapping (metadata, never row-level data).
       have_dsbase <- requireNamespace("dsBaseClient", quietly = TRUE)
+      # Staged output mode: outputs are Parquet FlowerDatasetDescriptors on the
+      # server, NOT in-memory data.frames, so ds.dim / ds.colnames do not apply.
+      mode <- if (isTRUE(input$opt_output_mode_staged)) "staged" else "memory"
+      staged <- identical(mode, "staged")
       shiny::withProgress(message = "Executing recipe on server...", value = 0.5, {
         res <- tryCatch({
-          out_map <- recipe_execute(recipe, symbol = state$symbol, conns = conns)
+          out_map <- recipe_execute(recipe, symbol = state$symbol, conns = conns,
+                                    output_mode = mode)
           if (length(out_map) == 0) {
             list(ok = FALSE, empty = TRUE,
                  message = "Recipe produced no outputs - add at least one variable to your output table before running.")
@@ -1575,7 +1703,7 @@
             symbols_per_server <- tryCatch(
               DSI::datashield.symbols(conns), error = function(e) NULL)
             dims <- NULL; cols <- NULL
-            if (have_dsbase) {
+            if (have_dsbase && !staged) {
               dims <- lapply(unname(out_map), function(sym) tryCatch(
                 dsBaseClient::ds.dim(sym, type = "both", datasources = conns),
                 error = function(e) NULL))
@@ -1586,7 +1714,7 @@
             }
             list(ok = TRUE, out = out_map, server_names = names(conns),
                  symbols = symbols_per_server, dims = dims, cols = cols,
-                 have_dsbase = have_dsbase)
+                 have_dsbase = have_dsbase, staged = staged)
           }
         }, error = function(e) {
           list(ok = FALSE, message = conditionMessage(e))
@@ -1633,6 +1761,52 @@
 
       out_map <- res$out                 # named: output_name -> server_symbol
       server_names <- res$server_names %||% names(res$symbols) %||% character(0)
+
+      # --- Staged mode: outputs are Parquet FlowerDatasetDescriptors, not
+      # data.frames. ds.dim / ds.colnames do not apply; report presence + that
+      # the symbol is a Parquet descriptor for downstream dsFlower analysis. ---
+      if (isTRUE(res$staged)) {
+        staged_blocks <- lapply(seq_along(out_map), function(i) {
+          sym <- unname(out_map)[i]
+          out_nm <- names(out_map)[i]
+          rows_per_server <- lapply(server_names, function(srv) {
+            present <- !is.null(res$symbols) &&
+              sym %in% (res$symbols[[srv]] %||% character(0))
+            shiny::tags$tr(
+              shiny::tags$td(srv),
+              shiny::tags$td(if (present)
+                shiny::span(class = "badge bg-success", "assigned")
+                else shiny::span(class = "badge bg-secondary", "not found")),
+              shiny::tags$td(shiny::em("Parquet descriptor"))
+            )
+          })
+          bslib::card(class = "mb-2",
+            bslib::card_header(
+              shiny::tagList(shiny::icon("box-archive"), " ",
+                shiny::strong(sym),
+                shiny::span(class = "text-muted",
+                  paste0("  (output: ", out_nm, ")")))),
+            bslib::card_body(
+              shiny::tags$table(class = "table table-sm mb-2",
+                shiny::tags$thead(shiny::tags$tr(
+                  shiny::tags$th("Server"), shiny::tags$th("Status"),
+                  shiny::tags$th("Storage"))),
+                shiny::tags$tbody(rows_per_server)),
+              shiny::div(class = "text-muted",
+                shiny::em("Staged as a FlowerDatasetDescriptor (Parquet). Use dsFlower column projection for federated analysis; ds.dim / ds.colnames do not apply to descriptors."))
+            )
+          )
+        })
+        return(shiny::tagList(
+          shiny::div(class = "alert alert-success",
+            shiny::strong("Execution complete (staged). "),
+            sprintf("%d output(s) written to Parquet server-side.", length(out_map))),
+          staged_blocks,
+          shiny::p(class = "text-muted small",
+            shiny::icon("shield-halved"),
+            " Row-level data never leaves the server. Staged outputs are zero-copy Parquet descriptors.")
+        ))
+      }
 
       blocks <- lapply(seq_along(out_map), function(i) {
         sym <- unname(out_map)[i]
