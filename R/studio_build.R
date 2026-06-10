@@ -685,14 +685,19 @@
     # nest a group into a new group from this simple control).
     shiny::observe({
       fl <- state$recipe$filters
+      ids <- names(fl) %||% character(0)
       plain_ids <- Filter(function(fid)
-        !inherits(fl[[fid]], "omop_filter_group"), names(fl))
-      choices <- stats::setNames(
-        plain_ids,
-        vapply(plain_ids, function(fid) {
-          lbl <- fl[[fid]]$label %||% fid
-          paste0(lbl, "  (", fid, ")")
-        }, character(1)))
+        !inherits(fl[[fid]], "omop_filter_group"), ids)
+      choices <- if (length(plain_ids)) {
+        stats::setNames(
+          plain_ids,
+          vapply(plain_ids, function(fid) {
+            lbl <- fl[[fid]]$label %||% fid
+            paste0(lbl, "  (", fid, ")")
+          }, character(1)))
+      } else {
+        character(0)
+      }
       shiny::updateCheckboxGroupInput(session, "group_members",
         choices = choices)
     })
