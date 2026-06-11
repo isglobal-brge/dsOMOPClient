@@ -84,14 +84,14 @@
   }
 
   # Plan options (only emit when something differs from ds.omop.plan()
-  # defaults, so default plans stay clean). .build_code drops NULL args, so a
+  # defaults, so default plans stay clean). .codegen_call drops NULL args, so a
   # NULL min_persons is simply omitted.
   o <- plan$options %||% list()
   if (!identical(o$translate_concepts %||% FALSE, FALSE) ||
       !identical(o$block_sensitive    %||% TRUE,  TRUE) ||
       !identical(o$min_persons,                   NULL) ||
       !identical(o$factor_concepts    %||% TRUE,  TRUE)) {
-    opt_args <- .build_code("ds.omop.plan.options",
+    opt_args <- .codegen_call("ds.omop.plan.options",
       translate_concepts = o$translate_concepts %||% FALSE,
       block_sensitive    = o$block_sensitive    %||% TRUE,
       min_persons        = o$min_persons,
@@ -209,7 +209,7 @@
 #' @return Character; R code string
 #' @keywords internal
 .studio_codegen_exploration <- function(fn_name, args_list) {
-  do.call(.build_code, c(list(fn_name = fn_name), args_list))
+  do.call(.codegen_call, c(list(fn_name = fn_name), args_list))
 }
 
 #' Generate R code for a profiling function call
@@ -218,7 +218,7 @@
 #' @return Character; R code string
 #' @keywords internal
 .studio_codegen_profiling <- function(fn_name, args_list) {
-  do.call(.build_code, c(list(fn_name = fn_name), args_list))
+  do.call(.codegen_call, c(list(fn_name = fn_name), args_list))
 }
 
 #' Generate R code for a vocabulary function call
@@ -227,5 +227,5 @@
 #' @return Character; R code string
 #' @keywords internal
 .studio_codegen_vocabulary <- function(fn_name, args_list) {
-  do.call(.build_code, c(list(fn_name = fn_name), args_list))
+  do.call(.codegen_call, c(list(fn_name = fn_name), args_list))
 }

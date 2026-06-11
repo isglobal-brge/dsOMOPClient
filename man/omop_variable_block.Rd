@@ -14,7 +14,8 @@ omop_variable_block(
   value_source = NULL,
   suffix_mode = "index",
   filters = list(),
-  population_id = "base"
+  population_id = "base",
+  expand = FALSE
 )
 }
 \arguments{
@@ -46,6 +47,9 @@ applied to all variables in the block.}
 
 \item{population_id}{Character; which population this block belongs to
 (default \code{"base"}).}
+
+\item{expand}{Logical; if \code{TRUE}, expand the block's concepts to
+include vocabulary descendants server-side (default \code{FALSE}).}
 }
 \value{
 An \code{omop_variable_block} object.

@@ -114,6 +114,8 @@
 #' @param suffix_mode Character; how to name multi-column expansions
 #'   (\code{"index"}, \code{"range"}, or \code{"label"}).
 #' @param filters List of \code{\link{omop_filter}} objects to apply to this variable.
+#' @param expand Logical; if \code{TRUE}, expand the concept to include
+#'   vocabulary descendants server-side (default \code{FALSE}).
 #' @return An \code{omop_variable} object (a named list with class
 #'   \code{"omop_variable"}).
 #' @examples
@@ -152,7 +154,8 @@ omop_variable <- function(name = NULL,
                           value_source = NULL,
                           time_window = NULL,
                           suffix_mode = c("index", "range", "label"),
-                          filters = list()) {
+                          filters = list(),
+                          expand = FALSE) {
   type <- match.arg(type)
   format <- match.arg(format)
   suffix_mode <- match.arg(suffix_mode)
@@ -183,6 +186,8 @@ omop_variable <- function(name = NULL,
     suffix_mode  = suffix_mode,
     filters      = filters
   )
+  # Only set when TRUE so the plain (exported) form stays stable.
+  if (isTRUE(expand)) obj$expand <- TRUE
   class(obj) <- c("omop_variable", "list")
   obj
 }
@@ -1196,6 +1201,8 @@ print.omop_population <- function(x, ...) {
 #'   applied to all variables in the block.
 #' @param population_id Character; which population this block belongs to
 #'   (default \code{"base"}).
+#' @param expand Logical; if \code{TRUE}, expand the block's concepts to
+#'   include vocabulary descendants server-side (default \code{FALSE}).
 #' @return An \code{omop_variable_block} object.
 #' @examples
 #' \dontrun{
@@ -1218,7 +1225,8 @@ omop_variable_block <- function(id = NULL,
                                 value_source = NULL,
                                 suffix_mode = "index",
                                 filters = list(),
-                                population_id = "base") {
+                                population_id = "base",
+                                expand = FALSE) {
   if (is.null(id)) {
     id <- paste0("block_", table, "_", length(concept_ids))
   }
@@ -1235,6 +1243,8 @@ omop_variable_block <- function(id = NULL,
     filters        = filters,
     population_id  = population_id
   )
+  # Only set when TRUE so the plain (exported) form stays stable.
+  if (isTRUE(expand)) obj$expand <- TRUE
   class(obj) <- c("omop_variable_block", "list")
   obj
 }
@@ -1309,7 +1319,10 @@ omop_output <- function(name = "output_1",
   obj <- list(
     name          = name,
     type          = type,
-    variables     = variables,
+    # as.character(unlist(...)) so JSON-imported lists of names behave the
+    # same as character vectors in recipe_to_plan()'s subsetting.
+    variables     = if (!is.null(variables))
+      as.character(unlist(variables)) else NULL,
     population_id = population_id,
     options       = options,
     result_symbol = result_symbol
@@ -1522,6 +1535,9 @@ recipe_add_block <- function(recipe, block) {
       suffix_mode = block$suffix_mode,
       filters = block$filters
     )
+    # Provenance marker so recipe_to_code() can skip block-derived variables
+    # without guessing by name.
+    v$block_id <- block$id
     if (isTRUE(block$expand)) v$expand <- TRUE
     recipe$variables[[var_name]] <- v
     existing_names <- c(existing_names, var_name)
@@ -2382,6 +2398,67 @@ recipe_set_options <- function(recipe,
 
 # --- Recipe -> Code generation ---
 
+#' Format an R value for recipe code generation
+#'
+#' Deparse-based replacement for \code{.format_r_value()}: \code{deparse()}
+#' escapes quotes/backslashes in strings correctly, keeps the \code{L} suffix
+#' on integers, and emits valid literals for (nested) named lists.
+#'
+#' @param x An R value, or a string wrapped with \code{.codegen_raw()}.
+#' @return Character string of valid R code.
+#' @keywords internal
+.codegen_value <- function(x) {
+  if (is.null(x)) return("NULL")
+  if (inherits(x, "codegen_raw")) return(as.character(x))
+  paste(deparse(x, width.cutoff = 500L), collapse = " ")
+}
+
+#' Mark a string as already-generated R code
+#'
+#' Wraps a code string so \code{.codegen_call()} injects it verbatim instead
+#' of deparsing it (used for nested constructor calls such as filter lists).
+#'
+#' @param code Character; R code to inject verbatim.
+#' @return The string with class \code{"codegen_raw"}.
+#' @keywords internal
+.codegen_raw <- function(code) structure(code, class = "codegen_raw")
+
+#' Build an R call string with deparse-based argument formatting
+#'
+#' Like \code{.build_code()} but escapes strings safely via
+#' \code{.codegen_value()} and supports verbatim arguments created with
+#' \code{.codegen_raw()}. \code{NULL} arguments are dropped.
+#'
+#' @param fn_name Character; fully qualified function name.
+#' @param ... Named arguments to include in the call.
+#' @return Character string of the R call.
+#' @keywords internal
+.codegen_call <- function(fn_name, ...) {
+  args <- list(...)
+  parts <- vapply(names(args), function(nm) {
+    val <- args[[nm]]
+    if (is.null(val)) return(NA_character_)
+    paste0(nm, " = ", .codegen_value(val))
+  }, character(1))
+  parts <- parts[!is.na(parts)]
+  paste0(fn_name, "(", paste(parts, collapse = ", "), ")")
+}
+
+#' Generate a verbatim `filters = list(...)` argument value
+#'
+#' @param filters List of \code{omop_filter}/\code{omop_filter_group} objects.
+#' @return A \code{.codegen_raw()} string, or \code{NULL} when empty (so
+#'   \code{.codegen_call()} drops the argument).
+#' @keywords internal
+.codegen_filter_list <- function(filters) {
+  if (is.null(filters) || length(filters) == 0) return(NULL)
+  code <- vapply(filters, function(f) {
+    if (inherits(f, "omop_filter_group")) .codegen_filter_group(f)
+    else .codegen_filter(f)
+  }, character(1))
+  .codegen_raw(paste0("list(", paste(code, collapse = ", "), ")"))
+}
+
 #' Generate reproducible R code from a recipe
 #'
 #' Produces a minimal R script that, when executed, recreates the recipe from
@@ -2404,94 +2481,98 @@ recipe_to_code <- function(recipe) {
 
   lines <- c("recipe <- omop_recipe()")
 
+  # Base cohort reference (the base population itself is implicit)
+  if (!is.null(recipe$populations$base$cohort_definition_id)) {
+    lines <- c(lines, paste0(
+      "recipe <- recipe_set_cohort(recipe, ",
+      .codegen_value(recipe$populations$base$cohort_definition_id), ")"
+    ))
+  }
+
   # Populations (skip base)
   for (pid in names(recipe$populations)) {
     if (pid == "base") next
     p <- recipe$populations[[pid]]
     lines <- c(lines, paste0(
       "recipe <- recipe_add_population(recipe, ",
-      .build_code("omop_population",
+      .codegen_call("omop_population",
         id = p$id, label = p$label, parent_id = p$parent_id,
+        filters = .codegen_filter_list(p$filters),
         cohort_definition_id = p$cohort_definition_id),
       ")"
     ))
   }
 
-  # Blocks
-  for (bid in names(recipe$blocks)) {
-    b <- recipe$blocks[[bid]]
-    lines <- c(lines, paste0(
-      "recipe <- recipe_add_block(recipe, ",
-      .build_code("omop_variable_block",
-        id = b$id, table = b$table,
-        concept_ids = b$concept_ids,
-        format = b$format, population_id = b$population_id),
-      ")"
-    ))
-  }
-
-  # Individual variables (not from blocks)
-  block_vars <- unlist(lapply(recipe$blocks, function(b) {
-    vapply(seq_along(b$concept_ids), function(i) {
-      cname <- if (!is.null(b$concept_names) && i <= length(b$concept_names))
-        b$concept_names[i] else NULL
-      if (!is.null(cname)) .sanitize_name(cname)
-      else paste0(b$table, "_c", b$concept_ids[i])
-    }, character(1))
-  }))
+  # Individual variables (not from blocks), emitted BEFORE blocks: standalone
+  # variables carry their exact names, so re-expanding the blocks afterwards
+  # reproduces the original collision suffixes (`_2`, ...). Variables expanded
+  # from a block carry a `block_id` provenance marker; recipes serialized
+  # before that marker existed fall back to the legacy name-matching
+  # heuristic.
+  has_provenance <- any(vapply(recipe$variables,
+                               function(v) !is.null(v$block_id), logical(1)))
+  block_vars <- if (has_provenance) character(0) else
+    unlist(lapply(recipe$blocks, function(b) {
+      vapply(seq_along(b$concept_ids), function(i) {
+        cname <- if (!is.null(b$concept_names) && i <= length(b$concept_names))
+          b$concept_names[i] else NULL
+        if (!is.null(cname)) .sanitize_name(cname)
+        else paste0(b$table, "_c", b$concept_ids[i])
+      }, character(1))
+    }))
   for (nm in names(recipe$variables)) {
-    if (nm %in% block_vars) next
     v <- recipe$variables[[nm]]
+    if (!is.null(v$block_id) || nm %in% block_vars) next
 
     # Use convenience constructors for derived variables
     if (!is.null(v$derived)) {
       code <- switch(v$derived$kind,
-        "age" = .build_code("omop_variable_age",
+        "age" = .codegen_call("omop_variable_age",
           name = v$name,
           reference = v$derived$reference %||% "today",
           reference_date = v$derived$reference_date),
-        "sex_mf" = .build_code("omop_variable_sex", name = v$name),
-        "obs_duration" = .build_code("omop_variable_obs_duration",
+        "sex_mf" = .codegen_call("omop_variable_sex", name = v$name),
+        "obs_duration" = .codegen_call("omop_variable_obs_duration",
           name = v$name),
-        "drug_duration" = .build_code("omop_variable_drug_duration",
+        "drug_duration" = .codegen_call("omop_variable_drug_duration",
           concept_id = v$concept_id,
           concept_name = v$concept_name,
           name = v$name, agg = v$derived$agg %||% "mean"),
-        "sum" = .build_code("omop_variable_sum",
+        "sum" = .codegen_call("omop_variable_sum",
           table = v$table, column = v$derived$column,
           concept_id = v$concept_id, concept_name = v$concept_name,
           name = v$name),
-        "n_distinct" = .build_code("omop_variable_n_distinct",
+        "n_distinct" = .codegen_call("omop_variable_n_distinct",
           table = v$table, name = v$name),
-        "prior_obs" = .build_code("omop_variable_prior_obs",
+        "prior_obs" = .codegen_call("omop_variable_prior_obs",
           name = v$name,
           reference_date = v$derived$reference_date),
-        "followup" = .build_code("omop_variable_followup",
+        "followup" = .codegen_call("omop_variable_followup",
           name = v$name,
           reference_date = v$derived$reference_date),
-        "demo_missingness" = .build_code("omop_variable_demo_missingness",
+        "demo_missingness" = .codegen_call("omop_variable_demo_missingness",
           name = v$name),
-        "sd" = .build_code("omop_variable_sd",
+        "sd" = .codegen_call("omop_variable_sd",
           table = v$table, concept_id = v$concept_id,
           concept_name = v$concept_name, name = v$name,
           value_source = v$value_source),
-        "cv" = .build_code("omop_variable_cv",
+        "cv" = .codegen_call("omop_variable_cv",
           table = v$table, concept_id = v$concept_id,
           concept_name = v$concept_name, name = v$name,
           value_source = v$value_source),
-        "slope" = .build_code("omop_variable_slope",
+        "slope" = .codegen_call("omop_variable_slope",
           table = v$table, concept_id = v$concept_id,
           concept_name = v$concept_name, name = v$name,
           value_source = v$value_source),
-        "charlson" = .build_code("omop_variable_charlson",
+        "charlson" = .codegen_call("omop_variable_charlson",
           name = v$name),
-        "chads2" = .build_code("omop_variable_chads2",
+        "chads2" = .codegen_call("omop_variable_chads2",
           name = v$name),
-        "chadsvasc" = .build_code("omop_variable_chadsvasc",
+        "chadsvasc" = .codegen_call("omop_variable_chadsvasc",
           name = v$name),
-        "dcsi" = .build_code("omop_variable_dcsi",
+        "dcsi" = .codegen_call("omop_variable_dcsi",
           name = v$name),
-        "hfrs" = .build_code("omop_variable_hfrs",
+        "hfrs" = .codegen_call("omop_variable_hfrs",
           name = v$name),
         NULL
       )
@@ -2504,12 +2585,62 @@ recipe_to_code <- function(recipe) {
 
     lines <- c(lines, paste0(
       "recipe <- recipe_add_variable(recipe, ",
-      .build_code("omop_variable",
+      .codegen_call("omop_variable",
         name = v$name, table = v$table, column = v$column,
         concept_id = v$concept_id, concept_name = v$concept_name,
-        format = v$format, value_source = v$value_source),
+        type = if (!identical(v$type %||% "auto", "auto")) v$type else NULL,
+        format = v$format, value_source = v$value_source,
+        time_window = v$time_window,
+        suffix_mode = if (!identical(v$suffix_mode %||% "index", "index"))
+          v$suffix_mode else NULL,
+        filters = .codegen_filter_list(v$filters),
+        expand = if (isTRUE(v$expand)) TRUE else NULL),
       ")"
     ))
+  }
+
+  # Blocks (re-expanded by recipe_add_block at run time)
+  for (bid in names(recipe$blocks)) {
+    b <- recipe$blocks[[bid]]
+    lines <- c(lines, paste0(
+      "recipe <- recipe_add_block(recipe, ",
+      .codegen_call("omop_variable_block",
+        id = b$id, table = b$table,
+        concept_ids = b$concept_ids,
+        concept_names = b$concept_names,
+        time_window = b$time_window,
+        format = b$format,
+        value_source = b$value_source,
+        suffix_mode = if (!identical(b$suffix_mode %||% "index", "index"))
+          b$suffix_mode else NULL,
+        filters = .codegen_filter_list(b$filters),
+        population_id = b$population_id,
+        expand = if (isTRUE(b$expand)) TRUE else NULL),
+      ")"
+    ))
+  }
+
+  # The rebuild order (standalone variables first, then block expansions)
+  # may differ from the recipe's insertion order; restore it so column
+  # ordering in outputs is preserved. Only possible when block provenance
+  # markers exist (legacy recipes keep the rebuild order).
+  if (has_provenance && length(recipe$variables) > 0) {
+    is_block_var <- vapply(recipe$variables,
+                           function(v) !is.null(v$block_id), logical(1))
+    rebuilt_order <- c(
+      names(recipe$variables)[!is_block_var],
+      unlist(lapply(names(recipe$blocks), function(bid) {
+        names(recipe$variables)[vapply(recipe$variables, function(v)
+          identical(v$block_id, bid), logical(1))]
+      }))
+    )
+    if (!identical(unname(rebuilt_order), names(recipe$variables)) &&
+        setequal(rebuilt_order, names(recipe$variables))) {
+      lines <- c(lines, paste0(
+        "recipe$variables <- recipe$variables[",
+        .codegen_value(names(recipe$variables)), "]"
+      ))
+    }
   }
 
   # Filters
@@ -2533,15 +2664,18 @@ recipe_to_code <- function(recipe) {
     o <- recipe$outputs[[nm]]
     lines <- c(lines, paste0(
       "recipe <- recipe_add_output(recipe, ",
-      .build_code("omop_output",
-        name = o$name, type = o$type, population_id = o$population_id,
+      .codegen_call("omop_output",
+        name = o$name, type = o$type,
+        variables = o$variables,
+        population_id = o$population_id,
+        options = if (length(o$options %||% list()) > 0) o$options else NULL,
         result_symbol = o$result_symbol),
       ")"
     ))
   }
 
   # Plan options (only when something differs from the constructor defaults,
-  # so empty/default recipes stay clean). .build_code drops NULL args, so a
+  # so empty/default recipes stay clean). .codegen_call drops NULL args, so a
   # NULL min_persons is simply omitted.
   o <- recipe$options %||% list()
   def <- list(translate_concepts = FALSE, block_sensitive = TRUE,
@@ -2550,12 +2684,12 @@ recipe_to_code <- function(recipe) {
       !identical(o$block_sensitive    %||% TRUE,  def$block_sensitive) ||
       !identical(o$min_persons,                   def$min_persons) ||
       !identical(o$factor_concepts    %||% TRUE,  def$factor_concepts)) {
-    opt_args <- .build_code("recipe_set_options",
+    opt_args <- .codegen_call("recipe_set_options",
       translate_concepts = o$translate_concepts %||% FALSE,
       block_sensitive    = o$block_sensitive    %||% TRUE,
       min_persons        = o$min_persons,
       factor_concepts    = o$factor_concepts    %||% TRUE)
-    # Inject the positional `recipe` arg that .build_code cannot emit.
+    # Inject the positional `recipe` arg that .codegen_call cannot emit.
     opt_args <- sub("^recipe_set_options\\(", "recipe_set_options(recipe, ",
                     opt_args)
     lines <- c(lines, paste0("recipe <- ", opt_args))
@@ -2571,59 +2705,64 @@ recipe_to_code <- function(recipe) {
 #' @keywords internal
 .codegen_filter <- function(f) {
   if (f$type == "sex") {
-    .build_code("omop_filter_sex", value = f$params$value)
+    .codegen_call("omop_filter_sex", value = f$params$value)
   } else if (f$type == "cohort") {
-    .build_code("omop_filter_cohort",
+    .codegen_call("omop_filter_cohort",
       cohort_definition_id = f$params$cohort_definition_id)
   } else if (f$type == "age_group") {
-    .build_code("omop_filter_age_group", groups = f$params$groups)
+    .codegen_call("omop_filter_age_group", groups = f$params$groups)
   } else if (f$type == "age_range") {
-    .build_code("omop_filter_age", min = f$params$min, max = f$params$max)
+    .codegen_call("omop_filter_age", min = f$params$min, max = f$params$max)
   } else if (f$type == "has_concept") {
-    .build_code("omop_filter_has_concept",
+    .codegen_call("omop_filter_has_concept",
       concept_id = f$params$concept_id,
       table = f$params$table,
-      concept_name = f$params$concept_name)
+      concept_name = f$params$concept_name,
+      window = f$params$window,
+      min_count = f$params$min_count)
   } else if (f$type == "date_range") {
-    .build_code("omop_filter_date_range",
+    .codegen_call("omop_filter_date_range",
       start = f$params$start, end = f$params$end)
   } else if (f$type == "value_bin") {
-    .build_code("omop_filter_value",
-      column = f$params$var,
-      threshold = mean(c(f$params$value$lower, f$params$value$upper)),
-      direction = f$params$direction %||% "above",
-      safe_bins = "# requires safe_bins from ds.omop.safe.cutpoints()")
+    # The disclosure-safe bin was already resolved when the filter was built
+    # (via ds.omop.safe.cutpoints()), so regenerate it verbatim instead of
+    # emitting a non-executable omop_filter_value() call.
+    .codegen_call("omop_filter",
+      type = f$type, level = f$level,
+      params = f$params, label = f$label)
   } else if (f$type == "not_has_concept") {
-    .build_code("omop_filter_not_has_concept",
+    .codegen_call("omop_filter_not_has_concept",
       concept_id = f$params$concept_id,
       table = f$params$table,
       concept_name = f$params$concept_name)
   } else if (f$type == "concept_count") {
-    .build_code("omop_filter_concept_count",
+    .codegen_call("omop_filter_concept_count",
       concept_id = f$params$concept_id,
       table = f$params$table,
       min_count = f$params$min_count,
       concept_name = f$params$concept_name)
   } else if (f$type == "prior_observation") {
-    .build_code("omop_filter_prior_observation",
+    .codegen_call("omop_filter_prior_observation",
       min_days = f$params$min_days)
   } else if (f$type == "followup") {
-    .build_code("omop_filter_followup",
+    .codegen_call("omop_filter_followup",
       min_days = f$params$min_days)
   } else if (f$type == "visit_count") {
-    .build_code("omop_filter_visit_count",
+    .codegen_call("omop_filter_visit_count",
       min_count = f$params$min_count,
       visit_concept_id = f$params$visit_concept_id)
   } else if (f$type == "has_measurement") {
-    .build_code("omop_filter_has_measurement",
+    .codegen_call("omop_filter_has_measurement",
       concept_id = f$params$concept_id,
       min_value = f$params$min_value,
       max_value = f$params$max_value)
   } else if (f$type == "missing_measurement") {
-    .build_code("omop_filter_missing_measurement",
+    .codegen_call("omop_filter_missing_measurement",
       concept_id = f$params$concept_id)
   } else {
-    .build_code("omop_filter", type = f$type, level = f$level)
+    .codegen_call("omop_filter", type = f$type, level = f$level,
+      params = if (length(f$params %||% list()) > 0) f$params else NULL,
+      label = f$label)
   }
 }
 
@@ -2684,9 +2823,50 @@ recipe_to_code <- function(recipe) {
   omop_filter(
     type = f$type %||% "custom",
     level = f$level %||% "population",
-    params = f$params %||% list(),
+    params = .recipe_restore_params(f$params %||% list()),
     label = f$label
   )
+}
+
+#' Normalize imported filter params back to their constructed form
+#'
+#' JSON parsing (\code{simplifyVector = FALSE}) turns atomic vectors into
+#' unnamed lists of scalars, and loses the integer/double distinction. This
+#' restores atomic vectors and re-applies the canonical storage types used by
+#' the \code{omop_filter_*} constructors so an export/import round-trip
+#' compares \code{identical()}. Named lists (e.g. \code{window},
+#' \code{value}) are kept intact.
+#'
+#' @param params Named list of filter parameters.
+#' @return The normalized parameter list.
+#' @keywords internal
+.recipe_restore_params <- function(params) {
+  if (length(params) == 0) return(list())
+  # Unnamed lists of atomic scalars -> atomic vectors
+  params <- lapply(params, function(p) {
+    if (is.list(p) && length(p) > 0 && is.null(names(p)) &&
+        all(vapply(p, function(e) is.atomic(e) && length(e) == 1L,
+                   logical(1))))
+      unlist(p)
+    else p
+  })
+  # Canonical numeric types (constructors store these as integer / double)
+  int_params <- c("concept_id", "cohort_definition_id", "min_count",
+                  "min_days", "visit_concept_id")
+  dbl_params <- c("min", "max", "min_value", "max_value")
+  for (nm in intersect(int_params, names(params))) {
+    if (is.numeric(params[[nm]])) params[[nm]] <- as.integer(params[[nm]])
+  }
+  for (nm in intersect(dbl_params, names(params))) {
+    if (is.numeric(params[[nm]])) params[[nm]] <- as.numeric(params[[nm]])
+  }
+  if (is.list(params$value)) {
+    for (nm in intersect(c("lower", "upper"), names(params$value))) {
+      if (is.numeric(params$value[[nm]]))
+        params$value[[nm]] <- as.numeric(params$value[[nm]])
+    }
+  }
+  params
 }
 
 .recipe_restore_filter_list <- function(filters) {
@@ -2765,6 +2945,7 @@ recipe_to_code <- function(recipe) {
         filters = .recipe_restore_filter_list(v$filters)
       )
       if (!is.null(v$derived)) var$derived <- v$derived
+      if (!is.null(v$block_id)) var$block_id <- v$block_id
       if (isTRUE(v$expand)) var$expand <- TRUE
       recipe$variables[[nm]] <- var
     }
@@ -2791,13 +2972,21 @@ recipe_to_code <- function(recipe) {
 
   if (!is.null(data$options)) {
     # Restore plan options, falling back to constructor defaults for any
-    # missing key so older exports degrade gracefully.
+    # missing key so older exports degrade gracefully. keep.null = TRUE so a
+    # serialized `min_persons: null` keeps its key, as in omop_recipe().
     recipe$options <- utils::modifyList(recipe$options %||% list(),
-                                        data$options)
+                                        data$options, keep.null = TRUE)
   }
 
   if (!is.null(data$meta)) {
     recipe$meta <- data$meta
+  }
+  # Serialization turns POSIXct into character; restore the type.
+  if (is.character(recipe$meta$created)) {
+    recipe$meta$created <- as.POSIXct(
+      recipe$meta$created, tz = "",
+      tryFormats = c("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S")
+    )
   }
   recipe$meta$modified <- Sys.time()
   recipe
@@ -3143,7 +3332,7 @@ recipe_preview_stats <- function(recipe,
   dsomop_result(
     per_site = results,
     meta = list(
-      call_code = .build_code("recipe_preview_stats",
+      call_code = .codegen_call("recipe_preview_stats",
         scope = scope, symbol = symbol),
       scope = scope
     )
