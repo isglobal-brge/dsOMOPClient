@@ -649,7 +649,7 @@ omop_variable_hfrs <- function(name = "hfrs") {
 #'
 #' @param type Character; filter type. One of \code{"sex"}, \code{"age_range"},
 #'   \code{"age_group"}, \code{"cohort"}, \code{"has_concept"},
-#'   \code{"date_range"}, \code{"value_threshold"}, \code{"concept_set"},
+#'   \code{"date_range"}, \code{"concept_set"},
 #'   \code{"min_count"}, \code{"top_n"}, \code{"dedup"}, \code{"custom"}.
 #' @param level Character; \code{"population"}, \code{"row"}, or \code{"output"}.
 #' @param params Named list; filter-specific parameters (varies by type).
@@ -666,7 +666,7 @@ omop_variable_hfrs <- function(name = "hfrs") {
 #' @export
 omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
                                   "has_concept", "date_range",
-                                  "value_threshold", "concept_set",
+                                  "concept_set",
                                   "min_count", "top_n", "dedup", "custom",
                                   "not_has_concept", "concept_count",
                                   "prior_observation", "followup",
@@ -690,8 +690,6 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
                            " in ", params$table %||% "?"),
       date_range = paste0("Dates ", params$start %||% "?",
                           " to ", params$end %||% "?"),
-      value_threshold = paste0("Value ", params$op %||% "?",
-                               " ", params$value %||% "?"),
       concept_set = paste0(length(params$concept_ids %||% integer(0)),
                            " concepts"),
       min_count = paste0("Min ", params$min_count %||% 1, " occurrences"),
@@ -924,7 +922,18 @@ omop_filter_value <- function(column = "value_as_number", threshold,
                                direction = c("above", "below"),
                                safe_bins = NULL) {
   direction <- match.arg(direction)
-  stopifnot(!is.null(safe_bins), length(safe_bins$breaks) >= 2)
+  if (is.null(safe_bins) || is.null(safe_bins$breaks)) {
+    stop("omop_filter_value() needs disclosure-safe bin edges. Either call ",
+         "ds.omop.safe.filter.value(table, column, threshold, direction) which ",
+         "fetches them, or pass safe_bins = list(breaks = <edges>) from ",
+         "ds.omop.safe.cutpoints(table, column).", call. = FALSE)
+  }
+  if (length(safe_bins$breaks) < 2) {
+    stop("omop_filter_value() needs at least 2 bin edges, but the server ",
+         "returned fewer (it may have merged bins for disclosure). Widen ",
+         "n_bins or pick a higher-spread column when calling ",
+         "ds.omop.safe.cutpoints().", call. = FALSE)
+  }
   breaks <- safe_bins$breaks
   bin_idx <- max(1L, min(
     findInterval(threshold, breaks, rightmost.closed = TRUE),
@@ -940,6 +949,7 @@ omop_filter_value <- function(column = "value_as_number", threshold,
   omop_filter(
     type = "value_bin", level = "row",
     params = list(var = column, op = "value_bin",
+                  direction = direction,
                   value = list(lower = lower, upper = upper)),
     label = paste0(column, " ", direction, " ~", threshold,
                    " [bin: ", lower, "-", upper, ")")
@@ -1088,7 +1098,7 @@ omop_filter_missing_measurement <- function(concept_id) {
                     "not_has_concept", "concept_count", "prior_observation",
                     "followup", "visit_count", "has_measurement",
                     "missing_measurement")
-  blocked <- c("value_threshold", "custom")
+  blocked <- c("custom")
 
   if (filter_type %in% always_allowed) return("allowed")
   if (filter_type %in% blocked) return("blocked")
@@ -1263,7 +1273,9 @@ print.omop_variable_block <- function(x, ...) {
 #' @param name Character; output table name (used as key in the recipe).
 #' @param type Character; output layout type. One of \code{"wide"},
 #'   \code{"long"}, \code{"features"}, \code{"survival"}, \code{"intervals"},
-#'   \code{"baseline"}, \code{"joined_long"}, \code{"covariates_sparse"}.
+#'   \code{"baseline"}, \code{"covariates_sparse"}. A \code{"long"} output that
+#'   spans multiple source tables always splits into one per-table output
+#'   (named \code{<name>_<table>}); there is no single cross-table joined frame.
 #' @param variables Character vector or \code{NULL}; variable names to include
 #'   (\code{NULL} means all variables in the recipe).
 #' @param population_id Character; which population to use (default
@@ -1284,7 +1296,7 @@ print.omop_variable_block <- function(x, ...) {
 omop_output <- function(name = "output_1",
                         type = c("wide", "long", "features",
                                  "survival", "intervals",
-                                 "baseline", "joined_long",
+                                 "baseline",
                                  "covariates_sparse"),
                         variables = NULL,
                         population_id = "base",
@@ -1821,6 +1833,19 @@ recipe_to_plan <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
 
+  # Multi-population execution is not yet implemented: the compiled plan carries
+  # a single cohort built from the base population, so any output or block
+  # targeting another population would silently run against the base cohort
+  # (wrong-cohort hazard). Fail loudly until per-population execution lands.
+  out_pops <- vapply(recipe$outputs, function(o) o$population_id %||% "base",
+                     character(1))
+  block_pops <- vapply(recipe$blocks, function(b) b$population_id %||% "base",
+                       character(1))
+  if (any(out_pops != "base") || any(block_pops != "base")) {
+    stop("Multiple populations are not yet executable; all outputs must ",
+         "target the base population.", call. = FALSE)
+  }
+
   plan <- ds.omop.plan()
 
   # Apply recipe-level plan options (single source of truth). Read defensively
@@ -2310,7 +2335,7 @@ recipe_set_options <- function(recipe,
       list(var = f$params$date_column %||% "start_date", op = "<=", value = f$params$end))),
     "has_concept" =, "concept_set" = list(
       var = f$params$concept_col %||% "concept_id",
-      op = "in", value = f$params$concept_ids),
+      op = "in", value = f$params$concept_id %||% f$params$concept_ids),
     "value_bin" = list(var = f$params$var, op = "value_bin", value = f$params$value),
     {
       if (!is.null(f$params$var))
@@ -2562,15 +2587,11 @@ recipe_to_code <- function(recipe) {
   } else if (f$type == "date_range") {
     .build_code("omop_filter_date_range",
       start = f$params$start, end = f$params$end)
-  } else if (f$type == "value_threshold") {
-    .build_code("omop_filter_value",
-      op = f$params$op, value = f$params$value)
   } else if (f$type == "value_bin") {
     .build_code("omop_filter_value",
       column = f$params$var,
       threshold = mean(c(f$params$value$lower, f$params$value$upper)),
-      direction = if (f$params$value$upper == max(f$params$value$upper))
-                    "above" else "below",
+      direction = f$params$direction %||% "above",
       safe_bins = "# requires safe_bins from ds.omop.safe.cutpoints()")
   } else if (f$type == "not_has_concept") {
     .build_code("omop_filter_not_has_concept",

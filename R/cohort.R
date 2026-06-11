@@ -90,16 +90,22 @@ ds.omop.cohort.definition <- function(id,
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
-#' @return Invisibly; the server-side symbol name for the created cohort
-#'   table (character). Assigned via \code{DSI::datashield.assign.expr}.
+#' @return Invisibly; a \code{dsomop_cohort_handle} object carrying the
+#'   deterministic server-side cohort TABLE name (e.g.
+#'   \code{"dsomop_cohort_1"}) for a temporary cohort, or \code{NULL} for a
+#'   persistent cohort. The table is assigned server-side via
+#'   \code{DSI::datashield.assign.expr}. Pass the returned handle straight
+#'   into \code{ds.omop.cohort.combine()}.
 #' @examples
 #' \dontrun{
-#' ds.omop.cohort.create(
+#' diabetes <- ds.omop.cohort.create(
 #'   spec = list(type = "event",
 #'               concept_set = c(201820, 201826)),
 #'   cohort_id = 1,
 #'   name = "Type 2 Diabetes"
 #' )
+#' # The returned handle feeds directly into ds.omop.cohort.combine():
+#' # ds.omop.cohort.combine(op = "union", cohort_a = diabetes, cohort_b = ...)
 #' }
 #' @export
 ds.omop.cohort.create <- function(spec,
@@ -137,6 +143,19 @@ ds.omop.cohort.create <- function(spec,
                 cohort_name,
                 overwrite)
   )
+
+  # Return the deterministic server-side cohort table name so it can be fed
+  # straight into ds.omop.cohort.combine(). For temporary cohorts the server
+  # (.cohortCreate) materialises a table named "dsomop_cohort_<id>"; persistent
+  # cohorts write to the cohort schema and have no temp table.
+  table_name <- if (identical(mode, "temporary"))
+    paste0("dsomop_cohort_", as.integer(cohort_id %||% 0L)) else NULL
+
+  invisible(structure(
+    table_name,
+    symbol = paste0(".cohort_", cohort_id %||% "tmp"),
+    class = "dsomop_cohort_handle"
+  ))
 }
 
 #' Create a cohort reference for the plan DSL (client-only)
@@ -175,25 +194,30 @@ ds.omop.cohort.ref <- function(cohort_definition_id) {
 #'   \code{"intersect"} (patients in both cohorts),
 #'   \code{"union"} (patients in either cohort), or
 #'   \code{"setdiff"} (patients in \code{cohort_a} but not \code{cohort_b}).
-#' @param cohort_a Character; server-side symbol name for the first cohort
-#'   temp table.
-#' @param cohort_b Character; server-side symbol name for the second cohort
-#'   temp table.
-#' @param new_name Character; symbol name for the combined result. If
+#' @param cohort_a Server-side cohort TABLE name for the first cohort (the
+#'   value returned by \code{ds.omop.cohort.create()}), its
+#'   \code{dsomop_cohort_handle}, or a cohort definition ID (integer).
+#' @param cohort_b Server-side cohort TABLE name for the second cohort (the
+#'   value returned by \code{ds.omop.cohort.create()}), its
+#'   \code{dsomop_cohort_handle}, or a cohort definition ID (integer).
+#' @param new_name Character; TABLE name for the combined result. If
 #'   \code{NULL} (the default), an auto-generated name is used.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
-#' @return Invisibly; the server-side symbol name (character) for the
-#'   combined cohort table.
+#' @return Invisibly; a \code{dsomop_cohort_handle} carrying the server-side
+#'   TABLE name for the combined cohort. The handle can itself be passed as
+#'   \code{cohort_a} / \code{cohort_b} to a further \code{ds.omop.cohort.combine()}.
 #' @examples
 #' \dontrun{
+#' diabetes <- ds.omop.cohort.create(spec = ..., cohort_id = 1)
+#' hypertension <- ds.omop.cohort.create(spec = ..., cohort_id = 2)
 #' # Patients with both diabetes AND hypertension
 #' combined <- ds.omop.cohort.combine(
 #'   op = "intersect",
-#'   cohort_a = ".cohort_1",
-#'   cohort_b = ".cohort_2"
+#'   cohort_a = diabetes,
+#'   cohort_b = hypertension
 #' )
 #' }
 #' @export
@@ -204,16 +228,60 @@ ds.omop.cohort.combine <- function(op, cohort_a, cohort_b,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  out_name <- new_name %||% paste0(
-    ".cohort_combined_", sample(1000:9999, 1))
+  # Validate the operation client-side so callers fail fast instead of after a
+  # server round-trip. Accept "difference" as an alias for "setdiff".
+  op <- tolower(op)
+  if (identical(op, "difference")) op <- "setdiff"
+  if (!op %in% c("intersect", "union", "setdiff")) {
+    stop("op must be one of 'intersect', 'union', 'setdiff'.", call. = FALSE)
+  }
+
+  # Coerce handles / IDs / symbol names to the deterministic server-side TABLE
+  # names the server splices directly into SQL.
+  cohort_a <- .resolve_cohort_table(cohort_a)
+  cohort_b <- .resolve_cohort_table(cohort_b)
+
+  # Generate the result table name on the client and pass it to the server so
+  # both sides agree (the server's random fallback never fires) and the
+  # returned handle points at a table that actually exists.
+  out_table <- new_name %||% paste0(
+    "dsomop_cohort_combined_", sample(1000:9999, 1))
 
   DSI::datashield.assign.expr(
     conns,
-    symbol = out_name,
+    symbol = paste0(".", out_table),
     expr = call("omopCohortCombineDS",
                 session$res_symbol,
-                op, cohort_a, cohort_b, new_name)
+                op, cohort_a, cohort_b, out_table)
   )
 
-  invisible(out_name)
+  invisible(structure(
+    out_table,
+    symbol = paste0(".", out_table),
+    class = "dsomop_cohort_handle"
+  ))
+}
+
+#' Resolve a cohort reference to its server-side table name
+#'
+#' Maps the various forms a caller may supply for a cohort -- a
+#' \code{dsomop_cohort_handle} (as returned by \code{ds.omop.cohort.create}
+#' or \code{ds.omop.cohort.combine}), a cohort definition ID, or a server-side
+#' name string -- to the deterministic temp table name the server expects.
+#'
+#' @param x A \code{dsomop_cohort_handle}, a numeric cohort definition ID, or
+#'   a character table/symbol name.
+#' @return Character; the server-side cohort table name.
+#' @keywords internal
+.resolve_cohort_table <- function(x) {
+  if (inherits(x, "dsomop_cohort_handle")) {
+    return(unclass(x)[1])
+  }
+  if (is.numeric(x)) {
+    return(paste0("dsomop_cohort_", as.integer(x)))
+  }
+  if (is.character(x) && grepl("^\\.cohort_", x)) {
+    return(sub("^\\.cohort_", "dsomop_cohort_", x))
+  }
+  x
 }

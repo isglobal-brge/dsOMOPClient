@@ -16,7 +16,11 @@ ds.omop.plan.baseline(
 
 \item{columns}{Character vector; person-table columns to include
 (e.g. \code{"gender_concept_id"}, \code{"year_of_birth"},
-\code{"race_concept_id"}).}
+\code{"race_concept_id"}). Pass a \emph{named} vector to rename columns
+in the output, e.g. \code{c(sex = "gender_concept_id", birth_year =
+"year_of_birth")} yields columns \code{sex} and \code{birth_year}.
+Unnamed entries keep their source name. Identifier columns cannot be
+renamed (they are stripped server-side regardless).}
 
 \item{derived}{Character vector; derived fields to compute.
 Supported values include \code{"age_at_index"},

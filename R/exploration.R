@@ -366,6 +366,12 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
 #'   \code{"value_as_number"}).
 #' @param probs Numeric vector; the quantile probabilities to compute
 #'   (default: \code{c(0.05, 0.25, 0.5, 0.75, 0.95)}).
+#' @param concept_id Integer or NULL; optional concept ID to restrict
+#'   rows to a single concept of the table before computing quantiles
+#'   (e.g., \code{value_as_number} for one measurement concept).
+#'   Default: NULL for all rows. The server applies the same disclosure
+#'   controls (including the [0.05, 0.95] probability clamp that blocks
+#'   min/max) to the concept-filtered population.
 #' @param cohort_table Character; name of a server-side cohort temp table
 #'   for filtering, or NULL (default: NULL).
 #' @param window List with \code{start}/\code{end} date strings for
@@ -393,6 +399,7 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
 #' @export
 ds.omop.value.quantiles <- function(table, value_col,
                                      probs = c(0.05, 0.25, 0.5, 0.75, 0.95),
+                                     concept_id = NULL,
                                      cohort_table = NULL, window = NULL,
                                      rounding = 2L,
                                      scope = c("per_site", "pooled"),
@@ -403,7 +410,7 @@ ds.omop.value.quantiles <- function(table, value_col,
 
   code <- .build_code("ds.omop.value.quantiles",
     table = table, value_col = value_col, probs = probs,
-    cohort_table = cohort_table, window = window,
+    concept_id = concept_id, cohort_table = cohort_table, window = window,
     rounding = rounding, scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -419,7 +426,8 @@ ds.omop.value.quantiles <- function(table, value_col,
     conns,
     expr = call("omopNumericQuantilesDS", session$res_symbol,
                 table, value_col, .ds_encode(probs),
-                cohort_table, window, as.integer(rounding))
+                cohort_table, window, as.integer(rounding),
+                concept_id = concept_id)
   )
 
   ds_errors <- attr(raw, "ds_errors")
@@ -610,6 +618,110 @@ ds.omop.concept.drilldown <- function(table, concept_id,
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
                 pooling_policy = pooling_policy, warnings = warnings))
+}
+
+#' Summarise a value column scoped to one concept of one table
+#'
+#' @description
+#' Type-aware orchestrator that summarises a value column for a single
+#' concept of a single OMOP CDM table. The unit of analysis is the
+#' \code{(table, concept_id, column)} triple: in OMOP a value column only
+#' makes sense within a concept (a \code{measurement} table mixes HbA1c,
+#' weight, blood pressure, ...), so restricting to one concept yields an
+#' interpretable distribution. Numeric and categorical value columns
+#' receive different DataSHIELD-safe statistics:
+#' \itemize{
+#'   \item A \code{*_concept_id} value column (e.g.
+#'     \code{value_as_concept_id}) is treated as CATEGORICAL and summarised
+#'     with \code{\link{ds.omop.value.counts}} (disclosure-safe frequency
+#'     counts of the categories observed for this concept).
+#'   \item \code{value_as_number} (or any numeric value column) is treated
+#'     as NUMERIC and summarised with both \code{\link{ds.omop.column.stats}}
+#'     (n, mean, SD, missingness, distinct count) and
+#'     \code{\link{ds.omop.value.quantiles}} (median, IQR, percentiles).
+#'     Min/max are never returned: the server clamps quantile probabilities
+#'     to [0.05, 0.95].
+#' }
+#' This function only adds a \code{concept_id} filter to queries that are
+#' already disclosure-gated server-side; the existing gates fire on the
+#' concept-filtered population, so a concept with too few persons is
+#' blocked.
+#'
+#' @param table Character; the CDM table name (e.g., \code{"measurement"},
+#'   \code{"observation"}).
+#' @param concept_id Integer; the OMOP concept ID to scope the value
+#'   column(s) to (e.g., the HbA1c measurement concept).
+#' @param column Character or NULL; a single value column to summarise. If
+#'   NULL (default), the table's columns are fetched via
+#'   \code{\link{ds.omop.columns}} and whichever of
+#'   \code{c("value_as_number", "value_as_concept_id")} are present are
+#'   summarised.
+#' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
+#'   Passed through to the underlying calls.
+#' @param symbol Character; the session symbol (default: \code{"omop"}).
+#' @param conns DSI connection object(s) or NULL to use the session default.
+#' @return A named list with \code{table}, \code{concept_id},
+#'   \code{numeric} (named-by-column list where each element is a list with
+#'   \code{stats} and \code{quantiles} \code{dsomop_result} objects, or
+#'   NULL when no numeric value column applies), and \code{categorical}
+#'   (named-by-column list of \code{dsomop_result} objects from value
+#'   counts, or NULL when no categorical value column applies).
+#' @examples
+#' \dontrun{
+#' # Distribution of value_as_number for an HbA1c measurement concept
+#' summ <- ds.omop.concept.summary("measurement", concept_id = 3004410)
+#' summ$numeric$value_as_number$stats$per_site$server1
+#' summ$numeric$value_as_number$quantiles$per_site$server1
+#'
+#' # Categorical value_as_concept_id breakdown for an observation concept
+#' obs <- ds.omop.concept.summary("observation", concept_id = 4058243,
+#'                                 column = "value_as_concept_id")
+#' obs$categorical$value_as_concept_id$per_site$server1
+#' }
+#' @export
+ds.omop.concept.summary <- function(table, concept_id, column = NULL,
+                                    scope = c("per_site", "pooled"),
+                                    symbol = "omop", conns = NULL) {
+  scope <- match.arg(scope)
+
+  if (!is.null(column)) {
+    cols <- column
+  } else {
+    col_info <- ds.omop.columns(table, symbol = symbol, conns = conns)
+    available <- unique(unlist(lapply(col_info, function(df) {
+      if (is.data.frame(df) && "column_name" %in% names(df)) {
+        as.character(df$column_name)
+      } else {
+        character(0)
+      }
+    })))
+    cols <- intersect(c("value_as_number", "value_as_concept_id"), available)
+  }
+
+  numeric <- list()
+  categorical <- list()
+
+  for (col in cols) {
+    if (grepl("_concept_id$", col)) {
+      categorical[[col]] <- ds.omop.value.counts(
+        table, col, concept_id = concept_id,
+        scope = scope, symbol = symbol, conns = conns)
+    } else {
+      numeric[[col]] <- list(
+        stats = ds.omop.column.stats(
+          table, col, concept_id = concept_id,
+          scope = scope, symbol = symbol, conns = conns),
+        quantiles = ds.omop.value.quantiles(
+          table, col, concept_id = concept_id,
+          scope = scope, symbol = symbol, conns = conns))
+    }
+  }
+
+  list(
+    table = table,
+    concept_id = concept_id,
+    numeric = if (length(numeric) > 0) numeric else NULL,
+    categorical = if (length(categorical) > 0) categorical else NULL)
 }
 
 #' Locate concept across all CDM tables

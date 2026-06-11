@@ -4,7 +4,13 @@
 \alias{ds.omop.plan.execute}
 \title{Execute a plan and create server-side tables}
 \usage{
-ds.omop.plan.execute(plan, out, symbol = "omop", conns = NULL)
+ds.omop.plan.execute(
+  plan,
+  out,
+  symbol = "omop",
+  conns = NULL,
+  output_mode = "memory"
+)
 }
 \arguments{
 \item{plan}{An \code{omop_plan} object.}
@@ -19,6 +25,10 @@ server (default \code{"omop"}).}
 
 \item{conns}{DSI connection object(s). If \code{NULL}, uses the
 connections stored in the session.}
+
+\item{output_mode}{Character; \code{"memory"} (default, backwards
+compatible) or \code{"staged"} (writes to Parquet, returns
+descriptors). Staged mode requires \code{arrow} on the server.}
 }
 \value{
 Invisible; the \code{out} symbol mapping (for chaining).
@@ -32,6 +42,12 @@ symbols can be used with standard DataSHIELD analysis functions.
 Sparse outputs (e.g. temporal covariates) are split into multiple
 symbols: \code{<name>.covariates} and \code{<name>.covariateRef}.
 }
+\details{
+When \code{output_mode = "staged"}, outputs are written to Parquet
+files on the server and assigned as \code{FlowerDatasetDescriptor}
+objects instead of data.frames. This avoids loading large datasets
+into R memory and enables zero-copy column projection with dsFlower.
+}
 \examples{
 \dontrun{
 plan <- ds.omop.plan()
@@ -41,7 +57,13 @@ plan <- ds.omop.plan.events(plan, "conditions",
 ds.omop.plan.execute(plan,
   out = c(baseline = "D_base", conditions = "D_cond")
 )
-# Now use D_base and D_cond with ds.summary(), ds.table(), etc.
+
+# Staged mode for large extractions
+ds.omop.plan.execute(plan,
+  out = c(features = "D_features"),
+  output_mode = "staged"
+)
+# D_features is now a FlowerDatasetDescriptor on the server
 }
 }
 \seealso{

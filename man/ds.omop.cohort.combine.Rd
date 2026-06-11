@@ -19,13 +19,15 @@ ds.omop.cohort.combine(
 \code{"union"} (patients in either cohort), or
 \code{"setdiff"} (patients in \code{cohort_a} but not \code{cohort_b}).}
 
-\item{cohort_a}{Character; server-side symbol name for the first cohort
-temp table.}
+\item{cohort_a}{Server-side cohort TABLE name for the first cohort (the
+value returned by \code{ds.omop.cohort.create()}), its
+\code{dsomop_cohort_handle}, or a cohort definition ID (integer).}
 
-\item{cohort_b}{Character; server-side symbol name for the second cohort
-temp table.}
+\item{cohort_b}{Server-side cohort TABLE name for the second cohort (the
+value returned by \code{ds.omop.cohort.create()}), its
+\code{dsomop_cohort_handle}, or a cohort definition ID (integer).}
 
-\item{new_name}{Character; symbol name for the combined result. If
+\item{new_name}{Character; TABLE name for the combined result. If
 \code{NULL} (the default), an auto-generated name is used.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection
@@ -35,8 +37,9 @@ was initialised (default: \code{"omop"}).}
 connections stored in the active session are used.}
 }
 \value{
-Invisibly; the server-side symbol name (character) for the
-  combined cohort table.
+Invisibly; a \code{dsomop_cohort_handle} carrying the server-side
+  TABLE name for the combined cohort. The handle can itself be passed as
+  \code{cohort_a} / \code{cohort_b} to a further \code{ds.omop.cohort.combine()}.
 }
 \description{
 Combines two existing server-side cohort tables using a set operation
@@ -46,11 +49,13 @@ executions.
 }
 \examples{
 \dontrun{
+diabetes <- ds.omop.cohort.create(spec = ..., cohort_id = 1)
+hypertension <- ds.omop.cohort.create(spec = ..., cohort_id = 2)
 # Patients with both diabetes AND hypertension
 combined <- ds.omop.cohort.combine(
   op = "intersect",
-  cohort_a = ".cohort_1",
-  cohort_b = ".cohort_2"
+  cohort_a = diabetes,
+  cohort_b = hypertension
 )
 }
 }

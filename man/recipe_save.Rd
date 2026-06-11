@@ -31,5 +31,5 @@ recipe_save(recipe, "analysis_recipe.json")
 }
 \seealso{
 \code{\link{recipe_load}}, \code{\link{recipe_export_json}},
-\code{\link{recipe_export_yaml}}
+  \code{\link{recipe_export_yaml}}
 }

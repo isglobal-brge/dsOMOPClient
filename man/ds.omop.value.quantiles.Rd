@@ -8,6 +8,7 @@ ds.omop.value.quantiles(
   table,
   value_col,
   probs = c(0.05, 0.25, 0.5, 0.75, 0.95),
+  concept_id = NULL,
   cohort_table = NULL,
   window = NULL,
   rounding = 2L,
@@ -26,6 +27,13 @@ ds.omop.value.quantiles(
 
 \item{probs}{Numeric vector; the quantile probabilities to compute
 (default: \code{c(0.05, 0.25, 0.5, 0.75, 0.95)}).}
+
+\item{concept_id}{Integer or NULL; optional concept ID to restrict
+rows to a single concept of the table before computing quantiles
+(e.g., \code{value_as_number} for one measurement concept).
+Default: NULL for all rows. The server applies the same disclosure
+controls (including the [0.05, 0.95] probability clamp that blocks
+min/max) to the concept-filtered population.}
 
 \item{cohort_table}{Character; name of a server-side cohort temp table
 for filtering, or NULL (default: NULL).}

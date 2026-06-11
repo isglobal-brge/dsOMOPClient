@@ -127,16 +127,16 @@ test_that("omop_filter_value rejects NULL safe_bins", {
 
 test_that("omop_filter_value rejects degenerate bins", {
   # Single break point → fewer than 2 breaks
- expect_error(
+  expect_error(
     omop_filter_value(threshold = 5, direction = "above",
                        safe_bins = list(breaks = c(5))),
-    "safe_bins"
+    "bin edges"
   )
   # Empty breaks
   expect_error(
     omop_filter_value(threshold = 5, direction = "above",
                        safe_bins = list(breaks = numeric(0))),
-    "safe_bins"
+    "bin edges"
   )
 })
 
@@ -841,9 +841,10 @@ test_that("omop_output supports baseline type", {
   expect_equal(o$type, "baseline")
 })
 
-test_that("omop_output supports joined_long type", {
-  o <- omop_output(name = "all_events", type = "joined_long")
-  expect_equal(o$type, "joined_long")
+test_that("omop_output rejects the removed joined_long type", {
+  # joined_long was a false promise (compiled identically to long); a
+  # multi-table long output now always splits into per-table outputs.
+  expect_error(omop_output(name = "all_events", type = "joined_long"))
 })
 
 test_that("omop_output supports covariates_sparse type", {
@@ -903,7 +904,7 @@ test_that("omop_variable with row-level filters", {
 
 test_that("omop_filter supports all types", {
   for (tp in c("sex", "age_range", "cohort", "has_concept", "date_range",
-               "value_threshold", "concept_set", "min_count", "top_n",
+               "concept_set", "min_count", "top_n",
                "dedup", "custom")) {
     f <- omop_filter(type = tp, level = "population",
                       params = list(value = "test"))
@@ -1841,7 +1842,6 @@ test_that("classifyFilterClient returns correct safety level", {
   expect_equal(.classifyFilterClient("age_group"), "allowed")
   expect_equal(.classifyFilterClient("cohort"), "allowed")
   expect_equal(.classifyFilterClient("concept_set"), "allowed")
-  expect_equal(.classifyFilterClient("value_threshold"), "blocked")
   expect_equal(.classifyFilterClient("custom"), "blocked")
   expect_equal(.classifyFilterClient("has_concept"), "constrained")
   expect_equal(.classifyFilterClient("age_range"), "constrained")

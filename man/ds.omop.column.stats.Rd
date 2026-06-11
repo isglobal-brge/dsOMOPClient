@@ -7,6 +7,7 @@
 ds.omop.column.stats(
   table,
   column,
+  concept_id = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",
@@ -20,6 +21,12 @@ ds.omop.column.stats(
 
 \item{column}{Character; the column name to profile (e.g.,
 \code{"condition_start_date"}, \code{"value_as_number"}).}
+
+\item{concept_id}{Integer or NULL; optional concept ID to restrict
+rows to a single concept of the table before computing the column
+statistics (e.g., \code{value_as_number} for one measurement
+concept). Default: NULL for all rows. The server applies the same
+disclosure controls to the concept-filtered population.}
 
 \item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 

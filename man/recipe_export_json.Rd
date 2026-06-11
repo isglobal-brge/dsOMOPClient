@@ -28,6 +28,5 @@ recipe_export_json(recipe, file = "my_recipe.json")
 }
 }
 \seealso{
-\code{\link{recipe_import_json}}, \code{\link{recipe_save}},
-\code{\link{recipe_export_yaml}}, \code{\link{recipe_to_code}}
+\code{\link{recipe_import_json}}, \code{\link{recipe_to_code}}
 }
