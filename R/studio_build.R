@@ -120,7 +120,30 @@
               "CHADS2 score" = "chads2",
               "CHA2DS2-VASc score" = "chadsvasc",
               "DCSI (diabetes complications)" = "dcsi",
-              "HFRS (hospital frailty)" = "hfrs")),
+              "HFRS (hospital frailty)" = "hfrs",
+              "Distinct concepts (table-wide)" = "n_distinct",
+              "Drug duration" = "drug_duration")),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("derived_type"),
+                               "'] == 'age'"),
+            shiny::selectInput(ns("derived_age_ref"), "Age reference",
+              choices = c("Today" = "today", "Index date" = "index"))
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("derived_type"),
+                               "'] == 'n_distinct'"),
+            shiny::selectInput(ns("derived_nd_table"), "Table",
+              choices = .table_choices(c("condition_occurrence",
+                          "drug_exposure", "measurement",
+                          "procedure_occurrence", "observation")))
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("derived_type"),
+                               "'] == 'drug_duration'"),
+            shiny::textInput(ns("derived_dd_cid"), "Drug Concept ID"),
+            shiny::selectInput(ns("derived_dd_agg"), "Aggregation",
+              choices = c("Mean" = "mean", "Sum" = "sum", "Max" = "max"))
+          ),
           shiny::textInput(ns("derived_name"), "Name (optional)",
             placeholder = "leave blank for default"),
           shiny::actionButton(ns("add_derived_btn"), "Add Derived Variable",
@@ -141,7 +164,9 @@
                         "Visit Count" = "visit_count",
                         "Has Measurement" = "has_measurement",
                         "Missing Measurement" = "missing_measurement",
-                        "Date Range" = "date_range")),
+                        "Date Range" = "date_range",
+                        "Cohort Membership" = "cohort",
+                        "Value Threshold (safe bins)" = "value_bin")),
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"), "'] == 'sex'"),
             shiny::selectInput(ns("sex_value"), "Sex",
@@ -165,15 +190,23 @@
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"),
                                "'] == 'has_concept'"),
-            shiny::textInput(ns("filter_concept_id"), "Concept ID"),
+            shiny::textInput(ns("filter_concept_id"), "Concept ID(s)",
+              placeholder = "201820, 316139"),
             shiny::selectInput(ns("filter_table"), "In Table",
               choices = .table_choices(c("condition_occurrence", "drug_exposure",
-                          "measurement", "procedure_occurrence")))
+                          "measurement", "procedure_occurrence"))),
+            shiny::numericInput(ns("filter_min_count"), "Min occurrences",
+              1, 1, NA),
+            shiny::numericInput(ns("filter_window_start"),
+              "Window start (days from index, optional)", value = NA),
+            shiny::numericInput(ns("filter_window_end"),
+              "Window end (days from index, optional)", value = NA)
           ),
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"),
                                "'] == 'not_has_concept'"),
-            shiny::textInput(ns("nhc_concept_id"), "Concept ID"),
+            shiny::textInput(ns("nhc_concept_id"), "Concept ID(s)",
+              placeholder = "201820, 316139"),
             shiny::selectInput(ns("nhc_table"), "In Table",
               choices = .table_choices(c("condition_occurrence", "drug_exposure",
                           "measurement", "procedure_occurrence")))
@@ -181,7 +214,8 @@
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"),
                                "'] == 'concept_count'"),
-            shiny::textInput(ns("cc_concept_id"), "Concept ID"),
+            shiny::textInput(ns("cc_concept_id"), "Concept ID(s)",
+              placeholder = "201820, 316139"),
             shiny::selectInput(ns("cc_table"), "In Table",
               choices = .table_choices(c("condition_occurrence", "drug_exposure",
                           "measurement", "procedure_occurrence"))),
@@ -208,7 +242,7 @@
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"),
                                "'] == 'has_measurement'"),
-            shiny::textInput(ns("hm_concept_id"), "Measurement Concept ID"),
+            shiny::textInput(ns("hm_concept_id"), "Measurement Concept ID(s)"),
             shiny::numericInput(ns("hm_min_value"), "Min Value (optional)",
               value = NA),
             shiny::numericInput(ns("hm_max_value"), "Max Value (optional)",
@@ -217,13 +251,34 @@
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"),
                                "'] == 'missing_measurement'"),
-            shiny::textInput(ns("mm_concept_id"), "Measurement Concept ID")
+            shiny::textInput(ns("mm_concept_id"), "Measurement Concept ID(s)")
           ),
           shiny::conditionalPanel(
             condition = paste0("input['", ns("filter_type"),
                                "'] == 'date_range'"),
             shiny::dateInput(ns("date_start"), "Start Date"),
             shiny::dateInput(ns("date_end"), "End Date")
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'cohort'"),
+            shiny::numericInput(ns("cohort_def_id"), "Cohort Definition ID",
+              1, 1, NA)
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("filter_type"),
+                               "'] == 'value_bin'"),
+            shiny::selectInput(ns("vb_table"), "Table",
+              choices = .table_choices(c("measurement", "observation"))),
+            shiny::textInput(ns("vb_column"), "Column",
+              value = "value_as_number"),
+            shiny::textInput(ns("vb_concept_id"), "Concept ID (optional)"),
+            shiny::numericInput(ns("vb_threshold"), "Threshold", value = NA),
+            shiny::selectInput(ns("vb_direction"), "Direction",
+              choices = c("Above" = "above", "Below" = "below")),
+            shiny::helpText(
+              "Uses disclosure-safe bin edges fetched from the server",
+              "(ds.omop.safe.cutpoints), so an active connection is required.")
           ),
           shiny::actionButton(ns("add_filter_btn"), "Add Filter",
                               class = "btn-warning w-100")
@@ -233,7 +288,8 @@
         bslib::accordion_panel(
           "Group Filters", icon = shiny::icon("object-group"),
           shiny::helpText(
-            "Combine two or more existing filters into one AND/OR group."),
+            "Combine two or more existing filters into one AND/OR group.",
+            "Selecting an existing group nests it (arbitrary AND/OR trees)."),
           shiny::selectInput(ns("group_operator"), "Combine with",
             choices = c("AND (all must match)" = "AND",
                         "OR (any may match)" = "OR"),
@@ -261,11 +317,12 @@
                         "Intervals" = "intervals")),
           shiny::selectInput(ns("output_pop"), "Population",
             choices = c("base")),
-          # --- Event-output knobs (long / joined_long only) ---
+          shiny::selectizeInput(ns("output_vars"), "Variables (empty = all)",
+            choices = character(0), multiple = TRUE),
+          # --- Event-output knobs (long only) ---
           shiny::conditionalPanel(
             condition = paste0("input['", ns("output_type"),
-              "'] == 'long' || input['", ns("output_type"),
-              "'] == 'joined_long'"),
+              "'] == 'long'"),
             bslib::tooltip(
               shiny::selectInput(ns("output_date_handling"), "Date handling",
                 choices = c("Relative days from index" = "relative",
@@ -296,6 +353,15 @@
               shiny::numericInput(ns("output_event_n"), "N events",
                 value = 1, min = 1, step = 1)
             )
+          ),
+          # --- Survival knobs: time-at-risk window ---
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("output_type"),
+              "'] == 'survival'"),
+            shiny::numericInput(ns("output_tar_start"),
+              "TAR start offset (days)", value = 0, step = 1),
+            shiny::numericInput(ns("output_tar_end"),
+              "TAR end offset (days)", value = 730, min = 1, step = 1)
           ),
           shiny::textInput(ns("output_symbol"), "Result Symbol",
                            placeholder = "D_output_1"),
@@ -334,7 +400,16 @@
             shiny::checkboxInput(ns("opt_output_mode_staged"),
               "Staged output (Parquet, zero-copy)", value = FALSE),
             "Write each output to a Parquet file on the server and return a FlowerDatasetDescriptor instead of an in-memory data.frame. Use for very large extractions; requires arrow on the server. Results panel shows descriptor metadata, not ds.dim."
-          )
+          ),
+          shiny::hr(class = "my-2"),
+          bslib::tooltip(
+            shiny::numericInput(ns("base_cohort_id"),
+              "Base cohort definition ID (blank = all persons)",
+              value = NA, min = 1, step = 1),
+            "Restrict the base population to an existing OMOP cohort (cohort table). Leave blank and click Set to clear."
+          ),
+          shiny::actionButton(ns("set_base_cohort"), "Set Base Cohort",
+                              class = "btn-sm btn-outline-primary w-100")
         )
       ),
 
@@ -462,10 +537,21 @@
       }
     })
 
-    # Update population dropdown when populations change
+    # Update population dropdown when populations change. Non-base
+    # populations are flagged: the PHASE-1 compile guard rejects outputs
+    # targeting them (recipe_to_plan).
     shiny::observe({
       pop_ids <- names(state$recipe$populations)
-      shiny::updateSelectInput(session, "output_pop", choices = pop_ids)
+      shiny::updateSelectInput(session, "output_pop",
+        choices = stats::setNames(pop_ids,
+          ifelse(pop_ids == "base", pop_ids,
+                 paste0(pop_ids, " (not yet executable)"))))
+    })
+
+    # Keep the per-output variable selector in sync with recipe variables
+    shiny::observe({
+      shiny::updateSelectizeInput(session, "output_vars",
+        choices = names(state$recipe$variables) %||% character(0))
     })
 
     # Add Variable (using concept picker)
@@ -491,6 +577,8 @@
         state$recipe <- recipe_add_variable(state$recipe, v)
         shiny::showNotification(
           paste("Added variable:", v$name), type = "message", duration = 2)
+        shiny::updateCheckboxInput(session, "add_include_descendants",
+          value = FALSE)
       }, error = function(e) {
         shiny::showNotification(
           .clean_ds_error(e), type = "error")
@@ -531,7 +619,9 @@
       nm <- trimws(input$derived_name %||% "")
       tryCatch({
         v <- switch(dtype,
-          age              = if (nchar(nm) > 0) omop_variable_age(name = nm) else omop_variable_age(),
+          age              = omop_variable_age(
+                               name = if (nchar(nm) > 0) nm else "age",
+                               reference = input$derived_age_ref %||% "today"),
           sex_mf           = if (nchar(nm) > 0) omop_variable_sex(name = nm) else omop_variable_sex(),
           obs_duration     = if (nchar(nm) > 0) omop_variable_obs_duration(name = nm) else omop_variable_obs_duration(),
           prior_obs        = if (nchar(nm) > 0) omop_variable_prior_obs(name = nm) else omop_variable_prior_obs(),
@@ -541,7 +631,20 @@
           chads2           = if (nchar(nm) > 0) omop_variable_chads2(name = nm) else omop_variable_chads2(),
           chadsvasc        = if (nchar(nm) > 0) omop_variable_chadsvasc(name = nm) else omop_variable_chadsvasc(),
           dcsi             = if (nchar(nm) > 0) omop_variable_dcsi(name = nm) else omop_variable_dcsi(),
-          hfrs             = if (nchar(nm) > 0) omop_variable_hfrs(name = nm) else omop_variable_hfrs()
+          hfrs             = if (nchar(nm) > 0) omop_variable_hfrs(name = nm) else omop_variable_hfrs(),
+          n_distinct       = omop_variable_n_distinct(input$derived_nd_table,
+                               name = if (nchar(nm) > 0) nm else NULL),
+          drug_duration    = {
+            dd_cid <- .parse_ids(input$derived_dd_cid)
+            if (is.null(dd_cid) || any(is.na(dd_cid))) {
+              shiny::showNotification("Enter a numeric drug concept ID",
+                                      type = "warning")
+              return()
+            }
+            omop_variable_drug_duration(dd_cid[1],
+              name = if (nchar(nm) > 0) nm else NULL,
+              agg = input$derived_dd_agg %||% "mean")
+          }
         )
         state$recipe <- recipe_add_variable(state$recipe, v)
         shiny::showNotification(paste("Added derived variable:", v$name), type = "message", duration = 2)
@@ -560,15 +663,29 @@
       {
         mp <- suppressWarnings(as.integer(input$opt_min_persons))
         if (length(mp) == 0 || is.na(mp)) mp <- NULL
-        state$recipe$options <- list(
-          translate_concepts = isTRUE(input$opt_translate_concepts),
-          block_sensitive    = isTRUE(input$opt_block_sensitive),
-          min_persons        = mp,
-          factor_concepts    = isTRUE(input$opt_factor_concepts)
-        )
+        # Merge (not replace) so option keys set elsewhere (e.g. via an
+        # imported recipe's recipe_set_options) are preserved.
+        opts <- state$recipe$options %||% list()
+        opts$translate_concepts <- isTRUE(input$opt_translate_concepts)
+        opts$block_sensitive    <- isTRUE(input$opt_block_sensitive)
+        opts$min_persons        <- mp
+        opts$factor_concepts    <- isTRUE(input$opt_factor_concepts)
+        state$recipe$options <- opts
       },
       ignoreInit = TRUE
     )
+
+    # Base cohort (recipe-level, so it survives recompiles and round-trips
+    # through export / generated code; recipe_to_plan consumes it).
+    shiny::observeEvent(input$set_base_cohort, {
+      cid <- suppressWarnings(as.integer(input$base_cohort_id))
+      if (length(cid) == 0 || is.na(cid)) cid <- NULL
+      state$recipe <- recipe_set_cohort(state$recipe, cid)
+      shiny::showNotification(
+        if (is.null(cid)) "Base cohort cleared."
+        else paste("Base population restricted to cohort", cid),
+        type = "message", duration = 2)
+    })
 
     # Add Filter
     shiny::observeEvent(input$add_filter_btn, {
@@ -603,35 +720,42 @@
             omop_filter_age(min = amin, max = amax)
           },
           has_concept = {
-            raw_cid <- trimws(input$filter_concept_id)
-            if (nchar(raw_cid) == 0 ||
-                is.na(suppressWarnings(as.integer(raw_cid)))) {
+            ids <- .parse_ids(input$filter_concept_id)
+            if (is.null(ids) || any(is.na(ids))) {
               shiny::showNotification(
-                "Enter a valid numeric concept ID", type = "warning")
+                "Enter at least one valid numeric concept ID",
+                type = "warning")
               return()
             }
-            cid <- as.integer(raw_cid)
-            omop_filter_has_concept(cid, input$filter_table)
+            ws <- input$filter_window_start
+            we <- input$filter_window_end
+            win <- if (!is.null(ws) && !is.null(we) &&
+                       !is.na(ws) && !is.na(we))
+              list(start = as.integer(ws), end = as.integer(we)) else NULL
+            mc <- suppressWarnings(as.integer(input$filter_min_count))
+            if (length(mc) == 0 || is.na(mc)) mc <- 1L
+            omop_filter_has_concept(ids, input$filter_table,
+              window = win, min_count = mc)
           },
           not_has_concept = {
-            raw_cid <- trimws(input$nhc_concept_id)
-            if (nchar(raw_cid) == 0 ||
-                is.na(suppressWarnings(as.integer(raw_cid)))) {
+            ids <- .parse_ids(input$nhc_concept_id)
+            if (is.null(ids) || any(is.na(ids))) {
               shiny::showNotification(
-                "Enter a valid numeric concept ID", type = "warning")
+                "Enter at least one valid numeric concept ID",
+                type = "warning")
               return()
             }
-            omop_filter_not_has_concept(as.integer(raw_cid), input$nhc_table)
+            omop_filter_not_has_concept(ids, input$nhc_table)
           },
           concept_count = {
-            raw_cid <- trimws(input$cc_concept_id)
-            if (nchar(raw_cid) == 0 ||
-                is.na(suppressWarnings(as.integer(raw_cid)))) {
+            ids <- .parse_ids(input$cc_concept_id)
+            if (is.null(ids) || any(is.na(ids))) {
               shiny::showNotification(
-                "Enter a valid numeric concept ID", type = "warning")
+                "Enter at least one valid numeric concept ID",
+                type = "warning")
               return()
             }
-            omop_filter_concept_count(as.integer(raw_cid), input$cc_table,
+            omop_filter_concept_count(ids, input$cc_table,
               min_count = as.integer(input$cc_min_count))
           },
           prior_observation =
@@ -640,42 +764,66 @@
           followup =
             omop_filter_followup(min_days = as.integer(input$fu_min_days)),
           visit_count = {
-            raw_vcid <- trimws(input$vc_visit_concept_id %||% "")
-            vcid <- if (nchar(raw_vcid) > 0 &&
-                        !is.na(suppressWarnings(as.integer(raw_vcid))))
-              as.integer(raw_vcid) else NULL
+            vcid <- .parse_ids(input$vc_visit_concept_id %||% "")
+            if (!is.null(vcid) && any(is.na(vcid))) vcid <- NULL
             omop_filter_visit_count(
               min_count = as.integer(input$vc_min_count),
               visit_concept_id = vcid)
           },
           has_measurement = {
-            raw_cid <- trimws(input$hm_concept_id)
-            if (nchar(raw_cid) == 0 ||
-                is.na(suppressWarnings(as.integer(raw_cid)))) {
+            ids <- .parse_ids(input$hm_concept_id)
+            if (is.null(ids) || any(is.na(ids))) {
               shiny::showNotification(
-                "Enter a valid numeric concept ID", type = "warning")
+                "Enter at least one valid numeric concept ID",
+                type = "warning")
               return()
             }
             minv <- if (!is.null(input$hm_min_value) &&
                         !is.na(input$hm_min_value)) input$hm_min_value else NULL
             maxv <- if (!is.null(input$hm_max_value) &&
                         !is.na(input$hm_max_value)) input$hm_max_value else NULL
-            omop_filter_has_measurement(as.integer(raw_cid),
+            omop_filter_has_measurement(ids,
               min_value = minv, max_value = maxv)
           },
           missing_measurement = {
-            raw_cid <- trimws(input$mm_concept_id)
-            if (nchar(raw_cid) == 0 ||
-                is.na(suppressWarnings(as.integer(raw_cid)))) {
+            ids <- .parse_ids(input$mm_concept_id)
+            if (is.null(ids) || any(is.na(ids))) {
               shiny::showNotification(
-                "Enter a valid numeric concept ID", type = "warning")
+                "Enter at least one valid numeric concept ID",
+                type = "warning")
               return()
             }
-            omop_filter_missing_measurement(as.integer(raw_cid))
+            omop_filter_missing_measurement(ids)
           },
           date_range = omop_filter_date_range(
             start = as.character(input$date_start),
-            end = as.character(input$date_end))
+            end = as.character(input$date_end)),
+          cohort = omop_filter_cohort(as.integer(input$cohort_def_id)),
+          value_bin = {
+            thr <- input$vb_threshold
+            if (is.null(thr) || is.na(thr)) {
+              shiny::showNotification("Enter a threshold value",
+                                      type = "warning")
+              return()
+            }
+            session_obj <- tryCatch(.get_session(state$symbol),
+                                    error = function(e) NULL)
+            if (is.null(session_obj) || length(session_obj$conns) == 0) {
+              shiny::showNotification(
+                "Value-threshold filters need disclosure-safe bins fetched from the server (ds.omop.safe.cutpoints). Connect with ds.omop.connect() first.",
+                type = "error", duration = 6)
+              return()
+            }
+            vb_cid <- .parse_ids(input$vb_concept_id %||% "")
+            if (!is.null(vb_cid) && any(is.na(vb_cid))) vb_cid <- NULL
+            ds.omop.safe.filter.value(
+              input$vb_table,
+              trimws(input$vb_column %||% "value_as_number"),
+              threshold = thr,
+              direction = input$vb_direction %||% "above",
+              concept_id = if (!is.null(vb_cid)) vb_cid[1] else NULL,
+              symbol = state$symbol)
+          }
         )
         state$recipe <- recipe_add_filter(state$recipe, f)
         shiny::showNotification(
@@ -687,18 +835,19 @@
     })
 
     # Keep the 'Group Filters' checkbox choices in sync with the recipe's
-    # current TOP-LEVEL plain filters (exclude existing groups; you cannot
-    # nest a group into a new group from this simple control).
+    # current TOP-LEVEL filters. Existing groups may be selected too:
+    # they nest into the new group, allowing arbitrary AND/OR trees.
     shiny::observe({
       fl <- state$recipe$filters
       ids <- names(fl) %||% character(0)
-      plain_ids <- Filter(function(fid)
-        !inherits(fl[[fid]], "omop_filter_group"), ids)
-      choices <- if (length(plain_ids)) {
+      choices <- if (length(ids)) {
         stats::setNames(
-          plain_ids,
-          vapply(plain_ids, function(fid) {
-            lbl <- fl[[fid]]$label %||% fid
+          ids,
+          vapply(ids, function(fid) {
+            f <- fl[[fid]]
+            lbl <- f$label %||% fid
+            if (inherits(f, "omop_filter_group"))
+              lbl <- paste0("[", f$operator, " group] ", lbl)
             paste0(lbl, "  (", fid, ")")
           }, character(1)))
       } else {
@@ -724,15 +873,6 @@
         member_ids <- names(recipe$filters)[
           names(recipe$filters) %in% member_ids]
         children <- unname(recipe$filters[member_ids])
-        # Guard: only plain filters (defensive; UI already excludes groups).
-        if (any(vapply(children,
-                       function(ch) inherits(ch, "omop_filter_group"),
-                       logical(1)))) {
-          shiny::showNotification(
-            "Cannot nest an existing group; select plain filters only",
-            type = "warning")
-          return()
-        }
         lbl <- trimws(input$group_label %||% "")
         grp <- do.call(omop_filter_group, c(
           children,
@@ -747,6 +887,7 @@
           paste("Grouped", length(children), "filters with",
                 input$group_operator),
           type = "message", duration = 2)
+        shiny::updateTextInput(session, "group_label", value = "")
       }, error = function(e) {
         shiny::showNotification(.clean_ds_error(e), type = "error")
       })
@@ -759,12 +900,24 @@
         shiny::showNotification("Enter an output name", type = "warning")
         return()
       }
+      if (nm %in% names(state$recipe$outputs)) {
+        shiny::showNotification(
+          paste0("Output '", nm,
+                 "' already exists - pick another name or use its edit button."),
+          type = "warning")
+        return()
+      }
       pop_id <- input$output_pop %||% "base"
+      if (!identical(pop_id, "base")) {
+        shiny::showNotification(
+          "Non-base populations are not yet executable; this output will block plan compilation until it targets 'base'.",
+          type = "warning", duration = 8)
+      }
       sym <- trimws(input$output_symbol %||% "")
       tryCatch({
-        # Event-output knobs (long / joined_long only): date_handling + temporal
+        # Event-output knobs (long only): date_handling + temporal
         opts <- list()
-        if (input$output_type %in% c("long", "joined_long")) {
+        if (identical(input$output_type, "long")) {
           dmode <- input$output_date_handling %||% "relative"
           opts$date_handling <- omop.date_handling(
             mode = dmode, reference = "index",
@@ -777,12 +930,24 @@
                                   n = as.integer(input$output_event_n %||% 1)))
           }
         }
+        # Survival: time-at-risk window
+        if (identical(input$output_type, "survival")) {
+          ts <- suppressWarnings(as.integer(input$output_tar_start))
+          te <- suppressWarnings(as.integer(input$output_tar_end))
+          opts$tar <- list(
+            start_offset = if (length(ts) == 1 && !is.na(ts)) ts else 0L,
+            end_offset   = if (length(te) == 1 && !is.na(te)) te else 730L)
+        }
         o <- omop_output(name = nm, type = input$output_type,
+                          variables = if (length(input$output_vars) > 0)
+                            input$output_vars else NULL,
                           population_id = pop_id, options = opts,
                           result_symbol = if (nchar(sym) > 0) sym else NULL)
         state$recipe <- recipe_add_output(state$recipe, o)
         shiny::showNotification(
           paste("Added output:", nm), type = "message", duration = 2)
+        shiny::updateTextInput(session, "output_name",
+          value = paste0("output_", length(state$recipe$outputs) + 1))
       }, error = function(e) {
         shiny::showNotification(
           .clean_ds_error(e), type = "error")
@@ -791,6 +956,16 @@
 
     # Add Population (modal)
     shiny::observeEvent(input$add_pop_btn, {
+      fl <- state$recipe$filters
+      filter_choices <- if (length(fl) > 0) {
+        stats::setNames(
+          names(fl),
+          vapply(names(fl), function(fid) {
+            paste0(fl[[fid]]$label %||% fid, "  (", fid, ")")
+          }, character(1)))
+      } else {
+        character(0)
+      }
       shiny::showModal(shiny::modalDialog(
         title = "Add Population",
         shiny::textInput(ns("pop_id"), "Population ID",
@@ -799,6 +974,15 @@
                          placeholder = "e.g. Adults 18-65"),
         shiny::selectInput(ns("pop_parent"), "Parent Population",
           choices = names(state$recipe$populations)),
+        shiny::numericInput(ns("pop_cohort_id"),
+          "Cohort Definition ID (optional)", value = NA, min = 1, step = 1),
+        if (length(filter_choices) > 0)
+          shiny::checkboxGroupInput(ns("pop_filters"),
+            "Move existing filters into this population",
+            choices = filter_choices),
+        shiny::helpText(
+          "Note: only the base population is executable today;",
+          "outputs targeting other populations will not compile yet."),
         easyClose = TRUE,
         footer = shiny::tagList(
           shiny::modalButton("Cancel"),
@@ -817,8 +1001,17 @@
         return()
       }
       tryCatch({
-        p <- omop_population(id = pid, label = plabel, parent_id = parent)
-        state$recipe <- recipe_add_population(state$recipe, p)
+        sel <- input$pop_filters %||% character(0)
+        sel <- sel[sel %in% names(state$recipe$filters)]
+        pcid <- suppressWarnings(as.integer(input$pop_cohort_id))
+        if (length(pcid) == 0 || is.na(pcid)) pcid <- NULL
+        p <- omop_population(id = pid, label = plabel, parent_id = parent,
+                             filters = unname(state$recipe$filters[sel]),
+                             cohort_definition_id = pcid)
+        recipe <- recipe_add_population(state$recipe, p)
+        # Selected filters move into the population (no longer base-level).
+        for (fid in sel) recipe <- recipe_remove_filter(recipe, fid)
+        state$recipe <- recipe
         shiny::removeModal()
         shiny::showNotification(
           paste("Added population:", pid), type = "message", duration = 2)
@@ -843,11 +1036,24 @@
     })
     shiny::observeEvent(input$confirm_clear, {
       state$recipe <- omop_recipe()
+      state$plan <- ds.omop.plan()
+      state$plan_compile_error <- NULL
+      # Reset the Plan Options inputs to the recipe defaults so the sidebar
+      # does not show stale values from the cleared recipe.
+      shiny::updateCheckboxInput(session, "opt_translate_concepts",
+        value = FALSE)
+      shiny::updateCheckboxInput(session, "opt_block_sensitive", value = TRUE)
+      shiny::updateCheckboxInput(session, "opt_factor_concepts", value = TRUE)
+      shiny::updateNumericInput(session, "opt_min_persons", value = NA)
+      shiny::updateNumericInput(session, "base_cohort_id", value = NA)
       shiny::removeModal()
       shiny::showNotification("Recipe cleared.", type = "message", duration = 2)
     })
 
-    # Auto-generate Plan from Recipe on changes
+    # Auto-generate Plan from Recipe on changes. Compile errors (e.g. the
+    # PHASE-1 multi-population guard) are recorded in
+    # state$plan_compile_error instead of being silently swallowed, so the
+    # Generated Code card can warn and the Run button can refuse early.
     shiny::observe({
       recipe <- state$recipe
       has_content <- length(recipe$variables) > 0 || length(recipe$blocks) > 0 ||
@@ -856,7 +1062,12 @@
         tryCatch({
           plan <- recipe_to_plan(recipe)
           state$plan <- plan
-        }, error = function(e) NULL)
+          state$plan_compile_error <- NULL
+        }, error = function(e) {
+          state$plan_compile_error <- conditionMessage(e)
+        })
+      } else {
+        state$plan_compile_error <- NULL
       }
     })
 
@@ -876,7 +1087,7 @@
     )
 
     shiny::observeEvent(input$import_file, {
-      req(input$import_file)
+      shiny::req(input$import_file)
       tryCatch({
         import_name <- input$import_file$name %||% ""
         ext <- tolower(sub("^.*\\.([^.]+)$", "\\1", import_name))
@@ -886,6 +1097,20 @@
           recipe_import_json(input$import_file$datapath)
         }
         state$recipe <- imported
+        # Sync the Plan Options inputs to the imported recipe; otherwise the
+        # options observer would clobber the imported values from stale UI
+        # state on the next toggle.
+        opts <- imported$options %||% list()
+        shiny::updateCheckboxInput(session, "opt_translate_concepts",
+          value = isTRUE(opts$translate_concepts))
+        shiny::updateCheckboxInput(session, "opt_block_sensitive",
+          value = !identical(opts$block_sensitive, FALSE))
+        shiny::updateCheckboxInput(session, "opt_factor_concepts",
+          value = !identical(opts$factor_concepts, FALSE))
+        shiny::updateNumericInput(session, "opt_min_persons",
+          value = opts$min_persons %||% NA)
+        shiny::updateNumericInput(session, "base_cohort_id",
+          value = imported$populations$base$cohort_definition_id %||% NA)
         shiny::showNotification(
           paste("Imported recipe:",
                 length(imported$variables), "variables,",
@@ -1084,7 +1309,9 @@
           f <- recipe$filters[[fid]]
           is_group <- inherits(f, "omop_filter_group")
           type_text <- if (is_group)
-            paste0("[", f$operator, " group]")
+            paste0("[", f$operator, " group] ",
+                   paste(vapply(f$children, function(ch) ch$label %||% "?",
+                                character(1)), collapse = " | "))
           else
             paste0("[", f$level, "] ", f$type)
 
@@ -1162,7 +1389,23 @@
       item_id <- data$id
       tryCatch({
         if (item_type == "population") {
-          state$recipe <- recipe_remove_population(state$recipe, item_id)
+          rec <- recipe_remove_population(state$recipe, item_id)
+          # Re-parent orphaned children and re-target outputs so nothing
+          # dangles (a dangling child disappears from the tree; a dangling
+          # output blocks plan compilation forever).
+          for (pid in names(rec$populations)) {
+            if (identical(rec$populations[[pid]]$parent_id, item_id))
+              rec$populations[[pid]]$parent_id <- "base"
+          }
+          for (onm in names(rec$outputs)) {
+            if (identical(rec$outputs[[onm]]$population_id, item_id)) {
+              rec$outputs[[onm]]$population_id <- "base"
+              shiny::showNotification(
+                paste0("Output '", onm, "' retargeted to base population"),
+                type = "warning", duration = 4)
+            }
+          }
+          state$recipe <- rec
         } else if (item_type == "block") {
           state$recipe$blocks[[item_id]] <- NULL
           state$recipe$meta$modified <- Sys.time()
@@ -1202,6 +1445,8 @@
           shiny::textInput(ns("edit_name"), "Name", value = v$name),
           shiny::selectInput(ns("edit_table"), "Table",
             choices = tbl_choices, selected = v$table),
+          shiny::textInput(ns("edit_column"), "Source Column (optional)",
+            value = v$column %||% ""),
           shiny::numericInput(ns("edit_concept_id"), "Concept ID",
             value = v$concept_id),
           shiny::textInput(ns("edit_concept_name"), "Concept Name",
@@ -1287,8 +1532,10 @@
           base_fields <- shiny::tagList(
             shiny::textInput(ns("edit_label"), "Label",
               value = f$label %||% ""),
+            # "output" level is not consumed by recipe_to_plan, so offering
+            # it here would silently turn the filter into a no-op.
             shiny::selectInput(ns("edit_filter_level"), "Level",
-              choices = c("population", "row", "output"),
+              choices = c("population", "row"),
               selected = f$level)
           )
           # Type-specific param fields
@@ -1309,13 +1556,19 @@
                           "65-74", "75-84", "85+"),
               selected = f$params$groups, inline = TRUE),
             "has_concept" = shiny::tagList(
-              shiny::numericInput(ns("edit_filter_cid"), "Concept ID",
-                value = f$params$concept_id),
+              shiny::textInput(ns("edit_filter_cid"), "Concept ID(s)",
+                value = paste(f$params$concept_id, collapse = ", ")),
               shiny::selectInput(ns("edit_filter_table"), "Table",
                 choices = tbl_choices, selected = f$params$table),
               shiny::numericInput(ns("edit_filter_min_count"),
                 "Min Count", value = f$params$min_count %||% 1L,
-                min = 1)
+                min = 1),
+              shiny::numericInput(ns("edit_filter_ws"),
+                "Window start (days from index, optional)",
+                value = f$params$window$start %||% NA),
+              shiny::numericInput(ns("edit_filter_we"),
+                "Window end (days from index, optional)",
+                value = f$params$window$end %||% NA)
             ),
             "date_range" = shiny::tagList(
               shiny::dateInput(ns("edit_date_start"), "Start Date",
@@ -1324,14 +1577,14 @@
                 value = f$params$end)
             ),
             "not_has_concept" = shiny::tagList(
-              shiny::numericInput(ns("edit_filter_cid"), "Concept ID",
-                value = f$params$concept_id),
+              shiny::textInput(ns("edit_filter_cid"), "Concept ID(s)",
+                value = paste(f$params$concept_id, collapse = ", ")),
               shiny::selectInput(ns("edit_filter_table"), "Table",
                 choices = tbl_choices, selected = f$params$table)
             ),
             "concept_count" = shiny::tagList(
-              shiny::numericInput(ns("edit_filter_cid"), "Concept ID",
-                value = f$params$concept_id),
+              shiny::textInput(ns("edit_filter_cid"), "Concept ID(s)",
+                value = paste(f$params$concept_id, collapse = ", ")),
               shiny::selectInput(ns("edit_filter_table"), "Table",
                 choices = tbl_choices, selected = f$params$table),
               shiny::numericInput(ns("edit_filter_min_count"), "Min Count",
@@ -1346,21 +1599,25 @@
             "visit_count" = shiny::tagList(
               shiny::numericInput(ns("edit_visit_min_count"), "Min Visits",
                 value = f$params$min_count %||% 1L, min = 1),
-              shiny::numericInput(ns("edit_visit_concept_id"),
-                "Visit Concept ID (optional)",
-                value = f$params$visit_concept_id)
+              shiny::textInput(ns("edit_visit_concept_id"),
+                "Visit Concept ID(s) (optional)",
+                value = paste(f$params$visit_concept_id, collapse = ", "))
             ),
             "has_measurement" = shiny::tagList(
-              shiny::numericInput(ns("edit_meas_cid"),
-                "Measurement Concept ID", value = f$params$concept_id),
+              shiny::textInput(ns("edit_meas_cid"),
+                "Measurement Concept ID(s)",
+                value = paste(f$params$concept_id, collapse = ", ")),
               shiny::numericInput(ns("edit_meas_min"), "Min Value",
                 value = f$params$min_value %||% NA),
               shiny::numericInput(ns("edit_meas_max"), "Max Value",
                 value = f$params$max_value %||% NA)
             ),
-            "missing_measurement" = shiny::numericInput(
-              ns("edit_meas_cid"), "Measurement Concept ID",
-              value = f$params$concept_id),
+            "missing_measurement" = shiny::textInput(
+              ns("edit_meas_cid"), "Measurement Concept ID(s)",
+              value = paste(f$params$concept_id, collapse = ", ")),
+            "cohort" = shiny::numericInput(ns("edit_cohort_def_id"),
+              "Cohort Definition ID",
+              value = f$params$cohort_definition_id %||% 1, min = 1),
             NULL
           )
           shiny::tagList(base_fields, param_fields)
@@ -1372,7 +1629,7 @@
         cur_bin <- o$options$date_handling$bin_width %||% "month"
         cur_esel <- o$options$temporal$event_select$order %||% "all"
         cur_en <- o$options$temporal$event_select$n %||% 1
-        event_knobs <- if (o$type %in% c("long", "joined_long")) {
+        event_knobs <- if (identical(o$type, "long")) {
           shiny::tagList(
             shiny::selectInput(ns("edit_output_date_handling"), "Date handling",
               choices = c("Relative days from index" = "relative",
@@ -1400,16 +1657,36 @@
             )
           )
         } else NULL
+        tar_knobs <- if (identical(o$type, "survival")) {
+          cur_tar <- o$options$tar %||% list(start_offset = 0,
+                                             end_offset = 730)
+          shiny::tagList(
+            shiny::numericInput(ns("edit_output_tar_start"),
+              "TAR start offset (days)",
+              value = cur_tar$start_offset %||% 0, step = 1),
+            shiny::numericInput(ns("edit_output_tar_end"),
+              "TAR end offset (days)",
+              value = cur_tar$end_offset %||% 730, min = 1, step = 1)
+          )
+        } else NULL
         shiny::tagList(
           shiny::textInput(ns("edit_name"), "Output Name", value = o$name),
           shiny::selectInput(ns("edit_output_type"), "Type",
             choices = c("wide", "long", "features", "survival",
-                        "intervals", "baseline", "joined_long",
+                        "intervals", "baseline",
                         "covariates_sparse"),
             selected = o$type),
           shiny::selectInput(ns("edit_output_pop"), "Population",
-            choices = pop_ids, selected = o$population_id),
+            choices = stats::setNames(pop_ids,
+              ifelse(pop_ids == "base", pop_ids,
+                     paste0(pop_ids, " (not yet executable)"))),
+            selected = o$population_id),
+          shiny::selectizeInput(ns("edit_output_vars"),
+            "Variables (empty = all)",
+            choices = names(recipe$variables),
+            selected = o$variables, multiple = TRUE),
           event_knobs,
+          tar_knobs,
           shiny::textInput(ns("edit_result_symbol"), "Result Symbol",
             value = o$result_symbol %||% paste0("D_", o$name))
         )
@@ -1452,7 +1729,9 @@
           cid_val <- input$edit_concept_id
           cname_val <- input$edit_concept_name
           vs_val <- input$edit_value_source
+          cl_val <- trimws(input$edit_column %||% "")
           v$table <- input$edit_table
+          v$column <- if (nchar(cl_val) > 0) cl_val else NULL
           v$concept_id <- if (!is.null(cid_val) && !is.na(cid_val))
             as.integer(cid_val) else NULL
           v$concept_name <- if (!is.null(cname_val) && nchar(cname_val) > 0) cname_val else NULL
@@ -1466,7 +1745,7 @@
           if (new_name != item_id) {
             if (new_name %in% names(recipe$variables)) {
               shiny::showNotification("Name already in use",
-                type = "warning", duration = 2)
+                type = "warning", duration = 4)
               return()
             }
             recipe$variables[[item_id]] <- NULL
@@ -1525,17 +1804,28 @@
             } else if (f$type == "age_group") {
               f$params$groups <- input$edit_age_groups
             } else if (f$type == "has_concept") {
-              f$params$concept_id <- as.integer(input$edit_filter_cid)
+              ids <- .parse_ids(input$edit_filter_cid)
+              if (!is.null(ids) && !any(is.na(ids)))
+                f$params$concept_id <- ids
               f$params$table <- input$edit_filter_table
               f$params$min_count <- as.integer(input$edit_filter_min_count)
+              ws <- input$edit_filter_ws
+              we <- input$edit_filter_we
+              f$params$window <- if (!is.null(ws) && !is.null(we) &&
+                                     !is.na(ws) && !is.na(we))
+                list(start = as.integer(ws), end = as.integer(we)) else NULL
             } else if (f$type == "date_range") {
               f$params$start <- as.character(input$edit_date_start)
               f$params$end <- as.character(input$edit_date_end)
             } else if (f$type == "not_has_concept") {
-              f$params$concept_id <- as.integer(input$edit_filter_cid)
+              ids <- .parse_ids(input$edit_filter_cid)
+              if (!is.null(ids) && !any(is.na(ids)))
+                f$params$concept_id <- ids
               f$params$table <- input$edit_filter_table
             } else if (f$type == "concept_count") {
-              f$params$concept_id <- as.integer(input$edit_filter_cid)
+              ids <- .parse_ids(input$edit_filter_cid)
+              if (!is.null(ids) && !any(is.na(ids)))
+                f$params$concept_id <- ids
               f$params$table <- input$edit_filter_table
               f$params$min_count <- as.integer(input$edit_filter_min_count)
             } else if (f$type == "prior_observation" ||
@@ -1543,17 +1833,24 @@
               f$params$min_days <- as.integer(input$edit_min_days)
             } else if (f$type == "visit_count") {
               f$params$min_count <- as.integer(input$edit_visit_min_count)
-              vcid <- input$edit_visit_concept_id
-              f$params$visit_concept_id <- if (!is.null(vcid) && !is.na(vcid))
-                as.integer(vcid) else NULL
+              vcid <- .parse_ids(input$edit_visit_concept_id %||% "")
+              f$params$visit_concept_id <- if (!is.null(vcid) &&
+                !any(is.na(vcid))) vcid else NULL
             } else if (f$type == "has_measurement") {
-              f$params$concept_id <- as.integer(input$edit_meas_cid)
+              ids <- .parse_ids(input$edit_meas_cid)
+              if (!is.null(ids) && !any(is.na(ids)))
+                f$params$concept_id <- ids
               f$params$min_value <- if (!is.null(input$edit_meas_min) &&
                 !is.na(input$edit_meas_min)) input$edit_meas_min else NULL
               f$params$max_value <- if (!is.null(input$edit_meas_max) &&
                 !is.na(input$edit_meas_max)) input$edit_meas_max else NULL
             } else if (f$type == "missing_measurement") {
-              f$params$concept_id <- as.integer(input$edit_meas_cid)
+              ids <- .parse_ids(input$edit_meas_cid)
+              if (!is.null(ids) && !any(is.na(ids)))
+                f$params$concept_id <- ids
+            } else if (f$type == "cohort") {
+              f$params$cohort_definition_id <-
+                as.integer(input$edit_cohort_def_id)
             }
           }
           recipe$filters[[item_id]] <- f
@@ -1563,10 +1860,21 @@
           if (is.null(o)) { shiny::removeModal(); return() }
           new_name <- trimws(input$edit_name)
           if (nchar(new_name) == 0) new_name <- item_id
-          o$type <- input$edit_output_type
+          # Validate against the DSL enum: a stale UI choice must never
+          # produce an output type that omop_output()/import would reject.
+          o$type <- match.arg(input$edit_output_type,
+            c("wide", "long", "features", "survival",
+              "intervals", "baseline", "covariates_sparse"))
           o$population_id <- input$edit_output_pop
-          # Event-output knobs (long / joined_long only)
-          if (o$type %in% c("long", "joined_long")) {
+          if (!identical(o$population_id, "base")) {
+            shiny::showNotification(
+              "Non-base populations are not yet executable; this output will block plan compilation until it targets 'base'.",
+              type = "warning", duration = 8)
+          }
+          o$variables <- if (length(input$edit_output_vars) > 0)
+            input$edit_output_vars else NULL
+          # Event-output knobs (long only)
+          if (identical(o$type, "long")) {
             dmode <- input$edit_output_date_handling %||% "relative"
             o$options$date_handling <- omop.date_handling(
               mode = dmode, reference = "index",
@@ -1580,6 +1888,16 @@
           } else {
             o$options$date_handling <- NULL
             o$options$temporal <- NULL
+          }
+          # Survival: time-at-risk window
+          if (identical(o$type, "survival")) {
+            ts <- suppressWarnings(as.integer(input$edit_output_tar_start))
+            te <- suppressWarnings(as.integer(input$edit_output_tar_end))
+            o$options$tar <- list(
+              start_offset = if (length(ts) == 1 && !is.na(ts)) ts else 0L,
+              end_offset   = if (length(te) == 1 && !is.na(te)) te else 730L)
+          } else {
+            o$options$tar <- NULL
           }
           o$result_symbol <- trimws(input$edit_result_symbol)
           if (nchar(o$result_symbol) == 0)
@@ -1668,10 +1986,18 @@
         return(.empty_state_ui("code", "No code yet",
           "Add variables, filters, and outputs to generate code."))
       }
+      compile_alert <- if (!is.null(state$plan_compile_error)) {
+        shiny::div(class = "alert alert-danger",
+          shiny::strong("Plan does not compile: "),
+          state$plan_compile_error)
+      } else NULL
       code <- recipe_to_code(recipe)
       highlighted <- .highlightR(code)
-      shiny::div(class = "code-output",
-        shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))
+      shiny::tagList(
+        compile_alert,
+        shiny::div(class = "code-output",
+          shiny::HTML(paste0("<pre><code>", highlighted, "</code></pre>"))
+        )
       )
     })
 
@@ -1694,6 +2020,13 @@
         shiny::showNotification(
           "Recipe has no outputs - add an output (e.g. a 'wide' table) to materialize a result.",
           type = "warning", duration = 5)
+        return()
+      }
+
+      if (!is.null(state$plan_compile_error)) {
+        shiny::showNotification(
+          paste("Cannot run:", state$plan_compile_error),
+          type = "error", duration = 6)
         return()
       }
 
@@ -1973,6 +2306,9 @@
       full_screen = TRUE,
       bslib::card_header("Current Plan"),
       bslib::card_body(
+        shiny::div(class = "alert alert-warning py-1 small",
+          shiny::icon("triangle-exclamation"),
+          " Changes here edit the compiled plan directly and are overwritten whenever the Recipe changes. Prefer the Recipe tab; Plan-tab outputs are not part of the recipe download."),
         shiny::uiOutput(ns("plan_summary_content")),
         shiny::actionButton(ns("clear_plan"), "Clear Plan",
                             class = "btn-sm btn-outline-danger")
@@ -2058,9 +2394,11 @@
       })
     })
 
-    # Set cohort on plan
+    # Set cohort on plan. Also persisted on the recipe so it survives the
+    # Recipe-tab auto-recompile and round-trips through export / codegen.
     shiny::observeEvent(input$set_cohort, {
       cid <- as.integer(input$cohort_id)
+      state$recipe <- recipe_set_cohort(state$recipe, cid)
       state$plan <- ds.omop.plan.cohort(state$plan,
                                          cohort_definition_id = cid)
       shiny::showNotification(

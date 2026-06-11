@@ -1718,7 +1718,12 @@ test_that(".codegen_filter generates correct code for each type", {
   bins <- list(breaks = c(0, 5, 10, 15, 20))
   f_val <- omop_filter_value(threshold = 6.5, direction = "above",
                               safe_bins = bins)
-  expect_true(grepl("omop_filter_value", .codegen_filter(f_val)))
+  # value_bin filters are regenerated verbatim (the disclosure-safe bin was
+  # already resolved at construction time), so the script stays executable
+  # without a ds.omop.safe.cutpoints() round-trip.
+  code_val <- .codegen_filter(f_val)
+  expect_true(grepl('omop_filter\\(type = "value_bin"', code_val))
+  expect_identical(eval(parse(text = code_val)), f_val)
 })
 
 test_that(".codegen_filter falls back to generic for unknown types", {

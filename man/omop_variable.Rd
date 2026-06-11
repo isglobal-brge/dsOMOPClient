@@ -19,7 +19,8 @@ omop_variable(
   value_source = NULL,
   time_window = NULL,
   suffix_mode = c("index", "range", "label"),
-  filters = list()
+  filters = list(),
+  expand = FALSE
 )
 }
 \arguments{
@@ -52,6 +53,9 @@ to index date, or \code{NULL} for no window constraint.}
 (\code{"index"}, \code{"range"}, or \code{"label"}).}
 
 \item{filters}{List of \code{\link{omop_filter}} objects to apply to this variable.}
+
+\item{expand}{Logical; if \code{TRUE}, expand the concept to include
+vocabulary descendants server-side (default \code{FALSE}).}
 }
 \value{
 An \code{omop_variable} object (a named list with class
