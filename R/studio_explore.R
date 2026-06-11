@@ -1648,6 +1648,49 @@
 #        categorical= list(<col> = <value.counts>))
 # where each inner result carries $per_site / $pooled.
 
+#' Pick the pooled element of a per_site/pooled result, else the first site
+#' @keywords internal
+.cs_pick_scope <- function(result, scope = "pooled") {
+  if (is.null(result)) return(NULL)
+  if (identical(scope, "pooled") && !is.null(result$pooled)) return(result$pooled)
+  ps <- result$per_site
+  if (length(ps) > 0) return(ps[[1]])
+  NULL
+}
+
+#' Build the numeric display table from a ds.omop.concept.summary result
+#' @keywords internal
+.cs_numeric_table <- function(res, scope = "pooled") {
+  if (is.null(res) || length(res$numeric) == 0) return(NULL)
+  rows <- lapply(names(res$numeric), function(col) {
+    nx <- res$numeric[[col]]
+    st <- .cs_pick_scope(nx$stats, scope)
+    q  <- .cs_pick_scope(nx$quantiles, "per_site")
+    gq <- function(p) {
+      if (is.data.frame(q) && "probability" %in% names(q)) {
+        v <- q$value[abs(q$probability - p) < 1e-6]
+        if (length(v) > 0) round(v[1], 2) else NA_real_
+      } else NA_real_
+    }
+    data.frame(column = col,
+      n = if (!is.null(st$n_total)) st$n_total else NA_real_,
+      mean = if (!is.null(st$mean)) round(st$mean, 2) else NA_real_,
+      p25 = gq(0.25), median = gq(0.5), p75 = gq(0.75),
+      stringsAsFactors = FALSE)
+  })
+  do.call(rbind, rows)
+}
+
+#' Build the categorical display table (first categorical column) from a result
+#' @keywords internal
+.cs_categorical_table <- function(res, scope = "pooled") {
+  if (is.null(res) || length(res$categorical) == 0) return(NULL)
+  col <- names(res$categorical)[1]
+  cc <- .cs_pick_scope(res$categorical[[col]], scope)
+  if (!is.data.frame(cc) || nrow(cc) == 0) return(NULL)
+  cc
+}
+
 #' @keywords internal
 .mod_explore_concept_summary_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -1676,14 +1719,6 @@
   shiny::moduleServer(id, function(input, output, session) {
     res_rv <- shiny::reactiveVal(NULL)
     picked_concept <- .concept_picker_server("concept", state)
-
-    .cs_pick <- function(result, scope) {
-      if (is.null(result)) return(NULL)
-      if (identical(scope, "pooled") && !is.null(result$pooled)) return(result$pooled)
-      ps <- result$per_site
-      if (length(ps) > 0) return(ps[[1]])
-      NULL
-    }
 
     shiny::observe({
       tbls <- tryCatch(.get_person_tables(state$tables), error = function(e) NULL)
@@ -1741,38 +1776,17 @@
     })
 
     output$numeric_dt <- DT::renderDT({
-      res <- res_rv()
-      if (is.null(res) || length(res$numeric) == 0) return(NULL)
-      rows <- lapply(names(res$numeric), function(col) {
-        nx <- res$numeric[[col]]
-        st <- .cs_pick(nx$stats, "pooled")
-        q  <- .cs_pick(nx$quantiles, "per_site")
-        gq <- function(p) {
-          if (is.data.frame(q) && "probability" %in% names(q)) {
-            v <- q$value[abs(q$probability - p) < 1e-6]
-            if (length(v) > 0) round(v[1], 2) else NA_real_
-          } else NA_real_
-        }
-        data.frame(
-          column = col,
-          n = if (!is.null(st$n_total)) st$n_total else NA_real_,
-          mean = if (!is.null(st$mean)) round(st$mean, 2) else NA_real_,
-          p25 = gq(0.25), median = gq(0.5), p75 = gq(0.75),
-          stringsAsFactors = FALSE)
-      })
-      df <- do.call(rbind, rows)
+      df <- .cs_numeric_table(res_rv(), "pooled")
+      if (is.null(df)) return(NULL)
       DT::datatable(df, rownames = FALSE, selection = "none",
                     options = list(dom = "t", scrollX = TRUE))
     })
 
     output$categorical_dt <- DT::renderDT({
-      res <- res_rv()
-      if (is.null(res) || length(res$categorical) == 0) return(NULL)
-      col <- names(res$categorical)[1]
-      cc <- .cs_pick(res$categorical[[col]], "pooled")
-      if (!is.data.frame(cc) || nrow(cc) == 0) return(NULL)
+      cc <- .cs_categorical_table(res_rv(), "pooled")
+      if (is.null(cc)) return(NULL)
       DT::datatable(cc, rownames = FALSE, selection = "none",
-                    caption = paste0("Value counts for ", col),
+                    caption = "Categorical value counts",
                     options = list(pageLength = 15, scrollX = TRUE))
     })
   })
