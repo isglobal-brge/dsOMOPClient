@@ -17,7 +17,9 @@
     bslib::nav_panel("Locator", icon = shiny::icon("location-dot"),
       .mod_explore_locator_ui(ns("locator"))),
     bslib::nav_panel("Vocabulary", icon = shiny::icon("book"),
-      .mod_explore_vocab_ui(ns("vocab")))
+      .mod_explore_vocab_ui(ns("vocab"))),
+    bslib::nav_panel("Concept Summary", icon = shiny::icon("database"),
+      .mod_explore_concept_summary_ui(ns("concept_summary")))
   )
 }
 
@@ -34,6 +36,7 @@
     .mod_explore_drilldown_server("drilldown", state, session)
     .mod_explore_locator_server("locator", state)
     .mod_explore_vocab_server("vocab", state)
+    .mod_explore_concept_summary_server("concept_summary", state, session)
   })
 }
 
@@ -1635,4 +1638,156 @@
     combined <- combined[combined$concept_id %in% common_ids, , drop = FALSE]
   }
   combined
+}
+
+# --- Sub-module: Concept Summary -------------------------------------------
+# Type-aware, disclosure-safe summary of a value column WITHIN one concept
+# (ds.omop.concept.summary, 2.2.0). Returns
+#   list(table, concept_id,
+#        numeric    = list(<col> = list(stats=<column.stats>, quantiles=<value.quantiles>)),
+#        categorical= list(<col> = <value.counts>))
+# where each inner result carries $per_site / $pooled.
+
+#' Pick the pooled element of a per_site/pooled result, else the first site
+#' @keywords internal
+.cs_pick_scope <- function(result, scope = "pooled") {
+  if (is.null(result)) return(NULL)
+  if (identical(scope, "pooled") && !is.null(result$pooled)) return(result$pooled)
+  ps <- result$per_site
+  if (length(ps) > 0) return(ps[[1]])
+  NULL
+}
+
+#' Build the numeric display table from a ds.omop.concept.summary result
+#' @keywords internal
+.cs_numeric_table <- function(res, scope = "pooled") {
+  if (is.null(res) || length(res$numeric) == 0) return(NULL)
+  rows <- lapply(names(res$numeric), function(col) {
+    nx <- res$numeric[[col]]
+    st <- .cs_pick_scope(nx$stats, scope)
+    q  <- .cs_pick_scope(nx$quantiles, "per_site")
+    gq <- function(p) {
+      if (is.data.frame(q) && "probability" %in% names(q)) {
+        v <- q$value[abs(q$probability - p) < 1e-6]
+        if (length(v) > 0) round(v[1], 2) else NA_real_
+      } else NA_real_
+    }
+    data.frame(column = col,
+      n = if (!is.null(st$n_total)) st$n_total else NA_real_,
+      mean = if (!is.null(st$mean)) round(st$mean, 2) else NA_real_,
+      p25 = gq(0.25), median = gq(0.5), p75 = gq(0.75),
+      stringsAsFactors = FALSE)
+  })
+  do.call(rbind, rows)
+}
+
+#' Build the categorical display table (first categorical column) from a result
+#' @keywords internal
+.cs_categorical_table <- function(res, scope = "pooled") {
+  if (is.null(res) || length(res$categorical) == 0) return(NULL)
+  col <- names(res$categorical)[1]
+  cc <- .cs_pick_scope(res$categorical[[col]], scope)
+  if (!is.data.frame(cc) || nrow(cc) == 0) return(NULL)
+  cc
+}
+
+#' @keywords internal
+.mod_explore_concept_summary_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Concept Summary", width = 300, open = "always",
+      shiny::selectInput(ns("table"), "Table", choices = NULL),
+      .concept_picker_ui(ns("concept"), label = "Concept"),
+      shiny::selectInput(ns("value_column"), "Value column",
+                         choices = c("(auto-detect)" = "")),
+      shiny::actionButton(ns("run_btn"), "Run", icon = shiny::icon("play"),
+                          class = "btn-primary w-100")
+    ),
+    shiny::uiOutput(ns("header")),
+    bslib::card(full_screen = TRUE,
+      bslib::card_header("Numeric value statistics (no min/max — DataSHIELD-safe)"),
+      bslib::card_body(DT::DTOutput(ns("numeric_dt")))),
+    bslib::card(full_screen = TRUE,
+      bslib::card_header("Categorical value counts"),
+      bslib::card_body(DT::DTOutput(ns("categorical_dt"))))
+  )
+}
+
+#' @keywords internal
+.mod_explore_concept_summary_server <- function(id, state, parent_session = NULL) {
+  shiny::moduleServer(id, function(input, output, session) {
+    res_rv <- shiny::reactiveVal(NULL)
+    picked_concept <- .concept_picker_server("concept", state)
+
+    shiny::observe({
+      tbls <- tryCatch(.get_person_tables(state$tables), error = function(e) NULL)
+      if (length(tbls) == 0) {
+        tbls <- c("measurement", "observation", "condition_occurrence",
+                  "drug_exposure", "procedure_occurrence", "visit_occurrence")
+      }
+      shiny::updateSelectInput(session, "table", choices = tbls)
+    })
+
+    shiny::observeEvent(input$table, {
+      cols <- tryCatch({
+        cr <- ds.omop.columns(input$table, symbol = state$symbol)
+        cn <- cr[[1]]$column_name
+        cn[grepl("value_as_number$|value_as_concept_id$|^quantity$|^days_supply$",
+                 cn, ignore.case = TRUE)]
+      }, error = function(e) character(0))
+      shiny::updateSelectInput(session, "value_column",
+                               choices = c("(auto-detect)" = "", cols))
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$run_btn, {
+      shiny::req(input$table)
+      pc <- picked_concept()
+      cid <- if (is.list(pc)) pc$concept_id else pc
+      if (is.null(cid) || length(cid) == 0) {
+        shiny::showNotification("Pick a concept first.", type = "warning")
+        return()
+      }
+      col <- if (nzchar(input$value_column %||% "")) input$value_column else NULL
+      shiny::withProgress(message = "Querying concept summary…", value = 0.4, {
+        res <- tryCatch(
+          ds.omop.concept.summary(table = input$table, concept_id = cid,
+                                  column = col, scope = "pooled",
+                                  symbol = state$symbol),
+          error = function(e) {
+            shiny::showNotification(.clean_ds_error(e), type = "error")
+            NULL
+          })
+        res_rv(res)
+      })
+    })
+
+    output$header <- shiny::renderUI({
+      res <- res_rv()
+      if (is.null(res)) {
+        return(.empty_state_ui("database", "No concept summarized",
+                               "Pick a table and concept, then click Run."))
+      }
+      bslib::value_box(
+        title = paste0(res$table, " · concept ", res$concept_id),
+        value = paste0(length(res$numeric), " numeric / ",
+                       length(res$categorical), " categorical column(s)"),
+        showcase = shiny::icon("database"), theme = "primary")
+    })
+
+    output$numeric_dt <- DT::renderDT({
+      df <- .cs_numeric_table(res_rv(), "pooled")
+      if (is.null(df)) return(NULL)
+      DT::datatable(df, rownames = FALSE, selection = "none",
+                    options = list(dom = "t", scrollX = TRUE))
+    })
+
+    output$categorical_dt <- DT::renderDT({
+      cc <- .cs_categorical_table(res_rv(), "pooled")
+      if (is.null(cc)) return(NULL)
+      DT::datatable(cc, rownames = FALSE, selection = "none",
+                    caption = "Categorical value counts",
+                    options = list(pageLength = 15, scrollX = TRUE))
+    })
+  })
 }
