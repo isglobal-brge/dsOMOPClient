@@ -349,30 +349,29 @@
     },
 
     "column_stats" = {
-      # per_site[[srv]] is a list with count, mean, sd, etc.
+      # .profileColumnStats returns per-site n_total + mean (plus optionally
+      # disclosure-suppressed n_distinct/n_missing). Pool the row count (sum)
+      # and the count-weighted mean. There is no per-site sd to pool, and
+      # n_distinct cannot be summed across servers (distinct sets overlap), so
+      # neither appears in the pooled view.
       counts <- vapply(per_site, function(s) {
-        if (is.list(s) && !is.null(s$count)) s$count else NA_real_
+        if (is.list(s) && !is.null(s$n_total)) as.numeric(s$n_total)
+        else if (is.list(s) && !is.null(s$count)) as.numeric(s$count)
+        else NA_real_
       }, numeric(1))
       names(counts) <- names(per_site)
 
       means <- vapply(per_site, function(s) {
-        if (is.list(s) && !is.null(s$mean)) s$mean else NA_real_
+        if (is.list(s) && !is.null(s$mean)) as.numeric(s$mean) else NA_real_
       }, numeric(1))
       names(means) <- names(per_site)
 
-      vars <- vapply(per_site, function(s) {
-        if (is.list(s) && !is.null(s$sd)) s$sd^2 else NA_real_
-      }, numeric(1))
-      names(vars) <- names(per_site)
-
       pool_n <- .pool_counts(counts, policy)
       pool_mean <- .pool_means(means, counts, policy)
-      pool_var <- .pool_variance(vars, means, counts, policy)
 
-      warnings <- c(pool_n$warnings, pool_mean$warnings, pool_var$warnings)
+      warnings <- c(pool_n$warnings, pool_mean$warnings)
       result <- if (!is.null(pool_n$result)) {
-        list(count = pool_n$result, mean = pool_mean$result,
-             sd = if (!is.null(pool_var$result)) sqrt(pool_var$result) else NULL)
+        list(n_total = pool_n$result, mean = pool_mean$result)
       } else NULL
 
       list(result = result, warnings = warnings)
