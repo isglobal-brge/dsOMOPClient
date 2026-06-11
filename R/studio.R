@@ -139,6 +139,35 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
           $(document).on('click', '.achilles-disabled, .ohdsi-results-disabled', function(e) {
             e.preventDefault(); e.stopPropagation(); return false;
           });
+        ")),
+        # --- Startup loading overlay (shown immediately from the initial HTML,
+        # hidden when the server signals 'dsomop_ready' after the blocking
+        # federated catalog/status calls return). Robust to the synchronous
+        # nature of those calls — a server-output conditionalPanel would not
+        # render until after the block. ---
+        shiny::tags$style(shiny::HTML(
+          "#dsomop-loading{position:fixed;inset:0;z-index:20000;background:rgba(248,250,252,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .45s ease}
+           #dsomop-loading.dsomop-hide{opacity:0;pointer-events:none}
+           #dsomop-loading .dsl-title{font:600 18px Inter,system-ui;color:#1e293b}
+           #dsomop-loading .dsl-sub{font:400 14px Inter,system-ui;color:#64748b}")),
+        shiny::tags$div(
+          id = "dsomop-loading",
+          shiny::tags$div(class = "spinner-border text-primary",
+                          style = "width:3rem;height:3rem;", role = "status"),
+          shiny::tags$div(class = "dsl-title", "Conectando con la federación…"),
+          shiny::tags$div(class = "dsl-sub",
+            "Cargando catálogo y estadísticas de los servidores")
+        ),
+        shiny::tags$script(shiny::HTML("
+          (function(){
+            var hidden=false;
+            function hide(){ if(hidden) return; hidden=true;
+              var el=document.getElementById('dsomop-loading');
+              if(el){ el.classList.add('dsomop-hide');
+                setTimeout(function(){ if(el&&el.parentNode) el.parentNode.removeChild(el); }, 520); } }
+            if(window.Shiny){ Shiny.addCustomMessageHandler('dsomop_ready', function(x){ hide(); }); }
+            setTimeout(hide, 90000); // safety net if the server never signals
+          })();
         "))
       ),
 
@@ -239,6 +268,9 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
           type = "error", duration = 10
         )
       })
+      # Dismiss the startup overlay once the (blocking) federated catalog/status
+      # calls have returned — success or error.
+      session$sendCustomMessage("dsomop_ready", TRUE)
     })
 
     # Clipboard toast is now handled entirely in JS (no round-trip needed)

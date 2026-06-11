@@ -293,7 +293,12 @@
         return(.empty_state_ui("chart-simple", "No concepts found",
           "Select a table and run the query."))
       }
-      DT::DTOutput(ns("results_dt"))
+      shiny::tagList(
+        shiny::p(class = "text-muted small mb-2",
+          shiny::icon("hand-pointer"),
+          " Tick the checkbox in the first column to select concepts, then click +Extract or Filter."),
+        DT::DTOutput(ns("results_dt"))
+      )
     })
 
     output$results_dt <- DT::renderDT({
@@ -336,7 +341,8 @@
           "});",
           # Select-all header checkbox
           "var hdr = $('<input type=\"checkbox\" class=\"dt-chk-all\">');",
-          "$(table.column(0).header()).empty().append(hdr);",
+          "$(table.column(0).header()).empty().append(hdr)",
+          "  .append('<span class=\"ms-1 small text-muted\">Select</span>');",
           "hdr.on('change', function() {",
           "  var checked = this.checked;",
           "  sel = [];",
@@ -398,6 +404,7 @@
       idx <- idx[idx <= nrow(df)]
       tbl <- input$table
       added <- 0L
+      errors <- character(0)
       for (i in idx) {
         cid <- as.integer(df$concept_id[i])
         cname <- if ("concept_name" %in% names(df))
@@ -409,12 +416,17 @@
           )
           state$recipe <- recipe_add_variable(state$recipe, v)
           added <- added + 1L
-        }, error = function(e) NULL)
+        }, error = function(e) {
+          errors <<- c(errors, .clean_ds_error(e))
+        })
       }
       if (added > 0) {
         shiny::showNotification(
           paste("Added", added, "variable(s) to recipe"),
           type = "message", duration = 2)
+      }
+      for (msg in unique(errors)) {
+        shiny::showNotification(msg, type = "error")
       }
     })
 
@@ -429,6 +441,7 @@
       idx <- idx[idx <= nrow(df)]
       tbl <- input$table
       added <- 0L
+      errors <- character(0)
       for (i in idx) {
         cid <- as.integer(df$concept_id[i])
         cname <- if ("concept_name" %in% names(df))
@@ -437,12 +450,17 @@
           f <- omop_filter_has_concept(cid, tbl, cname)
           state$recipe <- recipe_add_filter(state$recipe, f)
           added <- added + 1L
-        }, error = function(e) NULL)
+        }, error = function(e) {
+          errors <<- c(errors, .clean_ds_error(e))
+        })
       }
       if (added > 0) {
         shiny::showNotification(
           paste("Added", added, "filter(s) to recipe"),
           type = "message", duration = 2)
+      }
+      for (msg in unique(errors)) {
+        shiny::showNotification(msg, type = "error")
       }
     })
 
@@ -487,14 +505,7 @@
       shiny::hr(),
       shiny::actionButton(ns("add_to_set"), "Add to Concept Set",
                           class = "btn-outline-primary btn-sm w-100 mb-1"),
-      shiny::actionButton(ns("add_to_recipe_extract"),
-                          shiny::tagList(shiny::icon("plus"), "Extract to Builder"),
-                          class = "btn-success text-white btn-sm w-100 mb-1"),
-      shiny::actionButton(ns("add_to_recipe_filter"),
-                          shiny::tagList(shiny::icon("filter"), "Filter in Builder"),
-                          class = "btn-warning text-white btn-sm w-100 mb-1"),
-      shiny::actionButton(ns("add_to_plan"), "Add to Plan",
-                          class = "btn-outline-info btn-sm w-100 mb-1"),
+      shiny::uiOutput(ns("recipe_actions")),
       shiny::actionButton(ns("reload"), "Reload",
                           icon = shiny::icon("rotate-right"),
                           class = "btn-outline-secondary btn-sm w-100")
@@ -650,6 +661,28 @@
           shiny::span(class = "text-muted", style = "font-size:0.78rem;",
             tbl)
         )
+      )
+    })
+
+    # Recipe/plan action buttons: enabled only when a concept is selected
+    output$recipe_actions <- shiny::renderUI({
+      has_concept <- !is.null(state$selected_concept_id) &&
+        !is.null(state$selected_table)
+      disabled_attr <- if (has_concept) NULL else "disabled"
+      shiny::tagList(
+        shiny::actionButton(session$ns("add_to_recipe_extract"),
+                            shiny::tagList(shiny::icon("plus"), "Extract to Builder"),
+                            class = "btn-success text-white btn-sm w-100 mb-1",
+                            disabled = disabled_attr),
+        shiny::actionButton(session$ns("add_to_recipe_filter"),
+                            shiny::tagList(shiny::icon("filter"), "Filter in Builder"),
+                            class = "btn-warning text-white btn-sm w-100 mb-1",
+                            disabled = disabled_attr),
+        shiny::actionButton(session$ns("add_to_plan"), "Add to Plan",
+                            class = "btn-outline-info btn-sm w-100 mb-1",
+                            disabled = disabled_attr),
+        if (!has_concept) shiny::p(class = "text-muted small mb-1",
+          "Drill into a concept from Prevalence first.")
       )
     })
 
@@ -1030,9 +1063,17 @@
       bslib::card_header(
         class = "d-flex justify-content-between align-items-center py-2",
         shiny::span("Concept Locator"),
-        shiny::actionButton(ns("locate_btn"), "Locate",
-                            icon = shiny::icon("location-dot"),
-                            class = "btn-sm btn-primary")
+        shiny::div(
+          bslib::tooltip(
+            shiny::actionButton(ns("extract_to_recipe"),
+                                shiny::tagList(shiny::icon("plus"), "Extract to recipe"),
+                                class = "btn-sm btn-success text-white me-1"),
+            "Add the selected concepts as variables to Builder"
+          ),
+          shiny::actionButton(ns("locate_btn"), "Locate",
+                              icon = shiny::icon("location-dot"),
+                              class = "btn-sm btn-primary")
+        )
       ),
       bslib::card_body(
         class = "py-2 px-3",
@@ -1234,6 +1275,63 @@
       })
     })
 
+    # +Extract: add selected concepts as variables to recipe
+    shiny::observeEvent(input$extract_to_recipe, {
+      items <- selected_ids()
+      if (length(items) == 0) {
+        shiny::showNotification("Add at least one concept above.",
+                                type = "warning")
+        return()
+      }
+      # Use the presence matrix (if located) to map concept_id -> table.
+      loc <- locate_data()
+      table_for <- function(cid) {
+        if (is.data.frame(loc) && "concept_id" %in% names(loc) &&
+            "table_name" %in% names(loc)) {
+          hit <- loc$table_name[loc$concept_id == cid]
+          hit <- hit[!is.na(hit) & nchar(as.character(hit)) > 0]
+          if (length(hit) > 0) return(as.character(hit[1]))
+        }
+        NULL
+      }
+      added <- 0L
+      errors <- character(0)
+      skipped <- 0L
+      for (item in items) {
+        cid <- as.integer(item$concept_id)
+        tbl <- table_for(cid)
+        if (is.null(tbl)) {
+          skipped <- skipped + 1L
+          next
+        }
+        cname <- item$concept_name
+        tryCatch({
+          v <- omop_variable(
+            table = tbl, concept_id = cid,
+            concept_name = cname, format = "raw"
+          )
+          state$recipe <- recipe_add_variable(state$recipe, v)
+          added <- added + 1L
+        }, error = function(e) {
+          errors <<- c(errors, .clean_ds_error(e))
+        })
+      }
+      if (added > 0) {
+        shiny::showNotification(
+          paste("Added", added, "variable(s) to recipe"),
+          type = "message", duration = 2)
+      }
+      if (skipped > 0) {
+        shiny::showNotification(
+          paste(skipped, "concept(s) skipped: no table located.",
+                "Click Locate first to map concepts to tables."),
+          type = "warning")
+      }
+      for (msg in unique(errors)) {
+        shiny::showNotification(msg, type = "error")
+      }
+    })
+
     # Re-extract on scope/server change
     shiny::observeEvent(list(state$scope, state$selected_servers), {
       res <- raw_locate_result()
@@ -1379,7 +1477,12 @@
         return(.empty_state_ui("book", "No results",
           "Search for concepts using the sidebar controls."))
       }
-      DT::DTOutput(ns("results_table"))
+      shiny::tagList(
+        shiny::p(class = "text-muted small mb-2",
+          shiny::icon("hand-pointer"),
+          " Tick the checkbox in the first column to select concepts, then click +Extract."),
+        DT::DTOutput(ns("results_table"))
+      )
     })
 
     output$results_table <- DT::renderDT({
@@ -1424,7 +1527,8 @@
           "  Shiny.setInputValue('", ns("vocab_chk_selected"), "', sel, {priority:'event'});",
           "});",
           "var hdr = $('<input type=\"checkbox\" class=\"dt-chk-all\">');",
-          "$(table.column(0).header()).empty().append(hdr);",
+          "$(table.column(0).header()).empty().append(hdr)",
+          "  .append('<span class=\"ms-1 small text-muted\">Select</span>');",
           "hdr.on('change', function() {",
           "  var checked = this.checked;",
           "  sel = [];",
@@ -1469,6 +1573,7 @@
       }
       idx <- idx[idx <= nrow(df)]
       added <- 0L
+      errors <- character(0)
       for (i in idx) {
         cid <- as.integer(df$concept_id[i])
         cname <- if ("concept_name" %in% names(df))
@@ -1484,12 +1589,17 @@
           )
           state$recipe <- recipe_add_variable(state$recipe, v)
           added <- added + 1L
-        }, error = function(e) NULL)
+        }, error = function(e) {
+          errors <<- c(errors, .clean_ds_error(e))
+        })
       }
       if (added > 0) {
         shiny::showNotification(
           paste("Added", added, "variable(s) to recipe"),
           type = "message", duration = 2)
+      }
+      for (msg in unique(errors)) {
+        shiny::showNotification(msg, type = "error")
       }
     })
 
@@ -1702,7 +1812,10 @@
       shiny::selectInput(ns("value_column"), "Value column",
                          choices = c("(auto-detect)" = "")),
       shiny::actionButton(ns("run_btn"), "Run", icon = shiny::icon("play"),
-                          class = "btn-primary w-100")
+                          class = "btn-primary w-100"),
+      shiny::actionButton(ns("extract_to_recipe"),
+                          shiny::tagList(shiny::icon("plus"), "Extract to recipe"),
+                          class = "btn-success text-white w-100 mt-1")
     ),
     shiny::uiOutput(ns("header")),
     bslib::card(full_screen = TRUE,
@@ -1759,6 +1872,30 @@
             NULL
           })
         res_rv(res)
+      })
+    })
+
+    # +Extract: add the looked-up concept as a variable to recipe
+    shiny::observeEvent(input$extract_to_recipe, {
+      shiny::req(input$table)
+      pc <- picked_concept()
+      cid <- if (is.list(pc)) pc$concept_id else pc
+      if (is.null(cid) || length(cid) == 0) {
+        shiny::showNotification("Pick a concept first.", type = "warning")
+        return()
+      }
+      cname <- if (is.list(pc)) pc$concept_name else NULL
+      tryCatch({
+        v <- omop_variable(
+          table = input$table, concept_id = as.integer(cid),
+          concept_name = cname, format = "raw"
+        )
+        state$recipe <- recipe_add_variable(state$recipe, v)
+        shiny::showNotification(
+          paste("Added", v$name, "to recipe"),
+          type = "message", duration = 2)
+      }, error = function(e) {
+        shiny::showNotification(.clean_ds_error(e), type = "error")
       })
     })
 
