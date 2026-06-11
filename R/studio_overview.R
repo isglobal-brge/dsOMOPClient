@@ -317,7 +317,7 @@
     raw_coverage <- shiny::reactiveVal(NULL)
     coverage_data <- shiny::reactiveVal(NULL)
 
-    shiny::observeEvent(input$coverage_btn, {
+    .load_coverage <- function() {
       shiny::withProgress(message = "Loading domain coverage...", value = 0.3, {
         tryCatch({
           res <- ds.omop.domain.coverage(symbol = state$symbol)
@@ -337,7 +337,13 @@
             paste("Error:", conditionMessage(e)), type = "error")
         })
       })
-    })
+    }
+    shiny::observeEvent(input$coverage_btn, { .load_coverage() })
+    # Preload once the catalog is ready, so the panel is populated on entry
+    # (no click needed).
+    shiny::observeEvent(state$tables, {
+      if (!is.null(state$tables)) .load_coverage()
+    }, once = TRUE, ignoreNULL = TRUE)
 
     .update_coverage_server <- function(session, srv_names) {
       choices <- c("All Servers" = "__all__", stats::setNames(srv_names, srv_names))
@@ -400,7 +406,7 @@
       }
     })
 
-    shiny::observeEvent(input$miss_btn, {
+    .load_miss <- function() {
       shiny::withProgress(message = "Checking missingness...", value = 0.3, {
         tryCatch({
           res <- ds.omop.missingness(input$miss_table,
@@ -420,7 +426,13 @@
             paste("Error:", conditionMessage(e)), type = "error")
         })
       })
-    })
+    }
+    shiny::observeEvent(input$miss_btn, { .load_miss() })
+    # Preload once the table dropdown is auto-filled (mirrors Domain Coverage),
+    # so the panel is populated on entry (no click needed).
+    shiny::observeEvent(input$miss_table, {
+      if (!is.null(input$miss_table) && nzchar(input$miss_table)) .load_miss()
+    }, once = TRUE, ignoreNULL = TRUE)
 
     .update_miss_server <- function(session, srv_names) {
       choices <- c("All Servers" = "__all__", stats::setNames(srv_names, srv_names))
