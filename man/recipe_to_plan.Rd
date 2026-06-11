@@ -19,7 +19,8 @@ population-level filters to cohort specifications, groups variables by
 output and table, selects the appropriate plan builder (person_level,
 features, events, survival, intervals) for each output type, and attaches
 row-level filter trees.
-
+}
+\details{
 Recipes are the recommended interface for ordinary analysis code. Plans are
 retained as an explicit lower-level contract so advanced users, the Shiny
 builder, tests, and the server can inspect the exact payload before it is

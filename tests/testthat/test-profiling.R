@@ -44,6 +44,36 @@ test_that("ds.omop.value.counts execute=FALSE returns dsomop_result", {
   expect_true(grepl("ds.omop.value.counts", result$meta$call_code))
 })
 
+test_that("ds.omop.column.stats accepts a concept_id and plumbs it through", {
+  args <- formals(ds.omop.column.stats)
+  expect_true("concept_id" %in% names(args))
+  expect_null(args$concept_id)
+
+  res_all <- ds.omop.column.stats("measurement", "value_as_number",
+                                  execute = FALSE)
+  expect_false(grepl("concept_id", res_all$meta$call_code))
+
+  res_one <- ds.omop.column.stats("measurement", "value_as_number",
+                                  concept_id = 3004410, execute = FALSE)
+  expect_s3_class(res_one, "dsomop_result")
+  expect_true(grepl("concept_id = 3004410", res_one$meta$call_code))
+})
+
+test_that("ds.omop.value.counts accepts a concept_id and plumbs it through", {
+  args <- formals(ds.omop.value.counts)
+  expect_true("concept_id" %in% names(args))
+  expect_null(args$concept_id)
+
+  res_all <- ds.omop.value.counts("measurement", "value_as_concept_id",
+                                  execute = FALSE)
+  expect_false(grepl("concept_id = ", res_all$meta$call_code))
+
+  res_one <- ds.omop.value.counts("measurement", "value_as_concept_id",
+                                  concept_id = 3004410, execute = FALSE)
+  expect_s3_class(res_one, "dsomop_result")
+  expect_true(grepl("concept_id = 3004410", res_one$meta$call_code))
+})
+
 test_that("all profiling functions have scope parameter", {
   fns <- list(
     ds.omop.table.stats,

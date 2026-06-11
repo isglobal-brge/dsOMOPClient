@@ -29,5 +29,5 @@ preview <- recipe_preview(recipe)
 }
 \seealso{
 \code{\link{recipe_validate}}, \code{\link{recipe_execute}},
-\code{\link{recipe_to_plan}}
+  \code{\link{recipe_to_plan}}
 }

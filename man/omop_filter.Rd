@@ -20,9 +20,9 @@
 \usage{
 omop_filter(
   type = c("sex", "age_range", "age_group", "cohort", "has_concept", "date_range",
-    "value_threshold", "concept_set", "min_count", "top_n", "dedup", "custom",
-    "not_has_concept", "concept_count", "prior_observation", "followup", "visit_count",
-    "has_measurement", "missing_measurement"),
+    "concept_set", "min_count", "top_n", "dedup", "custom", "not_has_concept",
+    "concept_count", "prior_observation", "followup", "visit_count", "has_measurement",
+    "missing_measurement", "value_bin"),
   level = c("population", "row", "output"),
   params = list(),
   label = NULL
@@ -75,7 +75,7 @@ omop_filter_missing_measurement(concept_id)
 \arguments{
 \item{type}{Character; filter type. One of \code{"sex"}, \code{"age_range"},
 \code{"age_group"}, \code{"cohort"}, \code{"has_concept"},
-\code{"date_range"}, \code{"value_threshold"}, \code{"concept_set"},
+\code{"date_range"}, \code{"concept_set"},
 \code{"min_count"}, \code{"top_n"}, \code{"dedup"}, \code{"custom"}.}
 
 \item{level}{Character; \code{"population"}, \code{"row"}, or \code{"output"}.}
@@ -98,7 +98,8 @@ omop_filter_missing_measurement(concept_id)
 \item{cohort_definition_id}{Integer; existing OMOP cohort_definition_id to
 require for membership.}
 
-\item{concept_id}{Integer; measurement concept ID to check absence of}
+\item{concept_id}{Integer scalar or vector; measurement concept ID(s) to
+check absence of (a vector requires all of them to be absent)}
 
 \item{table}{Character; which OMOP table to check}
 
@@ -122,7 +123,8 @@ require for membership.}
 
 \item{min_days}{Integer; minimum days of followup}
 
-\item{visit_concept_id}{Integer or NULL; visit type filter}
+\item{visit_concept_id}{Integer scalar or vector, or NULL; visit type
+filter (a vector counts visits of any of the given types)}
 
 \item{min_value}{Numeric or NULL; minimum value}
 
@@ -143,9 +145,8 @@ transformations). Filters are added to a recipe via
 \details{
 Convenience constructors are provided for common filter types:
 \code{\link{omop_filter_sex}}, \code{\link{omop_filter_age}},
-\code{\link{omop_filter_age_group}}, \code{\link{omop_filter_cohort}},
-\code{\link{omop_filter_has_concept}}, \code{\link{omop_filter_date_range}},
-\code{\link{omop_filter_value}}.
+\code{\link{omop_filter_age_group}}, \code{\link{omop_filter_has_concept}},
+\code{\link{omop_filter_date_range}}, \code{\link{omop_filter_value}}.
 }
 \examples{
 \dontrun{

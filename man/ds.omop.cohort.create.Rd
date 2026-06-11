@@ -39,8 +39,12 @@ was initialised (default: \code{"omop"}).}
 connections stored in the active session are used.}
 }
 \value{
-Invisibly; the server-side symbol name for the created cohort
-  table (character). Assigned via \code{DSI::datashield.assign.expr}.
+Invisibly; a \code{dsomop_cohort_handle} object carrying the
+  deterministic server-side cohort TABLE name (e.g.
+  \code{"dsomop_cohort_1"}) for a temporary cohort, or \code{NULL} for a
+  persistent cohort. The table is assigned server-side via
+  \code{DSI::datashield.assign.expr}. Pass the returned handle straight
+  into \code{ds.omop.cohort.combine()}.
 }
 \description{
 Creates a cohort definition on each connected server based on the provided
@@ -52,11 +56,13 @@ entry.
 }
 \examples{
 \dontrun{
-ds.omop.cohort.create(
+diabetes <- ds.omop.cohort.create(
   spec = list(type = "event",
               concept_set = c(201820, 201826)),
   cohort_id = 1,
   name = "Type 2 Diabetes"
 )
+# The returned handle feeds directly into ds.omop.cohort.combine():
+# ds.omop.cohort.combine(op = "union", cohort_a = diabetes, cohort_b = ...)
 }
 }

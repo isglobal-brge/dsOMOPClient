@@ -22,6 +22,5 @@ recipe <- recipe_import_yaml("my_recipe.yml")
 }
 }
 \seealso{
-\code{\link{recipe_export_yaml}}, \code{\link{recipe_load}},
-\code{\link{recipe_import_json}}
+\code{\link{recipe_export_yaml}}, \code{\link{recipe_import_json}}
 }

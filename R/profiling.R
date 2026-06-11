@@ -93,6 +93,11 @@ ds.omop.table.stats <- function(table,
 #'   \code{"condition_occurrence"}).
 #' @param column Character; the column name to profile (e.g.,
 #'   \code{"condition_start_date"}, \code{"value_as_number"}).
+#' @param concept_id Integer or NULL; optional concept ID to restrict
+#'   rows to a single concept of the table before computing the column
+#'   statistics (e.g., \code{value_as_number} for one measurement
+#'   concept). Default: NULL for all rows. The server applies the same
+#'   disclosure controls to the concept-filtered population.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #' @param pooling_policy Character; \code{"strict"} (default) or
 #'   \code{"pooled_only_ok"}.
@@ -109,7 +114,7 @@ ds.omop.table.stats <- function(table,
 #' col_info$per_site$server1
 #' }
 #' @export
-ds.omop.column.stats <- function(table, column,
+ds.omop.column.stats <- function(table, column, concept_id = NULL,
                                  scope = c("per_site", "pooled"),
                                  pooling_policy = "strict",
                                  symbol = "omop",
@@ -118,7 +123,7 @@ ds.omop.column.stats <- function(table, column,
   scope <- match.arg(scope)
 
   code <- .build_code("ds.omop.column.stats",
-    table = table, column = column,
+    table = table, column = column, concept_id = concept_id,
     scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -133,7 +138,7 @@ ds.omop.column.stats <- function(table, column,
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopColumnStatsDS", session$res_symbol,
-                table, column)
+                table, column, concept_id = concept_id)
   )
 
   ds_errors <- attr(raw, "ds_errors")
@@ -318,6 +323,11 @@ ds.omop.missingness <- function(table, columns = NULL,
 #'   (e.g., \code{"condition_type_concept_id"}).
 #' @param top_n Integer; the number of most frequent values to return
 #'   (default: 20).
+#' @param concept_id Integer or NULL; optional concept ID to restrict
+#'   rows to a single concept of the table before counting values (e.g.,
+#'   the \code{value_as_concept_id} categories for one measurement
+#'   concept). Default: NULL for all rows. The server applies the same
+#'   disclosure controls to the concept-filtered population.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #' @param pooling_policy Character; \code{"strict"} (default) or
 #'   \code{"pooled_only_ok"}.
@@ -337,6 +347,7 @@ ds.omop.missingness <- function(table, columns = NULL,
 #' }
 #' @export
 ds.omop.value.counts <- function(table, column, top_n = 20,
+                                 concept_id = NULL,
                                  scope = c("per_site", "pooled"),
                                  pooling_policy = "strict",
                                  symbol = "omop",
@@ -346,7 +357,7 @@ ds.omop.value.counts <- function(table, column, top_n = 20,
 
   code <- .build_code("ds.omop.value.counts",
     table = table, column = column, top_n = top_n,
-    scope = scope, symbol = symbol)
+    concept_id = concept_id, scope = scope, symbol = symbol)
 
   if (!execute) {
     return(dsomop_result(
@@ -360,7 +371,8 @@ ds.omop.value.counts <- function(table, column, top_n = 20,
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopValueCountsDS", session$res_symbol,
-                table, column, as.integer(top_n))
+                table, column, as.integer(top_n),
+                concept_id = concept_id)
   )
 
   ds_errors <- attr(raw, "ds_errors")

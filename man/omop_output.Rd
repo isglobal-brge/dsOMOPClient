@@ -7,7 +7,7 @@
 omop_output(
   name = "output_1",
   type = c("wide", "long", "features", "survival", "intervals", "baseline",
-    "joined_long", "covariates_sparse"),
+    "covariates_sparse"),
   variables = NULL,
   population_id = "base",
   options = list(),
@@ -19,7 +19,9 @@ omop_output(
 
 \item{type}{Character; output layout type. One of \code{"wide"},
 \code{"long"}, \code{"features"}, \code{"survival"}, \code{"intervals"},
-\code{"baseline"}, \code{"joined_long"}, \code{"covariates_sparse"}.}
+\code{"baseline"}, \code{"covariates_sparse"}. A \code{"long"} output that
+spans multiple source tables always splits into one per-table output
+(named \code{<name>_<table>}); there is no single cross-table joined frame.}
 
 \item{variables}{Character vector or \code{NULL}; variable names to include
 (\code{NULL} means all variables in the recipe).}

@@ -13,8 +13,8 @@ recipe_export_yaml(recipe, file = NULL)
 returns the YAML string directly.}
 }
 \value{
-If \code{file} is \code{NULL}, returns a YAML string. Otherwise writes to
-\code{file} and returns the file path invisibly.
+If \code{file} is \code{NULL}, returns a YAML string. Otherwise
+  writes to \code{file} and returns the file path invisibly.
 }
 \description{
 Serializes the same portable recipe representation as
@@ -27,6 +27,5 @@ recipe_export_yaml(recipe, file = "my_recipe.yml")
 }
 }
 \seealso{
-\code{\link{recipe_import_yaml}}, \code{\link{recipe_save}},
-\code{\link{recipe_export_json}}
+\code{\link{recipe_import_yaml}}, \code{\link{recipe_export_json}}
 }

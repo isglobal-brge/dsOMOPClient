@@ -11,7 +11,12 @@ ds.omop.plan.person_level(plan, tables, name = "person_data")
 
 \item{tables}{Named list; each element maps a table name to a
 character vector of column names to include, e.g.
-\code{list(person = c("gender_concept_id"), visit_occurrence = c("visit_concept_id"))}.}
+\code{list(person = c("gender_concept_id"), visit_occurrence = c("visit_concept_id"))}.
+Each column vector may be \emph{named} to rename columns in the output:
+\code{c(sex = "gender_concept_id", birth_year = "year_of_birth")} yields
+output columns \code{sex} and \code{birth_year}. Unnamed entries keep
+their source name. Identifier columns cannot be renamed (they are
+stripped server-side regardless).}
 
 \item{name}{Character; output name used as a key in the plan's
 outputs list and as the default symbol name on the server.}
@@ -35,6 +40,13 @@ plan <- ds.omop.plan.person_level(plan,
     person = c("gender_concept_id", "year_of_birth"),
     visit_occurrence = c("visit_concept_id", "visit_type_concept_id")
   ),
+  name = "demographics"
+)
+
+# Rename columns at request time with a named vector
+plan <- ds.omop.plan.person_level(plan,
+  tables = list(person = c(sex = "gender_concept_id",
+                           birth_year = "year_of_birth")),
   name = "demographics"
 )
 }

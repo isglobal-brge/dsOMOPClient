@@ -8,6 +8,7 @@ ds.omop.value.counts(
   table,
   column,
   top_n = 20,
+  concept_id = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",
@@ -24,6 +25,12 @@ ds.omop.value.counts(
 
 \item{top_n}{Integer; the number of most frequent values to return
 (default: 20).}
+
+\item{concept_id}{Integer or NULL; optional concept ID to restrict
+rows to a single concept of the table before counting values (e.g.,
+the \code{value_as_concept_id} categories for one measurement
+concept). Default: NULL for all rows. The server applies the same
+disclosure controls to the concept-filtered population.}
 
 \item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 

@@ -26,5 +26,5 @@ recipe <- recipe_import_json('{"version":"2.0","populations":{...}}')
 }
 }
 \seealso{
-\code{\link{recipe_export_json}}, \code{\link{recipe_load}}
+\code{\link{recipe_export_json}}
 }

@@ -25,5 +25,5 @@ recipe <- recipe_load("analysis_recipe.yml")
 }
 \seealso{
 \code{\link{recipe_save}}, \code{\link{recipe_import_json}},
-\code{\link{recipe_import_yaml}}
+  \code{\link{recipe_import_yaml}}
 }

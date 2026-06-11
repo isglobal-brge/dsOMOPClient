@@ -255,7 +255,6 @@
             choices = c("Wide (one row/person)" = "wide",
                         "Baseline (person table)" = "baseline",
                         "Long (events)" = "long",
-                        "Joined Long (multi-table)" = "joined_long",
                         "Features (sparse)" = "features",
                         "Covariates Sparse" = "covariates_sparse",
                         "Survival" = "survival",

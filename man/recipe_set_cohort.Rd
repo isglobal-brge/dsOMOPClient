@@ -29,5 +29,5 @@ plan <- recipe_to_plan(recipe)
 }
 \seealso{
 \code{\link{omop_population}}, \code{\link{recipe_to_plan}},
-\code{\link{ds.omop.plan.cohort}}
+  \code{\link{ds.omop.plan.cohort}}
 }
