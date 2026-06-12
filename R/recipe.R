@@ -3170,6 +3170,59 @@ recipe_load <- function(file) {
   fmt
 }
 
+# --- Preview schema helpers ---
+
+#' Map a variable format to its preview R type
+#' @keywords internal
+.schema_r_type <- function(format, source_type = NULL) {
+  format <- format %||% "raw"
+  factor_fmts  <- c("binary", "sex_mf", "abnormal_high", "abnormal_low",
+                    "binned")
+  integer_fmts <- c("count", "n_distinct", "gap_max", "gap_mean",
+                    "charlson", "chads2", "chadsvasc", "dcsi", "hfrs",
+                    "demo_missingness")
+  numeric_fmts <- c("mean", "min", "max", "sum", "sd", "cv", "slope",
+                    "first_value", "last_value",
+                    "age", "obs_duration", "drug_duration", "time_since",
+                    "prior_obs", "followup", "duration_sum")
+  if (format %in% factor_fmts)  return("factor")
+  if (format %in% integer_fmts) return("integer")
+  if (format %in% numeric_fmts) return("numeric")
+  if (identical(format, "raw")) {
+    st <- source_type %||% "auto"
+    return(switch(st,
+      numeric = "numeric", integer = "integer",
+      boolean = "logical", date = "Date",
+      categorical = , character = "character",
+      "character"))   # auto / unknown -> character
+  }
+  "character"
+}
+
+#' Render a variable time_window as a preview string
+#' @keywords internal
+.schema_time_window <- function(tw) {
+  if (is.null(tw)) return("all time")
+  start <- tw$start; end <- tw$end
+  rel   <- tw$relative_to %||% tw$rel %||% "index"
+  if (is.null(start) && is.null(end)) return("all time")
+  paste0("[", start %||% "-Inf", ",", end %||% "Inf", "] d rel ", rel)
+}
+
+#' Resolve the output column names a variable expands to
+#' @keywords internal
+.schema_expand_names <- function(v) {
+  sn <- v[[".suffix_names"]] %||% v[["suffix_names"]]
+  if (!is.null(sn) && length(sn) > 0) return(as.character(sn))
+  n  <- v$n_values %||% v$n_cols
+  if (!is.null(n) && is.numeric(n) && n > 1) {
+    return(.suffix_names(v$name, as.integer(n),
+                         mode = v$suffix_mode %||% "index",
+                         labels = v$concept_names))
+  }
+  v$name
+}
+
 # --- Preview schema ---
 
 #' Preview the output schema for a recipe
@@ -3195,6 +3248,13 @@ recipe_preview_schema <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
 
+  empty_schema <- function() data.frame(
+    output = character(0), column = character(0), source = character(0),
+    concept = character(0), concept_name = character(0),
+    type = character(0), format = character(0), r_type = character(0),
+    time_window = character(0), stringsAsFactors = FALSE
+  )
+
   schemas <- list()
   for (out_name in names(recipe$outputs)) {
     out <- recipe$outputs[[out_name]]
@@ -3202,33 +3262,46 @@ recipe_preview_schema <- function(recipe) {
     vars <- recipe$variables[var_names]
     vars <- Filter(Negate(is.null), vars)
 
+    # Implicit person_id join-key row, pinned first per output.
+    pid_row <- data.frame(
+      output = out_name, column = "person_id", source = "person.person_id",
+      concept = "", concept_name = "", type = "integer", format = "id",
+      r_type = "integer", time_window = "all time", stringsAsFactors = FALSE
+    )
+
     rows <- lapply(vars, function(v) {
+      col_names <- .schema_expand_names(v)
       data.frame(
-        output    = out_name,
-        column    = v$name,
-        source    = paste0(v$table, ".", v$column %||% "*"),
-        concept   = if (!is.null(v$concept_id)) as.character(v$concept_id) else "",
-        type      = v$type,
-        format    = v$format,
+        output       = out_name,
+        column       = col_names,
+        source       = paste0(v$table, ".", v$column %||% "*"),
+        concept      = if (!is.null(v$concept_id)) as.character(v$concept_id) else "",
+        concept_name = v$concept_name %||% "",
+        type         = v$type,
+        format       = v$format,
+        r_type       = .schema_r_type(v$format, v$type),
+        time_window  = .schema_time_window(v$time_window),
+        .table       = v$table,   # per-row table provenance (dropped below)
         stringsAsFactors = FALSE
       )
     })
 
-    if (length(rows) > 0) {
-      schema <- do.call(rbind, rows)
-    } else {
-      schema <- data.frame(
-        output = character(0), column = character(0),
-        source = character(0), concept = character(0),
-        type = character(0), format = character(0),
-        stringsAsFactors = FALSE
-      )
-    }
+    body <- if (length(rows) > 0) do.call(rbind, rows) else
+      cbind(empty_schema(), .table = character(0))
+    schema <- rbind(cbind(pid_row, .table = "person"), body)
 
     tables_used <- unique(vapply(vars, function(v) v$table, character(1)))
-    attr(schema, "join_key") <- "person_id"
-    attr(schema, "tables") <- tables_used
-    attr(schema, "output_type") <- out$type
+
+    # For long outputs spanning multiple tables, mark the per-row table split
+    # (one body row per expanded column already carries its source table).
+    if (identical(out$type, "long") && length(tables_used) > 1) {
+      schema$table_split <- schema$.table
+    }
+    schema$.table <- NULL
+
+    attr(schema, "join_key")      <- "person_id"
+    attr(schema, "tables")        <- tables_used
+    attr(schema, "output_type")   <- out$type
     attr(schema, "population_id") <- out$population_id
 
     schemas[[out_name]] <- schema
@@ -3283,6 +3356,267 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
   ds.omop.plan.validate(recipe_to_plan(recipe), symbol = symbol, conns = conns)
+}
+
+# Formats that are computed from the person table (no concept extraction), so
+# rules keyed on concept_id (e.g. concept_zero) must skip them.
+.lint_person_derived_fmts <- c(
+  "age", "sex_mf", "obs_duration", "drug_duration",
+  "prior_obs", "followup", "demo_missingness",
+  "charlson", "chads2", "chadsvasc", "dcsi", "hfrs"
+)
+
+# Aggregate formats that pull a numeric value column; flagged when value_source
+# is unset (the server then silently defaults to value_as_number).
+.lint_value_source_fmts <- c(
+  "mean", "min", "max", "sum", "sd", "cv", "slope",
+  "first_value", "last_value"
+)
+
+# Domains where a categorical/factor representation risks high cardinality.
+.lint_highcard_tables <- c(
+  "condition_occurrence", "drug_exposure", "measurement",
+  "observation", "procedure_occurrence"
+)
+
+#' One-row lint result (keeps the 4-column contract in one place)
+#' @keywords internal
+.lint_row <- function(severity, code, message, locus) {
+  data.frame(
+    severity = severity, code = code, message = message, locus = locus,
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Lint a recipe for common authoring mistakes (pure client-side)
+#'
+#' Walks an \code{omop_recipe} and returns a tidy report of problems without
+#' contacting any server. The first and most important check is whether the
+#' recipe even compiles: \code{\link{recipe_to_plan}} is run inside
+#' \code{tryCatch} and any compile error becomes the \code{no_compile} lint.
+#' Remaining rules inspect outputs, variables, and population filters for
+#' structural and disclosure-safety issues that would otherwise surface only at
+#' execution time on the server.
+#'
+#' Severities are \code{"ERROR"} (will fail), \code{"WARNING"} (likely rejected
+#' or wrong), and \code{"INFO"} (advisory). Rules:
+#' \describe{
+#'   \item{no_compile (ERROR)}{\code{recipe_to_plan()} throws.}
+#'   \item{empty_output (ERROR)}{an output resolves to zero variables.}
+#'   \item{dup_output (ERROR)}{duplicate output names.}
+#'   \item{concept_zero (ERROR)}{a non-derived variable has an unmapped
+#'     \code{concept_id} (0 or NA).}
+#'   \item{concept_unnamed (WARNING)}{\code{concept_id} present but
+#'     \code{concept_name} missing.}
+#'   \item{age_no_index (WARNING)}{\code{format = "age"} with index reference
+#'     but the base population has neither a cohort nor a date filter.}
+#'   \item{narrow_filter (WARNING)}{population \code{age_range} width < 5 years
+#'     or \code{date_range} width < 30 days (server rejects).}
+#'   \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column with
+#'     \code{factor_concepts = TRUE}, or a categorical format on a
+#'     high-cardinality domain.}
+#'   \item{window_inverted (WARNING)}{a variable \code{time_window} with
+#'     \code{start > end}.}
+#'   \item{long_split (INFO)}{a \code{"long"} output spanning > 1 table.}
+#'   \item{no_value_source (INFO)}{an aggregate format with no
+#'     \code{value_source}.}
+#' }
+#' Edge cases: a \code{NULL} recipe returns a single \code{empty_recipe} info
+#' row; a recipe with no outputs adds a \code{no_output} warning.
+#'
+#' @param recipe An \code{omop_recipe} object, or \code{NULL}.
+#' @return A \code{data.frame} with columns \code{severity}, \code{code},
+#'   \code{message}, \code{locus} (zero rows if the recipe is clean).
+#' @examples
+#' \dontrun{
+#' recipe <- omop_recipe()
+#' recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
+#' recipe_lint(recipe)
+#' }
+#' @seealso \code{\link{recipe_to_plan}}, \code{\link{recipe_validate}}
+#' @export
+recipe_lint <- function(recipe) {
+  empty <- .lint_row(character(0), character(0), character(0), character(0))
+
+  if (is.null(recipe)) {
+    return(.lint_row("INFO", "empty_recipe", "Recipe is NULL.", "recipe"))
+  }
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+
+  rows <- list()
+  add <- function(severity, code, message, locus) {
+    rows[[length(rows) + 1L]] <<- .lint_row(severity, code, message, locus)
+  }
+
+  # ERROR no_compile: the compile error IS the first lint.
+  compile_err <- tryCatch({
+    recipe_to_plan(recipe)
+    NULL
+  }, error = function(e) conditionMessage(e))
+  if (!is.null(compile_err)) {
+    add("ERROR", "no_compile",
+        paste0("recipe_to_plan() failed: ", compile_err), "recipe")
+  }
+
+  outputs <- recipe$outputs %||% list()
+  vars <- recipe$variables %||% list()
+
+  # WARNING no_output: recipe with zero outputs.
+  if (length(outputs) == 0) {
+    add("WARNING", "no_output", "Recipe has no outputs.", "outputs")
+  }
+
+  # ERROR dup_output: duplicate output names.
+  out_names <- names(outputs)
+  if (length(out_names) > 0) {
+    for (d in unique(out_names[duplicated(out_names)])) {
+      add("ERROR", "dup_output",
+          paste0("Duplicate output name '", d, "'."),
+          paste0("outputs$", d))
+    }
+  }
+
+  # Per-output: empty_output + long_split.
+  for (onm in out_names) {
+    out <- outputs[[onm]]
+    resolved <- out$variables %||% names(vars)
+    resolved_vars <- Filter(Negate(is.null), vars[resolved])
+
+    if (length(resolved_vars) == 0) {
+      add("ERROR", "empty_output",
+          paste0("Output '", onm, "' resolves to zero variables."),
+          paste0("outputs$", onm))
+    }
+
+    if (identical(out$type, "long")) {
+      tables <- vapply(resolved_vars,
+                       function(v) v$table %||% NA_character_, character(1))
+      tables <- unique(tables[!is.na(tables)])
+      if (length(tables) > 1) {
+        add("INFO", "long_split",
+            paste0("Long output '", onm, "' spans ", length(tables),
+                   " tables; will split into ", onm, "_<table>."),
+            paste0("outputs$", onm))
+      }
+    }
+  }
+
+  factor_concepts <- isTRUE((recipe$options %||% list())$factor_concepts)
+
+  # Per-variable checks.
+  for (vnm in names(vars)) {
+    v <- vars[[vnm]]
+    fmt <- v$format %||% "raw"
+    is_person_derived <- fmt %in% .lint_person_derived_fmts
+
+    # ERROR concept_zero: unmapped concept (non-person-derived only).
+    if (!is_person_derived) {
+      cid <- v$concept_id
+      if (!is.null(cid) && (is.na(cid) || cid == 0)) {
+        add("ERROR", "concept_zero",
+            paste0("Variable '", vnm, "' has unmapped concept_id (",
+                   if (is.na(cid)) "NA" else cid, ")."),
+            paste0("variables$", vnm))
+      }
+    }
+
+    # WARNING concept_unnamed: concept present but no concept_name.
+    if (!is.null(v$concept_id) &&
+        (is.null(v$concept_name) || !nzchar(v$concept_name))) {
+      add("WARNING", "concept_unnamed",
+          paste0("Variable '", vnm, "' has concept_id ", v$concept_id,
+                 " but no concept_name."),
+          paste0("variables$", vnm))
+    }
+
+    # WARNING window_inverted: time_window start > end.
+    tw <- v$time_window
+    if (!is.null(tw) && !is.null(tw$start) && !is.null(tw$end) &&
+        tw$start > tw$end) {
+      add("WARNING", "window_inverted",
+          paste0("Variable '", vnm, "' time_window start (", tw$start,
+                 ") > end (", tw$end, ")."),
+          paste0("variables$", vnm))
+    }
+
+    # INFO no_value_source: aggregate format without a value_source.
+    if (fmt %in% .lint_value_source_fmts && is.null(v$value_source)) {
+      add("INFO", "no_value_source",
+          paste0("Variable '", vnm, "' format '", fmt,
+                 "' has no value_source (server defaults to value_as_number)."),
+          paste0("variables$", vnm))
+    }
+
+    # WARNING highcard_factor: raw _concept_id column with factor_concepts=TRUE,
+    # or a categorical format on a high-cardinality domain.
+    raw_concept_col <- !is.null(v$column) && grepl("_concept_id$", v$column)
+    if (raw_concept_col && factor_concepts) {
+      add("WARNING", "highcard_factor",
+          paste0("Variable '", vnm, "' is a raw _concept_id column with ",
+                 "factor_concepts=TRUE (>40 levels / 0.33 density risk)."),
+          paste0("variables$", vnm))
+    } else if (identical(v$type, "categorical") &&
+               (v$table %||% "") %in% .lint_highcard_tables) {
+      add("WARNING", "highcard_factor",
+          paste0("Variable '", vnm, "' is a categorical format on ",
+                 "high-cardinality domain '", v$table,
+                 "' (>40 levels / 0.33 density risk)."),
+          paste0("variables$", vnm))
+    }
+
+    # WARNING age_no_index: age relative to index but base has no anchor.
+    if (identical(fmt, "age") &&
+        identical((v$derived %||% list())$reference, "index")) {
+      base_pop <- (recipe$populations %||% list())$base
+      has_cohort <- !is.null(base_pop$cohort_definition_id)
+      all_filters <- c(.flatten_filters(recipe$filters %||% list()),
+                       .flatten_filters(base_pop$filters %||% list()))
+      has_date <- any(vapply(all_filters,
+        function(f) identical(f$type, "date_range"), logical(1)))
+      if (!has_cohort && !has_date) {
+        add("WARNING", "age_no_index",
+            paste0("Variable '", vnm, "' uses reference='index' but base ",
+                   "population has no cohort and no date filter ",
+                   "(negative-age risk)."),
+            paste0("variables$", vnm))
+      }
+    }
+  }
+
+  # WARNING narrow_filter: population filters too narrow (server rejects).
+  pop_filters <- c(
+    .flatten_filters(recipe$filters %||% list(), level = "population"),
+    .flatten_filters((recipe$populations$base$filters) %||% list(),
+                     level = "population")
+  )
+  for (f in pop_filters) {
+    if (identical(f$type, "age_range")) {
+      lo <- f$params$min; hi <- f$params$max
+      if (!is.null(lo) && !is.null(hi) && (hi - lo) < 5) {
+        add("WARNING", "narrow_filter",
+            paste0("age_range filter width (", hi - lo,
+                   ") < 5 years; server will reject."), "filters")
+      }
+    } else if (identical(f$type, "date_range")) {
+      s <- f$params$start; e <- f$params$end
+      if (!is.null(s) && !is.null(e)) {
+        dwidth <- tryCatch(
+          as.numeric(as.Date(e) - as.Date(s)),
+          error = function(err) NA_real_, warning = function(w) NA_real_)
+        if (!is.na(dwidth) && dwidth < 30) {
+          add("WARNING", "narrow_filter",
+              paste0("date_range filter width (", dwidth,
+                     " days) < 30; server will reject."), "filters")
+        }
+      }
+    }
+  }
+
+  if (length(rows) == 0) return(empty)
+  out <- do.call(rbind, rows)
+  rownames(out) <- NULL
+  out
 }
 
 #' Preview aggregate stats for a recipe (without materializing)

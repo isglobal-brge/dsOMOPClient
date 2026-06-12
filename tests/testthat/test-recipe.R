@@ -583,7 +583,9 @@ test_that("recipe_preview_schema returns schema per output", {
   expect_true("out1" %in% names(schemas))
   df <- schemas$out1
   expect_true(is.data.frame(df))
-  expect_equal(nrow(df), 2)
+  # Schema now pins an implicit person_id join-key row first (+ 2 variables).
+  expect_equal(nrow(df), 3)
+  expect_true("person_id" %in% df$column)
   expect_true("yob" %in% df$column)
   expect_true("diab" %in% df$column)
   expect_equal(attr(df, "join_key"), "person_id")
@@ -596,15 +598,18 @@ test_that("recipe_preview_schema with subset variables", {
   c <- recipe_add_output(c, omop_output(name = "out", type = "wide",
                                        variables = c("a")))
   schemas <- recipe_preview_schema(c)
-  expect_equal(nrow(schemas$out), 1)
-  expect_equal(schemas$out$column, "a")
+  # Implicit person_id row + the single subset variable "a".
+  expect_equal(nrow(schemas$out), 2)
+  expect_equal(schemas$out$column, c("person_id", "a"))
 })
 
 test_that("recipe_preview_schema empty recipe", {
   c <- omop_recipe()
   c <- recipe_add_output(c, omop_output(name = "empty_out", type = "wide"))
   schemas <- recipe_preview_schema(c)
-  expect_equal(nrow(schemas$empty_out), 0)
+  # Variable-less output still carries the implicit person_id join-key row.
+  expect_equal(nrow(schemas$empty_out), 1)
+  expect_equal(schemas$empty_out$column, "person_id")
 })
 
 # --- .sanitize_name ----------------------------------------------------------
@@ -1694,10 +1699,11 @@ test_that("recipe_preview_schema with multiple outputs", {
                                        variables = "cond"))
   schemas <- recipe_preview_schema(c)
   expect_equal(length(schemas), 2)
-  expect_equal(nrow(schemas$demo), 1)
-  expect_equal(nrow(schemas$events), 1)
-  expect_equal(schemas$demo$column, "yob")
-  expect_equal(schemas$events$column, "cond")
+  # Each output now leads with the implicit person_id join-key row.
+  expect_equal(nrow(schemas$demo), 2)
+  expect_equal(nrow(schemas$events), 2)
+  expect_equal(schemas$demo$column, c("person_id", "yob"))
+  expect_equal(schemas$events$column, c("person_id", "cond"))
 })
 
 # --- .codegen_filter / .codegen_filter_group ---------------------------------
