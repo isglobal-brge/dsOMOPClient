@@ -757,7 +757,12 @@
         N <- sum(n)
         row$count_value <- N
 
-        # Weighted mean
+        # Weighted mean. NON-DISCLOSURE INVARIANT: the server masks avg_value/
+        # stdev_value to NA for any site whose count_value < nfilter_dist
+        # (small-sample suppression). The !any(is.na(avgs)) guard therefore
+        # makes the pooled mean/SD computable ONLY when every contributing site
+        # was >= nfilter_dist, so the pooled N is itself >= nfilter_dist. Do not
+        # weaken this guard — it is what keeps pooled avg/stdev non-disclosive.
         avgs <- sub$avg_value
         row$avg_value <- if (N > 0 && !any(is.na(avgs))) {
           sum(n * avgs) / N

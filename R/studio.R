@@ -273,6 +273,19 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       session$sendCustomMessage("dsomop_ready", TRUE)
     })
 
+    # Connection keepalive. Opal R sessions AND the server-side DB connection
+    # both time out on inactivity (the cause of the Studio "wedging" after a
+    # long idle). Ping every 4 minutes (under Opal's default timeout) to keep
+    # BOTH layers warm for as long as the Studio is open. tryCatch so a
+    # transient hiccup never crashes the app.
+    shiny::observe({
+      shiny::invalidateLater(240000, session)
+      tryCatch(
+        ds.omop.keepalive(symbol = shiny::isolate(state$symbol)),
+        error = function(e) NULL
+      )
+    })
+
     # Clipboard toast is now handled entirely in JS (no round-trip needed)
 
     # Module servers
