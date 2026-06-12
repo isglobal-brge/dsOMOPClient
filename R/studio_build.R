@@ -1,6 +1,34 @@
 # Module: Studio - Recipe Builder
 # Shiny module for interactive recipe construction.
 
+#' Sanitize a filename so a working-directory write can never escape the CWD
+#'
+#' Reduces any user/derived name to its \code{basename} (which strips
+#' \code{../}, absolute paths, \code{~/} and backslash separators), collapses
+#' residual \code{..}, strips leading \code{. ~ /}, and enforces the expected
+#' extension. Verified against \code{'../../etc/passwd'}, \code{'/abs/path'},
+#' \code{'~/secret'}, \code{'..\\\\..\\\\win'}, \code{''}, \code{'/etc/passwd.json'}.
+#'
+#' @param filename Character; the proposed name.
+#' @param ext Character; required extension (without dot), or NULL.
+#' @param default Character; fallback when the name reduces to empty.
+#' @return A safe filename confined to the current directory.
+#' @keywords internal
+.sanitize_wd_filename <- function(filename, ext = NULL, default = "file") {
+  fname <- as.character(filename)[1]
+  if (is.na(fname) || !nzchar(trimws(fname))) fname <- default
+  fname <- basename(gsub("\\\\", "/", trimws(fname)))
+  fname <- gsub("\\.\\.+", ".", fname)
+  fname <- sub("^[.~/]+", "", fname)
+  if (!nzchar(fname)) fname <- default
+  if (!is.null(ext)) {
+    ext <- sub("^\\.", "", ext)
+    if (!grepl(paste0("\\.", ext, "$"), fname, ignore.case = TRUE))
+      fname <- paste0(sub("\\.[^.]*$", "", fname), ".", ext)
+  }
+  fname
+}
+
 #' Studio Recipe Builder UI
 #'
 #' @param id Character; Shiny module namespace ID.
@@ -426,6 +454,11 @@
             shiny::tagList(shiny::icon("download"), " Download"),
             class = "btn-sm btn-outline-primary flex-fill"),
           "Download this recipe as a YAML or JSON file to re-load later or share."),
+        bslib::tooltip(
+          shiny::actionButton(ns("save_wd_recipe"),
+            shiny::tagList(shiny::icon("hard-drive"), " Save to WD"),
+            class = "btn-sm btn-outline-primary flex-fill"),
+          "Write this recipe into the R working directory of the process running the Studio (useful for a local ds.omop.studio())."),
         bslib::tooltip(
           shiny::actionButton(ns("import_json_btn"),
             shiny::tagList(shiny::icon("upload"), " Load"),
@@ -1085,6 +1118,29 @@
         }
       }
     )
+
+    # Save the recipe into the R working directory of the Studio process
+    # (alternative to the browser download; only meaningful for a local launch).
+    shiny::observeEvent(input$save_wd_recipe, {
+      is_yaml <- identical(input$recipe_export_format, "yaml")
+      ext <- if (is_yaml) "yml" else "json"
+      fname <- .sanitize_wd_filename(
+        paste0("omop_recipe_", format(Sys.Date(), "%Y%m%d"), ".", ext),
+        ext = ext, default = paste0("omop_recipe.", ext))
+      path <- file.path(getwd(), fname)
+      tryCatch({
+        if (is_yaml) recipe_export_yaml(state$recipe, file = path)
+        else recipe_export_json(state$recipe, file = path)
+        shiny::showNotification(
+          shiny::HTML(paste0("Saved to <code>",
+            normalizePath(path, mustWork = FALSE),
+            "</code><br><small>Written on the machine running the Studio.</small>")),
+          type = "message", duration = 6)
+      }, error = function(e) {
+        shiny::showNotification(paste("Save failed:", conditionMessage(e)),
+                                type = "error", duration = 6)
+      })
+    })
 
     shiny::observeEvent(input$import_file, {
       shiny::req(input$import_file)
@@ -2231,6 +2287,33 @@
   })
 }
 
+# Wrap a Plan-tab output in a loading spinner when shinycssloaders is present;
+# else return the bare output (the CSS rule below still overlays a 'Building
+# plan…' spinner via Shiny's .recalculating class, so no hard dependency).
+.with_plan_spinner <- function(output) {
+  if (requireNamespace("shinycssloaders", quietly = TRUE)) {
+    shinycssloaders::withSpinner(output, type = 8, caption = "Building plan…")
+  } else {
+    output
+  }
+}
+
+# Scoped CSS fallback: while either Plan-tab output is recalculating (the
+# federated-startup window), overlay a spinner instead of showing blank.
+.plan_spinner_css <- shiny::tags$head(shiny::tags$style(shiny::HTML(
+  "#plan-spinner-scope .recalculating {
+     position: relative; min-height: 120px;
+     opacity: 0.35; transition: opacity 0.2s ease;
+   }
+   #plan-spinner-scope .recalculating::after {
+     content: 'Building plan\\2026';
+     position: absolute; top: 50%; left: 50%;
+     transform: translate(-50%, -50%); padding-left: 1.6em;
+     font-size: 0.85rem; color: #666; white-space: nowrap;
+     background: url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 50 50'><path fill='%23666' d='M25 5a20 20 0 1 0 0 40 20 20 0 0 1 0-40z'><animateTransform attributeName='transform' type='rotate' from='0 25 25' to='360 25 25' dur='0.8s' repeatCount='indefinite'/></path></svg>\") left center no-repeat;
+   }"
+)))
+
 .mod_build_plan_ui <- function(id) {
   ns <- shiny::NS(id)
   bslib::layout_sidebar(
@@ -2302,6 +2385,45 @@
       shiny::actionButton(ns("add_output"), "Add Output",
                           class = "btn-primary w-100 mt-2")
     ),
+    .plan_spinner_css,
+    shiny::div(
+      id = "plan-spinner-scope",
+      bslib::card(
+        full_screen = TRUE,
+        bslib::card_header(shiny::tagList(shiny::icon("diagram-project"),
+                                          " Plan Overview")),
+        bslib::card_body(
+          shiny::p(class = "text-muted small mb-1",
+            "What this recipe will request: cohort → extraction → derivation → output. Click a node to inspect its provenance; a dashed red border marks values that may be disclosure-suppressed."),
+          .with_plan_spinner(
+            if (requireNamespace("visNetwork", quietly = TRUE))
+              visNetwork::visNetworkOutput(ns("plan_dag"), height = "400px")
+            else
+              shiny::div(class = "alert alert-info small mb-0",
+                "Install the 'visNetwork' R package to see the plan diagram.")
+          ),
+          shiny::uiOutput(ns("plan_node_provenance"))
+        )
+      ),
+      bslib::card(
+        bslib::card_header(shiny::tagList(shiny::icon("clipboard-check"),
+                                          " Pre-Flight Check")),
+        bslib::card_body(.with_plan_spinner(shiny::uiOutput(ns("plan_lint"))))
+      )
+    ),
+    bslib::card(
+      bslib::card_header(shiny::tagList(shiny::icon("gauge-high"),
+                                        " Dry-Run Estimate")),
+      bslib::card_body(
+        shiny::div(class = "d-flex justify-content-between align-items-center mb-2",
+          shiny::actionButton(ns("run_dryrun"),
+            shiny::tagList(shiny::icon("play"), " Run estimate"),
+            class = "btn-sm btn-primary"),
+          shiny::span(class = "text-muted small",
+            "Light aggregate — not the extraction. Counts under 3 are suppressed.")),
+        shiny::uiOutput(ns("dryrun_result"))
+      )
+    ),
     bslib::card(
       full_screen = TRUE,
       bslib::card_header("Current Plan"),
@@ -2337,6 +2459,160 @@
 
 .mod_build_plan_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
+
+    # --- Pre-flight: plan DAG (reactive on state$recipe so it tracks edits) ---
+    if (requireNamespace("visNetwork", quietly = TRUE)) {
+      output$plan_dag <- visNetwork::renderVisNetwork({
+        dag <- .recipe_to_dag(state$recipe)
+        vis <- visNetwork::visNetwork(dag$nodes, dag$edges)
+        vis <- visNetwork::visHierarchicalLayout(vis, direction = "LR",
+                                                 sortMethod = "directed")
+        vis <- visNetwork::visNodes(vis, shape = "box")
+        vis <- visNetwork::visEdges(vis, arrows = "to")
+        vis <- visNetwork::visLegend(vis, useGroups = TRUE)
+        visNetwork::visEvents(vis, selectNode = paste0(
+          "function(nodes){Shiny.setInputValue('", session$ns("plan_node"),
+          "', nodes.nodes[0], {priority:'event'});}"))
+      })
+    }
+    output$plan_node_provenance <- shiny::renderUI(
+      .render_node_provenance(state$recipe, input$plan_node))
+
+    # --- Pre-flight: lint (instant, client-side; surfaces errors before Run) ---
+    output$plan_lint <- shiny::renderUI({
+      lint <- tryCatch(recipe_lint(state$recipe), error = function(e) NULL)
+      if (is.null(lint) || nrow(lint) == 0) {
+        return(shiny::div(class = "alert alert-success small mb-0",
+          shiny::icon("check"), " No issues — recipe is ready to run."))
+      }
+      sev <- list(
+        ERROR   = list(cls = "danger",  ic = "circle-xmark"),
+        WARNING = list(cls = "warning", ic = "triangle-exclamation"),
+        INFO    = list(cls = "info",    ic = "circle-info"))
+      n_err <- sum(lint$severity == "ERROR")
+      items <- lapply(seq_len(nrow(lint)), function(i) {
+        cfg <- sev[[lint$severity[i]]] %||% sev$INFO
+        shiny::div(class = paste0("alert alert-", cfg$cls, " py-1 px-2 small mb-1"),
+          shiny::icon(cfg$ic), " ",
+          shiny::tags$b(lint$locus[i]), ": ", lint$message[i])
+      })
+      shiny::tagList(
+        if (n_err > 0) shiny::div(class = "fw-bold text-danger mb-2",
+          sprintf("%d error(s) — fix before running.", n_err)),
+        items)
+    })
+
+    # --- Dry-Run Estimate (disclosure-safe; client-side banded to nearest 5) ---
+    dryrun_rv <- shiny::reactiveVal(NULL)
+
+    # Band a count CLIENT-side: the deployed server may return EXACT counts, so
+    # never trust the wire resolution. NA / sub-threshold render as the literal
+    # 'suppressed (<3)' (never 0, never blank).
+    .band5 <- function(n) {
+      if (is.null(n) || length(n) == 0 || is.na(n) || n < 3)
+        return("suppressed (<3)")
+      paste0("~", floor(n / 5) * 5)
+    }
+
+    shiny::observeEvent(input$run_dryrun, {
+      recipe <- state$recipe
+      if (length(recipe$outputs %||% list()) == 0) {
+        shiny::showNotification("Add at least one output before estimating.",
+                                type = "warning")
+        return()
+      }
+      shiny::withProgress(message = "Running dry-run estimate...", value = 0, {
+        res <- tryCatch({
+          shiny::incProgress(0.3, detail = "Cohort sizes")
+          prev <- recipe_preview(recipe, symbol = state$symbol,
+                                 conns = state$conns)
+          sites <- names(prev)
+          out_names <- names((prev[[1]]$outputs) %||% list())
+          cohort <- lapply(out_names, function(on) {
+            per_site <- vapply(sites, function(s) {
+              o <- prev[[s]]$outputs[[on]]
+              n <- NA_real_
+              if (!is.null(o$tables))
+                n <- suppressWarnings(max(vapply(o$tables,
+                  function(t) as.numeric(t$n_persons %||% NA), numeric(1)),
+                  na.rm = TRUE))
+              if (is.na(n) && !is.null(o[[on]]$n_persons))
+                n <- as.numeric(o[[on]]$n_persons)
+              if (is.infinite(n)) n <- NA_real_
+              n
+            }, numeric(1))
+            pooled <- if (all(is.na(per_site))) NA_real_ else
+              sum(per_site, na.rm = TRUE)
+            list(name = on, per_site = per_site, pooled = pooled)
+          })
+          shiny::incProgress(0.4, detail = "Concept coverage")
+          cvars <- Filter(function(v) !is.null(v$concept_id) &&
+                            !is.null(v$table), recipe$variables %||% list())
+          by_tbl <- split(cvars, vapply(cvars, function(v) v$table, character(1)))
+          coverage <- list()
+          for (tbl in names(by_tbl)) {
+            ccol <- paste0(tbl, "_concept_id")
+            pr <- tryCatch(ds.omop.concept.prevalence(tbl, ccol,
+                    metric = "persons", scope = "pooled",
+                    symbol = state$symbol, conns = state$conns),
+                    error = function(e) NULL)
+            pool <- if (!is.null(pr)) pr$pooled else NULL
+            for (v in by_tbl[[tbl]]) {
+              row <- if (!is.null(pool))
+                pool[match(as.integer(v$concept_id), pool$concept_id), ,
+                     drop = FALSE] else NULL
+              n <- if (!is.null(row) && nrow(row) == 1 &&
+                       !isTRUE(row$suppressed)) row$n_persons else NA_real_
+              coverage[[length(coverage) + 1]] <- list(
+                variable = v$name, table = tbl,
+                concept  = as.character(v$concept_id),
+                label    = v$concept_name %||% "",
+                pooled   = n)
+            }
+          }
+          shiny::incProgress(0.3)
+          list(cohort = cohort, coverage = coverage, error = NULL)
+        }, error = function(e) list(error = .clean_ds_error(e)))
+        dryrun_rv(res)
+      })
+    })
+
+    output$dryrun_result <- shiny::renderUI({
+      res <- dryrun_rv()
+      if (is.null(res)) return(shiny::p(class = "text-muted small mb-0",
+        shiny::em("Click “Run estimate” for a banded cohort/coverage preview.")))
+      if (!is.null(res$error))
+        return(shiny::div(class = "alert alert-danger small mb-0",
+          shiny::icon("triangle-exclamation"), " Dry-run failed: ", res$error))
+      cohort_ui <- lapply(res$cohort, function(co) {
+        shiny::div(class = "mb-2",
+          shiny::span(class = "fw-semibold small me-2", co$name),
+          lapply(names(co$per_site), function(s) shiny::span(
+            class = "badge rounded-pill bg-light text-dark border me-1",
+            shiny::tags$span(class = "text-muted", paste0(s, ": ")),
+            .band5(co$per_site[[s]]))),
+          shiny::span(class = "badge rounded-pill bg-primary ms-1",
+            paste0("pooled ", .band5(co$pooled))))
+      })
+      cov_rows <- lapply(res$coverage, function(cv) shiny::tags$tr(
+        shiny::tags$td(cv$variable),
+        shiny::tags$td(shiny::tags$code(cv$concept)),
+        shiny::tags$td(class = "text-muted small", cv$label),
+        shiny::tags$td(.band5(cv$pooled))))
+      shiny::tagList(
+        shiny::div(class = "fw-semibold small mb-1", "Cohort size per output"),
+        cohort_ui,
+        if (length(cov_rows) > 0) shiny::tagList(
+          shiny::hr(class = "my-2"),
+          shiny::div(class = "fw-semibold small mb-1",
+                     "Concept coverage (distinct persons)"),
+          shiny::tags$table(class = "table table-sm small mb-0",
+            shiny::tags$thead(shiny::tags$tr(
+              shiny::tags$th("Variable"), shiny::tags$th("Concept"),
+              shiny::tags$th("Name"), shiny::tags$th("Persons"))),
+            shiny::tags$tbody(cov_rows)))
+      )
+    })
 
     # Concept set display
     output$concept_set_display <- shiny::renderUI({
