@@ -275,11 +275,12 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
 
     # Connection keepalive. Opal R sessions AND the server-side DB connection
     # both time out on inactivity (the cause of the Studio "wedging" after a
-    # long idle). Ping every 4 minutes (under Opal's default timeout) to keep
-    # BOTH layers warm for as long as the Studio is open. tryCatch so a
-    # transient hiccup never crashes the app.
+    # long idle). Ping every 60s — comfortably under even an aggressive Opal
+    # R-session timeout — to keep BOTH layers warm for as long as the Studio is
+    # open. The ping is a trivial SELECT 1, so the cost is negligible. tryCatch
+    # so a transient hiccup never crashes the app.
     shiny::observe({
-      shiny::invalidateLater(240000, session)
+      shiny::invalidateLater(60000, session)
       tryCatch(
         ds.omop.keepalive(symbol = shiny::isolate(state$symbol)),
         error = function(e) NULL
