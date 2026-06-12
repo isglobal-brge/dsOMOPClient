@@ -154,9 +154,9 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
           id = "dsomop-loading",
           shiny::tags$div(class = "spinner-border text-primary",
                           style = "width:3rem;height:3rem;", role = "status"),
-          shiny::tags$div(class = "dsl-title", "Conectando con la federación…"),
+          shiny::tags$div(class = "dsl-title", "Connecting to the federation…"),
           shiny::tags$div(class = "dsl-sub",
-            "Cargando catálogo y estadísticas de los servidores")
+            "Loading catalogue and server statistics")
         ),
         shiny::tags$script(shiny::HTML("
           (function(){
@@ -247,10 +247,15 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       plan_outputs = list(),
       script_lines = character(0),
       scope = "pooled",
-      pooling_policy = "strict",
+      pooling_policy = "pooled_only_ok",
       server_names = character(0),
       selected_servers = character(0),
-      history = list()
+      history = list(),
+      # Session-scoped memoisation cache for federated query results. The
+      # federation data is static for the life of a Studio session, so caching
+      # by (fn, table, column/concept, scope, policy, servers) lets revisiting
+      # a tab or repeating a query return instantly without re-querying.
+      query_cache = new.env(parent = emptyenv())
     )
 
     # Load initial data on startup
@@ -1078,6 +1083,122 @@ isTRUE_vec <- function(x) {
   combined
 }
 
+# Display-data extractor with a disclosure-safe pooled fallback.
+#
+# Under scope == "pooled" with strict pooling, a value absent on ANY site is
+# suppressed (NA) and the tabs then drop those rows — which can leave the whole
+# table blank even though real per-site data exists. This wrapper detects that
+# case: when the pooled frame is empty / all-NA in `count_cols` but the per-site
+# data is not, it returns the row-bound per-site ("all") view instead and tags
+# the result with attr "pooled_fallback" = TRUE so the tab can render a banner.
+# Summing already-suppressed per-site cells is never done here (we only fall
+# back to per-site-labelled rows), so disclosure safety is preserved.
+.explore_display <- function(res, scope, selected_server = NULL,
+                             count_cols = character(0), server_col = "server") {
+  if (is.null(res)) return(NULL)
+  df <- .extract_display_data(res, scope, selected_server,
+                              server_col = server_col)
+
+  if (!identical(scope, "pooled") || !inherits(res, "dsomop_result"))
+    return(df)
+
+  # Is the pooled frame effectively empty (no rows, or all count cells NA)?
+  pooled_empty <- is.null(df) || !is.data.frame(df) || nrow(df) == 0
+  if (!pooled_empty && length(count_cols) > 0) {
+    cc <- intersect(count_cols, names(df))
+    if (length(cc) > 0) {
+      pooled_empty <- all(vapply(cc, function(c) all(is.na(df[[c]])),
+                                 logical(1)))
+    }
+  }
+  if (!pooled_empty) return(df)
+
+  # Fall back to the row-bound per-site view (real, per-site-labelled data).
+  alt <- .extract_display_data(res, "all", selected_server,
+                               server_col = server_col)
+  if (is.null(alt) || !is.data.frame(alt) || nrow(alt) == 0) return(df)
+  attr(alt, "pooled_fallback") <- TRUE
+  alt
+}
+
+# Banner shown above a results table when strict pooling suppressed every cell
+# and the tab is displaying the per-site view as a fallback (see
+# .explore_display). Tabs call this with the displayed data frame.
+.pooled_fallback_banner <- function(df) {
+  if (is.null(df) || !isTRUE(attr(df, "pooled_fallback"))) return(NULL)
+  shiny::div(class = "alert alert-warning py-2 mb-2", role = "alert",
+    shiny::icon("triangle-exclamation"),
+    shiny::strong(" Strict pooling suppressed all pooled cells "),
+    "(these values are not present on every site). Showing per-site results ",
+    "instead. Switch the sidebar Pooling Policy to ", shiny::strong("Best Effort"),
+    " or Data Scope to ", shiny::strong("Per Site"), " to pool across the ",
+    "available sites.")
+}
+
+# Session-scoped memoisation of a federated query. `state` holds the cache
+# environment; `key_parts` is a named list uniquely identifying the call
+# (function name, table, column/concept, scope, policy, ...). The selected
+# servers and the session symbol are folded into the key automatically so that
+# changing the server selection or reconnecting never returns a stale result.
+# `compute` is a zero-arg function that performs the actual (slow) query; it is
+# only invoked on a cache miss. NULL results are not cached (so a transient
+# failure can be retried). The federation data is static for the session, so
+# entries never expire.
+.cached_call <- function(state, key_parts, compute) {
+  # These reactiveValues fields are read imperatively: the caller may invoke us
+  # from a deferred session$onFlushed callback (OUTSIDE any reactive consumer),
+  # where a bare reactive read throws "Can't access reactive value ... outside
+  # of reactive consumer". isolate() makes the reads legal in both reactive and
+  # deferred contexts without taking a reactive dependency.
+  cache <- shiny::isolate(state$query_cache)
+  if (is.null(cache)) return(compute())
+  key_parts$.servers <- paste(sort(shiny::isolate(state$selected_servers) %||% character(0)),
+                              collapse = ",")
+  key_parts$.symbol <- shiny::isolate(state$symbol)
+  key <- .cache_key(key_parts)
+  if (exists(key, envir = cache, inherits = FALSE)) {
+    return(get(key, envir = cache, inherits = FALSE))
+  }
+  val <- compute()
+  if (!is.null(val)) assign(key, val, envir = cache)
+  val
+}
+
+# Run `expr` AFTER the current reactive flush completes, so any output state
+# set synchronously before this call (e.g. a result reactiveVal reset to NULL,
+# which puts a .with_spinner output into its recalculating/spinner state) is
+# painted to the client FIRST. This makes the loading spinner appear within one
+# flush (~tens of ms) instead of only after the blocking federated call
+# returns. Falls back to running inline if onFlushed is unavailable.
+.defer_after_flush <- function(session, expr) {
+  force(session)
+  # The deferred block runs inside session$onFlushed, OUTSIDE any reactive
+  # consumer, yet it reads reactiveValues (state$symbol, state$selected_servers,
+  # input$*) to build/run the query. Evaluate it inside isolate() so those reads
+  # are legal (the block is meant to run once, imperatively — not reactively).
+  fun <- function() shiny::isolate(expr)
+  if (!is.null(session) && is.function(session$onFlushed)) {
+    session$onFlushed(fun, once = TRUE)
+  } else {
+    fun()
+  }
+}
+
+# Build a deterministic cache key from a named list of scalar/short-vector
+# parts. The parts are flattened to "name=value" pairs in sorted-name order so
+# the key is stable regardless of argument order. NULLs become "name=" so that
+# concept_id = NULL and concept_id = 3027018 map to distinct keys.
+.cache_key <- function(parts) {
+  nms <- sort(names(parts))
+  flat <- vapply(nms, function(n) {
+    v <- parts[[n]]
+    sval <- if (is.null(v) || length(v) == 0) "" else
+      paste(as.character(v), collapse = "|")
+    paste0(n, "=", sval)
+  }, character(1))
+  paste0("k_", paste(flat, collapse = ";"))
+}
+
 .studio_colors <- c("#2563eb", "#059669", "#d97706", "#7c3aed", "#0891b2",
                     "#dc2626", "#65a30d", "#c026d3", "#ea580c", "#0d9488")
 
@@ -1124,6 +1245,17 @@ isTRUE_vec <- function(x) {
     shiny::h5(title),
     if (!is.null(desc)) shiny::p(desc)
   )
+}
+
+# Wrap a slow federated output in a loading spinner when shinycssloaders is
+# present; else return the bare output (no hard dependency). Mirrors the
+# .with_plan_spinner helper in studio_build.R but with a configurable caption.
+.with_spinner <- function(output, caption = "Loading…") {
+  if (requireNamespace("shinycssloaders", quietly = TRUE)) {
+    shinycssloaders::withSpinner(output, type = 8, caption = caption)
+  } else {
+    output
+  }
 }
 
 .history_add <- function(state, action) {

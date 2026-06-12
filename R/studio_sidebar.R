@@ -45,7 +45,7 @@
           shiny::radioButtons(ns("pooling_policy"), "Pooling Policy",
             choices = c("Strict" = "strict",
                         "Best Effort" = "pooled_only_ok"),
-            selected = "strict", inline = TRUE)
+            selected = "pooled_only_ok", inline = TRUE)
         )
       ),
 
