@@ -240,6 +240,13 @@ ds.omop.concept.prevalence <- function(table, concept_col = NULL,
 #' @param value_col Character; the numeric column to histogram (e.g.,
 #'   \code{"value_as_number"}).
 #' @param bins Integer; the number of histogram bins (default: 20).
+#' @param concept_id Integer or NULL; optional concept ID to restrict rows to a
+#'   single concept of the table before binning (e.g. \code{value_as_number}
+#'   for one measurement concept). Default: NULL for all rows. The server
+#'   applies the same disclosure controls to the concept-filtered population.
+#'   Requires a dsOMOP server build with histogram concept scoping; older
+#'   servers reject the argument (the Studio falls back to the box plot and
+#'   percentile table, which are concept-scoped via the quantiles aggregate).
 #' @param cohort_table Character; name of a server-side cohort temp table
 #'   for filtering, or NULL (default: NULL).
 #' @param window List with \code{start}/\code{end} date strings for
@@ -263,6 +270,7 @@ ds.omop.concept.prevalence <- function(table, concept_col = NULL,
 #' }
 #' @export
 ds.omop.value.histogram <- function(table, value_col, bins = 20L,
+                                     concept_id = NULL,
                                      cohort_table = NULL, window = NULL,
                                      scope = c("per_site", "pooled"),
                                      pooling_policy = "strict",
@@ -272,7 +280,7 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
 
   code <- .build_code("ds.omop.value.histogram",
     table = table, value_col = value_col, bins = bins,
-    cohort_table = cohort_table, window = window,
+    concept_id = concept_id, cohort_table = cohort_table, window = window,
     scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -287,14 +295,27 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
   pooled <- NULL
   warnings <- character(0)
 
+  # Only pass concept_id when set, so the unfiltered path stays byte-for-byte
+  # compatible with servers that predate histogram concept scoping (they would
+  # reject an extra concept_id = NULL argument). When a concept IS requested
+  # the call requires a server build with concept scoping.
+  .hist_call <- function(...) {
+    args <- list("omopNumericHistogramDS", session$res_symbol,
+                 table, value_col, as.integer(bins), cohort_table, window, ...)
+    if (!is.null(concept_id)) args$concept_id <- concept_id
+    do.call(call, args)
+  }
+  .range_call <- function() {
+    args <- list("omopNumericRangeDS", session$res_symbol,
+                 table, value_col, cohort_table, window)
+    if (!is.null(concept_id)) args$concept_id <- concept_id
+    do.call(call, args)
+  }
+
   if (scope == "pooled") {
     # Two-pass pooling: compute shared bin edges across servers
     # Pass 1: Get p05/p95 ranges from each server
-    range_raw <- .ds_safe_aggregate(
-      conns,
-      expr = call("omopNumericRangeDS", session$res_symbol,
-                  table, value_col, cohort_table, window)
-    )
+    range_raw <- .ds_safe_aggregate(conns, expr = .range_call())
 
     # Compute shared breaks from global p05/p95
     p05s <- vapply(range_raw, function(s) {
@@ -312,24 +333,15 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
       shared_breaks <- seq(global_p05, global_p95, length.out = as.integer(bins) + 1L)
 
       # Pass 2: Histogram with shared breaks
-      raw <- .ds_safe_aggregate(
-        conns,
-        expr = call("omopNumericHistogramDS", session$res_symbol,
-                    table, value_col, as.integer(bins),
-                    cohort_table, window, .ds_encode(shared_breaks))
-      )
+      raw <- .ds_safe_aggregate(conns,
+        expr = .hist_call(.ds_encode(shared_breaks)))
 
       pool_out <- .pool_result(raw, "histogram", pooling_policy)
       pooled <- pool_out$result
       warnings <- pool_out$warnings
     } else {
       # Fallback: single-pass (ranges are degenerate)
-      raw <- .ds_safe_aggregate(
-        conns,
-        expr = call("omopNumericHistogramDS", session$res_symbol,
-                    table, value_col, as.integer(bins),
-                    cohort_table, window)
-      )
+      raw <- .ds_safe_aggregate(conns, expr = .hist_call())
       pool_out <- .pool_result(raw, "histogram", pooling_policy)
       pooled <- pool_out$result
       warnings <- c(pool_out$warnings,
@@ -337,12 +349,7 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
     }
   } else {
     # Per-site: single pass (no pooling needed)
-    raw <- .ds_safe_aggregate(
-      conns,
-      expr = call("omopNumericHistogramDS", session$res_symbol,
-                  table, value_col, as.integer(bins),
-                  cohort_table, window)
-    )
+    raw <- .ds_safe_aggregate(conns, expr = .hist_call())
   }
 
   dsomop_result(
@@ -658,6 +665,11 @@ ds.omop.concept.drilldown <- function(table, concept_id,
 #'   summarised.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #'   Passed through to the underlying calls.
+#' @param pooling_policy Character; \code{"strict"} (default) or
+#'   \code{"pooled_only_ok"} (Best Effort). Passed through to the underlying
+#'   value-counts, column-stats and quantile calls so that, when pooled,
+#'   categories/values present on only some sites are summed across the
+#'   available sites rather than suppressed.
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
 #' @param conns DSI connection object(s) or NULL to use the session default.
 #' @return A named list with \code{table}, \code{concept_id},
@@ -681,6 +693,7 @@ ds.omop.concept.drilldown <- function(table, concept_id,
 #' @export
 ds.omop.concept.summary <- function(table, concept_id, column = NULL,
                                     scope = c("per_site", "pooled"),
+                                    pooling_policy = "strict",
                                     symbol = "omop", conns = NULL) {
   scope <- match.arg(scope)
 
@@ -705,15 +718,18 @@ ds.omop.concept.summary <- function(table, concept_id, column = NULL,
     if (grepl("_concept_id$", col)) {
       categorical[[col]] <- ds.omop.value.counts(
         table, col, concept_id = concept_id,
-        scope = scope, symbol = symbol, conns = conns)
+        scope = scope, pooling_policy = pooling_policy,
+        symbol = symbol, conns = conns)
     } else {
       numeric[[col]] <- list(
         stats = ds.omop.column.stats(
           table, col, concept_id = concept_id,
-          scope = scope, symbol = symbol, conns = conns),
+          scope = scope, pooling_policy = pooling_policy,
+          symbol = symbol, conns = conns),
         quantiles = ds.omop.value.quantiles(
           table, col, concept_id = concept_id,
-          scope = scope, symbol = symbol, conns = conns))
+          scope = scope, pooling_policy = pooling_policy,
+          symbol = symbol, conns = conns))
     }
   }
 

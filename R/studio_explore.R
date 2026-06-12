@@ -100,7 +100,8 @@
         )
       ),
       bslib::card_body(
-        shiny::uiOutput(ns("results_content")),
+        .with_spinner(shiny::uiOutput(ns("results_content")),
+                      caption = "Running query…"),
         shiny::uiOutput(ns("scope_info"))
       )
     )
@@ -111,6 +112,7 @@
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
     prevalence_data <- shiny::reactiveVal(NULL)
+    has_run <- shiny::reactiveVal(FALSE)
 
     # Populate table dropdown from state$tables
     shiny::observe({
@@ -235,18 +237,28 @@
     # Run concept prevalence
     shiny::observeEvent(input$run_btn, {
       shiny::req(input$table, input$concept_col)
+      has_run(TRUE)
 
       scope <- state$scope %||% "per_site"
       policy <- state$pooling_policy %||% "strict"
+      tbl <- input$table; ccol <- input$concept_col; metric <- input$metric
 
+      # Reset results NOW so the .with_spinner output paints its spinner in this
+      # flush; run the (blocking) federated query only after the flush.
+      prevalence_data(NULL)
+      last_result(NULL)
+      .defer_after_flush(session, {
       shiny::withProgress(message = "Fetching concept prevalence...", value = 0.3, {
         tryCatch({
-          res <- ds.omop.concept.prevalence(
-            table = input$table, concept_col = input$concept_col,
-            metric = input$metric, top_n = 99999L,
-            scope = .backend_scope(scope), pooling_policy = policy,
-            symbol = state$symbol
-          )
+          res <- .cached_call(state,
+            list(fn = "concept.prevalence", table = tbl, concept_col = ccol,
+                 metric = metric, scope = scope, policy = policy),
+            function() ds.omop.concept.prevalence(
+              table = tbl, concept_col = ccol,
+              metric = metric, top_n = 99999L,
+              scope = .backend_scope(scope), pooling_policy = policy,
+              symbol = state$symbol
+            ))
           shiny::incProgress(0.5)
           # Accumulate code for Script tab
           if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
@@ -254,23 +266,27 @@
           }
           last_result(res)
 
-          # Extract display data based on scope
-          df <- .extract_display_data(res, scope, state$selected_servers,
-                                       intersect_only = FALSE)
+          # Extract display data based on scope (with disclosure-safe pooled
+          # fallback to per-site when strict pooling suppressed everything).
+          metric_col <- if (metric == "persons") "n_persons" else "n_records"
+          df <- .explore_display(res, scope, state$selected_servers,
+                                 count_cols = metric_col)
+          fb <- isTRUE(attr(df, "pooled_fallback"))
 
           # Remove disclosure-suppressed rows (NA in count columns)
           if (is.data.frame(df) && nrow(df) > 0) {
-            metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
             if (metric_col %in% names(df)) {
               df <- df[!is.na(df[[metric_col]]), , drop = FALSE]
             }
           }
+          if (fb && is.data.frame(df)) attr(df, "pooled_fallback") <- TRUE
           prevalence_data(df)
         }, error = function(e) {
           shiny::showNotification(
             .clean_ds_error(e), type = "error"
           )
         })
+      })
       })
     })
 
@@ -280,16 +296,18 @@
       if (is.null(res)) return()
       scope <- state$scope %||% "per_site"
 
-      df <- .extract_display_data(res, scope, state$selected_servers,
-                                   intersect_only = FALSE)
+      metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
+      df <- .explore_display(res, scope, state$selected_servers,
+                             count_cols = metric_col)
+      fb <- isTRUE(attr(df, "pooled_fallback"))
 
       # Remove disclosure-suppressed rows
       if (is.data.frame(df) && nrow(df) > 0) {
-        metric_col <- if (input$metric == "persons") "n_persons" else "n_records"
         if (metric_col %in% names(df)) {
           df <- df[!is.na(df[[metric_col]]), , drop = FALSE]
         }
       }
+      if (fb && is.data.frame(df)) attr(df, "pooled_fallback") <- TRUE
       prevalence_data(df)
     }, ignoreInit = TRUE)
 
@@ -302,10 +320,23 @@
     output$results_content <- shiny::renderUI({
       df <- prevalence_data()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
-        return(.empty_state_ui("chart-simple", "No concepts found",
-          "Select a table and run the query."))
+        if (!isTRUE(has_run())) {
+          return(.empty_state_ui("chart-simple", "Ready to explore",
+            "Choose a table and a concept column, then click Run."))
+        }
+        scope <- state$scope %||% "per_site"
+        policy <- state$pooling_policy %||% "strict"
+        if (identical(scope, "pooled") && identical(policy, "strict")) {
+          return(.empty_state_ui("chart-simple", "All cells suppressed",
+            paste0("Strict pooling suppressed every concept (none present on ",
+                   "all sites). Switch the sidebar Pooling Policy to Best ",
+                   "Effort, or Data Scope to Per Site.")))
+        }
+        return(.empty_state_ui("chart-simple", "No concepts",
+          "No concepts above the disclosure threshold for this selection."))
       }
       shiny::tagList(
+        .pooled_fallback_banner(df),
         shiny::p(class = "text-muted small mb-2",
           shiny::icon("hand-pointer"),
           " Tick the checkbox in the first column to select concepts, then click +Extract or Filter."),
@@ -1815,11 +1846,12 @@
     bslib::card_body(
       shiny::conditionalPanel(
         condition = sprintf("input['%s'] == 'chart'", ns(paste0(plot_id, "_view"))),
-        plotly::plotlyOutput(ns(plot_id), height = "320px")
+        .with_spinner(plotly::plotlyOutput(ns(plot_id), height = "320px"),
+                      caption = "Running query…")
       ),
       shiny::conditionalPanel(
         condition = sprintf("input['%s'] == 'table'", ns(paste0(plot_id, "_view"))),
-        DT::DTOutput(ns(dt_id))
+        .with_spinner(DT::DTOutput(ns(dt_id)), caption = "Running query…")
       )
     )
   )
@@ -1894,8 +1926,14 @@
 #' Heatmap from a (already-suppressed) cross-tab matrix; NA cells shown blank
 #' @keywords internal
 .explore_heatmap_plot <- function(M, title = NULL) {
-  if (is.null(M) || !is.matrix(M) || length(M) == 0) {
-    return(.plotly_no_data("No cross-tab data"))
+  if (is.null(M) || !is.matrix(M) || length(M) == 0 || all(is.na(M))) {
+    # All-NA = every cell disclosure-suppressed (typical for a pooled 2-way
+    # table on a small federation). Show a placeholder instead of letting
+    # plotly fail with "Wasn't able to determine range of 'domain'".
+    msg <- if (!is.null(M) && is.matrix(M) && length(M) > 0 && all(is.na(M)))
+      "All cells suppressed under pooled — switch Data Scope to Per Site"
+      else "No cross-tab data"
+    return(.plotly_no_data(msg))
   }
   .safe_plotly({
     txt <- matrix(ifelse(is.na(M), "—", as.character(M)),
@@ -1948,8 +1986,8 @@
       shiny::selectInput(ns("column"), "Column", choices = NULL),
       .concept_picker_ui(ns("concept"), label = "Concept filter (optional)"),
       shiny::p(class = "text-muted small",
-        "Filtra por un concepto para rankear sus valores ",
-        "(p.ej. los ritmos dentro de Heart rate rhythm)."),
+        "Filter by a concept to rank its values ",
+        "(e.g. the rhythms within Heart rate rhythm)."),
       shiny::numericInput(ns("top_n"), "Top N", value = 20, min = 5, max = 200,
                           step = 5),
       shiny::actionButton(ns("run_btn"), "Run", icon = shiny::icon("play"),
@@ -1984,20 +2022,28 @@
       shiny::updateSelectInput(session, "column", choices = cols)
     }, ignoreInit = TRUE)
 
+    has_run <- shiny::reactiveVal(FALSE)
     shiny::observeEvent(input$run_btn, {
       shiny::req(input$table, input$column)
+      has_run(TRUE)
       scope <- state$scope %||% "per_site"
       policy <- state$pooling_policy %||% "strict"
       pc <- picked_concept()
       cid <- if (is.list(pc)) pc$concept_id else pc
       cid <- if (is.null(cid) || length(cid) == 0) NULL else cid
+      tbl <- input$table; col <- input$column
+      topn <- as.integer(input$top_n %||% 20)
+      res_rv(NULL)
+      .defer_after_flush(session, {
       shiny::withProgress(message = "Counting values...", value = 0.4, {
         res <- tryCatch(
-          ds.omop.value.counts(table = input$table, column = input$column,
-                               top_n = as.integer(input$top_n %||% 20),
-                               concept_id = cid,
-                               scope = .backend_scope(scope),
-                               pooling_policy = policy, symbol = state$symbol),
+          .cached_call(state,
+            list(fn = "value.counts", table = tbl, column = col, top_n = topn,
+                 concept_id = cid, scope = scope, policy = policy),
+            function() ds.omop.value.counts(table = tbl, column = col,
+                                 top_n = topn, concept_id = cid,
+                                 scope = .backend_scope(scope),
+                                 pooling_policy = policy, symbol = state$symbol)),
           error = function(e) {
             shiny::showNotification(.clean_ds_error(e), type = "error"); NULL
           })
@@ -2006,29 +2052,48 @@
         }
         res_rv(res)
       })
+      })
     })
 
     .vr_df <- shiny::reactive({
       res <- res_rv()
       if (is.null(res)) return(NULL)
-      df <- .extract_display_data(res, state$scope %||% "per_site",
-                                  state$selected_servers)
+      cnt_cols <- intersect(c("n", "count"), names(.extract_display_data(
+        res, "per_site", state$selected_servers) %||% list()))
+      df <- .explore_display(res, state$scope %||% "per_site",
+                             state$selected_servers, count_cols = cnt_cols)
       if (!is.data.frame(df) || nrow(df) == 0) return(NULL)
+      fb <- isTRUE(attr(df, "pooled_fallback"))
       # Drop suppressed rows (count NA) from the displayed/charted frame.
       cnt <- if ("n" %in% names(df)) "n" else "count"
       if (cnt %in% names(df)) df <- df[!is.na(df[[cnt]]), , drop = FALSE]
       # Prefer concept_name label when available.
       lab <- if ("concept_name" %in% names(df)) "concept_name" else "value"
       keep <- intersect(c(lab, "value", "n", "count"), names(df))
-      df[, unique(keep), drop = FALSE]
+      out <- df[, unique(keep), drop = FALSE]
+      if (fb) attr(out, "pooled_fallback") <- TRUE
+      out
     })
 
     output$header <- shiny::renderUI({
-      if (is.null(.vr_df())) {
-        return(.empty_state_ui("ranking-star", "No values ranked",
-          "Pick a table and column, then click Run."))
+      df <- .vr_df()
+      if (is.null(df)) {
+        if (!isTRUE(has_run())) {
+          return(.empty_state_ui("ranking-star", "No values ranked",
+            "Pick a table and column, then click Run."))
+        }
+        scope <- state$scope %||% "per_site"
+        policy <- state$pooling_policy %||% "strict"
+        if (identical(scope, "pooled") && identical(policy, "strict")) {
+          return(.empty_state_ui("ranking-star", "All values suppressed",
+            paste0("Strict pooling suppressed every value (none present on all ",
+                   "sites). Switch Pooling Policy to Best Effort or Data Scope ",
+                   "to Per Site.")))
+        }
+        return(.empty_state_ui("ranking-star", "No values",
+          "No values above the disclosure threshold for this selection."))
       }
-      NULL
+      .pooled_fallback_banner(df)
     })
 
     output$vr_plot <- plotly::renderPlotly({
@@ -2059,6 +2124,11 @@
       title = "Numeric Distribution", width = 280, open = "always",
       shiny::selectInput(ns("table"), "Table", choices = NULL),
       shiny::selectInput(ns("value_col"), "Numeric column", choices = NULL),
+      .concept_picker_ui(ns("concept"), label = "Concept (required)"),
+      shiny::p(class = "text-muted small",
+        "Summarising a numeric column across a whole table mixes unrelated ",
+        "variables. Pick a numeric concept such as ",
+        shiny::tags$code("Heart rate (3027018)"), " to scope the distribution."),
       shiny::numericInput(ns("bins"), "Bins", value = 20, min = 5, max = 50,
                           step = 5),
       shiny::actionButton(ns("run_btn"), "Run", icon = shiny::icon("play"),
@@ -2069,8 +2139,9 @@
     bslib::card(full_screen = TRUE,
       bslib::card_header("Distribution (box from percentiles)"),
       bslib::card_body(
-        plotly::plotlyOutput(ns("num_box_plot"), height = "260px"),
-        DT::DTOutput(ns("num_quant_dt"))
+        .with_spinner(plotly::plotlyOutput(ns("num_box_plot"), height = "260px"),
+                      caption = "Running query…"),
+        .with_spinner(DT::DTOutput(ns("num_quant_dt")), caption = "Running query…")
       ))
   )
 }
@@ -2080,6 +2151,8 @@
   shiny::moduleServer(id, function(input, output, session) {
     hist_rv <- shiny::reactiveVal(NULL)
     quant_rv <- shiny::reactiveVal(NULL)
+    has_run <- shiny::reactiveVal(FALSE)
+    picked_concept <- .concept_picker_server("concept", state)
 
     shiny::observe({
       tbls <- .get_person_tables(state$tables)
@@ -2102,21 +2175,44 @@
 
     shiny::observeEvent(input$run_btn, {
       shiny::req(input$table, input$value_col)
+      pc <- picked_concept()
+      cid <- if (is.list(pc)) pc$concept_id else pc
+      cid <- if (is.null(cid) || length(cid) == 0) NULL else as.integer(cid)
+      # A concept is REQUIRED: summarising value_as_number across the whole
+      # table mixes unrelated measurements and is meaningless.
+      if (is.null(cid)) {
+        shiny::showNotification(
+          "Pick a numeric concept first (e.g. Heart rate, 3027018).",
+          type = "warning")
+        return()
+      }
+      has_run(TRUE)
       scope <- state$scope %||% "per_site"
       policy <- state$pooling_policy %||% "strict"
+      tbl <- input$table; vcol <- input$value_col
+      bins <- as.integer(input$bins %||% 20)
+      hist_rv(NULL); quant_rv(NULL)
+      .defer_after_flush(session, {
       shiny::withProgress(message = "Computing distribution...", value = 0.4, {
         h <- tryCatch(
-          ds.omop.value.histogram(table = input$table, value_col = input$value_col,
-            bins = as.integer(input$bins %||% 20),
-            scope = .backend_scope(scope), pooling_policy = policy,
-            symbol = state$symbol),
+          .cached_call(state,
+            list(fn = "value.histogram", table = tbl, value_col = vcol,
+                 bins = bins, concept_id = cid, scope = scope, policy = policy),
+            function() ds.omop.value.histogram(table = tbl, value_col = vcol,
+              bins = bins, concept_id = cid,
+              scope = .backend_scope(scope), pooling_policy = policy,
+              symbol = state$symbol)),
           error = function(e) {
             shiny::showNotification(.clean_ds_error(e), type = "error"); NULL
           })
         q <- tryCatch(
-          ds.omop.value.quantiles(table = input$table, value_col = input$value_col,
-            scope = .backend_scope(scope), pooling_policy = policy,
-            symbol = state$symbol),
+          .cached_call(state,
+            list(fn = "value.quantiles", table = tbl, value_col = vcol,
+                 concept_id = cid, scope = scope, policy = policy),
+            function() ds.omop.value.quantiles(table = tbl, value_col = vcol,
+              concept_id = cid,
+              scope = .backend_scope(scope), pooling_policy = policy,
+              symbol = state$symbol)),
           error = function(e) NULL)
         for (r in list(h, q)) {
           if (inherits(r, "dsomop_result") && nchar(r$meta$call_code) > 0) {
@@ -2124,6 +2220,7 @@
           }
         }
         hist_rv(h); quant_rv(q)
+      })
       })
     })
 
@@ -2159,9 +2256,22 @@
     })
 
     output$header <- shiny::renderUI({
+      pc <- picked_concept()
+      cid <- if (is.list(pc)) pc$concept_id else pc
+      has_concept <- !(is.null(cid) || length(cid) == 0)
       if (is.null(.hist_df()) && is.null(.quant_df())) {
-        return(.empty_state_ui("chart-area", "No distribution computed",
-          "Pick a table and numeric column, then click Run."))
+        if (!has_concept) {
+          return(.empty_state_ui("chart-area", "Pick a numeric concept",
+            paste0("Select a numeric concept such as Heart rate (3027018) to ",
+                   "scope the distribution, then click Run. Summarising the ",
+                   "whole column would mix unrelated variables.")))
+        }
+        if (!isTRUE(has_run())) {
+          return(.empty_state_ui("chart-area", "No distribution computed",
+            "Concept selected — click Run to compute the distribution."))
+        }
+        return(.empty_state_ui("chart-area", "No distribution",
+          "No values above the disclosure threshold for this concept."))
       }
       if (identical(state$scope %||% "per_site", "pooled")) {
         return(shiny::p(class = "text-muted small mb-2",
@@ -2220,8 +2330,8 @@
       shiny::textInput(ns("col_concept_ids"), "Column concept IDs (optional)",
                        placeholder = "comma-separated"),
       shiny::p(class = "text-muted small",
-        "Filtra los ejes por conceptos (p.ej. los measurement_concept_id ",
-        "de unos antibióticos) para el antibiograma."),
+        "Filter the axes by concepts (e.g. the measurement_concept_id ",
+        "of a few antibiotics) for the antibiogram."),
       shiny::radioButtons(ns("by"), "Count",
         choices = c("Distinct persons" = "persons", "Records" = "records"),
         selected = "persons"),
@@ -2266,20 +2376,30 @@
         choices = c("(none)" = "", cols))
     }, ignoreInit = TRUE)
 
+    has_run <- shiny::reactiveVal(FALSE)
     shiny::observeEvent(input$run_btn, {
       shiny::req(input$table, input$row, input$col)
+      has_run(TRUE)
       scope <- state$scope %||% "per_site"
       policy <- state$pooling_policy %||% "strict"
       strat <- if (nzchar(input$stratify_by %||% "")) input$stratify_by else NULL
       row_cid <- .parse_ids(input$row_concept_ids %||% "")
       col_cid <- .parse_ids(input$col_concept_ids %||% "")
+      tbl <- input$table; rw <- input$row; cl <- input$col
+      by <- input$by %||% "persons"
+      res_rv(NULL)
+      .defer_after_flush(session, {
       shiny::withProgress(message = "Building cross-tab...", value = 0.4, {
         res <- tryCatch(
-          ds.omop.crosstab(table = input$table, row = input$row, col = input$col,
-            by = input$by %||% "persons", stratify_by = strat,
-            row_concept_id = row_cid, col_concept_id = col_cid,
-            scope = .backend_scope(scope), pooling_policy = policy,
-            symbol = state$symbol),
+          .cached_call(state,
+            list(fn = "crosstab", table = tbl, row = rw, col = cl, by = by,
+                 stratify_by = strat %||% "", row_cid = row_cid %||% "",
+                 col_cid = col_cid %||% "", scope = scope, policy = policy),
+            function() ds.omop.crosstab(table = tbl, row = rw, col = cl,
+              by = by, stratify_by = strat,
+              row_concept_id = row_cid, col_concept_id = col_cid,
+              scope = .backend_scope(scope), pooling_policy = policy,
+              symbol = state$symbol)),
           error = function(e) {
             shiny::showNotification(.clean_ds_error(e), type = "error"); NULL
           })
@@ -2288,25 +2408,48 @@
         }
         res_rv(res)
       })
+      })
     })
 
     # Pick the display object: pooled list when scoped pooled, else first site.
+    # When strict pooling suppressed the whole pooled matrix, fall back to the
+    # first available per-site matrix (disclosure-safe) and flag it.
     .ct_obj <- shiny::reactive({
       res <- res_rv()
       if (is.null(res)) return(NULL)
       scope <- state$scope %||% "per_site"
-      if (identical(scope, "pooled") && !is.null(res$pooled)) return(res$pooled)
       ps <- res$per_site
-      if (length(ps) == 0) return(NULL)
-      srvs <- .resolve_servers(ps, state$selected_servers)
-      ps[[if (length(srvs) > 0) srvs[1] else names(ps)[1]]]
+      .first_site <- function() {
+        if (length(ps) == 0) return(NULL)
+        srvs <- .resolve_servers(ps, state$selected_servers)
+        ps[[if (length(srvs) > 0) srvs[1] else names(ps)[1]]]
+      }
+      if (identical(scope, "pooled")) {
+        pooled <- res$pooled
+        ok <- !is.null(pooled) && is.list(pooled) &&
+          ((!is.null(pooled$counts) && any(!is.na(pooled$counts))) ||
+           isTRUE(pooled$stratified))
+        if (ok) return(pooled)
+        alt <- .first_site()
+        if (!is.null(alt)) attr(alt, "pooled_fallback") <- TRUE
+        return(alt)
+      }
+      .first_site()
     })
 
     output$header <- shiny::renderUI({
       obj <- .ct_obj()
       if (is.null(obj)) {
+        if (!isTRUE(has_run())) {
+          return(.empty_state_ui("table-cells", "No cross-tab",
+            "Pick a table and two columns, then click Run."))
+        }
         return(.empty_state_ui("table-cells", "No cross-tab",
-          "Pick a table and two columns, then click Run."))
+          "No cells above the disclosure threshold for this selection."))
+      }
+      if (isTRUE(attr(obj, "pooled_fallback"))) {
+        return(.pooled_fallback_banner(
+          structure(data.frame(), pooled_fallback = TRUE)))
       }
       if (is.list(obj) && isTRUE(obj$stratified)) {
         return(shiny::p(class = "text-muted small mb-2",
@@ -2399,11 +2542,16 @@
       shiny::req(input$table)
       scope <- state$scope %||% "per_site"
       policy <- state$pooling_policy %||% "strict"
+      tbl <- input$table
+      res_rv(NULL)
+      .defer_after_flush(session, {
       shiny::withProgress(message = "Computing missingness...", value = 0.4, {
         res <- tryCatch(
-          ds.omop.missingness(table = input$table,
-            scope = .backend_scope(scope), pooling_policy = policy,
-            symbol = state$symbol),
+          .cached_call(state,
+            list(fn = "missingness", table = tbl, scope = scope, policy = policy),
+            function() ds.omop.missingness(table = tbl,
+              scope = .backend_scope(scope), pooling_policy = policy,
+              symbol = state$symbol)),
           error = function(e) {
             shiny::showNotification(.clean_ds_error(e), type = "error"); NULL
           })
@@ -2411,6 +2559,7 @@
           state$script_lines <- c(state$script_lines, res$meta$call_code)
         }
         res_rv(res)
+      })
       })
     })
 
@@ -2518,12 +2667,15 @@
                           class = "btn-success text-white w-100 mt-1")
     ),
     shiny::uiOutput(ns("header")),
+    shiny::uiOutput(ns("no_values_msg")),
     bslib::card(full_screen = TRUE,
       bslib::card_header("Numeric value statistics (no min/max — DataSHIELD-safe)"),
-      bslib::card_body(DT::DTOutput(ns("numeric_dt")))),
+      bslib::card_body(.with_spinner(DT::DTOutput(ns("numeric_dt")),
+                                     caption = "Running query…"))),
     bslib::card(full_screen = TRUE,
       bslib::card_header("Categorical value counts"),
-      bslib::card_body(DT::DTOutput(ns("categorical_dt"))))
+      bslib::card_body(.with_spinner(DT::DTOutput(ns("categorical_dt")),
+                                     caption = "Running query…")))
   )
 }
 
@@ -2531,6 +2683,7 @@
 .mod_explore_concept_summary_server <- function(id, state, parent_session = NULL) {
   shiny::moduleServer(id, function(input, output, session) {
     res_rv <- shiny::reactiveVal(NULL)
+    value_cols <- shiny::reactiveVal(NULL)
     picked_concept <- .concept_picker_server("concept", state)
 
     shiny::observe({
@@ -2549,9 +2702,21 @@
         cn[grepl("value_as_number$|value_as_concept_id$|^quantity$|^days_supply$",
                  cn, ignore.case = TRUE)]
       }, error = function(e) character(0))
+      value_cols(cols)
       shiny::updateSelectInput(session, "value_column",
                                choices = c("(auto-detect)" = "", cols))
     }, ignoreInit = TRUE)
+
+    # Explicit guidance when the chosen table has no value columns to summarise.
+    output$no_values_msg <- shiny::renderUI({
+      vc <- value_cols()
+      if (is.null(vc) || length(vc) > 0) return(NULL)
+      shiny::div(class = "alert alert-info py-2",
+        shiny::icon("circle-info"),
+        " This table has no value columns (value_as_number / ",
+        "value_as_concept_id) to summarise. Concept Summary applies to ",
+        "tables such as measurement and observation.")
+    })
 
     shiny::observeEvent(input$run_btn, {
       shiny::req(input$table)
@@ -2562,16 +2727,29 @@
         return()
       }
       col <- if (nzchar(input$value_column %||% "")) input$value_column else NULL
+      tbl <- input$table
+      # Honor the sidebar scope/policy instead of hardcoding pooled (which made
+      # categorical show only all-site-common values and numeric quantiles NULL).
+      scope <- state$scope %||% "per_site"
+      policy <- state$pooling_policy %||% "strict"
+      res_rv(NULL)
+      .defer_after_flush(session, {
       shiny::withProgress(message = "Querying concept summary…", value = 0.4, {
         res <- tryCatch(
-          ds.omop.concept.summary(table = input$table, concept_id = cid,
-                                  column = col, scope = "pooled",
-                                  symbol = state$symbol),
+          .cached_call(state,
+            list(fn = "concept.summary", table = tbl, concept_id = cid,
+                 column = col %||% "", scope = scope, policy = policy),
+            function() ds.omop.concept.summary(table = tbl, concept_id = cid,
+                                    column = col,
+                                    scope = .backend_scope(scope),
+                                    pooling_policy = policy,
+                                    symbol = state$symbol)),
           error = function(e) {
             shiny::showNotification(.clean_ds_error(e), type = "error")
             NULL
           })
         res_rv(res)
+      })
       })
     })
 
@@ -2613,13 +2791,16 @@
     })
 
     output$numeric_dt <- DT::renderDT({
-      df <- .cs_numeric_table(res_rv(), "pooled")
+      # Honor the sidebar scope; .cs_pick_scope falls back to a per-site slice
+      # when the pooled element is NULL (pooled numeric quantiles are NULL by
+      # design), so the table is populated under either scope.
+      df <- .cs_numeric_table(res_rv(), state$scope %||% "per_site")
       if (is.null(df)) return(NULL)
       .explore_dt(df, page_length = 10L, selection = "none")
     })
 
     output$categorical_dt <- DT::renderDT({
-      cc <- .cs_categorical_table(res_rv(), "pooled")
+      cc <- .cs_categorical_table(res_rv(), state$scope %||% "per_site")
       if (is.null(cc)) return(NULL)
       val <- if ("n" %in% names(cc)) "n" else NULL
       .explore_dt(cc, default_sort = val, selection = "none",

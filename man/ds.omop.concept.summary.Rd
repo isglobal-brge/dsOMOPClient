@@ -9,6 +9,7 @@ ds.omop.concept.summary(
   concept_id,
   column = NULL,
   scope = c("per_site", "pooled"),
+  pooling_policy = "strict",
   symbol = "omop",
   conns = NULL
 )
@@ -28,6 +29,12 @@ summarised.}
 
 \item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.
 Passed through to the underlying calls.}
+
+\item{pooling_policy}{Character; \code{"strict"} (default) or
+\code{"pooled_only_ok"} (Best Effort). Passed through to the underlying
+value-counts, column-stats and quantile calls so that, when pooled,
+categories/values present on only some sites are summed across the
+available sites rather than suppressed.}
 
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 

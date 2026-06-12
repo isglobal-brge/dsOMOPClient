@@ -15,19 +15,19 @@
       fixed_width = FALSE,
       bslib::value_box(
         title = "Servers",
-        value = shiny::textOutput(ns("kpi_servers")),
+        value = .with_spinner(shiny::textOutput(ns("kpi_servers"))),
         showcase = fontawesome::fa_i("server"),
         theme = "primary", full_screen = FALSE
       ),
       bslib::value_box(
         title = "Common Tables",
-        value = shiny::textOutput(ns("kpi_tables")),
+        value = .with_spinner(shiny::textOutput(ns("kpi_tables"))),
         showcase = fontawesome::fa_i("table"),
         theme = "info", full_screen = FALSE
       ),
       bslib::value_box(
         title = "Total Persons",
-        value = shiny::textOutput(ns("kpi_persons")),
+        value = .with_spinner(shiny::textOutput(ns("kpi_persons"))),
         showcase = fontawesome::fa_i("users"),
         theme = "success", full_screen = FALSE
       )
@@ -40,7 +40,8 @@
                           class = "btn-sm btn-outline-primary")
     ),
     # --- Server cards (one per server) ---
-    shiny::uiOutput(ns("server_cards")),
+    .with_spinner(shiny::uiOutput(ns("server_cards")),
+                  caption = "Loading servers…"),
     # --- System Notifications ---
     shiny::uiOutput(ns("notifications_section")),
     # --- Data Quality Section ---
@@ -57,7 +58,8 @@
       ),
       bslib::card_body(
         shiny::uiOutput(ns("coverage_server_ui")),
-        shiny::uiOutput(ns("coverage_content"))
+        .with_spinner(shiny::uiOutput(ns("coverage_content")),
+                      caption = "Loading coverage…")
       )
     ),
     bslib::card(
@@ -81,7 +83,8 @@
             shiny::uiOutput(ns("miss_server_ui"))
           )
         ),
-        shiny::uiOutput(ns("miss_content"))
+        .with_spinner(shiny::uiOutput(ns("miss_content")),
+                      caption = "Loading missingness…")
       )
     )
   )
