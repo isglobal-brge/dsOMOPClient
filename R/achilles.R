@@ -288,3 +288,27 @@ ds.omop.achilles.catalog <- function(symbol = "omop", conns = NULL) {
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = "pooled"))
 }
+
+#' Get Achilles Heel data-quality warnings (per site)
+#'
+#' Returns disclosure-controlled Achilles Heel warnings for each connected
+#' server (record counts below nfilter are masked; numbers in the warning text
+#' are scrubbed server-side). Heel results describe which data-quality rules
+#' fired per site, so they are reported per-site (not pooled).
+#'
+#' @param symbol Character; session symbol (default "omop").
+#' @param conns Optional DataSHIELD connections.
+#' @return A \code{dsomop_result} with per-site heel warning data frames.
+#' @export
+ds.omop.achilles.heel <- function(symbol = "omop", conns = NULL) {
+  code <- .build_code("ds.omop.achilles.heel", symbol = symbol)
+  session <- .get_session(symbol)
+  conns <- conns %||% session$conns
+  raw <- .ds_safe_aggregate(
+    conns,
+    expr = call("omopAchillesHeelDS", session$res_symbol)
+  )
+  dsomop_result(
+    per_site = raw, pooled = NULL,
+    meta = list(call_code = code, scope = "per_site"))
+}

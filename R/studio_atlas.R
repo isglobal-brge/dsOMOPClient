@@ -110,7 +110,7 @@
         if (d %in% domains) pages <- c(pages, domain_page_map[d])
       }
       # Add Trends if any domain has time-stratified analyses
-      if (any(!is.na(cat$stratum_2_name) & cat$stratum_2_name == "calendar_month")) {
+      if (any(!is.na(cat$stratum_2_name) & cat$stratum_2_name == "calendar month")) {
         pages <- c(pages, "Trends")
       }
       pages <- c(pages, "Data Quality")
@@ -1291,16 +1291,37 @@
     status <- ds.omop.achilles.status(symbol = state$symbol)
     srv <- names(status$per_site)[1]
 
-    list(
-      warnings = data.frame(
-        analysis_id = integer(0),
-        warning = character(0),
-        rule_id = integer(0),
-        record_count = numeric(0),
-        stringsAsFactors = FALSE
-      ),
-      status = status$per_site[[srv]]
+    empty <- data.frame(
+      server = character(0), analysis_id = integer(0),
+      warning = character(0), rule_id = integer(0),
+      record_count = numeric(0), stringsAsFactors = FALSE
     )
+
+    # Pull the real (disclosure-controlled) Achilles Heel warnings per site.
+    heel <- tryCatch(ds.omop.achilles.heel(symbol = state$symbol),
+                     error = function(e) NULL)
+    warnings <- empty
+    if (!is.null(heel) && !is.null(heel$per_site)) {
+      rows <- list()
+      for (s in names(heel$per_site)) {
+        d <- heel$per_site[[s]]
+        if (is.data.frame(d) && nrow(d) > 0) {
+          rows[[s]] <- data.frame(
+            server = s,
+            analysis_id = d$analysis_id,
+            warning = if ("achilles_heel_warning" %in% names(d))
+              d$achilles_heel_warning else NA_character_,
+            rule_id = if ("rule_id" %in% names(d)) d$rule_id else NA_integer_,
+            record_count = if ("record_count" %in% names(d))
+              d$record_count else NA_real_,
+            stringsAsFactors = FALSE
+          )
+        }
+      }
+      if (length(rows) > 0) warnings <- do.call(rbind, rows)
+    }
+
+    list(warnings = warnings, status = status$per_site[[srv]])
   }, error = function(e) {
     list(warnings = data.frame(), status = NULL, error = conditionMessage(e))
   })
@@ -1318,15 +1339,17 @@
 
 .atlas_fetch_domain_dynamic <- function(state, analyses_df, scope, policy,
                                          selected_server = NULL) {
+  # Real Achilles names the concept stratum "<domain>_concept_id"
+  # (e.g. "condition_concept_id"), never bare "concept_id" — match the suffix.
   count_row <- analyses_df[!is.na(analyses_df$stratum_1_name) &
-                            analyses_df$stratum_1_name == "concept_id" &
+                            grepl("_concept_id$", analyses_df$stratum_1_name) &
                             (is.na(analyses_df$stratum_2_name) |
                              analyses_df$stratum_2_name == ""),
                            , drop = FALSE]
   count_id <- if (nrow(count_row) > 0) count_row$analysis_id[1] else NULL
 
   trend_row <- analyses_df[!is.na(analyses_df$stratum_2_name) &
-                            analyses_df$stratum_2_name == "calendar_month",
+                            analyses_df$stratum_2_name == "calendar month",
                            , drop = FALSE]
   trend_id <- if (nrow(trend_row) > 0) trend_row$analysis_id[1] else NULL
 
@@ -1344,7 +1367,7 @@
                                                  selected_server))
 
   trend_rows <- cat[!is.na(cat$stratum_2_name) &
-                     cat$stratum_2_name == "calendar_month", , drop = FALSE]
+                     cat$stratum_2_name == "calendar month", , drop = FALSE]
 
   if (nrow(trend_rows) == 0) return(.atlas_fetch_trends(state, scope, policy,
                                                           selected_server))

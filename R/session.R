@@ -303,3 +303,29 @@ ds.omop.status <- function(symbol = "omop") {
     errors = session$errors
   )
 }
+
+#' Keep federated connections alive
+#'
+#' Issues a lightweight ping to every connected server that ALSO touches the
+#' server-side database connection (\code{omopPingDS(symbol)} runs a trivial
+#' \code{SELECT 1} on the handle). This resets the inactivity timer on BOTH
+#' connection layers at once: the client<->Opal DataSHIELD R sessions and the
+#' server-side Rock-R<->OMOP-database connection. The OMOP Studio calls this on
+#' a timer so neither layer times out while the app stays open.
+#'
+#' @param symbol Character; session symbol (default: "omop").
+#' @return Per-server ping result (invisibly); a list with \code{$error} on
+#'   failure. Never throws.
+#' @examples
+#' \dontrun{
+#' ds.omop.keepalive("omop")
+#' }
+#' @export
+ds.omop.keepalive <- function(symbol = "omop") {
+  session <- tryCatch(.get_session(symbol), error = function(e) NULL)
+  if (is.null(session)) return(invisible(list(error = "no session")))
+  invisible(tryCatch(
+    DSI::datashield.aggregate(session$conns, expr = call("omopPingDS", session$res_symbol)),
+    error = function(e) list(error = conditionMessage(e))
+  ))
+}

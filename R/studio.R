@@ -273,6 +273,20 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
       session$sendCustomMessage("dsomop_ready", TRUE)
     })
 
+    # Connection keepalive. Opal R sessions AND the server-side DB connection
+    # both time out on inactivity (the cause of the Studio "wedging" after a
+    # long idle). Ping every 60s — comfortably under even an aggressive Opal
+    # R-session timeout — to keep BOTH layers warm for as long as the Studio is
+    # open. The ping is a trivial SELECT 1, so the cost is negligible. tryCatch
+    # so a transient hiccup never crashes the app.
+    shiny::observe({
+      shiny::invalidateLater(60000, session)
+      tryCatch(
+        ds.omop.keepalive(symbol = shiny::isolate(state$symbol)),
+        error = function(e) NULL
+      )
+    })
+
     # Clipboard toast is now handled entirely in JS (no round-trip needed)
 
     # Module servers
@@ -887,9 +901,11 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
 #' @return Character vector of table names.
 #' @keywords internal
 .get_person_tables <- function(tables) {
-  if (is.null(tables)) return(character(0))
-  srv_name <- names(tables)[1]
-  df <- tables[[srv_name]]
+  # Guard: tables may be NULL, empty, or an UNNAMED list (names(tables)[1] would
+  # be NA -> tables[[NA]] throws a get1index error). Use the positional first
+  # element, which is the first server's table frame regardless of names.
+  if (is.null(tables) || length(tables) == 0) return(character(0))
+  df <- tables[[1]]
   if (!is.data.frame(df)) return(character(0))
   # Filter to CDM tables with has_person_id = TRUE
   mask <- rep(TRUE, nrow(df))
