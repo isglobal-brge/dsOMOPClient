@@ -19,7 +19,15 @@
     bslib::nav_panel("Vocabulary", icon = shiny::icon("book"),
       .mod_explore_vocab_ui(ns("vocab"))),
     bslib::nav_panel("Concept Summary", icon = shiny::icon("database"),
-      .mod_explore_concept_summary_ui(ns("concept_summary")))
+      .mod_explore_concept_summary_ui(ns("concept_summary"))),
+    bslib::nav_panel("Value Ranking", icon = shiny::icon("ranking-star"),
+      .mod_explore_value_ranking_ui(ns("value_ranking"))),
+    bslib::nav_panel("Numeric Distribution", icon = shiny::icon("chart-area"),
+      .mod_explore_numeric_ui(ns("numeric"))),
+    bslib::nav_panel("Cross-tab", icon = shiny::icon("table-cells"),
+      .mod_explore_crosstab_ui(ns("crosstab"))),
+    bslib::nav_panel("Missingness", icon = shiny::icon("table-cells-large"),
+      .mod_explore_missingness_ui(ns("missingness")))
   )
 }
 
@@ -37,6 +45,10 @@
     .mod_explore_locator_server("locator", state)
     .mod_explore_vocab_server("vocab", state)
     .mod_explore_concept_summary_server("concept_summary", state, session)
+    .mod_explore_value_ranking_server("value_ranking", state)
+    .mod_explore_numeric_server("numeric", state)
+    .mod_explore_crosstab_server("crosstab", state)
+    .mod_explore_missingness_server("missingness", state)
   })
 }
 
@@ -927,8 +939,7 @@
           is.null(d$numeric_summary$quantiles)) return(NULL)
       df <- d$numeric_summary$quantiles
       if (!is.data.frame(df)) return(NULL)
-      DT::datatable(df, options = list(pageLength = 10, dom = "t", scrollX = TRUE),
-                    rownames = FALSE, selection = "none")
+      .explore_dt(df, page_length = 10L, selection = "none")
     })
 
     # --- Categorical values ---
@@ -964,8 +975,8 @@
       d <- dd[[srv]]
       df <- d$categorical_values
       if (is.null(df) || !is.data.frame(df)) return(NULL)
-      DT::datatable(df, options = list(pageLength = 10, dom = "ftip", scrollX = TRUE),
-                    rownames = FALSE, selection = "none")
+      val <- if ("n" %in% names(df)) "n" else NULL
+      .explore_dt(df, default_sort = val, page_length = 10L, selection = "none")
     })
 
     # --- Date coverage ---
@@ -1354,9 +1365,9 @@
     output$presence_dt <- DT::renderDT({
       df <- locate_data()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
-      DT::datatable(df,
-        options = list(pageLength = 25, dom = "ftip", scrollX = TRUE),
-        rownames = FALSE, selection = "none")
+      val <- if ("n_persons" %in% names(df)) "n_persons"
+             else if ("n_records" %in% names(df)) "n_records" else NULL
+      .explore_dt(df, default_sort = val, page_length = 25L, selection = "none")
     })
   })
 }
@@ -1750,6 +1761,676 @@
   combined
 }
 
+# --- Consistent sort / visualization layer ---------------------------------
+# Shared DT factory + chart-card toggle + typed plotly helpers. Every chart is
+# built ONLY from the already-suppressed aggregate frame it is handed; nothing
+# here imputes or back-fills suppressed cells.
+
+#' DT factory: sortable table with default count-desc sort + copy/csv export
+#'
+#' @param df Data frame to display (already disclosure-suppressed).
+#' @param default_sort Character column name to sort by, or NULL for no
+#'   explicit order (DT then keeps row order).
+#' @param decreasing Logical; sort direction for \code{default_sort}.
+#' @param page_length Integer rows per page.
+#' @param ... Extra args forwarded to \code{DT::datatable} (e.g.
+#'   \code{callback=}, \code{escape=}, \code{selection=}).
+#' @keywords internal
+.explore_dt <- function(df, default_sort = NULL, decreasing = TRUE,
+                        page_length = 15L, ...) {
+  if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
+  order_opt <- NULL
+  if (!is.null(default_sort) && default_sort %in% names(df)) {
+    col_idx <- match(default_sort, names(df)) - 1L  # 0-based for DT
+    order_opt <- list(list(col_idx, if (decreasing) "desc" else "asc"))
+  }
+  DT::datatable(
+    df,
+    extensions = "Buttons",
+    options = list(
+      pageLength = page_length,
+      dom = "Bftip",
+      scrollX = TRUE,
+      buttons = list("copy", "csv"),
+      order = order_opt
+    ),
+    rownames = FALSE,
+    ...
+  )
+}
+
+#' Chart/table card with a radio toggle between a plotly chart and a DT table
+#' @keywords internal
+.explore_chart_card <- function(ns, title, dt_id, plot_id) {
+  bslib::card(
+    full_screen = TRUE,
+    bslib::card_header(
+      shiny::div(class = "d-flex justify-content-between align-items-center",
+        shiny::span(title),
+        shiny::radioButtons(ns(paste0(plot_id, "_view")), label = NULL,
+          choices = c("Chart" = "chart", "Table" = "table"),
+          selected = "chart", inline = TRUE)
+      )
+    ),
+    bslib::card_body(
+      shiny::conditionalPanel(
+        condition = sprintf("input['%s'] == 'chart'", ns(paste0(plot_id, "_view"))),
+        plotly::plotlyOutput(ns(plot_id), height = "320px")
+      ),
+      shiny::conditionalPanel(
+        condition = sprintf("input['%s'] == 'table'", ns(paste0(plot_id, "_view"))),
+        DT::DTOutput(ns(dt_id))
+      )
+    )
+  )
+}
+
+#' Horizontal ranked bar chart (value vs count), top-N
+#' @keywords internal
+.explore_rank_plot <- function(df, label_col, value_col, top_n = 20L,
+                               color = .studio_colors[1]) {
+  if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+    return(.plotly_no_data("No values to rank"))
+  }
+  .safe_plotly({
+    d <- df
+    d$.lab <- substr(as.character(d[[label_col]]), 1, 40)
+    d$.val <- suppressWarnings(as.numeric(d[[value_col]]))
+    d <- d[!is.na(d$.val), , drop = FALSE]
+    if (nrow(d) == 0) return(.plotly_no_data("All values suppressed"))
+    d <- d[order(d$.val, decreasing = TRUE), , drop = FALSE]
+    d <- d[seq_len(min(nrow(d), top_n)), , drop = FALSE]
+    plotly::plot_ly(x = d$.val, y = d$.lab, type = "bar", orientation = "h",
+                    marker = list(color = color)) |>
+      plotly::layout(xaxis = list(title = "Count"),
+                     yaxis = list(title = "", categoryorder = "total ascending")) |>
+      .plotly_defaults()
+  })
+}
+
+#' Histogram bar chart; suppressed bins greyed (never imputed)
+#' @keywords internal
+.explore_hist_plot <- function(df, value_label = "value") {
+  if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+    return(.plotly_no_data("No distribution data"))
+  }
+  .safe_plotly({
+    sup <- if ("suppressed" %in% names(df)) df$suppressed else rep(FALSE, nrow(df))
+    cnt <- if ("count" %in% names(df)) df$count else df$n
+    cols <- ifelse(is.na(cnt) | sup, .studio_colors[4], .studio_colors[1])
+    y <- as.numeric(cnt); y[is.na(y)] <- 0
+    mids <- (df$bin_start + df$bin_end) / 2
+    plotly::plot_ly(x = round(mids, 2), y = y, type = "bar",
+                    marker = list(color = cols)) |>
+      plotly::layout(xaxis = list(title = value_label),
+                     yaxis = list(title = "Count")) |>
+      .plotly_defaults()
+  })
+}
+
+#' Box plot reconstructed from precomputed percentiles (no raw points)
+#' @param q Named numeric vector / list with p05,p25,p50,p75,p95 (any subset).
+#' @keywords internal
+.explore_box_plot <- function(q, value_label = "value") {
+  if (is.null(q) || length(q) == 0) return(.plotly_no_data("No quantiles"))
+  gv <- function(nm) {
+    v <- suppressWarnings(as.numeric(q[[nm]]))
+    if (length(v) == 0 || is.na(v)) NA_real_ else v
+  }
+  lo <- gv("p05"); q1 <- gv("p25"); md <- gv("p50"); q3 <- gv("p75"); hi <- gv("p95")
+  if (all(is.na(c(lo, q1, md, q3, hi)))) return(.plotly_no_data("No quantiles"))
+  .safe_plotly({
+    plotly::plot_ly(type = "box", name = value_label,
+                    lowerfence = list(lo), q1 = list(q1), median = list(md),
+                    q3 = list(q3), upperfence = list(hi),
+                    marker = list(color = .studio_colors[1]),
+                    line = list(color = .studio_colors[1])) |>
+      plotly::layout(yaxis = list(title = value_label),
+                     xaxis = list(title = "")) |>
+      .plotly_defaults()
+  })
+}
+
+#' Heatmap from a (already-suppressed) cross-tab matrix; NA cells shown blank
+#' @keywords internal
+.explore_heatmap_plot <- function(M, title = NULL) {
+  if (is.null(M) || !is.matrix(M) || length(M) == 0) {
+    return(.plotly_no_data("No cross-tab data"))
+  }
+  .safe_plotly({
+    txt <- matrix(ifelse(is.na(M), "—", as.character(M)),
+                  nrow = nrow(M), ncol = ncol(M))
+    plotly::plot_ly(
+      x = colnames(M), y = rownames(M), z = M, type = "heatmap",
+      text = txt, hoverinfo = "x+y+text",
+      colorscale = "Blues", showscale = TRUE,
+      colorbar = list(title = "Count")) |>
+      plotly::layout(xaxis = list(title = "", type = "category"),
+                     yaxis = list(title = "", type = "category")) |>
+      .plotly_defaults(title = title)
+  })
+}
+
+#' Missingness bar chart (missing % per column), sorted desc
+#' @keywords internal
+.explore_miss_plot <- function(df) {
+  if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+    return(.plotly_no_data("No missingness data"))
+  }
+  .safe_plotly({
+    pct_col <- if ("missing_pct" %in% names(df)) "missing_pct" else "missing_rate"
+    d <- df
+    d$.pct <- suppressWarnings(as.numeric(d[[pct_col]]))
+    if (pct_col == "missing_rate") d$.pct <- d$.pct * 100
+    d <- d[!is.na(d$.pct), , drop = FALSE]
+    if (nrow(d) == 0) return(.plotly_no_data("All columns suppressed"))
+    d <- d[order(d$.pct, decreasing = TRUE), , drop = FALSE]
+    plotly::plot_ly(x = d$.pct, y = d$column_name, type = "bar",
+                    orientation = "h",
+                    marker = list(color = .studio_colors[3])) |>
+      plotly::layout(xaxis = list(title = "Missing %", range = c(0, 100)),
+                     yaxis = list(title = "", categoryorder = "total ascending")) |>
+      .plotly_defaults()
+  })
+}
+
+
+# --- Sub-module: Value Ranking (B1) ----------------------------------------
+# ds.omop.value.counts over any concept/categorical column -> ranked bar + table.
+
+#' @keywords internal
+.mod_explore_value_ranking_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Value Ranking", width = 280, open = "always",
+      shiny::selectInput(ns("table"), "Table", choices = NULL),
+      shiny::selectInput(ns("column"), "Column", choices = NULL),
+      shiny::numericInput(ns("top_n"), "Top N", value = 20, min = 5, max = 200,
+                          step = 5),
+      shiny::actionButton(ns("run_btn"), "Run", icon = shiny::icon("play"),
+                          class = "btn-primary w-100")
+    ),
+    shiny::uiOutput(ns("header")),
+    .explore_chart_card(ns, "Value frequencies", "vr_dt", "vr_plot")
+  )
+}
+
+#' @keywords internal
+.mod_explore_value_ranking_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+    res_rv <- shiny::reactiveVal(NULL)
+
+    shiny::observe({
+      tbls <- .get_person_tables(state$tables)
+      if (length(tbls) == 0) {
+        tbls <- c("condition_occurrence", "drug_exposure", "measurement",
+                  "observation", "procedure_occurrence", "visit_occurrence")
+      }
+      shiny::updateSelectInput(session, "table", choices = .table_choices(tbls))
+    })
+
+    shiny::observeEvent(input$table, {
+      cols <- tryCatch({
+        cr <- ds.omop.columns(input$table, symbol = state$symbol)
+        cc <- .get_concept_columns(cr[[1]])
+        if (length(cc) == 0) cr[[1]]$column_name else cc
+      }, error = function(e) character(0))
+      shiny::updateSelectInput(session, "column", choices = cols)
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$run_btn, {
+      shiny::req(input$table, input$column)
+      scope <- state$scope %||% "per_site"
+      policy <- state$pooling_policy %||% "strict"
+      shiny::withProgress(message = "Counting values...", value = 0.4, {
+        res <- tryCatch(
+          ds.omop.value.counts(table = input$table, column = input$column,
+                               top_n = as.integer(input$top_n %||% 20),
+                               scope = .backend_scope(scope),
+                               pooling_policy = policy, symbol = state$symbol),
+          error = function(e) {
+            shiny::showNotification(.clean_ds_error(e), type = "error"); NULL
+          })
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
+        res_rv(res)
+      })
+    })
+
+    .vr_df <- shiny::reactive({
+      res <- res_rv()
+      if (is.null(res)) return(NULL)
+      df <- .extract_display_data(res, state$scope %||% "per_site",
+                                  state$selected_servers)
+      if (!is.data.frame(df) || nrow(df) == 0) return(NULL)
+      # Drop suppressed rows (count NA) from the displayed/charted frame.
+      cnt <- if ("n" %in% names(df)) "n" else "count"
+      if (cnt %in% names(df)) df <- df[!is.na(df[[cnt]]), , drop = FALSE]
+      # Prefer concept_name label when available.
+      lab <- if ("concept_name" %in% names(df)) "concept_name" else "value"
+      keep <- intersect(c(lab, "value", "n", "count"), names(df))
+      df[, unique(keep), drop = FALSE]
+    })
+
+    output$header <- shiny::renderUI({
+      if (is.null(.vr_df())) {
+        return(.empty_state_ui("ranking-star", "No values ranked",
+          "Pick a table and column, then click Run."))
+      }
+      NULL
+    })
+
+    output$vr_plot <- plotly::renderPlotly({
+      df <- .vr_df()
+      if (is.null(df)) return(.plotly_no_data("No values to rank"))
+      lab <- if ("concept_name" %in% names(df)) "concept_name" else "value"
+      val <- if ("n" %in% names(df)) "n" else "count"
+      .explore_rank_plot(df, lab, val, top_n = as.integer(input$top_n %||% 20))
+    })
+
+    output$vr_dt <- DT::renderDT({
+      df <- .vr_df()
+      val <- if (!is.null(df) && "n" %in% names(df)) "n" else "count"
+      .explore_dt(df, default_sort = val, selection = "none")
+    })
+  })
+}
+
+
+# --- Sub-module: Numeric Distribution (B2) ---------------------------------
+# ds.omop.value.histogram + ds.omop.value.quantiles -> histogram + box + table.
+
+#' @keywords internal
+.mod_explore_numeric_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Numeric Distribution", width = 280, open = "always",
+      shiny::selectInput(ns("table"), "Table", choices = NULL),
+      shiny::selectInput(ns("value_col"), "Numeric column", choices = NULL),
+      shiny::numericInput(ns("bins"), "Bins", value = 20, min = 5, max = 50,
+                          step = 5),
+      shiny::actionButton(ns("run_btn"), "Run", icon = shiny::icon("play"),
+                          class = "btn-primary w-100")
+    ),
+    shiny::uiOutput(ns("header")),
+    .explore_chart_card(ns, "Histogram", "num_hist_dt", "num_hist_plot"),
+    bslib::card(full_screen = TRUE,
+      bslib::card_header("Distribution (box from percentiles)"),
+      bslib::card_body(
+        plotly::plotlyOutput(ns("num_box_plot"), height = "260px"),
+        DT::DTOutput(ns("num_quant_dt"))
+      ))
+  )
+}
+
+#' @keywords internal
+.mod_explore_numeric_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+    hist_rv <- shiny::reactiveVal(NULL)
+    quant_rv <- shiny::reactiveVal(NULL)
+
+    shiny::observe({
+      tbls <- .get_person_tables(state$tables)
+      if (length(tbls) == 0) {
+        tbls <- c("measurement", "observation", "drug_exposure")
+      }
+      shiny::updateSelectInput(session, "table", choices = .table_choices(tbls))
+    })
+
+    shiny::observeEvent(input$table, {
+      cols <- tryCatch({
+        cr <- ds.omop.columns(input$table, symbol = state$symbol)
+        cn <- cr[[1]]$column_name
+        cn[grepl("value_as_number$|^quantity$|^days_supply$|_range_low$|_range_high$",
+                 cn, ignore.case = TRUE)]
+      }, error = function(e) character(0))
+      if (length(cols) == 0) cols <- "value_as_number"
+      shiny::updateSelectInput(session, "value_col", choices = cols)
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$run_btn, {
+      shiny::req(input$table, input$value_col)
+      scope <- state$scope %||% "per_site"
+      policy <- state$pooling_policy %||% "strict"
+      shiny::withProgress(message = "Computing distribution...", value = 0.4, {
+        h <- tryCatch(
+          ds.omop.value.histogram(table = input$table, value_col = input$value_col,
+            bins = as.integer(input$bins %||% 20),
+            scope = .backend_scope(scope), pooling_policy = policy,
+            symbol = state$symbol),
+          error = function(e) {
+            shiny::showNotification(.clean_ds_error(e), type = "error"); NULL
+          })
+        q <- tryCatch(
+          ds.omop.value.quantiles(table = input$table, value_col = input$value_col,
+            scope = .backend_scope(scope), pooling_policy = policy,
+            symbol = state$symbol),
+          error = function(e) NULL)
+        for (r in list(h, q)) {
+          if (inherits(r, "dsomop_result") && nchar(r$meta$call_code) > 0) {
+            state$script_lines <- c(state$script_lines, r$meta$call_code)
+          }
+        }
+        hist_rv(h); quant_rv(q)
+      })
+    })
+
+    .hist_df <- shiny::reactive({
+      res <- hist_rv()
+      if (is.null(res)) return(NULL)
+      df <- .extract_display_data(res, state$scope %||% "per_site",
+                                  state$selected_servers)
+      if (is.data.frame(df) && nrow(df) > 0) df else NULL
+    })
+
+    # Pooled quantiles are NULL by design -> always pick a per-site slice.
+    .quant_df <- shiny::reactive({
+      res <- quant_rv()
+      if (is.null(res)) return(NULL)
+      ps <- res$per_site
+      if (length(ps) == 0) return(NULL)
+      srvs <- .resolve_servers(ps, state$selected_servers)
+      srv <- if (length(srvs) > 0) srvs[1] else names(ps)[1]
+      df <- ps[[srv]]
+      if (is.data.frame(df) && nrow(df) > 0) df else NULL
+    })
+
+    .quant_named <- shiny::reactive({
+      df <- .quant_df()
+      if (is.null(df) || !"probability" %in% names(df)) return(NULL)
+      pick <- function(p) {
+        v <- df$value[abs(df$probability - p) < 1e-6]
+        if (length(v) > 0) v[1] else NA_real_
+      }
+      list(p05 = pick(0.05), p25 = pick(0.25), p50 = pick(0.5),
+           p75 = pick(0.75), p95 = pick(0.95))
+    })
+
+    output$header <- shiny::renderUI({
+      if (is.null(.hist_df()) && is.null(.quant_df())) {
+        return(.empty_state_ui("chart-area", "No distribution computed",
+          "Pick a table and numeric column, then click Run."))
+      }
+      if (identical(state$scope %||% "per_site", "pooled")) {
+        return(shiny::p(class = "text-muted small mb-2",
+          shiny::icon("circle-info"),
+          " Pooled quantiles unavailable — box plot uses per-site percentiles."))
+      }
+      NULL
+    })
+
+    output$num_hist_plot <- plotly::renderPlotly({
+      .explore_hist_plot(.hist_df(), value_label = input$value_col %||% "value")
+    })
+
+    output$num_hist_dt <- DT::renderDT({
+      .explore_dt(.hist_df(), selection = "none")
+    })
+
+    output$num_box_plot <- plotly::renderPlotly({
+      .explore_box_plot(.quant_named(), value_label = input$value_col %||% "value")
+    })
+
+    output$num_quant_dt <- DT::renderDT({
+      .explore_dt(.quant_df(), selection = "none", page_length = 10L)
+    })
+  })
+}
+
+
+# --- Sub-module: Cross-tab (B3) --------------------------------------------
+# ds.omop.crosstab -> table (NA shown as "-") + heatmap; optional stratify
+# produces small-multiple heatmaps. Charts built ONLY from suppressed counts.
+
+#' Convert a cross-tab matrix to a long->wide display frame (NA -> "-")
+#' @keywords internal
+.ct_matrix_to_df <- function(M) {
+  if (is.null(M) || !is.matrix(M) || length(M) == 0) return(NULL)
+  body <- as.data.frame(matrix(
+    ifelse(is.na(M), "—", format(M, trim = TRUE)),
+    nrow = nrow(M), ncol = ncol(M)), stringsAsFactors = FALSE)
+  names(body) <- colnames(M)
+  cbind(data.frame(.row = rownames(M), check.names = FALSE,
+                   stringsAsFactors = FALSE), body)
+}
+
+#' @keywords internal
+.mod_explore_crosstab_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Cross-tab", width = 300, open = "always",
+      shiny::selectInput(ns("table"), "Table", choices = NULL),
+      shiny::selectInput(ns("row"), "Row column", choices = NULL),
+      shiny::selectInput(ns("col"), "Column column", choices = NULL),
+      shiny::radioButtons(ns("by"), "Count",
+        choices = c("Distinct persons" = "persons", "Records" = "records"),
+        selected = "persons"),
+      shiny::selectInput(ns("stratify_by"), "Stratify by (optional)",
+                         choices = c("(none)" = "")),
+      shiny::actionButton(ns("run_btn"), "Run", icon = shiny::icon("play"),
+                          class = "btn-primary w-100"),
+      shiny::p(class = "text-muted small mt-2",
+        shiny::icon("circle-info"),
+        " Cross-tab is descriptive. For a multivariable association ",
+        "(adjusting for confounders), use ", shiny::tags$code("ds.glm"), ".")
+    ),
+    shiny::uiOutput(ns("header")),
+    .explore_chart_card(ns, "Contingency table", "ct_dt", "ct_plot")
+  )
+}
+
+#' @keywords internal
+.mod_explore_crosstab_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+    res_rv <- shiny::reactiveVal(NULL)
+
+    shiny::observe({
+      tbls <- .get_person_tables(state$tables)
+      if (length(tbls) == 0) {
+        tbls <- c("person", "condition_occurrence", "drug_exposure",
+                  "measurement", "visit_occurrence")
+      }
+      shiny::updateSelectInput(session, "table", choices = .table_choices(tbls))
+    })
+
+    shiny::observeEvent(input$table, {
+      cols <- tryCatch({
+        cr <- ds.omop.columns(input$table, symbol = state$symbol)
+        cc <- .get_concept_columns(cr[[1]])
+        if (length(cc) == 0) cr[[1]]$column_name else cc
+      }, error = function(e) character(0))
+      shiny::updateSelectInput(session, "row", choices = cols)
+      shiny::updateSelectInput(session, "col",
+        choices = cols, selected = if (length(cols) > 1) cols[2] else cols[1])
+      shiny::updateSelectInput(session, "stratify_by",
+        choices = c("(none)" = "", cols))
+    }, ignoreInit = TRUE)
+
+    shiny::observeEvent(input$run_btn, {
+      shiny::req(input$table, input$row, input$col)
+      scope <- state$scope %||% "per_site"
+      policy <- state$pooling_policy %||% "strict"
+      strat <- if (nzchar(input$stratify_by %||% "")) input$stratify_by else NULL
+      shiny::withProgress(message = "Building cross-tab...", value = 0.4, {
+        res <- tryCatch(
+          ds.omop.crosstab(table = input$table, row = input$row, col = input$col,
+            by = input$by %||% "persons", stratify_by = strat,
+            scope = .backend_scope(scope), pooling_policy = policy,
+            symbol = state$symbol),
+          error = function(e) {
+            shiny::showNotification(.clean_ds_error(e), type = "error"); NULL
+          })
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
+        res_rv(res)
+      })
+    })
+
+    # Pick the display object: pooled list when scoped pooled, else first site.
+    .ct_obj <- shiny::reactive({
+      res <- res_rv()
+      if (is.null(res)) return(NULL)
+      scope <- state$scope %||% "per_site"
+      if (identical(scope, "pooled") && !is.null(res$pooled)) return(res$pooled)
+      ps <- res$per_site
+      if (length(ps) == 0) return(NULL)
+      srvs <- .resolve_servers(ps, state$selected_servers)
+      ps[[if (length(srvs) > 0) srvs[1] else names(ps)[1]]]
+    })
+
+    output$header <- shiny::renderUI({
+      obj <- .ct_obj()
+      if (is.null(obj)) {
+        return(.empty_state_ui("table-cells", "No cross-tab",
+          "Pick a table and two columns, then click Run."))
+      }
+      if (is.list(obj) && isTRUE(obj$stratified)) {
+        return(shiny::p(class = "text-muted small mb-2",
+          shiny::icon("layer-group"),
+          sprintf(" Stratified by %s — one protected 2-way table per level.",
+                  obj$stratify_by %||% "stratum")))
+      }
+      NULL
+    })
+
+    output$ct_plot <- plotly::renderPlotly({
+      obj <- .ct_obj()
+      if (is.null(obj)) return(.plotly_no_data("No cross-tab data"))
+      if (is.list(obj) && isTRUE(obj$stratified)) {
+        # Small multiples: one heatmap per stratum, stacked as subplots.
+        strata <- obj$strata
+        plots <- lapply(names(strata), function(lv) {
+          M <- strata[[lv]]$counts
+          .explore_heatmap_plot(M, title = lv)
+        })
+        plots <- Filter(Negate(is.null), plots)
+        if (length(plots) == 0) return(.plotly_no_data("All strata suppressed"))
+        return(plotly::subplot(plots, nrows = length(plots), shareX = FALSE,
+                               titleY = TRUE, margin = 0.06))
+      }
+      .explore_heatmap_plot(obj$counts)
+    })
+
+    output$ct_dt <- DT::renderDT({
+      obj <- .ct_obj()
+      if (is.null(obj)) return(NULL)
+      if (is.list(obj) && isTRUE(obj$stratified)) {
+        # Concatenate per-stratum wide frames with a stratum label column.
+        frames <- lapply(names(obj$strata), function(lv) {
+          d <- .ct_matrix_to_df(obj$strata[[lv]]$counts)
+          if (is.null(d)) return(NULL)
+          cbind(data.frame(stratum = lv, stringsAsFactors = FALSE), d)
+        })
+        frames <- Filter(Negate(is.null), frames)
+        if (length(frames) == 0) return(NULL)
+        all_cols <- Reduce(union, lapply(frames, names))
+        frames <- lapply(frames, function(d) {
+          miss <- setdiff(all_cols, names(d))
+          for (m in miss) d[[m]] <- "—"
+          d[, all_cols, drop = FALSE]
+        })
+        df <- do.call(rbind, frames)
+      } else {
+        df <- .ct_matrix_to_df(obj$counts)
+      }
+      .explore_dt(df, default_sort = NULL, selection = "none", escape = FALSE)
+    })
+  })
+}
+
+
+# --- Sub-module: Missingness (B4) ------------------------------------------
+# ds.omop.missingness table-level -> sorted-by-missing% table + bar chart.
+
+#' @keywords internal
+.mod_explore_missingness_ui <- function(id) {
+  ns <- shiny::NS(id)
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(
+      title = "Missingness", width = 280, open = "always",
+      shiny::selectInput(ns("table"), "Table", choices = NULL),
+      shiny::actionButton(ns("run_btn"), "Run", icon = shiny::icon("play"),
+                          class = "btn-primary w-100")
+    ),
+    shiny::uiOutput(ns("header")),
+    .explore_chart_card(ns, "Column missingness", "miss_dt", "miss_plot")
+  )
+}
+
+#' @keywords internal
+.mod_explore_missingness_server <- function(id, state) {
+  shiny::moduleServer(id, function(input, output, session) {
+    res_rv <- shiny::reactiveVal(NULL)
+
+    shiny::observe({
+      tbls <- .get_person_tables(state$tables)
+      if (length(tbls) == 0) {
+        tbls <- c("person", "condition_occurrence", "drug_exposure",
+                  "measurement", "visit_occurrence", "observation")
+      }
+      shiny::updateSelectInput(session, "table", choices = .table_choices(tbls))
+    })
+
+    shiny::observeEvent(input$run_btn, {
+      shiny::req(input$table)
+      scope <- state$scope %||% "per_site"
+      policy <- state$pooling_policy %||% "strict"
+      shiny::withProgress(message = "Computing missingness...", value = 0.4, {
+        res <- tryCatch(
+          ds.omop.missingness(table = input$table,
+            scope = .backend_scope(scope), pooling_policy = policy,
+            symbol = state$symbol),
+          error = function(e) {
+            shiny::showNotification(.clean_ds_error(e), type = "error"); NULL
+          })
+        if (inherits(res, "dsomop_result") && nchar(res$meta$call_code) > 0) {
+          state$script_lines <- c(state$script_lines, res$meta$call_code)
+        }
+        res_rv(res)
+      })
+    })
+
+    .miss_df <- shiny::reactive({
+      res <- res_rv()
+      if (is.null(res)) return(NULL)
+      df <- .extract_display_data(res, state$scope %||% "per_site",
+                                  state$selected_servers)
+      if (!is.data.frame(df) || nrow(df) == 0) return(NULL)
+      # Build a tidy display frame with a missing_pct column, sorted desc.
+      if ("missing_rate" %in% names(df)) df$missing_pct <- round(df$missing_rate * 100, 1)
+      keep <- intersect(c("column_name", "n_total", "n_missing", "missing_pct"),
+                        names(df))
+      df <- df[, keep, drop = FALSE]
+      if ("missing_pct" %in% names(df)) {
+        df <- df[order(df$missing_pct, decreasing = TRUE), , drop = FALSE]
+      }
+      df
+    })
+
+    output$header <- shiny::renderUI({
+      if (is.null(.miss_df())) {
+        return(.empty_state_ui("table-cells-large", "No missingness",
+          "Pick a table, then click Run."))
+      }
+      NULL
+    })
+
+    output$miss_plot <- plotly::renderPlotly({
+      .explore_miss_plot(.miss_df())
+    })
+
+    output$miss_dt <- DT::renderDT({
+      .explore_dt(.miss_df(), default_sort = "missing_pct", selection = "none")
+    })
+  })
+}
+
+
 # --- Sub-module: Concept Summary -------------------------------------------
 # Type-aware, disclosure-safe summary of a value column WITHIN one concept
 # (ds.omop.concept.summary, 2.2.0). Returns
@@ -1915,16 +2596,15 @@
     output$numeric_dt <- DT::renderDT({
       df <- .cs_numeric_table(res_rv(), "pooled")
       if (is.null(df)) return(NULL)
-      DT::datatable(df, rownames = FALSE, selection = "none",
-                    options = list(dom = "t", scrollX = TRUE))
+      .explore_dt(df, page_length = 10L, selection = "none")
     })
 
     output$categorical_dt <- DT::renderDT({
       cc <- .cs_categorical_table(res_rv(), "pooled")
       if (is.null(cc)) return(NULL)
-      DT::datatable(cc, rownames = FALSE, selection = "none",
-                    caption = "Categorical value counts",
-                    options = list(pageLength = 15, scrollX = TRUE))
+      val <- if ("n" %in% names(cc)) "n" else NULL
+      .explore_dt(cc, default_sort = val, selection = "none",
+                  caption = "Categorical value counts")
     })
   })
 }
