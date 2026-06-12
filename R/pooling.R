@@ -923,10 +923,117 @@
       list(result = result, warnings = warnings)
     },
 
+    "crosstab" = {
+      .pool_crosstab(per_site, policy)
+    },
+
     # Default: no pooling
     {
       list(result = NULL,
            warnings = paste0("Unknown result type for pooling: ", result_type))
     }
   )
+}
+
+#' Pool a server cross-tab object by cell-wise summation
+#'
+#' Each server returns a cross-tab list with \code{$counts} (a matrix whose
+#' dimnames are row x col labels, NA for suppressed cells) or, when stratified,
+#' \code{$stratified = TRUE} with \code{$strata} (a named list of slices). This
+#' helper sums \code{n} per (row, col) cell key across sites. A cell that is
+#' absent on any site (its row/col label not present) or NA (suppressed) on any
+#' site is suppressed in the pooled table: under \code{strict} it renders as
+#' \code{NA}; this fail-closed behaviour prevents subtraction attacks.
+#'
+#' @param per_site Named list of server cross-tab objects.
+#' @param policy Character; "strict" or "pooled_only_ok".
+#' @return List with $result and $warnings.
+#' @keywords internal
+.pool_crosstab <- function(per_site, policy = "strict") {
+  # Stratified: pool each slice independently; never combine across strata
+  # (the union of slices == the unstratified total, which is never published).
+  is_strat <- vapply(per_site, function(s) {
+    is.list(s) && isTRUE(s$stratified)
+  }, logical(1))
+  if (any(is_strat)) {
+    warnings <- character(0)
+    strat_sites <- per_site[is_strat]
+    stratify_by <- strat_sites[[1]]$stratify_by
+    all_levels <- unique(unlist(lapply(strat_sites, function(s) names(s$strata))))
+    pooled_strata <- list()
+    for (lv in all_levels) {
+      slices <- lapply(strat_sites, function(s) s$strata[[lv]])
+      slices <- slices[!vapply(slices, is.null, logical(1))]
+      po <- .pool_crosstab_slice(slices, policy)
+      pooled_strata[[lv]] <- po$result
+      warnings <- c(warnings, po$warnings)
+    }
+    return(list(
+      result = list(stratified = TRUE, stratify_by = stratify_by,
+                    strata = pooled_strata),
+      warnings = warnings))
+  }
+  .pool_crosstab_slice(per_site, policy)
+}
+
+#' Pool a single (unstratified) set of cross-tab slices
+#' @keywords internal
+.pool_crosstab_slice <- function(slices, policy = "strict") {
+  warnings <- character(0)
+
+  valid <- list()
+  for (srv in names(slices)) {
+    s <- slices[[srv]]
+    if (is.list(s) && is.matrix(s$counts) && length(s$counts) > 0) {
+      valid[[srv]] <- s
+    } else {
+      # A fully suppressed / empty slice (suppressed = TRUE, 0x0 matrix).
+      if (policy == "strict") {
+        return(list(
+          result = NULL,
+          warnings = paste0("Strict pooling failed: cross-tab suppressed or ",
+                            "empty on server ", srv)))
+      }
+      warnings <- c(warnings, paste0("Dropped server with empty cross-tab: ", srv))
+    }
+  }
+
+  if (length(valid) == 0) {
+    return(list(result = NULL,
+                warnings = c(warnings, "No valid cross-tab data to pool")))
+  }
+
+  # Union of row/col labels across the contributing sites.
+  row_keys <- unique(unlist(lapply(valid, function(s) rownames(s$counts))))
+  col_keys <- unique(unlist(lapply(valid, function(s) colnames(s$counts))))
+
+  n_sites <- length(valid)
+  pooled <- matrix(0, nrow = length(row_keys), ncol = length(col_keys),
+                   dimnames = list(row_keys, col_keys))
+  # Track per-cell coverage: a cell must be present and non-NA on EVERY site.
+  present <- matrix(0L, nrow = length(row_keys), ncol = length(col_keys),
+                    dimnames = list(row_keys, col_keys))
+
+  for (s in valid) {
+    M <- s$counts
+    ri <- match(rownames(M), row_keys)
+    ci <- match(colnames(M), col_keys)
+    for (i in seq_along(ri)) {
+      for (j in seq_along(ci)) {
+        v <- M[i, j]
+        if (!is.na(v)) {
+          pooled[ri[i], ci[j]] <- pooled[ri[i], ci[j]] + as.numeric(v)
+          present[ri[i], ci[j]] <- present[ri[i], ci[j]] + 1L
+        }
+      }
+    }
+  }
+
+  # Fail-closed: any cell not present-and-visible on all sites is suppressed.
+  suppressed <- present < n_sites
+  pooled[suppressed] <- NA_real_
+
+  list(
+    result = list(counts = pooled, suppressed = any(suppressed)),
+    warnings = warnings)
 }
