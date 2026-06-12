@@ -1946,6 +1946,10 @@
       title = "Value Ranking", width = 280, open = "always",
       shiny::selectInput(ns("table"), "Table", choices = NULL),
       shiny::selectInput(ns("column"), "Column", choices = NULL),
+      .concept_picker_ui(ns("concept"), label = "Concept filter (optional)"),
+      shiny::p(class = "text-muted small",
+        "Filtra por un concepto para rankear sus valores ",
+        "(p.ej. los ritmos dentro de Heart rate rhythm)."),
       shiny::numericInput(ns("top_n"), "Top N", value = 20, min = 5, max = 200,
                           step = 5),
       shiny::actionButton(ns("run_btn"), "Run", icon = shiny::icon("play"),
@@ -1960,6 +1964,7 @@
 .mod_explore_value_ranking_server <- function(id, state) {
   shiny::moduleServer(id, function(input, output, session) {
     res_rv <- shiny::reactiveVal(NULL)
+    picked_concept <- .concept_picker_server("concept", state)
 
     shiny::observe({
       tbls <- .get_person_tables(state$tables)
@@ -1983,10 +1988,14 @@
       shiny::req(input$table, input$column)
       scope <- state$scope %||% "per_site"
       policy <- state$pooling_policy %||% "strict"
+      pc <- picked_concept()
+      cid <- if (is.list(pc)) pc$concept_id else pc
+      cid <- if (is.null(cid) || length(cid) == 0) NULL else cid
       shiny::withProgress(message = "Counting values...", value = 0.4, {
         res <- tryCatch(
           ds.omop.value.counts(table = input$table, column = input$column,
                                top_n = as.integer(input$top_n %||% 20),
+                               concept_id = cid,
                                scope = .backend_scope(scope),
                                pooling_policy = policy, symbol = state$symbol),
           error = function(e) {
@@ -2206,6 +2215,13 @@
       shiny::selectInput(ns("table"), "Table", choices = NULL),
       shiny::selectInput(ns("row"), "Row column", choices = NULL),
       shiny::selectInput(ns("col"), "Column column", choices = NULL),
+      shiny::textInput(ns("row_concept_ids"), "Row concept IDs (optional)",
+                       placeholder = "e.g. 3003105, 3006122"),
+      shiny::textInput(ns("col_concept_ids"), "Column concept IDs (optional)",
+                       placeholder = "comma-separated"),
+      shiny::p(class = "text-muted small",
+        "Filtra los ejes por conceptos (p.ej. los measurement_concept_id ",
+        "de unos antibióticos) para el antibiograma."),
       shiny::radioButtons(ns("by"), "Count",
         choices = c("Distinct persons" = "persons", "Records" = "records"),
         selected = "persons"),
@@ -2255,10 +2271,13 @@
       scope <- state$scope %||% "per_site"
       policy <- state$pooling_policy %||% "strict"
       strat <- if (nzchar(input$stratify_by %||% "")) input$stratify_by else NULL
+      row_cid <- .parse_ids(input$row_concept_ids %||% "")
+      col_cid <- .parse_ids(input$col_concept_ids %||% "")
       shiny::withProgress(message = "Building cross-tab...", value = 0.4, {
         res <- tryCatch(
           ds.omop.crosstab(table = input$table, row = input$row, col = input$col,
             by = input$by %||% "persons", stratify_by = strat,
+            row_concept_id = row_cid, col_concept_id = col_cid,
             scope = .backend_scope(scope), pooling_policy = policy,
             symbol = state$symbol),
           error = function(e) {
