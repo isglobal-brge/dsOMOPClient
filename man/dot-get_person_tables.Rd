@@ -4,13 +4,22 @@
 \alias{.get_person_tables}
 \title{Extract CDM table names with person_id from state tables}
 \usage{
-.get_person_tables(tables)
+.get_person_tables(tables, scope = "pooled", selected_servers = NULL)
 }
 \arguments{
-\item{tables}{Named list of table metadata per server.}
+\item{tables}{Named list of table metadata per server (from
+\code{ds.omop.tables()}; each element holds the tables PRESENT on that
+server).}
+
+\item{scope}{Character; "pooled" (default) shows a table when it is present
+on at least one of the considered servers; "per_site" restricts to the
+focus (first selected) server's tables.}
+
+\item{selected_servers}{Character; servers to consider (default: all servers
+in \code{tables}). Tables absent from every considered server are hidden.}
 }
 \value{
-Character vector of table names.
+Character vector of CDM person-level table names actually present.
 }
 \description{
 Extract CDM table names with person_id from state tables

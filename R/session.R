@@ -128,17 +128,7 @@ ds.omop.connect <- function(resource,
 
   server_names <- names(conns)
 
-  if (is.character(resource) && length(resource) == 1) {
-    resource_map <- stats::setNames(
-      rep(resource, length(server_names)),
-      server_names
-    )
-  } else if (is.list(resource)) {
-    resource_map <- resource
-  } else {
-    resource_map <- stats::setNames(
-      as.character(resource), server_names)
-  }
+  resource_map <- .resolve_resource_map(resource, server_names, strict = strict)
 
   res_symbol <- .generate_symbol("dsO")
 
@@ -328,4 +318,55 @@ ds.omop.keepalive <- function(symbol = "omop") {
     DSI::datashield.aggregate(session$conns, expr = call("omopPingDS", session$res_symbol)),
     error = function(e) list(error = conditionMessage(e))
   ))
+}
+
+#' Resolve a resource argument into a per-server resource map
+#'
+#' Accepts a single resource name (applied to every server), a named
+#' list/vector mapping server name to resource (servers may hold the OMOP
+#' resource at different locations), or an unnamed vector matched positionally
+#' to the connected servers. Validates names against the connected servers.
+#'
+#' @param resource Character scalar, named list/vector, or positional vector.
+#' @param server_names Character; names of the connected servers.
+#' @param strict Logical; error (vs warn) on unknown/missing server mappings.
+#' @return Named list of resource names, one per server (NULL for unmapped).
+#' @keywords internal
+.resolve_resource_map <- function(resource, server_names, strict = TRUE) {
+  # Single shared resource on every server.
+  if (is.character(resource) && length(resource) == 1 &&
+      is.null(names(resource))) {
+    return(stats::setNames(
+      as.list(rep(resource, length(server_names))), server_names))
+  }
+  nm <- names(resource)
+  if (!is.null(nm) && all(nzchar(nm))) {
+    # Named mapping (list or vector): match by server name.
+    unknown <- setdiff(nm, server_names)
+    if (length(unknown) > 0) {
+      msg <- paste0(
+        "resource names not among connected servers (",
+        paste(server_names, collapse = ", "), "): ",
+        paste(unknown, collapse = ", "))
+      if (strict) stop(msg, call. = FALSE) else warning(msg, call. = FALSE)
+    }
+    missing <- setdiff(server_names, nm)
+    if (length(missing) > 0 && strict) {
+      stop("no resource specified for server(s): ",
+           paste(missing, collapse = ", "), call. = FALSE)
+    }
+    return(stats::setNames(lapply(server_names, function(s) {
+      v <- resource[[s]]
+      if (is.null(v)) NULL else as.character(v)
+    }), server_names))
+  }
+  # Unnamed vector/list: match positionally to the servers.
+  vals <- as.character(unlist(resource, use.names = FALSE))
+  if (length(vals) != length(server_names)) {
+    stop("resource has ", length(vals), " entries but there are ",
+         length(server_names), " connected server(s); supply a named ",
+         "list/vector (server = resource) or one value per server.",
+         call. = FALSE)
+  }
+  stats::setNames(as.list(vals), server_names)
 }

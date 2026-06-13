@@ -4,12 +4,16 @@
 \alias{ds.omop.studio}
 \title{Launch OMOP Studio}
 \usage{
-ds.omop.studio(symbol = "omop", launch.browser = TRUE)
+ds.omop.studio(symbol = "omop", launch.browser = TRUE, port = NULL)
 }
 \arguments{
 \item{symbol}{Character; OMOP session symbol (default "omop")}
 
 \item{launch.browser}{Logical; open in browser (default TRUE)}
+
+\item{port}{Integer; preferred port for the app. If \code{NULL} (default)
+Shiny picks a free port automatically. If a port is given and free it is
+used; if it is already in use, a nearby free port is chosen instead.}
 }
 \value{
 A Shiny app object (runs interactively)
@@ -23,5 +27,6 @@ authoring. Requires an active DataSHIELD session created via
 \examples{
 \dontrun{
 ds.omop.studio(session)
+ds.omop.studio(port = 8200)
 }
 }

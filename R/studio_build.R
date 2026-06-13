@@ -568,7 +568,7 @@
 
     # Populate table dropdowns from state$tables
     shiny::observe({
-      tbl_choices <- .get_person_tables(state$tables)
+      tbl_choices <- .get_person_tables(state$tables, state$scope, state$selected_servers)
       if (length(tbl_choices) > 0) {
         formatted <- .table_choices(tbl_choices)
         shiny::updateSelectInput(session, "add_table", choices = formatted)
@@ -1514,7 +1514,7 @@
 
       recipe <- state$recipe
       tbl_choices <- .table_choices(
-        .get_person_tables(state$tables) %||%
+        .get_person_tables(state$tables, state$scope, state$selected_servers) %||%
           c("condition_occurrence", "drug_exposure", "measurement",
             "procedure_occurrence", "observation", "visit_occurrence", "person")
       )

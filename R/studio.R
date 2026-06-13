@@ -10,13 +10,17 @@
 #'
 #' @param symbol Character; OMOP session symbol (default "omop")
 #' @param launch.browser Logical; open in browser (default TRUE)
+#' @param port Integer; preferred port for the app. If \code{NULL} (default)
+#'   Shiny picks a free port automatically. If a port is given and free it is
+#'   used; if it is already in use, a nearby free port is chosen instead.
 #' @return A Shiny app object (runs interactively)
 #' @examples
 #' \dontrun{
 #' ds.omop.studio(session)
+#' ds.omop.studio(port = 8200)
 #' }
 #' @export
-ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
+ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE, port = NULL) {
   # Eagerly capture the session BEFORE Shiny starts. This protects against
   # namespace reloads (devtools::load_all) that would recreate an empty
   # .dsomop_client_env, losing the registered session.
@@ -26,7 +30,48 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
     ui = .studio_ui(symbol),
     server = .studio_server(symbol, captured_session)
   )
-  shiny::runApp(app, launch.browser = launch.browser)
+  # Only pass `port` when explicitly requested; otherwise let Shiny use its
+  # own default (getOption("shiny.port")) so existing port-pinning still works.
+  if (!is.null(port)) {
+    shiny::runApp(app, launch.browser = launch.browser,
+                  port = .studio_resolve_port(port))
+  } else {
+    shiny::runApp(app, launch.browser = launch.browser)
+  }
+}
+
+#' Resolve a preferred Studio port to a free one
+#'
+#' Validates a requested port and returns it when free; otherwise falls back to
+#' the next free port nearby (and then a short list of common ports), or
+#' \code{NULL} to let Shiny auto-select. Uses base \code{serverSocket()} so no
+#' extra dependency is required.
+#'
+#' @param port Integer-ish; the requested port.
+#' @return An integer free port, or \code{NULL}.
+#' @keywords internal
+.studio_resolve_port <- function(port) {
+  is_free <- function(p) {
+    con <- tryCatch(base::serverSocket(p), error = function(e) NULL)
+    if (is.null(con)) return(FALSE)
+    close(con)
+    TRUE
+  }
+  port <- suppressWarnings(as.integer(port))
+  if (is.na(port) || port < 1L || port > 65535L) {
+    stop("`port` must be an integer between 1 and 65535.", call. = FALSE)
+  }
+  if (is_free(port)) return(port)
+  for (p in c(port + seq_len(20), 3838L, 4040L, 8100L, 8200L, 8787L, 9090L)) {
+    if (p <= 65535L && is_free(p)) {
+      message(sprintf(
+        "OMOP Studio: port %d is in use; using free port %d instead.", port, p))
+      return(p)
+    }
+  }
+  message(sprintf(
+    "OMOP Studio: port %d is in use; letting Shiny pick a free port.", port))
+  NULL
 }
 
 #' OMOP Studio UI
@@ -902,25 +947,44 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE) {
 
 #' Extract CDM table names with person_id from state tables
 #'
-#' @param tables Named list of table metadata per server.
-#' @return Character vector of table names.
+#' @param tables Named list of table metadata per server (from
+#'   \code{ds.omop.tables()}; each element holds the tables PRESENT on that
+#'   server).
+#' @param scope Character; "pooled" (default) shows a table when it is present
+#'   on at least one of the considered servers; "per_site" restricts to the
+#'   focus (first selected) server's tables.
+#' @param selected_servers Character; servers to consider (default: all servers
+#'   in \code{tables}). Tables absent from every considered server are hidden.
+#' @return Character vector of CDM person-level table names actually present.
 #' @keywords internal
-.get_person_tables <- function(tables) {
-  # Guard: tables may be NULL, empty, or an UNNAMED list (names(tables)[1] would
-  # be NA -> tables[[NA]] throws a get1index error). Use the positional first
-  # element, which is the first server's table frame regardless of names.
+.get_person_tables <- function(tables, scope = "pooled",
+                               selected_servers = NULL) {
   if (is.null(tables) || length(tables) == 0) return(character(0))
-  df <- tables[[1]]
-  if (!is.data.frame(df)) return(character(0))
-  # Filter to CDM tables with has_person_id = TRUE
-  mask <- rep(TRUE, nrow(df))
-  if ("schema_category" %in% names(df)) {
-    mask <- mask & (df$schema_category == "CDM")
+  srv <- names(tables)
+  use <- if (!is.null(selected_servers) && length(selected_servers) > 0) {
+    if (!is.null(srv)) intersect(selected_servers, srv) else selected_servers
+  } else {
+    srv
   }
-  if ("has_person_id" %in% names(df)) {
-    mask <- mask & isTRUE_vec(df$has_person_id)
+  # Unnamed list (no server names): fall back to positional indices.
+  if (is.null(use) || length(use) == 0) use <- seq_along(tables)
+  # Per-site: only the focus (first selected) server's tables.
+  if (identical(scope, "per_site")) use <- use[1]
+  present <- function(df) {
+    if (!is.data.frame(df) || nrow(df) == 0) return(character(0))
+    mask <- rep(TRUE, nrow(df))
+    if ("schema_category" %in% names(df)) {
+      mask <- mask & (df$schema_category == "CDM")
+    }
+    if ("has_person_id" %in% names(df)) {
+      mask <- mask & isTRUE_vec(df$has_person_id)
+    }
+    as.character(df$table_name[mask])
   }
-  sort(df$table_name[mask])
+  # Union of tables present on the considered servers: a table is offered only
+  # if it actually exists somewhere, so tables absent everywhere are hidden.
+  sort(unique(unlist(lapply(use, function(s) present(tables[[s]])),
+                     use.names = FALSE)))
 }
 
 # Vectorised isTRUE
