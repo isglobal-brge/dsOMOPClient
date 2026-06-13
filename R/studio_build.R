@@ -403,7 +403,7 @@
           bslib::tooltip(
             shiny::checkboxInput(ns("opt_translate_concepts"),
               "Translate concept IDs to labels",
-              value = FALSE),
+              value = TRUE),
             "Replace numeric *_concept_id columns with human-readable concept names. Recommended for categorical data."
           ),
           bslib::tooltip(
@@ -465,6 +465,13 @@
             class = "btn-sm btn-outline-secondary flex-fill"),
           "Load a recipe from a .yml / .yaml / .json file.")
       ),
+      # Custom filename for the "Save to WD" action. The extension is added
+      # automatically from the selected format; leave blank for the default.
+      bslib::tooltip(
+        shiny::textInput(ns("save_wd_name"), NULL,
+          value = paste0("omop_recipe_", format(Sys.Date(), "%Y%m%d")),
+          placeholder = "omop_recipe name (for Save to WD)"),
+        "Filename used by \"Save to WD\". The .yml/.json extension is added automatically."),
       shiny::conditionalPanel(
         condition = paste0("input['", ns("import_json_btn"), "'] > 0"),
         shiny::fileInput(ns("import_file"), NULL,
@@ -1074,7 +1081,7 @@
       # Reset the Plan Options inputs to the recipe defaults so the sidebar
       # does not show stale values from the cleared recipe.
       shiny::updateCheckboxInput(session, "opt_translate_concepts",
-        value = FALSE)
+        value = TRUE)
       shiny::updateCheckboxInput(session, "opt_block_sensitive", value = TRUE)
       shiny::updateCheckboxInput(session, "opt_factor_concepts", value = TRUE)
       shiny::updateNumericInput(session, "opt_min_persons", value = NA)
@@ -1124,17 +1131,37 @@
     shiny::observeEvent(input$save_wd_recipe, {
       is_yaml <- identical(input$recipe_export_format, "yaml")
       ext <- if (is_yaml) "yml" else "json"
+      default_name <- paste0("omop_recipe_", format(Sys.Date(), "%Y%m%d"))
       fname <- .sanitize_wd_filename(
-        paste0("omop_recipe_", format(Sys.Date(), "%Y%m%d"), ".", ext),
-        ext = ext, default = paste0("omop_recipe.", ext))
+        input$save_wd_name %||% default_name,
+        ext = ext, default = paste0(default_name, ".", ext))
       path <- file.path(getwd(), fname)
+
+      # Never silently overwrite: if the target exists, auto-suffix _2, _3, ...
+      # before the extension and tell the user we renamed.
+      renamed <- FALSE
+      if (file.exists(path)) {
+        renamed <- TRUE
+        stem <- sub("\\.[^.]*$", "", fname)
+        i <- 2L
+        repeat {
+          fname <- paste0(stem, "_", i, ".", ext)
+          path <- file.path(getwd(), fname)
+          if (!file.exists(path)) break
+          i <- i + 1L
+        }
+      }
+
       tryCatch({
         if (is_yaml) recipe_export_yaml(state$recipe, file = path)
         else recipe_export_json(state$recipe, file = path)
         shiny::showNotification(
           shiny::HTML(paste0("Saved to <code>",
-            normalizePath(path, mustWork = FALSE),
-            "</code><br><small>Written on the machine running the Studio.</small>")),
+            normalizePath(path, mustWork = FALSE), "</code>",
+            if (renamed)
+              "<br><small>A file with that name already existed, so it was saved under a new name (existing file left untouched).</small>"
+            else
+              "<br><small>Written on the machine running the Studio.</small>")),
           type = "message", duration = 6)
       }, error = function(e) {
         shiny::showNotification(paste("Save failed:", conditionMessage(e)),

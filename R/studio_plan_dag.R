@@ -14,19 +14,36 @@
 # Distribution statistics whose disclosure floor is stricter (n < 10).
 .plan_distribution_fmts <- c("mean", "sd", "cv", "slope", "min", "max")
 
-# Per-domain colour + FontAwesome icon (unicode codepoints visNetwork uses).
+# Shared palette --------------------------------------------------------------
+# A soft, harmonised pastel scheme. Every node gets a LIGHT pastel background
+# (`fill`) with a darker, matching border (`border`); the global node font
+# colour is a dark slate so labels stay readable on every node. Disclosure
+# flags keep the existing red (`.plan_disclosure_border`) so the warning still
+# reads clearly against the pastels.
+.plan_node_font_color   <- "#2c3e50"  # dark slate — readable on all pastels
+.plan_disclosure_border <- "#c0392b"  # red border for n-too-small flags
+
+# COHORT / DERIVATION / OUTPUT layer colours (pastel fill + darker border).
+.plan_layer_colors <- list(
+  cohort     = list(fill = "#dfe7ef", border = "#7f93a8"),  # soft blue-grey
+  derivation = list(fill = "#fdf0c8", border = "#d9b657"),  # soft amber
+  output     = list(fill = "#d4efd9", border = "#5fb87f")   # soft green
+)
+
+# Per-domain pastel colour + FontAwesome icon (unicode codepoints visNetwork
+# uses). `fill` is a light pastel background, `border` a darker matching tone.
 .plan_domain_style <- function(table) {
   styles <- list(
-    condition_occurrence  = list(color = "#e74c3c", icon = "f0f1"), # stethoscope
-    drug_exposure         = list(color = "#9b59b6", icon = "f490"), # capsules
-    measurement           = list(color = "#16a085", icon = "f492"), # vial
-    procedure_occurrence  = list(color = "#e67e22", icon = "f0fe"), # plus-square
-    observation           = list(color = "#2980b9", icon = "f06e"), # eye
-    visit_occurrence      = list(color = "#795548", icon = "f0f8"), # hospital
-    person                = list(color = "#7f8c8d", icon = "f007"), # user
-    observation_period    = list(color = "#7f8c8d", icon = "f073")  # calendar
+    condition_occurrence  = list(fill = "#f6d6d2", border = "#d98b82", icon = "f0f1"), # stethoscope
+    drug_exposure         = list(fill = "#e6d6ef", border = "#a989c4", icon = "f490"), # capsules
+    measurement           = list(fill = "#cdeae3", border = "#5fb3a1", icon = "f492"), # vial
+    procedure_occurrence  = list(fill = "#fae0cc", border = "#d9a06b", icon = "f0fe"), # plus-square
+    observation           = list(fill = "#d3e3f3", border = "#7aa7d4", icon = "f06e"), # eye
+    visit_occurrence      = list(fill = "#e3dcd6", border = "#a8917f", icon = "f0f8"), # hospital
+    person                = list(fill = "#e4e8ec", border = "#9aa7b4", icon = "f007"), # user
+    observation_period    = list(fill = "#e4e8ec", border = "#9aa7b4", icon = "f073")  # calendar
   )
-  styles[[table]] %||% list(color = "#7f8c8d", icon = "f111")        # circle
+  styles[[table]] %||% list(fill = "#e4e8ec", border = "#9aa7b4", icon = "f111") # circle
 }
 
 #' Human-readable label for a recipe variable's concept
@@ -151,7 +168,9 @@
   )
   add_node(
     id = cohort_id, label = cohort_lbl, group = "COHORT", title = cohort_title,
-    color.background = "#34495e", color.border = if (min_persons_set) "#c0392b" else "#2c3e50",
+    color.background = .plan_layer_colors$cohort$fill,
+    color.border = if (min_persons_set) .plan_disclosure_border
+                   else .plan_layer_colors$cohort$border,
     shapeProperties.borderDashes = min_persons_set, shape = "box",
     icon.code = NA_character_, icon.color = NA_character_
   )
@@ -186,10 +205,10 @@
       )
       add_node(
         id = extraction_id, label = label, group = "EXTRACTION", title = ex_title,
-        color.background = style$color,
-        color.border = if (cells_disclosive) "#c0392b" else style$color,
+        color.background = style$fill,
+        color.border = if (cells_disclosive) .plan_disclosure_border else style$border,
         shapeProperties.borderDashes = cells_disclosive, shape = "box",
-        icon.code = intToUtf8(strtoi(style$icon, 16L)), icon.color = style$color
+        icon.code = intToUtf8(strtoi(style$icon, 16L)), icon.color = style$border
       )
       add_edge(cohort_id, extraction_id)
     }
@@ -211,8 +230,9 @@
     add_node(
       id = deriv_id, label = paste0(vname, "\n[", fmt, "]"),
       group = "DERIVATION", title = dv_title,
-      color.background = "#f1c40f",
-      color.border = if (is_dist) "#c0392b" else "#f39c12",
+      color.background = .plan_layer_colors$derivation$fill,
+      color.border = if (is_dist) .plan_disclosure_border
+                     else .plan_layer_colors$derivation$border,
       shapeProperties.borderDashes = is_dist, shape = "box",
       icon.code = NA_character_, icon.color = NA_character_
     )
@@ -236,8 +256,9 @@
     add_node(
       id = out_id, label = paste0(out_name, " (", out_type, ")"),
       group = "OUTPUT", title = out_title,
-      color.background = "#27ae60",
-      color.border = if (min_persons_set) "#c0392b" else "#1e8449",
+      color.background = .plan_layer_colors$output$fill,
+      color.border = if (min_persons_set) .plan_disclosure_border
+                     else .plan_layer_colors$output$border,
       shapeProperties.borderDashes = min_persons_set, shape = "box",
       icon.code = NA_character_, icon.color = NA_character_
     )
@@ -295,8 +316,18 @@
     vis <- visNetwork::visNetwork(dag$nodes, dag$edges)
     vis <- visNetwork::visHierarchicalLayout(vis, direction = "LR",
                                              sortMethod = "directed")
-    vis <- visNetwork::visNodes(vis, shape = "box")
-    vis <- visNetwork::visEdges(vis, arrows = "to")
+    # Soft, modern nodes: rounded boxes, a thin border, a subtle drop shadow and
+    # a dark slate label colour that stays readable on every pastel background.
+    vis <- visNetwork::visNodes(
+      vis, shape = "box", borderWidth = 1.5,
+      shadow = list(enabled = TRUE, size = 6, x = 1, y = 2),
+      font = list(color = .plan_node_font_color, size = 15, face = "system-ui"),
+      shapeProperties = list(borderRadius = 6),
+      margin = 10
+    )
+    vis <- visNetwork::visEdges(vis, arrows = "to", smooth = TRUE,
+                                color = list(color = "#b0bac4",
+                                             highlight = "#7f93a8"))
     vis <- visNetwork::visLegend(vis, useGroups = TRUE)
     vis <- visNetwork::visEvents(vis, selectNode = paste0(
       "function(nodes) {",
