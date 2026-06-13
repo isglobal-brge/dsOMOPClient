@@ -1,7 +1,7 @@
 Package: dsOMOPClient
 Type: Package
 Title: DataSHIELD Client for OMOP CDM Databases
-Version: 2.4.1
+Version: 2.4.2
 Authors@R: c(
     person("David", "Sarrat González", role = c("aut", "cre"), email = "david.sarrat@isglobal.org"),
     person("Xavier", "Escribà-Montagut", role = "aut"),
