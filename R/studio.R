@@ -229,12 +229,12 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE, port = NULL) 
         .mod_explore_ui("explore")
       ),
 
-      # --- Tab 3: Analytics dropdown (Achilles + OHDSI Results) ---
-      bslib::nav_menu("Analytics", icon = shiny::icon("chart-bar"),
-        bslib::nav_panel("Achilles", value = "achilles_tab",
+      # --- Tab 3: OHDSI Tools dropdown (Analysis [Achilles] + Data Quality) ---
+      bslib::nav_menu("OHDSI Tools", icon = shiny::icon("chart-bar"),
+        bslib::nav_panel("Analysis", value = "achilles_tab",
           .mod_atlas_ui("atlas")
         ),
-        bslib::nav_panel("OHDSI Results", value = "ohdsi_results_tab",
+        bslib::nav_panel("Data Quality", value = "ohdsi_results_tab",
           .mod_ohdsi_results_ui("ohdsi_results")
         )
       ),

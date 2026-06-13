@@ -12,6 +12,11 @@
     full_screen = TRUE,
     bslib::card_header("Session Log"),
     bslib::card_body(
+      shiny::div(class = "d-flex justify-content-end mb-2",
+        shiny::actionButton(ns("disconnect_btn"), "Close Studio",
+          icon = shiny::icon("xmark"),
+          class = "btn-sm btn-outline-secondary")
+      ),
       shiny::uiOutput(ns("session_log"))
     )
   )
@@ -37,6 +42,31 @@
         shiny::HTML(paste0("<pre style='margin:0;padding:0;'><code>",
                            highlighted, "</code></pre>"))
       )
+    })
+
+    # Close Studio: stop the Shiny app ONLY. The DataSHIELD connection and the
+    # OMOP session stay active (no logout, no ds.omop.disconnect) so the user
+    # can relaunch the Studio or keep working in R.
+    shiny::observeEvent(input$disconnect_btn, {
+      shiny::showModal(shiny::modalDialog(
+        title = "Close OMOP Studio",
+        shiny::p("This closes OMOP Studio only. Your DataSHIELD connection ",
+                 "stays active — relaunch any time with ",
+                 shiny::code("ds.omop.studio()"), ", or end the session in R ",
+                 "with ", shiny::code("ds.omop.disconnect()"), ". Any unsaved ",
+                 "recipe in the Builder will be lost."),
+        footer = shiny::tagList(
+          shiny::modalButton("Cancel"),
+          shiny::actionButton(session$ns("disconnect_confirm"),
+            "Close Studio", class = "btn-secondary")
+        ),
+        easyClose = TRUE
+      ))
+    })
+
+    shiny::observeEvent(input$disconnect_confirm, {
+      shiny::removeModal()
+      shiny::stopApp()
     })
   })
 }
