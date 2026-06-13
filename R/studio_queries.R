@@ -12,6 +12,19 @@
   bslib::layout_sidebar(
     sidebar = bslib::sidebar(
       title = "Query Library", width = 320, open = "always",
+      shiny::tags$style(shiny::HTML(
+        "#queries-query_list_dt table.dataTable td.qlib-cell {",
+        "  white-space:normal; word-break:break-word; padding:7px 9px;",
+        "  cursor:pointer; }",
+        "#queries-query_list_dt .qlib-group {",
+        "  font-size:0.64rem; font-weight:700; text-transform:uppercase;",
+        "  letter-spacing:.03em; color:#8a94a6; margin-bottom:1px; }",
+        "#queries-query_list_dt .qlib-name {",
+        "  font-size:0.9rem; line-height:1.3; color:inherit; }",
+        "#queries-query_list_dt table.dataTable { width:100% !important;",
+        "  border-collapse:collapse; }",
+        "#queries-query_list_dt .dataTables_scrollHead { display:none; }"
+      )),
       # Domain filter
       shiny::selectInput(ns("domain_filter"), "Domain",
         choices = c("All Domains" = "", "Condition" = "Condition",
@@ -129,12 +142,23 @@
     output$query_list_dt <- DT::renderDT({
       df <- filtered_queries()
       if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(NULL)
-      show_cols <- intersect(c("group", "name"), names(df))
+      grp <- if ("group" %in% names(df)) df$group else rep("", nrow(df))
+      nm  <- if ("name"  %in% names(df)) df$name  else df$id
+      # One full-width cell per query: a small muted group label above the full
+      # (wrapping) query name. Avoids the previous 2-column table that overflowed
+      # the narrow sidebar and truncated every name.
+      cells <- sprintf(
+        "<div class='qlib-item'><div class='qlib-group'>%s</div><div class='qlib-name'>%s</div></div>",
+        htmltools::htmlEscape(grp), htmltools::htmlEscape(nm))
       DT::datatable(
-        df[, show_cols, drop = FALSE],
-        options = list(pageLength = 50, dom = "t",
-                       scrollX = TRUE, scrollY = "360px"),
-        rownames = FALSE, selection = "single"
+        data.frame(Query = cells, stringsAsFactors = FALSE),
+        colnames = "", escape = FALSE, rownames = FALSE,
+        selection = "single", class = "compact hover",
+        options = list(
+          pageLength = 1000, dom = "t", scrollX = FALSE,
+          scrollY = "55vh", ordering = FALSE, autoWidth = FALSE,
+          columnDefs = list(list(targets = 0, className = "qlib-cell"))
+        )
       )
     })
 

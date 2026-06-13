@@ -402,7 +402,7 @@
 
     # Update miss table dropdown from state$tables
     shiny::observe({
-      tbl_choices <- .get_person_tables(state$tables)
+      tbl_choices <- .get_person_tables(state$tables, state$scope, state$selected_servers)
       if (length(tbl_choices) > 0) {
         shiny::updateSelectInput(session, "miss_table",
           choices = .table_choices(tbl_choices))

@@ -114,14 +114,12 @@
     prevalence_data <- shiny::reactiveVal(NULL)
     has_run <- shiny::reactiveVal(FALSE)
 
-    # Populate table dropdown from state$tables
+    # Populate table dropdown with the tables actually present in the data
+    # (scope-aware: pooled = union across selected servers, per_site = the
+    # focus server). Tables absent everywhere are not offered.
     shiny::observe({
-      tbl_choices <- .get_person_tables(state$tables)
-      if (length(tbl_choices) == 0) {
-        tbl_choices <- c("condition_occurrence", "drug_exposure",
-                         "measurement", "procedure_occurrence",
-                         "observation", "visit_occurrence")
-      }
+      tbl_choices <- .get_person_tables(state$tables, state$scope,
+                                        state$selected_servers)
       shiny::updateSelectInput(session, "table",
                                choices = .table_choices(tbl_choices))
     })
@@ -2005,7 +2003,7 @@
     picked_concept <- .concept_picker_server("concept", state)
 
     shiny::observe({
-      tbls <- .get_person_tables(state$tables)
+      tbls <- .get_person_tables(state$tables, state$scope, state$selected_servers)
       if (length(tbls) == 0) {
         tbls <- c("condition_occurrence", "drug_exposure", "measurement",
                   "observation", "procedure_occurrence", "visit_occurrence")
@@ -2155,7 +2153,7 @@
     picked_concept <- .concept_picker_server("concept", state)
 
     shiny::observe({
-      tbls <- .get_person_tables(state$tables)
+      tbls <- .get_person_tables(state$tables, state$scope, state$selected_servers)
       if (length(tbls) == 0) {
         tbls <- c("measurement", "observation", "drug_exposure")
       }
@@ -2355,7 +2353,7 @@
     res_rv <- shiny::reactiveVal(NULL)
 
     shiny::observe({
-      tbls <- .get_person_tables(state$tables)
+      tbls <- .get_person_tables(state$tables, state$scope, state$selected_servers)
       if (length(tbls) == 0) {
         tbls <- c("person", "condition_occurrence", "drug_exposure",
                   "measurement", "visit_occurrence")
@@ -2530,7 +2528,7 @@
     res_rv <- shiny::reactiveVal(NULL)
 
     shiny::observe({
-      tbls <- .get_person_tables(state$tables)
+      tbls <- .get_person_tables(state$tables, state$scope, state$selected_servers)
       if (length(tbls) == 0) {
         tbls <- c("person", "condition_occurrence", "drug_exposure",
                   "measurement", "visit_occurrence", "observation")
@@ -2687,7 +2685,7 @@
     picked_concept <- .concept_picker_server("concept", state)
 
     shiny::observe({
-      tbls <- tryCatch(.get_person_tables(state$tables), error = function(e) NULL)
+      tbls <- tryCatch(.get_person_tables(state$tables, state$scope, state$selected_servers), error = function(e) NULL)
       if (length(tbls) == 0) {
         tbls <- c("measurement", "observation", "condition_occurrence",
                   "drug_exposure", "procedure_occurrence", "visit_occurrence")
