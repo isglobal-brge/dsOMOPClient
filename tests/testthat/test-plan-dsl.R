@@ -3,7 +3,7 @@ test_that("ds.omop.plan creates empty plan", {
   expect_s3_class(plan, "omop_plan")
   expect_null(plan$cohort)
   expect_equal(length(plan$outputs), 0)
-  expect_false(plan$options$translate_concepts)
+  expect_true(plan$options$translate_concepts)
   expect_true(plan$options$block_sensitive)
 })
 
@@ -84,8 +84,8 @@ test_that("plan.outcome adds outcome extraction", {
 
 test_that("plan.options sets translate_concepts", {
   plan <- ds.omop.plan()
-  plan <- ds.omop.plan.options(plan, translate_concepts = TRUE)
-  expect_true(plan$options$translate_concepts)
+  plan <- ds.omop.plan.options(plan, translate_concepts = FALSE)
+  expect_false(plan$options$translate_concepts)
 })
 
 test_that("plan.options sets block_sensitive", {

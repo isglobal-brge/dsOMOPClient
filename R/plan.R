@@ -28,7 +28,7 @@ ds.omop.plan <- function() {
     anchor = list(table = "person", id_col = "person_id"),
     outputs = list(),
     options = list(
-      translate_concepts = FALSE,
+      translate_concepts = TRUE,
       block_sensitive = TRUE,
       min_persons = NULL,
       factor_concepts = TRUE
@@ -1245,7 +1245,7 @@ print.omop_plan <- function(x, ...) {
   }
 
   cat("Options: translate=",
-      x$options$translate_concepts %||% FALSE,
+      x$options$translate_concepts %||% TRUE,
       " block_sensitive=",
       x$options$block_sensitive %||% TRUE,
       " factor_concepts=",

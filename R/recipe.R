@@ -1387,7 +1387,7 @@ omop_recipe <- function() {
     filters   = list(),     # Named list of omop_filter / omop_filter_group
     outputs   = list(),     # Named list of omop_output
     options   = list(       # Plan-wide options applied at recipe_to_plan()
-      translate_concepts = FALSE,
+      translate_concepts = TRUE,
       block_sensitive    = TRUE,
       min_persons        = NULL,
       factor_concepts    = TRUE
@@ -2678,14 +2678,14 @@ recipe_to_code <- function(recipe) {
   # so empty/default recipes stay clean). .codegen_call drops NULL args, so a
   # NULL min_persons is simply omitted.
   o <- recipe$options %||% list()
-  def <- list(translate_concepts = FALSE, block_sensitive = TRUE,
+  def <- list(translate_concepts = TRUE, block_sensitive = TRUE,
               min_persons = NULL, factor_concepts = TRUE)
-  if (!identical(o$translate_concepts %||% FALSE, def$translate_concepts) ||
+  if (!identical(o$translate_concepts %||% TRUE, def$translate_concepts) ||
       !identical(o$block_sensitive    %||% TRUE,  def$block_sensitive) ||
       !identical(o$min_persons,                   def$min_persons) ||
       !identical(o$factor_concepts    %||% TRUE,  def$factor_concepts)) {
     opt_args <- .codegen_call("recipe_set_options",
-      translate_concepts = o$translate_concepts %||% FALSE,
+      translate_concepts = o$translate_concepts %||% TRUE,
       block_sensitive    = o$block_sensitive    %||% TRUE,
       min_persons        = o$min_persons,
       factor_concepts    = o$factor_concepts    %||% TRUE)

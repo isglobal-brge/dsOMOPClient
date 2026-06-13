@@ -87,12 +87,12 @@
   # defaults, so default plans stay clean). .codegen_call drops NULL args, so a
   # NULL min_persons is simply omitted.
   o <- plan$options %||% list()
-  if (!identical(o$translate_concepts %||% FALSE, FALSE) ||
+  if (!identical(o$translate_concepts %||% TRUE, TRUE) ||
       !identical(o$block_sensitive    %||% TRUE,  TRUE) ||
       !identical(o$min_persons,                   NULL) ||
       !identical(o$factor_concepts    %||% TRUE,  TRUE)) {
     opt_args <- .codegen_call("ds.omop.plan.options",
-      translate_concepts = o$translate_concepts %||% FALSE,
+      translate_concepts = o$translate_concepts %||% TRUE,
       block_sensitive    = o$block_sensitive    %||% TRUE,
       min_persons        = o$min_persons,
       factor_concepts    = o$factor_concepts    %||% TRUE)
