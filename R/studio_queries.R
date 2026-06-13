@@ -13,17 +13,23 @@
     sidebar = bslib::sidebar(
       title = "Query Library", width = 320, open = "always",
       shiny::tags$style(shiny::HTML(
-        "#queries-query_list_dt table.dataTable td.qlib-cell {",
-        "  white-space:normal; word-break:break-word; padding:7px 9px;",
-        "  cursor:pointer; }",
-        "#queries-query_list_dt .qlib-group {",
-        "  font-size:0.64rem; font-weight:700; text-transform:uppercase;",
-        "  letter-spacing:.03em; color:#8a94a6; margin-bottom:1px; }",
-        "#queries-query_list_dt .qlib-name {",
-        "  font-size:0.9rem; line-height:1.3; color:inherit; }",
         "#queries-query_list_dt table.dataTable { width:100% !important;",
         "  border-collapse:collapse; }",
-        "#queries-query_list_dt .dataTables_scrollHead { display:none; }"
+        "#queries-query_list_dt .dataTables_scrollHead { display:none; }",
+        "#queries-query_list_dt table.dataTable td.qlib-cell {",
+        "  white-space:normal; word-break:break-word; padding:9px 10px;",
+        "  cursor:pointer; border-bottom:1px solid rgba(128,138,154,.20);",
+        "  transition:background .12s ease; }",
+        "#queries-query_list_dt table.dataTable tbody tr:hover td.qlib-cell {",
+        "  background:rgba(128,138,154,.10); }",
+        "#queries-query_list_dt table.dataTable tr.selected td.qlib-cell {",
+        "  background:rgba(13,110,253,.14) !important;",
+        "  box-shadow:inset 3px 0 0 #0d6efd; }",
+        "#queries-query_list_dt .qlib-group {",
+        "  font-size:0.64rem; font-weight:700; text-transform:uppercase;",
+        "  letter-spacing:.03em; color:#8a94a6; margin-bottom:2px; }",
+        "#queries-query_list_dt .qlib-name {",
+        "  font-size:0.92rem; line-height:1.35; color:inherit; }"
       )),
       # Domain filter
       shiny::selectInput(ns("domain_filter"), "Domain",
