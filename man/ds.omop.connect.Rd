@@ -42,6 +42,13 @@ Assigns the resource server-side, initializes the OMOP handle, retrieves
 capabilities, and returns an \code{omop_session} object. This is the entry
 point for all dsOMOPClient operations.
 }
+\details{
+The connection is self-healing: the server-side OMOP database connection
+auto-reconnects on demand, so a dropped or timed-out database connection is
+transparently re-established on the next call. There is therefore no need to
+keep the session warm with periodic pings during long idle periods. Use
+\code{\link{ds.omop.status}} if you want to manually probe connectivity.
+}
 \examples{
 \dontrun{
 library(DSI)
