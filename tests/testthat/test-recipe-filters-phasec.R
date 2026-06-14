@@ -48,6 +48,83 @@ test_that("recipe_to_plan no longer writes to the dead output$filter slot", {
   expect_false(is.null(out$filters$custom))
 })
 
+# --- per-variable row filter -> non-long outputs (features/sparse/wide/surv) --
+#
+# G1 regression: per-variable row filters used to be applied ONLY in the long
+# branch; features / wide / covariates_sparse / survival silently dropped them,
+# so a value-restricted variable was computed over ALL rows. They must now reach
+# the slot the server executes for that output type.
+
+.value_bin_var <- function(name = "hba1c", format = NULL) {
+  omop_variable(
+    name = name, table = "measurement", concept_id = 3004410, format = format,
+    filters = list(omop_filter(
+      type = "value_bin", level = "row",
+      params = list(var = "value_as_number",
+                    value = list(lower = 7, upper = 10)))))
+}
+
+.expect_value_bin_leaf <- function(ft) {
+  expect_false(is.null(ft))
+  leaf <- if ("and" %in% names(ft)) ft$and[[1]] else ft
+  expect_equal(leaf$op, "value_bin")
+  expect_equal(leaf$var, "value_as_number")
+}
+
+test_that("features output forwards per-variable row filter to filters$custom", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, .value_bin_var(format = "mean"))
+  r <- recipe_add_output(r, omop_output(name = "labs", type = "features"))
+
+  out <- recipe_to_plan(r)$outputs[[1]]
+  expect_equal(out$type, "event_level")   # features compiles to event_level
+  .expect_value_bin_leaf(out$filters$custom)
+})
+
+test_that("covariates_sparse output forwards per-variable row filter", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, .value_bin_var(format = "mean"))
+  r <- recipe_add_output(r,
+    omop_output(name = "labs", type = "covariates_sparse"))
+
+  out <- recipe_to_plan(r)$outputs[[1]]
+  .expect_value_bin_leaf(out$filters$custom)
+})
+
+test_that("survival output forwards per-variable row filter to filters$custom", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, .value_bin_var(format = "mean"))
+  r <- recipe_add_output(r, omop_output(name = "surv", type = "survival"))
+
+  out <- recipe_to_plan(r)$outputs[["surv"]]
+  expect_equal(out$type, "survival")
+  .expect_value_bin_leaf(out$filters$custom)
+})
+
+test_that("single-table wide features output forwards per-variable row filter", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, .value_bin_var(format = "mean"))
+  r <- recipe_add_output(r, omop_output(name = "wide", type = "wide"))
+
+  out <- recipe_to_plan(r)$outputs[["wide"]]
+  expect_equal(out$type, "event_level")
+  .expect_value_bin_leaf(out$filters$custom)
+})
+
+test_that("multi-table wide routes row filter into the per-table feature entry", {
+  r <- omop_recipe()
+  r <- recipe_add_variable(r, .value_bin_var(name = "hba1c", format = "mean"))
+  r <- recipe_add_variable(r, omop_variable(
+    name = "sbp", table = "observation", concept_id = 3004249, format = "mean"))
+  r <- recipe_add_output(r, omop_output(name = "wide", type = "wide"))
+
+  out <- recipe_to_plan(r)$outputs[["wide"]]
+  expect_equal(out$type, "person_level")
+  # The measurement table entry carries the value_bin; observation does not.
+  .expect_value_bin_leaf(out$tables[["measurement"]]$filters)
+  expect_null(out$tables[["observation"]]$filters)
+})
+
 # --- per-variable time_window -> output$temporal$index_window -----------------
 
 test_that("recipe_to_plan forwards a per-variable time_window as index_window", {

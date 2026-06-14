@@ -2020,6 +2020,9 @@ recipe_to_plan <- function(recipe) {
             specs <- .build_feature_specs(vs)
             plan <- ds.omop.plan.features(plan, name = out_name, table = tbl,
                                            specs = specs)
+            # event_level output: per-variable row filters belong in the
+            # output's custom slot (same as the features/sparse branch).
+            plan <- .apply_var_filters(plan, out_name, vs)
           } else {
             # Multi-table or has derived: use person_level with features
             tables_spec <- list()
@@ -2040,6 +2043,10 @@ recipe_to_plan <- function(recipe) {
                   concept_set = .concept_set_arg(feat_vs, concept_ids),
                   features = specs
                 )
+                # person_level feature entries are filtered per-table: the
+                # server reads tables[[tbl]]$filters (.planExecute) and ANDs it
+                # into that table's feature SELECT before aggregation.
+                tables_spec[[tbl]]$filters <- .variables_custom_filter(feat_vs)
               } else {
                 tables_spec[[tbl]] <- .raw_table_columns(vs)
               }
@@ -2116,6 +2123,10 @@ recipe_to_plan <- function(recipe) {
               else out_name
         plan <- ds.omop.plan.features(plan, name = nm, table = tbl,
                                        specs = specs)
+        # Per-variable row filters restrict the rows that feed the feature
+        # aggregation; ds.omop.plan.features takes no filters arg, so route
+        # them into the output's custom slot (server applies before .toFeatures).
+        plan <- .apply_var_filters(plan, nm, vs)
       }
     } else if (out$type == "survival") {
       concept_ids <- unique(unlist(lapply(vars, function(v) v$concept_id)))
@@ -2127,6 +2138,10 @@ recipe_to_plan <- function(recipe) {
         outcome_concepts = concept_ids,
         tar = tar, name = out_name
       )
+      # Per-variable row filters narrow which outcome events qualify (e.g. a
+      # value range on the outcome). Route them into the output's custom slot;
+      # the server ANDs them into the outcome-event SELECT before time-to-event.
+      plan <- .apply_var_filters(plan, out_name, vars)
     } else if (out$type == "intervals") {
       tables <- names(by_table)
       plan <- ds.omop.plan.intervals(plan, tables = tables,
@@ -2384,6 +2399,35 @@ recipe_set_options <- function(recipe,
   }
   if (length(row_filters) == 0) return(NULL)
   .compile_filter_tree(row_filters, level = "row")
+}
+
+#' AND a set of variables' row filters into an output's custom filter slot
+#'
+#' Routes per-variable \code{"row"}-level filters into
+#' \code{plan$outputs[[name]]$filters$custom} — the nested AND/OR slot the
+#' server consumes (see dsOMOP \code{.planExecute} / \code{.compileSelect}).
+#' Used by the non-long output branches (features / wide / covariates_sparse /
+#' survival), which build outputs via dedicated plan helpers that don't take a
+#' \code{filters} argument, so the variable filters would otherwise be dropped
+#' and the variable computed over all rows. Any existing \code{custom} tree
+#' (e.g. a recipe-level row filter) is preserved by ANDing, exactly as the
+#' recipe-level merge in \code{recipe_to_plan} does. A no-op when the variables
+#' carry no row filters or the output does not exist.
+#'
+#' @param plan An \code{omop_plan} object.
+#' @param name Character; the output key to update.
+#' @param vars List of \code{omop_variable} objects feeding that output.
+#' @return The modified \code{omop_plan}.
+#' @keywords internal
+.apply_var_filters <- function(plan, name, vars) {
+  if (is.null(plan$outputs[[name]])) return(plan)
+  var_filter <- .variables_custom_filter(vars)
+  if (is.null(var_filter)) return(plan)
+  existing <- plan$outputs[[name]]$filters$custom
+  plan$outputs[[name]]$filters$custom <-
+    if (is.null(existing)) var_filter
+    else list(and = list(existing, var_filter))
+  plan
 }
 
 #' Derive an index-relative temporal spec from variables' time windows
