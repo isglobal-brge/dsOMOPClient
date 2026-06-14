@@ -168,10 +168,12 @@ test_that("omop_filter_value round-trip through recipe_to_plan", {
   r <- recipe_add_output(r, omop_output(name = "out", type = "long"))
   plan <- recipe_to_plan(r)
   out <- plan$outputs$out
-  # Row-level value_bin filter should compile into the filter tree
- expect_true(!is.null(out$filter))
+  # Row-level value_bin filter should compile into the executable custom filter
+  # tree (output$filters$custom — the slot the server actually runs).
+  ft <- out$filters$custom
+  expect_true(!is.null(ft))
   # Should contain a value_bin leaf node
-  leaf <- if ("and" %in% names(out$filter)) out$filter$and[[1]] else out$filter
+  leaf <- if ("and" %in% names(ft)) ft$and[[1]] else ft
   expect_equal(leaf$op, "value_bin")
   expect_equal(leaf$var, "value_as_number")
 })
@@ -183,7 +185,7 @@ test_that("date_range filter compiles to two conditions (>= start, <= end)", {
   r <- recipe_add_filter(r, omop_filter_date_range("2020-01-01", "2023-12-31"))
   r <- recipe_add_output(r, omop_output(name = "ev", type = "long"))
   plan <- recipe_to_plan(r)
-  ft <- plan$outputs$ev$filter
+  ft <- plan$outputs$ev$filters$custom
   expect_true("and" %in% names(ft))
   # Two conditions: >= start, <= end
   expect_equal(length(ft$and), 2)
@@ -1220,8 +1222,9 @@ test_that("row filter tree skips population filters inside mixed groups", {
   plan <- recipe_to_plan(c)
 
   expect_equal(plan$cohort$filter_tree$type, "sex")
-  expect_true("and" %in% names(plan$outputs$events$filter))
-  vars <- vapply(plan$outputs$events$filter$and, `[[`, character(1), "var")
+  ft <- plan$outputs$events$filters$custom
+  expect_true("and" %in% names(ft))
+  vars <- vapply(ft$and, `[[`, character(1), "var")
   expect_equal(vars, c("start_date", "start_date"))
 })
 
@@ -1247,11 +1250,11 @@ test_that("recipe_to_plan with row-level date filter", {
   c <- recipe_add_filter(c, omop_filter_date_range("2020-01-01", "2023-12-31"))
   c <- recipe_add_output(c, omop_output(name = "events", type = "long"))
   plan <- recipe_to_plan(c)
-  # Row filter compiled into filter tree and attached to output
+  # Row filter compiled into the executable custom filter tree on the output
   out <- plan$outputs$events
-  expect_true(!is.null(out$filter))
+  expect_true(!is.null(out$filters$custom))
   # Filter tree contains date bounds via compiled AND node
-  expect_true("and" %in% names(out$filter))
+  expect_true("and" %in% names(out$filters$custom))
 })
 
 test_that("recipe_to_plan with baseline output type", {

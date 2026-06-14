@@ -319,7 +319,17 @@ ds.omop.plan.concept_dictionary <- function(plan,
 #'   \code{\link{omop.temporal}}.
 #' @param date_handling A list; date handling specification controlling
 #'   how date columns are transformed. See \code{\link{omop.date_handling}}.
-#' @param filters Named list; additional custom filter DSL expressions.
+#' @param filters Named list; additional custom filter DSL expressions
+#'   (nested \code{and}/\code{or} of leaves, each \code{list(var=, op=, value=)}).
+#'   Validated fail-closed server-side: leaves on identifier or blocked columns,
+#'   and narrow fingerprinting operators, are rejected. Use this to filter by
+#'   \code{unit_concept_id} or a \code{*_type_concept_id} for unit/type scoping.
+#' @param visit_filter Named list \code{list(concept_ids = ...)}; restrict events
+#'   to visits of those \code{visit_concept_id} values via the
+#'   \code{visit_occurrence_id} link.
+#' @param concept_col Character; override the concept column the
+#'   \code{concept_set} scopes (default: the table's domain concept), e.g.
+#'   \code{"unit_concept_id"} to extract one unit for harmonization.
 #' @param representation Named list with \code{format} (one of
 #'   \code{"long"}, \code{"wide"}, \code{"features"}) and optional
 #'   format-specific settings.
@@ -346,6 +356,8 @@ ds.omop.plan.events <- function(plan, name, table,
                                 temporal = NULL,
                                 date_handling = NULL,
                                 filters = NULL,
+                                visit_filter = NULL,
+                                concept_col = NULL,
                                 representation = list(
                                   format = "long")) {
   output <- list(
@@ -365,6 +377,12 @@ ds.omop.plan.events <- function(plan, name, table,
   }
   if (!is.null(filters)) {
     output$filters$custom <- filters
+  }
+  if (!is.null(visit_filter)) {
+    output$filters$visit <- visit_filter
+  }
+  if (!is.null(concept_col)) {
+    output$filters$concept_col <- concept_col
   }
   if (!is.null(temporal)) {
     output$temporal <- temporal

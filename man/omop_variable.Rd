@@ -20,6 +20,8 @@ omop_variable(
   time_window = NULL,
   suffix_mode = c("index", "range", "label"),
   filters = list(),
+  visit_filter = NULL,
+  concept_col = NULL,
   expand = FALSE
 )
 }
@@ -53,6 +55,14 @@ to index date, or \code{NULL} for no window constraint.}
 (\code{"index"}, \code{"range"}, or \code{"label"}).}
 
 \item{filters}{List of \code{\link{omop_filter}} objects to apply to this variable.}
+
+\item{visit_filter}{Named list \code{list(concept_ids = ...)} or \code{NULL};
+restrict this variable's events to visits of those \code{visit_concept_id}
+values (via the \code{visit_occurrence_id} link).}
+
+\item{concept_col}{Character or \code{NULL}; override the concept column the
+\code{concept_id}/concept set scopes (default: the table's domain concept),
+e.g. \code{"unit_concept_id"} to extract a single unit for harmonization.}
 
 \item{expand}{Logical; if \code{TRUE}, expand the concept to include
 vocabulary descendants server-side (default \code{FALSE}).}

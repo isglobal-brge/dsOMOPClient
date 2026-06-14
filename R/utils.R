@@ -3,6 +3,20 @@
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+#' First non-NULL element of a list
+#'
+#' Returns the first element of \code{x} that is not \code{NULL}, or \code{NULL}
+#' if every element is \code{NULL}. Used to pick a single value (e.g. a visit
+#' filter or concept-scope column) from a set of variables, "first one set wins".
+#'
+#' @param x A list.
+#' @return The first non-NULL element, or \code{NULL}.
+#' @keywords internal
+.first_non_null <- function(x) {
+  for (el in x) if (!is.null(el)) return(el)
+  NULL
+}
+
 #' Internal environment for storing dsOMOPClient session state
 #' @keywords internal
 .dsomop_client_env <- new.env(parent = emptyenv())

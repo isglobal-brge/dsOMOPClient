@@ -14,6 +14,8 @@ ds.omop.plan.events(
   temporal = NULL,
   date_handling = NULL,
   filters = NULL,
+  visit_filter = NULL,
+  concept_col = NULL,
   representation = list(format = "long")
 )
 }
@@ -42,7 +44,19 @@ filtering relative to a cohort index date. See
 \item{date_handling}{A list; date handling specification controlling
 how date columns are transformed. See \code{\link{omop.date_handling}}.}
 
-\item{filters}{Named list; additional custom filter DSL expressions.}
+\item{filters}{Named list; additional custom filter DSL expressions
+(nested \code{and}/\code{or} of leaves, each \code{list(var=, op=, value=)}).
+Validated fail-closed server-side: leaves on identifier or blocked columns,
+and narrow fingerprinting operators, are rejected. Use this to filter by
+\code{unit_concept_id} or a \code{*_type_concept_id} for unit/type scoping.}
+
+\item{visit_filter}{Named list \code{list(concept_ids = ...)}; restrict events
+to visits of those \code{visit_concept_id} values via the
+\code{visit_occurrence_id} link.}
+
+\item{concept_col}{Character; override the concept column the
+\code{concept_set} scopes (default: the table's domain concept), e.g.
+\code{"unit_concept_id"} to extract one unit for harmonization.}
 
 \item{representation}{Named list with \code{format} (one of
 \code{"long"}, \code{"wide"}, \code{"features"}) and optional

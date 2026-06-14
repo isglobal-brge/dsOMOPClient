@@ -114,6 +114,12 @@
 #' @param suffix_mode Character; how to name multi-column expansions
 #'   (\code{"index"}, \code{"range"}, or \code{"label"}).
 #' @param filters List of \code{\link{omop_filter}} objects to apply to this variable.
+#' @param visit_filter Named list \code{list(concept_ids = ...)} or \code{NULL};
+#'   restrict this variable's events to visits of those \code{visit_concept_id}
+#'   values (via the \code{visit_occurrence_id} link).
+#' @param concept_col Character or \code{NULL}; override the concept column the
+#'   \code{concept_id}/concept set scopes (default: the table's domain concept),
+#'   e.g. \code{"unit_concept_id"} to extract a single unit for harmonization.
 #' @param expand Logical; if \code{TRUE}, expand the concept to include
 #'   vocabulary descendants server-side (default \code{FALSE}).
 #' @return An \code{omop_variable} object (a named list with class
@@ -155,6 +161,8 @@ omop_variable <- function(name = NULL,
                           time_window = NULL,
                           suffix_mode = c("index", "range", "label"),
                           filters = list(),
+                          visit_filter = NULL,
+                          concept_col = NULL,
                           expand = FALSE) {
   type <- match.arg(type)
   format <- match.arg(format)
@@ -186,7 +194,9 @@ omop_variable <- function(name = NULL,
     suffix_mode  = suffix_mode,
     filters      = filters
   )
-  # Only set when TRUE so the plain (exported) form stays stable.
+  # Only set when supplied so the plain (exported) form stays stable.
+  if (!is.null(visit_filter)) obj$visit_filter <- visit_filter
+  if (!is.null(concept_col)) obj$concept_col <- concept_col
   if (isTRUE(expand)) obj$expand <- TRUE
   class(obj) <- c("omop_variable", "list")
   obj
@@ -2041,14 +2051,29 @@ recipe_to_plan <- function(recipe) {
         })))
         columns <- columns[!is.null(columns)]
 
+        # Forward per-variable row filters (value_bin / date_range / ...) as the
+        # server custom filter DSL, and per-variable index-relative time windows
+        # as a temporal spec. Output-level temporal wins; the variable window
+        # only supplies index_window when the output sets none.
+        var_filter <- .variables_custom_filter(vs)
+        temporal <- out$options$temporal %||% .variables_time_window(vs)
+        # Visit-linkage + concept-scope come off the variables (first set wins);
+        # unit/type filtering is expressed as row filters on the relevant
+        # *_concept_id column and travels through var_filter above.
+        visit_filter <- .first_non_null(lapply(vs, function(v) v$visit_filter))
+        concept_col  <- .first_non_null(lapply(vs, function(v) v$concept_col))
+
         nm <- if (length(by_table) > 1) paste0(out_name, "_", tbl)
               else out_name
         plan <- ds.omop.plan.events(
           plan, name = nm, table = tbl,
           columns = if (length(columns) > 0) columns else NULL,
           concept_set = .concept_set_arg(vs, concept_ids),
-          temporal = out$options$temporal,
-          date_handling = out$options$date_handling
+          temporal = temporal,
+          date_handling = out$options$date_handling,
+          filters = var_filter,
+          visit_filter = visit_filter,
+          concept_col = concept_col
         )
       }
     } else if (out$type %in% c("features", "covariates_sparse")) {
@@ -2078,12 +2103,18 @@ recipe_to_plan <- function(recipe) {
     }
   }
 
-  # Apply row-level filters to relevant outputs (preserving AND/OR tree)
+  # Apply recipe-level row filters to outputs (preserving AND/OR tree). These go
+  # into output$filters$custom — the slot the server actually executes (see
+  # dsOMOP .planExecute / .compileSelect). Per-variable filters wired into the
+  # event paths above are ANDed with this recipe-level tree so neither is lost.
   row_filter_items <- .extract_filters_by_level(recipe$filters, "row")
   if (length(row_filter_items) > 0) {
     filter_tree <- .compile_filter_tree(row_filter_items, level = "row")
     for (out_name in names(plan$outputs)) {
-      plan$outputs[[out_name]]$filter <- filter_tree
+      existing <- plan$outputs[[out_name]]$filters$custom
+      plan$outputs[[out_name]]$filters$custom <-
+        if (is.null(existing)) filter_tree
+        else list(and = list(existing, filter_tree))
     }
   }
 
@@ -2297,6 +2328,50 @@ recipe_set_options <- function(recipe,
   if (inherits(f, "omop_filter")) {
     if (!is.null(level) && f$level != level) return(NULL)
     return(.filter_to_leaf(f))
+  }
+  NULL
+}
+
+#' Build a custom filter tree from a set of variables' row-level filters
+#'
+#' Collects every \code{"row"}-level \code{omop_filter} attached to the given
+#' variables (\code{v$filters}) and compiles them into a single AND/OR tree in
+#' the server's \code{.compileFilter()} DSL. This is what carries per-variable
+#' row filters (e.g. \code{value_bin}, \code{date_range}) from the recipe into
+#' the plan's \code{output$filters$custom}, where the server validates them
+#' fail-closed and ANDs them into the extraction WHERE.
+#'
+#' @param vars List of \code{omop_variable} objects (typically one table's).
+#' @return A filter-tree list, or \code{NULL} if no row filters are present.
+#' @keywords internal
+.variables_custom_filter <- function(vars) {
+  row_filters <- list()
+  for (v in vars) {
+    vf <- v$filters %||% list()
+    row_filters <- c(row_filters,
+                     .extract_filters_by_level(vf, "row"))
+  }
+  if (length(row_filters) == 0) return(NULL)
+  .compile_filter_tree(row_filters, level = "row")
+}
+
+#' Derive an index-relative temporal spec from variables' time windows
+#'
+#' Variable \code{time_window}s are index-relative day offsets
+#' (\code{list(start=, end=)}). The first variable that carries one defines the
+#' output's window, forwarded as the server temporal \code{index_window} so the
+#' extraction is restricted to events within that window of the cohort index
+#' date. Returns \code{NULL} when no variable sets a window.
+#'
+#' @param vars List of \code{omop_variable} objects.
+#' @return A temporal spec list with \code{index_window}, or \code{NULL}.
+#' @keywords internal
+.variables_time_window <- function(vars) {
+  for (v in vars) {
+    tw <- v$time_window
+    if (!is.null(tw) && (!is.null(tw$start) || !is.null(tw$end))) {
+      return(list(index_window = list(start = tw$start, end = tw$end)))
+    }
   }
   NULL
 }
@@ -2586,6 +2661,8 @@ recipe_to_code <- function(recipe) {
         suffix_mode = if (!identical(v$suffix_mode %||% "index", "index"))
           v$suffix_mode else NULL,
         filters = .codegen_filter_list(v$filters),
+        visit_filter = v$visit_filter,
+        concept_col = v$concept_col,
         expand = if (isTRUE(v$expand)) TRUE else NULL),
       ")"
     ))
@@ -2931,7 +3008,9 @@ recipe_to_code <- function(recipe) {
         value_source = v$value_source,
         time_window = v$time_window,
         suffix_mode = v$suffix_mode %||% "index",
-        filters = .recipe_restore_filter_list(v$filters)
+        filters = .recipe_restore_filter_list(v$filters),
+        visit_filter = v$visit_filter,
+        concept_col = v$concept_col
       )
       if (!is.null(v$derived)) var$derived <- v$derived
       if (!is.null(v$block_id)) var$block_id <- v$block_id
