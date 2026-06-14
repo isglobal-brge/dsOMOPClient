@@ -22,9 +22,8 @@ row-level filter trees.
 }
 \details{
 Recipes are the recommended interface for ordinary analysis code. Plans are
-retained as an explicit lower-level contract so advanced users, the Shiny
-builder, tests, and the server can inspect the exact payload before it is
-executed.
+retained as an explicit lower-level contract so advanced users, tests, and
+the server can inspect the exact payload before it is executed.
 }
 \examples{
 \dontrun{

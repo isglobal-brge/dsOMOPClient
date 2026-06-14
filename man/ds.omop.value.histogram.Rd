@@ -32,8 +32,8 @@ single concept of the table before binning (e.g. \code{value_as_number}
 for one measurement concept). Default: NULL for all rows. The server
 applies the same disclosure controls to the concept-filtered population.
 Requires a dsOMOP server build with histogram concept scoping; older
-servers reject the argument (the Studio falls back to the box plot and
-percentile table, which are concept-scoped via the quantiles aggregate).}
+servers reject the argument (use the concept-scoped quantiles aggregate
+via \code{ds.omop.value.quantiles()} as a fallback).}
 
 \item{cohort_table}{Character; name of a server-side cohort temp table
 for filtering, or NULL (default: NULL).}

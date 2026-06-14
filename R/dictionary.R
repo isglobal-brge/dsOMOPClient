@@ -195,7 +195,8 @@ ds.omop.compare <- function(symbol = "omop", conns = NULL) {
 #' combining capabilities metadata (available tables, CDM version info)
 #' with the join relationship graph into a single structure. This
 #' provides a complete picture of the database schema that can be cached
-#' client-side for use by the UI and query builder.
+#' client-side and used to drive headless schema exploration and query
+#' building.
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
 #' @param conns DSI connection object(s) or NULL to use the session default.

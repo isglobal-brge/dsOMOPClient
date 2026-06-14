@@ -250,8 +250,8 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
 #'   for one measurement concept). Default: NULL for all rows. The server
 #'   applies the same disclosure controls to the concept-filtered population.
 #'   Requires a dsOMOP server build with histogram concept scoping; older
-#'   servers reject the argument (the Studio falls back to the box plot and
-#'   percentile table, which are concept-scoped via the quantiles aggregate).
+#'   servers reject the argument (use the concept-scoped quantiles aggregate
+#'   via \code{ds.omop.value.quantiles()} as a fallback).
 #' @param cohort_table Character; name of a server-side cohort temp table
 #'   for filtering, or NULL (default: NULL).
 #' @param window List with \code{start}/\code{end} date strings for

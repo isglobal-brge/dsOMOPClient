@@ -1,7 +1,7 @@
 Package: dsOMOPClient
 Type: Package
 Title: DataSHIELD Client for OMOP CDM Databases
-Version: 2.4.8
+Version: 2.4.9
 Authors@R: c(
     person("David", "Sarrat González", role = c("aut", "cre"), email = "david.sarrat@isglobal.org"),
     person("Xavier", "Escribà-Montagut", role = "aut"),
@@ -11,8 +11,7 @@ Description: Client-side DataSHIELD package for interacting with OMOP CDM
     schema exploration, vocabulary operations, cohort management, feature
     engineering, and multi-server harmonization. Includes a recipe builder for
     point-and-click cohort and feature construction, a curated query library,
-    Achilles analytics integration, and OMOP Studio —
-    a full Shiny application for interactive federated data exploration.
+    and Achilles analytics integration.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends:
@@ -22,25 +21,15 @@ Imports:
     methods,
     stats,
     utils,
-    shiny (>= 1.7.0),
-    bslib (>= 0.5.0),
-    DT,
-    htmltools,
     jsonlite,
-    yaml,
-    plotly,
-    fontawesome,
-    shinycssloaders
+    yaml
 Suggests:
     DSLite,
     dsBaseClient,
     testthat (>= 3.0.0),
-    shinytest2,
-    chromote,
     clipr,
     knitr,
-    rmarkdown,
-    visNetwork
+    rmarkdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 RoxygenNote: 7.3.3

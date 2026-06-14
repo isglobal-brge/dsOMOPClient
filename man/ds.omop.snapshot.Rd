@@ -22,7 +22,8 @@ Retrieves a comprehensive schema snapshot from each connected server,
 combining capabilities metadata (available tables, CDM version info)
 with the join relationship graph into a single structure. This
 provides a complete picture of the database schema that can be cached
-client-side for use by the UI and query builder.
+client-side and used to drive headless schema exploration and query
+building.
 }
 \examples{
 \dontrun{

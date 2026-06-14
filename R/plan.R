@@ -1658,3 +1658,178 @@ print.omop_plan <- function(x, ...) {
       x$options$factor_concepts %||% TRUE, "\n")
   invisible(x)
 }
+
+# Internal: one-line, human-readable label for a single plan output. Shared by
+# summary.omop_plan and plot.omop_plan so the two stay consistent.
+.plan_output_label <- function(out, name) {
+  otype <- out$type %||% "event_level"
+  detail <- switch(otype,
+    person_level = paste0(length(out$tables %||% character(0)), " tables"),
+    baseline = paste0(length(out$columns %||% character(0)), " cols, ",
+                      length(out$derived %||% character(0)), " derived"),
+    survival = paste0(out$outcome$table %||% "?", ", ",
+                      length(out$outcome$concept_set %||% integer(0)),
+                      " concepts"),
+    concept_dictionary = paste0("from ",
+                      paste(out$source_outputs %||% "all", collapse = ", ")),
+    cohort_membership = "OHDSI cohort format",
+    intervals_long = paste0(length(out$tables %||% character(0)), " tables"),
+    temporal_covariates = paste0(out$table %||% "?", " bins=",
+                      out$bin_width %||% 30L, "d"),
+    {
+      n_concepts <- length(out$filters$concept_set$ids %||% out$concept_set)
+      paste0(out$table %||% "?",
+             if (n_concepts > 0) paste0(" (", n_concepts, " concepts)") else "")
+    }
+  )
+  list(type = otype, name = name, detail = detail)
+}
+
+# Internal: short label for the cohort node, used by summary and plot.
+.plan_cohort_label <- function(x) {
+  if (is.null(x$cohort)) return("all persons")
+  if (!is.null(x$cohort$cohort_definition_id))
+    paste("cohort ID", x$cohort$cohort_definition_id)
+  else "custom cohort spec"
+}
+
+#' Summarise an extraction plan
+#'
+#' Produces a compact, human-readable overview of an \code{omop_plan}: the
+#' cohort it targets, one row per configured output (type, name, and key
+#' parameters), and the plan-wide disclosure options. This is the headless
+#' equivalent of inspecting a plan interactively.
+#'
+#' @param object An \code{omop_plan} object.
+#' @param ... Additional arguments (ignored).
+#' @return Invisibly, a data frame with one row per output (columns
+#'   \code{type}, \code{name}, \code{detail}); printed as a formatted summary
+#'   as a side effect.
+#' @examples
+#' \dontrun{
+#' plan <- ds.omop.plan()
+#' plan <- ds.omop.plan.baseline(plan)
+#' summary(plan)
+#' }
+#' @export
+#' @method summary omop_plan
+summary.omop_plan <- function(object, ...) {
+  labels <- lapply(names(object$outputs), function(nm)
+    .plan_output_label(object$outputs[[nm]], nm))
+  df <- if (length(labels) == 0) {
+    data.frame(type = character(0), name = character(0),
+               detail = character(0), stringsAsFactors = FALSE)
+  } else {
+    data.frame(
+      type = vapply(labels, function(l) l$type, character(1)),
+      name = vapply(labels, function(l) l$name, character(1)),
+      detail = vapply(labels, function(l) l$detail, character(1)),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  cat("dsOMOP Extraction Plan\n")
+  cat("  Cohort : ", .plan_cohort_label(object), "\n", sep = "")
+  cat("  Outputs: ", nrow(df), "\n", sep = "")
+  for (i in seq_len(nrow(df))) {
+    cat(sprintf("    - [%s] %s: %s\n", df$type[i], df$name[i], df$detail[i]))
+  }
+  cat("  Options: translate=", object$options$translate_concepts %||% TRUE,
+      " block_sensitive=", object$options$block_sensitive %||% TRUE,
+      " factor_concepts=", object$options$factor_concepts %||% TRUE, "\n",
+      sep = "")
+  invisible(df)
+}
+
+#' Plot an extraction plan as a dependency graph
+#'
+#' Renders the structure of an \code{omop_plan} as a small directed graph
+#' linking the cohort node to each output node. By default the graph is emitted
+#' as Graphviz DOT text (printed via \code{cat}) which can be piped to
+#' \code{dot}, pasted into any Graphviz viewer, or rendered with the
+#' \pkg{DiagrammeR} package. A base-graphics fallback (\code{engine = "base"})
+#' draws a simple cohort-to-outputs diagram using only base \pkg{graphics},
+#' requiring no additional packages. This replaces the interactive plan DAG.
+#'
+#' @param x An \code{omop_plan} object.
+#' @param engine Character; \code{"dot"} (default) to emit Graphviz DOT text,
+#'   or \code{"base"} to draw a base-graphics diagram.
+#' @param ... Additional arguments (ignored).
+#' @return Invisibly: the DOT string when \code{engine = "dot"}, otherwise
+#'   \code{x}. Output is produced as a side effect.
+#' @examples
+#' \dontrun{
+#' plan <- ds.omop.plan()
+#' plan <- ds.omop.plan.baseline(plan)
+#' plot(plan)                 # Graphviz DOT text
+#' plot(plan, engine = "base")
+#' }
+#' @export
+#' @method plot omop_plan
+plot.omop_plan <- function(x, engine = c("dot", "base"), ...) {
+  engine <- match.arg(engine)
+  cohort_lbl <- .plan_cohort_label(x)
+  out_labels <- lapply(names(x$outputs), function(nm)
+    .plan_output_label(x$outputs[[nm]], nm))
+
+  esc <- function(s) gsub("\"", "'", s, fixed = TRUE)
+
+  if (engine == "dot") {
+    lines <- c(
+      "digraph omop_plan {",
+      "  rankdir=LR;",
+      "  node [shape=box, style=rounded];",
+      sprintf("  cohort [label=\"Cohort\\n%s\", style=\"rounded,filled\", fillcolor=\"#d6eaf8\"];",
+              esc(cohort_lbl))
+    )
+    if (length(out_labels) == 0) {
+      lines <- c(lines,
+        "  empty [label=\"(no outputs)\", style=\"rounded,dashed\"];",
+        "  cohort -> empty;")
+    } else {
+      for (i in seq_along(out_labels)) {
+        l <- out_labels[[i]]
+        nid <- paste0("out", i)
+        lines <- c(lines,
+          sprintf("  %s [label=\"[%s]\\n%s\\n%s\"];",
+                  nid, esc(l$type), esc(l$name), esc(l$detail)),
+          sprintf("  cohort -> %s;", nid))
+      }
+    }
+    lines <- c(lines, "}")
+    dot <- paste(lines, collapse = "\n")
+    cat(dot, "\n", sep = "")
+    return(invisible(dot))
+  }
+
+  # Base-graphics fallback: cohort box on the left, outputs stacked on the
+  # right, arrows from cohort to each output. No external dependency.
+  n <- length(out_labels)
+  op <- graphics::par(mar = c(0, 0, 1, 0))
+  on.exit(graphics::par(op), add = TRUE)
+  graphics::plot.new()
+  graphics::plot.window(xlim = c(0, 10), ylim = c(0, max(1, n) + 1))
+  graphics::title(main = "dsOMOP Extraction Plan")
+
+  cy <- (max(1, n) + 1) / 2
+  draw_box <- function(xc, yc, txt, fill) {
+    w <- 2.6; h <- 0.6
+    graphics::rect(xc - w, yc - h, xc + w, yc + h, col = fill, border = "grey40")
+    graphics::text(xc, yc, txt, cex = 0.8)
+  }
+  draw_box(2, cy, paste0("Cohort\n", cohort_lbl), "#d6eaf8")
+
+  if (n == 0) {
+    draw_box(8, cy, "(no outputs)", "white")
+    graphics::arrows(4.6, cy, 5.4, cy, length = 0.1)
+  } else {
+    ys <- rev(seq_len(n))
+    for (i in seq_len(n)) {
+      l <- out_labels[[i]]
+      draw_box(8, ys[i], paste0("[", l$type, "] ", l$name, "\n", l$detail),
+               "#fef9e7")
+      graphics::arrows(4.6, cy, 5.4, ys[i], length = 0.1)
+    }
+  }
+  invisible(x)
+}

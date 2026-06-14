@@ -18,8 +18,8 @@ Issues a lightweight ping to every connected server that ALSO touches the
 server-side database connection (\code{omopPingDS(symbol)} runs a trivial
 \code{SELECT 1} on the handle). This resets the inactivity timer on BOTH
 connection layers at once: the client<->Opal DataSHIELD R sessions and the
-server-side Rock-R<->OMOP-database connection. The OMOP Studio calls this on
-a timer so neither layer times out while the app stays open.
+server-side Rock-R<->OMOP-database connection. Call this on a timer so
+neither layer times out during long idle periods.
 }
 \examples{
 \dontrun{
