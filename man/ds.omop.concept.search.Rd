@@ -5,11 +5,14 @@
 \title{Search for OMOP concepts by name}
 \usage{
 ds.omop.concept.search(
-  pattern,
+  pattern = NULL,
   domain = NULL,
   vocabulary = NULL,
   standard_only = TRUE,
   limit = 50,
+  concept_id = NULL,
+  standard = NULL,
+  valid = NULL,
   symbol = "omop",
   conns = NULL,
   execute = TRUE
@@ -18,7 +21,8 @@ ds.omop.concept.search(
 \arguments{
 \item{pattern}{Character; search term or SQL LIKE pattern to match against
 concept names. Supports partial matching (e.g., \code{"diabetes"} matches
-\code{"Type 2 diabetes mellitus"}).}
+\code{"Type 2 diabetes mellitus"}). Now optional: pass \code{NULL} to
+search by \code{concept_id} or by the metadata filters alone.}
 
 \item{domain}{Character; restrict results to a specific OMOP domain
 (e.g., \code{"Condition"}, \code{"Drug"}, \code{"Measurement"}).
@@ -30,11 +34,23 @@ concept names. Supports partial matching (e.g., \code{"diabetes"} matches
 
 \item{standard_only}{Logical; if \code{TRUE} (the default), only standard
 concepts are returned. Set to \code{FALSE} to include non-standard and
-classification concepts.}
+classification concepts. Ignored when \code{standard} is supplied.}
 
 \item{limit}{Integer; maximum number of results to return per server
 (default: 50). Increase for broader searches, but larger values will
 increase server-side processing time.}
+
+\item{concept_id}{Integer or numeric vector; restrict the search to these
+exact concept IDs. \code{NULL} (the default) applies no ID filter.}
+
+\item{standard}{Character; explicit \code{standard_concept} value to filter
+on (e.g. \code{"S"} for standard, \code{"C"} for classification). When
+supplied this overrides \code{standard_only}. \code{NULL} (the default)
+applies no explicit value filter.}
+
+\item{valid}{Logical; \code{TRUE} keeps only currently-valid concepts
+(\code{invalid_reason IS NULL}), \code{FALSE} only invalidated ones.
+\code{NULL} (the default) returns both.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
@@ -54,10 +70,11 @@ A \code{dsomop_result} object with \code{scope = "per_site"}.
 }
 \description{
 Searches the vocabulary tables across all connected DataSHIELD servers for
-concepts matching the given pattern. Results include concept ID, name,
-domain, vocabulary, and standard concept flag. The search is executed
-server-side via \code{omopSearchConceptsDS} so that vocabulary tables
-never leave the server.
+concepts matching the given pattern and/or filters. Results include concept
+ID, name, domain, vocabulary, and standard concept flag. The search is
+executed server-side via \code{omopSearchConceptsDS} so that vocabulary
+tables never leave the server. Vocabulary metadata carries no patient data,
+so this reader is not disclosure-gated.
 }
 \examples{
 \dontrun{
@@ -67,5 +84,9 @@ results$pooled
 
 # Search across all domains, including non-standard concepts
 all_hits <- ds.omop.concept.search("aspirin", standard_only = FALSE, limit = 100)
+
+# Look up exact IDs, keeping only currently-valid standard concepts
+hits <- ds.omop.concept.search(NULL, concept_id = c(201826, 4329847),
+                               standard = "S", valid = TRUE)
 }
 }

@@ -183,6 +183,77 @@ test_that(".pool_result dispatches table_stats correctly", {
   expect_equal(result$result$persons, 130)
 })
 
+test_that(".pool_result column_stats pools n, mean, and a correct cross-site SD", {
+  # Per-site stats as returned by .profileColumnStats (sd over non-NULL values).
+  # Server A: n_total=110, n_missing=10 -> n_eff=100, mean=10, sd=2 (var=4)
+  # Server B: n_total=210, n_missing=10 -> n_eff=200, mean=20, sd=3 (var=9)
+  per_site <- list(
+    a = list(n_total = 110, n_missing = 10, mean = 10, sd = 2),
+    b = list(n_total = 210, n_missing = 10, mean = 20, sd = 3)
+  )
+  result <- .pool_result(per_site, "column_stats", "strict")
+
+  expect_equal(result$result$n_total, 320)               # sum of n_total
+  expect_equal(result$result$mean, (110 * 10 + 210 * 20) / 320, tolerance = 1e-10)
+
+  # Pooled SD must equal sqrt of the sum-of-squares pooled variance over n_eff.
+  n <- c(a = 100, b = 200); m <- c(a = 10, b = 20); v <- c(a = 4, b = 9)
+  N <- sum(n); pooled_mean <- sum(n * m) / N
+  expected_var <- (sum((n - 1) * v) + sum(n * (m - pooled_mean)^2)) / (N - 1)
+  expect_equal(result$result$sd, sqrt(expected_var), tolerance = 1e-10)
+})
+
+test_that(".pool_result column_stats omits SD when no site reports one", {
+  per_site <- list(
+    a = list(n_total = 100, mean = 10),
+    b = list(n_total = 200, mean = 20)
+  )
+  result <- .pool_result(per_site, "column_stats", "strict")
+  expect_equal(result$result$n_total, 300)
+  expect_null(result$result$sd)
+})
+
+test_that(".pool_result column_stats pools SD over the sites that report it", {
+  # Server B suppressed its sd (small-sample NA); pooled sd should fall back to
+  # the single reporting site (A) rather than vanish.
+  per_site <- list(
+    a = list(n_total = 100, n_missing = 0, mean = 10, sd = 2),
+    b = list(n_total = 200, n_missing = 0, mean = 20, sd = NA_real_)
+  )
+  result <- .pool_result(per_site, "column_stats", "strict")
+  expect_equal(result$result$sd, 2, tolerance = 1e-10)  # single-site var=4 -> sd=2
+})
+
+test_that(".pool_result column_stats never pools n_distinct across sites", {
+  # n_distinct sets overlap across servers, so they cannot be summed; the pooled
+  # view must expose n_total, mean, and sd but NOT n_distinct, even when every
+  # site reports one.
+  per_site <- list(
+    a = list(n_total = 100, n_missing = 0, mean = 10, sd = 2, n_distinct = 40),
+    b = list(n_total = 200, n_missing = 0, mean = 20, sd = 3, n_distinct = 55)
+  )
+  result <- .pool_result(per_site, "column_stats", "strict")
+  expect_null(result$result$n_distinct)
+  expect_equal(result$result$n_total, 300)
+  expect_false(is.null(result$result$sd))           # sd still pooled
+})
+
+test_that(".pool_result column_stats SD weights use non-NULL counts (n_missing)", {
+  # The server computes sd over NON-NULL values, so the pooled-variance weight is
+  # n_total - n_missing. A two-site reference computed on n_eff must match.
+  per_site <- list(
+    a = list(n_total = 130, n_missing = 30, mean = 5,  sd = 1.5),   # n_eff = 100
+    b = list(n_total = 250, n_missing = 50, mean = 15, sd = 4.0)    # n_eff = 200
+  )
+  result <- .pool_result(per_site, "column_stats", "strict")
+
+  n <- c(a = 100, b = 200); m <- c(a = 5, b = 15); v <- c(a = 1.5^2, b = 4.0^2)
+  N <- sum(n); pooled_mean <- sum(n * m) / N
+  expected_var <- (sum((n - 1) * v) + sum(n * (m - pooled_mean)^2)) / (N - 1)
+  expect_equal(result$result$sd, sqrt(expected_var), tolerance = 1e-10)
+  expect_equal(result$result$n_total, 380)          # n_total summed, not n_eff
+})
+
 test_that(".pool_result returns NULL for unknown type", {
   result <- .pool_result(list(a = 1), "unknown_type", "strict")
   expect_null(result$result)

@@ -349,11 +349,11 @@
     },
 
     "column_stats" = {
-      # .profileColumnStats returns per-site n_total + mean (plus optionally
-      # disclosure-suppressed n_distinct/n_missing). Pool the row count (sum)
-      # and the count-weighted mean. There is no per-site sd to pool, and
-      # n_distinct cannot be summed across servers (distinct sets overlap), so
-      # neither appears in the pooled view.
+      # .profileColumnStats returns per-site n_total + mean (plus optionally a
+      # per-site sd and disclosure-suppressed n_distinct/n_missing). Pool the row
+      # count (sum) and the count-weighted mean. n_distinct cannot be summed
+      # across servers (distinct sets overlap), so it never appears in the pooled
+      # view. The per-site sd IS pooled into a correct cross-site sd below.
       counts <- vapply(per_site, function(s) {
         if (is.list(s) && !is.null(s$n_total)) as.numeric(s$n_total)
         else if (is.list(s) && !is.null(s$count)) as.numeric(s$count)
@@ -369,9 +369,46 @@
       pool_n <- .pool_counts(counts, policy)
       pool_mean <- .pool_means(means, counts, policy)
 
-      warnings <- c(pool_n$warnings, pool_mean$warnings)
+      # Pooled SD via the sum-of-squares identity (delegated to .pool_variance):
+      #   pooled_var = (Σ(n_i-1)·var_i + Σ n_i·(mean_i - mean_pool)^2) / (N-1)
+      # The server computes each site's sd over its NON-NULL values, so the
+      # matching weight is that site's non-NULL count = n_total - n_missing
+      # (n_missing may be NA when suppressed -> fall back to n_total). Inputs are
+      # already gated/banded aggregates, so reconstructing the pooled spread adds
+      # no disclosure. Sites that suppressed their sd (small-sample NA) are simply
+      # absent from the variance inputs; we pool over the remaining sites
+      # ("pooled_only_ok") rather than discarding the pooled sd entirely, and warn
+      # when this leaves too few sites to combine.
+      sds <- vapply(per_site, function(s) {
+        if (is.list(s) && !is.null(s$sd)) as.numeric(s$sd) else NA_real_
+      }, numeric(1))
+      names(sds) <- names(per_site)
+
+      n_eff <- vapply(names(per_site), function(srv) {
+        s <- per_site[[srv]]
+        if (!is.list(s) || is.null(s$n_total)) return(NA_real_)
+        nt <- as.numeric(s$n_total)
+        nm <- if (!is.null(s$n_missing)) as.numeric(s$n_missing) else NA_real_
+        if (is.na(nm)) nt else nt - nm
+      }, numeric(1))
+      names(n_eff) <- names(per_site)
+
+      pooled_sd <- NULL
+      sd_warnings <- character(0)
+      if (any(!is.na(sds))) {
+        vars <- sds^2
+        pool_var <- .pool_variance(vars, means, n_eff, policy = "pooled_only_ok")
+        if (!is.null(pool_var$result)) {
+          pooled_sd <- sqrt(max(pool_var$result, 0))
+        }
+        sd_warnings <- pool_var$warnings
+      }
+
+      warnings <- c(pool_n$warnings, pool_mean$warnings, sd_warnings)
       result <- if (!is.null(pool_n$result)) {
-        list(n_total = pool_n$result, mean = pool_mean$result)
+        out <- list(n_total = pool_n$result, mean = pool_mean$result)
+        if (!is.null(pooled_sd)) out$sd <- pooled_sd
+        out
       } else NULL
 
       list(result = result, warnings = warnings)
