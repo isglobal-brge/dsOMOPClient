@@ -151,8 +151,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE, port = NULL) 
           Shiny.addCustomMessageHandler('toggleAchillesTab', function(data) {
             var tabs = document.querySelectorAll('#main_nav .nav-link, #main_nav .dropdown-item');
             tabs.forEach(function(tab) {
-              if (tab.textContent.trim().indexOf('Achilles') !== -1 &&
-                  tab.textContent.trim().indexOf('OHDSI') === -1) {
+              if (tab.getAttribute('data-value') === 'achilles_tab') {
                 if (data.disabled) {
                   tab.classList.add('achilles-disabled');
                   tab.setAttribute('title', data.tooltip || 'Run OHDSI Achilles on your CDM to enable this tab');
@@ -168,7 +167,7 @@ ds.omop.studio <- function(symbol = "omop", launch.browser = TRUE, port = NULL) 
           Shiny.addCustomMessageHandler('toggleOhdsiResultsTab', function(data) {
             var tabs = document.querySelectorAll('#main_nav .nav-link, #main_nav .dropdown-item');
             tabs.forEach(function(tab) {
-              if (tab.textContent.trim().indexOf('OHDSI Results') !== -1) {
+              if (tab.getAttribute('data-value') === 'ohdsi_results_tab') {
                 if (data.disabled) {
                   tab.classList.add('ohdsi-results-disabled');
                   tab.setAttribute('title', data.tooltip || 'No OHDSI result tables found');

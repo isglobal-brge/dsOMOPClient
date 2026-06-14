@@ -1,7 +1,7 @@
 Package: dsOMOPClient
 Type: Package
 Title: DataSHIELD Client for OMOP CDM Databases
-Version: 2.4.2
+Version: 2.4.3
 Authors@R: c(
     person("David", "Sarrat González", role = c("aut", "cre"), email = "david.sarrat@isglobal.org"),
     person("Xavier", "Escribà-Montagut", role = "aut"),
@@ -10,8 +10,8 @@ Description: Client-side DataSHIELD package for interacting with OMOP CDM
     databases. Provides an ergonomic plan-based API for safe data extraction,
     schema exploration, vocabulary operations, cohort management, feature
     engineering, and multi-server harmonization. Includes a recipe builder for
-    point-and-click cohort and feature construction, a curated query library
-    with auto-visualization, Achilles analytics integration, and OMOP Studio —
+    point-and-click cohort and feature construction, a curated query library,
+    Achilles analytics integration, and OMOP Studio —
     a full Shiny application for interactive federated data exploration.
 License: MIT + file LICENSE
 Encoding: UTF-8
