@@ -2,13 +2,13 @@
 % Please edit documentation in R/queries.R
 \name{ds.omop.query.get}
 \alias{ds.omop.query.get}
-\title{Get query template details}
+\title{Get query template details (DEPRECATED)}
 \usage{
 ds.omop.query.get(query_id, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{query_id}{Character; the unique query ID from the query library
-(e.g., \code{"condition_prevalence"}).}
+\item{query_id}{Character; the legacy query ID (e.g.,
+\code{"condition_prevalence"}).}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
@@ -17,22 +17,19 @@ was initialised (default: \code{"omop"}).}
 connections stored in the active session are used.}
 }
 \value{
-Named list with query metadata, including \code{id}, \code{name},
-  \code{description}, \code{inputs}, \code{output_schema},
-  \code{sensitive_fields}, and \code{pool_strategy}. Returns \code{NULL}
-  if the query ID is not found.
+Named list of catalog entry metadata, or \code{NULL} if not found.
 }
 \description{
-Returns the full metadata for a specific query template, including its
-input parameter definitions, output column schema, sensitive field
-annotations (used by disclosure controls), and the recommended pooling
-strategy. This is useful for programmatically building input forms or
-understanding what a query will return before executing it.
+Deprecated shim for \code{\link{ds.omop.analysis.get}}. Forwards to
+\code{ds.omop.analysis.get()} using the entry's pack-prefixed catalog name
+(\code{"dsomop:<query_id>"}) and returns the entry metadata list.
 }
 \examples{
 \dontrun{
 meta <- ds.omop.query.get("condition_prevalence")
-meta$inputs
-meta$sensitive_fields
+meta$params
 }
+}
+\seealso{
+\code{\link{ds.omop.analysis.get}}
 }

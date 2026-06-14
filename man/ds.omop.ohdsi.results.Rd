@@ -49,8 +49,8 @@ with suppression propagation; rates/proportions are set to NA.
 }
 \examples{
 \dontrun{
-# DQD results per site
-dqd <- ds.omop.ohdsi.results("dqdashboard_results")
+# Cohort diagnostics results per site
+cd <- ds.omop.ohdsi.results("index_event_breakdown")
 
 # Cohort counts pooled across servers
 cc <- ds.omop.ohdsi.results("cohort_count", scope = "pooled")

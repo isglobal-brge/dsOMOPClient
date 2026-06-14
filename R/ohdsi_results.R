@@ -4,7 +4,7 @@
 #' Check OHDSI result tool availability
 #'
 #' Queries each connected server to determine which OHDSI tool result tables
-#' (DQD, CohortDiagnostics, CohortIncidence, Characterization) are present.
+#' (CohortDiagnostics, CohortIncidence, Characterization, and others) are present.
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL}, uses active session.
@@ -12,7 +12,7 @@
 #' @examples
 #' \dontrun{
 #' status <- ds.omop.ohdsi.status()
-#' status$per_site[["server_a"]]$dqd$available
+#' status$per_site[["server_a"]]$cohort_diagnostics$available
 #' }
 #' @export
 ds.omop.ohdsi.status <- function(symbol = "omop", conns = NULL) {
@@ -96,8 +96,8 @@ ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL) {
 #' @return A \code{dsomop_result} object.
 #' @examples
 #' \dontrun{
-#' # DQD results per site
-#' dqd <- ds.omop.ohdsi.results("dqdashboard_results")
+#' # Cohort diagnostics results per site
+#' cd <- ds.omop.ohdsi.results("index_event_breakdown")
 #'
 #' # Cohort counts pooled across servers
 #' cc <- ds.omop.ohdsi.results("cohort_count", scope = "pooled")
@@ -142,7 +142,7 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
 #'
 #' Returns a summary of available result tables for a specific OHDSI tool.
 #'
-#' @param tool_id Character; which tool to summarize (e.g., \code{"dqd"},
+#' @param tool_id Character; which tool to summarize (e.g.,
 #'   \code{"cohort_diagnostics"}, \code{"cohort_incidence"},
 #'   \code{"characterization"}).
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
@@ -150,8 +150,8 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
 #' @return A \code{dsomop_result} object with \code{scope = "per_site"}.
 #' @examples
 #' \dontrun{
-#' dqd_summary <- ds.omop.ohdsi.summary("dqd")
-#' dqd_summary$per_site
+#' cd_summary <- ds.omop.ohdsi.summary("cohort_diagnostics")
+#' cd_summary$per_site
 #' }
 #' @export
 ds.omop.ohdsi.summary <- function(tool_id, symbol = "omop", conns = NULL) {

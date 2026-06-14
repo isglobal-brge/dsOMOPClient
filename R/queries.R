@@ -1,168 +1,118 @@
-# Module: Query Library
-# Client-side wrappers for listing, inspecting, and executing curated SQL
-# query templates from the dsOMOP query library.
+# Module: Query Library (DEPRECATED)
+# The curated SQL query templates are now one of the three surfaces folded into
+# the unified analysis catalog (see analysis.R / dsOMOP/R/analysis_catalog.R).
+# These functions are retained only as thin deprecated shims that forward to the
+# ds.omop.analysis.* equivalents so existing code keeps working; new code should
+# call ds.omop.analysis.list / .get / .run directly.
 
-#' List available query templates
+#' Map a legacy query id to its analysis-catalog entry name
 #'
-#' Returns metadata for all available query templates on connected servers.
-#' Templates are classified by their DataSHIELD security mode:
-#' \code{SAFE_AGGREGATE} (returns aggregate results to the client),
-#' \code{SAFE_ASSIGN} (stores results server-side), or \code{BLOCKED}
-#' (not permitted). Only non-BLOCKED templates are returned. Since the
-#' query library is defined by the server package, the catalog is identical
-#' across servers and the first server's result is returned.
+#' QueryLibrary templates are registered in the unified catalog under the
+#' pack-prefixed name \code{"dsomop:<query_id>"}. This prefixes a bare legacy
+#' \code{query_id} (and leaves an already-prefixed name untouched).
+#' @param query_id Character; a legacy query id or an already-prefixed name.
+#' @return Character; the catalog entry name.
+#' @keywords internal
+.query_id_to_name <- function(query_id) {
+  query_id <- as.character(query_id)[[1]]
+  if (grepl(":", query_id, fixed = TRUE)) query_id else paste0("dsomop:", query_id)
+}
+
+#' List available query templates (DEPRECATED)
 #'
-#' @param domain Character; optional domain filter to restrict results
-#'   (e.g., \code{"Condition"}, \code{"Drug"}, \code{"Measurement"}).
-#'   \code{NULL} (the default) returns templates for all domains.
-#' @param provider Character; query provider filter. \code{"native"} (the
-#'   default) returns only built-in dsOMOP templates; \code{"all"} includes
-#'   any additional registered providers.
+#' Deprecated shim for \code{\link{ds.omop.analysis.list}}. The curated query
+#' templates are now part of the unified analysis catalog; this forwards to
+#' \code{ds.omop.analysis.list()} and returns the catalog data frame.
+#'
+#' @param domain Character; optional domain filter. \code{NULL} (the default)
+#'   returns all domains.
+#' @param provider Character; ignored (retained for back-compatibility).
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
-#' @return Data frame with query metadata columns: \code{id}, \code{group},
-#'   \code{name}, \code{description}, \code{mode}, \code{class},
-#'   \code{poolable}, \code{cdm_version}, \code{n_inputs}. Returns an empty
-#'   data frame with the correct schema if no templates match.
+#' @return Data frame of analysis-catalog entry metadata (the pooled view).
 #' @examples
 #' \dontrun{
-#' # List all available templates
 #' templates <- ds.omop.query.list()
 #' head(templates)
-#'
-#' # List only drug-related templates
-#' drug_queries <- ds.omop.query.list(domain = "Drug")
 #' }
+#' @seealso \code{\link{ds.omop.analysis.list}}
 #' @export
 ds.omop.query.list <- function(domain = NULL, provider = "native",
                                   symbol = "omop", conns = NULL) {
-  session <- .get_session(symbol)
-  conns <- conns %||% session$conns
-
-  results <- DSI::datashield.aggregate(
-    conns,
-    expr = call("omopQueryListDS", session$res_symbol,
-                domain, provider)
-  )
-
-  # Return first server's result (metadata is identical across servers)
-  if (length(results) > 0) {
-    result <- results[[1]]
-    if (is.data.frame(result)) return(result)
-  }
-
-  data.frame(
-    id = character(0), group = character(0), name = character(0),
-    description = character(0), mode = character(0),
-    class = character(0), poolable = logical(0),
-    cdm_version = character(0), n_inputs = integer(0),
-    stringsAsFactors = FALSE
-  )
+  .Deprecated("ds.omop.analysis.list")
+  res <- ds.omop.analysis.list(domain = domain, symbol = symbol, conns = conns)
+  if (is.data.frame(res$pooled)) return(res$pooled)
+  data.frame()
 }
 
-#' Get query template details
+#' Get query template details (DEPRECATED)
 #'
-#' Returns the full metadata for a specific query template, including its
-#' input parameter definitions, output column schema, sensitive field
-#' annotations (used by disclosure controls), and the recommended pooling
-#' strategy. This is useful for programmatically building input forms or
-#' understanding what a query will return before executing it.
+#' Deprecated shim for \code{\link{ds.omop.analysis.get}}. Forwards to
+#' \code{ds.omop.analysis.get()} using the entry's pack-prefixed catalog name
+#' (\code{"dsomop:<query_id>"}) and returns the entry metadata list.
 #'
-#' @param query_id Character; the unique query ID from the query library
-#'   (e.g., \code{"condition_prevalence"}).
+#' @param query_id Character; the legacy query ID (e.g.,
+#'   \code{"condition_prevalence"}).
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
-#' @return Named list with query metadata, including \code{id}, \code{name},
-#'   \code{description}, \code{inputs}, \code{output_schema},
-#'   \code{sensitive_fields}, and \code{pool_strategy}. Returns \code{NULL}
-#'   if the query ID is not found.
+#' @return Named list of catalog entry metadata, or \code{NULL} if not found.
 #' @examples
 #' \dontrun{
 #' meta <- ds.omop.query.get("condition_prevalence")
-#' meta$inputs
-#' meta$sensitive_fields
+#' meta$params
 #' }
+#' @seealso \code{\link{ds.omop.analysis.get}}
 #' @export
 ds.omop.query.get <- function(query_id, symbol = "omop", conns = NULL) {
-  session <- .get_session(symbol)
-  conns <- conns %||% session$conns
-
-  results <- DSI::datashield.aggregate(
-    conns,
-    expr = call("omopQueryGetDS", session$res_symbol, query_id)
-  )
-
-  if (length(results) > 0) return(results[[1]])
-  NULL
+  .Deprecated("ds.omop.analysis.get")
+  res <- ds.omop.analysis.get(.query_id_to_name(query_id),
+                              symbol = symbol, conns = conns)
+  res$pooled
 }
 
-#' Execute a query template
+#' Execute a query template (DEPRECATED)
 #'
-#' Executes a query template against all connected servers with
-#' DataSHIELD-aligned disclosure controls applied server-side. In
-#' \code{"aggregate"} mode, results are returned to the client as per-server
-#' data frames. In \code{"assign"} mode, results are stored server-side
-#' under a generated symbol name and the function returns \code{TRUE}
-#' invisibly.
+#' Deprecated shim for \code{\link{ds.omop.analysis.run}}. Forwards to
+#' \code{ds.omop.analysis.run()} using the entry's pack-prefixed catalog name.
+#' For back-compatibility the return value matches the old contract:
+#' \code{"aggregate"} mode returns a named list of per-server data frames, and
+#' \code{"assign"} mode returns \code{TRUE} invisibly (the result stays on the
+#' server). Disclosure controls and (in aggregate mode) cross-server pooling are
+#' handled by the analysis run path.
 #'
-#' Disclosure controls (small-count suppression) are applied by the server
-#' before results leave the server. Rows with counts below the server's
-#' configured threshold are either dropped or have their counts set to NA.
-#'
-#' @param query_id Character; the unique query ID from the query library
-#'   (e.g., \code{"condition_prevalence"}).
-#' @param inputs Named list; parameter values required by the query template.
-#'   Use \code{\link{ds.omop.query.get}} to discover required inputs and
-#'   their types. Default: empty list (for queries with no required inputs).
-#' @param mode Character; \code{"aggregate"} (the default) returns results
-#'   to the client, \code{"assign"} stores results server-side for further
-#'   analysis.
+#' @param query_id Character; the legacy query ID (e.g.,
+#'   \code{"condition_prevalence"}).
+#' @param inputs Named list; parameter values for the entry. Default: empty list.
+#' @param mode Character; \code{"aggregate"} (the default) returns results to the
+#'   client, \code{"assign"} stores the result server-side.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
-#' @return For \code{mode = "aggregate"}: a named list of per-server data
-#'   frames. For \code{mode = "assign"}: \code{TRUE} invisibly. Use
-#'   \code{\link{ds.omop.query.pool}} to combine aggregate results.
+#' @return For \code{mode = "aggregate"}: a named list of per-server data frames.
+#'   For \code{mode = "assign"}: \code{TRUE} invisibly. Use
+#'   \code{\link{ds.omop.query.pool}} to combine aggregate results, or prefer the
+#'   pooled view returned by \code{\link{ds.omop.analysis.run}} directly.
 #' @examples
 #' \dontrun{
-#' # Execute a query with no inputs
-#' results <- ds.omop.query.exec("gender_distribution")
-#' results[["server_a"]]
-#'
-#' # Execute a query with inputs and pool the results
 #' results <- ds.omop.query.exec("condition_prevalence",
 #'   inputs = list(concept_id = 201826))
 #' pooled <- ds.omop.query.pool(results, query_id = "condition_prevalence")
 #' }
+#' @seealso \code{\link{ds.omop.analysis.run}}
 #' @export
 ds.omop.query.exec <- function(query_id, inputs = list(),
                                   mode = "aggregate",
                                   symbol = "omop", conns = NULL) {
-  session <- .get_session(symbol)
-  conns <- conns %||% session$conns
+  .Deprecated("ds.omop.analysis.run")
   mode <- match.arg(mode, c("aggregate", "assign"))
-
-  if (mode == "aggregate") {
-    results <- .ds_safe_aggregate(
-      conns,
-      expr = call("omopQueryExecDS", session$res_symbol,
-                   query_id, .ds_encode(inputs), mode)
-    )
-    return(results)
-  }
-
-  # Assign mode
-  DSI::datashield.assign.expr(
-    conns,
-    symbol = paste0("query_", gsub("\\.", "_", query_id)),
-    expr = call("omopQueryExecDS", session$res_symbol,
-                query_id, .ds_encode(inputs), mode)
-  )
+  res <- ds.omop.analysis.run(.query_id_to_name(query_id), params = inputs,
+                              symbol = symbol, conns = conns)
+  if (mode == "aggregate") return(res$per_site)
   invisible(TRUE)
 }
 
@@ -206,10 +156,15 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
 #' @return A data frame with pooled results, or \code{NULL} if pooling
 #'   failed (no valid data frames, all empty, etc.). For a single server,
 #'   its result is returned as-is.
+#' @section Deprecated:
+#' New code should use \code{\link{ds.omop.analysis.run}}, whose \code{pooled}
+#' element already contains the cross-server aggregation. This client-side pooler
+#' is retained for back-compatibility with results produced by the deprecated
+#' \code{\link{ds.omop.query.exec}}.
 #' @examples
 #' \dontrun{
-#' results <- ds.omop.query.exec("gender_distribution")
-#' pooled <- ds.omop.query.pool(results, query_id = "gender_distribution")
+#' results <- ds.omop.query.exec("condition_prevalence")
+#' pooled <- ds.omop.query.pool(results, query_id = "condition_prevalence")
 #' pooled
 #'
 #' # Manual sensitive field specification
@@ -217,12 +172,14 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
 #'   sensitive_fields = c("n_persons", "n_records"),
 #'   policy = "strict")
 #' }
+#' @seealso \code{\link{ds.omop.analysis.run}}
 #' @export
 ds.omop.query.pool <- function(results, query_id = NULL,
                                   sensitive_fields = NULL,
                                   pool_strategy = "sum",
                                   policy = "strict",
                                   symbol = "omop") {
+  .Deprecated("ds.omop.analysis.run")
   if (is.null(results) || length(results) == 0) return(NULL)
 
   # Filter out non-data.frame results (errors)

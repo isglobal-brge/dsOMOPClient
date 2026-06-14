@@ -16,11 +16,11 @@ A \code{dsomop_result} object with \code{scope = "per_site"}.
 }
 \description{
 Queries each connected server to determine which OHDSI tool result tables
-(DQD, CohortDiagnostics, CohortIncidence, Characterization) are present.
+(CohortDiagnostics, CohortIncidence, Characterization, and others) are present.
 }
 \examples{
 \dontrun{
 status <- ds.omop.ohdsi.status()
-status$per_site[["server_a"]]$dqd$available
+status$per_site[["server_a"]]$cohort_diagnostics$available
 }
 }

@@ -7,7 +7,7 @@
 ds.omop.ohdsi.summary(tool_id, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{tool_id}{Character; which tool to summarize (e.g., \code{"dqd"},
+\item{tool_id}{Character; which tool to summarize (e.g.,
 \code{"cohort_diagnostics"}, \code{"cohort_incidence"},
 \code{"characterization"}).}
 
@@ -23,7 +23,7 @@ Returns a summary of available result tables for a specific OHDSI tool.
 }
 \examples{
 \dontrun{
-dqd_summary <- ds.omop.ohdsi.summary("dqd")
-dqd_summary$per_site
+cd_summary <- ds.omop.ohdsi.summary("cohort_diagnostics")
+cd_summary$per_site
 }
 }

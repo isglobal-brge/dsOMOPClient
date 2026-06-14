@@ -62,10 +62,18 @@ matching patterns such as \code{n_*}, \code{*_count}, \code{count_value},
 and \code{num_*}. Non-sensitive columns are used as join keys for
 cross-server merging.
 }
+\section{Deprecated}{
+
+New code should use \code{\link{ds.omop.analysis.run}}, whose \code{pooled}
+element already contains the cross-server aggregation. This client-side pooler
+is retained for back-compatibility with results produced by the deprecated
+\code{\link{ds.omop.query.exec}}.
+}
+
 \examples{
 \dontrun{
-results <- ds.omop.query.exec("gender_distribution")
-pooled <- ds.omop.query.pool(results, query_id = "gender_distribution")
+results <- ds.omop.query.exec("condition_prevalence")
+pooled <- ds.omop.query.pool(results, query_id = "condition_prevalence")
 pooled
 
 # Manual sensitive field specification
@@ -73,4 +81,7 @@ pooled <- ds.omop.query.pool(results,
   sensitive_fields = c("n_persons", "n_records"),
   policy = "strict")
 }
+}
+\seealso{
+\code{\link{ds.omop.analysis.run}}
 }

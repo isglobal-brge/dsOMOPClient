@@ -2,7 +2,7 @@
 % Please edit documentation in R/queries.R
 \name{ds.omop.query.exec}
 \alias{ds.omop.query.exec}
-\title{Execute a query template}
+\title{Execute a query template (DEPRECATED)}
 \usage{
 ds.omop.query.exec(
   query_id,
@@ -13,16 +13,13 @@ ds.omop.query.exec(
 )
 }
 \arguments{
-\item{query_id}{Character; the unique query ID from the query library
-(e.g., \code{"condition_prevalence"}).}
+\item{query_id}{Character; the legacy query ID (e.g.,
+\code{"condition_prevalence"}).}
 
-\item{inputs}{Named list; parameter values required by the query template.
-Use \code{\link{ds.omop.query.get}} to discover required inputs and
-their types. Default: empty list (for queries with no required inputs).}
+\item{inputs}{Named list; parameter values for the entry. Default: empty list.}
 
-\item{mode}{Character; \code{"aggregate"} (the default) returns results
-to the client, \code{"assign"} stores results server-side for further
-analysis.}
+\item{mode}{Character; \code{"aggregate"} (the default) returns results to the
+client, \code{"assign"} stores the result server-side.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
@@ -31,32 +28,27 @@ was initialised (default: \code{"omop"}).}
 connections stored in the active session are used.}
 }
 \value{
-For \code{mode = "aggregate"}: a named list of per-server data
-  frames. For \code{mode = "assign"}: \code{TRUE} invisibly. Use
-  \code{\link{ds.omop.query.pool}} to combine aggregate results.
+For \code{mode = "aggregate"}: a named list of per-server data frames.
+  For \code{mode = "assign"}: \code{TRUE} invisibly. Use
+  \code{\link{ds.omop.query.pool}} to combine aggregate results, or prefer the
+  pooled view returned by \code{\link{ds.omop.analysis.run}} directly.
 }
 \description{
-Executes a query template against all connected servers with
-DataSHIELD-aligned disclosure controls applied server-side. In
-\code{"aggregate"} mode, results are returned to the client as per-server
-data frames. In \code{"assign"} mode, results are stored server-side
-under a generated symbol name and the function returns \code{TRUE}
-invisibly.
-}
-\details{
-Disclosure controls (small-count suppression) are applied by the server
-before results leave the server. Rows with counts below the server's
-configured threshold are either dropped or have their counts set to NA.
+Deprecated shim for \code{\link{ds.omop.analysis.run}}. Forwards to
+\code{ds.omop.analysis.run()} using the entry's pack-prefixed catalog name.
+For back-compatibility the return value matches the old contract:
+\code{"aggregate"} mode returns a named list of per-server data frames, and
+\code{"assign"} mode returns \code{TRUE} invisibly (the result stays on the
+server). Disclosure controls and (in aggregate mode) cross-server pooling are
+handled by the analysis run path.
 }
 \examples{
 \dontrun{
-# Execute a query with no inputs
-results <- ds.omop.query.exec("gender_distribution")
-results[["server_a"]]
-
-# Execute a query with inputs and pool the results
 results <- ds.omop.query.exec("condition_prevalence",
   inputs = list(concept_id = 201826))
 pooled <- ds.omop.query.pool(results, query_id = "condition_prevalence")
 }
+}
+\seealso{
+\code{\link{ds.omop.analysis.run}}
 }
