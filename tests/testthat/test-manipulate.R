@@ -77,8 +77,8 @@ test_that("ds.omop.merge validates type via match.arg", {
 
 test_that("ds.omop.merge rejects non-scalar-character symbols", {
   .with_fake_session()
-  expect_error(ds.omop.merge(c("a", "b"), "c"), "omop.table symbols")
-  expect_error(ds.omop.merge("a", 42), "omop.table symbols")
+  expect_error(ds.omop.merge(c("a", "b"), "c"), "omop.table symbol")
+  expect_error(ds.omop.merge("a", 42), "omop.table symbol")
 })
 
 test_that("ds.omop.merge generates a newobj when none supplied", {
@@ -188,7 +188,7 @@ test_that("ds.omop.bind_rows builds omopBindRowsDS(x, y) with bare symbols", {
 
 test_that("ds.omop.bind_rows rejects non-scalar-character symbols", {
   .with_fake_session()
-  expect_error(ds.omop.bind_rows("a", c("b", "c")), "omop.table symbols")
+  expect_error(ds.omop.bind_rows("a", c("b", "c")), "omop.table symbol")
 })
 
 # ------------------------------------------------------------------------------

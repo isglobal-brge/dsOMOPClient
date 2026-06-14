@@ -13,259 +13,273 @@ knitr::opts_chunk$set(eval = FALSE)
 
 ## Overview
 
-The **extraction plan DSL** is the primary way to specify what data you
-need from OMOP CDM databases. A plan is a serializable list that describes:
+The **extraction plan DSL** specifies exactly what data to pull from the OMOP
+CDM. A plan is a serializable object describing a cohort, one or more outputs,
+their representations, and global options. Plans are built client-side, validated
+against the server schema, and executed to produce server-side data frames
+(`omop.table` objects) that you analyse with `dsBaseClient`.
 
-- **Cohort**: Which persons to include
-- **Outputs**: What tables and columns to extract
-- **Representations**: How to shape the output (long, wide, features)
-- **Options**: Concept translation, disclosure thresholds
-
-Plans are built client-side, validated against the server schema, and
-executed to produce server-side data frames.
+For higher-level, named, save/loadable extractions, the **recipe** API wraps the
+plan (covered at the end of this vignette).
 
 ## Building a Plan
-
-### Basic Structure
 
 ```{r basic}
 library(dsOMOPClient)
 
 plan <- ds.omop.plan()
-# Creates an empty plan with default anchor (person table)
+# An empty plan. Concept translation and federation-wide concept factors are
+# ON by default (translate_concepts = TRUE, factor_concepts = TRUE).
 ```
 
-### Adding Baseline Data
+### Baseline demographics
 
-Baseline outputs extract person-level data (one row per person) by
-merging columns from one or more tables:
+`ds.omop.plan.baseline()` adds a person-level output of demographic columns from
+the `person` table, plus optional derived columns (e.g. `age_at_index`):
 
 ```{r baseline}
-plan <- ds.omop.plan.addBaseline(plan,
-  tables = list(
-    person = c("gender_concept_id", "year_of_birth", "race_concept_id"),
-    observation_period = c("observation_period_start_date",
-                           "observation_period_end_date")
-  ),
-  name = "demographics"
-)
+plan <- ds.omop.plan.baseline(plan,
+  columns = c("gender_concept_id", "year_of_birth", "race_concept_id"),
+  derived = c("age_at_index"),
+  name = "demographics")
 ```
 
-Tables are joined to `person` via their `person_id` column. If a person
-has multiple observation periods, the first is used.
+To merge columns from several person-linked tables into one person-level frame,
+use `ds.omop.plan.person_level()`:
 
-### Adding Event-Level Data
+```{r person-level}
+plan <- ds.omop.plan.person_level(plan,
+  tables = list(
+    person = c("gender_concept_id", "year_of_birth"),
+    observation_period = c("observation_period_start_date",
+                           "observation_period_end_date")),
+  name = "person_data")
+```
 
-Event outputs extract rows from clinical event tables:
+### Event-level data
+
+`ds.omop.plan.events()` extracts rows from a clinical event table:
 
 ```{r events}
-# Condition occurrences filtered by concept
-plan <- ds.omop.plan.addEvents(plan,
+plan <- ds.omop.plan.events(plan,
   name = "conditions",
   table = "condition_occurrence",
-  columns = c("person_id", "condition_concept_id",
-              "condition_start_date"),
+  columns = c("person_id", "condition_concept_id", "condition_start_date"),
   concept_set = c(201826, 255573, 4329847),
-  representation = list(format = "long")
-)
+  representation = list(format = "long"))
+```
 
-# Measurements with time window
-plan <- ds.omop.plan.addEvents(plan,
-  name = "labs",
+### Outcomes and feature sets
+
+`ds.omop.plan.outcome()` is a convenience wrapper for a binary condition outcome
+(it adds an event output with the `features` representation):
+
+```{r outcome}
+plan <- ds.omop.plan.outcome(plan, name = "copd", concept_set = c(255573))
+```
+
+`ds.omop.plan.features()` builds a person-level feature set from explicit feature
+specs (see the `omop.feature.*` constructors):
+
+```{r features}
+plan <- ds.omop.plan.features(plan,
+  name = "hba1c_features",
   table = "measurement",
-  concept_set = c(3004410),
-  time_window = list(
-    start_date = "2020-01-01",
-    end_date = "2023-12-31"
-  )
-)
-```
-
-### Adding Outcomes
-
-`addOutcome` is a convenience wrapper for binary condition outcomes
-using the `features` representation:
-
-```{r outcomes}
-plan <- ds.omop.plan.addOutcome(plan,
-  name = "copd",
-  concept_set = c(255573)
-)
-# Produces person-level features: copd_ever, copd_count, etc.
-```
-
-### Setting Options
-
-```{r options}
-plan <- ds.omop.plan.setOptions(plan,
-  translate_concepts = TRUE,
-  min_persons = 5
-)
+  specs = list(
+    omop.feature.mean_value(concept_set = c(3004410)),
+    omop.feature.latest_value(concept_set = c(3004410)),
+    omop.feature.sd_value(concept_set = c(3004410))))
 ```
 
 ## Representations
 
-Each event output can use one of three representations:
+Each event output uses one of three representations:
 
-### Long Format (Default)
+- **`long`** (default): one row per event, full temporal detail.
+- **`wide`**: pivots on the concept column; each concept becomes a column group.
+- **`features`**: aggregates to one row per person (counts, ever-flags, and for
+  numeric values mean/min/max/sd, etc.).
 
-One row per event. Preserves full temporal detail.
-
-```{r long}
-plan <- ds.omop.plan.addEvents(plan,
-  name = "conditions",
-  table = "condition_occurrence",
-  representation = list(format = "long")
-)
-# Output: person_id | condition_concept_id | condition_start_date | ...
+```{r repr}
+plan <- ds.omop.plan.events(plan, name = "labs_wide",
+  table = "measurement", concept_set = c(3004410),
+  representation = list(format = "wide"))
 ```
 
-### Wide Format
+## Maximum-Flexibility Extraction
 
-Pivots on the concept ID column. Each concept becomes a column prefix.
+### Row-level filter DSL
 
-```{r wide}
-plan <- ds.omop.plan.addEvents(plan,
-  name = "conditions_wide",
-  table = "condition_occurrence",
-  concept_set = c(201826, 255573),
-  representation = list(format = "wide")
-)
-# Output: person_id | 201826_start_date | 255573_start_date | ...
+Beyond a concept set, `ds.omop.plan.events()` accepts a `filters` argument that
+takes a **nested AND/OR tree of row-level predicates**. Build leaves with the
+`omop_filter*` constructors and combine them with
+`omop_filter_group(..., operator = "AND" | "OR")`:
+
+```{r row-filters}
+filt <- omop_filter_group(
+  omop_filter(type = "custom", level = "row",
+    params = list(var = "value_as_number", op = "between", value = c(6.5, 12))),
+  omop_filter_group(
+    omop_filter_date_range(start = "2020-01-01", end = "2023-12-31"),
+    operator = "OR"),
+  operator = "AND")
+
+plan <- ds.omop.plan.events(plan, name = "labs_filtered",
+  table = "measurement", concept_set = c(3004410),
+  filters = filt)
 ```
 
-### Features Format
+Disclosure note: the custom filter DSL is fail-closed. Range and membership
+operators (`>=`, `>`, `<=`, `<`, `between`, `in`, `not_in`, `is_null`,
+`not_null`) and the pre-validated `value_bin` family are allowed because they can
+only narrow a population. Exact-match predicates (`==`, `!=`) on an arbitrary
+column are **rejected server-side** -- a single arbitrary-column equality is the
+canonical fingerprinting primitive -- and filtering on the person token or any
+protected/identifier column is also rejected. The per-patient gate still runs on
+the filtered result, so a filter can never bypass suppression. For value
+thresholds snapped to disclosure-safe bin edges, prefer
+`ds.omop.safe.cutpoints()` / `ds.omop.safe.filter.value()`, which return a
+sanctioned `value_bin` filter.
 
-Aggregates to person-level summary statistics:
+### Unit / type concept-column scoping
 
-```{r features}
-plan <- ds.omop.plan.addEvents(plan,
-  name = "condition_features",
-  table = "condition_occurrence",
-  concept_set = c(201826, 255573),
-  representation = list(format = "features")
-)
-# Output: person_id | concept_count | concept_ever | ...
-# For measurements: also concept_mean, concept_min, concept_max
+By default a table is profiled and filtered on its domain concept column. Pass
+`concept_col` to scope to a different concept column instead -- e.g. a unit
+(`unit_concept_id`), a record-type (`*_type_concept_id`), or a value concept
+(`value_as_concept_id`):
+
+```{r concept-col}
+plan <- ds.omop.plan.events(plan, name = "labs_by_unit",
+  table = "measurement", concept_set = c(8840),  # mg/dL
+  concept_col = "unit_concept_id")
+```
+
+### Visit linkage
+
+`visit_filter` restricts events to those occurring during a visit of a given
+type, via an `EXISTS` join on `visit_occurrence_id`:
+
+```{r visit}
+plan <- ds.omop.plan.events(plan, name = "inpatient_dx",
+  table = "condition_occurrence", concept_set = c(201826),
+  visit_filter = list(visit_concept_id = c(9201)))  # inpatient
 ```
 
 ## Concept Translation
 
-When `translate_concepts = TRUE`, concept ID columns are replaced with
-human-readable concept names from the vocabulary:
+`translate_concepts` is **ON by default**. Concept-ID columns are replaced with
+human-readable concept names from the vocabulary, so `condition_concept_id =
+201826` is returned as `"Type 2 diabetes mellitus"`. Toggle it (and the related
+options) with `ds.omop.plan.options()`:
 
-```{r translate}
-plan <- ds.omop.plan.setOptions(plan, translate_concepts = TRUE)
-
-# condition_concept_id = 201826 becomes "Type 2 diabetes mellitus"
+```{r options}
+plan <- ds.omop.plan.options(plan,
+  translate_concepts = TRUE,
+  factor_concepts = TRUE,
+  block_sensitive = TRUE)
 ```
 
-This requires a vocabulary/concept table in the CDM.
+`factor_concepts = TRUE` (the default) makes execution recode concept columns as
+federation-wide factors with a shared level ordering, which is what lets pooled
+`ds.glm`, `ds.glmSLMA`, and `ds.table` behave correctly across servers.
 
 ## Plan Lifecycle
 
-### 1. Build
+### Preview (server-side dry run)
 
-```{r build}
-plan <- ds.omop.plan()
-plan <- ds.omop.plan.addBaseline(plan,
-  tables = list(person = c("gender_concept_id", "year_of_birth")))
-plan <- ds.omop.plan.addEvents(plan,
-  name = "labs", table = "measurement",
-  concept_set = c(3004410))
-```
-
-### 2. Preview (Optional)
-
-Preview validates the plan and returns safe metadata:
+`ds.omop.plan.preview()` sends the plan for a dry run that returns, **per
+server**, each output's expected columns, an estimated person count, and a
+disclosure flag -- *without creating any data*:
 
 ```{r preview}
-preview <- ds.omop.plan.preview(plan,
-  symbol = "omop", conns = conns)
+preview <- ds.omop.plan.preview(plan, symbol = "omop", conns = conns)
 
-# Shows: expected columns, person counts, disclosive flags
-# Does NOT create server-side data
+# Per-server, per-output details:
+preview$server1$outputs$conditions$columns
+preview$server1$outputs$conditions$n_persons    # banded, not exact
+preview$server1$outputs$conditions$disclosive   # TRUE if below nfilter.subset
 ```
 
-### 3. Execute
+The estimated `n_persons` is **banded** (rounded down to a multiple of
+`band_width`) so the preview never reveals an exact supra-threshold count that
+could be used for differencing; an output whose person count is below
+`nfilter.subset` is flagged `disclosive = TRUE`. `ds.omop.plan.validate()` calls
+the same server endpoint; use it for a pass/fail check and `preview` to inspect
+the expected structure.
+
+### Execute
+
+`ds.omop.plan.execute()` runs the plan and assigns each output into the
+DataSHIELD session under the symbols given in `out`. `out` is a **named**
+character vector mapping each plan output name to a server-side symbol:
 
 ```{r execute}
 ds.omop.plan.execute(plan,
-  out = list(
-    baseline = "D",
-    labs = "E"
-  ),
-  symbol = "omop",
-  conns = conns
-)
+  out = c(demographics = "D", conditions = "E"),
+  symbol = "omop", conns = conns)
 
-# D and E are now server-side data frames
-# Use dsBaseClient functions for analysis
+# D and E are now server-side omop.table data frames
 dsBaseClient::ds.summary("D")
 dsBaseClient::ds.dim("E")
 ```
 
-## Pipe-Style Chaining
+For very large extractions, `output_mode = "staged"` writes outputs to Parquet
+on the server and assigns `FlowerDatasetDescriptor` objects instead of
+in-memory data frames (requires `arrow` server-side).
 
-Plans support sequential building:
+## The Recipe API (named, reusable extractions)
 
-```{r chained}
-plan <- ds.omop.plan()
-plan <- ds.omop.plan.setCohort(plan, cohort_definition_id = 1)
-plan <- ds.omop.plan.addBaseline(plan,
-  tables = list(person = c("gender_concept_id")))
-plan <- ds.omop.plan.addEvents(plan,
-  name = "labs", table = "measurement",
-  concept_set = c(3004410))
-plan <- ds.omop.plan.setOptions(plan, translate_concepts = TRUE)
+A **recipe** is a higher-level, named container of populations, variables, and
+outputs that compiles down to a plan. It is the most ergonomic path and the one
+that supports saving/loading.
 
-# Print plan summary
-print(plan)
+```{r recipe-build}
+rec <- omop_recipe()
+rec <- recipe_add_variable(rec,
+  omop_variable(table = "person", column = "gender_concept_id",
+                format = "sex_mf"))
+rec <- recipe_add_variable(rec,
+  omop_variable(table = "measurement", concept_id = 3004410,
+                format = "mean",
+                # per-variable row filters and a per-variable time window
+                filters = list(omop_filter_date_range(start = "2020-01-01",
+                                                      end = "2023-12-31")),
+                time_window = list(start = -365, end = 0),
+                concept_col = "value_as_concept_id"))
+rec <- recipe_add_output(rec,
+  omop_output(name = "study", type = "features"))
 ```
 
-## Helper Functions
+Per-variable `filters` are forwarded as row-level predicates and `time_window`
+(in days, relative to the cohort index date) becomes the variable's temporal
+window when the recipe is compiled to a plan.
 
-### ds.omop.quick
+### Validate, preview, execute
 
-One-call extraction for common patterns:
+```{r recipe-run}
+recipe_validate(rec, symbol = "omop", conns = conns)
+recipe_preview(rec, symbol = "omop", conns = conns)
 
-```{r quick}
-ds.omop.quick(
-  baseline_tables = list(
-    person = c("gender_concept_id", "year_of_birth")
-  ),
-  event_table = "condition_occurrence",
-  event_concepts = c(201826),
-  out_baseline = "D",
-  out_events = "E",
-  symbol = "omop",
-  conns = conns
-)
+# Ergonomic execute: with no `out`, symbols are derived from the output names
+# (here "study" -> "D_study"). This is the simplest single-output form.
+recipe_execute(rec, symbol = "omop", conns = conns)
+
+# Or assign explicit symbols, exactly like ds.omop.plan.execute():
+recipe_execute(rec, out = c(study = "D"), symbol = "omop", conns = conns)
 ```
 
-### ds.omop.auto
+### Save and load (YAML / JSON)
 
-Auto-detect and extract from all available clinical tables:
+Recipes round-trip to disk; the format is inferred from the file extension (or
+set `format =` explicitly):
 
-```{r auto}
-ds.omop.auto(
-  symbol_prefix = "omop_data",
-  tables = c("person", "condition_occurrence", "measurement"),
-  symbol = "omop",
-  conns = conns
-)
-# Creates: omop_data_person, omop_data_condition_occurrence, etc.
+```{r recipe-io}
+recipe_save(rec, "study.yaml")        # or "study.json"
+rec2 <- recipe_load("study.yaml")
+
+# Or work with strings instead of files:
+yaml_txt <- recipe_export_yaml(rec)
+rec3 <- recipe_import_yaml(yaml_txt)
 ```
 
-### ds.omop.get
-
-Simple single-table extraction:
-
-```{r get}
-ds.omop.get("person",
-  columns = c("person_id", "gender_concept_id", "year_of_birth"),
-  target = "persons",
-  symbol = "omop",
-  conns = conns
-)
-```
+You can also emit runnable R for the whole recipe with `recipe_to_code(rec)`.

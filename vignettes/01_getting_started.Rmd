@@ -16,20 +16,19 @@ knitr::opts_chunk$set(eval = FALSE)
 **dsOMOP v2** provides safe, federated access to OMOP Common Data Model databases
 through the DataSHIELD framework. It consists of two packages:
 
-- **dsOMOP** (server-side): Runs on each DataSHIELD node. Handles database queries,
-  disclosure control, and data preparation.
-- **dsOMOPClient** (client-side): Runs on your local machine. Provides an ergonomic
-  API for schema exploration, cohort management, and data extraction.
+- **dsOMOP** (server-side): runs on each DataSHIELD node. Handles database
+  queries, disclosure control, and data preparation.
+- **dsOMOPClient** (client-side): runs on your local machine. Provides an
+  ergonomic API for schema exploration, cohort management, and data extraction.
 
 ## Prerequisites
 
 - A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2 installed
-- An OMOP CDM database configured as an Opal resource
+- An OMOP CDM database configured as a DataSHIELD resource
 - The `dsOMOPClient` package installed locally
 
 ```{r install}
-# From GitHub
-remotes::install_github("your-org/dsomop-rework/dsOMOPClient")
+remotes::install_github("isglobal-brge/dsOMOPClient")
 ```
 
 ## Quick Start
@@ -41,7 +40,6 @@ library(dsOMOPClient)
 library(DSI)
 library(DSOpal)
 
-# Build the login data frame
 builder <- DSI::newDSLoginBuilder()
 builder$append(
   server = "server1",
@@ -58,109 +56,113 @@ conns <- DSI::datashield.login(logins = login_data)
 ### 2. Attach the OMOP Resource
 
 ```{r attach}
-# Attach the OMOP CDM resource to start a session
-ds.omop.attach(
+ds.omop.connect(
   resource = "project.omop_cdm",
   conns = conns,
   symbol = "omop"
 )
 ```
 
-This initializes a server-side handle that connects to the database,
-introspects the schema, and prepares for queries. The `symbol` parameter
-identifies this session for subsequent calls.
+This initializes a server-side handle that connects to the database, introspects
+the schema, and prepares for queries. The session is stored under `symbol`
+(default `"omop"`). Every later call defaults to `symbol = "omop"`, so in a
+single-session workflow you can omit it entirely.
 
 ### 3. Explore the Schema
 
 ```{r explore}
-# What tables are available?
-tables <- ds.omop.listTables(symbol = "omop", conns = conns)
-print(tables)
-
-# What columns does person have?
-cols <- ds.omop.listColumns("person", symbol = "omop", conns = conns)
-print(cols)
-
-# Safe summary statistics
-stats <- ds.omop.tableStats("person", symbol = "omop", conns = conns)
-print(stats)
+ds.omop.tables(symbol = "omop", conns = conns)            # available tables
+ds.omop.columns("person", symbol = "omop", conns = conns)  # columns of a table
+ds.omop.table.stats("person", symbol = "omop", conns = conns)  # safe row/person counts
 ```
+
+See the *Schema Exploration* vignette for prevalence, statistics, missingness,
+and the disclosure-gated manipulation verbs.
 
 ### 4. Extract Data with a Plan
 
-The plan DSL lets you specify exactly what data to extract:
+The plan DSL specifies exactly what to extract:
 
 ```{r plan}
-# Build a plan
 plan <- ds.omop.plan()
-plan <- ds.omop.plan.addBaseline(plan,
-  tables = list(
-    person = c("gender_concept_id", "year_of_birth"),
-    observation_period = c("observation_period_start_date",
-                           "observation_period_end_date")
-  )
-)
+plan <- ds.omop.plan.baseline(plan,
+  columns = c("gender_concept_id", "year_of_birth"))
+plan <- ds.omop.plan.events(plan,
+  name = "conditions",
+  table = "condition_occurrence",
+  concept_set = c(201826, 255573))
 
-# Preview (returns safe metadata, no actual data)
-preview <- ds.omop.plan.preview(plan, symbol = "omop", conns = conns)
-print(preview)
+print(plan)
+```
 
-# Execute (creates server-side data frame)
+### 5. Preview and Execute
+
+`ds.omop.plan.preview()` is a server-side dry run: it returns each output's
+expected columns and a banded person-count estimate **without creating any
+data**.
+
+```{r preview}
+ds.omop.plan.preview(plan, symbol = "omop", conns = conns)
+```
+
+`ds.omop.plan.execute()` assigns each output into the DataSHIELD session. The
+`out` argument is a **named** vector mapping plan output names to server-side
+symbols:
+
+```{r execute}
 ds.omop.plan.execute(plan,
-  out = list(baseline = "D"),
+  out = c(baseline = "D", conditions = "E"),
   symbol = "omop",
   conns = conns
 )
 
-# Now use D with standard DataSHIELD analysis functions
+# D and E are now server-side data frames
 dsBaseClient::ds.summary("D")
-dsBaseClient::ds.dim("D")
+dsBaseClient::ds.dim("E")
 ```
 
-### 5. Clean Up
+### 6. Clean Up
 
 ```{r cleanup}
-ds.omop.detach(symbol = "omop", conns = conns)
+ds.omop.disconnect(symbol = "omop", conns = conns)
 DSI::datashield.logout(conns)
 ```
 
-## One-Call Shortcut
+## Ergonomics
 
-For quick analyses, use `ds.omop.quick()`:
+### Recipes: named, reusable, save/loadable extractions
 
-```{r quick}
-ds.omop.attach(resource = "project.omop_cdm", conns = conns)
+For anything beyond a one-off plan, use the **recipe** API. A recipe is a named
+container of variables and outputs that compiles to a plan, and it can be saved
+to and loaded from disk:
 
-ds.omop.quick(
-  baseline_tables = list(
-    person = c("gender_concept_id", "year_of_birth")
-  ),
-  event_table = "condition_occurrence",
-  event_concepts = c(201826, 255573),
-  out_baseline = "D",
-  out_events = "E",
-  symbol = "omop",
-  conns = conns
-)
+```{r recipe}
+rec <- omop_recipe()
+rec <- recipe_add_variable(rec,
+  omop_variable(table = "measurement", concept_id = 3004410, format = "mean"))
+rec <- recipe_add_output(rec, omop_output(name = "study", type = "features"))
 
-# D and E are now available as server-side data frames
+# With no `out`, recipe_execute() derives the output symbols from the output
+# names (here "study" -> "D_study") -- the simplest single-output form:
+recipe_execute(rec, symbol = "omop", conns = conns)
+
+# Or assign explicit symbols, exactly like the plan API:
+recipe_execute(rec, out = c(study = "D"), symbol = "omop", conns = conns)
+
+# Persist the recipe (format inferred from the extension; YAML or JSON):
+recipe_save(rec, "study.yaml")
+rec <- recipe_load("study.yaml")
 ```
 
-## Migration from v1
+See the *Data Extraction* vignette for the full recipe and plan reference,
+including the row-level filter DSL, per-variable time windows, unit/type concept
+scoping, and visit linkage.
 
-If you used dsOMOPClient v1 or dsOMOPHelper, see the migration table:
+## Where to Go Next
 
-| v1 | v2 |
-|---|---|
-| `ds.omop(conns, resource)` | `ds.omop.attach(resource, conns = conns)` |
-| `db$get("person")` | `ds.omop.get("person", ...)` |
-| `db$tables()` | `ds.omop.listTables()` |
-| `ds.omop.helper(...)$auto()` | `ds.omop.auto()` |
-
-For temporary v1 server compatibility:
-
-```{r legacy}
-legacy <- ds.omop.legacy.v1()
-db <- legacy$ds.omop(conns, resource)
-db$get("person")
-```
+- **Schema Exploration** -- prevalence, statistics, and the manipulation verbs.
+- **Cohort Management** -- spec-based, workspace, and pre-existing cohorts; the
+  unified `cohort =` argument.
+- **Data Extraction** -- the plan DSL, recipes, and max-flexibility extraction.
+- **Multi-Server** -- federated analysis and plan harmonization.
+- **Security** -- the per-patient gate, the person token, and admin configuration.

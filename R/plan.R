@@ -769,27 +769,29 @@ omop.date_handling <- function(mode = "absolute", reference = "index",
 #' not execute the plan or create any data. Use this to catch errors
 #' before calling \code{\link{ds.omop.plan.execute}}.
 #'
-#' Note: despite the name difference, both \code{ds.omop.plan.validate}
-#' and \code{\link{ds.omop.plan.preview}} currently call the same
-#' server-side endpoint (\code{omopPlanPreviewDS}). Use
-#' \code{ds.omop.plan.validate} when you want a pass/fail check, and
-#' \code{ds.omop.plan.preview} when you want to inspect expected schemas
-#' and row estimates.
+#' Note: \code{ds.omop.plan.validate} and \code{\link{ds.omop.plan.preview}}
+#' call the same server endpoint (\code{omopPlanPreviewDS}) and therefore
+#' return the \emph{same} structure; the difference is only intent. Read the
+#' \code{$validation} element (\code{valid}/\code{errors}/\code{warnings}) for
+#' a pass/fail check here, and the \code{$outputs} element for the per-output
+#' detail under \code{\link{ds.omop.plan.preview}}.
 #'
 #' @param plan An \code{omop_plan} object.
 #' @param symbol Character; name of the OMOP session symbol on the
 #'   server (default \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL}, uses the
 #'   connections stored in the session.
-#' @return A named list (one element per server) containing validation
-#'   results with expected output schemas, row estimates, and any
-#'   warnings or errors.
+#' @return A named list (one element per server). Each server's result is the
+#'   preview payload, whose \code{$validation} sub-list reports
+#'   \code{valid} (logical), \code{errors}, \code{warnings}, and
+#'   \code{available_tables}. (No row estimates or SQL are returned.)
 #' @examples
 #' \dontrun{
 #' result <- ds.omop.plan.validate(my_plan)
-#' # Check a specific server's result
-#' result$server1$valid
-#' result$server1$errors
+#' # Check a specific server's pass/fail and messages
+#' result$server1$validation$valid
+#' result$server1$validation$errors
+#' result$server1$validation$warnings
 #' }
 #' @seealso \code{\link{ds.omop.plan.preview}},
 #'   \code{\link{ds.omop.plan.execute}}
@@ -808,33 +810,38 @@ ds.omop.plan.validate <- function(plan, symbol = "omop",
 
 #' Preview a plan (server-side dry run)
 #'
-#' Sends the plan to each connected server for a dry-run preview that
-#' returns expected output schemas, estimated row counts, and the SQL
-#' queries that would be executed, without actually creating any data.
-#' This is useful for verifying that the plan will produce the expected
-#' structure before committing to a full execution.
+#' Sends the plan to each connected server for a dry-run preview that, per
+#' output, reports the resolvable column names, any requested-but-missing
+#' columns, and a \emph{disclosure-banded} distinct-person count, without
+#' creating any data. The person counts are banded down to a multiple of the
+#' server's \code{band_width} (and suppressed to \code{NA} below the
+#' disclosure floor) to defeat exact-count differencing; raw row counts,
+#' min/max, and the underlying SQL are deliberately never returned.
 #'
-#' Note: both \code{\link{ds.omop.plan.validate}} and
-#' \code{ds.omop.plan.preview} currently call the same server-side
-#' endpoint (\code{omopPlanPreviewDS}). The distinction is semantic:
-#' use validate for pass/fail checking, and preview for inspecting
-#' expected output details.
+#' Note: \code{ds.omop.plan.preview} and \code{\link{ds.omop.plan.validate}}
+#' call the same server endpoint (\code{omopPlanPreviewDS}) and return the
+#' same structure; the distinction is only intent. Read \code{$outputs} here
+#' for per-output detail, and \code{$validation} under
+#' \code{\link{ds.omop.plan.validate}} for the pass/fail check.
 #'
 #' @param plan An \code{omop_plan} object.
 #' @param symbol Character; name of the OMOP session symbol on the
 #'   server (default \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL}, uses the
 #'   connections stored in the session.
-#' @return A named list (one element per server) containing preview
-#'   information including expected column names and types, estimated
-#'   row counts, and generated SQL queries for each output.
+#' @return A named list (one element per server). Each server's result holds
+#'   \code{$validation} (see \code{\link{ds.omop.plan.validate}}),
+#'   \code{$band_width} (the count-banding granularity), and \code{$outputs},
+#'   a per-output list with \code{columns}, \code{missing_columns},
+#'   \code{n_persons} (banded; \code{NA} when below the disclosure floor),
+#'   \code{n_persons_banded}, \code{disclosive}, and \code{representation}.
 #' @examples
 #' \dontrun{
 #' preview <- ds.omop.plan.preview(my_plan)
-#' # Inspect expected columns for the "baseline" output
+#' # Resolvable columns for the "baseline" output on one server
 #' preview$server1$outputs$baseline$columns
-#' # Check estimated row count
-#' preview$server1$outputs$baseline$estimated_rows
+#' # Disclosure-banded distinct-person count (NA if below the floor)
+#' preview$server1$outputs$baseline$n_persons
 #' }
 #' @seealso \code{\link{ds.omop.plan.validate}},
 #'   \code{\link{ds.omop.plan.execute}}
@@ -867,10 +874,23 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' into R memory and enables zero-copy column projection with dsFlower.
 #'
 #' @param plan An \code{omop_plan} object.
-#' @param out Named character vector; maps output names (as defined in
-#'   the plan) to server-side symbol names. For example,
-#'   \code{c(baseline = "D_base", survival = "D_tte")} assigns the
-#'   \code{baseline} output to symbol \code{D_base}.
+#' @param out Optional output-to-symbol mapping. Three forms are accepted:
+#'   \itemize{
+#'     \item \strong{Missing or \code{NULL} (default):} symbol names are
+#'       auto-derived for \emph{every} plan output exactly as
+#'       \code{\link{recipe_execute}} does — the output's own
+#'       \code{result_symbol} when set, otherwise \code{D_<name>} (so an
+#'       output named \code{baseline} becomes symbol \code{D_baseline}).
+#'       Single-output plans therefore just work with no \code{out}.
+#'     \item \strong{A bare unnamed string} (e.g. \code{out = "D"}): allowed
+#'       only when the plan has exactly \emph{one} output, which is bound to
+#'       that symbol. With multiple outputs this stops with an error asking
+#'       you to use the named form.
+#'     \item \strong{A named character vector} (e.g.
+#'       \code{c(baseline = "D_base", survival = "D_tte")}): maps each named
+#'       plan output to its server-side symbol. This advanced multi-output
+#'       form is unchanged and fully backward compatible.
+#'   }
 #' @param symbol Character; name of the OMOP session symbol on the
 #'   server (default \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL}, uses the
@@ -878,11 +898,23 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' @param output_mode Character; \code{"memory"} (default, backwards
 #'   compatible) or \code{"staged"} (writes to Parquet, returns
 #'   descriptors). Staged mode requires \code{arrow} on the server.
-#' @return Invisible; the \code{out} symbol mapping (for chaining).
+#' @return Invisible; the resolved \code{out} symbol mapping (for chaining).
+#'   The produced symbols are also recorded on the session so subsequent
+#'   manipulation wrappers (\code{\link{ds.omop.merge}},
+#'   \code{\link{ds.omop.filter}}, \code{\link{ds.omop.select}},
+#'   \code{\link{ds.omop.bind_rows}}) can default to the last one.
 #' @examples
 #' \dontrun{
 #' plan <- ds.omop.plan()
 #' plan <- ds.omop.plan.baseline(plan)
+#'
+#' # Simplest case: single-output plan, bind to "D".
+#' ds.omop.plan.execute(plan, out = "D")
+#'
+#' # Or omit out entirely to auto-derive D_<name> for every output.
+#' ds.omop.plan.execute(plan)
+#'
+#' # Advanced: multiple outputs, each mapped explicitly.
 #' plan <- ds.omop.plan.events(plan, "conditions",
 #'   "condition_occurrence", concept_set = c(201826))
 #' ds.omop.plan.execute(plan,
@@ -899,12 +931,16 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' @seealso \code{\link{ds.omop.plan.validate}},
 #'   \code{\link{ds.omop.plan.preview}}
 #' @export
-ds.omop.plan.execute <- function(plan, out,
+ds.omop.plan.execute <- function(plan, out = NULL,
                                  symbol = "omop",
                                  conns = NULL,
                                  output_mode = "memory") {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+
+  # Resolve the out mapping: NULL -> auto-derive D_<name> for every output;
+  # a bare unnamed string -> bind the single output; a named vector -> as-is.
+  out <- .resolve_plan_out(plan, out)
 
   # Single assign call: server assigns each output directly into session
   exec_symbol <- .generate_symbol("dsOexec")
@@ -931,7 +967,133 @@ ds.omop.plan.execute <- function(plan, out,
     .harmonizeConceptFactors(out, conns)
   }
 
+  # Record the produced symbols on the session so manipulation wrappers can
+  # default to the most recently created one (no need to re-type symbols).
+  .record_session_outputs(symbol, out)
+
   invisible(out)
+}
+
+#' Resolve the out argument of ds.omop.plan.execute into a named mapping
+#'
+#' Normalises the three accepted \code{out} forms into the named
+#' \code{output -> symbol} character vector the server expects. \code{NULL}
+#' auto-derives a symbol for every plan output exactly as
+#' \code{\link{recipe_execute}} does (an output's \code{result_symbol} when
+#' set, else \code{D_<name>}). A bare unnamed string is bound to the plan's
+#' sole output, or stops with an instructive error when the plan has several
+#' outputs. A named vector is validated and returned unchanged.
+#'
+#' @param plan An \code{omop_plan} object.
+#' @param out \code{NULL}, a bare unnamed string, or a named character vector.
+#' @return A named character vector mapping output names to server symbols.
+#' @keywords internal
+.resolve_plan_out <- function(plan, out) {
+  out_names <- names(plan$outputs)
+  if (length(out_names) == 0L) {
+    stop("plan has no outputs to execute; add an output first (e.g. ",
+         "ds.omop.plan.baseline / ds.omop.plan.events).", call. = FALSE)
+  }
+
+  # (a) Missing / NULL: auto-derive a symbol for every output, mirroring
+  # recipe_execute (result_symbol when present, else D_<name>).
+  if (is.null(out)) {
+    symbols <- vapply(out_names, function(nm) {
+      rs <- plan$outputs[[nm]]$result_symbol
+      if (!is.null(rs)) as.character(rs)[1L] else paste0("D_", nm)
+    }, character(1))
+    return(stats::setNames(symbols, out_names))
+  }
+
+  if (!is.character(out) || length(out) == 0L) {
+    stop("out must be NULL, a single symbol name, or a named character ",
+         "vector mapping output names to symbols.", call. = FALSE)
+  }
+
+  # (b) Bare unnamed string: only valid for a single-output plan.
+  if (is.null(names(out))) {
+    if (length(out) != 1L) {
+      stop("out must be NULL, a single symbol name, or a named character ",
+           "vector mapping output names to symbols.", call. = FALSE)
+    }
+    if (length(out_names) != 1L) {
+      stop("plan has ", length(out_names), " outputs (",
+           paste(out_names, collapse = ", "),
+           "); a bare out=\"symbol\" is only allowed for a single-output ",
+           "plan. Use the named form, e.g. out = c(",
+           paste0(out_names, " = \"D_", out_names, "\"", collapse = ", "),
+           ").", call. = FALSE)
+    }
+    return(stats::setNames(out, out_names))
+  }
+
+  # (c) Named vector: keep backward compatible, but flag unknown outputs.
+  unknown <- setdiff(names(out), out_names)
+  if (length(unknown) > 0L) {
+    stop("out names not among plan outputs (",
+         paste(out_names, collapse = ", "), "): ",
+         paste(unknown, collapse = ", "), call. = FALSE)
+  }
+  out
+}
+
+#' Record execute-produced symbols on the stored session
+#'
+#' After a plan or recipe execution, stamps the produced server-side symbols
+#' onto the \code{omop_session} held in \code{.dsomop_client_env} so the
+#' manipulation wrappers can default their target symbol to the most recent
+#' output. Updates \code{session$outputs} (accumulated, de-duplicated) and
+#' \code{session$last_output} (the final symbol of this execution), then
+#' persists the session back into the registry. Never throws: a missing
+#' session simply skips recording.
+#'
+#' @param symbol Character; the session symbol used for the execution.
+#' @param out Named character vector mapping outputs to server symbols.
+#' @return \code{NULL} invisibly.
+#' @keywords internal
+.record_session_outputs <- function(symbol, out) {
+  produced <- unname(unlist(out, use.names = FALSE))
+  produced <- produced[nzchar(produced)]
+  if (length(produced) == 0L) return(invisible(NULL))
+  if (!exists(symbol, envir = .dsomop_client_env)) return(invisible(NULL))
+
+  session <- get(symbol, envir = .dsomop_client_env)
+  session$outputs <- unique(c(session$outputs, produced))
+  session$last_output <- produced[[length(produced)]]
+  assign(symbol, session, envir = .dsomop_client_env)
+  invisible(NULL)
+}
+
+#' Resolve a manipulation wrapper's target symbol, defaulting to the session
+#'
+#' The data-manipulation verbs (\code{\link{ds.omop.merge}},
+#' \code{\link{ds.omop.filter}}, \code{\link{ds.omop.select}},
+#' \code{\link{ds.omop.bind_rows}}) operate on the NAME of a server-side
+#' \code{omop.table} symbol. When the caller omits it, fall back to the
+#' session's \code{last_output} (the symbol most recently produced by
+#' \code{\link{ds.omop.plan.execute}} / \code{\link{recipe_execute}}), so a
+#' user need not re-type it. An explicit value always wins.
+#'
+#' @param x The caller-supplied symbol name, or \code{NULL} to use the
+#'   session default.
+#' @param session The \code{omop_session} object.
+#' @param arg Character; the argument name, used only in error messages.
+#' @return A single character symbol name.
+#' @keywords internal
+.resolve_target_symbol <- function(x, session, arg = "x") {
+  if (is.null(x)) {
+    x <- session$last_output
+    if (is.null(x)) {
+      stop(arg, " not supplied and the session has no recorded output yet. ",
+           "Run ds.omop.plan.execute() / recipe_execute() first, or pass ",
+           arg, " explicitly.", call. = FALSE)
+    }
+  }
+  if (!is.character(x) || length(x) != 1L) {
+    stop(arg, " must be the name of a server-side omop.table symbol.",
+         call. = FALSE)
+  }
+  x
 }
 
 #' Harmonize concept-id columns into federation-wide factors
@@ -1157,6 +1319,241 @@ ds.omop.plan.harmonize <- function(plan,
   }
 
   plan
+}
+
+# --- Plan save / load (YAML + JSON) -------------------------------------------
+
+#' Strip S3 classes from a plan for clean serialization
+#'
+#' Recursively drops every S3 class (e.g. \code{omop_plan},
+#' \code{omop_feature_spec}, \code{omop_temporal_spec}) so the structure
+#' serializes to plain JSON/YAML mappings and arrays. The data itself is
+#' untouched. Mirrors \code{.recipe_strip_classes}.
+#'
+#' @param x Any object.
+#' @return \code{x} with nested lists reduced to plain lists.
+#' @keywords internal
+.plan_strip_classes <- function(x) {
+  if (is.list(x) && !is.data.frame(x)) {
+    x <- lapply(x, .plan_strip_classes)
+    class(x) <- "list"
+  }
+  x
+}
+
+#' Portable plain-list representation of a plan
+#'
+#' Produces the version-tagged, class-free list that
+#' \code{\link{ds.omop.plan.save}} serializes. Preserves every field an
+#' \code{omop_plan} carries (\code{cohort}, \code{anchor}, \code{outputs}
+#' with their nested \code{filters$custom} and/or trees, \code{concept_set},
+#' \code{time_window}, representation \code{format}s, and \code{options}).
+#'
+#' @param plan An \code{omop_plan} object.
+#' @return A plain list with a \code{version} tag and the plan fields.
+#' @keywords internal
+.plan_plain <- function(plan) {
+  if (!inherits(plan, "omop_plan"))
+    stop("plan must be an omop_plan object", call. = FALSE)
+  list(
+    version = "1.0",
+    cohort  = .plan_strip_classes(plan$cohort),
+    anchor  = .plan_strip_classes(plan$anchor),
+    outputs = .plan_strip_classes(plan$outputs),
+    options = plan$options %||% list()
+  )
+}
+
+#' Integer field names that must survive a plan round-trip
+#'
+#' JSON/YAML parsing loses the integer/double distinction and turns short
+#' atomic vectors into lists of scalars. These are the plan fields the
+#' builders store as integers (concept ids, cohort ids, offsets, bin
+#' geometry); \code{.plan_restore} coerces them back so a save/load/execute
+#' round-trip sends the server the identical payload.
+#' @keywords internal
+.plan_int_fields <- c(
+  "concept_set", "ids", "cohort_definition_id", "start_offset", "end_offset",
+  "offset", "bin_width", "window_start", "window_end", "min_count",
+  "min_days", "visit_concept_id", "index_window", "calendar"
+)
+
+#' Restore atomic vectors and integer types in a parsed plan
+#'
+#' \code{jsonlite::fromJSON(simplifyVector = FALSE)} (and \code{yaml.load})
+#' turn atomic vectors into unnamed lists of scalars and read every number as
+#' a double. This walks the parsed structure, collapses unnamed all-scalar
+#' lists back to atomic vectors, and coerces the known integer fields
+#' (\code{.plan_int_fields}) to integer, so the reconstructed plan re-encodes
+#' to byte-identical transport JSON. Mirrors \code{.recipe_restore_params}.
+#'
+#' @param x A parsed plan substructure.
+#' @param key Character; the name this node was stored under (drives integer
+#'   coercion). \code{NULL} at the top level.
+#' @return The normalized substructure.
+#' @keywords internal
+.plan_restore <- function(x, key = NULL) {
+  # Unnamed list of atomic scalars -> atomic vector.
+  if (is.list(x) && length(x) > 0 && is.null(names(x)) &&
+      all(vapply(x, function(e) is.atomic(e) && length(e) == 1L,
+                 logical(1)))) {
+    x <- unlist(x, use.names = FALSE)
+  }
+  if (is.list(x)) {
+    nms <- names(x)
+    x <- lapply(seq_along(x), function(i) {
+      .plan_restore(x[[i]], key = if (!is.null(nms)) nms[[i]] else NULL)
+    })
+    names(x) <- nms
+    return(x)
+  }
+  if (!is.null(key) && key %in% .plan_int_fields &&
+      is.numeric(x) && !is.integer(x)) {
+    x <- as.integer(x)
+  }
+  x
+}
+
+#' Reconstruct an omop_plan from its plain representation
+#'
+#' Inverse of \code{\link{.plan_plain}}: applies \code{\link{.plan_restore}}
+#' to recover atomic vectors and integer types, then re-stamps the
+#' \code{omop_plan} class so \code{\link{ds.omop.plan.execute}} accepts the
+#' result unchanged.
+#'
+#' @param data A parsed plain plan (from JSON or YAML).
+#' @return An \code{omop_plan} object.
+#' @keywords internal
+.plan_from_plain <- function(data) {
+  plan <- list(
+    cohort  = .plan_restore(data$cohort),
+    anchor  = .plan_restore(data$anchor) %||%
+      list(table = "person", id_col = "person_id"),
+    outputs = .plan_restore(data$outputs) %||% list(),
+    options = .plan_restore(data$options) %||% list(
+      translate_concepts = TRUE,
+      block_sensitive = TRUE,
+      factor_concepts = TRUE
+    )
+  )
+  class(plan) <- c("omop_plan", "list")
+  plan
+}
+
+#' Resolve a plan file's serialization format
+#'
+#' Picks \code{"json"} or \code{"yaml"} from an explicit \code{format} or the
+#' file extension (\code{.json} / \code{.yml} / \code{.yaml}). Mirrors
+#' \code{.recipe_file_format}.
+#'
+#' @param file Character; the file path.
+#' @param format Character or \code{NULL}; an explicit format override.
+#' @return \code{"json"} or \code{"yaml"}.
+#' @keywords internal
+.plan_file_format <- function(file, format = NULL) {
+  fmt <- format
+  if (is.null(fmt)) {
+    ext <- tolower(tools::file_ext(file))
+    fmt <- switch(ext, json = "json", yml = "yaml", yaml = "yaml", NULL)
+  } else {
+    fmt <- tolower(fmt)
+    if (length(fmt) == 1L && fmt == "yml") fmt <- "yaml"
+  }
+  if (is.null(fmt) || length(fmt) != 1L || !fmt %in% c("json", "yaml")) {
+    stop("Plan format must be 'json' or 'yaml', or file must end in ",
+         ".json, .yml, or .yaml.", call. = FALSE)
+  }
+  fmt
+}
+
+#' Save an extraction plan to JSON or YAML
+#'
+#' Serializes an \code{omop_plan} to a file so it can be version-controlled,
+#' shared, and re-run later. The on-disk format is a faithful, class-free copy
+#' of the plan (all outputs, nested \code{filters$custom} and/or trees,
+#' \code{concept_set}s, \code{time_window}s, cohort, and representation
+#' formats), tagged with a schema version. The format is chosen from the file
+#' extension unless given explicitly: \code{.json} uses \pkg{jsonlite};
+#' \code{.yaml}/\code{.yml} uses \pkg{yaml}. A plan reloaded with
+#' \code{\link{ds.omop.plan.load}} executes identically to the original
+#' (the round-trip is lossless with respect to what is sent to the server).
+#'
+#' @param plan An \code{omop_plan} object.
+#' @param file Character; destination path ending in \code{.json},
+#'   \code{.yml}, or \code{.yaml}.
+#' @param format Character or \code{NULL}; optional explicit format
+#'   (\code{"json"} or \code{"yaml"}) overriding the extension.
+#' @return The file path, invisibly.
+#' @examples
+#' \dontrun{
+#' plan <- ds.omop.plan()
+#' plan <- ds.omop.plan.baseline(plan)
+#' plan <- ds.omop.plan.events(plan, "conditions",
+#'   "condition_occurrence", concept_set = c(201826))
+#'
+#' ds.omop.plan.save(plan, "extraction.json")
+#' ds.omop.plan.save(plan, "extraction.yaml")
+#' }
+#' @seealso \code{\link{ds.omop.plan.load}}, \code{\link{ds.omop.plan.execute}}
+#' @export
+ds.omop.plan.save <- function(plan, file, format = NULL) {
+  if (!inherits(plan, "omop_plan"))
+    stop("plan must be an omop_plan object", call. = FALSE)
+  if (missing(file) || length(file) != 1L || !nzchar(file)) {
+    stop("file must be a single non-empty path.", call. = FALSE)
+  }
+  fmt <- .plan_file_format(file, format)
+  plain <- .plan_plain(plan)
+  if (fmt == "json") {
+    json <- jsonlite::toJSON(plain, auto_unbox = TRUE, pretty = TRUE,
+                             null = "null")
+    writeLines(as.character(json), file)
+  } else {
+    if (!requireNamespace("yaml", quietly = TRUE))
+      stop("Package 'yaml' is required for YAML plans. Install it with ",
+           "install.packages(\"yaml\").", call. = FALSE)
+    writeLines(yaml::as.yaml(plain), file)
+  }
+  invisible(file)
+}
+
+#' Load an extraction plan from JSON or YAML
+#'
+#' Reconstructs an \code{omop_plan} previously written by
+#' \code{\link{ds.omop.plan.save}}. The parser is selected from the file
+#' extension (\code{.json} via \pkg{jsonlite}; \code{.yaml}/\code{.yml} via
+#' \pkg{yaml}). Atomic vectors and integer concept/offset fields are restored
+#' so the returned plan is accepted unchanged by
+#' \code{\link{ds.omop.plan.execute}} and produces an identical execution.
+#'
+#' @param file Character; source path ending in \code{.json}, \code{.yml}, or
+#'   \code{.yaml}.
+#' @return An \code{omop_plan} object.
+#' @examples
+#' \dontrun{
+#' plan <- ds.omop.plan.load("extraction.json")
+#' ds.omop.plan.execute(plan, out = "D")
+#' }
+#' @seealso \code{\link{ds.omop.plan.save}}, \code{\link{ds.omop.plan.execute}}
+#' @export
+ds.omop.plan.load <- function(file) {
+  if (missing(file) || length(file) != 1L || !nzchar(file)) {
+    stop("file must be a single non-empty path.", call. = FALSE)
+  }
+  if (!file.exists(file)) {
+    stop("Plan file not found: ", file, call. = FALSE)
+  }
+  fmt <- .plan_file_format(file)
+  if (fmt == "json") {
+    text <- paste(readLines(file, warn = FALSE), collapse = "\n")
+    data <- jsonlite::fromJSON(text, simplifyVector = FALSE)
+  } else {
+    if (!requireNamespace("yaml", quietly = TRUE))
+      stop("Package 'yaml' is required for YAML plans. Install it with ",
+           "install.packages(\"yaml\").", call. = FALSE)
+    data <- yaml::yaml.load_file(file)
+  }
+  .plan_from_plain(data)
 }
 
 #' Print method for extraction plans

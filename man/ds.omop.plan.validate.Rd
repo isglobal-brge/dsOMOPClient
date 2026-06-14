@@ -16,9 +16,10 @@ server (default \code{"omop"}).}
 connections stored in the session.}
 }
 \value{
-A named list (one element per server) containing validation
-  results with expected output schemas, row estimates, and any
-  warnings or errors.
+A named list (one element per server). Each server's result is the
+  preview payload, whose \code{$validation} sub-list reports
+  \code{valid} (logical), \code{errors}, \code{warnings}, and
+  \code{available_tables}. (No row estimates or SQL are returned.)
 }
 \description{
 Sends the plan to each connected server for structural validation,
@@ -29,19 +30,20 @@ not execute the plan or create any data. Use this to catch errors
 before calling \code{\link{ds.omop.plan.execute}}.
 }
 \details{
-Note: despite the name difference, both \code{ds.omop.plan.validate}
-and \code{\link{ds.omop.plan.preview}} currently call the same
-server-side endpoint (\code{omopPlanPreviewDS}). Use
-\code{ds.omop.plan.validate} when you want a pass/fail check, and
-\code{ds.omop.plan.preview} when you want to inspect expected schemas
-and row estimates.
+Note: \code{ds.omop.plan.validate} and \code{\link{ds.omop.plan.preview}}
+call the same server endpoint (\code{omopPlanPreviewDS}) and therefore
+return the \emph{same} structure; the difference is only intent. Read the
+\code{$validation} element (\code{valid}/\code{errors}/\code{warnings}) for
+a pass/fail check here, and the \code{$outputs} element for the per-output
+detail under \code{\link{ds.omop.plan.preview}}.
 }
 \examples{
 \dontrun{
 result <- ds.omop.plan.validate(my_plan)
-# Check a specific server's result
-result$server1$valid
-result$server1$errors
+# Check a specific server's pass/fail and messages
+result$server1$validation$valid
+result$server1$validation$errors
+result$server1$validation$warnings
 }
 }
 \seealso{

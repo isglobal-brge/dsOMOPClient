@@ -3760,6 +3760,9 @@ recipe_preview_stats <- function(recipe,
 #' @param output_mode Character; \code{"memory"} (default) or \code{"staged"}.
 #'   Passed through to \code{\link{ds.omop.plan.execute}}.
 #' @return Invisibly, the output symbol mapping (a named character vector).
+#'   As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
+#'   recorded on the session so the manipulation wrappers can default to the
+#'   last one.
 #' @examples
 #' \dontrun{
 #' recipe_execute(recipe)

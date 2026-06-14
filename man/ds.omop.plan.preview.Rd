@@ -16,31 +16,36 @@ server (default \code{"omop"}).}
 connections stored in the session.}
 }
 \value{
-A named list (one element per server) containing preview
-  information including expected column names and types, estimated
-  row counts, and generated SQL queries for each output.
+A named list (one element per server). Each server's result holds
+  \code{$validation} (see \code{\link{ds.omop.plan.validate}}),
+  \code{$band_width} (the count-banding granularity), and \code{$outputs},
+  a per-output list with \code{columns}, \code{missing_columns},
+  \code{n_persons} (banded; \code{NA} when below the disclosure floor),
+  \code{n_persons_banded}, \code{disclosive}, and \code{representation}.
 }
 \description{
-Sends the plan to each connected server for a dry-run preview that
-returns expected output schemas, estimated row counts, and the SQL
-queries that would be executed, without actually creating any data.
-This is useful for verifying that the plan will produce the expected
-structure before committing to a full execution.
+Sends the plan to each connected server for a dry-run preview that, per
+output, reports the resolvable column names, any requested-but-missing
+columns, and a \emph{disclosure-banded} distinct-person count, without
+creating any data. The person counts are banded down to a multiple of the
+server's \code{band_width} (and suppressed to \code{NA} below the
+disclosure floor) to defeat exact-count differencing; raw row counts,
+min/max, and the underlying SQL are deliberately never returned.
 }
 \details{
-Note: both \code{\link{ds.omop.plan.validate}} and
-\code{ds.omop.plan.preview} currently call the same server-side
-endpoint (\code{omopPlanPreviewDS}). The distinction is semantic:
-use validate for pass/fail checking, and preview for inspecting
-expected output details.
+Note: \code{ds.omop.plan.preview} and \code{\link{ds.omop.plan.validate}}
+call the same server endpoint (\code{omopPlanPreviewDS}) and return the
+same structure; the distinction is only intent. Read \code{$outputs} here
+for per-output detail, and \code{$validation} under
+\code{\link{ds.omop.plan.validate}} for the pass/fail check.
 }
 \examples{
 \dontrun{
 preview <- ds.omop.plan.preview(my_plan)
-# Inspect expected columns for the "baseline" output
+# Resolvable columns for the "baseline" output on one server
 preview$server1$outputs$baseline$columns
-# Check estimated row count
-preview$server1$outputs$baseline$estimated_rows
+# Disclosure-banded distinct-person count (NA if below the floor)
+preview$server1$outputs$baseline$n_persons
 }
 }
 \seealso{

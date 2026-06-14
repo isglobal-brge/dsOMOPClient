@@ -6,7 +6,7 @@
 \usage{
 ds.omop.plan.execute(
   plan,
-  out,
+  out = NULL,
   symbol = "omop",
   conns = NULL,
   output_mode = "memory"
@@ -15,10 +15,23 @@ ds.omop.plan.execute(
 \arguments{
 \item{plan}{An \code{omop_plan} object.}
 
-\item{out}{Named character vector; maps output names (as defined in
-the plan) to server-side symbol names. For example,
-\code{c(baseline = "D_base", survival = "D_tte")} assigns the
-\code{baseline} output to symbol \code{D_base}.}
+\item{out}{Optional output-to-symbol mapping. Three forms are accepted:
+\itemize{
+  \item \strong{Missing or \code{NULL} (default):} symbol names are
+    auto-derived for \emph{every} plan output exactly as
+    \code{\link{recipe_execute}} does — the output's own
+    \code{result_symbol} when set, otherwise \code{D_<name>} (so an
+    output named \code{baseline} becomes symbol \code{D_baseline}).
+    Single-output plans therefore just work with no \code{out}.
+  \item \strong{A bare unnamed string} (e.g. \code{out = "D"}): allowed
+    only when the plan has exactly \emph{one} output, which is bound to
+    that symbol. With multiple outputs this stops with an error asking
+    you to use the named form.
+  \item \strong{A named character vector} (e.g.
+    \code{c(baseline = "D_base", survival = "D_tte")}): maps each named
+    plan output to its server-side symbol. This advanced multi-output
+    form is unchanged and fully backward compatible.
+}}
 
 \item{symbol}{Character; name of the OMOP session symbol on the
 server (default \code{"omop"}).}
@@ -31,7 +44,11 @@ compatible) or \code{"staged"} (writes to Parquet, returns
 descriptors). Staged mode requires \code{arrow} on the server.}
 }
 \value{
-Invisible; the \code{out} symbol mapping (for chaining).
+Invisible; the resolved \code{out} symbol mapping (for chaining).
+  The produced symbols are also recorded on the session so subsequent
+  manipulation wrappers (\code{\link{ds.omop.merge}},
+  \code{\link{ds.omop.filter}}, \code{\link{ds.omop.select}},
+  \code{\link{ds.omop.bind_rows}}) can default to the last one.
 }
 \description{
 Sends the plan to each connected server for full execution. The
@@ -52,6 +69,14 @@ into R memory and enables zero-copy column projection with dsFlower.
 \dontrun{
 plan <- ds.omop.plan()
 plan <- ds.omop.plan.baseline(plan)
+
+# Simplest case: single-output plan, bind to "D".
+ds.omop.plan.execute(plan, out = "D")
+
+# Or omit out entirely to auto-derive D_<name> for every output.
+ds.omop.plan.execute(plan)
+
+# Advanced: multiple outputs, each mapped explicitly.
 plan <- ds.omop.plan.events(plan, "conditions",
   "condition_occurrence", concept_set = c(201826))
 ds.omop.plan.execute(plan,

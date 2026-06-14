@@ -4,11 +4,15 @@
 \alias{ds.omop.bind_rows}
 \title{Row-bind two schema-identical server-side omop.table data frames}
 \usage{
-ds.omop.bind_rows(x, y, newobj = NULL, symbol = "omop", conns = NULL)
+ds.omop.bind_rows(x = NULL, y, newobj = NULL, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{x, y}{Character; names of the server-side \code{omop.table} symbols to
-bind (must have identical column names server-side).}
+\item{x}{Character; name of the first (top) server-side \code{omop.table}
+symbol. If \code{NULL} (the default), the session's most recently produced
+output symbol is used.}
+
+\item{y}{Character; name of the second (bottom) server-side \code{omop.table}
+symbol (must have identical column names to \code{x} server-side).}
 
 \item{newobj}{Character; name of the server-side symbol to create. If
 \code{NULL} (default), a unique name is generated.}

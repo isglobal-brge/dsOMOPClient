@@ -13,164 +13,153 @@ knitr::opts_chunk$set(eval = FALSE)
 
 ## Overview
 
-dsOMOP v2 enforces DataSHIELD disclosure controls at every level.
-These controls are self-contained — dsOMOP does **not** depend on dsBase
-for disclosure checking, which avoids version coupling.
+dsOMOP v2 enforces DataSHIELD disclosure controls at every level. The controls
+are self-contained -- dsOMOP does **not** depend on dsBase for disclosure
+checking, which avoids version coupling. All thresholds are read from
+DataSHIELD server options that the Opal administrator configures; the client can
+only read these settings, never change them.
 
-All disclosure settings are read from DataSHIELD server options,
-configured by the server administrator.
+## The Per-Patient Gate
+
+The central control is a **per-patient gate** keyed on the number of *unique
+persons*, counted as `COUNT(DISTINCT person_id)` (or `subject_id` for cohorts).
+Every result that leaves the server -- exploration aggregates, plan/recipe
+extractions, cohort creation/combination/`from_table`, and the data-manipulation
+verbs (`ds.omop.merge` / `filter` / `select` / `bind_rows`) -- flows through
+`.assertMinPersons`, which compares the distinct-person count against
+`nfilter.subset`.
+
+The gate is **fail-closed**: if the count is below the floor (or `NA`), the
+operation is blocked with a deliberately uninformative error that does not reveal
+the actual count:
+
+```
+Error: Disclosive: operation blocked — insufficient individuals to meet
+disclosure threshold. No further details available.
+```
+
+Because the gate counts *distinct persons* rather than rows, narrowing
+operations (filters, set differences, joins) can only ever reduce the population,
+and a frame that describes too few individuals is never created. Even
+`ds.omop.bind_rows` cannot inflate a population past the floor by binding a frame
+to itself, since duplicated persons do not raise the distinct count.
+
+Aggregate counts that *survive* the gate are additionally **banded** down to a
+multiple of a band width before being returned, so an exact supra-threshold count
+cannot be used as a differencing primitive (this is what `ds.omop.plan.preview()`
+reports as `n_persons`).
+
+## The Person Token
+
+Row-level person and subject keys never leave the server as raw ids. Before any
+value is assigned into the DataSHIELD session, each id is replaced -- under its
+original column name -- by a pseudonymous **person token** with four properties:
+
+- **Persistent / deterministic.** The token is the AES-256-CBC encryption of the
+  id under a per-resource secret key (plus a derived fixed IV), so the same id
+  always maps to the same token. Tokens are stable across reconnects and across
+  DataSHIELD workspace save/load, and remain joinable on the key.
+- **Per-resource.** A different resource uses a different key, so the same person
+  is *not* linkable across sites by comparing tokens.
+- **Non-numeric.** Each token is `paste0("p", <hex ciphertext>)`. The leading
+  `"p"` guarantees the token is non-numeric: hex alone could be all digits, which
+  `as.numeric()` / `ds.asNumeric()` would parse back into a number; the letter
+  prefix forces those to `NA`. The id therefore cannot be recovered or inferred
+  client-side, even by coercion.
+- **Reversible server-side only.** The transform is invertible *on the server*
+  (used for population-scoping joins, e.g. `ds.omop.cohort.from_table()`), but
+  the **client never holds the key** and so cannot invert a token.
+
+The token column is also tagged `dsomop_protected`, so the factor/level layer and
+the manipulation verbs refuse to expose it, use it as a grouping/stat variable,
+or let it be filtered on. Every other identifier column is dropped outright.
+
+This pseudonymisation is defense-in-depth, **not** the sole protection: the
+authoritative barrier remains output gating (the per-patient gate plus small-cell
+suppression). A high-cardinality token is safe to retain precisely because it can
+never be a stat/group variable and can never be reversed off-server.
 
 ## Disclosure Settings
 
-### nfilter.subset (Minimum Persons)
+Each setting is read with a `getOption()` chain: the direct option, then a
+`default.*` fallback (declared in the package `DATASHIELD` file), then a
+hard-coded default.
 
-**The most critical control.** Any query result or cohort must contain
-at least `nfilter.subset` unique persons.
+### nfilter.subset (minimum persons)
 
-- Default: 3
-- Enforced using `COUNT(DISTINCT person_id)`
-- Blocks: table extraction, cohort creation, cohort combination
+The per-patient floor described above. Default `3`. Enforced on
+`COUNT(DISTINCT person_id)` for every result path.
 
-```
-# Server-side option
-options(nfilter.subset = 5)
-```
+### nfilter.tab (minimum cell count)
 
-If a query would return data for fewer persons:
+Minimum count for frequency distributions; smaller cells are suppressed.
+Default `3`. Affects `ds.omop.value.counts()`, `ds.omop.crosstab()`, table/column
+statistics, and prevalence.
 
-```
-Error: Disclosive: unique persons (2) < nfilter.subset (3)
-```
+### nfilter.levels.max (maximum factor levels)
 
-### nfilter.tab (Minimum Cell Count)
-
-Minimum count for frequency distributions. Cells below this threshold
-are replaced with `NA`.
-
-- Default: 3
-- Affects: `ds.omop.valueCounts()`, `catalogTableStats()`
-
-### nfilter.levels.max (Maximum Factor Levels)
-
-Maximum number of distinct values allowed for a categorical column.
-
-- Default: 40
-- Prevents extraction of high-cardinality identifiers
+Maximum number of distinct values allowed for a categorical column, preventing
+extraction of high-cardinality identifiers. Default `40`.
 
 ### nfilter.levels.density
 
-Maximum ratio of levels to observations. Prevents near-unique columns
-from being returned.
+Maximum ratio of distinct levels to observations, blocking near-unique columns.
+Default `0.33`.
 
-- Default: 0.33
-- Formula: `n_levels / n_rows <= nfilter.levels.density`
+### nfilter.string / nfilter.stringShort / nfilter.noise
 
-### datashield.privacyControlLevel
+Standard DataSHIELD string-length and noise parameters (defaults `80`, `20`,
+`0.25`).
 
-Controls which operations are permitted:
+### dsOMOP-specific settings
 
-| Level | Allowed Operations |
-|---|---|
-| `permissive` | All operations, including persistent cohort writes |
-| `banana` | Most operations, including set difference |
-| `avocado` | Standard operations |
-| `carrot` | Restricted |
-| `non-permissive` | Most restrictive |
-
-Default: `"non-permissive"`
+- `dsomop.query_strict` (default `TRUE`): keeps the ad-hoc query library in
+  strict, fully-gated mode.
+- `dsomop.nfilter.dist` (default `10`): minimum support for distribution-style
+  outputs.
+- `dsomop.allow_absolute_dates` (default `FALSE`, **locked**): when off, raw
+  calendar event dates are removed from outputs; the admin must explicitly opt
+  in.
+- `dsomop.allow_sensitive_columns` (default `FALSE`, **locked**): gates extraction
+  of columns flagged sensitive.
 
 ## Where Controls Are Enforced
 
-### Table Extraction (.extractTable)
-
-Before returning any data:
-
-1. Counts unique persons in the query result
-2. Blocks if below `nfilter.subset`
-3. Validates factor levels against `nfilter.levels`
-
-### Cohort Creation (.cohortCreate)
-
-Before materializing a cohort:
-
-1. Counts unique `subject_id` values
-2. Blocks if below `nfilter.subset`
-
-### Cohort Combination (.cohortCombine)
-
-1. Counts unique persons in combined result
-2. Set difference operations require `banana` privacy level
-
-### Catalog Functions
-
-- `tableStats`: Suppresses counts below `nfilter.subset`
-- `valueCounts`: Suppresses cells below `nfilter.tab`, checks levels
-- `searchConcepts`: Read-only vocabulary search (no patient data)
-
-### Plan Preview (.planPreview)
-
-Returns aggregate metadata. Each output is flagged:
-
-```{r preview-flags}
-preview <- ds.omop.plan.preview(plan, symbol = "omop", conns = conns)
-# preview$outputs$conditions$disclosive == TRUE
-# if the person count is below nfilter.subset
-```
-
-### Plan Execution (.planExecute)
-
-Each output is individually checked. Disclosive outputs are skipped
-with a warning rather than failing the entire plan.
-
-## Input Validation
-
-dsOMOP validates all user-provided strings to prevent SQL injection:
-
-### Table and Column Names
-
-- Must match `^[a-zA-Z_][a-zA-Z0-9_]*$`
-- Maximum 128 characters
-- Invalid names are rejected before SQL construction
-
-### String Values
-
-- Maximum 1000 characters by default
-- No raw SQL is accepted from the client
-
-### Concept IDs
-
-- Cast to `as.integer()` before use in SQL
-- Invalid values cause type coercion errors
+| Operation | Gate |
+|---|---|
+| Exploration aggregates | `nfilter.subset` on distinct persons; `nfilter.tab` cell suppression; `nfilter.levels.*` on categoricals |
+| Plan / recipe execution | each output gated on distinct persons; concept factors built from disclosure-safe levels |
+| Plan / recipe preview | per-output `disclosive` flag; surviving counts banded; no data created |
+| Cohort create / combine / from_table | `nfilter.subset` on the resulting cohort |
+| Manipulation verbs (merge/filter/select/bind_rows) | result re-gated on distinct person tokens, re-tagged `omop.table`, fail-closed |
+| Row-level filter DSL | range/membership/`value_bin` only; exact-match `==`/`!=` and identifier columns rejected; gate still runs on the filtered result |
 
 ## SQL Safety
 
-dsOMOP never constructs SQL from raw user strings. All SQL is built
-using parameterized patterns:
-
-- Table/column names go through `adapter$quote_ident()`
-- Literal values go through `adapter$quote_literal()`
-- Concept IDs are cast to integer
-- Filter DSL is compiled recursively with operator whitelisting
+dsOMOP never builds SQL from raw client strings. Table and column names are
+validated against `^[a-zA-Z_][a-zA-Z0-9_]*$` and quoted as identifiers, literal
+values are quoted, concept ids are cast to integer, and the filter DSL is
+compiled recursively with an operator whitelist.
 
 ## Server Administrator Guide
 
-### Recommended Settings
+The Opal administrator sets the thresholds via DataSHIELD options. Recommended
+hardened settings:
 
 ```r
-# In Opal DataSHIELD options:
 options(
-  nfilter.subset = 5,           # Minimum unique persons
-  nfilter.tab = 5,              # Minimum cell count
-  nfilter.levels.max = 40,      # Max factor levels
-  nfilter.levels.density = 0.33, # Max level density
-  datashield.privacyControlLevel = "banana"
+  nfilter.subset         = 5,    # minimum unique persons (the per-patient gate)
+  nfilter.tab            = 5,    # minimum cell count
+  nfilter.levels.max     = 40,   # max categorical levels
+  nfilter.levels.density = 0.33  # max level density
 )
 ```
 
-### DATASHIELD File
+### The DATASHIELD file
 
-The `dsOMOP/DATASHIELD` file declares all methods and their default
-option values. Opal reads this file during package installation:
+The package `DATASHIELD` file declares each method and its `default.*` option, so
+Opal applies sane defaults at install time. These are the fallbacks used when a
+direct option is unset:
 
 ```
 Options:
@@ -178,23 +167,12 @@ Options:
   default.nfilter.tab=3
   default.nfilter.levels.max=40
   default.nfilter.levels.density=0.33
-  default.datashield.privacyControlLevel=non-permissive
+  default.dsomop.query_strict=TRUE
+  default.dsomop.allow_absolute_dates=FALSE
+  default.dsomop.allow_sensitive_columns=FALSE
 ```
 
-Administrators can override these defaults in the Opal admin panel.
-
-### Privacy Level Hierarchy
-
-Operations are gated by privacy level. The hierarchy (most to least
-permissive):
-
-```
-permissive > banana > avocado > carrot > non-permissive
-```
-
-Higher-risk operations require more permissive settings:
-
-- **permissive**: Persistent cohort writes
-- **banana**: Set difference (complement) operations
-- **avocado**: Standard extraction and cohort creation
-- **non-permissive**: Read-only catalog operations
+The administrator overrides any of these in the Opal admin panel. The opt-out
+permissions (`allow_absolute_dates`, `allow_sensitive_columns`) are locked off by
+default and must be enabled deliberately. None of this is reachable from the
+client, which can only observe the effective behaviour.

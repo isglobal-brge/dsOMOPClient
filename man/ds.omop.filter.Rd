@@ -4,10 +4,20 @@
 \alias{ds.omop.filter}
 \title{Filter the rows of a server-side omop.table data frame}
 \usage{
-ds.omop.filter(x, var, op, value, newobj = NULL, symbol = "omop", conns = NULL)
+ds.omop.filter(
+  x = NULL,
+  var,
+  op,
+  value,
+  newobj = NULL,
+  symbol = "omop",
+  conns = NULL
+)
 }
 \arguments{
-\item{x}{Character; name of the server-side \code{omop.table} symbol.}
+\item{x}{Character; name of the server-side \code{omop.table} symbol. If
+\code{NULL} (the default), the session's most recently produced output
+symbol is used.}
 
 \item{var}{Character; the (non-protected) column to filter on.}
 

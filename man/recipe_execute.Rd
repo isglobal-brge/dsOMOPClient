@@ -29,6 +29,9 @@ Passed through to \code{\link{ds.omop.plan.execute}}.}
 }
 \value{
 Invisibly, the output symbol mapping (a named character vector).
+  As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
+  recorded on the session so the manipulation wrappers can default to the
+  last one.
 }
 \description{
 Convenience function that compiles the recipe to an execution plan via

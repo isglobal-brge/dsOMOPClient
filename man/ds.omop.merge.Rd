@@ -5,7 +5,7 @@
 \title{Merge two server-side omop.table data frames on the person key}
 \usage{
 ds.omop.merge(
-  x,
+  x = NULL,
   y,
   by = "person_id",
   type = "inner",
@@ -15,9 +15,12 @@ ds.omop.merge(
 )
 }
 \arguments{
-\item{x, y}{Character; names of the server-side \code{omop.table} symbols to
-join (e.g. the \code{newobj} returned by a previous verb, or a symbol
-created by \code{\link{ds.omop.plan.execute}}).}
+\item{x}{Character; name of the left server-side \code{omop.table} symbol
+(e.g. the \code{newobj} returned by a previous verb, or a symbol created by
+\code{\link{ds.omop.plan.execute}}). If \code{NULL} (the default), the
+session's most recently produced output symbol is used.}
+
+\item{y}{Character; name of the right server-side \code{omop.table} symbol.}
 
 \item{by}{Character vector; the join key. Must be the person key
 (\code{"person_id"} or \code{"subject_id"}); other columns are rejected

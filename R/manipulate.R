@@ -40,9 +40,11 @@
 #' server re-gates the joined result on its distinct-person count and fails
 #' closed if it falls below the disclosure threshold.
 #'
-#' @param x,y Character; names of the server-side \code{omop.table} symbols to
-#'   join (e.g. the \code{newobj} returned by a previous verb, or a symbol
-#'   created by \code{\link{ds.omop.plan.execute}}).
+#' @param x Character; name of the left server-side \code{omop.table} symbol
+#'   (e.g. the \code{newobj} returned by a previous verb, or a symbol created by
+#'   \code{\link{ds.omop.plan.execute}}). If \code{NULL} (the default), the
+#'   session's most recently produced output symbol is used.
+#' @param y Character; name of the right server-side \code{omop.table} symbol.
 #' @param by Character vector; the join key. Must be the person key
 #'   (\code{"person_id"} or \code{"subject_id"}); other columns are rejected
 #'   server-side.
@@ -60,14 +62,14 @@
 #' }
 #' @seealso \code{\link{ds.omop.filter}}, \code{\link{ds.omop.bind_rows}}
 #' @export
-ds.omop.merge <- function(x, y, by = "person_id", type = "inner",
+ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
                           newobj = NULL, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   type <- match.arg(type, c("inner", "left"))
-  if (!is.character(x) || length(x) != 1L ||
-      !is.character(y) || length(y) != 1L) {
-    stop("x and y must be the names of server-side omop.table symbols.",
+  x <- .resolve_target_symbol(x, session, "x")
+  if (!is.character(y) || length(y) != 1L) {
+    stop("y must be the name of a server-side omop.table symbol.",
          call. = FALSE)
   }
   newobj <- newobj %||% .generate_symbol("omop.merge")
@@ -89,7 +91,9 @@ ds.omop.merge <- function(x, y, by = "person_id", type = "inner",
 #' the filtered result on its distinct-person count and fails closed if the
 #' filter narrows the population below the disclosure threshold.
 #'
-#' @param x Character; name of the server-side \code{omop.table} symbol.
+#' @param x Character; name of the server-side \code{omop.table} symbol. If
+#'   \code{NULL} (the default), the session's most recently produced output
+#'   symbol is used.
 #' @param var Character; the (non-protected) column to filter on.
 #' @param op Character; one of \code{"=="}, \code{"!="}, \code{">"},
 #'   \code{">="}, \code{"<"}, \code{"<="}, \code{"in"}, \code{"not_in"}.
@@ -108,15 +112,12 @@ ds.omop.merge <- function(x, y, by = "person_id", type = "inner",
 #' }
 #' @seealso \code{\link{ds.omop.select}}, \code{\link{ds.omop.merge}}
 #' @export
-ds.omop.filter <- function(x, var, op, value,
+ds.omop.filter <- function(x = NULL, var, op, value,
                            newobj = NULL, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   op <- match.arg(op, c("==", "!=", ">", ">=", "<", "<=", "in", "not_in"))
-  if (!is.character(x) || length(x) != 1L) {
-    stop("x must be the name of a server-side omop.table symbol.",
-         call. = FALSE)
-  }
+  x <- .resolve_target_symbol(x, session, "x")
   if (!is.character(var) || length(var) != 1L) {
     stop("var must be a single column name.", call. = FALSE)
   }
@@ -143,7 +144,9 @@ ds.omop.filter <- function(x, var, op, value,
 #' token column is always retained server-side so the result stays a valid,
 #' joinable \code{omop.table}.
 #'
-#' @param x Character; name of the server-side \code{omop.table} symbol.
+#' @param x Character; name of the server-side \code{omop.table} symbol. If
+#'   \code{NULL} (the default), the session's most recently produced output
+#'   symbol is used.
 #' @param cols Character vector; the columns to keep.
 #' @param newobj Character; name of the server-side symbol to create. If
 #'   \code{NULL} (default), a unique name is generated.
@@ -158,14 +161,11 @@ ds.omop.filter <- function(x, var, op, value,
 #' }
 #' @seealso \code{\link{ds.omop.filter}}
 #' @export
-ds.omop.select <- function(x, cols,
+ds.omop.select <- function(x = NULL, cols,
                            newobj = NULL, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
-  if (!is.character(x) || length(x) != 1L) {
-    stop("x must be the name of a server-side omop.table symbol.",
-         call. = FALSE)
-  }
+  x <- .resolve_target_symbol(x, session, "x")
   if (!is.character(cols) || length(cols) == 0L) {
     stop("cols must be a non-empty character vector of column names.",
          call. = FALSE)
@@ -188,8 +188,11 @@ ds.omop.select <- function(x, cols,
 #' frame to itself cannot inflate the count and the result is still blocked when
 #' it covers too few individuals.
 #'
-#' @param x,y Character; names of the server-side \code{omop.table} symbols to
-#'   bind (must have identical column names server-side).
+#' @param x Character; name of the first (top) server-side \code{omop.table}
+#'   symbol. If \code{NULL} (the default), the session's most recently produced
+#'   output symbol is used.
+#' @param y Character; name of the second (bottom) server-side \code{omop.table}
+#'   symbol (must have identical column names to \code{x} server-side).
 #' @param newobj Character; name of the server-side symbol to create. If
 #'   \code{NULL} (default), a unique name is generated.
 #' @param symbol Character; the session symbol used when the OMOP connection was
@@ -203,13 +206,13 @@ ds.omop.select <- function(x, cols,
 #' }
 #' @seealso \code{\link{ds.omop.merge}}
 #' @export
-ds.omop.bind_rows <- function(x, y,
+ds.omop.bind_rows <- function(x = NULL, y,
                               newobj = NULL, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
-  if (!is.character(x) || length(x) != 1L ||
-      !is.character(y) || length(y) != 1L) {
-    stop("x and y must be the names of server-side omop.table symbols.",
+  x <- .resolve_target_symbol(x, session, "x")
+  if (!is.character(y) || length(y) != 1L) {
+    stop("y must be the name of a server-side omop.table symbol.",
          call. = FALSE)
   }
   newobj <- newobj %||% .generate_symbol("omop.bind")

@@ -4,10 +4,12 @@
 \alias{ds.omop.select}
 \title{Keep a subset of columns of a server-side omop.table data frame}
 \usage{
-ds.omop.select(x, cols, newobj = NULL, symbol = "omop", conns = NULL)
+ds.omop.select(x = NULL, cols, newobj = NULL, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{x}{Character; name of the server-side \code{omop.table} symbol.}
+\item{x}{Character; name of the server-side \code{omop.table} symbol. If
+\code{NULL} (the default), the session's most recently produced output
+symbol is used.}
 
 \item{cols}{Character vector; the columns to keep.}
 

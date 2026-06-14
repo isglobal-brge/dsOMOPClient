@@ -294,6 +294,46 @@ ds.omop.status <- function(symbol = "omop") {
   )
 }
 
+#' Inspect the active disclosure thresholds on each server
+#'
+#' @description
+#' Reports the disclosure-control thresholds currently in effect on every
+#' connected server, so an analyst or data controller can see the effective
+#' floor each server enforces — most importantly \code{nfilter_subset}, the
+#' minimum number of distinct persons the per-patient gate
+#' (\code{.assertMinPersons}) requires before any result is returned.
+#'
+#' This is strictly \strong{read-only}. The thresholds are configured
+#' server-side through R options (Opal admin panel, Armadillo config, or
+#' \code{Rprofile.site}); there is deliberately no client-side way to lower
+#' them. Servers may report different floors, so the result is per-server.
+#'
+#' @param symbol Character; the session symbol (default: \code{"omop"}).
+#' @param conns DSI connection object(s) or \code{NULL} to use the session
+#'   default.
+#' @return A named list, one element per server, each holding that server's
+#'   active disclosure settings (e.g. \code{nfilter_subset},
+#'   \code{nfilter_tab}, \code{nfilter_levels_max}). Servers that fail to
+#'   respond are omitted and their errors attached as a \code{ds_errors}
+#'   attribute.
+#' @examples
+#' \dontrun{
+#' settings <- ds.omop.disclosure.settings()
+#' # Effective per-patient floor on each server:
+#' lapply(settings, function(s) s$nfilter_subset)
+#' }
+#' @seealso \code{\link{ds.omop.status}}
+#' @export
+ds.omop.disclosure.settings <- function(symbol = "omop", conns = NULL) {
+  session <- .get_session(symbol)
+  conns <- conns %||% session$conns
+
+  .ds_safe_aggregate(
+    conns,
+    expr = call("omopDisclosureSettingsDS")
+  )
+}
+
 #' Keep federated connections alive
 #'
 #' Issues a lightweight ping to every connected server that ALSO touches the
