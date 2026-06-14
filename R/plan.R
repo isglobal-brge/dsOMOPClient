@@ -942,15 +942,39 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # a bare unnamed string -> bind the single output; a named vector -> as-is.
   out <- .resolve_plan_out(plan, out)
 
+  # Recipe-level scope: a cohort reference and/or omop.table symbol(s) the server
+  # folds into ONE cohort and intersects into every population. omop.table
+  # SYMBOLS cannot ride in the plan JSON, so they are spliced into the call by
+  # name (DSI resolves them to server-side frames) — exactly the
+  # ds.omop.analysis.run scope contract. The cohort literal is carried in the
+  # same spliced expression so the server never double-counts it.
+  scope_expr <- NULL
+  combine <- "union"
+  if (!is.null(plan$scope) &&
+      (!is.null(plan$scope$cohort) || length(plan$scope$tables) > 0)) {
+    scope_expr <- .analysis_scope_expr(cohort = plan$scope$cohort,
+                                       tables = plan$scope$tables)
+    combine <- plan$scope$combine %||% "union"
+  }
+
   # Single assign call: server assigns each output directly into session
   exec_symbol <- .generate_symbol("dsOexec")
+
+  exec_args <- list(
+    as.name("omopPlanExecuteDS"),
+    session$res_symbol, .ds_encode(plan), .ds_encode(out),
+    output_mode)
+  if (!is.null(scope_expr)) {
+    # Splice the scope expression by NAME (so list(as.name(<table>)) resolves to
+    # server-side frames) and pass combine by name so a NULL scope never shifts
+    # it into the wrong positional slot.
+    exec_args <- c(exec_args, list(scope = scope_expr, combine = combine))
+  }
 
   DSI::datashield.assign.expr(
     conns,
     symbol = exec_symbol,
-    expr = call("omopPlanExecuteDS",
-                session$res_symbol, .ds_encode(plan), .ds_encode(out),
-                output_mode)
+    expr = as.call(exec_args)
   )
 
   # exec_symbol holds TRUE (return value); clean up

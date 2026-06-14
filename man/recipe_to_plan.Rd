@@ -21,6 +21,24 @@ features, events, survival, intervals) for each output type, and attaches
 row-level filter trees.
 }
 \details{
+Multiple populations and recipe-level scope are both serialized into the
+plan for the server to execute:
+\itemize{
+  \item \code{plan$populations} carries every recipe population. A
+    criteria population serializes as
+    \code{list(id, label, kind = "criteria", filter_tree, cohort_definition_id)};
+    a set-op population as
+    \code{list(id, label, kind = "setop", setop = list(op, members))}. The
+    base population is always included so its cohort drives single-population
+    recipes exactly as before.
+  \item every \code{plan$outputs[[name]]} carries the \code{population_id} it
+    was authored against (default \code{"base"}), so the server materializes
+    and gates each output against the right population.
+  \item \code{plan$scope} carries the recipe-level scope
+    (\code{list(cohort, tables, combine)}) the server folds and intersects
+    into every population. It is omitted when no scope was set.
+}
+
 Recipes are the recommended interface for ordinary analysis code. Plans are
 retained as an explicit lower-level contract so advanced users, tests, and
 the server can inspect the exact payload before it is executed.

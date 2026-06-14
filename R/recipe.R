@@ -1165,35 +1165,88 @@ omop_filter_missing_measurement <- function(concept_id, window = NULL) {
 
 #' Create a population node
 #'
-#' Populations form a directed acyclic graph (DAG): a base cohort at the root,
-#' with derived subpopulations created by applying filter chains. Each recipe
-#' starts with a \code{"base"} population representing all persons. Additional
-#' populations are passed to \code{\link{omop_recipe}} via its
-#' \code{populations} argument as children of existing ones.
+#' A recipe defines one or more populations and every output targets one (via
+#' \code{omop_output(..., population_id=)}). Each recipe starts with an implicit
+#' \code{"base"} population representing all persons; additional populations are
+#' passed to \code{\link{omop_recipe}} via its \code{populations} argument.
+#'
+#' A population is one of two kinds, which are mutually exclusive:
+#' \itemize{
+#'   \item \strong{criteria-defined} — a person-level inclusion tree given in
+#'     \code{filters} (any mix of \code{\link{omop_filter}} /
+#'     \code{\link{omop_filter_group}} at the \code{"population"} level, e.g.
+#'     sex + \code{has_concept} + \code{has_measurement}). It compiles to the
+#'     same cohort filter tree the server builds the base cohort from.
+#'   \item \strong{set-op derived} — built from \emph{other} populations by a
+#'     set operation on the person key. Supply exactly one of \code{union},
+#'     \code{intersect}, or \code{setdiff} as a character vector of two or more
+#'     population IDs; the server folds the named members with the matching
+#'     algebra (\code{\link{ds.omop.cohort.combine}}'s \code{.cohortCombine}).
+#'     \code{setdiff} keeps persons in the first member and not in the rest.
+#' }
 #'
 #' @param id Character; population ID (must be unique within the recipe).
 #' @param label Character; human-readable label.
 #' @param parent_id Character or \code{NULL}; parent population ID (\code{NULL}
-#'   for root).
+#'   for root). Informational provenance only; set-op membership is the
+#'   executable dependency.
 #' @param filters List of \code{\link{omop_filter}} or
-#'   \code{\link{omop_filter_group}} objects.
+#'   \code{\link{omop_filter_group}} objects (criteria populations only).
 #' @param cohort_definition_id Integer or \code{NULL}; base cohort definition ID
 #'   (if the population is defined by a pre-existing cohort).
-#' @return An \code{omop_population} object.
+#' @param union,intersect,setdiff Character vector of two or more population IDs
+#'   to derive this population from by the named set operation on the person key.
+#'   Exactly one may be supplied, and only for a set-op population (mutually
+#'   exclusive with \code{filters} / \code{cohort_definition_id}).
+#' @return An \code{omop_population} object. A set-op population carries a
+#'   \code{$setop = list(op, members)} field; a criteria population carries
+#'   \code{$filters} (and optionally \code{$cohort_definition_id}).
 #' @examples
 #' \dontrun{
-#' pop <- omop_population(id = "females",
-#'                        label = "Female patients",
-#'                        parent_id = "base",
-#'                        filters = list(omop_filter_sex("F")))
+#' # Criteria population.
+#' females <- omop_population(id = "females", label = "Female patients",
+#'                            filters = list(omop_filter_sex("F")))
+#'
+#' # Set-op population: persons in EITHER of two criteria subgroups.
+#' either <- omop_population(id = "either", label = "diabetic or hypertensive",
+#'                           union = c("diabetic", "hypertensive"))
 #' }
-#' @seealso \code{\link{omop_recipe}}, \code{\link{omop_filter}}
+#' @seealso \code{\link{omop_recipe}}, \code{\link{omop_filter}},
+#'   \code{\link{ds.omop.cohort.combine}}
 #' @export
 omop_population <- function(id = "base",
                             label = "Base Population",
                             parent_id = NULL,
                             filters = list(),
-                            cohort_definition_id = NULL) {
+                            cohort_definition_id = NULL,
+                            union = NULL,
+                            intersect = NULL,
+                            setdiff = NULL) {
+  # A population is EITHER criteria-defined (filters / cohort id) OR derived from
+  # other populations by ONE set operation; the two shapes never mix.
+  setops <- list(union = union, intersect = intersect, setdiff = setdiff)
+  setops <- setops[!vapply(setops, is.null, logical(1))]
+  setop <- NULL
+  if (length(setops) > 0) {
+    if (length(setops) > 1) {
+      stop("omop_population(): supply only one of union / intersect / setdiff.",
+           call. = FALSE)
+    }
+    if (length(filters) > 0 || !is.null(cohort_definition_id)) {
+      stop("omop_population(): a set-op population (union / intersect / ",
+           "setdiff) cannot also take filters or cohort_definition_id.",
+           call. = FALSE)
+    }
+    op <- names(setops)[1]
+    members <- as.character(setops[[1]])
+    members <- members[nzchar(members)]
+    if (length(members) < 2) {
+      stop("omop_population(): ", op, " needs at least two member population ",
+           "IDs.", call. = FALSE)
+    }
+    setop <- list(op = op, members = members)
+  }
+
   obj <- list(
     id                   = id,
     label                = label,
@@ -1202,6 +1255,9 @@ omop_population <- function(id = "base",
     cohort_definition_id = if (!is.null(cohort_definition_id))
       as.integer(cohort_definition_id) else NULL
   )
+  # Only set when supplied so the plain (exported) form of a criteria
+  # population stays byte-stable for the JSON/YAML round-trip.
+  if (!is.null(setop)) obj$setop <- setop
   class(obj) <- c("omop_population", "list")
   obj
 }
@@ -1216,6 +1272,9 @@ omop_population <- function(id = "base",
 print.omop_population <- function(x, ...) {
   parent_txt <- if (!is.null(x$parent_id)) paste("->", x$parent_id) else "(root)"
   cat("omop_population:", x$id, parent_txt, "-", x$label, "\n")
+  if (!is.null(x$setop))
+    cat("  Set-op:", x$setop$op, "(",
+        paste(x$setop$members, collapse = ", "), ")\n")
   if (!is.null(x$cohort_definition_id))
     cat("  Cohort ID:", x$cohort_definition_id, "\n")
   if (length(x$filters) > 0)
@@ -1488,8 +1547,18 @@ print.omop_output <- function(x, ...) {
 #'   declared before their children).
 #' @param blocks A single \code{\link{omop_variable_block}} or a list of them;
 #'   each block is expanded into individual variables.
-#' @param cohort Integer or \code{NULL}; an existing OMOP
-#'   \code{cohort_definition_id} to use as the base population.
+#' @param cohort Recipe scope and/or base cohort. A scalar OMOP
+#'   \code{cohort_definition_id} keeps the existing behaviour: it becomes the
+#'   base population's cohort (equivalent to \code{recipe_set_cohort}). A cohort
+#'   handle (\code{dsomop_cohort_handle}) or a server-side cohort table name is
+#'   instead taken as a recipe-level \emph{scope} that is intersected into every
+#'   population (alongside \code{tables}). \code{NULL} sets neither.
+#' @param tables Character vector of server-side \code{omop.table} symbol names,
+#'   or \code{NULL}. Their distinct persons form a recipe-level scope folded with
+#'   any \code{cohort} scope by \code{combine} and intersected into every
+#'   population (the server resolves the symbol names to frames).
+#' @param combine Character; how to fold multiple scope sources together:
+#'   \code{"union"} (the default) or \code{"intersect"}.
 #' @param options Named list of plan-wide options (\code{translate_concepts},
 #'   \code{block_sensitive}, \code{factor_concepts}); only supplied keys
 #'   override the defaults.
@@ -1511,6 +1580,30 @@ print.omop_output <- function(x, ...) {
 #'   outputs = omop_output(name = "study", type = "wide")
 #' )
 #' recipe_execute(recipe)
+#'
+#' # Multi-population: build two criteria subgroups, UNION them into one
+#' # population, then run an output against that union while a recipe-level
+#' # scope (a cohort handle INTERSECTED with a workspace omop.table's persons)
+#' # narrows every population.
+#' recipe2 <- omop_recipe(
+#'   populations = list(
+#'     omop_population("diabetic", "Diabetics",
+#'                     filters = list(omop_filter_has_concept(
+#'                       201820, "condition_occurrence"))),
+#'     omop_population("hypertensive", "Hypertensives",
+#'                     filters = list(omop_filter_has_concept(
+#'                       320128, "condition_occurrence"))),
+#'     omop_population("either", "Diabetic or hypertensive",
+#'                     union = c("diabetic", "hypertensive"))
+#'   ),
+#'   variables = omop_variable_age(),
+#'   outputs = omop_output(name = "study", type = "wide",
+#'                         population_id = "either"),
+#'   cohort = my_cohort_handle,   # cohort handle / table name as scope
+#'   tables = "my_inclusion_set", # workspace omop.table symbol name
+#'   combine = "intersect"
+#' )
+#' recipe_execute(recipe2)
 #' }
 #' @seealso \code{\link{omop_variable}}, \code{\link{omop_filter}},
 #'   \code{\link{omop_output}}, \code{\link{omop_population}},
@@ -1524,6 +1617,8 @@ omop_recipe <- function(variables = NULL,
                         populations = NULL,
                         blocks = NULL,
                         cohort = NULL,
+                        tables = NULL,
+                        combine = "union",
                         options = NULL) {
   recipe <- .omop_recipe_empty()
 
@@ -1548,9 +1643,20 @@ omop_recipe <- function(variables = NULL,
   for (o in .recipe_arg_list(outputs)) {
     recipe <- recipe_add_output(recipe, o)
   }
+  # `cohort` is dual-purpose by type: a scalar cohort_definition_id keeps the
+  # legacy meaning (base population cohort), while a cohort handle / table-name
+  # ref is a recipe-level scope. `tables` symbols are always scope. Scope (when
+  # any) is folded by `combine` and intersected into every population server-side.
+  scope_cohort <- NULL
   if (!is.null(cohort)) {
-    recipe <- recipe_set_cohort(recipe, cohort)
+    if (is.numeric(cohort) && !inherits(cohort, "dsomop_cohort_handle")) {
+      recipe <- recipe_set_cohort(recipe, cohort)
+    } else {
+      scope_cohort <- cohort
+    }
   }
+  recipe <- recipe_set_scope(recipe, cohort = scope_cohort, tables = tables,
+                             combine = combine)
   if (!is.null(options)) {
     recipe <- recipe_set_options(recipe,
       translate_concepts = options$translate_concepts,
@@ -1583,6 +1689,19 @@ recipe_add_population <- function(recipe, population) {
     stop("Parent population '", population$parent_id, "' not found in recipe",
          call. = FALSE)
   }
+  # Validate set-op members are already declared (so populations() is assembled
+  # in dependency order, exactly like parents). A member may itself be a set-op
+  # population, which lets set operations nest.
+  if (!is.null(population$setop)) {
+    missing <- setdiff(population$setop$members, names(recipe$populations))
+    if (length(missing) > 0) {
+      stop("Set-op population '", population$id, "' references unknown member",
+           if (length(missing) > 1) "s" else "", " '",
+           paste(missing, collapse = "', '"),
+           "'; declare member populations before the set-op that combines them.",
+           call. = FALSE)
+    }
+  }
   recipe$populations[[population$id]] <- population
   recipe$meta$modified <- Sys.time()
   recipe
@@ -1606,6 +1725,66 @@ recipe_set_cohort <- function(recipe, cohort_definition_id) {
     stop("recipe must be an omop_recipe object", call. = FALSE)
   recipe$populations$base$cohort_definition_id <-
     if (!is.null(cohort_definition_id)) as.integer(cohort_definition_id) else NULL
+  recipe$meta$modified <- Sys.time()
+  recipe
+}
+
+#' Set the recipe-level population scope
+#'
+#' Records a recipe-wide scope that the server folds into ONE cohort and
+#' intersects into every population before extraction. The scope mixes an
+#' optional cohort reference (a \code{dsomop_cohort_handle}, a
+#' \code{cohort_definition_id}, or a server-side cohort table name) with zero or
+#' more workspace \code{omop.table} symbol \emph{names}; the sources are combined
+#' on the person key by \code{combine} (\code{"union"}/\code{"intersect"}). The
+#' cohort reference is normalised with the shared \code{\link{.cohort_scope_arg}}
+#' resolver (the same one the exploration / analysis wrappers use) so the server
+#' receives the value its \code{.resolveCohortArg} expects; table symbol names
+#' travel as strings for the server to resolve to frames (matching the
+#' \code{ds.omop.analysis.run} scope contract). Stored on \code{recipe$scope}
+#' and serialized to \code{plan$scope} by \code{\link{recipe_to_plan}}. With no
+#' cohort and no tables the scope is cleared (\code{recipe$scope <- NULL}), so a
+#' plain recipe carries no scope and is byte-identical to one built without it.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param cohort Cohort reference or \code{NULL}.
+#' @param tables Character vector of \code{omop.table} symbol names, or
+#'   \code{NULL}.
+#' @param combine Character; \code{"union"} (default) or \code{"intersect"}.
+#' @return The modified \code{omop_recipe} object.
+#' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_execute}},
+#'   \code{\link{recipe_to_plan}}, \code{\link{.cohort_scope_arg}}
+#' @keywords internal
+recipe_set_scope <- function(recipe, cohort = NULL, tables = NULL,
+                             combine = "union") {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  combine <- match.arg(combine, c("union", "intersect"))
+
+  if (!is.null(tables)) {
+    if (!is.character(tables)) {
+      stop("tables must be the name(s) of server-side omop.table symbol(s).",
+           call. = FALSE)
+    }
+    tables <- tables[nzchar(tables)]
+    if (length(tables) == 0) tables <- NULL
+  }
+
+  cohort_val <- .cohort_scope_arg(cohort)
+
+  # No scope at all -> leave the slot empty so an unscoped recipe stays compact
+  # and round-trips byte-for-byte.
+  if (is.null(cohort_val) && is.null(tables)) {
+    recipe$scope <- NULL
+    recipe$meta$modified <- Sys.time()
+    return(recipe)
+  }
+
+  recipe$scope <- list(
+    cohort  = cohort_val,
+    tables  = tables,
+    combine = combine
+  )
   recipe$meta$modified <- Sys.time()
   recipe
 }
@@ -1916,6 +2095,72 @@ print.omop_recipe <- function(x, ...) {
   as.list(stats::setNames(src[keep], alias[keep]))
 }
 
+#' Serialize one population for the server's multi-population plan
+#'
+#' Each \code{\link{omop_population}} compiles to a transport-safe spec the
+#' server materializes and gates independently. A set-op population carries its
+#' \code{list(op, members)} verbatim (the server folds the named members with the
+#' matching cohort algebra). A criteria population compiles its person-level
+#' filter chain to the SAME nested AND/OR \code{filter_tree} the base cohort uses
+#' (via \code{\link{.compile_population_filter_tree}}), so the server reuses its
+#' existing \code{.buildCohortFromFilters} path, and carries any
+#' \code{cohort_definition_id}. \code{filter_tree}/\code{cohort_definition_id}
+#' are included only when set so a bare population stays compact.
+#'
+#' @param pop An \code{omop_population} object.
+#' @return A named list spec with \code{id}, \code{label}, \code{kind}
+#'   (\code{"setop"} or \code{"criteria"}), and the kind-specific fields.
+#' @keywords internal
+.compile_population_spec <- function(pop) {
+  if (!is.null(pop$setop)) {
+    return(list(
+      id    = pop$id,
+      label = pop$label,
+      kind  = "setop",
+      setop = list(op = pop$setop$op,
+                   members = as.character(pop$setop$members))
+    ))
+  }
+
+  spec <- list(id = pop$id, label = pop$label, kind = "criteria")
+  pop_filters <- .extract_filters_by_level(pop$filters %||% list(), "population")
+  filter_tree <- .compile_population_filter_tree(pop_filters)
+  if (!is.null(filter_tree)) spec$filter_tree <- filter_tree
+  if (!is.null(pop$cohort_definition_id))
+    spec$cohort_definition_id <- as.integer(pop$cohort_definition_id)
+  spec
+}
+
+#' Resolve the population a (possibly table-split) plan output belongs to
+#'
+#' A "long"/features output spanning multiple tables is split into
+#' \code{<name>_<table>} children in the plan. To recover an output's
+#' \code{population_id} we match the plan output name to a recipe output: a
+#' direct hit wins; otherwise the longest recipe-output name it is prefixed by
+#' (\code{<recipe_name>_...}) is its parent. Falls back to \code{"base"} when no
+#' recipe output matches (defensive; should not happen for plan-built outputs).
+#'
+#' @param plan_out_name Character; a name in \code{plan$outputs}.
+#' @param recipe_outputs Named list of \code{omop_output} objects.
+#' @param recipe_out_names Character vector; \code{names(recipe_outputs)}.
+#' @return Character; the target population ID.
+#' @keywords internal
+.recipe_output_population <- function(plan_out_name, recipe_outputs,
+                                      recipe_out_names) {
+  o <- recipe_outputs[[plan_out_name]]
+  if (!is.null(o)) return(o$population_id %||% "base")
+  # Split output: pick the longest matching <recipe_name>_ prefix so outputs
+  # whose names share a prefix are disambiguated deterministically.
+  hits <- recipe_out_names[vapply(recipe_out_names, function(rn) {
+    startsWith(plan_out_name, paste0(rn, "_"))
+  }, logical(1))]
+  if (length(hits) > 0) {
+    parent <- hits[which.max(nchar(hits))]
+    return(recipe_outputs[[parent]]$population_id %||% "base")
+  }
+  "base"
+}
+
 #' Convert a recipe to an extraction plan
 #'
 #' Compiles the recipe into an \code{omop_plan} suitable for server-side
@@ -1924,6 +2169,24 @@ print.omop_recipe <- function(x, ...) {
 #' output and table, selects the appropriate plan builder (person_level,
 #' features, events, survival, intervals) for each output type, and attaches
 #' row-level filter trees.
+#'
+#' Multiple populations and recipe-level scope are both serialized into the
+#' plan for the server to execute:
+#' \itemize{
+#'   \item \code{plan$populations} carries every recipe population. A
+#'     criteria population serializes as
+#'     \code{list(id, label, kind = "criteria", filter_tree, cohort_definition_id)};
+#'     a set-op population as
+#'     \code{list(id, label, kind = "setop", setop = list(op, members))}. The
+#'     base population is always included so its cohort drives single-population
+#'     recipes exactly as before.
+#'   \item every \code{plan$outputs[[name]]} carries the \code{population_id} it
+#'     was authored against (default \code{"base"}), so the server materializes
+#'     and gates each output against the right population.
+#'   \item \code{plan$scope} carries the recipe-level scope
+#'     (\code{list(cohort, tables, combine)}) the server folds and intersects
+#'     into every population. It is omitted when no scope was set.
+#' }
 #'
 #' Recipes are the recommended interface for ordinary analysis code. Plans are
 #' retained as an explicit lower-level contract so advanced users, tests, and
@@ -1948,17 +2211,21 @@ recipe_to_plan <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
 
-  # Multi-population execution is not yet implemented: the compiled plan carries
-  # a single cohort built from the base population, so any output or block
-  # targeting another population would silently run against the base cohort
-  # (wrong-cohort hazard). Fail loudly until per-population execution lands.
+  # Every output / block must target a population that the recipe declares, so
+  # the server never silently runs an output against the wrong (or a missing)
+  # cohort. Fail-closed on a dangling reference before anything is compiled.
+  declared_pops <- names(recipe$populations)
   out_pops <- vapply(recipe$outputs, function(o) o$population_id %||% "base",
                      character(1))
   block_pops <- vapply(recipe$blocks, function(b) b$population_id %||% "base",
                        character(1))
-  if (any(out_pops != "base") || any(block_pops != "base")) {
-    stop("Multiple populations are not yet executable; all outputs must ",
-         "target the base population.", call. = FALSE)
+  unknown_pops <- setdiff(unique(c(out_pops, block_pops)), declared_pops)
+  if (length(unknown_pops) > 0) {
+    stop("Output/block targets undeclared population",
+         if (length(unknown_pops) > 1) "s" else "", " '",
+         paste(unknown_pops, collapse = "', '"),
+         "'; add it via omop_recipe(populations = ...) or omop_population().",
+         call. = FALSE)
   }
 
   plan <- ds.omop.plan()
@@ -1998,6 +2265,22 @@ recipe_to_plan <- function(recipe) {
     }
     if (!is.null(filter_tree)) plan$cohort$filter_tree <- filter_tree
   }
+
+  # Serialize EVERY population (base + criteria + set-op) for the server to
+  # materialize and gate independently. The base cohort above is kept as-is so
+  # single-population recipes execute through the unchanged plan$cohort path;
+  # plan$populations is the multi-population contract layered on top.
+  plan$populations <- lapply(recipe$populations, .compile_population_spec)
+  names(plan$populations) <- names(recipe$populations)
+
+  # Recipe-level scope (cohort and/or omop.table symbol NAMES, folded by
+  # combine): the server folds it into one cohort and intersects it into every
+  # population. `tables` stays a character vector here because omop.table SYMBOLS
+  # cannot ride in the plan JSON — ds.omop.plan.execute() splices them into the
+  # DataSHIELD call by name (via .analysis_scope_expr, the ds.omop.analysis.run
+  # scope contract), so the server resolves them to frames; only the cohort
+  # literal and combine travel as data.
+  if (!is.null(recipe$scope)) plan$scope <- recipe$scope
 
   # Group variables by output
   for (out_name in names(recipe$outputs)) {
@@ -2221,6 +2504,18 @@ recipe_to_plan <- function(recipe) {
         if (is.null(existing)) filter_tree
         else list(and = list(existing, filter_tree))
     }
+  }
+
+  # Stamp each plan output with the population it targets so the server runs (and
+  # gates) it against the right cohort. A "long"/features output that spanned
+  # several tables was split into <name>_<table> children; map those back to the
+  # parent recipe output to recover its population_id (same logic as
+  # recipe_execute / .resolve_plan_out use for symbol naming).
+  recipe_out_names <- names(recipe$outputs)
+  for (plan_out_name in names(plan$outputs)) {
+    pid <- .recipe_output_population(plan_out_name, recipe$outputs,
+                                     recipe_out_names)
+    plan$outputs[[plan_out_name]]$population_id <- pid
   }
 
   plan
@@ -2722,10 +3017,19 @@ recipe_to_code <- function(recipe) {
   for (pid in names(recipe$populations)) {
     if (pid == "base") next
     p <- recipe$populations[[pid]]
-    pop_code <- c(pop_code, .codegen_call("omop_population",
-      id = p$id, label = p$label, parent_id = p$parent_id,
-      filters = .codegen_filter_list(p$filters),
-      cohort_definition_id = p$cohort_definition_id))
+    if (!is.null(p$setop)) {
+      # Set-op population: emit the matching named set arg (union/intersect/
+      # setdiff = c(members)), never filters/cohort_definition_id.
+      pop_args <- list("omop_population",
+                       id = p$id, label = p$label, parent_id = p$parent_id)
+      pop_args[[p$setop$op]] <- as.character(p$setop$members)
+      pop_code <- c(pop_code, do.call(.codegen_call, pop_args))
+    } else {
+      pop_code <- c(pop_code, .codegen_call("omop_population",
+        id = p$id, label = p$label, parent_id = p$parent_id,
+        filters = .codegen_filter_list(p$filters),
+        cohort_definition_id = p$cohort_definition_id))
+    }
   }
   if (length(pop_code) > 0)
     slot_args$populations <- .codegen_list_arg(pop_code)
@@ -2871,6 +3175,20 @@ recipe_to_code <- function(recipe) {
   # Base cohort reference (the base population itself is implicit).
   if (!is.null(recipe$populations$base$cohort_definition_id)) {
     slot_args$cohort <- recipe$populations$base$cohort_definition_id
+  }
+
+  # Recipe-level scope. `tables`/`combine` re-parse as scope directly; the scope
+  # `cohort` re-parses as scope only when non-numeric (a handle/table name) —
+  # a bare-id scope cohort is a codegen corner the JSON/YAML round-trip covers.
+  if (!is.null(recipe$scope)) {
+    sc <- recipe$scope
+    if (!is.null(sc$cohort) && !is.numeric(sc$cohort) &&
+        is.null(slot_args$cohort)) {
+      slot_args$cohort <- sc$cohort
+    }
+    if (!is.null(sc$tables)) slot_args$tables <- sc$tables
+    if (!identical(sc$combine %||% "union", "union"))
+      slot_args$combine <- sc$combine
   }
 
   # Plan options (only when something differs from the constructor defaults,
@@ -3021,7 +3339,7 @@ recipe_to_code <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
 
-  list(
+  out <- list(
     version     = "2.0",
     populations = .recipe_strip_classes(recipe$populations),
     blocks      = .recipe_strip_classes(recipe$blocks),
@@ -3031,6 +3349,11 @@ recipe_to_code <- function(recipe) {
     options     = recipe$options %||% list(),
     meta        = .recipe_strip_classes(recipe$meta)
   )
+  # Only serialize the scope when set, so an unscoped recipe round-trips
+  # byte-for-byte (no spurious `scope: null` key). Population set-op fields are
+  # plain lists and survive .recipe_strip_classes above unchanged.
+  if (!is.null(recipe$scope)) out$scope <- recipe$scope
+  out
 }
 
 .recipe_restore_filter <- function(f) {
@@ -3122,13 +3445,24 @@ recipe_to_code <- function(recipe) {
     recipe$populations <- list()
     for (pid in names(data$populations)) {
       p <- data$populations[[pid]]
-      recipe$populations[[pid]] <- omop_population(
-        id = p$id %||% pid,
-        label = p$label %||% pid,
-        parent_id = p$parent_id,
-        filters = .recipe_restore_filter_list(p$filters),
-        cohort_definition_id = p$cohort_definition_id
-      )
+      if (!is.null(p$setop)) {
+        # Set-op population: rebuild through the matching named argument so the
+        # constructor re-validates (one op, >= 2 members) on import.
+        members <- as.character(unlist(p$setop$members))
+        setop_args <- stats::setNames(list(members), p$setop$op)
+        recipe$populations[[pid]] <- do.call(omop_population, c(
+          list(id = p$id %||% pid, label = p$label %||% pid,
+               parent_id = p$parent_id),
+          setop_args))
+      } else {
+        recipe$populations[[pid]] <- omop_population(
+          id = p$id %||% pid,
+          label = p$label %||% pid,
+          parent_id = p$parent_id,
+          filters = .recipe_restore_filter_list(p$filters),
+          cohort_definition_id = p$cohort_definition_id
+        )
+      }
     }
   }
 
@@ -3205,6 +3539,19 @@ recipe_to_code <- function(recipe) {
     # removed option such as min_persons imports without error, simply ignored).
     recipe$options <- utils::modifyList(recipe$options %||% list(),
                                         data$options, keep.null = TRUE)
+  }
+
+  if (!is.null(data$scope)) {
+    # Rebuild through the setter so types are normalised and an empty scope is
+    # dropped. The serialized cohort value is already the resolved scope arg, so
+    # it passes straight through .cohort_scope_arg unchanged.
+    sc <- data$scope
+    recipe <- recipe_set_scope(
+      recipe,
+      cohort  = sc$cohort,
+      tables  = .recipe_restore_chr(if (!is.null(sc$tables))
+        unlist(sc$tables) else NULL),
+      combine = sc$combine %||% "union")
   }
 
   if (!is.null(data$meta)) {
@@ -3918,6 +4265,17 @@ recipe_preview_stats <- function(recipe,
 #' @param conns DSI connections or \code{NULL} (uses active connections).
 #' @param output_mode Character; \code{"memory"} (default) or \code{"staged"}.
 #'   Passed through to \code{\link{ds.omop.plan.execute}}.
+#' @param cohort Optional recipe-level scope cohort applied at execution time: a
+#'   \code{dsomop_cohort_handle}, a \code{cohort_definition_id}, or a server-side
+#'   cohort table name. When supplied (with or without \code{tables}) it replaces
+#'   any scope already on the recipe; \code{NULL} (the default) leaves the
+#'   recipe's own scope untouched. Folded with \code{tables} by \code{combine}
+#'   and intersected into every population (see \code{\link{omop_recipe}}).
+#' @param tables Optional character vector of \code{omop.table} symbol names to
+#'   add to the execution-time scope (their distinct persons). May be combined
+#'   with \code{cohort}.
+#' @param combine Character; how to fold the scope sources together:
+#'   \code{"union"} (the default) or \code{"intersect"}.
 #' @return Invisibly, the output symbol mapping (a named character vector).
 #'   As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
 #'   recorded on the session so the manipulation wrappers can default to the
@@ -3928,13 +4286,26 @@ recipe_preview_stats <- function(recipe,
 #' recipe_execute(recipe, output_mode = "staged")
 #' # Or with explicit symbol mapping:
 #' recipe_execute(recipe, out = c(features_wide = "D_features"))
+#' # Scope every population to a cohort intersected with a workspace table:
+#' recipe_execute(recipe, cohort = my_cohort, tables = "inclusion_set",
+#'                combine = "intersect")
 #' }
 #' @seealso \code{\link{recipe_to_plan}}, \code{\link{ds.omop.plan.execute}}
 #' @export
 recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
-                           output_mode = "memory") {
+                           output_mode = "memory", cohort = NULL,
+                           tables = NULL, combine = "union") {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
+
+  # Execution-time scope overrides the recipe's stored scope when given. A scalar
+  # cohort_definition_id here is a SCOPE (unlike omop_recipe(cohort=), where a
+  # scalar sets the base cohort) — recipe_execute scopes, it does not re-root the
+  # base population.
+  if (!is.null(cohort) || !is.null(tables)) {
+    recipe <- recipe_set_scope(recipe, cohort = cohort, tables = tables,
+                               combine = combine)
+  }
 
   plan <- recipe_to_plan(recipe)
 

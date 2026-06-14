@@ -9,7 +9,10 @@ omop_population(
   label = "Base Population",
   parent_id = NULL,
   filters = list(),
-  cohort_definition_id = NULL
+  cohort_definition_id = NULL,
+  union = NULL,
+  intersect = NULL,
+  setdiff = NULL
 )
 }
 \arguments{
@@ -18,32 +21,59 @@ omop_population(
 \item{label}{Character; human-readable label.}
 
 \item{parent_id}{Character or \code{NULL}; parent population ID (\code{NULL}
-for root).}
+for root). Informational provenance only; set-op membership is the
+executable dependency.}
 
 \item{filters}{List of \code{\link{omop_filter}} or
-\code{\link{omop_filter_group}} objects.}
+\code{\link{omop_filter_group}} objects (criteria populations only).}
 
 \item{cohort_definition_id}{Integer or \code{NULL}; base cohort definition ID
 (if the population is defined by a pre-existing cohort).}
+
+\item{union, intersect, setdiff}{Character vector of two or more population IDs
+to derive this population from by the named set operation on the person key.
+Exactly one may be supplied, and only for a set-op population (mutually
+exclusive with \code{filters} / \code{cohort_definition_id}).}
 }
 \value{
-An \code{omop_population} object.
+An \code{omop_population} object. A set-op population carries a
+  \code{$setop = list(op, members)} field; a criteria population carries
+  \code{$filters} (and optionally \code{$cohort_definition_id}).
 }
 \description{
-Populations form a directed acyclic graph (DAG): a base cohort at the root,
-with derived subpopulations created by applying filter chains. Each recipe
-starts with a \code{"base"} population representing all persons. Additional
-populations are passed to \code{\link{omop_recipe}} via its
-\code{populations} argument as children of existing ones.
+A recipe defines one or more populations and every output targets one (via
+\code{omop_output(..., population_id=)}). Each recipe starts with an implicit
+\code{"base"} population representing all persons; additional populations are
+passed to \code{\link{omop_recipe}} via its \code{populations} argument.
+}
+\details{
+A population is one of two kinds, which are mutually exclusive:
+\itemize{
+  \item \strong{criteria-defined} — a person-level inclusion tree given in
+    \code{filters} (any mix of \code{\link{omop_filter}} /
+    \code{\link{omop_filter_group}} at the \code{"population"} level, e.g.
+    sex + \code{has_concept} + \code{has_measurement}). It compiles to the
+    same cohort filter tree the server builds the base cohort from.
+  \item \strong{set-op derived} — built from \emph{other} populations by a
+    set operation on the person key. Supply exactly one of \code{union},
+    \code{intersect}, or \code{setdiff} as a character vector of two or more
+    population IDs; the server folds the named members with the matching
+    algebra (\code{\link{ds.omop.cohort.combine}}'s \code{.cohortCombine}).
+    \code{setdiff} keeps persons in the first member and not in the rest.
+}
 }
 \examples{
 \dontrun{
-pop <- omop_population(id = "females",
-                       label = "Female patients",
-                       parent_id = "base",
-                       filters = list(omop_filter_sex("F")))
+# Criteria population.
+females <- omop_population(id = "females", label = "Female patients",
+                           filters = list(omop_filter_sex("F")))
+
+# Set-op population: persons in EITHER of two criteria subgroups.
+either <- omop_population(id = "either", label = "diabetic or hypertensive",
+                          union = c("diabetic", "hypertensive"))
 }
 }
 \seealso{
-\code{\link{omop_recipe}}, \code{\link{omop_filter}}
+\code{\link{omop_recipe}}, \code{\link{omop_filter}},
+  \code{\link{ds.omop.cohort.combine}}
 }

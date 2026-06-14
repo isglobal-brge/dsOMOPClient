@@ -7,7 +7,19 @@ sev_of   <- function(L, code) L$severity[match(code, L$code)]
 
 # --- ERROR rules --------------------------------------------------------------
 
-test_that("no_compile: output targets a non-base population", {
+test_that("no_compile: output targets an undeclared population", {
+  # A declared non-base population now compiles; only a dangling population_id
+  # (never declared) makes recipe_to_plan fail, surfacing as no_compile.
+  r <- omop_recipe()
+  r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_sex())
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "w", type = "wide",
+                                        population_id = "ghost"))
+  L <- recipe_lint(r)
+  expect_true(has_code(L, "no_compile"))
+  expect_equal(sev_of(L, "no_compile"), "ERROR")
+})
+
+test_that("declared non-base population output lints clean (compiles)", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_population(r, omop_population(id = "f", parent_id = "base",
          filters = list(omop_filter_sex("F"))))
@@ -15,8 +27,7 @@ test_that("no_compile: output targets a non-base population", {
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "w", type = "wide",
                                         population_id = "f"))
   L <- recipe_lint(r)
-  expect_true(has_code(L, "no_compile"))
-  expect_equal(sev_of(L, "no_compile"), "ERROR")
+  expect_false(has_code(L, "no_compile"))
 })
 
 test_that("empty_output: output resolves to zero variables", {

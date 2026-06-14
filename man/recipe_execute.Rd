@@ -9,7 +9,10 @@ recipe_execute(
   out = NULL,
   symbol = "omop",
   conns = NULL,
-  output_mode = "memory"
+  output_mode = "memory",
+  cohort = NULL,
+  tables = NULL,
+  combine = "union"
 )
 }
 \arguments{
@@ -26,6 +29,20 @@ output specifications.}
 
 \item{output_mode}{Character; \code{"memory"} (default) or \code{"staged"}.
 Passed through to \code{\link{ds.omop.plan.execute}}.}
+
+\item{cohort}{Optional recipe-level scope cohort applied at execution time: a
+\code{dsomop_cohort_handle}, a \code{cohort_definition_id}, or a server-side
+cohort table name. When supplied (with or without \code{tables}) it replaces
+any scope already on the recipe; \code{NULL} (the default) leaves the
+recipe's own scope untouched. Folded with \code{tables} by \code{combine}
+and intersected into every population (see \code{\link{omop_recipe}}).}
+
+\item{tables}{Optional character vector of \code{omop.table} symbol names to
+add to the execution-time scope (their distinct persons). May be combined
+with \code{cohort}.}
+
+\item{combine}{Character; how to fold the scope sources together:
+\code{"union"} (the default) or \code{"intersect"}.}
 }
 \value{
 Invisibly, the output symbol mapping (a named character vector).
@@ -46,6 +63,9 @@ recipe_execute(recipe)
 recipe_execute(recipe, output_mode = "staged")
 # Or with explicit symbol mapping:
 recipe_execute(recipe, out = c(features_wide = "D_features"))
+# Scope every population to a cohort intersected with a workspace table:
+recipe_execute(recipe, cohort = my_cohort, tables = "inclusion_set",
+               combine = "intersect")
 }
 }
 \seealso{

@@ -11,6 +11,8 @@ omop_recipe(
   populations = NULL,
   blocks = NULL,
   cohort = NULL,
+  tables = NULL,
+  combine = "union",
   options = NULL
 )
 }
@@ -31,8 +33,20 @@ declared before their children).}
 \item{blocks}{A single \code{\link{omop_variable_block}} or a list of them;
 each block is expanded into individual variables.}
 
-\item{cohort}{Integer or \code{NULL}; an existing OMOP
-\code{cohort_definition_id} to use as the base population.}
+\item{cohort}{Recipe scope and/or base cohort. A scalar OMOP
+\code{cohort_definition_id} keeps the existing behaviour: it becomes the
+base population's cohort (equivalent to \code{recipe_set_cohort}). A cohort
+handle (\code{dsomop_cohort_handle}) or a server-side cohort table name is
+instead taken as a recipe-level \emph{scope} that is intersected into every
+population (alongside \code{tables}). \code{NULL} sets neither.}
+
+\item{tables}{Character vector of server-side \code{omop.table} symbol names,
+or \code{NULL}. Their distinct persons form a recipe-level scope folded with
+any \code{cohort} scope by \code{combine} and intersected into every
+population (the server resolves the symbol names to frames).}
+
+\item{combine}{Character; how to fold multiple scope sources together:
+\code{"union"} (the default) or \code{"intersect"}.}
 
 \item{options}{Named list of plan-wide options (\code{translate_concepts},
 \code{block_sensitive}, \code{factor_concepts}); only supplied keys
@@ -78,6 +92,30 @@ recipe <- omop_recipe(
   outputs = omop_output(name = "study", type = "wide")
 )
 recipe_execute(recipe)
+
+# Multi-population: build two criteria subgroups, UNION them into one
+# population, then run an output against that union while a recipe-level
+# scope (a cohort handle INTERSECTED with a workspace omop.table's persons)
+# narrows every population.
+recipe2 <- omop_recipe(
+  populations = list(
+    omop_population("diabetic", "Diabetics",
+                    filters = list(omop_filter_has_concept(
+                      201820, "condition_occurrence"))),
+    omop_population("hypertensive", "Hypertensives",
+                    filters = list(omop_filter_has_concept(
+                      320128, "condition_occurrence"))),
+    omop_population("either", "Diabetic or hypertensive",
+                    union = c("diabetic", "hypertensive"))
+  ),
+  variables = omop_variable_age(),
+  outputs = omop_output(name = "study", type = "wide",
+                        population_id = "either"),
+  cohort = my_cohort_handle,   # cohort handle / table name as scope
+  tables = "my_inclusion_set", # workspace omop.table symbol name
+  combine = "intersect"
+)
+recipe_execute(recipe2)
 }
 }
 \seealso{
