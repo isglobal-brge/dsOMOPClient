@@ -2,38 +2,88 @@
 % Please edit documentation in R/recipe.R
 \name{omop_recipe}
 \alias{omop_recipe}
-\title{Create an empty extraction recipe}
+\title{Create an extraction recipe declaratively}
 \usage{
-omop_recipe()
+omop_recipe(
+  variables = NULL,
+  filters = NULL,
+  outputs = NULL,
+  populations = NULL,
+  blocks = NULL,
+  cohort = NULL,
+  options = NULL
+)
+}
+\arguments{
+\item{variables}{A single \code{\link{omop_variable}} (including the
+convenience \code{omop_variable_*} derived constructors) or a list of them.}
+
+\item{filters}{A single \code{\link{omop_filter}} /
+\code{\link{omop_filter_group}} or a list of them. A \emph{named} list uses
+each name as the filter ID.}
+
+\item{outputs}{A single \code{\link{omop_output}} or a list of them.}
+
+\item{populations}{A single \code{\link{omop_population}} or a list of them
+(the implicit \code{"base"} population always exists; parents must be
+declared before their children).}
+
+\item{blocks}{A single \code{\link{omop_variable_block}} or a list of them;
+each block is expanded into individual variables.}
+
+\item{cohort}{Integer or \code{NULL}; an existing OMOP
+\code{cohort_definition_id} to use as the base population.}
+
+\item{options}{Named list of plan-wide options (\code{translate_concepts},
+\code{block_sensitive}, \code{factor_concepts}); only supplied keys
+override the defaults.}
 }
 \value{
-An \code{omop_recipe} object containing empty populations, blocks,
-  variables, filters, outputs, and metadata.
+An \code{omop_recipe} object.
 }
 \description{
-The recipe is the central user-facing data structure for the Recipe Builder
-workflow. It holds all selections for an OMOP data extraction: populations
-(who), variable blocks (what, grouped), individual variables, filters
-(constraints), and output specifications (how to shape the result). Most
-users can keep working at this level with \code{\link{recipe_preview}},
+The recipe is the central user-facing data structure for an OMOP data
+extraction. It holds every selection in one place: populations (who),
+variable blocks (what, grouped), individual variables, filters (constraints),
+outputs (how to shape the result), the base cohort, and plan-wide options.
+}
+\details{
+This is the single recipe-authoring entry point: pass the complete extraction
+as one nested expression built from the leaf constructors
+(\code{\link{omop_variable}}, \code{\link{omop_filter}},
+\code{\link{omop_output}}, \code{\link{omop_population}},
+\code{\link{omop_variable_block}}, and friends). Each argument accepts a
+single object or a list of objects. The recipe is assembled in dependency
+order (populations, then blocks, then variables, then filters, then outputs,
+then the base cohort, then options) so later items can reference earlier ones.
+Most users then work at the recipe level with \code{\link{recipe_preview}},
 \code{\link{recipe_execute}}, \code{\link{recipe_save}}, and
-\code{\link{recipe_load}}; \code{\link{recipe_to_plan}} exists as the
+\code{\link{recipe_load}}; \code{\link{recipe_to_plan}} exposes the
 lower-level execution contract sent to the server.
 }
 \examples{
 \dontrun{
-recipe <- omop_recipe()
-recipe <- recipe_add_block(recipe, omop_variable_block(
-  table = "condition_occurrence",
-  concept_ids = c(201820),
-  format = "binary"
-))
-recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
+recipe <- omop_recipe(
+  blocks = omop_variable_block(
+    table = "condition_occurrence",
+    concept_ids = c(201820),
+    format = "binary"
+  ),
+  variables = list(
+    omop_variable_age(),
+    omop_variable(table = "measurement", concept_id = 3004410,
+                  format = "mean")
+  ),
+  filters = omop_filter_sex("F"),
+  outputs = omop_output(name = "study", type = "wide")
+)
 recipe_execute(recipe)
 }
 }
 \seealso{
-\code{\link{recipe_add_block}}, \code{\link{recipe_add_filter}},
-  \code{\link{recipe_preview}}, \code{\link{recipe_execute}},
-  \code{\link{recipe_save}}, \code{\link{recipe_to_plan}}
+\code{\link{omop_variable}}, \code{\link{omop_filter}},
+  \code{\link{omop_output}}, \code{\link{omop_population}},
+  \code{\link{omop_variable_block}}, \code{\link{recipe_preview}},
+  \code{\link{recipe_execute}}, \code{\link{recipe_save}},
+  \code{\link{recipe_to_plan}}
 }

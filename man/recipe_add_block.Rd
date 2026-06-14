@@ -20,16 +20,7 @@ Registers the block and expands its \code{concept_ids} into individual
 (table, format, time window, filters). Variable names are auto-generated
 from concept names or IDs with uniqueness enforcement.
 }
-\examples{
-\dontrun{
-recipe <- omop_recipe()
-recipe <- recipe_add_block(recipe, omop_variable_block(
-  table = "condition_occurrence",
-  concept_ids = c(201820, 320128),
-  format = "binary"
-))
-}
-}
 \seealso{
-\code{\link{omop_variable_block}}, \code{\link{recipe_add_variable}}
+\code{\link{omop_variable_block}}, \code{\link{omop_recipe}}
 }
+\keyword{internal}

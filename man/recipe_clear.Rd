@@ -16,11 +16,7 @@ A new empty \code{omop_recipe} object.
 Discards all populations, blocks, variables, filters, and outputs,
 returning a fresh empty recipe identical to \code{\link{omop_recipe}()}.
 }
-\examples{
-\dontrun{
-recipe <- recipe_clear(recipe)
-}
-}
 \seealso{
 \code{\link{omop_recipe}}
 }
+\keyword{internal}

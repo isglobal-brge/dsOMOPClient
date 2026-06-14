@@ -34,5 +34,5 @@ grp <- omop_filter_group(
 }
 }
 \seealso{
-\code{\link{omop_filter}}, \code{\link{recipe_add_filter}}
+\code{\link{omop_filter}}, \code{\link{omop_recipe}}
 }

@@ -19,15 +19,7 @@ Registers a new population node in the recipe's population DAG. The
 population's parent (if any) must already exist in the recipe. The base
 population is created automatically by \code{\link{omop_recipe}}.
 }
-\examples{
-\dontrun{
-recipe <- omop_recipe()
-recipe <- recipe_add_population(recipe,
-  omop_population(id = "adults", label = "Adults 18+",
-                  parent_id = "base",
-                  filters = list(omop_filter_age(min = 18))))
-}
-}
 \seealso{
-\code{\link{recipe_remove_population}}, \code{\link{omop_population}}
+\code{\link{omop_population}}, \code{\link{omop_recipe}}
 }
+\keyword{internal}

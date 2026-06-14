@@ -30,7 +30,8 @@ start date.
 }
 \examples{
 \dontrun{
-recipe <- recipe_add_variable(recipe, omop_variable_age())
+recipe <- omop_recipe(variables = omop_variable_age(),
+                      outputs = omop_output(type = "wide"))
 }
 }
 \seealso{

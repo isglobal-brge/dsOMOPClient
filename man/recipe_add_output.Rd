@@ -19,12 +19,7 @@ Registers an output specification that defines how extracted data should be
 shaped. Multiple outputs can target different subsets of variables and
 populations, each producing a separate server-side dataset.
 }
-\examples{
-\dontrun{
-recipe <- recipe_add_output(recipe,
-  omop_output(name = "wide_data", type = "wide"))
-}
-}
 \seealso{
-\code{\link{recipe_remove_output}}, \code{\link{omop_output}}
+\code{\link{omop_output}}, \code{\link{omop_recipe}}
 }
+\keyword{internal}

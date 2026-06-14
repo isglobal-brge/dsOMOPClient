@@ -51,8 +51,7 @@ row; a recipe with no outputs adds a \code{no_output} warning.
 }
 \examples{
 \dontrun{
-recipe <- omop_recipe()
-recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
+recipe <- omop_recipe(outputs = omop_output(type = "wide"))
 recipe_lint(recipe)
 }
 }

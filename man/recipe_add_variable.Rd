@@ -24,13 +24,7 @@ Adds a single variable to the recipe. Either pass a pre-built
 will be forwarded to \code{omop_variable()}. The variable name is
 deduplicated if it conflicts with existing names.
 }
-\examples{
-\dontrun{
-recipe <- recipe_add_variable(recipe,
-  table = "measurement", concept_id = 3004249,
-  concept_name = "Systolic BP", format = "mean")
-}
-}
 \seealso{
-\code{\link{recipe_remove_variable}}, \code{\link{recipe_add_block}}
+\code{\link{omop_variable}}, \code{\link{omop_recipe}}
 }
+\keyword{internal}

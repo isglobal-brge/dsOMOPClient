@@ -5,16 +5,16 @@
 # Build the B1 recipe used across schema tests.
 .b1_recipe <- function() {
   recipe <- omop_recipe()
-  recipe <- recipe_add_filter(recipe,
+  recipe <- dsOMOPClient:::recipe_add_filter(recipe,
     omop_filter_has_concept(320128, "condition_occurrence"))
-  recipe <- recipe_add_variable(recipe, omop_variable_sex(name = "sex"))
-  recipe <- recipe_add_variable(recipe,
+  recipe <- dsOMOPClient:::recipe_add_variable(recipe, omop_variable_sex(name = "sex"))
+  recipe <- dsOMOPClient:::recipe_add_variable(recipe,
     omop_variable_age(name = "age", reference = "index"))
-  recipe <- recipe_add_variable(recipe,
+  recipe <- dsOMOPClient:::recipe_add_variable(recipe,
     omop_variable(name = "n_rhythm", table = "measurement",
                   concept_id = 3022318, concept_name = "Heart rate rhythm",
                   format = "count"))
-  recipe_add_output(recipe, omop_output(name = "wide", type = "wide"))
+  dsOMOPClient:::recipe_add_output(recipe, omop_output(name = "wide", type = "wide"))
 }
 
 test_that("recipe_preview_schema keeps backward-compatible columns and attrs", {
@@ -50,11 +50,11 @@ test_that("recipe_preview_schema maps B1 formats to R types with concept names",
 
 test_that("recipe_preview_schema reports time_window as a string", {
   recipe <- omop_recipe()
-  recipe <- recipe_add_variable(recipe,
+  recipe <- dsOMOPClient:::recipe_add_variable(recipe,
     omop_variable(name = "sbp", table = "measurement", concept_id = 3004249,
                   concept_name = "Systolic BP", format = "mean",
                   time_window = list(start = -365, end = 0)))
-  recipe <- recipe_add_output(recipe, omop_output(name = "w", type = "wide"))
+  recipe <- dsOMOPClient:::recipe_add_output(recipe, omop_output(name = "w", type = "wide"))
   s <- recipe_preview_schema(recipe)[["w"]]
   expect_equal(s[s$column == "sbp", "time_window"], "[-365,0] d rel index")
   expect_equal(s[s$column == "person_id", "time_window"], "all time")
@@ -66,8 +66,8 @@ test_that("recipe_preview_schema expands multi-column variables", {
                       concept_id = 3004410, concept_name = "HbA1c",
                       format = "mean")
   mv[[".suffix_names"]] <- c("hba1c_1", "hba1c_2", "hba1c_3")
-  recipe <- recipe_add_variable(recipe, mv)
-  recipe <- recipe_add_output(recipe, omop_output(name = "w", type = "wide"))
+  recipe <- dsOMOPClient:::recipe_add_variable(recipe, mv)
+  recipe <- dsOMOPClient:::recipe_add_output(recipe, omop_output(name = "w", type = "wide"))
   s <- recipe_preview_schema(recipe)[["w"]]
   expect_true(all(c("hba1c_1", "hba1c_2", "hba1c_3") %in% s$column))
   expect_equal(nrow(s[s$concept_name == "HbA1c", ]), 3)
@@ -76,14 +76,14 @@ test_that("recipe_preview_schema expands multi-column variables", {
 
 test_that("recipe_preview_schema marks table_split for multi-table long outputs", {
   recipe <- omop_recipe()
-  recipe <- recipe_add_variable(recipe,
+  recipe <- dsOMOPClient:::recipe_add_variable(recipe,
     omop_variable(name = "hr", table = "measurement", concept_id = 3022318,
                   concept_name = "Heart rate", format = "mean"))
-  recipe <- recipe_add_variable(recipe,
+  recipe <- dsOMOPClient:::recipe_add_variable(recipe,
     omop_variable(name = "dx", table = "condition_occurrence",
                   concept_id = 201820, concept_name = "T2DM",
                   format = "binary"))
-  recipe <- recipe_add_output(recipe, omop_output(name = "evt", type = "long"))
+  recipe <- dsOMOPClient:::recipe_add_output(recipe, omop_output(name = "evt", type = "long"))
   s <- recipe_preview_schema(recipe)[["evt"]]
   expect_true("table_split" %in% names(s))
   expect_equal(s[s$column == "person_id", "table_split"], "person")
@@ -95,7 +95,7 @@ test_that("recipe_preview_schema handles empty recipe and variable-less output",
   expect_equal(recipe_preview_schema(omop_recipe()), list())
 
   r <- omop_recipe()
-  r <- recipe_add_output(r, omop_output(name = "empty", type = "wide"))
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "empty", type = "wide"))
   s <- recipe_preview_schema(r)[["empty"]]
   expect_equal(nrow(s), 1)
   expect_equal(s$column, "person_id")

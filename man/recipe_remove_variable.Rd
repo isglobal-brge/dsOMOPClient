@@ -17,11 +17,7 @@ The modified \code{omop_recipe} object.
 \description{
 Removes a variable by name from the recipe's variable list.
 }
-\examples{
-\dontrun{
-recipe <- recipe_remove_variable(recipe, "condition_occurrence_c201820")
-}
-}
 \seealso{
-\code{\link{recipe_add_variable}}
+\code{\link{omop_recipe}}
 }
+\keyword{internal}

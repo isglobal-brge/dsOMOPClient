@@ -23,8 +23,9 @@ IDs per person in the specified table.
 }
 \examples{
 \dontrun{
-recipe <- recipe_add_variable(recipe,
-  omop_variable_n_distinct("condition_occurrence"))
+recipe <- omop_recipe(
+  variables = omop_variable_n_distinct("condition_occurrence"),
+  outputs = omop_output(type = "wide"))
 }
 }
 \seealso{

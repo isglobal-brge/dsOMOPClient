@@ -56,22 +56,24 @@ An \code{omop_variable_block} object.
 }
 \description{
 A variable block groups variables that share a source table, time window,
-and row-level filters. When added to a recipe via
-\code{\link{recipe_add_block}}, the block's \code{concept_ids} are expanded
-into individual \code{\link{omop_variable}} objects that inherit the block's
-defaults. This is the primary way the Builder UI adds concepts to a recipe.
+and row-level filters. When passed to \code{\link{omop_recipe}} via its
+\code{blocks} argument, the block's \code{concept_ids} are expanded into
+individual \code{\link{omop_variable}} objects that inherit the block's
+defaults. This is the compact way to add many concepts from one table.
 }
 \examples{
 \dontrun{
-block <- omop_variable_block(
-  table = "condition_occurrence",
-  concept_ids = c(201820, 320128),
-  concept_names = c("Type 2 diabetes", "Essential hypertension"),
-  format = "binary"
+recipe <- omop_recipe(
+  blocks = omop_variable_block(
+    table = "condition_occurrence",
+    concept_ids = c(201820, 320128),
+    concept_names = c("Type 2 diabetes", "Essential hypertension"),
+    format = "binary"
+  ),
+  outputs = omop_output(type = "wide")
 )
-recipe <- recipe_add_block(recipe, block)
 }
 }
 \seealso{
-\code{\link{recipe_add_block}}, \code{\link{omop_variable}}
+\code{\link{omop_recipe}}, \code{\link{omop_variable}}
 }

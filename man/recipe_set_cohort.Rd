@@ -20,14 +20,8 @@ Updates the base population to reference an existing OMOP cohort definition.
 During \code{\link{recipe_to_plan}}, this is compiled to
 \code{\link{ds.omop.plan.cohort}} with \code{cohort_definition_id}.
 }
-\examples{
-\dontrun{
-recipe <- omop_recipe()
-recipe <- recipe_set_cohort(recipe, 42)
-plan <- recipe_to_plan(recipe)
-}
-}
 \seealso{
-\code{\link{omop_population}}, \code{\link{recipe_to_plan}},
+\code{\link{omop_recipe}}, \code{\link{recipe_to_plan}},
   \code{\link{ds.omop.plan.cohort}}
 }
+\keyword{internal}

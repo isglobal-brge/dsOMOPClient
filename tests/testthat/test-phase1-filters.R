@@ -78,8 +78,8 @@ test_that("a value_concept row filter flows into a compiled recipe plan", {
   v <- omop_variable(
     name = "smoking", table = "observation", concept_id = 4275495,
     filters = list(omop_filter_value_concept(c(45877994L, 45884084L))))
-  r <- recipe_add_variable(r, v)
-  r <- recipe_add_output(r, omop_output(name = "obs", type = "long"))
+  r <- dsOMOPClient:::recipe_add_variable(r, v)
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "obs", type = "long"))
 
   plan <- recipe_to_plan(r)
   ft <- plan$outputs[[1]]$filters$custom
@@ -127,14 +127,14 @@ test_that("window stays NULL when omitted (no spurious time-scoping)", {
 
 test_that("recipe_to_code round-trips value_concept and window filters", {
   r <- omop_recipe()
-  r <- recipe_add_filter(r, omop_filter_not_has_concept(
+  r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_not_has_concept(
     1124300L, table = "drug_exposure", window = list(start = -365, end = 0)))
-  r <- recipe_add_filter(r, omop_filter_missing_measurement(
+  r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_missing_measurement(
     3004410L, window = list(start = -180, end = 0)))
-  r <- recipe_add_variable(r, omop_variable(
+  r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
     name = "smoking", table = "observation", concept_id = 4275495,
     filters = list(omop_filter_value_concept(45877994L))))
-  r <- recipe_add_output(r, omop_output(name = "obs", type = "long"))
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "obs", type = "long"))
 
   code <- recipe_to_code(r)
   expect_true(grepl("omop_filter_value_concept", code))

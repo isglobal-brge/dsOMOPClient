@@ -14,9 +14,11 @@ Character string containing executable R code.
 }
 \description{
 Produces a minimal R script that, when executed, recreates the recipe from
-scratch. The output contains calls to \code{\link{omop_recipe}},
-\code{recipe_add_*} functions, and the relevant constructors. Does not
-include \code{library()} calls or header comments.
+scratch. The output is a single declarative \code{\link{omop_recipe}(...)}
+expression whose arguments are nested calls to the leaf constructors
+(\code{omop_variable*}, \code{omop_filter*}, \code{omop_output},
+\code{omop_population}, \code{omop_variable_block}). Does not include
+\code{library()} calls or header comments.
 }
 \examples{
 \dontrun{

@@ -20,7 +20,8 @@ Produces a derived variable that computes the number of days between
 }
 \examples{
 \dontrun{
-recipe <- recipe_add_variable(recipe, omop_variable_obs_duration())
+recipe <- omop_recipe(variables = omop_variable_obs_duration(),
+                      outputs = omop_output(type = "wide"))
 }
 }
 \seealso{

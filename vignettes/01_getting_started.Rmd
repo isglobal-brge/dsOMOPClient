@@ -134,13 +134,15 @@ DSI::datashield.logout(conns)
 
 For anything beyond a one-off plan, use the **recipe** API. A recipe is a named
 container of variables and outputs that compiles to a plan, and it can be saved
-to and loaded from disk:
+to and loaded from disk. Author it as a single declarative `omop_recipe()` call
+built from the leaf constructors:
 
 ```{r recipe}
-rec <- omop_recipe()
-rec <- recipe_add_variable(rec,
-  omop_variable(table = "measurement", concept_id = 3004410, format = "mean"))
-rec <- recipe_add_output(rec, omop_output(name = "study", type = "features"))
+rec <- omop_recipe(
+  variables = omop_variable(table = "measurement", concept_id = 3004410,
+                            format = "mean"),
+  outputs = omop_output(name = "study", type = "features")
+)
 
 # With no `out`, recipe_execute() derives the output symbols from the output
 # names (here "study" -> "D_study") -- the simplest single-output form:

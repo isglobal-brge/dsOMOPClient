@@ -17,11 +17,7 @@ The modified \code{omop_recipe} object.
 \description{
 Removes a filter by its ID from the recipe's filter list.
 }
-\examples{
-\dontrun{
-recipe <- recipe_remove_filter(recipe, "f1_sex")
-}
-}
 \seealso{
-\code{\link{recipe_add_filter}}
+\code{\link{omop_recipe}}
 }
+\keyword{internal}

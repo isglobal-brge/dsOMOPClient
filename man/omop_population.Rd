@@ -33,8 +33,8 @@ An \code{omop_population} object.
 Populations form a directed acyclic graph (DAG): a base cohort at the root,
 with derived subpopulations created by applying filter chains. Each recipe
 starts with a \code{"base"} population representing all persons. Additional
-populations can be created as children of existing ones via
-\code{\link{recipe_add_population}}.
+populations are passed to \code{\link{omop_recipe}} via its
+\code{populations} argument as children of existing ones.
 }
 \examples{
 \dontrun{
@@ -45,5 +45,5 @@ pop <- omop_population(id = "females",
 }
 }
 \seealso{
-\code{\link{recipe_add_population}}, \code{\link{omop_recipe}}
+\code{\link{omop_recipe}}, \code{\link{omop_filter}}
 }

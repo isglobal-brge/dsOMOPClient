@@ -17,11 +17,7 @@ The modified \code{omop_recipe} object.
 \description{
 Removes an output specification by name from the recipe.
 }
-\examples{
-\dontrun{
-recipe <- recipe_remove_output(recipe, "wide_data")
-}
-}
 \seealso{
-\code{\link{recipe_add_output}}
+\code{\link{omop_recipe}}
 }
+\keyword{internal}

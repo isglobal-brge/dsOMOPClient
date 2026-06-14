@@ -233,26 +233,54 @@ A **recipe** is a higher-level, named container of populations, variables, and
 outputs that compiles down to a plan. It is the most ergonomic path and the one
 that supports saving/loading.
 
+A recipe is authored as a **single declarative `omop_recipe()` call**: pass the
+whole extraction as one nested expression built from the leaf constructors
+(`omop_variable*`, `omop_filter*`, `omop_output`, `omop_population`,
+`omop_variable_block`). Each argument (`variables`, `filters`, `outputs`,
+`populations`, `blocks`, `cohort`, `options`) accepts a single object or a list
+of objects, and the recipe is assembled in dependency order so later items can
+reference earlier ones.
+
 ```{r recipe-build}
-rec <- omop_recipe()
-rec <- recipe_add_variable(rec,
-  omop_variable(table = "person", column = "gender_concept_id",
-                format = "sex_mf"))
-rec <- recipe_add_variable(rec,
-  omop_variable(table = "measurement", concept_id = 3004410,
-                format = "mean",
-                # per-variable row filters and a per-variable time window
-                filters = list(omop_filter_date_range(start = "2020-01-01",
-                                                      end = "2023-12-31")),
-                time_window = list(start = -365, end = 0),
-                concept_col = "value_as_concept_id"))
-rec <- recipe_add_output(rec,
-  omop_output(name = "study", type = "features"))
+rec <- omop_recipe(
+  variables = list(
+    omop_variable(table = "person", column = "gender_concept_id",
+                  format = "sex_mf"),
+    omop_variable(table = "measurement", concept_id = 3004410,
+                  format = "mean",
+                  # per-variable row filters and a per-variable time window
+                  filters = list(omop_filter_date_range(start = "2020-01-01",
+                                                        end = "2023-12-31")),
+                  time_window = list(start = -365, end = 0),
+                  concept_col = "value_as_concept_id")
+  ),
+  outputs = omop_output(name = "study", type = "features")
+)
 ```
 
 Per-variable `filters` are forwarded as row-level predicates and `time_window`
 (in days, relative to the cohort index date) becomes the variable's temporal
 window when the recipe is compiled to a plan.
+
+Grouping many concepts from one table, declaring sub-populations, pinning a base
+cohort, and toggling plan options all flow through the same call:
+
+```{r recipe-full}
+rec2 <- omop_recipe(
+  blocks = omop_variable_block(
+    table = "condition_occurrence",
+    concept_ids = c(201820, 320128),
+    concept_names = c("Type 2 diabetes", "Essential hypertension"),
+    format = "binary"),
+  variables = omop_variable_age(),
+  filters = list(adults = omop_filter_age(min = 18, max = 65)),
+  outputs = omop_output(name = "study", type = "wide"),
+  cohort = 42,                              # base cohort_definition_id
+  options = list(translate_concepts = TRUE) # only supplied keys override defaults
+)
+```
+
+A named `filters` list (e.g. `adults = ...`) uses each name as the filter ID.
 
 ### Validate, preview, execute
 

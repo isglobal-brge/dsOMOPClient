@@ -40,3 +40,4 @@ existing option values are preserved for omitted arguments. Mirrors
 \code{\link{omop_recipe}}, \code{\link{recipe_to_plan}},
   \code{\link{ds.omop.plan.options}}
 }
+\keyword{internal}

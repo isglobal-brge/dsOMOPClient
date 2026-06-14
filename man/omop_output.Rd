@@ -42,17 +42,19 @@ An \code{omop_output} object.
 Defines how to shape the extracted data into a result table. Each output
 selects a subset of variables from the recipe, targets a population, and
 specifies a layout type (e.g. wide person-level, long event-level, or
-feature matrix). Outputs are added to a recipe via
-\code{\link{recipe_add_output}} and determine the server-side plan structure
+feature matrix). Outputs are passed to \code{\link{omop_recipe}} via its
+\code{outputs} argument and determine the server-side plan structure
 produced by \code{\link{recipe_to_plan}}.
 }
 \examples{
 \dontrun{
-out <- omop_output(name = "features_wide", type = "wide",
-                   population_id = "base")
-recipe <- recipe_add_output(recipe, out)
+recipe <- omop_recipe(
+  variables = omop_variable(table = "condition_occurrence",
+                            concept_id = 201820, format = "binary"),
+  outputs = omop_output(name = "features_wide", type = "wide")
+)
 }
 }
 \seealso{
-\code{\link{recipe_add_output}}, \code{\link{recipe_to_plan}}
+\code{\link{omop_recipe}}, \code{\link{recipe_to_plan}}
 }

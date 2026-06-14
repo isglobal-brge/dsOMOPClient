@@ -27,11 +27,11 @@ the server can inspect the exact payload before it is executed.
 }
 \examples{
 \dontrun{
-recipe <- omop_recipe()
-recipe <- recipe_add_block(recipe, omop_variable_block(
-  table = "condition_occurrence",
-  concept_ids = c(201820), format = "binary"))
-recipe <- recipe_add_output(recipe, omop_output(type = "wide"))
+recipe <- omop_recipe(
+  blocks = omop_variable_block(
+    table = "condition_occurrence",
+    concept_ids = c(201820), format = "binary"),
+  outputs = omop_output(type = "wide"))
 recipe_execute(recipe)
 plan <- recipe_to_plan(recipe)  # advanced: inspect the server payload
 }

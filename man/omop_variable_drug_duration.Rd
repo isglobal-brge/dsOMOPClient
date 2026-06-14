@@ -33,8 +33,9 @@ per person using the specified function.
 }
 \examples{
 \dontrun{
-recipe <- recipe_add_variable(recipe,
-  omop_variable_drug_duration(1124300, concept_name = "Metformin"))
+recipe <- omop_recipe(
+  variables = omop_variable_drug_duration(1124300, concept_name = "Metformin"),
+  outputs = omop_output(type = "wide"))
 }
 }
 \seealso{

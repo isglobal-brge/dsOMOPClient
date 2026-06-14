@@ -17,8 +17,8 @@ test_that("recipe_to_plan forwards a per-variable row filter to filters$custom",
       params = list(var = "value_as_number",
                     value = list(lower = 7, upper = 10))))
   )
-  r <- recipe_add_variable(r, v)
-  r <- recipe_add_output(r, omop_output(name = "labs", type = "long"))
+  r <- dsOMOPClient:::recipe_add_variable(r, v)
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
   plan <- recipe_to_plan(r)
   out <- plan$outputs[[1]]
@@ -34,10 +34,10 @@ test_that("recipe_to_plan forwards a per-variable row filter to filters$custom",
 
 test_that("recipe_to_plan no longer writes to the dead output$filter slot", {
   r <- omop_recipe()
-  r <- recipe_add_variable(r, omop_variable(
+  r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
     name = "cond", table = "condition_occurrence", concept_id = 201820))
-  r <- recipe_add_filter(r, omop_filter_date_range("2020-01-01", "2023-12-31"))
-  r <- recipe_add_output(r, omop_output(name = "ev", type = "long"))
+  r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_date_range("2020-01-01", "2023-12-31"))
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "ev", type = "long"))
 
   plan <- recipe_to_plan(r)
   out <- plan$outputs$ev
@@ -73,8 +73,8 @@ test_that("recipe_to_plan no longer writes to the dead output$filter slot", {
 
 test_that("features output forwards per-variable row filter to filters$custom", {
   r <- omop_recipe()
-  r <- recipe_add_variable(r, .value_bin_var(format = "mean"))
-  r <- recipe_add_output(r, omop_output(name = "labs", type = "features"))
+  r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "features"))
 
   out <- recipe_to_plan(r)$outputs[[1]]
   expect_equal(out$type, "event_level")   # features compiles to event_level
@@ -83,8 +83,8 @@ test_that("features output forwards per-variable row filter to filters$custom", 
 
 test_that("covariates_sparse output forwards per-variable row filter", {
   r <- omop_recipe()
-  r <- recipe_add_variable(r, .value_bin_var(format = "mean"))
-  r <- recipe_add_output(r,
+  r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
+  r <- dsOMOPClient:::recipe_add_output(r,
     omop_output(name = "labs", type = "covariates_sparse"))
 
   out <- recipe_to_plan(r)$outputs[[1]]
@@ -93,8 +93,8 @@ test_that("covariates_sparse output forwards per-variable row filter", {
 
 test_that("survival output forwards per-variable row filter to filters$custom", {
   r <- omop_recipe()
-  r <- recipe_add_variable(r, .value_bin_var(format = "mean"))
-  r <- recipe_add_output(r, omop_output(name = "surv", type = "survival"))
+  r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "surv", type = "survival"))
 
   out <- recipe_to_plan(r)$outputs[["surv"]]
   expect_equal(out$type, "survival")
@@ -103,8 +103,8 @@ test_that("survival output forwards per-variable row filter to filters$custom", 
 
 test_that("single-table wide features output forwards per-variable row filter", {
   r <- omop_recipe()
-  r <- recipe_add_variable(r, .value_bin_var(format = "mean"))
-  r <- recipe_add_output(r, omop_output(name = "wide", type = "wide"))
+  r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "wide", type = "wide"))
 
   out <- recipe_to_plan(r)$outputs[["wide"]]
   expect_equal(out$type, "event_level")
@@ -113,10 +113,10 @@ test_that("single-table wide features output forwards per-variable row filter", 
 
 test_that("multi-table wide routes row filter into the per-table feature entry", {
   r <- omop_recipe()
-  r <- recipe_add_variable(r, .value_bin_var(name = "hba1c", format = "mean"))
-  r <- recipe_add_variable(r, omop_variable(
+  r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(name = "hba1c", format = "mean"))
+  r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
     name = "sbp", table = "observation", concept_id = 3004249, format = "mean"))
-  r <- recipe_add_output(r, omop_output(name = "wide", type = "wide"))
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "wide", type = "wide"))
 
   out <- recipe_to_plan(r)$outputs[["wide"]]
   expect_equal(out$type, "person_level")
@@ -132,8 +132,8 @@ test_that("recipe_to_plan forwards a per-variable time_window as index_window", 
   v <- omop_variable(
     name = "recent_hba1c", table = "measurement", concept_id = 3004410,
     time_window = list(start = -365, end = 0))
-  r <- recipe_add_variable(r, v)
-  r <- recipe_add_output(r, omop_output(name = "labs", type = "long"))
+  r <- dsOMOPClient:::recipe_add_variable(r, v)
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
   plan <- recipe_to_plan(r)
   out <- plan$outputs[[1]]
@@ -152,8 +152,8 @@ test_that("recipe_to_plan carries row filter AND time_window from one variable",
       type = "value_bin", level = "row",
       params = list(var = "value_as_number",
                     value = list(lower = 7, upper = 10)))))
-  r <- recipe_add_variable(r, v)
-  r <- recipe_add_output(r, omop_output(name = "labs", type = "long"))
+  r <- dsOMOPClient:::recipe_add_variable(r, v)
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
   plan <- recipe_to_plan(r)
   out <- plan$outputs[[1]]
@@ -173,10 +173,10 @@ test_that("recipe-level and per-variable row filters AND-merge (neither lost)", 
       type = "value_bin", level = "row",
       params = list(var = "value_as_number",
                     value = list(lower = 7, upper = 10)))))
-  r <- recipe_add_variable(r, v)
+  r <- dsOMOPClient:::recipe_add_variable(r, v)
   # recipe-level row filter (date range)
-  r <- recipe_add_filter(r, omop_filter_date_range("2020-01-01", "2023-12-31"))
-  r <- recipe_add_output(r, omop_output(name = "labs", type = "long"))
+  r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_date_range("2020-01-01", "2023-12-31"))
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
   plan <- recipe_to_plan(r)
   ft <- plan$outputs[[1]]$filters$custom
@@ -219,8 +219,8 @@ test_that("recipe_to_plan forwards per-variable visit_filter and concept_col", {
     name = "bw", table = "measurement", concept_id = 3025315,
     visit_filter = list(concept_ids = 9201L),
     concept_col = "unit_concept_id")
-  r <- recipe_add_variable(r, v)
-  r <- recipe_add_output(r, omop_output(name = "labs", type = "long"))
+  r <- dsOMOPClient:::recipe_add_variable(r, v)
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
   plan <- recipe_to_plan(r)
   out <- plan$outputs[[1]]
@@ -243,8 +243,8 @@ test_that("a recipe round-trips per-variable filter, window, visit, concept_col"
       type = "value_bin", level = "row",
       params = list(var = "value_as_number",
                     value = list(lower = 7, upper = 10)))))
-  r <- recipe_add_variable(r, v)
-  r <- recipe_add_output(r, omop_output(name = "labs", type = "long"))
+  r <- dsOMOPClient:::recipe_add_variable(r, v)
+  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
   path <- withr::local_tempfile(fileext = ".json")
   recipe_save(r, path)

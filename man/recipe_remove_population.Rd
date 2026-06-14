@@ -18,11 +18,7 @@ The modified \code{omop_recipe} object.
 Removes a population node from the recipe's population DAG. The base
 population cannot be removed.
 }
-\examples{
-\dontrun{
-recipe <- recipe_remove_population(recipe, "adults")
-}
-}
 \seealso{
-\code{\link{recipe_add_population}}
+\code{\link{omop_recipe}}
 }
+\keyword{internal}

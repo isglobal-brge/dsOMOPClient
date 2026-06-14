@@ -155,8 +155,8 @@ An \code{omop_filter} object (a named list with class
 Filters restrict the population or events included in the extraction.
 There are three levels: \code{"population"} (person-level inclusion criteria),
 \code{"row"} (event-level restrictions), and \code{"output"} (post-extraction
-transformations). Filters are added to a recipe via
-\code{\link{recipe_add_filter}} and can be nested into groups with
+transformations). Filters are passed to \code{\link{omop_recipe}} via its
+\code{filters} argument and can be nested into groups with
 \code{\link{omop_filter_group}}.
 }
 \details{
@@ -172,5 +172,5 @@ f <- omop_filter(type = "sex", level = "population",
 }
 }
 \seealso{
-\code{\link{recipe_add_filter}}, \code{\link{omop_filter_group}}
+\code{\link{omop_recipe}}, \code{\link{omop_filter_group}}
 }

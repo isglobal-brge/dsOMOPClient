@@ -74,20 +74,23 @@ An \code{omop_variable} object (a named list with class
 \description{
 Describes a single variable to extract from the CDM. Variables reference
 a source table and column, and may include concept-level filtering and
-output formatting options. Variables are the atomic units added to an
-\code{omop_recipe} either individually via \code{\link{recipe_add_variable}}
-or in bulk via \code{\link{recipe_add_block}}.
+output formatting options. Variables are the atomic building blocks passed to
+\code{\link{omop_recipe}} via its \code{variables} argument (or grouped with
+\code{\link{omop_variable_block}} and passed via \code{blocks}).
 }
 \examples{
 \dontrun{
-v <- omop_variable(
-  table = "condition_occurrence",
-  concept_id = 201820,
-  concept_name = "Type 2 diabetes",
-  format = "binary"
+recipe <- omop_recipe(
+  variables = omop_variable(
+    table = "condition_occurrence",
+    concept_id = 201820,
+    concept_name = "Type 2 diabetes",
+    format = "binary"
+  ),
+  outputs = omop_output(type = "wide")
 )
 }
 }
 \seealso{
-\code{\link{recipe_add_variable}}, \code{\link{omop_variable_block}}
+\code{\link{omop_recipe}}, \code{\link{omop_variable_block}}
 }

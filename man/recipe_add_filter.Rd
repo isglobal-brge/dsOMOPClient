@@ -24,13 +24,7 @@ plan compilation: population-level filters restrict the cohort, row-level
 filters restrict events. The filter ID is auto-generated from the type if
 not provided.
 }
-\examples{
-\dontrun{
-recipe <- recipe_add_filter(recipe, omop_filter_sex("F"))
-recipe <- recipe_add_filter(recipe,
-  omop_filter_age(min = 18, max = 65), id = "adults_only")
-}
-}
 \seealso{
-\code{\link{recipe_remove_filter}}, \code{\link{omop_filter}}
+\code{\link{omop_filter}}, \code{\link{omop_recipe}}
 }
+\keyword{internal}

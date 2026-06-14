@@ -35,9 +35,10 @@ records matching the concept set.
 }
 \examples{
 \dontrun{
-recipe <- recipe_add_variable(recipe,
-  omop_variable_sum("drug_exposure", "days_supply",
-                    concept_id = 1124300))
+recipe <- omop_recipe(
+  variables = omop_variable_sum("drug_exposure", "days_supply",
+                                concept_id = 1124300),
+  outputs = omop_output(type = "wide"))
 }
 }
 \seealso{

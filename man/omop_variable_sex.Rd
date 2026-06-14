@@ -19,7 +19,8 @@ Produces a derived variable that maps \code{gender_concept_id} to
 }
 \examples{
 \dontrun{
-recipe <- recipe_add_variable(recipe, omop_variable_sex())
+recipe <- omop_recipe(variables = omop_variable_sex(),
+                      outputs = omop_output(type = "wide"))
 }
 }
 \seealso{
