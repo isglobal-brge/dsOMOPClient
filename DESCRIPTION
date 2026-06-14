@@ -1,7 +1,7 @@
 Package: dsOMOPClient
 Type: Package
 Title: DataSHIELD Client for OMOP CDM Databases
-Version: 2.4.13
+Version: 2.4.14
 Authors@R: c(
     person("David", "Sarrat González", role = c("aut", "cre"), email = "david.sarrat@isglobal.org"),
     person("Xavier", "Escribà-Montagut", role = "aut"),
@@ -29,7 +29,8 @@ Suggests:
     testthat (>= 3.0.0),
     clipr,
     knitr,
-    rmarkdown
+    rmarkdown,
+    ggplot2
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 RoxygenNote: 7.3.3

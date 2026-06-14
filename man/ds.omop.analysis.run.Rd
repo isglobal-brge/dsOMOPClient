@@ -11,6 +11,7 @@ ds.omop.analysis.run(
   tables = NULL,
   combine = "union",
   pooling_policy = "strict",
+  plot = FALSE,
   symbol = "omop",
   conns = NULL
 )
@@ -39,6 +40,15 @@ pooling aggregate results across servers. \code{"strict"} (the default)
 sets the pooled value to NA if any server suppressed it; \code{"pooled_only_ok"}
 sums only the non-suppressed values.}
 
+\item{plot}{Logical; when \code{TRUE} AND the entry ships a plot recipe, build
+a \code{ggplot} CLIENT-SIDE over the pooled, gate-passed data and attach it
+to the result (also returned via the \code{"plot"} attribute and
+\code{meta$plot}). \code{FALSE} (the default) returns data only and never
+touches \pkg{ggplot2}. The plot is purely a client-side rendering of numbers
+that already cleared the server's disclosure gate (see Safety, below). A
+broken/incompatible recipe degrades to a warning and a \code{NULL} plot — it
+never costs you the returned data.}
+
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
 
@@ -50,7 +60,9 @@ A \code{dsomop_result} object. For aggregate entries, \code{per_site}
   holds each server's disclosure-controlled data frame and \code{pooled} holds
   the cross-server aggregation. For assign-mode entries, \code{per_site} holds
   per-server assignment confirmations (the data stays on the server) and the
-  server-side symbol name is recorded in the result metadata.
+  server-side symbol name is recorded in the result metadata. When
+  \code{plot = TRUE} and the entry ships a plot recipe, the built \code{ggplot}
+  is attached as the \code{"plot"} attribute (and \code{meta$plot}).
 }
 \description{
 Executes one catalog entry across every connected server through the server's
@@ -71,6 +83,19 @@ person key) into a single re-gated cohort, and SQL entries are restricted to
 it. Pre-computed Achilles/OHDSI entries hold no per-row person key and reject
 scoping (the server raises a clear error).
 }
+\section{Safety (client-side plotting)}{
+ Some entries ship an INERT plot recipe
+  — the source text of a \code{function(df, params)} that builds a
+  \code{ggplot} — which the server returns as metadata ALONGSIDE the gated
+  aggregate. That source ships inside the installed dsOMOP / analysis-pack
+  package (authored by the same maintainers as the disclosure gate). When
+  \code{plot = TRUE} the client evaluates it LOCALLY and calls it only on
+  \code{pooled} — data that has already passed the server's single per-patient
+  gate (small-cell suppressed, banded, distributions masked). The client never
+  sends plot code to the server and the server never evaluates it; a plot can
+  only redraw disclosure-controlled numbers, never recover a suppressed cell.
+}
+
 \examples{
 \dontrun{
 # Discover, inspect, then run an entry scoped to a cohort.
@@ -93,6 +118,10 @@ res2 <- ds.omop.analysis.run(
   tables  = c("my_cohort", "my_other_cohort"),
   combine = "intersect"
 )
+
+# Build the entry's client-side plot over the pooled, gate-passed data.
+res3 <- ds.omop.analysis.run(entry, params = list(top_n = 25), plot = TRUE)
+attr(res3, "plot")   # the ggplot (NULL if the entry ships no plot recipe)
 }
 }
 \seealso{

@@ -92,6 +92,85 @@
   as.call(args)
 }
 
+#' Render an entry's client-side plot over already-gated pooled data
+#'
+#' The plotting half of the analysis catalog runs ENTIRELY on the client, over
+#' data that has ALREADY passed the server's single per-patient disclosure gate.
+#' For entries that ship one, the server returns an INERT plot recipe in the
+#' entry metadata (\code{omopAnalysisGetDS}): \code{plot$type} (a label) and
+#' \code{plot$code}, the SOURCE TEXT of a \code{function(df, params)} that builds
+#' a \code{ggplot}. That source ships INSIDE the installed dsOMOP / analysis-pack
+#' package; it is authored by the same trusted maintainers as the gate itself.
+#'
+#' Safety model (why eval here is not a code-injection surface):
+#' \itemize{
+#'   \item The client NEVER sends plot code to the server, and the server NEVER
+#'     evaluates it — the server only carries the inert text alongside the gated
+#'     aggregate. There is no client->server code path here.
+#'   \item The code is evaluated CLIENT-SIDE, in the analyst's own session, only
+#'     over \code{df} — the pooled data frame that already cleared the gate
+#'     (small-cell suppressed, banded, distributions masked). A plot can only
+#'     ever redraw disclosure-controlled numbers; it cannot reach back into any
+#'     server or recover a suppressed cell.
+#'   \item Evaluation is wrapped in \code{\link[base]{tryCatch}} so a broken or
+#'     incompatible plot recipe NEVER costs the analyst the (already returned)
+#'     data — it degrades to a warning and \code{NULL} plot.
+#' }
+#' \pkg{ggplot2} is required only on this path (\code{plot = TRUE}); a clear
+#' message is raised if it is not installed, rather than failing obscurely inside
+#' the recipe.
+#'
+#' @param meta Named list; one entry's metadata from \code{omopAnalysisGetDS}.
+#'   The plot recipe is read from \code{meta$plot} (a \code{list(type, code)}),
+#'   tolerating a nested \code{meta$compute$plot} for forward compatibility.
+#' @param pooled Data frame; the pooled, gate-passed aggregate to plot.
+#' @param params Named list; the same parameter values passed to the run, handed
+#'   to the recipe's \code{function(df, params)} second argument.
+#' @return A \code{ggplot} object, or \code{NULL} when the entry ships no plot
+#'   recipe or the recipe could not be built (with a warning in the latter case).
+#' @keywords internal
+.analysis_render_plot <- function(meta, pooled, params) {
+  # The recipe lives at meta$plot (flat, as omopAnalysisGetDS exposes it); accept
+  # a nested compute$plot too so the client is robust to either metadata shape.
+  recipe <- meta$plot %||% meta$compute$plot
+  code <- recipe$code
+  if (is.null(code) || !nzchar(code)) {
+    warning("Analysis '", meta$name %||% "?",
+            "' does not provide a plot; returning data only.", call. = FALSE)
+    return(NULL)
+  }
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("plot = TRUE requires the 'ggplot2' package; install it or call with ",
+         "plot = FALSE to get the data only.", call. = FALSE)
+  }
+  if (!is.data.frame(pooled) || nrow(pooled) == 0) {
+    warning("Analysis '", meta$name %||% "?",
+            "' returned no pooled data to plot; returning data only.",
+            call. = FALSE)
+    return(NULL)
+  }
+
+  # Parse + evaluate the recipe and call it on the already-gated pooled frame.
+  # A failure here must never lose the data the caller already has, so the whole
+  # build degrades to a warning + NULL plot.
+  tryCatch({
+    plot_fn <- eval(parse(text = code))
+    if (!is.function(plot_fn)) {
+      stop("plot recipe did not evaluate to a function(df, params).",
+           call. = FALSE)
+    }
+    p <- plot_fn(pooled, params)
+    if (!inherits(p, "ggplot")) {
+      stop("plot recipe did not return a ggplot object.", call. = FALSE)
+    }
+    p
+  }, error = function(e) {
+    warning("Analysis '", meta$name %||% "?", "' plot could not be built (",
+            conditionMessage(e), "); returning data only.", call. = FALSE)
+    NULL
+  })
+}
+
 #' List unified analysis catalog entries
 #'
 #' Returns metadata for every entry in the server's unified analysis catalog —
@@ -226,6 +305,14 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 #'   pooling aggregate results across servers. \code{"strict"} (the default)
 #'   sets the pooled value to NA if any server suppressed it; \code{"pooled_only_ok"}
 #'   sums only the non-suppressed values.
+#' @param plot Logical; when \code{TRUE} AND the entry ships a plot recipe, build
+#'   a \code{ggplot} CLIENT-SIDE over the pooled, gate-passed data and attach it
+#'   to the result (also returned via the \code{"plot"} attribute and
+#'   \code{meta$plot}). \code{FALSE} (the default) returns data only and never
+#'   touches \pkg{ggplot2}. The plot is purely a client-side rendering of numbers
+#'   that already cleared the server's disclosure gate (see Safety, below). A
+#'   broken/incompatible recipe degrades to a warning and a \code{NULL} plot — it
+#'   never costs you the returned data.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
@@ -234,7 +321,20 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 #'   holds each server's disclosure-controlled data frame and \code{pooled} holds
 #'   the cross-server aggregation. For assign-mode entries, \code{per_site} holds
 #'   per-server assignment confirmations (the data stays on the server) and the
-#'   server-side symbol name is recorded in the result metadata.
+#'   server-side symbol name is recorded in the result metadata. When
+#'   \code{plot = TRUE} and the entry ships a plot recipe, the built \code{ggplot}
+#'   is attached as the \code{"plot"} attribute (and \code{meta$plot}).
+#'
+#' @section Safety (client-side plotting): Some entries ship an INERT plot recipe
+#'   — the source text of a \code{function(df, params)} that builds a
+#'   \code{ggplot} — which the server returns as metadata ALONGSIDE the gated
+#'   aggregate. That source ships inside the installed dsOMOP / analysis-pack
+#'   package (authored by the same maintainers as the disclosure gate). When
+#'   \code{plot = TRUE} the client evaluates it LOCALLY and calls it only on
+#'   \code{pooled} — data that has already passed the server's single per-patient
+#'   gate (small-cell suppressed, banded, distributions masked). The client never
+#'   sends plot code to the server and the server never evaluates it; a plot can
+#'   only redraw disclosure-controlled numbers, never recover a suppressed cell.
 #' @examples
 #' \dontrun{
 #' # Discover, inspect, then run an entry scoped to a cohort.
@@ -257,12 +357,16 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 #'   tables  = c("my_cohort", "my_other_cohort"),
 #'   combine = "intersect"
 #' )
+#'
+#' # Build the entry's client-side plot over the pooled, gate-passed data.
+#' res3 <- ds.omop.analysis.run(entry, params = list(top_n = 25), plot = TRUE)
+#' attr(res3, "plot")   # the ggplot (NULL if the entry ships no plot recipe)
 #' }
 #' @seealso \code{\link{ds.omop.analysis.list}}, \code{\link{ds.omop.analysis.get}}
 #' @export
 ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
                                  tables = NULL, combine = "union",
-                                 pooling_policy = "strict",
+                                 pooling_policy = "strict", plot = FALSE,
                                  symbol = "omop", conns = NULL) {
   combine <- match.arg(combine, c("union", "intersect"))
 
@@ -271,14 +375,15 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
 
-  # Decide aggregate vs assign from the entry's mode (assign loaders keep their
-  # result server-side and go through the assign run path).
-  is_assign <- tryCatch({
+  # Fetch the entry metadata once: it decides aggregate vs assign (assign loaders
+  # keep their result server-side) AND carries the inert plot recipe used below
+  # when plot = TRUE. Identical across servers, so the first server's view is used.
+  entry_meta <- tryCatch({
     meta <- DSI::datashield.aggregate(
       conns, expr = call("omopAnalysisGetDS", session$res_symbol, name))
-    m <- if (length(meta) > 0) meta[[1]] else NULL
-    identical(m$mode, "assign")
-  }, error = function(e) FALSE)
+    if (length(meta) > 0) meta[[1]] else NULL
+  }, error = function(e) NULL)
+  is_assign <- identical(entry_meta$mode, "assign")
 
   scope_expr <- .analysis_scope_expr(cohort, tables)
 
@@ -311,9 +416,22 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
 
   pool_out <- .pool_result(raw, "ohdsi_results", pooling_policy)
 
-  dsomop_result(
+  # Optional client-side plot over the pooled, gate-passed data. The data is
+  # already in hand; .analysis_render_plot degrades to NULL (with a warning) on
+  # any failure so plotting can never lose the returned aggregate.
+  gg <- if (isTRUE(plot)) {
+    .analysis_render_plot(entry_meta, pool_out$result, params)
+  } else NULL
+
+  result <- dsomop_result(
     per_site = raw, pooled = pool_out$result,
     meta = list(call_code = code, scope = "pooled",
                 pooling_policy = pooling_policy,
                 warnings = pool_out$warnings))
+  # The dsomop_result constructor keeps only its known meta fields, so attach the
+  # built plot explicitly (as documented: available via both the "plot"
+  # attribute and meta$plot). NULL when plot = FALSE or no recipe was built.
+  attr(result, "plot") <- gg
+  result$meta$plot <- gg
+  result
 }

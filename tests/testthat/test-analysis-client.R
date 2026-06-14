@@ -157,3 +157,196 @@ test_that("ds.omop.query.exec warns (deprecated) and forwards", {
              error = function(e) NULL),
     "deprecated|ds.omop.analysis.run", ignore.case = TRUE)
 })
+
+# ==============================================================================
+# Phase 6b: client-side plot harness (ds.omop.analysis.run plot=)
+#
+# The plotting half runs ENTIRELY on the client over data that already cleared
+# the server's single per-patient gate. The server ships an INERT plot recipe in
+# the entry metadata (plot$code = the SOURCE TEXT of a function(df, params)); the
+# client eval()s that text LOCALLY and calls it on the pooled gated frame. The
+# load-bearing security property: the client NEVER sends plot code to the server
+# and the server NEVER evals it. These tests pin (1) the .analysis_render_plot
+# helper's branches directly, and (2) the end-to-end run path with DataSHIELD
+# mocked so we can both prove plot=FALSE never touches the recipe AND capture
+# every server-bound expression to prove no code is ever transmitted.
+# ==============================================================================
+
+# A trivial, valid plot recipe: source text of a function(df, params) -> ggplot.
+.acat_plot_code <- paste(
+  "function(df, params) {",
+  "  ggplot2::ggplot(df, ggplot2::aes(x = gender_name, y = n_persons)) +",
+  "    ggplot2::geom_col()",
+  "}",
+  sep = "\n")
+
+# A small ALREADY-GATED pooled frame (banded counts), as the gate would emit.
+.acat_gated_df <- function() {
+  data.frame(gender_name = c("MALE", "FEMALE"),
+             n_persons = c(45, 30), stringsAsFactors = FALSE)
+}
+
+# --- .analysis_render_plot (unit, no session) --------------------------------
+
+test_that(".analysis_render_plot builds a ggplot from an inert recipe on gated df", {
+  skip_if_not_installed("ggplot2")
+  meta <- list(name = "dsomop:demo.person_count_by_gender",
+               plot = list(type = "bar", code = .acat_plot_code))
+  p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(),
+                                            params = list())
+  expect_s3_class(p, "ggplot")
+  # The recipe was evaluated over the GATED frame we passed (not some other data):
+  # the built plot's data is exactly that banded frame.
+  expect_equal(p$data$n_persons, c(45, 30))
+})
+
+test_that(".analysis_render_plot reads a nested compute$plot recipe too", {
+  skip_if_not_installed("ggplot2")
+  meta <- list(name = "x", compute = list(plot = list(code = .acat_plot_code)))
+  p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(), list())
+  expect_s3_class(p, "ggplot")
+})
+
+test_that(".analysis_render_plot returns NULL (warns) when no recipe is shipped", {
+  meta <- list(name = "dsomop:achilles.401")  # no plot field
+  expect_warning(
+    p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(), list()),
+    "does not provide a plot")
+  expect_null(p)
+})
+
+test_that(".analysis_render_plot degrades to NULL+warn on a broken recipe (data kept)", {
+  skip_if_not_installed("ggplot2")
+  # A recipe that errors when called must NOT propagate: the caller already holds
+  # the data, so plotting failure is a warning + NULL plot, never a hard error.
+  meta <- list(name = "x", plot = list(code = "function(df, params) stop('boom')"))
+  expect_warning(
+    p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(), list()),
+    "plot could not be built")
+  expect_null(p)
+})
+
+test_that(".analysis_render_plot rejects a recipe that isn't a ggplot", {
+  skip_if_not_installed("ggplot2")
+  meta <- list(name = "x", plot = list(code = "function(df, params) 42"))
+  expect_warning(
+    p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(), list()),
+    "plot could not be built")
+  expect_null(p)
+})
+
+# --- ds.omop.analysis.run(plot=) end-to-end (mocked DataSHIELD) ---------------
+
+# Register a fake session AND mock DSI::datashield.aggregate so the run path can
+# execute with no live backend. The mock dispatches on the call HEAD:
+#   omopAnalysisGetDS -> the entry metadata (carrying the inert plot recipe)
+#   omopAnalysisRunDS -> the already-gated aggregate frame
+# Every expression handed to the server is recorded in `sent` so a test can
+# assert no plot code was ever transmitted.
+.acat_with_mocked_run <- function(meta_plot, gated, code) {
+  assign("omop", list(conns = list(srv = "FAKE"), res_symbol = "dsO.fake"),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  withr::defer_parent(
+    if (exists("omop", envir = dsOMOPClient:::.dsomop_client_env)) {
+      rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env)
+    })
+
+  sent <- new.env(parent = emptyenv())
+  sent$exprs <- list()
+  meta <- list(name = "dsomop:demo.person_count_by_gender", mode = "aggregate")
+  if (!is.null(meta_plot)) meta$plot <- meta_plot
+
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      sent$exprs <- c(sent$exprs, list(expr))
+      head <- if (is.call(expr)) as.character(expr[[1]]) else ""
+      val <- if (identical(head, "omopAnalysisGetDS")) meta else gated
+      stats::setNames(list(val), names(conns))
+    },
+    .package = "DSI", .env = parent.frame())
+
+  code(sent)
+}
+
+test_that("ds.omop.analysis.run(plot=FALSE) returns data only, no plot, no ggplot", {
+  gated <- .acat_gated_df()
+  .acat_with_mocked_run(
+    meta_plot = list(type = "bar", code = .acat_plot_code),
+    gated = gated,
+    code = function(sent) {
+      res <- ds.omop.analysis.run("dsomop:demo.person_count_by_gender",
+                                  plot = FALSE)
+      # Data is returned (pooled = the gated frame, one server). Pooling groups
+      # by gender_name so row order is not input order; key on the label.
+      expect_s3_class(res, "dsomop_result")
+      pn <- stats::setNames(res$pooled$n_persons, res$pooled$gender_name)
+      expect_equal(pn[["MALE"]], 45)
+      expect_equal(pn[["FEMALE"]], 30)
+      # No plot is attached on the default path.
+      expect_null(attr(res, "plot"))
+      expect_null(res$meta$plot)
+    })
+})
+
+test_that("ds.omop.analysis.run(plot=TRUE) evals the recipe CLIENT-SIDE on the gated df", {
+  skip_if_not_installed("ggplot2")
+  gated <- .acat_gated_df()
+  .acat_with_mocked_run(
+    meta_plot = list(type = "bar", code = .acat_plot_code),
+    gated = gated,
+    code = function(sent) {
+      res <- ds.omop.analysis.run("dsomop:demo.person_count_by_gender",
+                                  plot = TRUE)
+      gg <- attr(res, "plot")
+      expect_s3_class(gg, "ggplot")
+      # The plot was drawn over the GATED, banded data — not raw counts. The
+      # plot's data IS the pooled gate-passed frame (key on the gender label,
+      # since pooling reorders rows).
+      ggn <- stats::setNames(gg$data$n_persons, gg$data$gender_name)
+      expect_equal(ggn[["MALE"]], 45)
+      expect_equal(ggn[["FEMALE"]], 30)
+      # The data is still returned intact alongside the plot.
+      pn <- stats::setNames(res$pooled$n_persons, res$pooled$gender_name)
+      expect_equal(pn[["MALE"]], 45)
+      # meta$plot and the attribute are the same built ggplot.
+      expect_identical(res$meta$plot, gg)
+    })
+})
+
+test_that("plot recipe is NEVER sent to the server (client-side eval only)", {
+  skip_if_not_installed("ggplot2")
+  gated <- .acat_gated_df()
+  .acat_with_mocked_run(
+    meta_plot = list(type = "bar", code = .acat_plot_code),
+    gated = gated,
+    code = function(sent) {
+      ds.omop.analysis.run("dsomop:demo.person_count_by_gender", plot = TRUE)
+      # Every server-bound expression is a known catalog method, never the plot
+      # code. Deparse each and assert none carries the recipe source text.
+      heads <- vapply(sent$exprs,
+                      function(e) as.character(e[[1]]), character(1))
+      expect_true(all(heads %in% c("omopAnalysisGetDS", "omopAnalysisRunDS")))
+      depars <- vapply(sent$exprs,
+                       function(e) paste(deparse(e), collapse = " "), character(1))
+      expect_false(any(grepl("geom_col", depars, fixed = TRUE)))
+      expect_false(any(grepl("ggplot", depars, fixed = TRUE)))
+    })
+})
+
+test_that("ds.omop.analysis.run(plot=TRUE) on an entry with no recipe keeps the data", {
+  skip_if_not_installed("ggplot2")
+  gated <- .acat_gated_df()
+  .acat_with_mocked_run(
+    meta_plot = NULL,  # entry ships no plot recipe
+    gated = gated,
+    code = function(sent) {
+      expect_warning(
+        res <- ds.omop.analysis.run("dsomop:demo.person_count_by_gender",
+                                    plot = TRUE),
+        "does not provide a plot")
+      expect_null(attr(res, "plot"))
+      # Data is never lost when a plot can't be built.
+      pn <- stats::setNames(res$pooled$n_persons, res$pooled$gender_name)
+      expect_equal(pn[["MALE"]], 45)
+    })
+})
