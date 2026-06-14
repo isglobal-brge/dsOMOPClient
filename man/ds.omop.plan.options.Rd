@@ -8,7 +8,6 @@ ds.omop.plan.options(
   plan,
   translate_concepts = NULL,
   block_sensitive = NULL,
-  min_persons = NULL,
   factor_concepts = NULL
 )
 }
@@ -21,10 +20,6 @@ output tables.}
 
 \item{block_sensitive}{Logical; if \code{TRUE}, sensitive columns
 (e.g. exact dates, free-text notes) are excluded from outputs.}
-
-\item{min_persons}{Integer; minimum person count threshold for
-disclosure control. Cells with fewer persons are suppressed.
-If \code{NULL}, no suppression is applied.}
 
 \item{factor_concepts}{Logical; if \code{TRUE} (default), after a
 memory-mode execution every \code{_concept_id} column is converted
@@ -48,7 +43,6 @@ plan <- ds.omop.plan()
 plan <- ds.omop.plan.options(plan,
   translate_concepts = TRUE,
   block_sensitive = TRUE,
-  min_persons = 5L,
   factor_concepts = TRUE
 )
 }

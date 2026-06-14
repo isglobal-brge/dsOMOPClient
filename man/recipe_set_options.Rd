@@ -8,7 +8,6 @@ recipe_set_options(
   recipe,
   translate_concepts = NULL,
   block_sensitive = NULL,
-  min_persons = NULL,
   factor_concepts = NULL
 )
 }
@@ -20,10 +19,6 @@ translated to human-readable concept names in output tables.}
 
 \item{block_sensitive}{Logical; if \code{TRUE}, sensitive columns
 (e.g. exact dates, free-text notes) are excluded from outputs.}
-
-\item{min_persons}{Integer; minimum person count threshold for disclosure
-control. Cells with fewer persons are suppressed. \code{NULL} = no
-suppression.}
 
 \item{factor_concepts}{Logical; if \code{TRUE}, after a memory-mode
 execution every \code{_concept_id} column is converted to a factor whose

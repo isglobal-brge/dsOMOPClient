@@ -94,12 +94,6 @@ test_that("plan.options sets block_sensitive", {
   expect_false(plan$options$block_sensitive)
 })
 
-test_that("plan.options sets min_persons", {
-  plan <- ds.omop.plan()
-  plan <- ds.omop.plan.options(plan, min_persons = 5)
-  expect_equal(plan$options$min_persons, 5)
-})
-
 test_that("plan.features adds feature specs", {
   plan <- ds.omop.plan()
   plan <- ds.omop.plan.features(plan,

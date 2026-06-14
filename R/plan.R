@@ -30,7 +30,6 @@ ds.omop.plan <- function() {
     options = list(
       translate_concepts = TRUE,
       block_sensitive = TRUE,
-      min_persons = NULL,
       factor_concepts = TRUE
     )
   )
@@ -625,9 +624,6 @@ ds.omop.plan.temporal_covariates <- function(plan,
 #'   output tables.
 #' @param block_sensitive Logical; if \code{TRUE}, sensitive columns
 #'   (e.g. exact dates, free-text notes) are excluded from outputs.
-#' @param min_persons Integer; minimum person count threshold for
-#'   disclosure control. Cells with fewer persons are suppressed.
-#'   If \code{NULL}, no suppression is applied.
 #' @param factor_concepts Logical; if \code{TRUE} (default), after a
 #'   memory-mode execution every \code{_concept_id} column is converted
 #'   into a factor whose levels are harmonized across all connected
@@ -642,7 +638,6 @@ ds.omop.plan.temporal_covariates <- function(plan,
 #' plan <- ds.omop.plan.options(plan,
 #'   translate_concepts = TRUE,
 #'   block_sensitive = TRUE,
-#'   min_persons = 5L,
 #'   factor_concepts = TRUE
 #' )
 #' }
@@ -651,16 +646,12 @@ ds.omop.plan.temporal_covariates <- function(plan,
 ds.omop.plan.options <- function(plan,
                                  translate_concepts = NULL,
                                  block_sensitive = NULL,
-                                 min_persons = NULL,
                                  factor_concepts = NULL) {
   if (!is.null(translate_concepts)) {
     plan$options$translate_concepts <- translate_concepts
   }
   if (!is.null(block_sensitive)) {
     plan$options$block_sensitive <- block_sensitive
-  }
-  if (!is.null(min_persons)) {
-    plan$options$min_persons <- min_persons
   }
   if (!is.null(factor_concepts)) {
     plan$options$factor_concepts <- factor_concepts
