@@ -7,6 +7,7 @@
 ds.omop.missingness(
   table,
   columns = NULL,
+  cohort = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",

@@ -8,6 +8,7 @@ ds.omop.column.stats(
   table,
   column,
   concept_id = NULL,
+  cohort = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",

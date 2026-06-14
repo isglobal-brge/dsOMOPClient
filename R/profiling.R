@@ -115,16 +115,18 @@ ds.omop.table.stats <- function(table,
 #' }
 #' @export
 ds.omop.column.stats <- function(table, column, concept_id = NULL,
+                                 cohort = NULL,
                                  scope = c("per_site", "pooled"),
                                  pooling_policy = "strict",
                                  symbol = "omop",
                                  conns = NULL,
                                  execute = TRUE) {
   scope <- match.arg(scope)
+  cohort_scope <- .cohort_scope_arg(cohort)
 
   code <- .build_code("ds.omop.column.stats",
     table = table, column = column, concept_id = concept_id,
-    scope = scope, symbol = symbol)
+    cohort = cohort_scope, scope = scope, symbol = symbol)
 
   if (!execute) {
     return(dsomop_result(
@@ -138,7 +140,8 @@ ds.omop.column.stats <- function(table, column, concept_id = NULL,
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopColumnStatsDS", session$res_symbol,
-                table, column, concept_id = concept_id)
+                table, column, concept_id = concept_id,
+                cohort = cohort_scope)
   )
 
   ds_errors <- attr(raw, "ds_errors")
@@ -262,16 +265,17 @@ ds.omop.domain.coverage <- function(scope = c("per_site", "pooled"),
 #' miss$per_site$server1
 #' }
 #' @export
-ds.omop.missingness <- function(table, columns = NULL,
+ds.omop.missingness <- function(table, columns = NULL, cohort = NULL,
                                 scope = c("per_site", "pooled"),
                                 pooling_policy = "strict",
                                 symbol = "omop",
                                 conns = NULL,
                                 execute = TRUE) {
   scope <- match.arg(scope)
+  cohort_scope <- .cohort_scope_arg(cohort)
 
   code <- .build_code("ds.omop.missingness",
-    table = table, columns = columns,
+    table = table, columns = columns, cohort = cohort_scope,
     scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -286,7 +290,7 @@ ds.omop.missingness <- function(table, columns = NULL,
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopMissingnessDS", session$res_symbol,
-                table, .ds_encode(columns))
+                table, .ds_encode(columns), cohort = cohort_scope)
   )
 
   ds_errors <- attr(raw, "ds_errors")
@@ -347,17 +351,19 @@ ds.omop.missingness <- function(table, columns = NULL,
 #' }
 #' @export
 ds.omop.value.counts <- function(table, column, top_n = 20,
-                                 concept_id = NULL,
+                                 concept_id = NULL, cohort = NULL,
                                  scope = c("per_site", "pooled"),
                                  pooling_policy = "strict",
                                  symbol = "omop",
                                  conns = NULL,
                                  execute = TRUE) {
   scope <- match.arg(scope)
+  cohort_scope <- .cohort_scope_arg(cohort)
 
   code <- .build_code("ds.omop.value.counts",
     table = table, column = column, top_n = top_n,
-    concept_id = concept_id, scope = scope, symbol = symbol)
+    concept_id = concept_id, cohort = cohort_scope,
+    scope = scope, symbol = symbol)
 
   if (!execute) {
     return(dsomop_result(
@@ -372,7 +378,7 @@ ds.omop.value.counts <- function(table, column, top_n = 20,
     conns,
     expr = call("omopValueCountsDS", session$res_symbol,
                 table, column, as.integer(top_n),
-                concept_id = concept_id)
+                concept_id = concept_id, cohort = cohort_scope)
   )
 
   ds_errors <- attr(raw, "ds_errors")
@@ -454,17 +460,19 @@ ds.omop.value.counts <- function(table, column, top_n = 20,
 ds.omop.crosstab <- function(table, row, col, by = "persons",
                              row_concept_id = NULL, col_concept_id = NULL,
                              cohort_table = NULL, stratify_by = NULL,
+                             cohort = NULL,
                              scope = c("per_site", "pooled"),
                              pooling_policy = "strict",
                              symbol = "omop",
                              conns = NULL,
                              execute = TRUE) {
   scope <- match.arg(scope)
+  cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.crosstab",
     table = table, row = row, col = col, by = by,
     row_concept_id = row_concept_id, col_concept_id = col_concept_id,
-    cohort_table = cohort_table, stratify_by = stratify_by,
+    cohort_table = cohort_scope, stratify_by = stratify_by,
     scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -483,7 +491,7 @@ ds.omop.crosstab <- function(table, row, col, by = "persons",
                 count_mode = by,
                 row_concept_ids = row_concept_id,
                 col_concept_ids = col_concept_id,
-                cohort_table = cohort_table,
+                cohort_table = cohort_scope,
                 stratify_by = stratify_by)
   )
 

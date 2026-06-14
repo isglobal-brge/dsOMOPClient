@@ -11,6 +11,7 @@ ds.omop.value.quantiles(
   concept_id = NULL,
   cohort_table = NULL,
   window = NULL,
+  cohort = NULL,
   rounding = 2L,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",

@@ -5,12 +5,15 @@
 \title{Get concept prevalence for a table}
 \usage{
 ds.omop.concept.prevalence(
-  table,
+  table = NULL,
   concept_col = NULL,
   metric = "persons",
   top_n = 50,
   cohort_table = NULL,
   window = NULL,
+  offset = 0L,
+  global = FALSE,
+  cohort = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",

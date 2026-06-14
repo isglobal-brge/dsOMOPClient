@@ -9,6 +9,7 @@ ds.omop.value.counts(
   column,
   top_n = 20,
   concept_id = NULL,
+  cohort = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",

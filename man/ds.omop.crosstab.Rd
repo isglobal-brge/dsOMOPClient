@@ -13,6 +13,7 @@ ds.omop.crosstab(
   col_concept_id = NULL,
   cohort_table = NULL,
   stratify_by = NULL,
+  cohort = NULL,
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",

@@ -177,18 +177,22 @@ ds.omop.safe.filter.value <- function(table, column, threshold,
 #' pooled$pooled
 #' }
 #' @export
-ds.omop.concept.prevalence <- function(table, concept_col = NULL,
+ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
                                         metric = "persons", top_n = 50,
                                         cohort_table = NULL, window = NULL,
+                                        offset = 0L, global = FALSE,
+                                        cohort = NULL,
                                         scope = c("per_site", "pooled"),
                                         pooling_policy = "strict",
                                         symbol = "omop", conns = NULL,
                                         execute = TRUE) {
   scope <- match.arg(scope)
+  cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.concept.prevalence",
     table = table, concept_col = concept_col, metric = metric,
-    top_n = top_n, cohort_table = cohort_table, window = window,
+    top_n = top_n, cohort_table = cohort_scope, window = window,
+    offset = offset, global = global,
     scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -204,7 +208,8 @@ ds.omop.concept.prevalence <- function(table, concept_col = NULL,
     conns,
     expr = call("omopConceptPrevalenceDS", session$res_symbol,
                 table, concept_col, metric, as.integer(top_n),
-                cohort_table, window)
+                cohort_scope, window, offset = as.integer(offset),
+                global = isTRUE(global))
   )
 
   ds_errors <- attr(raw, "ds_errors")
@@ -272,15 +277,17 @@ ds.omop.concept.prevalence <- function(table, concept_col = NULL,
 ds.omop.value.histogram <- function(table, value_col, bins = 20L,
                                      concept_id = NULL,
                                      cohort_table = NULL, window = NULL,
+                                     cohort = NULL,
                                      scope = c("per_site", "pooled"),
                                      pooling_policy = "strict",
                                      symbol = "omop", conns = NULL,
                                      execute = TRUE) {
   scope <- match.arg(scope)
+  cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.value.histogram",
     table = table, value_col = value_col, bins = bins,
-    concept_id = concept_id, cohort_table = cohort_table, window = window,
+    concept_id = concept_id, cohort_table = cohort_scope, window = window,
     scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -301,13 +308,13 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
   # the call requires a server build with concept scoping.
   .hist_call <- function(...) {
     args <- list("omopNumericHistogramDS", session$res_symbol,
-                 table, value_col, as.integer(bins), cohort_table, window, ...)
+                 table, value_col, as.integer(bins), cohort_scope, window, ...)
     if (!is.null(concept_id)) args$concept_id <- concept_id
     do.call(call, args)
   }
   .range_call <- function() {
     args <- list("omopNumericRangeDS", session$res_symbol,
-                 table, value_col, cohort_table, window)
+                 table, value_col, cohort_scope, window)
     if (!is.null(concept_id)) args$concept_id <- concept_id
     do.call(call, args)
   }
@@ -408,16 +415,18 @@ ds.omop.value.quantiles <- function(table, value_col,
                                      probs = c(0.05, 0.25, 0.5, 0.75, 0.95),
                                      concept_id = NULL,
                                      cohort_table = NULL, window = NULL,
+                                     cohort = NULL,
                                      rounding = 2L,
                                      scope = c("per_site", "pooled"),
                                      pooling_policy = "strict",
                                      symbol = "omop", conns = NULL,
                                      execute = TRUE) {
   scope <- match.arg(scope)
+  cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.value.quantiles",
     table = table, value_col = value_col, probs = probs,
-    concept_id = concept_id, cohort_table = cohort_table, window = window,
+    concept_id = concept_id, cohort_table = cohort_scope, window = window,
     rounding = rounding, scope = scope, symbol = symbol)
 
   if (!execute) {
@@ -433,7 +442,7 @@ ds.omop.value.quantiles <- function(table, value_col,
     conns,
     expr = call("omopNumericQuantilesDS", session$res_symbol,
                 table, value_col, .ds_encode(probs),
-                cohort_table, window, as.integer(rounding),
+                cohort_scope, window, as.integer(rounding),
                 concept_id = concept_id)
   )
 

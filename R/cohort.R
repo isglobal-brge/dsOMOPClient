@@ -262,6 +262,66 @@ ds.omop.cohort.combine <- function(op, cohort_a, cohort_b,
   ))
 }
 
+#' Build a cohort from the persons in a server-side omop.table symbol
+#'
+#' Turns an existing server-side, token-keyed \code{omop.table} symbol -- e.g.
+#' the symbol produced by \code{\link{ds.omop.plan.execute}} or one of the
+#' data-manipulation verbs (\code{\link{ds.omop.merge}} etc.) -- into a reusable
+#' cohort that can scope subsequent exploration queries and plan/recipe runs. The
+#' CLIENT sends only the symbol NAME; the server reads its distinct person
+#' tokens, reverses them to original ids with the per-resource key, gates the
+#' distinct count (fail-closed), and materialises a size-checked cohort temp
+#' table. No identifier ever leaves the server.
+#'
+#' @param x Character; the name of a server-side \code{omop.table} symbol.
+#' @param new_name Character; TABLE name for the cohort. If \code{NULL} (the
+#'   default), an auto-generated name is used.
+#' @param symbol Character; the session symbol used when the OMOP connection was
+#'   initialised (default: \code{"omop"}).
+#' @param conns DSI connection object(s). If \code{NULL} (the default), the
+#'   connections stored in the active session are used.
+#' @return Invisibly; a \code{dsomop_cohort_handle} carrying the server-side
+#'   TABLE name. Pass it straight into the \code{cohort} argument of the
+#'   exploration wrappers (e.g. \code{ds.omop.concept.prevalence}), into
+#'   \code{ds.omop.cohort.combine()}, or as a plan/recipe population scope.
+#' @examples
+#' \dontrun{
+#' feats <- ds.omop.plan.execute(plan, out = c(features = "F"))
+#' coh <- ds.omop.cohort.from_table("F")
+#' ds.omop.concept.prevalence("condition_occurrence", cohort = coh)
+#' }
+#' @seealso \code{\link{ds.omop.cohort.create}}, \code{\link{ds.omop.cohort.combine}}
+#' @export
+ds.omop.cohort.from_table <- function(x, new_name = NULL,
+                                      symbol = "omop", conns = NULL) {
+  if (!is.character(x) || length(x) != 1L) {
+    stop("x must be the name of a server-side omop.table symbol.",
+         call. = FALSE)
+  }
+
+  session <- .get_session(symbol)
+  conns <- conns %||% session$conns
+
+  # Generate the result table name on the client and pass it to the server so
+  # both sides agree (the server's random fallback never fires) and the returned
+  # handle points at a table that exists and can be named in later cohort= calls.
+  out_table <- new_name %||% paste0(
+    "dsomop_cohort_fromtbl_", sample(1000:9999, 1))
+
+  DSI::datashield.assign.expr(
+    conns,
+    symbol = paste0(".", out_table),
+    expr = call("omopCohortFromTableDS", as.name(x),
+                session$res_symbol, out_table)
+  )
+
+  invisible(structure(
+    out_table,
+    symbol = paste0(".", out_table),
+    class = "dsomop_cohort_handle"
+  ))
+}
+
 #' Resolve a cohort reference to its server-side table name
 #'
 #' Maps the various forms a caller may supply for a cohort -- a
@@ -284,4 +344,32 @@ ds.omop.cohort.combine <- function(op, cohort_a, cohort_b,
     return(sub("^\\.cohort_", "dsomop_cohort_", x))
   }
   x
+}
+
+#' Resolve the unified \code{cohort=} scope argument of the exploration wrappers
+#'
+#' The exploration wrappers accept a single \code{cohort} argument naming the
+#' population to scope to. This maps the accepted forms to the value the SERVER's
+#' \code{.resolveCohortArg}/\code{.resolveCohortTable} expects, which then
+#' materialises + re-gates it server-side:
+#' \itemize{
+#'   \item a \code{dsomop_cohort_handle} (from \code{ds.omop.cohort.create},
+#'     \code{.combine}, or \code{.from_table}) -> its server TABLE name;
+#'   \item a numeric cohort_definition_id -> the integer, passed through so the
+#'     server materialises it from the cohort results table;
+#'   \item a character TABLE name -> as-is;
+#'   \item \code{NULL} -> \code{NULL} (no scoping).
+#' }
+#' This deliberately does NOT collapse a numeric id to a \code{dsomop_cohort_<id>}
+#' temp-table name (that is \code{.resolve_cohort_table}'s job for the set-ops
+#' path); for exploration a bare id means a cohort_definition_id.
+#'
+#' @param cohort The unified \code{cohort} argument.
+#' @return A server-side cohort table name, a cohort_definition_id, or NULL.
+#' @keywords internal
+.cohort_scope_arg <- function(cohort) {
+  if (is.null(cohort)) return(NULL)
+  if (inherits(cohort, "dsomop_cohort_handle")) return(unclass(cohort)[1])
+  if (is.numeric(cohort)) return(as.integer(cohort))
+  cohort
 }
