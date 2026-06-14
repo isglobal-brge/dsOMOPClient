@@ -686,7 +686,8 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
                                   "not_has_concept", "concept_count",
                                   "prior_observation", "followup",
                                   "visit_count", "has_measurement",
-                                  "missing_measurement", "value_bin"),
+                                  "missing_measurement", "value_bin",
+                                  "value_concept"),
                         level = c("population", "row", "output"),
                         params = list(),
                         label = NULL) {
@@ -723,9 +724,13 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
                                " in range"),
       missing_measurement = paste0("Missing measurement ",
                                    cid),
-      value_bin = paste0(params$var %||% "value", " bin [",
-                         params$value$lower %||% "?", ", ",
-                         params$value$upper %||% "?", ")")
+      value_bin = if (is.list(params$value))
+        paste0(params$var %||% "value", " bin [",
+               params$value$lower %||% "?", ", ",
+               params$value$upper %||% "?", ")")
+      else
+        paste0(params$var %||% "value", " = ",
+               paste(params$value %||% "?", collapse = ", "))
     )
   }
 
@@ -972,13 +977,36 @@ omop_filter_value <- function(column = "value_as_number", threshold,
 }
 
 #' @rdname omop_filter
+#' @param concept_ids Integer scalar or vector; the value concept(s) to keep
+#'   (a record matches if its value concept is any of them)
+#' @param column Character; the value-concept column (default
+#'   \code{"value_as_concept_id"})
+#' @param concept_name Character or NULL; human-readable name(s)
+#' @export
+omop_filter_value_concept <- function(concept_ids,
+                                       column = "value_as_concept_id",
+                                       concept_name = NULL) {
+  ids <- as.integer(concept_ids)
+  label <- paste0(column, " in ", .concept_label(ids, concept_name))
+  omop_filter(
+    type = "value_concept", level = "row",
+    params = list(var = column, op = "in", value = ids,
+                  concept_name = concept_name),
+    label = label
+  )
+}
+
+#' @rdname omop_filter
 #' @param concept_id Integer scalar or vector; the concept(s) to exclude
 #'   (a vector excludes persons having any of them)
 #' @param table Character; which OMOP table to check
 #' @param concept_name Character or NULL; human-readable name
+#' @param window Named list with start/end index-relative day offsets, or NULL;
+#'   restricts absence to that window (e.g. "no drug X in the prior year")
 #' @export
 omop_filter_not_has_concept <- function(concept_id, table,
-                                         concept_name = NULL) {
+                                         concept_name = NULL,
+                                         window = NULL) {
   label <- paste0("Not has ", .concept_label(concept_id, concept_name),
                   " in ", table)
   omop_filter(
@@ -986,7 +1014,8 @@ omop_filter_not_has_concept <- function(concept_id, table,
     params = list(
       concept_id = as.integer(concept_id),
       table = table,
-      concept_name = concept_name
+      concept_name = concept_name,
+      window = window
     ),
     label = label
   )
@@ -1088,11 +1117,13 @@ omop_filter_has_measurement <- function(concept_id,
 #' @rdname omop_filter
 #' @param concept_id Integer scalar or vector; measurement concept ID(s) to
 #'   check absence of (a vector requires all of them to be absent)
+#' @param window Named list with start/end index-relative day offsets, or NULL;
+#'   restricts absence to that window (e.g. "no HbA1c in the prior year")
 #' @export
-omop_filter_missing_measurement <- function(concept_id) {
+omop_filter_missing_measurement <- function(concept_id, window = NULL) {
   omop_filter(
     type = "missing_measurement", level = "population",
-    params = list(concept_id = as.integer(concept_id)),
+    params = list(concept_id = as.integer(concept_id), window = window),
     label = paste0("Missing measurement ",
                    paste(as.integer(concept_id), collapse = ", "))
   )
@@ -1108,7 +1139,8 @@ omop_filter_missing_measurement <- function(concept_id) {
 #' @return Character; "allowed", "constrained", or "blocked"
 #' @keywords internal
 .classifyFilterClient <- function(filter_type, params = list()) {
-  always_allowed <- c("sex", "age_group", "cohort", "concept_set", "value_bin")
+  always_allowed <- c("sex", "age_group", "cohort", "concept_set", "value_bin",
+                      "value_concept")
   constrained <- c("age_range", "has_concept", "date_range", "min_count",
                     "not_has_concept", "concept_count", "prior_observation",
                     "followup", "visit_count", "has_measurement",
@@ -2800,6 +2832,12 @@ recipe_to_code <- function(recipe) {
     .codegen_call("omop_filter_not_has_concept",
       concept_id = f$params$concept_id,
       table = f$params$table,
+      concept_name = f$params$concept_name,
+      window = f$params$window)
+  } else if (f$type == "value_concept") {
+    .codegen_call("omop_filter_value_concept",
+      concept_ids = f$params$value,
+      column = f$params$var,
       concept_name = f$params$concept_name)
   } else if (f$type == "concept_count") {
     .codegen_call("omop_filter_concept_count",
@@ -2824,7 +2862,8 @@ recipe_to_code <- function(recipe) {
       max_value = f$params$max_value)
   } else if (f$type == "missing_measurement") {
     .codegen_call("omop_filter_missing_measurement",
-      concept_id = f$params$concept_id)
+      concept_id = f$params$concept_id,
+      window = f$params$window)
   } else {
     .codegen_call("omop_filter", type = f$type, level = f$level,
       params = if (length(f$params %||% list()) > 0) f$params else NULL,

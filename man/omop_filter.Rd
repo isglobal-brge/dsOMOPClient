@@ -9,6 +9,7 @@
 \alias{omop_filter_has_concept}
 \alias{omop_filter_date_range}
 \alias{omop_filter_value}
+\alias{omop_filter_value_concept}
 \alias{omop_filter_not_has_concept}
 \alias{omop_filter_concept_count}
 \alias{omop_filter_prior_observation}
@@ -22,7 +23,7 @@ omop_filter(
   type = c("sex", "age_range", "age_group", "cohort", "has_concept", "date_range",
     "concept_set", "min_count", "top_n", "dedup", "custom", "not_has_concept",
     "concept_count", "prior_observation", "followup", "visit_count", "has_measurement",
-    "missing_measurement", "value_bin"),
+    "missing_measurement", "value_bin", "value_concept"),
   level = c("population", "row", "output"),
   params = list(),
   label = NULL
@@ -53,7 +54,18 @@ omop_filter_value(
   safe_bins = NULL
 )
 
-omop_filter_not_has_concept(concept_id, table, concept_name = NULL)
+omop_filter_value_concept(
+  concept_ids,
+  column = "value_as_concept_id",
+  concept_name = NULL
+)
+
+omop_filter_not_has_concept(
+  concept_id,
+  table,
+  concept_name = NULL,
+  window = NULL
+)
 
 omop_filter_concept_count(
   concept_id,
@@ -70,7 +82,7 @@ omop_filter_visit_count(min_count = 1L, visit_concept_id = NULL)
 
 omop_filter_has_measurement(concept_id, min_value = NULL, max_value = NULL)
 
-omop_filter_missing_measurement(concept_id)
+omop_filter_missing_measurement(concept_id, window = NULL)
 }
 \arguments{
 \item{type}{Character; filter type. One of \code{"sex"}, \code{"age_range"},
@@ -105,7 +117,8 @@ check absence of (a vector requires all of them to be absent)}
 
 \item{concept_name}{Character or NULL; human-readable name}
 
-\item{window}{Named list with start/end offsets, or NULL}
+\item{window}{Named list with start/end index-relative day offsets, or NULL;
+restricts absence to that window (e.g. "no HbA1c in the prior year")}
 
 \item{min_count}{Integer; minimum number of visits}
 
@@ -113,13 +126,17 @@ check absence of (a vector requires all of them to be absent)}
 
 \item{end}{Character; end date (YYYY-MM-DD) or NULL}
 
-\item{column}{Character; column to compare}
+\item{column}{Character; the value-concept column (default
+\code{"value_as_concept_id"})}
 
 \item{threshold}{Numeric; threshold value}
 
 \item{direction}{Character; "above" or "below"}
 
 \item{safe_bins}{List with $breaks numeric vector from ds.omop.safe.cutpoints()}
+
+\item{concept_ids}{Integer scalar or vector; the value concept(s) to keep
+(a record matches if its value concept is any of them)}
 
 \item{min_days}{Integer; minimum days of followup}
 
