@@ -597,7 +597,7 @@ add_arch("23_block_window_expand_filters",
     r
   })
 
-# 24. Cohort scoping via cohort= (existing cohort_definition_id base).
+# 24. Cohort scoping via cohort= (a scalar cohort_definition_id is SCOPE).
 add_arch("24_cohort_scope",
   decl = function() omop_recipe(
     variables = list(omop_variable_age(), omop_variable_sex()),
@@ -609,7 +609,7 @@ add_arch("24_cohort_scope",
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_sex())
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "w",
                                                          type = "wide"))
-    r <- dsOMOPClient:::recipe_set_cohort(r, 42L)
+    r <- dsOMOPClient:::recipe_set_scope(r, cohort = 42L)
     r
   })
 
@@ -744,7 +744,7 @@ add_arch("31_age_index_with_cohort",
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_sex())
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "w",
                                                          type = "wide"))
-    r <- dsOMOPClient:::recipe_set_cohort(r, 7L)
+    r <- dsOMOPClient:::recipe_set_scope(r, cohort = 7L)
     r
   })
 
@@ -1023,7 +1023,7 @@ add_arch("38_kitchen_sink",
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(
       name = "feat_drugs", type = "features",
       variables = c("metformin", "glipizide")))
-    r <- dsOMOPClient:::recipe_set_cohort(r, 99L)
+    r <- dsOMOPClient:::recipe_set_scope(r, cohort = 99L)
     r <- dsOMOPClient:::recipe_set_options(r, translate_concepts = TRUE,
                                            block_sensitive = FALSE,
                                            factor_concepts = TRUE)

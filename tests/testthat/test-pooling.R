@@ -85,6 +85,66 @@ test_that(".pool_variance with single server returns server variance", {
   expect_equal(result$result, 4, tolerance = 1e-10)
 })
 
+# --- .pool_effect_estimate (inverse-variance meta-analysis) -------------------
+
+test_that(".pool_effect_estimate matches hand inverse-variance pool", {
+  # Two sites: HR 1.5 (SE 0.2) and HR 2.0 (SE 0.3) on the log scale.
+  le <- c(a = log(1.5), b = log(2.0))
+  se <- c(a = 0.2, b = 0.3)
+  out <- .pool_effect_estimate(le, se, "strict")
+  w <- 1 / se^2
+  fe <- sum(w * le) / sum(w)
+  fese <- sqrt(1 / sum(w))
+  expect_equal(out$result$n_databases, 2L)
+  expect_equal(out$result$estimate_fixed, exp(fe), tolerance = 1e-10)
+  expect_equal(out$result$ci_lo_fixed, exp(fe - qnorm(0.975) * fese),
+               tolerance = 1e-10)
+  expect_equal(out$result$ci_hi_fixed, exp(fe + qnorm(0.975) * fese),
+               tolerance = 1e-10)
+  # Q and I^2 are finite and non-negative; tau2 >= 0.
+  expect_true(out$result$q >= 0 && out$result$i2 >= 0 && out$result$tau2 >= 0)
+})
+
+test_that(".pool_effect_estimate RE == FE when no heterogeneity (tau2=0)", {
+  # Identical estimates -> Q = 0 -> I^2 = 0 -> tau2 = 0 -> RE collapses to FE.
+  le <- c(a = log(1.7), b = log(1.7))
+  se <- c(a = 0.25, b = 0.25)
+  out <- .pool_effect_estimate(le, se, "strict")
+  expect_equal(out$result$tau2, 0)
+  expect_equal(out$result$i2, 0)
+  expect_equal(out$result$estimate_random, out$result$estimate_fixed,
+               tolerance = 1e-12)
+})
+
+test_that(".pool_effect_estimate strict fails closed on a suppressed site", {
+  le <- c(a = log(1.5), b = NA_real_)
+  se <- c(a = 0.2, b = NA_real_)
+  out <- .pool_effect_estimate(le, se, "strict")
+  expect_null(out$result)
+  expect_true(any(grepl("Strict pooling failed", out$warnings)))
+})
+
+test_that(".pool_effect_estimate pooled_only_ok drops the suppressed site", {
+  le <- c(a = log(1.5), b = NA_real_)
+  se <- c(a = 0.2, b = NA_real_)
+  out <- .pool_effect_estimate(le, se, "pooled_only_ok")
+  expect_equal(out$result$n_databases, 1L)
+  expect_equal(out$result$estimate_fixed, 1.5, tolerance = 1e-10)
+  expect_true(any(grepl("Dropped server", out$warnings)))
+})
+
+test_that(".pool_effect_estimate rejects degenerate SE (<= 0)", {
+  out <- .pool_effect_estimate(c(a = log(1.5), b = log(2)),
+                               c(a = 0.2, b = 0), "strict")
+  expect_null(out$result)
+})
+
+test_that(".pool_effect_estimate returns NULL when no valid sites", {
+  out <- .pool_effect_estimate(c(a = NA_real_, b = NA_real_),
+                               c(a = NA_real_, b = NA_real_), "pooled_only_ok")
+  expect_null(out$result)
+})
+
 # --- .pool_proportions --------------------------------------------------------
 
 test_that(".pool_proportions weighted proportions", {
@@ -181,6 +241,44 @@ test_that(".pool_result dispatches table_stats correctly", {
   result <- .pool_result(per_site, "table_stats", "strict")
   expect_equal(result$result$rows, 300)
   expect_equal(result$result$persons, 130)
+})
+
+test_that(".pool_result effect_estimate pools per-site CohortMethod arm frames", {
+  # Each site returns the gated cm.effect_estimate frame: the log_estimate + SE
+  # replicated across the target/comparator arm rows.
+  mk <- function(le, se) data.frame(
+    arm = c("target", "comparator"),
+    log_estimate = le, se_log_estimate = se, stringsAsFactors = FALSE)
+  per_site <- list(a = mk(log(1.5), 0.2), b = mk(log(2.0), 0.3))
+  out <- .pool_result(per_site, "effect_estimate", "strict")
+  w <- 1 / c(0.2, 0.3)^2
+  fe <- sum(w * c(log(1.5), log(2.0))) / sum(w)
+  expect_equal(out$result$n_databases, 2L)
+  expect_equal(out$result$estimate_fixed, exp(fe), tolerance = 1e-10)
+})
+
+test_that(".pool_result effect_estimate reads SCCS log_irr/se_log_irr columns", {
+  per_site <- list(
+    a = data.frame(log_irr = log(3.0), se_log_irr = 0.25),
+    b = data.frame(log_irr = log(2.0), se_log_irr = 0.25))
+  out <- .pool_result(per_site, "effect_estimate", "strict")
+  expect_equal(out$result$n_databases, 2L)
+  # Equal weights -> geometric-mean-ish pool on the log scale.
+  expect_equal(out$result$log_estimate_fixed,
+               (log(3.0) + log(2.0)) / 2, tolerance = 1e-10)
+})
+
+test_that(".pool_result effect_estimate treats an empty/NA site as suppressed", {
+  per_site <- list(
+    a = data.frame(log_estimate = log(1.5), se_log_estimate = 0.2),
+    b = data.frame(),  # server fail-closed -> empty frame
+    c = data.frame(log_estimate = NA_real_, se_log_estimate = NA_real_))
+  # strict: any suppressed site aborts.
+  expect_null(.pool_result(per_site, "effect_estimate", "strict")$result)
+  # pooled_only_ok: pool the one valid site.
+  out <- .pool_result(per_site, "effect_estimate", "pooled_only_ok")
+  expect_equal(out$result$n_databases, 1L)
+  expect_equal(out$result$estimate_fixed, 1.5, tolerance = 1e-10)
 })
 
 test_that(".pool_concept_metadata dedupes shared vocab to one clean view", {

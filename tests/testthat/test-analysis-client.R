@@ -446,3 +446,72 @@ test_that("ds.omop.distribution delegates to fe.continuous with the metric", {
       expect_equal(params$metric, "age")
     })
 })
+
+# --- ds.omop.meta.effect_estimate (cross-site evidence synthesis) ------------
+
+test_that("ds.omop.meta.effect_estimate has the expected signature", {
+  expect_true(is.function(ds.omop.meta.effect_estimate))
+  args <- formals(ds.omop.meta.effect_estimate)
+  expect_true(all(c("name", "params", "cohort", "tables", "combine",
+                    "pooling_policy", "symbol", "conns") %in% names(args)))
+  expect_equal(args$name, "dsomop:cm.effect_estimate")
+  expect_equal(args$pooling_policy, "strict")
+})
+
+# Multi-server mock: each server returns its OWN per-site effect-estimate frame,
+# so the wrapper's inverse-variance re-pool produces a genuine 2-site meta.
+.acat_with_mocked_meta <- function(per_server_frames, code) {
+  conns <- stats::setNames(as.list(rep("FAKE", length(per_server_frames))),
+                           names(per_server_frames))
+  assign("omop", list(conns = conns, res_symbol = "dsO.fake"),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  withr::defer_parent(
+    if (exists("omop", envir = dsOMOPClient:::.dsomop_client_env)) {
+      rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env)
+    })
+  meta <- list(name = "dsomop:cm.effect_estimate", mode = "aggregate")
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      head <- if (is.call(expr)) as.character(expr[[1]]) else ""
+      if (identical(head, "omopAnalysisGetDS")) {
+        return(stats::setNames(rep(list(meta), length(conns)), names(conns)))
+      }
+      stats::setNames(per_server_frames[names(conns)], names(conns))
+    },
+    .package = "DSI", .env = parent.frame())
+  code()
+}
+
+test_that("ds.omop.meta.effect_estimate inverse-variance pools per-site HRs", {
+  mk <- function(le, se) data.frame(
+    arm = c("target", "comparator"),
+    log_estimate = le, se_log_estimate = se, stringsAsFactors = FALSE)
+  frames <- list(nairobi = mk(log(1.5), 0.2), douala = mk(log(2.0), 0.3))
+  .acat_with_mocked_meta(frames, function() {
+    res <- ds.omop.meta.effect_estimate(
+      params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L))
+    expect_s3_class(res, "dsomop_result")
+    # Pooled is the one-row meta-analysis, not the stacked per-arm frame.
+    expect_equal(nrow(res$pooled), 1L)
+    expect_equal(res$pooled$n_databases, 2L)
+    w <- 1 / c(0.2, 0.3)^2
+    fe <- sum(w * c(log(1.5), log(2.0))) / sum(w)
+    expect_equal(res$pooled$estimate_fixed, exp(fe), tolerance = 1e-8)
+    # Per-site frames are retained intact.
+    expect_named(res$per_site, c("nairobi", "douala"))
+  })
+})
+
+test_that("ds.omop.meta.effect_estimate strict fails closed if a site suppressed", {
+  mk <- function(le, se) data.frame(
+    log_estimate = le, se_log_estimate = se, stringsAsFactors = FALSE)
+  # douala suppressed its estimate (small arm -> NA).
+  frames <- list(nairobi = mk(log(1.5), 0.2),
+                 douala = mk(NA_real_, NA_real_))
+  .acat_with_mocked_meta(frames, function() {
+    res <- ds.omop.meta.effect_estimate(cohort = c(1L, 2L),
+                                        pooling_policy = "strict")
+    expect_null(res$pooled)
+    expect_true(any(grepl("Strict pooling failed", res$meta$warnings)))
+  })
+})

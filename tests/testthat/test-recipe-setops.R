@@ -203,14 +203,16 @@ test_that("recipe-level scope (cohort + tables) serializes into plan$scope", {
   expect_identical(plan$scope$combine, "intersect")
 })
 
-test_that("a scalar cohort to omop_recipe is the base cohort, not scope", {
-  # Back-compat: a bare cohort_definition_id keeps the legacy meaning.
+test_that("a scalar cohort to omop_recipe is scope, not the base cohort", {
+  # A bare cohort_definition_id is a recipe-level SCOPE (resolved to a gated
+  # person set server-side), like a handle or table name; it does NOT re-root
+  # the base population. A base cohort is set via omop_population(...).
   recipe <- omop_recipe(
     variables = omop_variable_age(),
     outputs = omop_output(name = "w", type = "wide"),
     cohort = 7)
-  expect_identical(recipe$populations$base$cohort_definition_id, 7L)
-  expect_null(recipe$scope)
+  expect_null(recipe$populations$base$cohort_definition_id)
+  expect_identical(recipe$scope$cohort, 7L)
 })
 
 # A fake session so .get_session() resolves and conns is non-NULL.

@@ -641,3 +641,76 @@ ds.omop.distribution <- function(cohort = NULL, metric = "measurement_value",
                               symbol = symbol, conns = conns)
   .analysis_filter_concepts(res, concept_id)
 }
+
+#' Meta-analyze a comparative effect estimate across databases (evidence synthesis)
+#'
+#' The CLIENT half of OHDSI evidence synthesis: run a per-site fitted comparative
+#' effect estimate on every server, then INVERSE-VARIANCE meta-analyze the
+#' per-site log-estimates into ONE pooled estimate + 95\% CI (the
+#' \code{metafor::rma} pattern by hand — no new dependency). A single site cannot
+#' compute a cross-database pooled estimate, so the server-side
+#' \code{dsomop:cm.effect_estimate} (CohortMethod HR/RR; the
+#' \code{es_cm_result} delegate) and \code{dsomop:sccs.incidence_rate_ratio}
+#' (SCCS IRR; the \code{es_sccs_result} delegate) each emit only the
+#' disclosure-safe per-site \code{log_estimate} + SE; this function pools them.
+#'
+#' Both a FIXED-effect and a random-effects (DerSimonian-Laird) pooled estimate
+#' are returned, with Cochran's Q, \eqn{I^2}, and \eqn{\tau^2} heterogeneity. No
+#' patient data crosses sites — only the already-gated per-site sufficient
+#' statistics. A site whose per-site estimate the server suppressed (small/empty
+#' arm) is ABSENT from the pool: under \code{pooling_policy = "strict"} (default)
+#' any suppressed site aborts the pool fail-closed; \code{"pooled_only_ok"} pools
+#' the remaining sites and warns.
+#'
+#' @param name Character; the per-site effect-estimate analysis id. Default
+#'   \code{"dsomop:cm.effect_estimate"} (CohortMethod). Use
+#'   \code{"dsomop:sccs.incidence_rate_ratio"} for SCCS, or the
+#'   \code{es_cm_result} / \code{es_sccs_result} evidence-synthesis ids.
+#' @param params Named list of analysis params (e.g. \code{outcome_concept_id},
+#'   \code{model_type}); passed through to the per-site analysis unchanged.
+#' @param cohort For CohortMethod, the two-population target+comparator scope (a
+#'   length-2 set of cohort handles / ids / table names); for SCCS, the scoped
+#'   case population.
+#' @param tables Optional \code{omop.table} symbol scope (see
+#'   \code{\link{ds.omop.analysis.run}}).
+#' @param combine Character; \code{"union"} (default) or \code{"intersect"} for
+#'   multi-source scope folding.
+#' @param pooling_policy Character; \code{"strict"} (default) or
+#'   \code{"pooled_only_ok"}.
+#' @param symbol Character; the session symbol (default \code{"omop"}).
+#' @param conns DSI connection object(s) or \code{NULL} to use the session
+#'   default.
+#' @return A \code{dsomop_result}: \code{per_site} holds each server's gated
+#'   per-site effect-estimate frame; \code{pooled} holds the one-row meta-analysis
+#'   (pooled HR/RR + CI under both models, \code{n_databases}, \code{i2},
+#'   \code{tau2}).
+#' @examples
+#' \dontrun{
+#' # Pool a CohortMethod hazard ratio across databases.
+#' res <- ds.omop.meta.effect_estimate(
+#'   params = list(outcome_concept_id = 4329847),
+#'   cohort = c(target_cohort, comparator_cohort))
+#' res$pooled   # estimate_random, ci_lo_random, ci_hi_random, i2, ...
+#' }
+#' @seealso \code{\link{ds.omop.analysis.run}}
+#' @export
+ds.omop.meta.effect_estimate <- function(name = "dsomop:cm.effect_estimate",
+                                         params = list(), cohort = NULL,
+                                         tables = NULL, combine = "union",
+                                         pooling_policy = "strict",
+                                         symbol = "omop", conns = NULL) {
+  # Run the per-site effect estimate via the power path (inherits scoping, the
+  # single per-patient gate, and the per_site frames), then RE-POOL the per-site
+  # frames with the inverse-variance meta-analysis result_type. The default
+  # "ohdsi_results" pooling would wrongly stack the per-arm rows; effect
+  # estimates must be combined on the log scale, weighted by 1/SE^2.
+  res <- ds.omop.analysis.run(name, params = params, cohort = cohort,
+                              tables = tables, combine = combine,
+                              pooling_policy = pooling_policy, plot = FALSE,
+                              symbol = symbol, conns = conns)
+  pool_out <- .pool_result(res$per_site, "effect_estimate", pooling_policy)
+  res$pooled <- pool_out$result
+  res$meta$scope <- "pooled"
+  res$meta$warnings <- c(res$meta$warnings, pool_out$warnings)
+  res
+}

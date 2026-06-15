@@ -1560,12 +1560,13 @@ print.omop_output <- function(x, ...) {
 #'   declared before their children).
 #' @param blocks A single \code{\link{omop_variable_block}} or a list of them;
 #'   each block is expanded into individual variables.
-#' @param cohort Recipe scope and/or base cohort. A scalar OMOP
-#'   \code{cohort_definition_id} keeps the existing behaviour: it becomes the
-#'   base population's cohort (equivalent to \code{recipe_set_cohort}). A cohort
-#'   handle (\code{dsomop_cohort_handle}) or a server-side cohort table name is
-#'   instead taken as a recipe-level \emph{scope} that is intersected into every
-#'   population (alongside \code{tables}). \code{NULL} sets neither.
+#' @param cohort Recipe-level \emph{scope}. Any form -- a scalar OMOP
+#'   \code{cohort_definition_id}, a cohort handle (\code{dsomop_cohort_handle}),
+#'   or a server-side cohort table name -- resolves to a gated person set that is
+#'   intersected into every population (alongside \code{tables}). It does NOT
+#'   re-root the base population; to build a base population from an existing
+#'   cohort use \code{omop_population(cohort_definition_id = ...)}. \code{NULL}
+#'   sets no scope.
 #' @param tables Character vector of server-side \code{omop.table} symbol names,
 #'   or \code{NULL}. Their distinct persons form a recipe-level scope folded with
 #'   any \code{cohort} scope by \code{combine} and intersected into every
@@ -1617,6 +1618,20 @@ print.omop_output <- function(x, ...) {
 #'   combine = "intersect"
 #' )
 #' recipe_execute(recipe2)
+#'
+#' # `cohort=` is ALWAYS scope, including a bare cohort_definition_id: it resolves
+#' # to a gated person set that narrows every population. To instead BUILD the base
+#' # population from an existing admin/ATLAS cohort, pass it through
+#' # omop_population(cohort_definition_id = ...); `cohort=` then layers a scope on
+#' # top.
+#' recipe3 <- omop_recipe(
+#'   populations = omop_population(id = "base", label = "Registry cohort",
+#'                                 cohort_definition_id = 1001),  # base population
+#'   variables = omop_variable_age(),
+#'   outputs = omop_output(name = "study", type = "wide"),
+#'   cohort = 2002                                               # scalar id = scope
+#' )
+#' recipe_execute(recipe3)
 #' }
 #' @seealso \code{\link{omop_variable}}, \code{\link{omop_filter}},
 #'   \code{\link{omop_output}}, \code{\link{omop_population}},
@@ -1656,19 +1671,13 @@ omop_recipe <- function(variables = NULL,
   for (o in .recipe_arg_list(outputs)) {
     recipe <- recipe_add_output(recipe, o)
   }
-  # `cohort` is dual-purpose by type: a scalar cohort_definition_id keeps the
-  # legacy meaning (base population cohort), while a cohort handle / table-name
-  # ref is a recipe-level scope. `tables` symbols are always scope. Scope (when
-  # any) is folded by `combine` and intersected into every population server-side.
-  scope_cohort <- NULL
-  if (!is.null(cohort)) {
-    if (is.numeric(cohort) && !inherits(cohort, "dsomop_cohort_handle")) {
-      recipe <- recipe_set_cohort(recipe, cohort)
-    } else {
-      scope_cohort <- cohort
-    }
-  }
-  recipe <- recipe_set_scope(recipe, cohort = scope_cohort, tables = tables,
+  # `cohort` is ALWAYS a recipe-level SCOPE, regardless of form: a scalar
+  # cohort_definition_id, a cohort handle / table-name ref, and `tables` symbols
+  # all become scope sources. Scope (when any) is folded by `combine` and
+  # intersected into every population server-side. (A genuine base population
+  # built from an existing cohort is expressed via omop_population(
+  # cohort_definition_id = ...), not via this argument.)
+  recipe <- recipe_set_scope(recipe, cohort = cohort, tables = tables,
                              combine = combine)
   if (!is.null(options)) {
     recipe <- recipe_set_options(recipe,
@@ -3102,10 +3111,14 @@ recipe_to_code <- function(recipe) {
   # authoring form (no step-by-step recipe_add_*/recipe_set_* calls).
   slot_args <- list()
 
-  # Populations (skip the implicit base).
+  # Populations. The implicit base is normally not emitted, but a base that was
+  # re-defined from an existing cohort (cohort_definition_id) IS emitted as an
+  # explicit omop_population(id = "base", ...): `cohort=` is reserved for the
+  # recipe scope now, so the base cohort can no longer ride on it.
   pop_code <- character(0)
   for (pid in names(recipe$populations)) {
-    if (pid == "base") next
+    if (pid == "base" &&
+        is.null(recipe$populations$base$cohort_definition_id)) next
     p <- recipe$populations[[pid]]
     if (!is.null(p$setop)) {
       # Set-op population: emit the matching named set arg (union/intersect/
@@ -3252,20 +3265,14 @@ recipe_to_code <- function(recipe) {
   if (length(out_code) > 0)
     slot_args$outputs <- .codegen_list_arg(out_code)
 
-  # Base cohort reference (the base population itself is implicit).
-  if (!is.null(recipe$populations$base$cohort_definition_id)) {
-    slot_args$cohort <- recipe$populations$base$cohort_definition_id
-  }
-
-  # Recipe-level scope. `tables`/`combine` re-parse as scope directly; the scope
-  # `cohort` re-parses as scope only when non-numeric (a handle/table name) —
-  # a bare-id scope cohort is a codegen corner the JSON/YAML round-trip covers.
+  # Recipe-level scope. `cohort`/`tables`/`combine` all re-parse as the scope
+  # directly, so the scope `cohort` is emitted via `cohort=` whatever its form
+  # (a handle/table name OR a bare cohort_definition_id) — the new contract makes
+  # `cohort=` mean scope on both write and read, so a numeric scope cohort now
+  # round-trips through code too (no JSON/YAML-only corner).
   if (!is.null(recipe$scope)) {
     sc <- recipe$scope
-    if (!is.null(sc$cohort) && !is.numeric(sc$cohort) &&
-        is.null(slot_args$cohort)) {
-      slot_args$cohort <- sc$cohort
-    }
+    if (!is.null(sc$cohort)) slot_args$cohort <- sc$cohort
     if (!is.null(sc$tables)) slot_args$tables <- sc$tables
     if (!identical(sc$combine %||% "union", "union"))
       slot_args$combine <- sc$combine

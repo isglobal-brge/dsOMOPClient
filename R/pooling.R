@@ -118,6 +118,109 @@
   list(result = pooled_var, warnings = warnings)
 }
 
+#' Inverse-variance meta-analysis of per-site log-effect estimates
+#'
+#' The cross-database EVIDENCE SYNTHESIS half that the server cannot do
+#' single-site: pool each site's per-site effect estimate (a log hazard/rate
+#' ratio from \code{dsomop:cm.effect_estimate}, or a log IRR from
+#' \code{dsomop:sccs.incidence_rate_ratio}) into ONE pooled estimate + 95\% CI
+#' by inverse-variance weighting — the \code{metafor::rma} pattern done by hand
+#' (no new dependency). Both a FIXED-effect and a random-effects
+#' (DerSimonian-Laird) pool are returned, plus Cochran's Q, \eqn{I^2}, and
+#' \eqn{\tau^2}.
+#'
+#' No patient data crosses sites: the inputs are the already disclosure-safe
+#' per-site \code{log_estimate} + \code{se_log_estimate} (the inverse-variance
+#' sufficient statistics). A site whose per-site estimate was SUPPRESSED (NA /
+#' small arm, the server fail-closed) is simply ABSENT from the pool — exactly
+#' the \code{pooled_only_ok} behaviour of \code{\link{.pool_variance}}; under
+#' \code{strict} any NA site aborts the pool fail-closed.
+#'
+#' @param per_site_logest Named numeric vector of per-site log-effect estimates.
+#' @param per_site_se Named numeric vector of per-site SEs of the log-estimate
+#'   (same names).
+#' @param policy Character; \code{"strict"} (any NA site aborts) or
+#'   \code{"pooled_only_ok"} (drop NA sites, pool the rest).
+#' @return List with \code{$result} (a one-row data.frame: pooled HR/RR + CI
+#'   under both models, plus \code{n_databases}, \code{q}, \code{i2}, \code{tau2})
+#'   and \code{$warnings}.
+#' @keywords internal
+.pool_effect_estimate <- function(per_site_logest, per_site_se,
+                                  policy = "strict") {
+  logest <- unlist(per_site_logest)
+  se <- unlist(per_site_se)
+  warnings <- character(0)
+
+  common <- intersect(names(logest), names(se))
+  logest <- logest[common]
+  se <- se[common]
+
+  # A site is usable only with a finite estimate AND a finite, strictly positive
+  # SE (se <= 0 is degenerate; the server NAs both together, but guard anyway).
+  invalid <- is.na(logest) | is.na(se) | !is.finite(logest) | !is.finite(se) |
+    se <= 0
+  if (any(invalid)) {
+    bad <- common[invalid]
+    if (policy == "strict") {
+      return(list(
+        result = NULL,
+        warnings = paste0("Strict pooling failed: suppressed/invalid per-site ",
+                          "effect estimate from server(s) ",
+                          paste(bad, collapse = ", "))
+      ))
+    }
+    warnings <- paste0("Dropped server(s) with suppressed per-site estimate: ",
+                       paste(bad, collapse = ", "))
+    logest <- logest[!invalid]
+    se <- se[!invalid]
+  }
+
+  k <- length(logest)
+  if (k == 0) {
+    return(list(result = NULL,
+                warnings = c(warnings, "No valid per-site estimates to pool")))
+  }
+
+  # --- Fixed-effect inverse-variance pool ---
+  w <- 1 / se^2
+  fe_logest <- sum(w * logest) / sum(w)
+  fe_se <- sqrt(1 / sum(w))
+
+  # --- Heterogeneity (Cochran's Q, I^2, DerSimonian-Laird tau^2) ---
+  q <- sum(w * (logest - fe_logest)^2)
+  df <- k - 1
+  i2 <- if (df > 0) max(0, (q - df) / q) * 100 else 0
+  c_dl <- sum(w) - sum(w^2) / sum(w)
+  tau2 <- if (df > 0 && c_dl > 0) max(0, (q - df) / c_dl) else 0
+
+  # --- Random-effects pool (inverse of within + between variance) ---
+  w_re <- 1 / (se^2 + tau2)
+  re_logest <- sum(w_re * logest) / sum(w_re)
+  re_se <- sqrt(1 / sum(w_re))
+
+  z <- stats::qnorm(0.975)
+  result <- data.frame(
+    n_databases       = k,
+    estimate_fixed    = exp(fe_logest),
+    ci_lo_fixed       = exp(fe_logest - z * fe_se),
+    ci_hi_fixed       = exp(fe_logest + z * fe_se),
+    estimate_random   = exp(re_logest),
+    ci_lo_random      = exp(re_logest - z * re_se),
+    ci_hi_random      = exp(re_logest + z * re_se),
+    log_estimate_fixed = fe_logest,
+    se_log_estimate_fixed = fe_se,
+    q                 = q,
+    i2                = i2,
+    tau2              = tau2,
+    stringsAsFactors  = FALSE)
+
+  if (k == 1) {
+    warnings <- c(warnings,
+                  "Only one site contributed; pooled estimate == that site's.")
+  }
+  list(result = result, warnings = warnings)
+}
+
 #' Pool proportions weighted by denominator
 #' @param per_site_num Named numeric vector of numerators
 #' @param per_site_denom Named numeric vector of denominators
@@ -974,6 +1077,40 @@
 
     "crosstab" = {
       .pool_crosstab(per_site, policy)
+    },
+
+    "effect_estimate" = {
+      # Each site returns the gated per-site effect-estimate frame from
+      # dsomop:cm.effect_estimate (log_estimate / se_log_estimate, replicated
+      # across both arm rows) or dsomop:sccs.incidence_rate_ratio (log_irr /
+      # se_log_irr, one row). Extract the single per-site log-estimate + SE and
+      # inverse-variance meta-analyze (see .pool_effect_estimate). A site whose
+      # frame is empty or carries an NA estimate (server fail-closed) yields NA
+      # and is handled by the policy.
+      one <- function(df) {
+        if (!is.data.frame(df) || nrow(df) == 0) {
+          return(c(le = NA_real_, se = NA_real_))
+        }
+        le_col <- if ("log_estimate" %in% names(df)) "log_estimate" else
+          if ("log_irr" %in% names(df)) "log_irr" else NA_character_
+        se_col <- if ("se_log_estimate" %in% names(df)) "se_log_estimate" else
+          if ("se_log_irr" %in% names(df)) "se_log_irr" else NA_character_
+        if (is.na(le_col) || is.na(se_col)) {
+          return(c(le = NA_real_, se = NA_real_))
+        }
+        le <- suppressWarnings(as.numeric(df[[le_col]]))
+        se <- suppressWarnings(as.numeric(df[[se_col]]))
+        # The estimate is identical across rows; take the first non-NA pair.
+        ok <- which(!is.na(le) & !is.na(se))
+        if (length(ok) == 0) return(c(le = NA_real_, se = NA_real_))
+        c(le = le[ok[1]], se = se[ok[1]])
+      }
+      pairs <- lapply(per_site, one)
+      logest <- vapply(pairs, function(p) p[["le"]], numeric(1))
+      se <- vapply(pairs, function(p) p[["se"]], numeric(1))
+      names(logest) <- names(per_site)
+      names(se) <- names(per_site)
+      .pool_effect_estimate(logest, se, policy)
     },
 
     # Default: no pooling

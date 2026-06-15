@@ -33,12 +33,13 @@ declared before their children).}
 \item{blocks}{A single \code{\link{omop_variable_block}} or a list of them;
 each block is expanded into individual variables.}
 
-\item{cohort}{Recipe scope and/or base cohort. A scalar OMOP
-\code{cohort_definition_id} keeps the existing behaviour: it becomes the
-base population's cohort (equivalent to \code{recipe_set_cohort}). A cohort
-handle (\code{dsomop_cohort_handle}) or a server-side cohort table name is
-instead taken as a recipe-level \emph{scope} that is intersected into every
-population (alongside \code{tables}). \code{NULL} sets neither.}
+\item{cohort}{Recipe-level \emph{scope}. Any form -- a scalar OMOP
+\code{cohort_definition_id}, a cohort handle (\code{dsomop_cohort_handle}),
+or a server-side cohort table name -- resolves to a gated person set that is
+intersected into every population (alongside \code{tables}). It does NOT
+re-root the base population; to build a base population from an existing
+cohort use \code{omop_population(cohort_definition_id = ...)}. \code{NULL}
+sets no scope.}
 
 \item{tables}{Character vector of server-side \code{omop.table} symbol names,
 or \code{NULL}. Their distinct persons form a recipe-level scope folded with
@@ -116,6 +117,20 @@ recipe2 <- omop_recipe(
   combine = "intersect"
 )
 recipe_execute(recipe2)
+
+# `cohort=` is ALWAYS scope, including a bare cohort_definition_id: it resolves
+# to a gated person set that narrows every population. To instead BUILD the base
+# population from an existing admin/ATLAS cohort, pass it through
+# omop_population(cohort_definition_id = ...); `cohort=` then layers a scope on
+# top.
+recipe3 <- omop_recipe(
+  populations = omop_population(id = "base", label = "Registry cohort",
+                                cohort_definition_id = 1001),  # base population
+  variables = omop_variable_age(),
+  outputs = omop_output(name = "study", type = "wide"),
+  cohort = 2002                                               # scalar id = scope
+)
+recipe_execute(recipe3)
 }
 }
 \seealso{
