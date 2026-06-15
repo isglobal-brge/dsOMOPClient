@@ -1244,6 +1244,13 @@ omop_population <- function(id = "base",
       stop("omop_population(): ", op, " needs at least two member population ",
            "IDs.", call. = FALSE)
     }
+    if (anyDuplicated(members) > 0) {
+      dups <- unique(members[duplicated(members)])
+      stop("omop_population(): ", op, " has duplicate member(s): '",
+           paste(dups, collapse = "', '"),
+           "'. A set operation over a population and itself is degenerate; ",
+           "list each member once.", call. = FALSE)
+    }
     setop <- list(op = op, members = members)
   }
 
@@ -2241,6 +2248,13 @@ recipe_to_plan <- function(recipe) {
     factor_concepts    = opts$factor_concepts
   )
 
+  # Fail closed at compile time when a variable's value_source / raw column is a
+  # known free-text / source-value column the server can never release (e.g.
+  # value_as_string, *_source_value, sig). Silently dropping it server-side would
+  # yield a person-id-only frame with no signal; an explicit request must error
+  # here, before any DataSHIELD round-trip.
+  .assert_no_blocked_value_sources(recipe$variables)
+
   # Build cohort from base population + population-level filters
   base_pop <- recipe$populations[["base"]]
   if (!is.null(base_pop$cohort_definition_id)) {
@@ -2362,9 +2376,11 @@ recipe_to_plan <- function(recipe) {
             specs <- .build_feature_specs(vs)
             plan <- ds.omop.plan.features(plan, name = out_name, table = tbl,
                                            specs = specs)
-            # event_level output: per-variable row filters belong in the
-            # output's custom slot (same as the features/sparse branch).
-            plan <- .apply_var_filters(plan, out_name, vs)
+            # Per-variable row filters now ride on each feature spec (per-spec
+            # scoping in .build_feature_specs), so the server applies them inside
+            # .toFeatures per column. They are intentionally NOT also merged into
+            # the output's custom slot, which would AND mutually-exclusive slices
+            # into a contradiction and zero the rows.
           } else {
             # Multi-table or has derived: use person_level with features
             tables_spec <- list()
@@ -2385,10 +2401,10 @@ recipe_to_plan <- function(recipe) {
                   concept_set = .concept_set_arg(feat_vs, concept_ids),
                   features = specs
                 )
-                # person_level feature entries are filtered per-table: the
-                # server reads tables[[tbl]]$filters (.planExecute) and ANDs it
-                # into that table's feature SELECT before aggregation.
-                tables_spec[[tbl]]$filters <- .variables_custom_filter(feat_vs)
+                # Per-variable row filters ride on each feature spec (per-spec
+                # scoping), applied inside .toFeatures per column. Not merged into
+                # the table's $filters slot, which would AND mutually-exclusive
+                # slices into a contradiction before aggregation.
               } else {
                 tables_spec[[tbl]] <- .raw_table_columns(vs)
               }
@@ -2465,10 +2481,9 @@ recipe_to_plan <- function(recipe) {
               else out_name
         plan <- ds.omop.plan.features(plan, name = nm, table = tbl,
                                        specs = specs)
-        # Per-variable row filters restrict the rows that feed the feature
-        # aggregation; ds.omop.plan.features takes no filters arg, so route
-        # them into the output's custom slot (server applies before .toFeatures).
-        plan <- .apply_var_filters(plan, nm, vs)
+        # Per-variable row filters ride on each feature spec (per-spec scoping
+        # in .build_feature_specs); the server applies them inside .toFeatures
+        # per column rather than ANDing them all into one output-level WHERE.
       }
     } else if (out$type == "survival") {
       concept_ids <- unique(unlist(lapply(vars, function(v) v$concept_id)))
@@ -2579,6 +2594,44 @@ recipe_set_options <- function(recipe,
   ids
 }
 
+#' Is a column name a server-blocked free-text / source-value column?
+#'
+#' Mirrors the server's blocked-column patterns (dsOMOP blueprint:
+#' \code{*_source_value}, \code{value_as_string}, \code{value_source_value},
+#' \code{sig}, \code{*_source_concept_value}, note text). These are never
+#' releasable, so a recipe that requests one as a variable's \code{value_source}
+#' or raw \code{column} is rejected at compile time rather than silently dropped.
+#'
+#' @param col Character; a column name (case-insensitive).
+#' @return Logical scalar.
+#' @keywords internal
+.is_blocked_column <- function(col) {
+  if (is.null(col) || !nzchar(col)) return(FALSE)
+  col <- tolower(col)
+  patterns <- c("_source_value$", "^value_as_string$", "^value_source_value$",
+                "^sig$", "^note_text$", "^note_source_value$")
+  any(vapply(patterns, function(p) grepl(p, col), logical(1)))
+}
+
+#' Reject variables whose value_source / raw column is a blocked column
+#'
+#' @param variables Named list of \code{omop_variable} objects.
+#' @return Invisibly TRUE, or stops with a disclosure error.
+#' @keywords internal
+.assert_no_blocked_value_sources <- function(variables) {
+  for (nm in names(variables %||% list())) {
+    v <- variables[[nm]]
+    for (col in c(v$value_source, v$column)) {
+      if (.is_blocked_column(col)) {
+        stop("Disclosive: variable '", nm %||% v$name %||% "?",
+             "' requests blocked free-text/source column '", col,
+             "', which the server cannot release.", call. = FALSE)
+      }
+    }
+  }
+  invisible(TRUE)
+}
+
 #' Build feature specifications from a list of omop_variable objects
 #'
 #' Maps each variable's format to the corresponding \code{omop.feature.*}
@@ -2628,7 +2681,18 @@ recipe_set_options <- function(recipe,
     if (fmt == "drug_duration" && !is.null(v$derived$agg)) {
       args$agg <- v$derived$agg
     }
-    do.call(feat_fn, args)
+    spec <- do.call(feat_fn, args)
+    # Attach this variable's OWN row filter to its spec (per-spec scoping) so the
+    # server applies it only when computing THIS feature. Multiple variables on
+    # one table with mutually-exclusive unit/type slices (e.g. HbA1c in % vs
+    # mmol/mol) must not have their filters AND-merged into one contradictory
+    # WHERE — each slice is its own column over its own rows.
+    vf <- .variables_custom_filter(list(v))
+    if (!is.null(vf)) spec$filter <- vf
+    # A per-variable concept_col override (e.g. scoping by unit_concept_id)
+    # likewise belongs to this spec alone.
+    if (!is.null(v$concept_col)) spec$concept_col <- v$concept_col
+    spec
   })
   names(specs) <- vapply(vs, function(v) v$name, character(1))
   specs
@@ -2787,22 +2851,32 @@ recipe_set_options <- function(recipe,
 #' Derive an index-relative temporal spec from variables' time windows
 #'
 #' Variable \code{time_window}s are index-relative day offsets
-#' (\code{list(start=, end=)}). The first variable that carries one defines the
-#' output's window, forwarded as the server temporal \code{index_window} so the
-#' extraction is restricted to events within that window of the cohort index
-#' date. Returns \code{NULL} when no variable sets a window.
+#' (\code{list(start=, end=)}). A single \code{long} output is one event stream,
+#' so when several variables carry windows we take their UNION (the minimum start
+#' and maximum end) as the output's \code{index_window}, rather than letting the
+#' first variable silently win and drop the others' events. This guarantees every
+#' windowed variable's events fall inside the extracted span; per-variable
+#' narrowing (e.g. distinct peri-index columns) is the job of the features/wide
+#' path, which scopes each spec independently. Returns \code{NULL} when no
+#' variable sets a window.
 #'
 #' @param vars List of \code{omop_variable} objects.
 #' @return A temporal spec list with \code{index_window}, or \code{NULL}.
 #' @keywords internal
 .variables_time_window <- function(vars) {
+  starts <- c(); ends <- c(); any_window <- FALSE
   for (v in vars) {
     tw <- v$time_window
     if (!is.null(tw) && (!is.null(tw$start) || !is.null(tw$end))) {
-      return(list(index_window = list(start = tw$start, end = tw$end)))
+      any_window <- TRUE
+      if (!is.null(tw$start)) starts <- c(starts, as.numeric(tw$start))
+      if (!is.null(tw$end))   ends   <- c(ends, as.numeric(tw$end))
     }
   }
-  NULL
+  if (!any_window) return(NULL)
+  list(index_window = list(
+    start = if (length(starts) > 0) min(starts) else NULL,
+    end   = if (length(ends) > 0) max(ends) else NULL))
 }
 
 .compile_population_filter_tree <- function(filters, default_operator = "and") {

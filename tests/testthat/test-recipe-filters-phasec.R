@@ -71,24 +71,32 @@ test_that("recipe_to_plan no longer writes to the dead output$filter slot", {
   expect_equal(leaf$var, "value_as_number")
 }
 
-test_that("features output forwards per-variable row filter to filters$custom", {
+# Feature-aggregation outputs (features / wide-single / covariates_sparse) now
+# carry each variable's row filter on its OWN feature spec ($filter), so the
+# server scopes it per column rather than ANDing every variable's filter into one
+# output-level WHERE (which would turn mutually-exclusive unit/type slices into a
+# contradiction). The G1 intent is unchanged: the row filter is applied, not
+# dropped — it just rides the spec instead of the shared custom slot.
+test_that("features output carries per-variable row filter on its feature spec", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "features"))
 
   out <- recipe_to_plan(r)$outputs[[1]]
   expect_equal(out$type, "event_level")   # features compiles to event_level
-  .expect_value_bin_leaf(out$filters$custom)
+  expect_null(out$filters$custom)         # not in the shared slot anymore
+  .expect_value_bin_leaf(out$representation$features[["hba1c"]]$filter)
 })
 
-test_that("covariates_sparse output forwards per-variable row filter", {
+test_that("covariates_sparse output carries per-variable row filter on its spec", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
   r <- dsOMOPClient:::recipe_add_output(r,
     omop_output(name = "labs", type = "covariates_sparse"))
 
   out <- recipe_to_plan(r)$outputs[[1]]
-  .expect_value_bin_leaf(out$filters$custom)
+  expect_null(out$filters$custom)
+  .expect_value_bin_leaf(out$representation$features[["hba1c"]]$filter)
 })
 
 test_that("survival output forwards per-variable row filter to filters$custom", {
@@ -98,20 +106,23 @@ test_that("survival output forwards per-variable row filter to filters$custom", 
 
   out <- recipe_to_plan(r)$outputs[["surv"]]
   expect_equal(out$type, "survival")
+  # Survival has no feature specs; its single outcome filter rides the custom
+  # slot as before (the per-spec change is feature/wide/sparse only).
   .expect_value_bin_leaf(out$filters$custom)
 })
 
-test_that("single-table wide features output forwards per-variable row filter", {
+test_that("single-table wide features output carries per-variable row filter", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "wide", type = "wide"))
 
   out <- recipe_to_plan(r)$outputs[["wide"]]
   expect_equal(out$type, "event_level")
-  .expect_value_bin_leaf(out$filters$custom)
+  expect_null(out$filters$custom)
+  .expect_value_bin_leaf(out$representation$features[["hba1c"]]$filter)
 })
 
-test_that("multi-table wide routes row filter into the per-table feature entry", {
+test_that("multi-table wide carries row filter on the per-table feature spec", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(name = "hba1c", format = "mean"))
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
@@ -120,9 +131,11 @@ test_that("multi-table wide routes row filter into the per-table feature entry",
 
   out <- recipe_to_plan(r)$outputs[["wide"]]
   expect_equal(out$type, "person_level")
-  # The measurement table entry carries the value_bin; observation does not.
-  .expect_value_bin_leaf(out$tables[["measurement"]]$filters)
-  expect_null(out$tables[["observation"]]$filters)
+  # The measurement spec carries the value_bin; observation's spec does not, and
+  # neither table's shared $filters slot is used.
+  .expect_value_bin_leaf(out$tables[["measurement"]]$features[["hba1c"]]$filter)
+  expect_null(out$tables[["measurement"]]$filters)
+  expect_null(out$tables[["observation"]]$features[["sbp"]]$filter)
 })
 
 # --- per-variable time_window -> output$temporal$index_window -----------------
