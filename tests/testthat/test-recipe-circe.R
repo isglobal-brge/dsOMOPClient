@@ -57,25 +57,6 @@ test_that("a newly saved recipe stamps schema version '1'", {
   expect_equal(yaml::yaml.load(yaml)$version, "1")
 })
 
-test_that("a legacy '2.0' recipe still imports identically and without warning", {
-  r <- omop_recipe()
-  r <- dsOMOPClient:::recipe_add_variable(r, name = "yob", table = "person",
-                                          column = "year_of_birth",
-                                          type = "numeric")
-  r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_sex("F"), id = "sex_f")
-
-  current <- recipe_import_json(recipe_export_json(r))
-
-  legacy_json <- sub("\"version\": ?\"1\"", "\"version\": \"2.0\"",
-                     recipe_export_json(r))
-  expect_true(grepl("2.0", legacy_json, fixed = TRUE))
-
-  # Tolerant reader: legacy tag loads with NO warning ...
-  expect_silent(legacy <- recipe_import_json(legacy_json))
-  # ... and yields an identical recipe (schema is unchanged across 2.0 -> 1).
-  expect_equal(legacy, current)
-})
-
 test_that("an unknown (newer) schema version warns but still loads", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, name = "yob", table = "person",
@@ -85,7 +66,7 @@ test_that("an unknown (newer) schema version warns but still loads", {
                      recipe_export_json(r))
 
   expect_warning(loaded <- recipe_import_json(future_json),
-                 "newer than this reader")
+                 "not recognized")
   expect_s3_class(loaded, "omop_recipe")
   expect_true("yob" %in% names(loaded$variables))
 })

@@ -3515,13 +3515,12 @@ recipe_to_code <- function(recipe) {
 }
 
 .recipe_from_plain <- function(data) {
-  # Tolerant version handling: the on-disk schema is unchanged, so accept the
-  # current "1" and the legacy "2.0" tag identically (older saved recipes
-  # carried "2.0"). Any other tag is from a newer breaking schema we cannot read.
+  # The schema version is "1"; it only bumps on a real breaking change. Any other
+  # tag is an unrecognized (e.g. future) schema, so warn but attempt a best-effort read.
   ver <- as.character(data$version %||% "1")
-  if (!ver %in% c("1", "2.0")) {
-    warning("Recipe schema version '", ver, "' is newer than this reader ",
-            "supports (expected '1'); attempting to load anyway.", call. = FALSE)
+  if (!identical(ver, "1")) {
+    warning("Recipe schema version '", ver, "' is not recognized (this reader ",
+            "uses version '1'); attempting to load anyway.", call. = FALSE)
   }
 
   recipe <- omop_recipe()
