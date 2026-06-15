@@ -884,6 +884,18 @@
       rate_cols <- grep(rate_pattern, names(combined), value = TRUE,
                          ignore.case = TRUE)
 
+      # Distribution-stat / proportion VALUE columns (avg_value, stdev_value,
+      # median_value, p*_value, a bare `average`) also cannot be summed across
+      # sites, and — critically for mixed-unit results like Table 1 where they are
+      # NA on person-unit rows — must NEVER become grouping keys, or split() drops
+      # whole strata and the pooled view collapses to nothing. Fold them into the
+      # non-summable set (kept as columns, set to NA in the pooled view). Counts
+      # (sum_value/count_value) stay summable; numeric id columns stay keys.
+      value_pattern <- "_value$|^average$|^mean$|^median$|^sd$|^stdev$"
+      value_cols <- setdiff(grep(value_pattern, names(combined), value = TRUE,
+                                 ignore.case = TRUE), count_cols)
+      rate_cols <- union(rate_cols, value_cols)
+
       # Group by all non-count, non-rate, non-server columns
       meta_cols <- setdiff(names(combined),
                             c(count_cols, rate_cols, ".server"))

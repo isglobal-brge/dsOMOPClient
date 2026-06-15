@@ -183,6 +183,30 @@ test_that(".pool_result dispatches table_stats correctly", {
   expect_equal(result$result$persons, 130)
 })
 
+test_that(".pool_result ohdsi_results pools a MIXED-UNIT Table 1 (no stratum drop)", {
+  # Regression: distribution-stat / proportion VALUE columns are NA on person-unit
+  # rows of a Table 1. They must NOT become grouping keys, else split() drops every
+  # stratum and the pooled view collapses to NULL. Counts must still sum.
+  mk <- function(f, m) data.frame(
+    characteristic = c("gender", "gender", "age"),
+    level = c("FEMALE", "MALE", "mean"),
+    unit = c("person", "person", "dist"),
+    sum_value = c(f, m, NA),
+    average = c(f / (f + m), m / (f + m), NA),
+    count_value = c(NA, NA, f + m),
+    avg_value = c(NA, NA, 65),        # dist stat: NA on person rows
+    median_value = c(NA, NA, 64),
+    stringsAsFactors = FALSE)
+  per_site <- list(a = mk(10, 20), b = mk(15, 25))
+  out <- .pool_result(per_site, "ohdsi_results", "strict")
+  expect_false(is.null(out$result))
+  g <- out$result[out$result$characteristic == "gender", ]
+  expect_equal(nrow(g), 2L)                              # strata preserved
+  expect_equal(g$sum_value[g$level == "FEMALE"], 25)     # 10 + 15 summed
+  expect_equal(g$sum_value[g$level == "MALE"], 45)       # 20 + 25 summed
+  expect_true(all(is.na(out$result$average)))            # proportions not summed
+})
+
 test_that(".pool_result column_stats pools n, mean, and a correct cross-site SD", {
   # Per-site stats as returned by .profileColumnStats (sd over non-NULL values).
   # Server A: n_total=110, n_missing=10 -> n_eff=100, mean=10, sd=2 (var=4)
