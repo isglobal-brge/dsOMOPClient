@@ -15,14 +15,38 @@ connections stored in the active session are used.}
 }
 \value{
 Named list (one entry per server) of data frames with cohort
-  metadata. Returns an empty list if no cohorts are defined.
+  metadata. Each row is a cohort at or above the server's
+  \code{nfilter_subset} threshold; its reported size is BANDED to a multiple
+  of \code{nfilter_band} (never the exact subject count). Sub-threshold
+  cohorts are intentionally absent. Returns an empty list (or per-server empty
+  data frames) when no cohort clears the threshold.
 }
 \description{
 Queries each connected server for existing cohort definitions. Returns a
-named list (one entry per server) of data frames containing cohort IDs,
-names, and row counts. This is useful for discovering cohorts that have
+named list (one entry per server) of data frames describing the cohorts that
+are usable for analysis. This is useful for discovering cohorts that have
 already been created in persistent storage.
 }
+\section{Disclosure control}{
+
+Listing is gated server-side and is intentionally a partial, approximate view
+so that discovery is itself disclosure-safe:
+\itemize{
+  \item Only cohorts whose distinct-subject count reaches the server's
+    per-subset threshold (\code{nfilter_subset}) appear. A cohort below that
+    threshold is OMITTED entirely -- it never shows up in the listing, exactly
+    as if it did not exist. You therefore cannot use the listing to learn that
+    a small cohort exists.
+  \item Each surviving cohort's size is BANDED (rounded down to a multiple of
+    \code{nfilter_band}), never the exact subject count, so the listing cannot
+    be differenced to recover an individual's membership.
+}
+The net effect: you can discover the cohorts you can actually use and their
+approximate size, but never tiny cohorts and never an exact count. The gating
+and banding happen on the server through the shared disclosure helpers; the
+client surfaces the server's response unchanged.
+}
+
 \examples{
 \dontrun{
 cohorts <- ds.omop.cohort.list()

@@ -47,6 +47,17 @@ Combines two existing server-side cohort tables using a set operation
 new server-side symbol that can be used in subsequent queries or plan
 executions.
 }
+\section{Disclosure control}{
+
+Each input is resolved + re-gated server-side, and the COMBINED result is
+gated on its distinct-subject count: if an operand is unavailable
+(absent/sub-threshold cohort_definition_id) or the combination yields fewer
+than the server's per-subset threshold (\code{nfilter_subset}) persons, the
+call FAILS CLOSED and no result table is materialised. An "insufficient
+individuals" error here reflects the operands/operation you chose and carries
+no disclosure about any pre-existing cohort.
+}
+
 \examples{
 \dontrun{
 diabetes <- ds.omop.cohort.create(spec = ..., cohort_id = 1)

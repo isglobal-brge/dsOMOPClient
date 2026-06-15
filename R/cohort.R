@@ -4,16 +4,38 @@
 #' List available cohort definitions
 #'
 #' Queries each connected server for existing cohort definitions. Returns a
-#' named list (one entry per server) of data frames containing cohort IDs,
-#' names, and row counts. This is useful for discovering cohorts that have
+#' named list (one entry per server) of data frames describing the cohorts that
+#' are usable for analysis. This is useful for discovering cohorts that have
 #' already been created in persistent storage.
+#'
+#' @section Disclosure control:
+#' Listing is gated server-side and is intentionally a partial, approximate view
+#' so that discovery is itself disclosure-safe:
+#' \itemize{
+#'   \item Only cohorts whose distinct-subject count reaches the server's
+#'     per-subset threshold (\code{nfilter_subset}) appear. A cohort below that
+#'     threshold is OMITTED entirely -- it never shows up in the listing, exactly
+#'     as if it did not exist. You therefore cannot use the listing to learn that
+#'     a small cohort exists.
+#'   \item Each surviving cohort's size is BANDED (rounded down to a multiple of
+#'     \code{nfilter_band}), never the exact subject count, so the listing cannot
+#'     be differenced to recover an individual's membership.
+#' }
+#' The net effect: you can discover the cohorts you can actually use and their
+#' approximate size, but never tiny cohorts and never an exact count. The gating
+#' and banding happen on the server through the shared disclosure helpers; the
+#' client surfaces the server's response unchanged.
 #'
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
 #' @return Named list (one entry per server) of data frames with cohort
-#'   metadata. Returns an empty list if no cohorts are defined.
+#'   metadata. Each row is a cohort at or above the server's
+#'   \code{nfilter_subset} threshold; its reported size is BANDED to a multiple
+#'   of \code{nfilter_band} (never the exact subject count). Sub-threshold
+#'   cohorts are intentionally absent. Returns an empty list (or per-server empty
+#'   data frames) when no cohort clears the threshold.
 #' @examples
 #' \dontrun{
 #' cohorts <- ds.omop.cohort.list()
@@ -37,19 +59,37 @@ ds.omop.cohort.list <- function(symbol = "omop",
 #' server, including the inclusion criteria and any metadata stored with
 #' the cohort definition.
 #'
-#' @param id Integer; the cohort definition ID to retrieve. Must correspond
-#'   to an existing cohort on the server(s).
+#' @section Disclosure control:
+#' An id that is not available -- whether because no such cohort exists OR
+#' because the cohort exists but is below the server's per-subset threshold
+#' (\code{nfilter_subset}) -- yields the SAME "not available" result. The two
+#' cases are deliberately indistinguishable: a sub-threshold cohort is treated as
+#' nonexistent, and the server's response for it is identical to that for a
+#' genuinely unknown id (it never says "too small" or otherwise hints that a
+#' small cohort exists, which would itself confirm its existence). The client
+#' surfaces the server's response as-is and adds no distinction of its own, so a
+#' caller cannot tell small-but-present from absent from either side. Only
+#' definitions of cohorts at or above the threshold (the ones that appear in
+#' \code{\link{ds.omop.cohort.list}}) are readable.
+#'
+#' @param id Integer; the cohort definition ID to retrieve. An id that is unknown
+#'   or below the disclosure threshold returns the same not-available result (see
+#'   Disclosure control), so a usable definition requires a cohort that appears in
+#'   \code{\link{ds.omop.cohort.list}}.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
-#' @return Named list (one entry per server) with definition details,
-#'   including the cohort specification and member count.
+#' @return Named list (one entry per server) with definition details for an
+#'   available (at- or above-threshold) cohort. For an unavailable id -- absent
+#'   OR sub-threshold -- the server returns its uniform not-available response
+#'   (identical for both cases), surfaced unchanged by the client.
 #' @examples
 #' \dontrun{
 #' defn <- ds.omop.cohort.definition(id = 1)
 #' defn[["server_a"]]
 #' }
+#' @seealso \code{\link{ds.omop.cohort.list}}
 #' @export
 ds.omop.cohort.definition <- function(id,
                                       symbol = "omop",
@@ -73,6 +113,16 @@ ds.omop.cohort.definition <- function(id,
 #' executions. The specification must include a \code{type} field and a
 #' \code{concept_set} defining the clinical events that constitute cohort
 #' entry.
+#'
+#' @section Disclosure control:
+#' The resulting cohort is gated server-side on its distinct-subject count: if
+#' the spec (including any \code{inclusion_criteria}) selects fewer than the
+#' server's per-subset threshold (\code{nfilter_subset}) persons, creation FAILS
+#' CLOSED with an "insufficient individuals" error and no table is materialised.
+#' Because you authored the criteria, an explicit error here is expected and
+#' carries no disclosure (it only reflects your own spec); contrast this with the
+#' uniform, silent omission used for pre-existing small cohorts in
+#' \code{\link{ds.omop.cohort.list}} / \code{\link{ds.omop.cohort.definition}}.
 #'
 #' @param spec Named list defining the cohort. Must contain at least
 #'   \code{type} (character; one of \code{"condition"}, \code{"drug"},
@@ -171,8 +221,20 @@ ds.omop.cohort.create <- function(spec,
 #' contact any server; the reference is resolved at plan execution time
 #' when \code{recipe_execute()} runs on the server.
 #'
+#' @section Disclosure control:
+#' Building the reference does no checking (it never touches a server); the
+#' disclosure gate applies when the reference is RESOLVED at execution time. If
+#' the cohort_definition_id is unavailable -- absent OR below the server's
+#' per-subset threshold (\code{nfilter_subset}) -- materialising/using it FAILS
+#' CLOSED server-side (the same fail-closed gate that protects every other way of
+#' naming a cohort, e.g. the \code{cohort=} scope of the exploration wrappers).
+#' A sub-threshold cohort can therefore never be used to scope or populate a
+#' query, exactly as if it did not exist.
+#'
 #' @param cohort_definition_id Integer; the ID of an existing cohort
-#'   definition that has already been created on the server(s).
+#'   definition that has already been created on the server(s). Referencing an
+#'   absent or sub-threshold id is accepted here but fails closed when resolved
+#'   server-side (see Disclosure control).
 #' @return A named list with class-implicit structure containing
 #'   \code{type = "cohort_table"} and \code{cohort_definition_id}. Intended
 #'   for use inside plan population specifications.
@@ -195,6 +257,15 @@ ds.omop.cohort.ref <- function(cohort_definition_id) {
 #' (intersection, union, or set difference). The result is assigned as a
 #' new server-side symbol that can be used in subsequent queries or plan
 #' executions.
+#'
+#' @section Disclosure control:
+#' Each input is resolved + re-gated server-side, and the COMBINED result is
+#' gated on its distinct-subject count: if an operand is unavailable
+#' (absent/sub-threshold cohort_definition_id) or the combination yields fewer
+#' than the server's per-subset threshold (\code{nfilter_subset}) persons, the
+#' call FAILS CLOSED and no result table is materialised. An "insufficient
+#' individuals" error here reflects the operands/operation you chose and carries
+#' no disclosure about any pre-existing cohort.
 #'
 #' @param op Character; the set operation to apply. One of
 #'   \code{"intersect"} (patients in both cohorts),
@@ -278,6 +349,14 @@ ds.omop.cohort.combine <- function(op, cohort_a, cohort_b,
 #' tokens, reverses them to original ids with the per-resource key, gates the
 #' distinct count (fail-closed), and materialises a size-checked cohort temp
 #' table. No identifier ever leaves the server.
+#'
+#' @section Disclosure control:
+#' The derived cohort is gated on its distinct-subject count: if the source
+#' symbol resolves to fewer than the server's per-subset threshold
+#' (\code{nfilter_subset}) persons, the call FAILS CLOSED with an "insufficient
+#' individuals" error and no cohort table is materialised. The error reflects the
+#' contents of the symbol you supplied and carries no disclosure about any
+#' pre-existing cohort.
 #'
 #' @param x Character; the name of a server-side \code{omop.table} symbol.
 #' @param new_name Character; TABLE name for the cohort. If \code{NULL} (the

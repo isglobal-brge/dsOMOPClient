@@ -7,8 +7,10 @@
 ds.omop.cohort.definition(id, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{id}{Integer; the cohort definition ID to retrieve. Must correspond
-to an existing cohort on the server(s).}
+\item{id}{Integer; the cohort definition ID to retrieve. An id that is unknown
+or below the disclosure threshold returns the same not-available result (see
+Disclosure control), so a usable definition requires a cohort that appears in
+\code{\link{ds.omop.cohort.list}}.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
@@ -17,17 +19,37 @@ was initialised (default: \code{"omop"}).}
 connections stored in the active session are used.}
 }
 \value{
-Named list (one entry per server) with definition details,
-  including the cohort specification and member count.
+Named list (one entry per server) with definition details for an
+  available (at- or above-threshold) cohort. For an unavailable id -- absent
+  OR sub-threshold -- the server returns its uniform not-available response
+  (identical for both cases), surfaced unchanged by the client.
 }
 \description{
 Retrieves the full definition of a specific cohort from each connected
 server, including the inclusion criteria and any metadata stored with
 the cohort definition.
 }
+\section{Disclosure control}{
+
+An id that is not available -- whether because no such cohort exists OR
+because the cohort exists but is below the server's per-subset threshold
+(\code{nfilter_subset}) -- yields the SAME "not available" result. The two
+cases are deliberately indistinguishable: a sub-threshold cohort is treated as
+nonexistent, and the server's response for it is identical to that for a
+genuinely unknown id (it never says "too small" or otherwise hints that a
+small cohort exists, which would itself confirm its existence). The client
+surfaces the server's response as-is and adds no distinction of its own, so a
+caller cannot tell small-but-present from absent from either side. Only
+definitions of cohorts at or above the threshold (the ones that appear in
+\code{\link{ds.omop.cohort.list}}) are readable.
+}
+
 \examples{
 \dontrun{
 defn <- ds.omop.cohort.definition(id = 1)
 defn[["server_a"]]
 }
+}
+\seealso{
+\code{\link{ds.omop.cohort.list}}
 }

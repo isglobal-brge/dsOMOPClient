@@ -34,6 +34,16 @@ tokens, reverses them to original ids with the per-resource key, gates the
 distinct count (fail-closed), and materialises a size-checked cohort temp
 table. No identifier ever leaves the server.
 }
+\section{Disclosure control}{
+
+The derived cohort is gated on its distinct-subject count: if the source
+symbol resolves to fewer than the server's per-subset threshold
+(\code{nfilter_subset}) persons, the call FAILS CLOSED with an "insufficient
+individuals" error and no cohort table is materialised. The error reflects the
+contents of the symbol you supplied and carries no disclosure about any
+pre-existing cohort.
+}
+
 \examples{
 \dontrun{
 feats <- ds.omop.plan.execute(plan, out = c(features = "F"))

@@ -55,6 +55,18 @@ executions. The specification must include a \code{type} field and a
 \code{concept_set} defining the clinical events that constitute cohort
 entry.
 }
+\section{Disclosure control}{
+
+The resulting cohort is gated server-side on its distinct-subject count: if
+the spec (including any \code{inclusion_criteria}) selects fewer than the
+server's per-subset threshold (\code{nfilter_subset}) persons, creation FAILS
+CLOSED with an "insufficient individuals" error and no table is materialised.
+Because you authored the criteria, an explicit error here is expected and
+carries no disclosure (it only reflects your own spec); contrast this with the
+uniform, silent omission used for pre-existing small cohorts in
+\code{\link{ds.omop.cohort.list}} / \code{\link{ds.omop.cohort.definition}}.
+}
+
 \examples{
 \dontrun{
 diabetes <- ds.omop.cohort.create(

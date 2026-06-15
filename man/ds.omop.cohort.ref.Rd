@@ -8,7 +8,9 @@ ds.omop.cohort.ref(cohort_definition_id)
 }
 \arguments{
 \item{cohort_definition_id}{Integer; the ID of an existing cohort
-definition that has already been created on the server(s).}
+definition that has already been created on the server(s). Referencing an
+absent or sub-threshold id is accepted here but fails closed when resolved
+server-side (see Disclosure control).}
 }
 \value{
 A named list with class-implicit structure containing
@@ -21,6 +23,18 @@ plan specification. This is a client-side-only helper that does not
 contact any server; the reference is resolved at plan execution time
 when \code{recipe_execute()} runs on the server.
 }
+\section{Disclosure control}{
+
+Building the reference does no checking (it never touches a server); the
+disclosure gate applies when the reference is RESOLVED at execution time. If
+the cohort_definition_id is unavailable -- absent OR below the server's
+per-subset threshold (\code{nfilter_subset}) -- materialising/using it FAILS
+CLOSED server-side (the same fail-closed gate that protects every other way of
+naming a cohort, e.g. the \code{cohort=} scope of the exploration wrappers).
+A sub-threshold cohort can therefore never be used to scope or populate a
+query, exactly as if it did not exist.
+}
+
 \examples{
 \dontrun{
 ref <- ds.omop.cohort.ref(cohort_definition_id = 1)
