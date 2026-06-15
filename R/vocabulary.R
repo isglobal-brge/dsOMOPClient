@@ -43,7 +43,9 @@
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
-#' @return A \code{dsomop_result} object with \code{scope = "per_site"}.
+#' @return A \code{dsomop_result} object with \code{scope = "pooled"} (a
+#'   de-duplicated cross-site view of the shared vocabulary; per-site frames
+#'   remain available).
 #'   Each server's result is a data frame with columns such as
 #'   \code{concept_id}, \code{concept_name}, \code{domain_id},
 #'   \code{vocabulary_id}, and \code{standard_concept}.
@@ -96,8 +98,8 @@ ds.omop.concept.search <- function(pattern = NULL, domain = NULL,
   )
 
   dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site"))
+    per_site = raw, pooled = .pool_concept_metadata(raw),
+    meta = list(call_code = code, scope = "pooled"))
 }
 
 #' Look up OMOP concepts by ID
@@ -116,7 +118,9 @@ ds.omop.concept.search <- function(pattern = NULL, domain = NULL,
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
-#' @return A \code{dsomop_result} object with \code{scope = "per_site"}.
+#' @return A \code{dsomop_result} object with \code{scope = "pooled"} (a
+#'   de-duplicated cross-site view of the shared vocabulary; per-site frames
+#'   remain available).
 #'   Each server's result is a data frame with concept metadata columns.
 #' @examples
 #' \dontrun{
@@ -151,8 +155,8 @@ ds.omop.concept.lookup <- function(concept_ids,
   )
 
   dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site"))
+    per_site = raw, pooled = .pool_concept_metadata(raw),
+    meta = list(call_code = code, scope = "pooled"))
 }
 
 #' Get descendant concepts via the concept_ancestor table
@@ -174,7 +178,9 @@ ds.omop.concept.lookup <- function(concept_ids,
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
-#' @return A \code{dsomop_result} object with \code{scope = "per_site"}.
+#' @return A \code{dsomop_result} object with \code{scope = "pooled"} (a
+#'   de-duplicated cross-site view of the shared vocabulary; per-site frames
+#'   remain available).
 #'   Each server's result is a data frame of descendant concept rows.
 #' @examples
 #' \dontrun{
@@ -211,8 +217,8 @@ ds.omop.concept.descendants <- function(ancestor_ids,
   )
 
   dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site"))
+    per_site = raw, pooled = .pool_concept_metadata(raw),
+    meta = list(call_code = code, scope = "pooled"))
 }
 
 #' Build a concept set specification (client-only)
@@ -275,7 +281,9 @@ ds.omop.concept.set <- function(concepts,
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
-#' @return A \code{dsomop_result} object with \code{scope = "per_site"}.
+#' @return A \code{dsomop_result} object with \code{scope = "pooled"} (a
+#'   de-duplicated cross-site view of the shared vocabulary; per-site frames
+#'   remain available).
 #'   Each server's result contains the resolved concept IDs.
 #' @examples
 #' \dontrun{
@@ -307,8 +315,8 @@ ds.omop.concept.expand <- function(concept_set,
   )
 
   dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site"))
+    per_site = raw, pooled = .pool_concept_metadata(raw),
+    meta = list(call_code = code, scope = "pooled"))
 }
 
 # --- Vocabulary catalog pooling helper ----------------------------------------

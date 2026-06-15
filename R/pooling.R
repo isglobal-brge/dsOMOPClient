@@ -1086,3 +1086,24 @@
     result = list(counts = pooled, suppressed = any(suppressed)),
     warnings = warnings)
 }
+
+#' Pool vocabulary / concept METADATA rows across servers (de-duplicated union)
+#'
+#' Concept metadata (ids, names, domains, descendants, expansions) is shared
+#' vocabulary: identical across sites and non-disclosive (it carries no patient
+#' counts), so the pooled view is the row-wise union de-duplicated to a single
+#' clean answer. Per-site frames remain available on the result for inspecting
+#' any cross-site vocabulary differences. Returns NULL when no site had data.
+#' @param per_site Named list of per-server data frames.
+#' @return A de-duplicated data frame, or NULL.
+#' @keywords internal
+.pool_concept_metadata <- function(per_site) {
+  dfs <- Filter(function(d) is.data.frame(d) && nrow(d) > 0, per_site)
+  if (length(dfs) == 0) return(NULL)
+  cols <- Reduce(intersect, lapply(dfs, names))
+  if (length(cols) == 0) return(NULL)
+  combined <- do.call(rbind, lapply(dfs, function(d) d[, cols, drop = FALSE]))
+  combined <- unique(combined)
+  rownames(combined) <- NULL
+  combined
+}

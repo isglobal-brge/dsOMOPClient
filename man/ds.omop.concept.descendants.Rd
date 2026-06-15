@@ -31,7 +31,9 @@ connections stored in the active session are used.}
 contacting the servers.}
 }
 \value{
-A \code{dsomop_result} object with \code{scope = "per_site"}.
+A \code{dsomop_result} object with \code{scope = "pooled"} (a
+  de-duplicated cross-site view of the shared vocabulary; per-site frames
+  remain available).
   Each server's result is a data frame of descendant concept rows.
 }
 \description{

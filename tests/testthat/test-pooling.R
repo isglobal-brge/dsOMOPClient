@@ -183,6 +183,16 @@ test_that(".pool_result dispatches table_stats correctly", {
   expect_equal(result$result$persons, 130)
 })
 
+test_that(".pool_concept_metadata dedupes shared vocab to one clean view", {
+  one <- data.frame(concept_id = c(80180, 40481087),
+                    concept_name = c("Osteoarthritis", "Viral sinusitis"),
+                    stringsAsFactors = FALSE)
+  out <- .pool_concept_metadata(list(nairobi = one, douala = one, dakar = one))
+  expect_equal(nrow(out), 2L)                       # 3 identical copies -> 2 rows
+  expect_setequal(out$concept_id, c(80180, 40481087))
+  expect_null(.pool_concept_metadata(list(a = data.frame(), b = NULL)))
+})
+
 test_that(".pool_result ohdsi_results pools a MIXED-UNIT Table 1 (no stratum drop)", {
   # Regression: distribution-stat / proportion VALUE columns are NA on person-unit
   # rows of a Table 1. They must NOT become grouping keys, else split() drops every
