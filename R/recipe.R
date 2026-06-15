@@ -1258,7 +1258,11 @@ omop_population <- function(id = "base",
     id                   = id,
     label                = label,
     parent_id            = parent_id,
-    filters              = filters,
+    # Accept a SINGLE omop_filter / omop_filter_group as well as a list: normalize
+    # to a list at construction so downstream code (compile / codegen / circe
+    # export) always iterates a list. A bare object otherwise surfaces a cryptic
+    # "$ operator is invalid for atomic vectors" deep in export/codegen.
+    filters              = .recipe_arg_list(filters),
     cohort_definition_id = if (!is.null(cohort_definition_id))
       as.integer(cohort_definition_id) else NULL
   )
@@ -1359,7 +1363,9 @@ omop_variable_block <- function(id = NULL,
     format         = format,
     value_source   = value_source,
     suffix_mode    = suffix_mode,
-    filters        = filters,
+    # Accept a SINGLE omop_filter as well as a list (normalize at construction)
+    # so a bare row filter never surfaces a cryptic atomic-vector error later.
+    filters        = .recipe_arg_list(filters),
     population_id  = population_id
   )
   # Only set when TRUE so the plain (exported) form stays stable.
@@ -2262,22 +2268,22 @@ recipe_to_plan <- function(recipe) {
       cohort_definition_id = base_pop$cohort_definition_id)
   }
 
-  # Collect all population-level filters. `spec` stays as the legacy flat
-  # AND list for older servers; `filter_tree` preserves nested AND/OR groups
-  # for servers that support the richer cohort filter DSL.
+  # Collect all population-level filters and compile them to the nested AND/OR
+  # `filter_tree` the server reads on every cohort path
+  # (.buildCohortFromFilters). This is the sole transport for recipe-authored
+  # population filters; the inline concept `spec` form is reserved for the
+  # lower-level ds.omop.plan.cohort(spec = ...) API.
   pop_filter_items <- .collect_pop_filter_items(recipe)
   pop_filters <- .flatten_filters(pop_filter_items, level = "population")
   if (length(pop_filters) > 0) {
-    spec <- lapply(pop_filters, function(f) {
-      list(type = f$type, params = f$params)
-    })
     filter_tree <- .compile_population_filter_tree(pop_filter_items)
-    if (is.null(plan$cohort)) {
-      plan$cohort <- list(type = "spec", spec = spec)
-    } else {
-      plan$cohort$spec <- spec
+    if (!is.null(filter_tree)) {
+      if (is.null(plan$cohort)) {
+        plan$cohort <- list(type = "spec", filter_tree = filter_tree)
+      } else {
+        plan$cohort$filter_tree <- filter_tree
+      }
     }
-    if (!is.null(filter_tree)) plan$cohort$filter_tree <- filter_tree
   }
 
   # Serialize EVERY population (base + criteria + set-op) for the server to
@@ -2295,6 +2301,16 @@ recipe_to_plan <- function(recipe) {
   # scope contract), so the server resolves them to frames; only the cohort
   # literal and combine travel as data.
   if (!is.null(recipe$scope)) plan$scope <- recipe$scope
+
+  # A recipe that selected variables but declared no output is the common simple
+  # case ("just give me a table"): default to a single sensible WIDE person-level
+  # output over every variable rather than compiling to an empty, do-nothing plan.
+  # Mutating the local recipe copy keeps every downstream reference (output names,
+  # population stamping, row filters) consistent. Recipes with no variables AND no
+  # outputs are left empty (nothing to shape).
+  if (length(recipe$outputs) == 0 && length(recipe$variables) > 0) {
+    recipe <- recipe_add_output(recipe, omop_output(name = "output", type = "wide"))
+  }
 
   # Group variables by output
   for (out_name in names(recipe$outputs)) {
@@ -3128,24 +3144,14 @@ recipe_to_code <- function(recipe) {
   if (length(block_code) > 0)
     slot_args$blocks <- .codegen_list_arg(block_code)
 
-  # Standalone variables (those not produced by a block). Variables expanded
-  # from a block carry a `block_id` provenance marker; recipes serialized
-  # before that marker existed fall back to the legacy name-matching heuristic.
-  has_provenance <- any(vapply(recipe$variables,
-                               function(v) !is.null(v$block_id), logical(1)))
-  block_vars <- if (has_provenance) character(0) else
-    unlist(lapply(recipe$blocks, function(b) {
-      vapply(seq_along(b$concept_ids), function(i) {
-        cname <- if (!is.null(b$concept_names) && i <= length(b$concept_names))
-          b$concept_names[i] else NULL
-        if (!is.null(cname)) .sanitize_name(cname)
-        else paste0(b$table, "_c", b$concept_ids[i])
-      }, character(1))
-    }))
+  # Standalone variables (those not produced by a block). Every block-expanded
+  # variable carries a `block_id` provenance marker (stamped by
+  # recipe_add_block and preserved across the JSON/YAML round-trip), so
+  # block-derived variables are identified by that marker alone.
   var_code <- character(0)
   for (nm in names(recipe$variables)) {
     v <- recipe$variables[[nm]]
-    if (!is.null(v$block_id) || nm %in% block_vars) next
+    if (!is.null(v$block_id)) next
 
     # Use convenience constructors for derived variables
     code <- NULL
@@ -3284,12 +3290,11 @@ recipe_to_code <- function(recipe) {
 
   # The block re-expansion order (blocks first, then standalone variables)
   # may differ from the recipe's insertion order; restore it so column
-  # ordering in outputs is preserved. Only possible when block provenance
-  # markers exist (legacy recipes keep the rebuild order). This is the one
-  # piece the declarative call cannot express, so it trails as a fixup.
-  if (has_provenance && length(recipe$variables) > 0) {
-    is_block_var <- vapply(recipe$variables,
-                           function(v) !is.null(v$block_id), logical(1))
+  # ordering in outputs is preserved. This is the one piece the declarative
+  # call cannot express, so it trails as a fixup.
+  is_block_var <- vapply(recipe$variables,
+                         function(v) !is.null(v$block_id), logical(1))
+  if (any(is_block_var) && length(recipe$variables) > 0) {
     rebuilt_order <- c(
       unlist(lapply(names(recipe$blocks), function(bid) {
         names(recipe$variables)[vapply(recipe$variables, function(v)

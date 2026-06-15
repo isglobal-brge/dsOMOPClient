@@ -19,10 +19,12 @@ connections stored in the active session are used.}
 }
 \value{
 A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
-  element is a data frame with one row per entry: \code{name}, \code{domain},
-  \code{adapter}, \code{mode}, disclosure \code{unit}, \code{description},
-  parameter summary, and the \code{accepts_cohort}/\code{accepts_tables}
-  scoping flags.
+  element is a data frame with one row per entry: \code{name} (the id),
+  \code{domain}, \code{adapter}, \code{mode}, disclosure \code{unit},
+  \code{description} (title), parameter summary, the
+  \code{accepts_cohort}/\code{accepts_tables} scoping flags, whether the entry
+  \code{requires_cohort} (un-scoped runs error), and whether it ships a plot
+  (\code{has_plot}).
 }
 \description{
 Returns metadata for every entry in the server's unified analysis catalog —

@@ -75,8 +75,9 @@ ds.omop.cohort.definition <- function(id,
 #' entry.
 #'
 #' @param spec Named list defining the cohort. Must contain at least
-#'   \code{type} (character) and \code{concept_set} (integer vector or
-#'   \code{omop_concept_set} object).
+#'   \code{type} (character; one of \code{"condition"}, \code{"drug"},
+#'   \code{"measurement"}, \code{"observation"}, \code{"procedure"}) and
+#'   \code{concept_set} (integer vector or \code{omop_concept_set} object).
 #' @param mode Character; \code{"temporary"} (the default) creates a
 #'   session-scoped temp table, \code{"persistent"} writes to the cohort
 #'   schema for reuse across sessions.
@@ -99,7 +100,7 @@ ds.omop.cohort.definition <- function(id,
 #' @examples
 #' \dontrun{
 #' diabetes <- ds.omop.cohort.create(
-#'   spec = list(type = "event",
+#'   spec = list(type = "condition",
 #'               concept_set = c(201820, 201826)),
 #'   cohort_id = 1,
 #'   name = "Type 2 Diabetes"
@@ -126,20 +127,25 @@ ds.omop.cohort.create <- function(spec,
          call. = FALSE)
   }
 
+  # Auto-assign a non-colliding cohort id when the caller supplies none, so two
+  # un-id'd cohorts no longer both land on id 0 / table "dsomop_cohort_0" (the
+  # second would overwrite/clash with the first). A supplied id is honoured as-is.
+  cohort_id <- as.integer(cohort_id %||% sample(100000:999999, 1))
+
   # Opal's DataSHIELD expression grammar cannot lex an empty string literal
   # (its string token requires >= 1 character), so a blank name would abort
   # the assign with a server-side "Lexical error" before the call even runs.
   # Fall back to a non-empty, human-readable default derived from the id.
   cohort_name <- if (is.null(name) || !nzchar(trimws(name)))
-    paste0("cohort_", cohort_id %||% "tmp") else name
+    paste0("cohort_", cohort_id) else name
 
   DSI::datashield.assign.expr(
     conns,
-    symbol = paste0(".cohort_", cohort_id %||% "tmp"),
+    symbol = paste0(".cohort_", cohort_id),
     expr = call("omopCohortCreateDS",
                 session$res_symbol,
                 .ds_encode(spec), mode,
-                as.integer(cohort_id %||% 0L),
+                cohort_id,
                 cohort_name,
                 overwrite)
   )
@@ -149,11 +155,11 @@ ds.omop.cohort.create <- function(spec,
   # (.cohortCreate) materialises a table named "dsomop_cohort_<id>"; persistent
   # cohorts write to the cohort schema and have no temp table.
   table_name <- if (identical(mode, "temporary"))
-    paste0("dsomop_cohort_", as.integer(cohort_id %||% 0L)) else NULL
+    paste0("dsomop_cohort_", cohort_id) else NULL
 
   invisible(structure(
     table_name,
-    symbol = paste0(".cohort_", cohort_id %||% "tmp"),
+    symbol = paste0(".cohort_", cohort_id),
     class = "dsomop_cohort_handle"
   ))
 }

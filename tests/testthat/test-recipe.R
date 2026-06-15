@@ -65,6 +65,30 @@ test_that("omop_filter creates correct class", {
   expect_true(grepl("Sex", f$label))
 })
 
+test_that("omop_population/block filters= accept a SINGLE object (normalized)", {
+  # Footgun fix: a bare filter/group used to yield a cryptic atomic-vector error
+  # deep in codegen/export. It is normalized to a list at construction.
+  pop1 <- omop_population(id = "f", filters = omop_filter_sex("F"))
+  expect_true(is.list(pop1$filters) && !inherits(pop1$filters, "omop_filter"))
+  expect_length(pop1$filters, 1L)
+  expect_s3_class(pop1$filters[[1]], "omop_filter")
+
+  pop2 <- omop_population(id = "g", filters = omop_filter_group(
+    omop_filter_sex("F"), omop_filter_age(18, 65), operator = "AND"))
+  expect_length(pop2$filters, 1L)
+  # The bare group now survives circe export (previously errored).
+  rec <- omop_recipe(populations = pop2, variables = omop_variable_age(),
+                     outputs = omop_output(name = "o", type = "wide",
+                                           population_id = "g"))
+  expect_silent(recipe_export_circe(rec, population_id = "g"))
+
+  blk <- omop_variable_block(table = "measurement", concept_ids = 3004410L,
+                             filters = omop_filter_date_range(start = "2010-01-01"))
+  expect_length(blk$filters, 1L)
+  # An empty default stays an empty list (round-trip stability).
+  expect_length(omop_population()$filters, 0L)
+})
+
 test_that("omop_filter_sex convenience constructor", {
   f <- omop_filter_sex("M")
   expect_s3_class(f, "omop_filter")
@@ -1169,7 +1193,6 @@ test_that("recipe_to_plan includes base population filters", {
   plan <- recipe_to_plan(c)
 
   expect_equal(plan$cohort$type, "spec")
-  expect_equal(plan$cohort$spec[[1]]$type, "age_range")
   expect_equal(plan$cohort$filter_tree$type, "age_range")
 })
 
@@ -1190,7 +1213,6 @@ test_that("recipe_to_plan preserves population filter group tree", {
 
   plan <- recipe_to_plan(c)
 
-  expect_equal(length(plan$cohort$spec), 3)
   expect_true("or" %in% names(plan$cohort$filter_tree))
   expect_true("and" %in% names(plan$cohort$filter_tree$or[[2]]))
 })
@@ -1204,7 +1226,6 @@ test_that("recipe_to_plan supports cohort definition filters", {
 
   plan <- recipe_to_plan(c)
 
-  expect_equal(plan$cohort$spec[[1]]$type, "cohort")
   expect_equal(plan$cohort$filter_tree$params$cohort_definition_id, 42L)
 })
 
@@ -1803,10 +1824,19 @@ test_that("recipe print shows populations and blocks", {
 
 # --- edge cases --------------------------------------------------------------
 
-test_that("recipe_to_plan with no outputs returns empty plan", {
+test_that("recipe_to_plan with variables but no output defaults to a wide output", {
+  # Footgun fix: selecting variables without declaring an output is the common
+  # simple case; it now compiles to ONE sensible wide output rather than a silent
+  # empty (do-nothing) plan.
   c <- omop_recipe()
   c <- dsOMOPClient:::recipe_add_variable(c, name = "v", table = "person")
   plan <- recipe_to_plan(c)
+  expect_s3_class(plan, "omop_plan")
+  expect_equal(length(plan$outputs), 1)
+})
+
+test_that("recipe_to_plan with neither variables nor outputs stays empty", {
+  plan <- recipe_to_plan(omop_recipe())
   expect_s3_class(plan, "omop_plan")
   expect_equal(length(plan$outputs), 0)
 })

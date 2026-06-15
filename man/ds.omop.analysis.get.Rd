@@ -7,8 +7,9 @@
 ds.omop.analysis.get(name, symbol = "omop", conns = NULL)
 }
 \arguments{
-\item{name}{Character; the entry name (pack-prefixed stable id, e.g.
-\code{"dsomop:achilles.401"}).}
+\item{name}{Character; the entry id (e.g. \code{"dsomop:achilles.401"}) or a
+shorthand for it (native id without the \code{"dsomop:"} prefix, or a unique
+id suffix; an ambiguous shorthand errors with the candidates).}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
@@ -20,7 +21,8 @@ connections stored in the active session are used.}
 A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
   element is a named list with the entry's \code{name}, \code{description},
   \code{domain}, \code{mode}, \code{params}, \code{compute_kind},
-  \code{disclosure}, \code{scope}, and \code{adapter}.
+  \code{disclosure}, \code{scope}, \code{adapter}, and the inert client-side
+  \code{plot} recipe (\code{NULL} when the entry ships none).
 }
 \description{
 Returns full metadata for a single catalog entry: its parameter specs,

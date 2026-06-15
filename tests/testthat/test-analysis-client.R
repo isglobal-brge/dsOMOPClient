@@ -35,6 +35,46 @@ test_that("ds.omop.analysis.run has the expected signature", {
   expect_equal(args$pooling_policy, "strict")
 })
 
+test_that("ds.omop.prevalence / ds.omop.distribution are thin one-liners", {
+  expect_true(is.function(ds.omop.prevalence))
+  pa <- formals(ds.omop.prevalence)
+  expect_true(all(c("concept_id", "cohort", "domain", "top_n", "tables",
+                    "symbol", "conns") %in% names(pa)))
+  expect_equal(pa$domain, "condition")
+  expect_true(is.function(ds.omop.distribution))
+  da <- formals(ds.omop.distribution)
+  expect_true(all(c("cohort", "metric", "domain", "top_n", "concept_id",
+                    "tables", "symbol", "conns") %in% names(da)))
+  expect_equal(da$metric, "measurement_value")
+})
+
+# --- .analysis_domain_code ---------------------------------------------------
+
+test_that(".analysis_domain_code maps names and codes, rejects junk", {
+  f <- dsOMOPClient:::.analysis_domain_code
+  expect_equal(f("condition"), "0")
+  expect_equal(f("drug"), "1")
+  expect_equal(f("measurement"), "3")
+  expect_equal(f("3"), "3")          # a code passes through
+  expect_equal(f(NULL, default = "3"), "3")
+  expect_error(f("nonsense"), "Unknown domain")
+})
+
+# --- .analysis_filter_concepts (post-gate row subset) ------------------------
+
+test_that(".analysis_filter_concepts subsets pooled + per_site by concept id", {
+  res <- dsomop_result(
+    per_site = list(s = data.frame(covariate_id = c(1L, 2L, 3L),
+                                   sum_value = c(5, 10, 15))),
+    pooled = data.frame(covariate_id = c(1L, 2L, 3L), sum_value = c(5, 10, 15)))
+  out <- dsOMOPClient:::.analysis_filter_concepts(res, concept_id = 2L)
+  expect_equal(out$pooled$covariate_id, 2L)
+  expect_equal(out$per_site$s$covariate_id, 2L)
+  # NULL concept_id is a no-op (returns all rows untouched).
+  same <- dsOMOPClient:::.analysis_filter_concepts(res, concept_id = NULL)
+  expect_equal(nrow(same$pooled), 3L)
+})
+
 # --- .query_id_to_name -------------------------------------------------------
 
 test_that(".query_id_to_name prefixes a bare legacy id", {
@@ -348,5 +388,61 @@ test_that("ds.omop.analysis.run(plot=TRUE) on an entry with no recipe keeps the 
       # Data is never lost when a plot can't be built.
       pn <- stats::setNames(res$pooled$n_persons, res$pooled$gender_name)
       expect_equal(pn[["MALE"]], 45)
+    })
+})
+
+# --- One-liner delegation (mocked DataSHIELD) --------------------------------
+#
+# Prove ds.omop.prevalence / ds.omop.distribution are thin: they delegate to the
+# server's fe.prevalence / fe.continuous entries with the mapped params, and the
+# concept_id post-filter subsets the already-gated frame.
+
+# A gated covariate frame as fe.prevalence/fe.continuous would emit.
+.acat_cov_df <- function() {
+  data.frame(covariate_id = c(201820L, 320128L),
+             covariate_name = c("Diabetes", "Hypertension"),
+             sum_value = c(45, 30), average = c(0.9, 0.6),
+             stringsAsFactors = FALSE)
+}
+
+test_that("ds.omop.prevalence delegates to fe.prevalence with mapped params", {
+  .acat_with_mocked_run(
+    meta_plot = NULL, gated = .acat_cov_df(),
+    code = function(sent) {
+      res <- ds.omop.prevalence(cohort = 1L, domain = "drug", top_n = 10)
+      expect_s3_class(res, "dsomop_result")
+      run <- Filter(function(e) identical(as.character(e[[1]]), "omopAnalysisRunDS"),
+                    sent$exprs)[[1]]
+      # entry name (3rd positional) is the fe.prevalence catalog id.
+      expect_equal(run[[3]], "dsomop:fe.prevalence")
+      # params (4th positional) carry the mapped domain_code + top_n.
+      params <- jsonlite::fromJSON(rawToChar(jsonlite::base64_dec(
+        gsub("_", "/", gsub("-", "+", sub("^B64:", "", run[[4]]))))))
+      expect_equal(params$domain_code, "1")   # "drug" -> "1"
+      expect_equal(params$top_n, 10)
+    })
+})
+
+test_that("ds.omop.prevalence(concept_id=) narrows the gated result", {
+  .acat_with_mocked_run(
+    meta_plot = NULL, gated = .acat_cov_df(),
+    code = function(sent) {
+      res <- ds.omop.prevalence(concept_id = 201820, cohort = 1L)
+      expect_equal(res$pooled$covariate_id, 201820L)
+      expect_equal(nrow(res$pooled), 1L)
+    })
+})
+
+test_that("ds.omop.distribution delegates to fe.continuous with the metric", {
+  .acat_with_mocked_run(
+    meta_plot = NULL, gated = .acat_cov_df(),
+    code = function(sent) {
+      ds.omop.distribution(cohort = 1L, metric = "age")
+      run <- Filter(function(e) identical(as.character(e[[1]]), "omopAnalysisRunDS"),
+                    sent$exprs)[[1]]
+      expect_equal(run[[3]], "dsomop:fe.continuous")
+      params <- jsonlite::fromJSON(rawToChar(jsonlite::base64_dec(
+        gsub("_", "/", gsub("-", "+", sub("^B64:", "", run[[4]]))))))
+      expect_equal(params$metric, "age")
     })
 })

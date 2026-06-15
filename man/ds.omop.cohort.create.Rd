@@ -16,8 +16,9 @@ ds.omop.cohort.create(
 }
 \arguments{
 \item{spec}{Named list defining the cohort. Must contain at least
-\code{type} (character) and \code{concept_set} (integer vector or
-\code{omop_concept_set} object).}
+\code{type} (character; one of \code{"condition"}, \code{"drug"},
+\code{"measurement"}, \code{"observation"}, \code{"procedure"}) and
+\code{concept_set} (integer vector or \code{omop_concept_set} object).}
 
 \item{mode}{Character; \code{"temporary"} (the default) creates a
 session-scoped temp table, \code{"persistent"} writes to the cohort
@@ -57,7 +58,7 @@ entry.
 \examples{
 \dontrun{
 diabetes <- ds.omop.cohort.create(
-  spec = list(type = "event",
+  spec = list(type = "condition",
               concept_set = c(201820, 201826)),
   cohort_id = 1,
   name = "Type 2 Diabetes"

@@ -230,6 +230,92 @@ ds.omop.connect <- function(resource,
   invisible(session)
 }
 
+#' Log in and open an OMOP CDM session in one call
+#'
+#' One-line entry point for first-time users: builds the DataSHIELD login
+#' (\code{\link[DSI]{newDSLoginBuilder}} + \code{\link[DSI]{datashield.login}}),
+#' then assigns + initialises the OMOP resource (\code{\link{ds.omop.connect}}),
+#' returning BOTH the live connections and the OMOP session. It is a thin
+#' convenience over the existing lower-level path — \code{datashield.login()}
+#' followed by \code{ds.omop.connect()} — and adds no new behaviour; reach for
+#' that two-step path when you need a custom login builder, multiple resources
+#' per server, or to reuse connections across several OMOP sessions.
+#'
+#' The single-server common case is one call:
+#' \code{ds.omop.login(url, user, password, resource)}. For several servers pass
+#' \code{server}/\code{url}/\code{resource} (and, if they differ,
+#' \code{user}/\code{password}) as equal-length vectors; scalars are recycled.
+#'
+#' @param url Character; server URL(s). A single URL or one per server.
+#' @param user Character; username(s) (recycled if scalar). Ignored for a
+#'   server whose \code{token} is supplied.
+#' @param password Character; password(s) (recycled if scalar). Ignored for a
+#'   server whose \code{token} is supplied.
+#' @param resource Character; the OMOP CDM resource path(s) (e.g.
+#'   \code{"project.omop_cdm"}). A single value applies to every server; a named
+#'   vector maps server name to resource; an unnamed vector matches positionally.
+#' @param server Character; server name(s) (default \code{"server1"}, or
+#'   \code{server1..N} when several URLs are given).
+#' @param driver Character; the DSI driver to connect with (default
+#'   \code{"OpalDriver"}, from the \pkg{DSOpal} package). Recycled if scalar.
+#' @param token Character or \code{NULL}; personal access token(s) used instead
+#'   of \code{user}/\code{password} where supplied.
+#' @param profile Character or \code{NULL}; Opal/Armadillo R server profile(s).
+#' @param symbol Character; server-side OMOP session symbol (default
+#'   \code{"omop"}).
+#' @param ... Further arguments forwarded to \code{\link{ds.omop.connect}}
+#'   (e.g. \code{cdm_schema}, \code{strict}).
+#' @return Invisibly, a list with \code{conns} (the DSI connections) and
+#'   \code{session} (the \code{omop_session}). The session is also stored under
+#'   \code{symbol} so every other \code{ds.omop.*} call can default to it.
+#' @examples
+#' \dontrun{
+#' # The whole connect, in one line:
+#' login <- ds.omop.login(
+#'   url = "https://opal.example.org",
+#'   user = "analyst", password = "secret",
+#'   resource = "project.omop_cdm")
+#' login$conns     # the DataSHIELD connections
+#' login$session   # the OMOP session
+#' }
+#' @seealso \code{\link{ds.omop.connect}}, \code{\link{ds.omop.disconnect}}
+#' @export
+ds.omop.login <- function(url, user = "", password = "", resource,
+                          server = NULL, driver = "OpalDriver",
+                          token = NULL, profile = NULL,
+                          symbol = "omop", ...) {
+  if (missing(url) || length(url) == 0)
+    stop("ds.omop.login() needs at least one server 'url'.", call. = FALSE)
+  if (missing(resource) || length(resource) == 0)
+    stop("ds.omop.login() needs a 'resource'.", call. = FALSE)
+
+  n <- length(url)
+  server <- server %||% (if (n == 1) "server1" else paste0("server", seq_len(n)))
+  # Recycle scalar credentials/driver across servers so the common single-value
+  # form works for several servers without repeating them.
+  rec <- function(x) if (length(x) == 1) rep(x, n) else x
+  user     <- rec(user)
+  password <- rec(password)
+  driver   <- rec(driver)
+  token    <- if (is.null(token)) rep("", n) else rec(token)
+  profile  <- if (is.null(profile)) rep("", n) else rec(profile)
+  if (length(server) != n)
+    stop("'server' and 'url' must have the same length.", call. = FALSE)
+
+  builder <- DSI::newDSLoginBuilder(.silent = TRUE)
+  for (i in seq_len(n)) {
+    builder$append(server = server[i], url = url[i], driver = driver[i],
+                   user = user[i], password = password[i],
+                   token = token[i], profile = profile[i])
+  }
+  conns <- DSI::datashield.login(builder$build())
+
+  session <- ds.omop.connect(resource = resource, symbol = symbol,
+                             conns = conns, ...)
+
+  invisible(list(conns = conns, session = session))
+}
+
 #' Disconnect an OMOP session
 #'
 #' Cleans up server-side temporary tables and removes the OMOP handle symbol.

@@ -17,7 +17,8 @@ ds.omop.analysis.run(
 )
 }
 \arguments{
-\item{name}{Character; the entry name (pack-prefixed stable id).}
+\item{name}{Character; the entry id, or a shorthand for it (native id without
+the \code{"dsomop:"} prefix, or a unique id suffix).}
 
 \item{params}{Named list; parameter values for the entry (see
 \code{\link{ds.omop.analysis.get}} for the entry's parameter specs).}
@@ -82,7 +83,32 @@ server-side with \code{combine} (\code{"union"}/\code{"intersect"} on the
 person key) into a single re-gated cohort, and SQL entries are restricted to
 it. Pre-computed Achilles/OHDSI entries hold no per-row person key and reject
 scoping (the server raises a clear error).
+
+\code{name} accepts the full pack-prefixed id (\code{"dsomop:fe.prevalence"})
+and the natural shorthands: the native id without the prefix
+(\code{"fe.prevalence"}) or a unique id suffix (\code{"prevalence"}). An
+ambiguous shorthand errors with the candidate ids.
 }
+\section{Which tool when}{
+
+Three layers, simplest first — reach for the lowest one that does the job:
+\itemize{
+  \item \strong{One-liners} (\code{\link{ds.omop.prevalence}},
+    \code{\link{ds.omop.distribution}}): the fastest path for the two most
+    common summaries over a cohort. One call plus good defaults; thin wrappers
+    over this function.
+  \item \strong{Analysis catalog} (\code{\link{ds.omop.analysis.list}} /
+    \code{\link{ds.omop.analysis.get}} / \code{ds.omop.analysis.run}): the full
+    menu of curated, pre-gated analyses (QueryLibrary, Achilles, OHDSI, native
+    diagnostics). Use it to discover and run any named analysis with explicit
+    params.
+  \item \strong{Recipes} (\code{\link[=omop_recipe]{omop_recipe}} +
+    \code{\link[=recipe_execute]{recipe_execute}}): author a bespoke EXTRACTION
+    — choose populations, variables, filters, and output shape — when no single
+    catalog analysis fits. The complete, declarative query surface.
+}
+}
+
 \section{Safety (client-side plotting)}{
  Some entries ship an INERT plot recipe
   — the source text of a \code{function(df, params)} that builds a

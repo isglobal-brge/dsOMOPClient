@@ -189,10 +189,12 @@
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
-#'   element is a data frame with one row per entry: \code{name}, \code{domain},
-#'   \code{adapter}, \code{mode}, disclosure \code{unit}, \code{description},
-#'   parameter summary, and the \code{accepts_cohort}/\code{accepts_tables}
-#'   scoping flags.
+#'   element is a data frame with one row per entry: \code{name} (the id),
+#'   \code{domain}, \code{adapter}, \code{mode}, disclosure \code{unit},
+#'   \code{description} (title), parameter summary, the
+#'   \code{accepts_cohort}/\code{accepts_tables} scoping flags, whether the entry
+#'   \code{requires_cohort} (un-scoped runs error), and whether it ships a plot
+#'   (\code{has_plot}).
 #' @examples
 #' \dontrun{
 #' catalog <- ds.omop.analysis.list()
@@ -232,8 +234,9 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
 #' before running it. The metadata is identical across servers, so the first
 #' responding server's result is returned as the pooled view.
 #'
-#' @param name Character; the entry name (pack-prefixed stable id, e.g.
-#'   \code{"dsomop:achilles.401"}).
+#' @param name Character; the entry id (e.g. \code{"dsomop:achilles.401"}) or a
+#'   shorthand for it (native id without the \code{"dsomop:"} prefix, or a unique
+#'   id suffix; an ambiguous shorthand errors with the candidates).
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
@@ -241,7 +244,8 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
 #'   element is a named list with the entry's \code{name}, \code{description},
 #'   \code{domain}, \code{mode}, \code{params}, \code{compute_kind},
-#'   \code{disclosure}, \code{scope}, and \code{adapter}.
+#'   \code{disclosure}, \code{scope}, \code{adapter}, and the inert client-side
+#'   \code{plot} recipe (\code{NULL} when the entry ships none).
 #' @examples
 #' \dontrun{
 #' meta <- ds.omop.analysis.get("dsomop:achilles.401")
@@ -288,7 +292,31 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 #' it. Pre-computed Achilles/OHDSI entries hold no per-row person key and reject
 #' scoping (the server raises a clear error).
 #'
-#' @param name Character; the entry name (pack-prefixed stable id).
+#' \code{name} accepts the full pack-prefixed id (\code{"dsomop:fe.prevalence"})
+#' and the natural shorthands: the native id without the prefix
+#' (\code{"fe.prevalence"}) or a unique id suffix (\code{"prevalence"}). An
+#' ambiguous shorthand errors with the candidate ids.
+#'
+#' @section Which tool when:
+#' Three layers, simplest first — reach for the lowest one that does the job:
+#' \itemize{
+#'   \item \strong{One-liners} (\code{\link{ds.omop.prevalence}},
+#'     \code{\link{ds.omop.distribution}}): the fastest path for the two most
+#'     common summaries over a cohort. One call plus good defaults; thin wrappers
+#'     over this function.
+#'   \item \strong{Analysis catalog} (\code{\link{ds.omop.analysis.list}} /
+#'     \code{\link{ds.omop.analysis.get}} / \code{ds.omop.analysis.run}): the full
+#'     menu of curated, pre-gated analyses (QueryLibrary, Achilles, OHDSI, native
+#'     diagnostics). Use it to discover and run any named analysis with explicit
+#'     params.
+#'   \item \strong{Recipes} (\code{\link[=omop_recipe]{omop_recipe}} +
+#'     \code{\link[=recipe_execute]{recipe_execute}}): author a bespoke EXTRACTION
+#'     — choose populations, variables, filters, and output shape — when no single
+#'     catalog analysis fits. The complete, declarative query surface.
+#' }
+#'
+#' @param name Character; the entry id, or a shorthand for it (native id without
+#'   the \code{"dsomop:"} prefix, or a unique id suffix).
 #' @param params Named list; parameter values for the entry (see
 #'   \code{\link{ds.omop.analysis.get}} for the entry's parameter specs).
 #' @param cohort Optional cohort reference to scope the population to: a
@@ -434,4 +462,182 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   attr(result, "plot") <- gg
   result$meta$plot <- gg
   result
+}
+
+# --- One-liner convenience wrappers (over ds.omop.analysis.run) --------------
+#
+# Thin shortcuts for the two analyses an analyst reaches for most — covariate
+# prevalence and continuous-value distributions. They add NO new compute and NO
+# new gate: each builds the catalog entry's params and delegates to
+# ds.omop.analysis.run(), inheriting its scoping, pooling, plotting, and the ONE
+# per-patient disclosure gate verbatim. The verbose ds.omop.analysis.run() stays
+# the power path; these only spare the simple case the entry-name + params boilerplate.
+
+#' Map a human domain name (or code) to the catalog domain_code
+#'
+#' The covariate analyses select their event family with a \code{domain_code}
+#' ("0" condition, "1" drug, ...). Accept the friendly domain NAME as well so a
+#' caller writes \code{domain = "condition"} instead of memorising the code; a
+#' code passed through unchanged.
+#'
+#' @param domain Character/numeric domain name or code, or \code{NULL}.
+#' @param default Character; the code to use when \code{domain} is \code{NULL}.
+#' @return Character domain code.
+#' @keywords internal
+.analysis_domain_code <- function(domain = NULL, default = "0") {
+  if (is.null(domain)) return(default)
+  d <- tolower(trimws(as.character(domain)[[1]]))
+  switch(d,
+    "0" =, "condition" = "0",
+    "1" =, "drug" = "1",
+    "2" =, "procedure" = "2",
+    "3" =, "measurement" = "3",
+    "4" =, "observation" = "4",
+    stop("Unknown domain '", domain, "'. Use one of condition, drug, procedure, ",
+         "measurement, observation (or the codes 0-4).", call. = FALSE))
+}
+
+#' Subset an already-gated result's frames to requested concept id(s)
+#'
+#' Post-gate, cosmetic row selection: keeps only the rows whose covariate/concept
+#' id is in \code{concept_id}, in BOTH the pooled and per-site frames. This is a
+#' plain subset of numbers that already cleared the server's disclosure gate — it
+#' is NOT a new gate and never recovers a suppressed cell. Frames without an id
+#' column are returned untouched (defensive).
+#'
+#' @param result A \code{dsomop_result}.
+#' @param concept_id Integer vector of concept ids to keep, or \code{NULL}.
+#' @return The \code{dsomop_result} with its frames row-subset.
+#' @keywords internal
+.analysis_filter_concepts <- function(result, concept_id = NULL) {
+  if (is.null(concept_id) || length(concept_id) == 0) return(result)
+  ids <- as.integer(concept_id)
+  id_cols <- c("covariate_id", "concept_id")
+  subset_df <- function(df) {
+    if (!is.data.frame(df) || nrow(df) == 0) return(df)
+    col <- intersect(id_cols, names(df))
+    if (length(col) == 0) return(df)
+    df[as.integer(df[[col[1]]]) %in% ids, , drop = FALSE]
+  }
+  result$pooled <- subset_df(result$pooled)
+  result$per_site <- lapply(result$per_site, subset_df)
+  result
+}
+
+#' Covariate prevalence over a cohort, in one call
+#'
+#' Thin wrapper over \code{\link{ds.omop.analysis.run}} for the catalog's
+#' feature-prevalence analysis (\code{"dsomop:fe.prevalence"}): the per-covariate
+#' distinct-person count and proportion over a scoped cohort, for one clinical
+#' domain. It builds the analysis params and delegates, so cohort/table scoping,
+#' cross-server pooling, optional plotting, and the ONE per-patient disclosure
+#' gate are inherited unchanged.
+#'
+#' Because the cohort IS the analysis population, a \code{cohort} (or
+#' \code{tables}) scope is required; an un-scoped call fails closed with a clear
+#' error from the server rather than returning an empty frame.
+#'
+#' @param concept_id Integer vector or \code{NULL}; when supplied, the gated
+#'   result is narrowed to these covariate concept id(s) (a post-gate row
+#'   subset). \code{NULL} (the default) returns the domain's top covariates.
+#' @param cohort Cohort reference to scope to: a \code{dsomop_cohort_handle}, a
+#'   \code{cohort_definition_id}, or a server-side cohort table name. Required
+#'   unless \code{tables} is given.
+#' @param domain Character; clinical domain by name (\code{"condition"},
+#'   \code{"drug"}, \code{"procedure"}, \code{"measurement"}, \code{"observation"})
+#'   or its code (\code{"0"}-\code{"4"}). Default \code{"condition"}.
+#' @param top_n Integer; number of top covariates to return (default 50).
+#' @param tables Optional character vector of \code{omop.table} symbol names to
+#'   scope to (their distinct persons); may be combined with \code{cohort}.
+#' @param plot Logical; build the entry's client-side plot over the gated data
+#'   (default \code{FALSE}). See \code{\link{ds.omop.analysis.run}}.
+#' @param symbol Character; the session symbol (default \code{"omop"}).
+#' @param conns DSI connection object(s) or \code{NULL} to use the session
+#'   default.
+#' @return A \code{dsomop_result} (see \code{\link{ds.omop.analysis.run}}).
+#' @examples
+#' \dontrun{
+#' # Simplest path: top condition prevalence over a cohort, one call.
+#' ds.omop.prevalence(cohort = my_cohort)
+#'
+#' # A specific concept's prevalence (drug domain).
+#' ds.omop.prevalence(concept_id = 1503297, cohort = my_cohort, domain = "drug")
+#' }
+#' @seealso \code{\link{ds.omop.analysis.run}}, \code{\link{ds.omop.distribution}},
+#'   \code{\link{ds.omop.cohort.create}}
+#' @export
+ds.omop.prevalence <- function(concept_id = NULL, cohort = NULL,
+                               domain = "condition", top_n = 50,
+                               tables = NULL, plot = FALSE,
+                               symbol = "omop", conns = NULL) {
+  if (is.null(cohort) && is.null(tables)) {
+    stop("ds.omop.prevalence() computes prevalence WITHIN a cohort: pass ",
+         "cohort= (a cohort handle, cohort_definition_id, or cohort table) ",
+         "or tables= (omop.table symbols). For database-wide counts, use ",
+         "ds.omop.analysis.run() with an Achilles/QueryLibrary analysis.",
+         call. = FALSE)
+  }
+  params <- list(domain_code = .analysis_domain_code(domain, "0"),
+                 top_n = as.integer(top_n))
+  res <- ds.omop.analysis.run("dsomop:fe.prevalence", params = params,
+                              cohort = cohort, tables = tables, plot = plot,
+                              symbol = symbol, conns = conns)
+  .analysis_filter_concepts(res, concept_id)
+}
+
+#' Continuous-value distribution over a cohort, in one call
+#'
+#' Thin wrapper over \code{\link{ds.omop.analysis.run}} for the catalog's
+#' continuous-covariate analysis (\code{"dsomop:fe.continuous"}): per-covariate
+#' count and avg/sd/median/p10-p90 over a scoped cohort (measurement values, age,
+#' or time-in-cohort). It builds the params and delegates, inheriting scoping,
+#' pooling, optional plotting, and the ONE disclosure gate (which strips min/max
+#' and masks sub-threshold stats) unchanged.
+#'
+#' As with \code{\link{ds.omop.prevalence}}, the cohort IS the population, so a
+#' \code{cohort}/\code{tables} scope is required; an un-scoped call errors clearly.
+#'
+#' @param cohort Cohort reference to scope to (handle, \code{cohort_definition_id},
+#'   or server-side table name). Required unless \code{tables} is given.
+#' @param metric Character; \code{"measurement_value"} (default), \code{"age"},
+#'   or \code{"time_in_cohort"}.
+#' @param domain Character; value domain for \code{metric = "measurement_value"}
+#'   by name (\code{"measurement"} / \code{"observation"}) or code
+#'   (\code{"3"}/\code{"4"}). Default \code{"measurement"}.
+#' @param top_n Integer; number of top covariates to return (default 50).
+#' @param concept_id Integer vector or \code{NULL}; narrow the gated result to
+#'   these covariate concept id(s) (post-gate row subset). Default \code{NULL}.
+#' @param tables Optional character vector of \code{omop.table} symbol names to
+#'   scope to; may be combined with \code{cohort}.
+#' @param plot Logical; build the entry's client-side plot (default \code{FALSE}).
+#' @param symbol Character; the session symbol (default \code{"omop"}).
+#' @param conns DSI connection object(s) or \code{NULL} to use the session
+#'   default.
+#' @return A \code{dsomop_result} (see \code{\link{ds.omop.analysis.run}}).
+#' @examples
+#' \dontrun{
+#' # Measurement-value distributions over a cohort, one call.
+#' ds.omop.distribution(cohort = my_cohort)
+#'
+#' # Age distribution of the cohort.
+#' ds.omop.distribution(cohort = my_cohort, metric = "age")
+#' }
+#' @seealso \code{\link{ds.omop.analysis.run}}, \code{\link{ds.omop.prevalence}}
+#' @export
+ds.omop.distribution <- function(cohort = NULL, metric = "measurement_value",
+                                 domain = "measurement", top_n = 50,
+                                 concept_id = NULL, tables = NULL, plot = FALSE,
+                                 symbol = "omop", conns = NULL) {
+  if (is.null(cohort) && is.null(tables)) {
+    stop("ds.omop.distribution() computes a distribution WITHIN a cohort: pass ",
+         "cohort= (a cohort handle, cohort_definition_id, or cohort table) ",
+         "or tables= (omop.table symbols).", call. = FALSE)
+  }
+  params <- list(metric = metric,
+                 domain_code = .analysis_domain_code(domain, "3"),
+                 top_n = as.integer(top_n))
+  res <- ds.omop.analysis.run("dsomop:fe.continuous", params = params,
+                              cohort = cohort, tables = tables, plot = plot,
+                              symbol = symbol, conns = conns)
+  .analysis_filter_concepts(res, concept_id)
 }
