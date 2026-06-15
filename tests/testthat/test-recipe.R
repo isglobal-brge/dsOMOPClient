@@ -1370,7 +1370,7 @@ test_that("recipe_export_json returns JSON string", {
   expect_true(is.character(json))
   expect_true(nchar(json) > 0)
   parsed <- jsonlite::fromJSON(json, simplifyVector = FALSE)
-  expect_equal(parsed$version, "2.0")
+  expect_equal(parsed$version, "1")
   expect_true("yob" %in% names(parsed$variables))
 })
 

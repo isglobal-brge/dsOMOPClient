@@ -22,7 +22,7 @@ preserved.
 \examples{
 \dontrun{
 recipe <- recipe_import_json("my_recipe.json")
-recipe <- recipe_import_json('{"version":"2.0","populations":{...}}')
+recipe <- recipe_import_json('{"version":"1","populations":{...}}')
 }
 }
 \seealso{

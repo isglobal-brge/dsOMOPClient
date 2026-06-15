@@ -18,8 +18,8 @@ If \code{file} is \code{NULL}, returns a JSON string (invisibly).
 }
 \description{
 Serializes the recipe to a JSON string or file. All object classes are
-stripped for clean serialization. The JSON format includes a version tag
-(\code{"2.0"}) and can be re-imported with \code{\link{recipe_import_json}}.
+stripped for clean serialization. The JSON format includes a schema version
+tag (\code{"1"}) and can be re-imported with \code{\link{recipe_import_json}}.
 }
 \examples{
 \dontrun{

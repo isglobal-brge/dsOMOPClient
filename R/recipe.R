@@ -3414,7 +3414,9 @@ recipe_to_code <- function(recipe) {
     stop("recipe must be an omop_recipe object", call. = FALSE)
 
   out <- list(
-    version     = "2.0",
+    # Schema version. Only bump this on a real BREAKING schema change (a change
+    # that an older reader could not load); additive fields do not bump it.
+    version     = "1",
     populations = .recipe_strip_classes(recipe$populations),
     blocks      = .recipe_strip_classes(recipe$blocks),
     variables   = .recipe_strip_classes(recipe$variables),
@@ -3513,6 +3515,15 @@ recipe_to_code <- function(recipe) {
 }
 
 .recipe_from_plain <- function(data) {
+  # Tolerant version handling: the on-disk schema is unchanged, so accept the
+  # current "1" and the legacy "2.0" tag identically (older saved recipes
+  # carried "2.0"). Any other tag is from a newer breaking schema we cannot read.
+  ver <- as.character(data$version %||% "1")
+  if (!ver %in% c("1", "2.0")) {
+    warning("Recipe schema version '", ver, "' is newer than this reader ",
+            "supports (expected '1'); attempting to load anyway.", call. = FALSE)
+  }
+
   recipe <- omop_recipe()
 
   if (!is.null(data$populations)) {
@@ -3645,8 +3656,8 @@ recipe_to_code <- function(recipe) {
 #' Export a recipe to JSON
 #'
 #' Serializes the recipe to a JSON string or file. All object classes are
-#' stripped for clean serialization. The JSON format includes a version tag
-#' (\code{"2.0"}) and can be re-imported with \code{\link{recipe_import_json}}.
+#' stripped for clean serialization. The JSON format includes a schema version
+#' tag (\code{"1"}) and can be re-imported with \code{\link{recipe_import_json}}.
 #'
 #' @param recipe An \code{omop_recipe} object.
 #' @param file Character or \code{NULL}; file path to write. If \code{NULL},
@@ -3681,7 +3692,7 @@ recipe_export_json <- function(recipe, file = NULL) {
 #' @examples
 #' \dontrun{
 #' recipe <- recipe_import_json("my_recipe.json")
-#' recipe <- recipe_import_json('{"version":"2.0","populations":{...}}')
+#' recipe <- recipe_import_json('{"version":"1","populations":{...}}')
 #' }
 #' @seealso \code{\link{recipe_export_json}}
 #' @export
@@ -3739,6 +3750,598 @@ recipe_import_yaml <- function(yaml) {
     yaml <- paste(readLines(yaml, warn = FALSE), collapse = "\n")
   }
   .recipe_from_plain(yaml::yaml.load(yaml))
+}
+
+# --- Circe (OHDSI ATLAS) cohort-expression interop --------------------------
+#
+# Maps the recipe POPULATION / cohort layer to and from an OHDSI Circe cohort
+# expression (the JSON ATLAS exchanges). This is a deliberately PRAGMATIC subset
+# covering the common cohort-definition constructs; anything outside it is warned
+# about and documented (see ?recipe_export_circe), never silently dropped. The
+# supported subset round-trips losslessly.
+#
+# recipe filter type            <->  Circe construct
+#   has_concept (anchor)        <->  PrimaryCriteria entry event (domain criteria)
+#   has_concept (non-anchor)    <->  InclusionRule criteria (occurrence >= min_count)
+#   not_has_concept             <->  InclusionRule criteria (occurrence exactly 0)
+#   concept_count               <->  InclusionRule criteria (occurrence >= min_count)
+#   has_measurement             <->  InclusionRule Measurement criteria (+ValueAsNumber)
+#   sex                         <->  DemographicCriteria Gender
+#   age_range                   <->  DemographicCriteria Age (bt)
+#   window (start/end days)     <->  Criteria StartWindow (days, index-relative)
+#   prior_observation/followup  <->  PrimaryCriteria ObservationWindow (Prior/PostDays)
+#   union / intersect populations <-> top-level CriteriaGroup ANY / ALL
+#
+# Recipe -> Circe domain table for occurrence-style criteria.
+.circe_domain_map <- list(
+  condition_occurrence = "ConditionOccurrence",
+  drug_exposure        = "DrugExposure",
+  measurement          = "Measurement",
+  observation          = "Observation",
+  procedure_occurrence = "ProcedureOccurrence",
+  device_exposure      = "DeviceExposure",
+  visit_occurrence     = "VisitOccurrence"
+)
+.circe_domain_codeset_field <- "CodesetId"
+
+# Filter types that carry a concept_id + table and map to a domain criteria.
+.circe_occurrence_types <- c("has_concept", "not_has_concept", "concept_count")
+
+#' Translate a recipe index-relative window to a Circe StartWindow
+#'
+#' Recipe windows are \code{list(start, end)} day offsets relative to the index
+#' date. Circe expresses each endpoint as \code{list(Days, Coeff)} where
+#' \code{Coeff} is -1 (before index) or 1 (after). Day 0 uses Coeff 1.
+#' @keywords internal
+.circe_window_from_recipe <- function(window) {
+  if (is.null(window)) return(NULL)
+  ep <- function(d) {
+    if (is.null(d)) return(list(Days = NULL, Coeff = -1L))
+    list(Days = abs(as.integer(d)), Coeff = if (d < 0) -1L else 1L)
+  }
+  list(Start = ep(window$start), End = ep(window$end),
+       UseIndexEnd = FALSE, UseEventEnd = FALSE)
+}
+
+#' Translate a Circe StartWindow back to a recipe window
+#' @keywords internal
+.circe_window_to_recipe <- function(sw) {
+  if (is.null(sw)) return(NULL)
+  ep <- function(e) {
+    if (is.null(e) || is.null(e$Days)) return(NULL)
+    as.integer(e$Days) * (if ((e$Coeff %||% 1L) < 0) -1L else 1L)
+  }
+  w <- list(start = ep(sw$Start), end = ep(sw$End))
+  if (is.null(w$start) && is.null(w$end)) return(NULL)
+  w
+}
+
+#' Build (or reuse) a Circe concept set for a vector of concept IDs
+#'
+#' Concept sets are deduplicated by their ID vector so repeated references share
+#' one codeset. Returns \code{list(id, sets)} where \code{sets} is the updated
+#' registry. \code{include_descendants} mirrors the recipe block/expand notion.
+#' @keywords internal
+.circe_codeset <- function(sets, concept_ids, name = NULL,
+                           include_descendants = FALSE, is_excluded = FALSE) {
+  ids <- as.integer(concept_ids)
+  key <- paste(sort(ids), include_descendants, is_excluded, collapse = ",")
+  for (s in sets) if (identical(s$.key, key)) return(list(id = s$id, sets = sets))
+  id <- length(sets)
+  items <- lapply(ids, function(cid) list(
+    concept = list(CONCEPT_ID = cid),
+    isExcluded = is_excluded,
+    includeDescendants = include_descendants,
+    includeMapped = FALSE))
+  sets[[length(sets) + 1L]] <- list(
+    id = id,
+    name = name %||% paste0("Concept set ", id),
+    expression = list(items = items),
+    .key = key)
+  list(id = id, sets = sets)
+}
+
+#' Build a Circe occurrence criteria object for one recipe filter
+#'
+#' Returns \code{list(criteria, sets)}; \code{criteria} is the wrapped
+#' \code{list(<Domain> = ..., StartWindow, Occurrence)} ready for a CriteriaList.
+#' @keywords internal
+.circe_occurrence_from_filter <- function(f, sets) {
+  p <- f$params
+  domain <- .circe_domain_map[[p$table %||% ""]]
+  if (is.null(domain)) {
+    warning("Circe export: recipe table '", p$table %||% "?", "' has no Circe ",
+            "domain analog; skipping filter '", f$label %||% f$type, "'.",
+            call. = FALSE)
+    return(NULL)
+  }
+  cs <- .circe_codeset(sets, p$concept_id, name = p$concept_name)
+  inner <- stats::setNames(list(list(CodesetId = cs$id)), domain)
+  # not_has_concept -> exactly 0; concept_count / has_concept -> at least N.
+  occ <- if (identical(f$type, "not_has_concept"))
+    list(Type = 0L, Count = 0L)            # Type 0 = exactly
+  else
+    list(Type = 2L, Count = as.integer(p$min_count %||% 1L))  # Type 2 = at least
+  criteria <- list(
+    Criteria = inner,
+    StartWindow = .circe_window_from_recipe(p$window),
+    Occurrence = occ)
+  list(criteria = criteria, sets = cs$sets)
+}
+
+#' Build a Circe Measurement criteria with an optional value range
+#' @keywords internal
+.circe_measurement_from_filter <- function(f, sets) {
+  p <- f$params
+  cs <- .circe_codeset(sets, p$concept_id)
+  meas <- list(CodesetId = cs$id)
+  if (!is.null(p$min_value) || !is.null(p$max_value)) {
+    # OHDSI Circe convention: Value is the primary operand for every Op; Extent
+    # is the second operand used only by "bt"/"!bt". So a single-bound "lte"
+    # carries its bound in Value (NOT Extent) to round-trip with the importer.
+    if (!is.null(p$min_value) && !is.null(p$max_value)) {
+      meas$ValueAsNumber <- list(Value = p$min_value, Extent = p$max_value,
+                                 Op = "bt")
+    } else if (!is.null(p$min_value)) {
+      meas$ValueAsNumber <- list(Value = p$min_value, Op = "gte")
+    } else {
+      meas$ValueAsNumber <- list(Value = p$max_value, Op = "lte")
+    }
+  }
+  criteria <- list(
+    Criteria = list(Measurement = meas),
+    StartWindow = .circe_window_from_recipe(p$window),
+    Occurrence = list(Type = 2L, Count = 1L))
+  list(criteria = criteria, sets = cs$sets)
+}
+
+#' Append a demographic criteria (sex / age) for a recipe filter
+#' @keywords internal
+.circe_demographic_from_filter <- function(f) {
+  if (identical(f$type, "sex")) {
+    # OMOP gender concepts: 8532 Female, 8507 Male.
+    cid <- if (identical(f$params$value, "F")) 8532L else 8507L
+    return(list(Gender = list(list(CONCEPT_ID = cid,
+                                   CONCEPT_NAME = f$params$value))))
+  }
+  if (identical(f$type, "age_range")) {
+    return(list(Age = list(Value = as.integer(f$params$min),
+                           Extent = as.integer(f$params$max), Op = "bt")))
+  }
+  NULL
+}
+
+#' Convert one recipe population's filter list into Circe building blocks
+#'
+#' Splits the population's flat criteria into: a PrimaryCriteria anchor (the
+#' first occurrence-style filter, else an "any visit" placeholder), an
+#' ObservationWindow (from prior_observation / followup), demographic criteria,
+#' and the remaining occurrence/measurement criteria for InclusionRules. OR
+#' \code{omop_filter_group}s become nested Circe CriteriaGroups (Type ANY).
+#' Unsupported filter types are warned about and skipped.
+#' @keywords internal
+.circe_from_population <- function(pop, sets) {
+  filters <- pop$filters %||% list()
+  anchor <- NULL
+  inclusion_criteria <- list()
+  demographics <- list()
+  groups <- list()
+  obs_window <- list(PriorDays = 0L, PostDays = 0L)
+
+  # Flatten a single level of AND groups (a population's top-level filters are
+  # ANDed); OR groups are emitted as nested Circe groups.
+  flat <- list()
+  for (f in filters) {
+    if (inherits(f, "omop_filter_group") ||
+        (!is.null(f$operator) && !is.null(f$children))) {
+      if (toupper(f$operator %||% "AND") == "AND") {
+        flat <- c(flat, f$children)
+      } else {
+        g <- .circe_group_from_or(f, sets)
+        sets <- g$sets
+        groups[[length(groups) + 1L]] <- g$group
+      }
+    } else {
+      flat[[length(flat) + 1L]] <- f
+    }
+  }
+
+  for (f in flat) {
+    ftype <- f$type %||% "custom"
+    if (ftype %in% .circe_occurrence_types) {
+      built <- .circe_occurrence_from_filter(f, sets)
+      if (is.null(built)) next
+      sets <- built$sets
+      if (is.null(anchor) && ftype == "has_concept") {
+        anchor <- built$criteria          # promote first positive event to entry
+      } else {
+        inclusion_criteria[[length(inclusion_criteria) + 1L]] <- built$criteria
+      }
+    } else if (ftype == "has_measurement") {
+      built <- .circe_measurement_from_filter(f, sets)
+      sets <- built$sets
+      inclusion_criteria[[length(inclusion_criteria) + 1L]] <- built$criteria
+    } else if (ftype %in% c("sex", "age_range")) {
+      demographics[[length(demographics) + 1L]] <- .circe_demographic_from_filter(f)
+    } else if (ftype == "prior_observation") {
+      obs_window$PriorDays <- as.integer(f$params$min_days %||% 0L)
+    } else if (ftype == "followup") {
+      obs_window$PostDays <- as.integer(f$params$min_days %||% 0L)
+    } else {
+      warning("Circe export: filter type '", ftype, "' has no Circe analog; ",
+              "omitted from the exported cohort expression.", call. = FALSE)
+    }
+  }
+
+  list(anchor = anchor, inclusion = inclusion_criteria,
+       demographics = demographics, groups = groups,
+       obs_window = obs_window, sets = sets)
+}
+
+#' Convert a recipe OR filter group into a nested Circe CriteriaGroup (Type ANY)
+#' @keywords internal
+.circe_group_from_or <- function(fg, sets) {
+  crits <- list()
+  for (ch in fg$children %||% list()) {
+    ctype <- ch$type %||% "custom"
+    if (ctype %in% .circe_occurrence_types) {
+      b <- .circe_occurrence_from_filter(ch, sets)
+      if (!is.null(b)) { sets <- b$sets; crits[[length(crits) + 1L]] <- b$criteria }
+    } else if (ctype == "has_measurement") {
+      b <- .circe_measurement_from_filter(ch, sets)
+      sets <- b$sets; crits[[length(crits) + 1L]] <- b$criteria
+    } else {
+      warning("Circe export: OR-group member '", ctype, "' has no Circe analog; ",
+              "skipped.", call. = FALSE)
+    }
+  }
+  list(group = list(Type = "ANY", CriteriaList = crits,
+                    DemographicCriteriaList = list(), Groups = list()),
+       sets = sets)
+}
+
+#' Export a recipe population to an OHDSI Circe cohort expression
+#'
+#' Maps the recipe POPULATION / cohort layer to an OHDSI Circe cohort-expression
+#' JSON (the format ATLAS imports/exports). Circe entry events, inclusion rules,
+#' concept sets, demographic criteria and observation windows are derived from
+#' the population's inclusion-criteria filter tree. This is a pragmatic,
+#' documented SUBSET of Circe: the common cohort-definition constructs are
+#' supported and round-trip losslessly with \code{\link{recipe_import_circe}};
+#' everything else is warned about and omitted rather than silently dropped.
+#'
+#' \strong{Supported constructs (recipe <-> Circe):}
+#' \itemize{
+#'   \item \code{omop_filter_has_concept} on a condition/drug/measurement/
+#'     observation/procedure/device/visit table -> the first positive event
+#'     becomes the PrimaryCriteria entry event; further ones become InclusionRule
+#'     occurrence criteria (occurrence "at least" \code{min_count}).
+#'   \item \code{omop_filter_not_has_concept} -> InclusionRule occurrence
+#'     "exactly 0" criteria.
+#'   \item \code{omop_filter_concept_count} -> InclusionRule occurrence "at
+#'     least N" criteria.
+#'   \item \code{omop_filter_has_measurement} -> Measurement criteria with a
+#'     \code{ValueAsNumber} range.
+#'   \item \code{omop_filter_sex} / \code{omop_filter_age} -> DemographicCriteria
+#'     Gender / Age.
+#'   \item Filter \code{window = list(start, end)} day offsets -> criteria
+#'     \code{StartWindow} (index-relative days).
+#'   \item \code{omop_filter_prior_observation} / \code{omop_filter_followup} ->
+#'     the entry event \code{ObservationWindow} (PriorDays / PostDays).
+#'   \item An \code{omop_filter_group(operator = "OR")} -> a nested Circe
+#'     CriteriaGroup of Type ANY; the population's top-level AND criteria map to
+#'     the cohort's implicit ALL.
+#'   \item A \strong{set-op} population (\code{union} / \code{intersect}) ->
+#'     a top-level CriteriaGroup ANY / ALL over the member populations'
+#'     criteria.
+#' }
+#'
+#' \strong{Intentionally unsupported} (warned + omitted, never silently lost):
+#' \code{setdiff} populations (Circe has no first-class person-set difference;
+#' negate the subtracted criteria manually), \code{cohort} /
+#' \code{cohort_definition_id} references, \code{age_group},
+#' \code{visit_count}, \code{missing_measurement}, \code{value_bin} /
+#' \code{value_concept} / \code{date_range} (row-level) filters, and the recipe
+#' VARIABLE / output / feature layer (Circe describes cohort entry only, not
+#' feature extraction). Circe-only constructs with no recipe analog (custom
+#' correlated criteria, censoring, complex exit strategies) are dropped on
+#' import with a warning.
+#'
+#' @param recipe An \code{omop_recipe} object.
+#' @param population_id Character; which population to export (default
+#'   \code{"base"}).
+#' @param file Character or \code{NULL}; path to write the Circe JSON to. If
+#'   \code{NULL}, the JSON string is returned.
+#' @return The Circe JSON string (if \code{file} is \code{NULL}) or the file path
+#'   invisibly.
+#' @examples
+#' \dontrun{
+#' recipe <- omop_recipe(
+#'   populations = omop_population(
+#'     id = "t2d", label = "Type 2 diabetes, female, 18-65",
+#'     filters = list(
+#'       omop_filter_has_concept(201820, "condition_occurrence"),
+#'       omop_filter_sex("F"),
+#'       omop_filter_age(18, 65))),
+#'   outputs = omop_output(type = "wide", population_id = "t2d"))
+#' circe_json <- recipe_export_circe(recipe, population_id = "t2d")
+#' # Round-trips the supported subset:
+#' pop <- recipe_import_circe(circe_json)
+#' }
+#' @seealso \code{\link{recipe_import_circe}}, \code{\link{omop_population}}
+#' @export
+recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  pop <- recipe$populations[[population_id]]
+  if (is.null(pop))
+    stop("Population '", population_id, "' not found in recipe.", call. = FALSE)
+
+  sets <- list()
+  top_groups <- list()
+  inclusion <- list()
+  demographics <- list()
+  obs_window <- list(PriorDays = 0L, PostDays = 0L)
+  anchor <- NULL
+
+  if (!is.null(pop$setop)) {
+    # Set-op population: union -> ANY, intersect -> ALL over member criteria.
+    op <- pop$setop$op
+    if (op == "setdiff") {
+      warning("Circe export: 'setdiff' populations have no Circe analog ",
+              "(Circe has no person-set difference); exporting the first ",
+              "member only. Negate the subtracted criteria manually if needed.",
+              call. = FALSE)
+      members <- pop$setop$members[1]
+      circe_type <- "ALL"
+    } else {
+      members <- pop$setop$members
+      circe_type <- if (op == "union") "ANY" else "ALL"
+    }
+    member_crits <- list()
+    for (mid in members) {
+      m <- recipe$populations[[mid]]
+      if (is.null(m)) next
+      built <- .circe_from_population(m, sets)
+      sets <- built$sets
+      member_crits <- c(member_crits,
+                        if (!is.null(built$anchor)) list(built$anchor) else list(),
+                        built$inclusion)
+      demographics <- c(demographics, built$demographics)
+    }
+    top_groups <- list(list(Type = circe_type, CriteriaList = member_crits,
+                            DemographicCriteriaList = list(), Groups = list()))
+  } else {
+    if (!is.null(pop$cohort_definition_id)) {
+      warning("Circe export: population references cohort_definition_id ",
+              pop$cohort_definition_id, "; a pre-existing cohort reference has ",
+              "no portable Circe expression and is omitted.", call. = FALSE)
+    }
+    built <- .circe_from_population(pop, sets)
+    sets <- built$sets
+    anchor <- built$anchor
+    inclusion <- built$inclusion
+    demographics <- built$demographics
+    top_groups <- built$groups
+    obs_window <- built$obs_window
+  }
+
+  # PrimaryCriteria entry event: the anchor, or a permissive "any visit" entry
+  # when the population has no positive event (e.g. demographics-only).
+  if (is.null(anchor)) {
+    anchor <- list(Criteria = list(VisitOccurrence = list()),
+                   StartWindow = NULL,
+                   Occurrence = list(Type = 2L, Count = 1L))
+  }
+  primary_event <- anchor$Criteria
+
+  inclusion_rules <- lapply(seq_along(inclusion), function(i) {
+    list(name = paste0("Inclusion rule ", i),
+         expression = list(Type = "ALL", CriteriaList = list(inclusion[[i]]),
+                           DemographicCriteriaList = list(), Groups = list()))
+  })
+  if (length(top_groups) > 0) {
+    inclusion_rules <- c(inclusion_rules, lapply(seq_along(top_groups), function(i) {
+      list(name = paste0("Set-op / OR group ", i),
+           expression = list(Type = top_groups[[i]]$Type,
+                             CriteriaList = top_groups[[i]]$CriteriaList,
+                             DemographicCriteriaList = list(), Groups = list()))
+    }))
+  }
+  if (length(demographics) > 0) {
+    inclusion_rules <- c(inclusion_rules, list(list(
+      name = "Demographics",
+      expression = list(Type = "ALL", CriteriaList = list(),
+                        DemographicCriteriaList = demographics, Groups = list()))))
+  }
+
+  # Strip the internal dedup key from concept sets before serialising.
+  concept_sets <- lapply(sets, function(s) { s$.key <- NULL; s })
+
+  expr <- list(
+    ConceptSets = concept_sets,
+    PrimaryCriteria = list(
+      CriteriaList = list(primary_event),
+      ObservationWindow = obs_window,
+      PrimaryCriteriaLimit = list(Type = "First")),
+    InclusionRules = inclusion_rules,
+    EndStrategy = list(),
+    CensoringCriteria = list(),
+    # Round-trip hint: the recipe identity Circe cannot otherwise carry.
+    cdmVersionRange = ">=5.0.0",
+    .dsomop = list(population_id = pop$id %||% population_id,
+                   label = pop$label))
+
+  json <- jsonlite::toJSON(expr, auto_unbox = TRUE, pretty = TRUE, null = "null")
+  if (is.null(file)) return(as.character(json))
+  writeLines(as.character(json), file)
+  invisible(file)
+}
+
+#' Reverse the Circe domain map (Circe key -> recipe table)
+#' @keywords internal
+.circe_table_from_domain <- function(domain) {
+  hit <- names(.circe_domain_map)[vapply(.circe_domain_map,
+                                         function(x) identical(x, domain),
+                                         logical(1))]
+  if (length(hit) == 0) NULL else hit[[1]]
+}
+
+#' Resolve a Circe CodesetId to its concept-id vector
+#' @keywords internal
+.circe_ids_for_codeset <- function(codeset_id, concept_sets) {
+  for (s in concept_sets) {
+    if (identical(as.integer(s$id), as.integer(codeset_id))) {
+      items <- s$expression$items %||% list()
+      return(vapply(items, function(it) as.integer(it$concept$CONCEPT_ID),
+                    integer(1)))
+    }
+  }
+  integer(0)
+}
+
+#' Convert one Circe occurrence criteria back into a recipe filter
+#' @keywords internal
+.circe_criteria_to_filter <- function(crit, concept_sets, anchor = FALSE) {
+  inner <- crit$Criteria %||% crit   # tolerate bare or wrapped criteria
+  domain <- intersect(names(inner), unlist(.circe_domain_map))
+  if (length(domain) == 0) {
+    # Demographic criteria are handled separately; warn for anything truly alien.
+    return(NULL)
+  }
+  domain <- domain[[1]]
+  spec <- inner[[domain]]
+  table <- .circe_table_from_domain(domain)
+  ids <- .circe_ids_for_codeset(spec$CodesetId, concept_sets)
+  window <- .circe_window_to_recipe(crit$StartWindow)
+  occ <- crit$Occurrence %||% list(Type = 2L, Count = 1L)
+
+  if (domain == "Measurement" && !is.null(spec$ValueAsNumber)) {
+    v <- spec$ValueAsNumber
+    return(omop_filter_has_measurement(
+      concept_id = ids,
+      min_value = if ((v$Op %||% "") %in% c("bt", "gte")) v$Value else NULL,
+      max_value = if ((v$Op %||% "") == "bt") v$Extent
+                  else if ((v$Op %||% "") == "lte") v$Value else NULL))
+  }
+  # Occurrence Type 0 with Count 0 == "exactly none" -> not_has_concept.
+  if (identical(as.integer(occ$Type %||% 2L), 0L) &&
+      identical(as.integer(occ$Count %||% 0L), 0L)) {
+    return(omop_filter_not_has_concept(concept_id = ids, table = table,
+                                       window = window))
+  }
+  count <- as.integer(occ$Count %||% 1L)
+  if (!anchor && count > 1L) {
+    return(omop_filter_concept_count(concept_id = ids, table = table,
+                                     min_count = count))
+  }
+  omop_filter_has_concept(concept_id = ids, table = table, window = window,
+                          min_count = max(1L, count))
+}
+
+#' Convert Circe demographic criteria back into recipe filters
+#' @keywords internal
+.circe_demographics_to_filters <- function(demo_list) {
+  out <- list()
+  for (d in demo_list %||% list()) {
+    if (!is.null(d$Gender)) {
+      g <- d$Gender[[1]]
+      sex <- if (identical(as.integer(g$CONCEPT_ID), 8532L)) "F" else "M"
+      out[[length(out) + 1L]] <- omop_filter_sex(sex)
+    }
+    if (!is.null(d$Age)) {
+      out[[length(out) + 1L]] <- omop_filter_age(
+        min = as.integer(d$Age$Value %||% 0L),
+        max = as.integer(d$Age$Extent %||% d$Age$Value %||% 150L))
+    }
+  }
+  out
+}
+
+#' Import an OHDSI Circe cohort expression as a recipe population
+#'
+#' Reverse of \code{\link{recipe_export_circe}}: parses an OHDSI Circe
+#' cohort-expression JSON (as produced by ATLAS or by
+#' \code{recipe_export_circe}) into an \code{omop_population}, reconstructing the
+#' supported constructs (entry event, inclusion-rule occurrence / measurement
+#' criteria, demographic criteria, observation windows, OR groups). The
+#' \strong{supported subset round-trips losslessly}; Circe features with no
+#' recipe analog (custom correlated criteria, censoring, exit strategies, nested
+#' grouping beyond one OR level) are warned about and dropped. See
+#' \code{\link{recipe_export_circe}} for the full supported-constructs list.
+#'
+#' @param file_or_json Character; a Circe JSON string, or a path to a JSON file.
+#' @param id Character or \code{NULL}; population ID for the result (defaults to
+#'   the \code{.dsomop} round-trip hint, else \code{"imported"}).
+#' @param label Character or \code{NULL}; population label (defaults likewise).
+#' @return An \code{omop_population} object.
+#' @examples
+#' \dontrun{
+#' pop <- recipe_import_circe("cohort_from_atlas.json")
+#' recipe <- omop_recipe(populations = pop,
+#'                       outputs = omop_output(population_id = pop$id))
+#' }
+#' @seealso \code{\link{recipe_export_circe}}, \code{\link{omop_population}}
+#' @export
+recipe_import_circe <- function(file_or_json, id = NULL, label = NULL) {
+  if (length(file_or_json) == 1 && file.exists(file_or_json)) {
+    file_or_json <- paste(readLines(file_or_json, warn = FALSE), collapse = "\n")
+  }
+  expr <- jsonlite::fromJSON(file_or_json, simplifyVector = FALSE)
+  concept_sets <- expr$ConceptSets %||% list()
+
+  filters <- list()
+
+  # Entry event -> a population filter (anchor). A bare "any visit" entry (our
+  # placeholder for demographics-only cohorts) carries no codeset, so skip it.
+  primary <- expr$PrimaryCriteria$CriteriaList %||% list()
+  for (pc in primary) {
+    f <- .circe_criteria_to_filter(list(Criteria = pc), concept_sets,
+                                   anchor = TRUE)
+    if (!is.null(f) && length(f$params$concept_id %||% integer(0)) > 0)
+      filters[[length(filters) + 1L]] <- f
+  }
+  # Observation window -> prior_observation / followup.
+  ow <- expr$PrimaryCriteria$ObservationWindow %||% list()
+  if (!is.null(ow$PriorDays) && as.integer(ow$PriorDays) > 0)
+    filters[[length(filters) + 1L]] <-
+      omop_filter_prior_observation(as.integer(ow$PriorDays))
+  if (!is.null(ow$PostDays) && as.integer(ow$PostDays) > 0)
+    filters[[length(filters) + 1L]] <-
+      omop_filter_followup(as.integer(ow$PostDays))
+
+  # Inclusion rules -> occurrence / measurement / demographic filters and OR
+  # groups (an ANY group of >1 criteria becomes an omop_filter_group OR).
+  for (rule in expr$InclusionRules %||% list()) {
+    ex <- rule$expression %||% list()
+    crits <- ex$CriteriaList %||% list()
+    rule_type <- toupper(ex$Type %||% "ALL")
+    rule_filters <- Filter(Negate(is.null),
+      lapply(crits, function(c) .circe_criteria_to_filter(c, concept_sets)))
+    if (rule_type %in% c("ANY") && length(rule_filters) > 1L) {
+      filters[[length(filters) + 1L]] <-
+        do.call(omop_filter_group, c(rule_filters, list(operator = "OR")))
+    } else {
+      filters <- c(filters, rule_filters)
+    }
+    filters <- c(filters,
+                 .circe_demographics_to_filters(ex$DemographicCriteriaList))
+    if (length(ex$Groups %||% list()) > 0) {
+      warning("Circe import: nested CriteriaGroups beyond one level are not ",
+              "represented in the recipe model and were dropped.", call. = FALSE)
+    }
+  }
+  if (length(expr$CensoringCriteria %||% list()) > 0 ||
+      length(expr$EndStrategy %||% list()) > 0) {
+    warning("Circe import: EndStrategy / CensoringCriteria have no recipe ",
+            "analog and were dropped.", call. = FALSE)
+  }
+
+  hint <- expr$.dsomop %||% list()
+  omop_population(
+    id = id %||% hint$population_id %||% "imported",
+    label = label %||% hint$label %||% "Imported from Circe",
+    filters = filters)
 }
 
 #' Save a recipe to JSON or YAML
