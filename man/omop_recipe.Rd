@@ -13,7 +13,8 @@ omop_recipe(
   cohort = NULL,
   tables = NULL,
   combine = "union",
-  options = NULL
+  options = NULL,
+  output = NULL
 )
 }
 \arguments{
@@ -52,6 +53,9 @@ population (the server resolves the symbol names to frames).}
 \item{options}{Named list of plan-wide options (\code{translate_concepts},
 \code{block_sensitive}, \code{factor_concepts}); only supplied keys
 override the defaults.}
+
+\item{output}{Convenience alias for a single \code{\link{omop_output}}; use it
+instead of \code{outputs} when the recipe has just one output.}
 }
 \value{
 An \code{omop_recipe} object.

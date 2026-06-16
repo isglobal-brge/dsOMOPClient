@@ -1,6 +1,21 @@
 # Module: Result Objects
 # dsomop_result construction, printing, and utility functions.
 
+# Disclosure: never surface suppressed rows. A row flagged `suppressed` reveals
+# that a rare concept/value EXISTS (with too few persons) -- which is itself
+# disclosive. Drop such rows entirely (indistinguishable from absent) and remove
+# the now-redundant column. Only data.frames carrying a `suppressed` column are
+# touched; list/scalar results (e.g. table-stat suppression flags) are left
+# as-is.
+.hide_suppressed <- function(x) {
+  if (is.data.frame(x) && "suppressed" %in% names(x)) {
+    x <- x[!(x$suppressed %in% TRUE), , drop = FALSE]
+    x$suppressed <- NULL
+    rownames(x) <- NULL
+  }
+  x
+}
+
 #' Create a dsomop_result object
 #'
 #' Constructs a standardised \code{dsomop_result} S3 object that wraps every
@@ -23,6 +38,13 @@
 #'   \code{c("dsomop_result", "list")}).
 #' @keywords internal
 dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
+  # Drop suppressed rows/column from every per-site + pooled table, but PRESERVE
+  # list attributes -- lapply() drops them, and per_site carries a `ds_errors`
+  # attribute with per-server error messages that must survive.
+  ps_attrs <- attributes(per_site)
+  per_site <- lapply(per_site, .hide_suppressed)
+  for (a in setdiff(names(ps_attrs), "names")) attr(per_site, a) <- ps_attrs[[a]]
+  pooled   <- .hide_suppressed(pooled)
   obj <- list(
     per_site = per_site,
     pooled   = pooled,

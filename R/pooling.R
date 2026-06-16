@@ -401,15 +401,15 @@
     }
   }
 
-  # Mark concepts as suppressed if missing from any server or having NA counts
-  suppressed <- concept_server_count < n_servers
-  merged$suppressed <- suppressed[as.character(merged$concept_id)]
-  # Set suppressed concept counts to NA
-  merged[[metric_col]][merged$suppressed] <- NA_real_
-
-  # Pass 2: Re-rank and take top K (non-suppressed first, then suppressed)
-  merged <- merged[order(merged$suppressed, -merged[[metric_col]],
-                          na.last = TRUE), ]
+  # Strict pooling: keep ONLY concepts present (above the per-site gate) on every
+  # server, summed across them. A concept missing/suppressed on any server is
+  # DROPPED entirely -- never surfaced, and no `suppressed` column is built,
+  # because a concept's mere appearance would itself reveal it exists with too
+  # few people. (Disclosure is enforced server-side; the client never constructs
+  # or exposes a suppressed marker.)
+  cnt <- concept_server_count[as.character(merged$concept_id)]
+  merged <- merged[!is.na(cnt) & cnt >= n_servers, , drop = FALSE]
+  merged <- merged[order(-merged[[metric_col]], na.last = TRUE), ]
   n <- min(nrow(merged), k)
   merged <- merged[seq_len(n), , drop = FALSE]
   rownames(merged) <- NULL

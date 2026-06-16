@@ -202,17 +202,16 @@ test_that(".pool_top_k two-pass merge", {
 
   result <- .pool_top_k(list(a = df1, b = df2), "n_persons", 3, "strict")
   expect_true(is.data.frame(result$result))
-  expect_equal(nrow(result$result), 3)
-
-  # Concepts in BOTH servers get summed; concepts in only one are suppressed
-  # (could be below disclosure threshold in the missing server)
+  # Strict: only concepts present on BOTH servers survive (summed). Concepts on
+  # a single server are DROPPED entirely -- never surfaced, and no `suppressed`
+  # column is built (a concept's mere appearance must not reveal it is rare).
+  expect_equal(nrow(result$result), 2)
+  expect_false("suppressed" %in% names(result$result))
   expect_equal(result$result$concept_id[1], 2)  # B = 50+80 = 130
   expect_equal(result$result$n_persons[1], 130)
   expect_equal(result$result$concept_id[2], 3)  # C = 30+20 = 50
   expect_equal(result$result$n_persons[2], 50)
-  # A (only in server a) and D (only in server b) are suppressed
-  expect_true(is.na(result$result$n_persons[3]))
-  expect_true(result$result$suppressed[3])
+  expect_false(any(c(1, 4) %in% result$result$concept_id))  # A, D dropped
 })
 
 test_that(".pool_top_k strict fails on invalid data", {
@@ -228,7 +227,10 @@ test_that(".pool_top_k carries concept_name", {
                      n = c(30, 5))
   result <- .pool_top_k(list(a = df1, b = df2), "n", 10, "strict")
   expect_true("concept_name" %in% names(result$result))
-  expect_equal(result$result$concept_name[result$result$concept_id == 1], "Alpha")
+  # Only concept 2 (Beta) is on both servers -> survives with its name; the
+  # single-server concepts (Alpha, Gamma) are dropped.
+  expect_equal(result$result$concept_name[result$result$concept_id == 2], "Beta")
+  expect_false(any(c(1, 3) %in% result$result$concept_id))
 })
 
 # --- .pool_result dispatcher --------------------------------------------------

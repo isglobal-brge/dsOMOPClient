@@ -7,7 +7,8 @@
 omop_variable_age(
   name = "age",
   reference = c("today", "index"),
-  reference_date = NULL
+  reference_date = NULL,
+  year = NULL
 )
 }
 \arguments{
@@ -16,7 +17,11 @@ omop_variable_age(
 \item{reference}{Character; \code{"today"} or \code{"index"}.}
 
 \item{reference_date}{Date or \code{NULL}; explicit reference date
-(overrides \code{reference}).}
+(overrides \code{reference}). Only the year is used for age.}
+
+\item{year}{Integer or \code{NULL}; convenience shorthand for
+\code{reference_date} when you only care about a data-collection year
+(e.g. \code{year = 2024}). Overrides \code{reference}.}
 }
 \value{
 An \code{omop_variable} object with \code{format = "age"} and

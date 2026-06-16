@@ -31,7 +31,7 @@ omop_filter(
 
 omop_filter_sex(value)
 
-omop_filter_age(min = 0, max = 150)
+omop_filter_age(min = 0, max = 150, year = NULL, reference_date = NULL)
 
 omop_filter_age_group(groups)
 
@@ -104,6 +104,13 @@ omop_filter_missing_measurement(concept_id, window = NULL)
 \item{min}{Numeric; minimum age (inclusive)}
 
 \item{max}{Numeric; maximum age (inclusive)}
+
+\item{year}{Integer or \code{NULL}; anchor age to this calendar year instead
+of the current year (e.g. \code{year = 2024} for a 2024 collection era).
+Keeps the filter consistent with \code{omop_variable_age(year = ...)}.}
+
+\item{reference_date}{Date/string or \code{NULL}; explicit reference date
+(only its year is used). \code{year} is a shorthand for this.}
 
 \item{groups}{Character vector; age group labels (e.g. c("18-24", "25-34"))}
 

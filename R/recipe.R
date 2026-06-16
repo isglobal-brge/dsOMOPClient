@@ -241,7 +241,10 @@ print.omop_variable <- function(x, ...) {
 #' @param name Character; output column name (default \code{"age"}).
 #' @param reference Character; \code{"today"} or \code{"index"}.
 #' @param reference_date Date or \code{NULL}; explicit reference date
-#'   (overrides \code{reference}).
+#'   (overrides \code{reference}). Only the year is used for age.
+#' @param year Integer or \code{NULL}; convenience shorthand for
+#'   \code{reference_date} when you only care about a data-collection year
+#'   (e.g. \code{year = 2024}). Overrides \code{reference}.
 #' @return An \code{omop_variable} object with \code{format = "age"} and
 #'   a \code{$derived} metadata field.
 #' @examples
@@ -253,8 +256,13 @@ print.omop_variable <- function(x, ...) {
 #' @export
 omop_variable_age <- function(name = "age",
                                reference = c("today", "index"),
-                               reference_date = NULL) {
+                               reference_date = NULL,
+                               year = NULL) {
   reference <- match.arg(reference)
+  # `year = 2024` is shorthand for reference_date = "2024-07-01": anchor age to
+  # a data-collection year, not "today". Only the year is used downstream, so
+  # the mid-year day is arbitrary.
+  if (!is.null(year)) reference_date <- sprintf("%d-07-01", as.integer(year))
   v <- omop_variable(
     name = name, table = "person", format = "age"
   )
@@ -859,11 +867,20 @@ omop_filter_sex <- function(value) {
 #' @rdname omop_filter
 #' @param min Numeric; minimum age (inclusive)
 #' @param max Numeric; maximum age (inclusive)
+#' @param year Integer or \code{NULL}; anchor age to this calendar year instead
+#'   of the current year (e.g. \code{year = 2024} for a 2024 collection era).
+#'   Keeps the filter consistent with \code{omop_variable_age(year = ...)}.
+#' @param reference_date Date/string or \code{NULL}; explicit reference date
+#'   (only its year is used). \code{year} is a shorthand for this.
 #' @export
-omop_filter_age <- function(min = 0, max = 150) {
+omop_filter_age <- function(min = 0, max = 150, year = NULL,
+                            reference_date = NULL) {
+  if (!is.null(year)) reference_date <- sprintf("%d-07-01", as.integer(year))
+  params <- list(min = min, max = max)
+  if (!is.null(reference_date)) params$reference_date <- reference_date
   omop_filter(
     type = "age_range", level = "population",
-    params = list(min = min, max = max),
+    params = params,
     label = paste0("Age ", min, "-", max)
   )
 }
@@ -1555,6 +1572,8 @@ print.omop_output <- function(x, ...) {
 #'   \code{\link{omop_filter_group}} or a list of them. A \emph{named} list uses
 #'   each name as the filter ID.
 #' @param outputs A single \code{\link{omop_output}} or a list of them.
+#' @param output Convenience alias for a single \code{\link{omop_output}}; use it
+#'   instead of \code{outputs} when the recipe has just one output.
 #' @param populations A single \code{\link{omop_population}} or a list of them
 #'   (the implicit \code{"base"} population always exists; parents must be
 #'   declared before their children).
@@ -1647,7 +1666,8 @@ omop_recipe <- function(variables = NULL,
                         cohort = NULL,
                         tables = NULL,
                         combine = "union",
-                        options = NULL) {
+                        options = NULL,
+                        output = NULL) {
   recipe <- .omop_recipe_empty()
 
   # Delegate to the internal slot-filling setters in dependency order so the
@@ -1668,7 +1688,9 @@ omop_recipe <- function(variables = NULL,
       filter_ids[i] else NULL
     recipe <- recipe_add_filter(recipe, filter_items[[i]], id = fid)
   }
-  for (o in .recipe_arg_list(outputs)) {
+  # `output` (singular) is a convenience alias for a single output; it is simply
+  # added alongside anything passed via `outputs`.
+  for (o in c(.recipe_arg_list(output), .recipe_arg_list(outputs))) {
     recipe <- recipe_add_output(recipe, o)
   }
   # `cohort` is ALWAYS a recipe-level SCOPE, regardless of form: a scalar

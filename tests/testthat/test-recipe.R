@@ -103,6 +103,13 @@ test_that("omop_filter_age convenience constructor", {
   expect_equal(f$type, "age_range")
   expect_equal(f$params$min, 18)
   expect_equal(f$params$max, 65)
+  expect_null(f$params$reference_date)
+
+  fy <- omop_filter_age(min = 65, year = 2024)
+  expect_equal(fy$params$reference_date, "2024-07-01")
+
+  fd <- omop_filter_age(min = 65, reference_date = "2024-01-01")
+  expect_equal(fd$params$reference_date, "2024-01-01")
 })
 
 test_that("omop_filter_cohort convenience constructor", {
