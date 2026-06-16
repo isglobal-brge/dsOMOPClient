@@ -63,9 +63,8 @@ dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
 
 #' Print a dsomop_result
 #'
-#' Displays a compact summary of a \code{dsomop_result} object, including
-#' the list of servers, scope, pooling status, any warnings, and a truncated
-#' preview of the reproducible R code.
+#' Prints the per-site result tables and the pooled (cross-server) result
+#' table, followed by any disclosure/pooling warnings.
 #'
 #' @param x A \code{dsomop_result} object.
 #' @param ... Additional arguments (ignored).
@@ -77,21 +76,23 @@ dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
 #' }
 #' @export
 print.dsomop_result <- function(x, ...) {
-  cat("dsomop_result\n")
-  cat("  Servers:", paste(x$meta$servers, collapse = ", ") %||% "(none)", "\n")
-  cat("  Scope:  ", x$meta$scope, "\n")
-  if (!is.null(x$pooled)) {
-    cat("  Pooled:  yes\n")
-  } else {
-    cat("  Pooled:  no\n")
+  ps     <- .subset2(x, "per_site")
+  pooled <- .subset2(x, "pooled")
+  warns  <- .subset2(x, "meta")$warnings
+
+  for (nm in names(ps)) {
+    cat("$", nm, "\n", sep = "")
+    print(ps[[nm]], ...)
+    cat("\n")
   }
-  if (length(x$meta$warnings) > 0) {
-    cat("  Warnings:", length(x$meta$warnings), "\n")
-    for (w in x$meta$warnings) cat("    - ", w, "\n")
+  if (!is.null(pooled)) {
+    cat("$pooled\n")
+    print(pooled, ...)
+    cat("\n")
   }
-  if (nchar(x$meta$call_code) > 0) {
-    cat("  Code:   ", substr(x$meta$call_code, 1, 80),
-        if (nchar(x$meta$call_code) > 80) "..." else "", "\n")
+  if (length(warns) > 0) {
+    cat("Warnings:\n")
+    for (w in warns) cat("  - ", w, "\n", sep = "")
   }
   invisible(x)
 }

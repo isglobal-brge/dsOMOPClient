@@ -408,10 +408,19 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
   grp <- cut(mid, breaks = br, include.lowest = TRUE)
   counts <- tapply(df[[cc]], grp, sum); counts[is.na(counts)] <- 0
   centres <- (utils::head(br, -1) + utils::tail(br, -1)) / 2
-  graphics::barplot(as.numeric(counts), names.arg = round(centres, 1), las = 2,
-                    col = col, border = NA, ylab = "count",
-                    xlab = xlab %||% "value",
+  # Adaptive label precision (whole numbers for wide ranges like years, one
+  # decimal for narrow ranges like creatinine) keeps the vertical tick labels
+  # short, and an expanded bottom margin places the x-axis title *below* them
+  # rather than overlapping (the original bug, worst for 4-digit years).
+  digits <- if (diff(range(centres)) >= 20) 0L else 1L
+  labs   <- formatC(centres, format = "f", digits = digits)
+  op  <- graphics::par(no.readonly = TRUE); on.exit(graphics::par(op))
+  bot <- 4 + 0.55 * max(nchar(labs))
+  graphics::par(mar = c(bot, 4.1, 3.1, 1.1))
+  graphics::barplot(as.numeric(counts), names.arg = labs, las = 2,
+                    col = col, border = NA, ylab = "count", xlab = "",
                     main = main %||% "Distribution (pooled across sites)")
+  graphics::title(xlab = xlab %||% "value", line = bot - 1.3)
   invisible(data.frame(centre = centres, count = as.numeric(counts)))
 }
 
