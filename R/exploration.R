@@ -263,6 +263,11 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
 #' @param conns DSI connection object(s) or NULL to use the session default.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
+#' @param plot Logical; if \code{TRUE}, draw a federation-wide bar chart of the
+#'   pooled, shared-edge bins (forces \code{scope = "pooled"}) and return the
+#'   result invisibly. Default \code{FALSE}.
+#' @param xlab,main,col Axis label, title and bar colour used when
+#'   \code{plot = TRUE}.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
 #'   of data frames with columns \code{bin_start}, \code{bin_end},
 #'   \code{count_value}), \code{$pooled} (combined histogram when pooled),
@@ -281,8 +286,13 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
                                      scope = c("per_site", "pooled"),
                                      pooling_policy = "strict",
                                      symbol = "omop", conns = NULL,
-                                     execute = TRUE) {
+                                     execute = TRUE,
+                                     plot = FALSE, nbins = 9L, xlab = NULL,
+                                     main = NULL, col = "#4C72B0") {
   scope <- match.arg(scope)
+  # When asked to plot, use the per-site bins (clean long format) and re-bin
+  # their midpoints onto a common grid into one federation-wide bar chart.
+  if (isTRUE(plot)) scope <- "per_site"
   cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.value.histogram",
@@ -359,10 +369,50 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
     raw <- .ds_safe_aggregate(conns, expr = .hist_call())
   }
 
-  dsomop_result(
+  out <- dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
                 pooling_policy = pooling_policy, warnings = warnings))
+
+  if (isTRUE(plot)) {
+    .omopPlotHistogram(out, nbins = nbins, xlab = xlab %||% value_col,
+                       main = main, col = col)
+    return(invisible(out))
+  }
+  out
+}
+
+#' Draw a federation-wide histogram from a value-histogram result
+#'
+#' Sums the disclosure-safe, shared-edge bins across sites into one bar chart.
+#' Used by \code{ds.omop.value.histogram(plot = TRUE)} so callers get a plot
+#' directly instead of hand-combining per-site bins.
+#' @keywords internal
+.omopPlotHistogram <- function(hist_result, nbins = 9L, xlab = NULL,
+                                main = NULL, col = "#4C72B0") {
+  # Combine the per-site bins (clean long format: bin_start/bin_end/count) by
+  # re-binning their midpoints onto a common equal-width grid, then sum the
+  # counts -- one federation-wide bar chart. (The $pooled slot carries a
+  # wide/flattened shape unsuited to plotting, so we use per_site.)
+  df <- tryCatch(do.call(rbind, hist_result$per_site), error = function(e) NULL)
+  if (is.null(df) || !is.data.frame(df) || nrow(df) == 0 ||
+      !all(c("bin_start", "bin_end") %in% names(df))) {
+    warning("No histogram data to plot (all bins suppressed or empty).")
+    return(invisible(NULL))
+  }
+  cc <- intersect(c("count", "count_value", "n"), names(df))[1]
+  if (is.na(cc)) { warning("No count column in histogram result."); return(invisible(NULL)) }
+  df <- df[!is.na(df[[cc]]), , drop = FALSE]
+  mid <- (df$bin_start + df$bin_end) / 2
+  br  <- seq(min(mid), max(mid), length.out = as.integer(nbins) + 1L)
+  grp <- cut(mid, breaks = br, include.lowest = TRUE)
+  counts <- tapply(df[[cc]], grp, sum); counts[is.na(counts)] <- 0
+  centres <- (utils::head(br, -1) + utils::tail(br, -1)) / 2
+  graphics::barplot(as.numeric(counts), names.arg = round(centres, 1), las = 2,
+                    col = col, border = NA, ylab = "count",
+                    xlab = xlab %||% "value",
+                    main = main %||% "Distribution (pooled across sites)")
+  invisible(data.frame(centre = centres, count = as.numeric(counts)))
 }
 
 #' Get disclosure-safe numeric quantiles

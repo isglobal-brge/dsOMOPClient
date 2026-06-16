@@ -16,7 +16,11 @@ ds.omop.value.histogram(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  plot = FALSE,
+  xlab = NULL,
+  main = NULL,
+  col = "#4C72B0"
 )
 }
 \arguments{
@@ -52,6 +56,13 @@ temporal filtering, or NULL (default: NULL).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
+
+\item{plot}{Logical; if \code{TRUE}, draw a federation-wide bar chart of the
+pooled, shared-edge bins (forces \code{scope = "pooled"}) and return the
+result invisibly. Default \code{FALSE}.}
+
+\item{xlab, main, col}{Axis label, title and bar colour used when
+\code{plot = TRUE}.}
 }
 \value{
 A \code{dsomop_result} object with \code{$per_site} (named list
