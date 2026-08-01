@@ -20,11 +20,16 @@ denote time before the index date.}
 (character ISO 8601 dates, e.g. \code{"2020-01-01"}).}
 
 \item{event_select}{Named list with \code{order} (\code{"first"} or
-\code{"last"}) and \code{n} (integer; number of events to keep per
-person).}
+\code{"last"}), \code{n} (integer; number of events), and optional
+\code{by = "grain"} (default) or \code{by = "concept"}. Concept mode
+keeps the first/last N independently for each concept within a cohort
+episode when \code{index_window} is present, otherwise within each person.}
 
-\item{min_gap}{Integer; minimum number of days between events. Events
-closer together are collapsed.}
+\item{min_gap}{Positive integer days, or a named list with
+\code{days}, optional \code{by = "concept"} or \code{"grain"}, and
+optional \code{keep = "first"} or \code{"last"}. Adjacent events no
+more than \code{days} apart form one chain. The normalized policy defaults
+to concept-specific chains represented by their first event.}
 }
 \value{
 An \code{omop_temporal_spec} object (a list with class
@@ -33,12 +38,12 @@ An \code{omop_temporal_spec} object (a list with class
 \description{
 Creates an \code{omop_temporal_spec} object that defines how events
 are filtered relative to a cohort index date or calendar dates. The
-spec can combine index-relative windows, calendar date ranges, event
-selection (first/last N), and minimum gap requirements.
+spec can combine index-relative windows, calendar date ranges, and event
+selection (first/last N) and deterministic minimum-gap collapsing.
 }
 \examples{
 \dontrun{
-# Events within 1 year before index, keep first 3 per person
+# Events within 1 year before each index episode; keep its first 3 events
 temporal <- omop.temporal(
   index_window = list(start = -365, end = 0),
   event_select = list(order = "first", n = 3)

@@ -4,12 +4,14 @@
 \alias{.resolve_plan_out}
 \title{Resolve the out argument of ds.omop.plan.execute into a named mapping}
 \usage{
-.resolve_plan_out(plan, out)
+.resolve_plan_out(plan, out, reserved_symbols = character(0))
 }
 \arguments{
 \item{plan}{An \code{omop_plan} object.}
 
 \item{out}{\code{NULL}, a bare unnamed string, or a named character vector.}
+
+\item{reserved_symbols}{Optional server symbols that outputs may not replace.}
 }
 \value{
 A named character vector mapping output names to server symbols.

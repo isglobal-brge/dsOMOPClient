@@ -78,25 +78,26 @@ ds.omop.query.get <- function(query_id, symbol = "omop", conns = NULL) {
 #'
 #' Deprecated shim for \code{\link{ds.omop.analysis.run}}. Forwards to
 #' \code{ds.omop.analysis.run()} using the entry's pack-prefixed catalog name.
-#' For back-compatibility the return value matches the old contract:
-#' \code{"aggregate"} mode returns a named list of per-server data frames, and
-#' \code{"assign"} mode returns \code{TRUE} invisibly (the result stays on the
-#' server). Disclosure controls and (in aggregate mode) cross-server pooling are
-#' handled by the analysis run path.
+#' For back-compatibility, \code{"aggregate"} mode returns a named list of
+#' per-server data frames. The legacy caller-selected \code{"assign"} mode is
+#' rejected: whether an analysis is an assign loader is server-owned catalog
+#' metadata and must not be asserted by the client. Use
+#' \code{\link{ds.omop.analysis.run}} directly for catalog-managed loaders.
+#' Disclosure controls and cross-server pooling are handled by that path.
 #'
 #' @param query_id Character; the legacy query ID (e.g.,
 #'   \code{"condition_prevalence"}).
 #' @param inputs Named list; parameter values for the entry. Default: empty list.
-#' @param mode Character; \code{"aggregate"} (the default) returns results to the
-#'   client, \code{"assign"} stores the result server-side.
+#' @param mode Character; only \code{"aggregate"} is accepted. The deprecated
+#'   \code{"assign"} value now fails closed; assign behavior is selected from
+#'   trusted server catalog metadata by \code{\link{ds.omop.analysis.run}}.
 #' @param symbol Character; the session symbol used when the OMOP connection
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
-#' @return For \code{mode = "aggregate"}: a named list of per-server data frames.
-#'   For \code{mode = "assign"}: \code{TRUE} invisibly. Use
-#'   \code{\link{ds.omop.query.pool}} to combine aggregate results, or prefer the
-#'   pooled view returned by \code{\link{ds.omop.analysis.run}} directly.
+#' @return A named list of per-server disclosure-controlled data frames. Use
+#'   \code{\link{ds.omop.query.pool}} to combine them, or prefer the pooled view
+#'   returned by \code{\link{ds.omop.analysis.run}} directly.
 #' @examples
 #' \dontrun{
 #' results <- ds.omop.query.exec("condition_prevalence",
@@ -110,10 +111,14 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
                                   symbol = "omop", conns = NULL) {
   .Deprecated("ds.omop.analysis.run")
   mode <- match.arg(mode, c("aggregate", "assign"))
+  if (!identical(mode, "aggregate")) {
+    stop("Legacy mode='assign' is no longer accepted. Assign loaders are ",
+         "selected from trusted server catalog metadata by ",
+         "ds.omop.analysis.run().", call. = FALSE)
+  }
   res <- ds.omop.analysis.run(.query_id_to_name(query_id), params = inputs,
                               symbol = symbol, conns = conns)
-  if (mode == "aggregate") return(res$per_site)
-  invisible(TRUE)
+  res$per_site
 }
 
 #' Pool query template results across servers
@@ -123,7 +128,8 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
 #' methods:
 #' \itemize{
 #'   \item \code{sum}: Sum count columns across servers (default)
-#'   \item \code{weighted_mean}: Pool means weighted by count
+#'   \item \code{weighted_mean}: legacy metadata value; rejected because the
+#'     deprecated helper has no closed numerator/denominator contract
 #' }
 #'
 #' Suppression-safe pooling policy: if any server suppressed a cell (marked
@@ -145,9 +151,9 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
 #'   pooling rules to. If \code{NULL} (the default), auto-detected from
 #'   query metadata or column name patterns.
 #' @param pool_strategy Character; pooling method. \code{"sum"} (the default)
-#'   sums count columns across servers; \code{"weighted_mean"} pools means
-#'   weighted by count; \code{"none"} returns the first server's result
-#'   without pooling.
+#'   sums count columns across servers; \code{"none"} returns the first server's
+#'   result without pooling. The legacy \code{"weighted_mean"} value fails
+#'   closed; use \code{ds.omop.analysis.run()} for contracted pooling.
 #' @param policy Character; suppression propagation policy. \code{"strict"}
 #'   (the default) sets the pooled value to NA if any server suppressed the
 #'   cell. \code{"pooled_only_ok"} sums only the non-suppressed values.
@@ -180,14 +186,26 @@ ds.omop.query.pool <- function(results, query_id = NULL,
                                   policy = "strict",
                                   symbol = "omop") {
   .Deprecated("ds.omop.analysis.run")
+  pool_strategy <- match.arg(pool_strategy,
+                             c("sum", "weighted_mean", "none"))
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
   if (is.null(results) || length(results) == 0) return(NULL)
 
-  # Filter out non-data.frame results (errors)
+  # A strict pool must never silently become a partial federation.  Preserve
+  # the permissive legacy behaviour only when the caller explicitly requests
+  # pooled_only_ok.
+  result_errors <- attr(results, "ds_errors") %||% list()
+  valid_mask <- vapply(results, function(r) {
+    is.data.frame(r) && nrow(r) > 0L
+  }, logical(1))
+  if (identical(policy, "strict") &&
+      (length(result_errors) > 0L || any(!valid_mask))) {
+    return(NULL)
+  }
+
+  # Filter out non-data.frame/empty results under pooled_only_ok.
   valid <- Filter(function(r) is.data.frame(r) && nrow(r) > 0, results)
   if (length(valid) == 0) return(NULL)
-
-  # Single server: return as-is
-  if (length(valid) == 1) return(valid[[1]])
 
   # Try to get pool strategy from query metadata
   if (!is.null(query_id) && is.null(sensitive_fields)) {
@@ -201,6 +219,16 @@ ds.omop.query.pool <- function(results, query_id = NULL,
       }
     }, error = function(e) NULL)
   }
+  pool_strategy <- match.arg(pool_strategy,
+                             c("sum", "weighted_mean", "none"))
+  if (identical(pool_strategy, "weighted_mean")) {
+    stop("The deprecated query pooler cannot safely infer a weighted-mean ",
+         "contract. Use ds.omop.analysis.run() instead.", call. = FALSE)
+  }
+
+  # Single complete/contributing server: no cross-server arithmetic remains,
+  # but only after every caller-selected/metadata strategy has been validated.
+  if (length(valid) == 1L) return(valid[[1L]])
 
   # Auto-detect sensitive fields from column names
   if (is.null(sensitive_fields)) {
@@ -213,6 +241,15 @@ ds.omop.query.pool <- function(results, query_id = NULL,
 
   if (pool_strategy == "none") {
     return(valid[[1]])
+  }
+
+  # Back-compatibility must not bypass the federated release contract.  When
+  # this deprecated helper is used with a live OMOP session, require identical
+  # count-band widths before any client-side sum/weighted pool.
+  session <- tryCatch(.get_session(symbol), error = function(e) NULL)
+  if (!is.null(session)) {
+    .session_harmonization_for_connections(
+      session, session$conns, require_count_pooling = TRUE)
   }
 
   # Determine join key columns (non-sensitive, non-numeric)
@@ -286,6 +323,7 @@ ds.omop.query.pool <- function(results, query_id = NULL,
 #' Pool a single column across two data frames
 #' @keywords internal
 .pool_col <- function(a, b, policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
   if (policy == "strict") {
     # If either is NA (suppressed), result is NA
     result <- ifelse(is.na(a) | is.na(b), NA_real_, a + b)

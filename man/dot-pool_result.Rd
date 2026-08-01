@@ -4,7 +4,13 @@
 \alias{.pool_result}
 \title{Dispatch pooling by result type}
 \usage{
-.pool_result(per_site, result_type, policy = "strict")
+.pool_result(
+  per_site,
+  result_type,
+  policy = "strict",
+  harmonization = NULL,
+  output_contract = NULL
+)
 }
 \arguments{
 \item{per_site}{Named list of per-server results}
@@ -12,6 +18,9 @@
 \item{result_type}{Character; one of the recognized result types}
 
 \item{policy}{Character; "strict" or "pooled_only_ok"}
+
+\item{output_contract}{Optional closed analysis output contract used instead
+of column-name heuristics for generic OHDSI-style frames.}
 }
 \value{
 List with $result and $warnings

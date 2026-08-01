@@ -21,11 +21,11 @@ symbol is used.}
 
 \item{var}{Character; the (non-protected) column to filter on.}
 
-\item{op}{Character; one of \code{"=="}, \code{"!="}, \code{">"},
-\code{">="}, \code{"<"}, \code{"<="}, \code{"in"}, \code{"not_in"}.}
+\item{op}{Character; one of \code{"=="}, \code{"!="}, \code{"in"}, or
+\code{"not_in"}. Numeric/date thresholds belong in recipe filters with
+disclosure-safe bins/ranges.}
 
-\item{value}{Comparison value(s); scalar for the relational operators, a
-vector for \code{"in"} / \code{"not_in"}.}
+\item{value}{Category value(s).}
 
 \item{newobj}{Character; name of the server-side symbol to create. If
 \code{NULL} (default), a unique name is generated.}
@@ -40,7 +40,8 @@ connections stored in the active session are used.}
 Invisibly, the name of the created server-side symbol (\code{newobj}).
 }
 \description{
-Applies a single comparison filter to a server-side, token-keyed data frame.
+Applies a categorical equality/membership filter to a server-side,
+token-keyed data frame.
 Filtering on a protected/identifier column (the person token or any
 \code{dsomop_protected} column) is rejected server-side. The server re-gates
 the filtered result on its distinct-person count and fails closed if the
@@ -48,7 +49,7 @@ filter narrows the population below the disclosure threshold.
 }
 \examples{
 \dontrun{
-adults <- ds.omop.filter("features", var = "age", op = ">=", value = 18)
+women <- ds.omop.filter("features", var = "sex", op = "==", value = "F")
 }
 }
 \seealso{

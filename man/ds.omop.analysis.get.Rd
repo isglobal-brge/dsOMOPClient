@@ -22,14 +22,16 @@ A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
   element is a named list with the entry's \code{name}, \code{description},
   \code{domain}, \code{mode}, \code{params}, \code{compute_kind},
   \code{disclosure}, \code{scope}, \code{adapter}, and the inert client-side
-  \code{plot} recipe (\code{NULL} when the entry ships none).
+  \code{plot} recipe (\code{NULL} when the entry ships none). External packs
+  also expose their pinned package/version and closed output contract, so
+  federated execution can require exact metadata equality across nodes.
 }
 \description{
 Returns full metadata for a single catalog entry: its parameter specs,
 compute kind, disclosure spec, and scoping capabilities. Use it to discover
 an entry's parameters and to check whether it accepts cohort/table scoping
-before running it. The metadata is identical across servers, so the first
-responding server's result is returned as the pooled view.
+before running it. Execution requires identical metadata from every server;
+a mixed-version or partially unavailable federation fails closed.
 }
 \examples{
 \dontrun{

@@ -33,9 +33,11 @@ The modified \code{omop_plan} with the intervals output
 \description{
 Extracts interval data (observation periods, visits, drug or condition
 durations) with start and end days relative to the cohort index date.
-Requires a cohort to be set. The output contains one row per interval
-per person, with columns for table source, start day, end day, and
-optionally concept IDs filtered by \code{concept_filter}.
+Requires a cohort to be set. The output contains one row per matching
+interval and cohort episode, with columns for table source, start day, end
+day, and optionally concept IDs filtered by \code{concept_filter}. An event
+that overlaps multiple recurrent cohort episodes can therefore appear once
+for each matching episode, identified by \code{cohort_row_id}.
 }
 \examples{
 \dontrun{

@@ -139,24 +139,25 @@ test_that("an un-scoped one-liner errors clearly client-side", {
   expect_error(ds.omop.distribution(), "computes a distribution WITHIN a cohort")
 })
 
-test_that("an un-scoped requires-cohort error is preserved per-site (not dropped)", {
+test_that("an un-scoped requires-cohort error fails the federation closed", {
   # Via the POWER path (ds.omop.analysis.run, which does not pre-guard): the
   # server raises requires-cohort for a cohort-IS-the-population entry run
-  # un-scoped. The client deliberately does NOT abort the whole federation on
-  # one site's error (.ds_safe_aggregate captures per-server errors); the message
-  # is preserved on the result's per_site ds_errors attribute and the pooled
-  # frame is empty, never a silent fake-success row. (The hard, immediate error
-  # is the SERVER-side contract, asserted in dsOMOP's catalog tests.)
+  # un-scoped. The aggregate transport captures that error per server, but the
+  # public analysis contract refuses to publish or pool a partial federation.
+  # (The specific requires-cohort message is asserted server-side in dsOMOP's
+  # catalog tests.)
   .shc_with_mocked_run(
     gated = .shc_cov_df(),
     run_error = "requires a cohort/population scope",
     code = function(sent) {
-      res <- ds.omop.analysis.run("dsomop:fe.prevalence",
-                                  params = list(domain_code = "0", top_n = 50L))
-      errs <- attr(res$per_site, "ds_errors")
-      expect_true(any(grepl("requires a cohort/population scope",
-                            unlist(errs))))
-      expect_true(is.null(res$pooled) || nrow(res$pooled) == 0L)
+      expect_error(
+        ds.omop.analysis.run(
+          "dsomop:fe.prevalence",
+          params = list(domain_code = "0", top_n = 50L)
+        ),
+        "Partial-site analysis results are not published or pooled",
+        fixed = TRUE
+      )
     })
 })
 
@@ -166,10 +167,13 @@ test_that("an un-scoped requires-cohort error is preserved per-site (not dropped
 
 test_that("a single bare filter normalizes and survives codegen round-trip", {
   rec <- omop_recipe(
-    populations = omop_population("g", filters = omop_filter_group(
-      omop_filter_sex("F"),
-      omop_filter_has_concept(201820, "condition_occurrence"),
-      operator = "AND")),
+    populations = omop_population(
+      "g",
+      index_event = omop_index_event(201820, "condition_occurrence"),
+      filters = omop_filter_group(
+        omop_filter_sex("F"),
+        omop_filter_has_concept(201820, "condition_occurrence"),
+        operator = "AND")),
     variables = omop_variable_age(),
     outputs = omop_output(name = "o", type = "wide", population_id = "g"))
 
@@ -187,7 +191,8 @@ test_that("a single bare filter normalizes and survives codegen round-trip", {
 
 test_that("a single bare row filter on a block normalizes to a list", {
   blk <- omop_variable_block(table = "measurement", concept_ids = 3004410L,
-                             filters = omop_filter_date_range(start = "2010-01-01"))
+                             filters = omop_filter_date_range(
+                               start = "2010-01-01", end = "2010-02-01"))
   expect_true(is.list(blk$filters) && !inherits(blk$filters, "omop_filter"))
   expect_length(blk$filters, 1L)
 })
@@ -220,8 +225,17 @@ test_that("ds.omop.cohort.create gives un-id'd cohorts distinct, non-zero ids", 
          envir = dsOMOPClient:::.dsomop_client_env)
   on.exit(rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env),
           add = TRUE)
+  state <- list(s = character(0))
   testthat::local_mocked_bindings(
-    datashield.assign.expr = function(conns, symbol, expr, ...) invisible(TRUE),
+    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      for (server in names(conns)) {
+        state[[server]] <<- union(state[[server]], symbol)
+        success(server)
+      }
+      invisible(TRUE)
+    },
     .package = "DSI")
 
   spec <- list(type = "condition", concept_set = c(201820L))

@@ -5,14 +5,15 @@
 \title{Build a date handling specification}
 \usage{
 omop.date_handling(
-  mode = "absolute",
+  mode = "remove",
   reference = "index",
   bin_width = NULL,
   date_columns = NULL
 )
 }
 \arguments{
-\item{mode}{Character; transformation mode. One of \code{"absolute"}
+\item{mode}{Character; transformation mode. Defaults to \code{"remove"}
+(privacy-preserving). One of \code{"absolute"}
 (keep original dates), \code{"relative"} (convert to days from
 reference), \code{"binned"} (aggregate into calendar bins), or
 \code{"remove"} (drop all date columns).}

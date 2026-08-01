@@ -93,40 +93,94 @@ test_that(".analysis_scope_expr: NULL cohort + NULL tables -> NULL", {
   expect_null(dsOMOPClient:::.analysis_scope_expr(NULL, NULL))
 })
 
-test_that(".analysis_scope_expr: cohort-only passes the literal through", {
-  # A cohort definition id is coerced to an integer literal (not a call).
-  expr <- dsOMOPClient:::.analysis_scope_expr(cohort = 1L, tables = NULL)
-  expect_false(is.call(expr))
-  expect_equal(expr, 1L)
+test_that(".analysis_scope_expr: cohort-only stays literal in named scope", {
+  # A cohort definition id is coerced to an integer literal, never a call.
+  args <- dsOMOPClient:::.analysis_scope_expr(cohort = 1L, tables = NULL)
+  expect_named(args, "scope")
+  expect_false(is.call(args$scope))
+  expect_equal(args$scope, 1L)
 
   # A cohort handle unwraps to its server-side table name.
   ch <- structure("dsomop_cohort_7", class = "dsomop_cohort_handle")
-  expect_equal(dsOMOPClient:::.analysis_scope_expr(cohort = ch, tables = NULL),
-               "dsomop_cohort_7")
+  args <- dsOMOPClient:::.analysis_scope_expr(cohort = ch, tables = NULL)
+  expect_equal(args$scope, "dsomop_cohort_7")
 })
 
-test_that(".analysis_scope_expr: table symbols become an unevaluated list() call", {
-  expr <- dsOMOPClient:::.analysis_scope_expr(cohort = NULL,
-                                              tables = c("tblA", "tblB"))
-  expect_true(is.call(expr))
-  # list(as.name("tblA"), as.name("tblB")) — symbols, NOT strings, so the server
-  # resolves them to the live omop.table frames.
-  expect_identical(expr[[1]], as.name("list"))
-  expect_identical(expr[[2]], as.name("tblA"))
-  expect_identical(expr[[3]], as.name("tblB"))
+test_that(".analysis_scope_expr: tables become separate named bare symbols", {
+  args <- dsOMOPClient:::.analysis_scope_expr(
+    cohort = NULL, tables = c("tblA", "tblB")
+  )
+  expect_named(args, c("scope_table_1", "scope_table_2"))
+  expect_identical(args$scope_table_1, as.name("tblA"))
+  expect_identical(args$scope_table_2, as.name("tblB"))
+  expect_false(any(vapply(args, is.call, logical(1L))))
 })
 
-test_that(".analysis_scope_expr: cohort + tables mixes literal and symbols", {
-  expr <- dsOMOPClient:::.analysis_scope_expr(cohort = 2L, tables = "tblA")
-  expect_true(is.call(expr))
-  expect_identical(expr[[1]], as.name("list"))
-  expect_equal(expr[[2]], 2L)              # cohort literal first
-  expect_identical(expr[[3]], as.name("tblA"))  # then the table symbol
+test_that(".analysis_scope_expr: cohort and tables remain separate arguments", {
+  args <- dsOMOPClient:::.analysis_scope_expr(cohort = 2L, tables = "tblA")
+  expect_named(args, c("scope", "scope_table_1"))
+  expect_equal(args$scope, 2L)
+  expect_identical(args$scope_table_1, as.name("tblA"))
+})
+
+test_that(".analysis_scope_expr: cohort vectors use scalar top-level args", {
+  args <- dsOMOPClient:::.analysis_scope_expr(
+    cohort = c(1L, 2L), tables = "tblA"
+  )
+  expect_named(args, c("scope_cohort_1", "scope_cohort_2", "scope_table_1"))
+  expect_identical(args$scope_cohort_1, 1L)
+  expect_identical(args$scope_cohort_2, 2L)
+  expect_identical(args$scope_table_1, as.name("tblA"))
+
+  call <- dsOMOPClient:::.analysis_run_call(
+    "omopAnalysisRunDS", "res", "dsomop:cm.effect_estimate",
+    params = list(), scope_args = args, combine = "union"
+  )
+  expect_identical(call$scope_cohort_1, 1L)
+  expect_identical(call$scope_cohort_2, 2L)
+  expect_false(any(vapply(as.list(call)[-1L], is.call, logical(1L))))
+  expect_false(grepl("(^|[^[:alnum:]_.])(c|list)\\s*\\(|1:2",
+                     paste(deparse(call), collapse = " ")))
+
+  handle <- structure("target_table", class = "dsomop_cohort_handle")
+  mixed <- dsOMOPClient:::.analysis_scope_expr(
+    cohort = list(handle, 2L), tables = NULL
+  )
+  expect_identical(mixed$scope_cohort_1, "target_table")
+  expect_identical(mixed$scope_cohort_2, 2L)
+  expect_error(
+    dsOMOPClient:::.analysis_scope_expr(
+      cohort = c(unclass(handle), 2L), tables = NULL
+    ),
+    "ambiguous.*use list"
+  )
 })
 
 test_that(".analysis_scope_expr: non-character tables is rejected", {
   expect_error(dsOMOPClient:::.analysis_scope_expr(NULL, tables = 123),
                "name\\(s\\) of server-side omop.table")
+  expect_error(
+    dsOMOPClient:::.analysis_scope_expr(NULL, tables = "list(x)"),
+    "name\\(s\\) of server-side omop.table"
+  )
+  expect_error(
+    dsOMOPClient:::.analysis_scope_expr(NULL, tables = c("tblA", "tblA")),
+    "name\\(s\\) of server-side omop.table"
+  )
+  expect_error(
+    dsOMOPClient:::.analysis_scope_expr(
+      cohort = call("list", as.name("secret")), tables = NULL
+    ),
+    "one or more literal cohort ids or table names"
+  )
+  expect_error(
+    dsOMOPClient:::.analysis_scope_expr(cohort = c(1, 2.5), tables = NULL),
+    "positive finite integer-like"
+  )
+  expect_error(dsOMOPClient:::.analysis_scope_expr(cohort = 0L),
+               "positive finite integer-like")
+  expect_error(dsOMOPClient:::.analysis_scope_expr(cohort = "-1"),
+               "positive finite integer-like")
 })
 
 # --- .analysis_run_call ------------------------------------------------------
@@ -134,7 +188,7 @@ test_that(".analysis_scope_expr: non-character tables is rejected", {
 test_that(".analysis_run_call: no scope still passes combine by NAME", {
   call <- dsOMOPClient:::.analysis_run_call(
     "omopAnalysisRunDS", "res", "dsomop:achilles.401",
-    params = list(), scope_expr = NULL, combine = "union")
+    params = list(), scope_args = NULL, combine = "union")
   expect_true(is.call(call))
   expect_identical(call[[1]], as.name("omopAnalysisRunDS"))
   # combine is a NAMED argument (never positional), so a NULL scope cannot shift
@@ -143,25 +197,42 @@ test_that(".analysis_run_call: no scope still passes combine by NAME", {
   expect_null(call$scope)
 })
 
-test_that(".analysis_run_call: scope is spliced in by NAME", {
-  scope_expr <- dsOMOPClient:::.analysis_scope_expr(NULL, tables = "tblA")
+test_that(".analysis_run_call: scope arguments are spliced without list/c", {
+  scope_args <- dsOMOPClient:::.analysis_scope_expr(
+    cohort = 7L, tables = c("tblA", "tblB")
+  )
   call <- dsOMOPClient:::.analysis_run_call(
     "omopAnalysisRunDS", "res", "dsomop:condition.prevalence_by_concept",
-    params = list(top_n = 25), scope_expr = scope_expr, combine = "intersect")
+    params = list(top_n = 25), scope_args = scope_args, combine = "intersect")
   expect_true(is.call(call))
-  # The scope argument is named and carries the unevaluated list() of symbols.
-  expect_true(is.call(call$scope))
-  expect_identical(call$scope[[2]], as.name("tblA"))
+  expect_equal(call$scope, 7L)
+  expect_identical(call$scope_table_1, as.name("tblA"))
+  expect_identical(call$scope_table_2, as.name("tblB"))
   expect_equal(call$combine, "intersect")
+  nested_heads <- vapply(as.list(call)[-1L], function(value) {
+    if (is.call(value)) as.character(value[[1L]]) else ""
+  }, character(1L))
+  expect_false(any(nested_heads %in% c("c", "list")))
   # params are base64/JSON-encoded for transport (a positional arg, not raw).
   encoded <- call[[4]]
   expect_true(is.character(encoded))
 })
 
+test_that(".analysis_run_call rejects arbitrary nested scope expressions", {
+  expect_error(
+    dsOMOPClient:::.analysis_run_call(
+      "omopAnalysisRunDS", "res", "dsomop:x", params = list(),
+      scope_args = list(scope_table_1 = call("list", as.name("secret"))),
+      combine = "union"
+    ),
+    "sequential bare"
+  )
+})
+
 test_that(".analysis_run_call: params survive .ds_encode round-trip slot", {
   call <- dsOMOPClient:::.analysis_run_call(
     "omopAnalysisRunDS", "res", "dsomop:x", params = list(a = 1, b = 2),
-    scope_expr = NULL, combine = "union")
+    scope_args = NULL, combine = "union")
   # The 4th positional element is the encoded params payload.
   expect_equal(call[[4]], dsOMOPClient:::.ds_encode(list(a = 1, b = 2)))
 })
@@ -198,15 +269,23 @@ test_that("ds.omop.query.exec warns (deprecated) and forwards", {
     "deprecated|ds.omop.analysis.run", ignore.case = TRUE)
 })
 
+test_that("ds.omop.query.exec fails closed for caller-selected assign mode", {
+  expect_warning(
+    expect_error(
+      ds.omop.query.exec("condition_prevalence", mode = "assign"),
+      "no longer accepted"
+    ),
+    "deprecated|ds.omop.analysis.run", ignore.case = TRUE
+  )
+})
+
 # ==============================================================================
 # Phase 6b: client-side plot harness (ds.omop.analysis.run plot=)
 #
 # The plotting half runs ENTIRELY on the client over data that already cleared
-# the server's single per-patient gate. The server ships an INERT plot recipe in
-# the entry metadata (plot$code = the SOURCE TEXT of a function(df, params)); the
-# client eval()s that text LOCALLY and calls it on the pooled gated frame. The
-# load-bearing security property: the client NEVER sends plot code to the server
-# and the server NEVER evals it. These tests pin (1) the .analysis_render_plot
+# the server's single per-patient gate. The server may ship declarative metadata
+# (an allowlisted type plus column mappings); source text is ignored and never
+# parsed/evaluated. These tests pin (1) the .analysis_render_plot
 # helper's branches directly, and (2) the end-to-end run path with DataSHIELD
 # mocked so we can both prove plot=FALSE never touches the recipe AND capture
 # every server-bound expression to prove no code is ever transmitted.
@@ -228,10 +307,12 @@ test_that("ds.omop.query.exec warns (deprecated) and forwards", {
 
 # --- .analysis_render_plot (unit, no session) --------------------------------
 
-test_that(".analysis_render_plot builds a ggplot from an inert recipe on gated df", {
+test_that(".analysis_render_plot builds a ggplot from declarative metadata", {
   skip_if_not_installed("ggplot2")
   meta <- list(name = "dsomop:demo.person_count_by_gender",
-               plot = list(type = "bar", code = .acat_plot_code))
+               plot = list(type = "bar",
+                           mapping = list(x = "gender_name", y = "n_persons"),
+                           code = .acat_plot_code))
   p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(),
                                             params = list())
   expect_s3_class(p, "ggplot")
@@ -242,7 +323,9 @@ test_that(".analysis_render_plot builds a ggplot from an inert recipe on gated d
 
 test_that(".analysis_render_plot reads a nested compute$plot recipe too", {
   skip_if_not_installed("ggplot2")
-  meta <- list(name = "x", compute = list(plot = list(code = .acat_plot_code)))
+  meta <- list(name = "x", compute = list(plot = list(
+    type = "bar", mapping = list(x = "gender_name", y = "n_persons"),
+    code = .acat_plot_code)))
   p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(), list())
   expect_s3_class(p, "ggplot")
 })
@@ -255,23 +338,24 @@ test_that(".analysis_render_plot returns NULL (warns) when no recipe is shipped"
   expect_null(p)
 })
 
-test_that(".analysis_render_plot degrades to NULL+warn on a broken recipe (data kept)", {
+test_that(".analysis_render_plot ignores hostile source text", {
   skip_if_not_installed("ggplot2")
-  # A recipe that errors when called must NOT propagate: the caller already holds
-  # the data, so plotting failure is a warning + NULL plot, never a hard error.
-  meta <- list(name = "x", plot = list(code = "function(df, params) stop('boom')"))
-  expect_warning(
-    p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(), list()),
-    "plot could not be built")
-  expect_null(p)
+  touched <- FALSE
+  meta <- list(name = "x", plot = list(
+    type = "bar", mapping = list(x = "gender_name", y = "n_persons"),
+    code = "{ touched <<- TRUE; system('false') }"))
+  p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(), list())
+  expect_s3_class(p, "ggplot")
+  expect_false(touched)
 })
 
-test_that(".analysis_render_plot rejects a recipe that isn't a ggplot", {
+test_that(".analysis_render_plot rejects unsupported plot types", {
   skip_if_not_installed("ggplot2")
-  meta <- list(name = "x", plot = list(code = "function(df, params) 42"))
+  meta <- list(name = "x", plot = list(type = "arbitrary_code",
+                                        code = "function(df, params) 42"))
   expect_warning(
     p <- dsOMOPClient:::.analysis_render_plot(meta, .acat_gated_df(), list()),
-    "plot could not be built")
+    "unsupported plot type")
   expect_null(p)
 })
 
@@ -328,7 +412,32 @@ test_that("ds.omop.analysis.run(plot=FALSE) returns data only, no plot, no ggplo
     })
 })
 
-test_that("ds.omop.analysis.run(plot=TRUE) evals the recipe CLIENT-SIDE on the gated df", {
+test_that("analysis table scopes cross as separate named symbol arguments", {
+  .acat_with_mocked_run(
+    meta_plot = NULL,
+    gated = .acat_gated_df(),
+    code = function(sent) {
+      ds.omop.analysis.run(
+        "dsomop:demo.person_count_by_gender",
+        cohort = 9L, tables = c("eligible_a", "eligible_b"),
+        combine = "intersect"
+      )
+      run <- Filter(function(expr) {
+        identical(as.character(expr[[1L]]), "omopAnalysisRunDS")
+      }, sent$exprs)[[1L]]
+      args <- as.list(run)
+      expect_identical(args$scope, 9L)
+      expect_identical(args$scope_table_1, as.name("eligible_a"))
+      expect_identical(args$scope_table_2, as.name("eligible_b"))
+      expect_identical(args$combine, "intersect")
+      nested_heads <- vapply(args[-1L], function(value) {
+        if (is.call(value)) as.character(value[[1L]]) else ""
+      }, character(1L))
+      expect_false(any(nested_heads %in% c("c", "list")))
+    })
+})
+
+test_that("ds.omop.analysis.run(plot=TRUE) renders declaratively on gated df", {
   skip_if_not_installed("ggplot2")
   gated <- .acat_gated_df()
   .acat_with_mocked_run(
@@ -389,6 +498,178 @@ test_that("ds.omop.analysis.run(plot=TRUE) on an entry with no recipe keeps the 
       pn <- stats::setNames(res$pooled$n_persons, res$pooled$gender_name)
       expect_equal(pn[["MALE"]], 45)
     })
+})
+
+.acat_test_session <- function(conns, outputs = NULL, scope_cap = 8L) {
+  disclosure <- list(
+    harmonization_contract_version = "dsomop-harmonization-v3",
+    age_breaks = seq(0, 85, 5),
+    age_semantics = "reference_year_minus_year_of_birth",
+    date_semantics = "ISO8601_Gregorian_closed_interval",
+    date_granularity = "calendar_day",
+    datetime_timezone = "UTC", week_start = "Monday",
+    nfilter_age_range = 5, nfilter_date_range = 30, nfilter_band = 5,
+    max_feature_specs = 1000, max_pivot_concepts = 1000,
+    max_output_columns = 5000, max_temporal_bins = 10000,
+    max_filter_depth = 32, max_filter_nodes = 1024,
+    max_filter_values = 10000, max_plan_outputs = 100,
+    max_analysis_scope_tables = scope_cap
+  )
+  list(
+    conns = conns, res_symbol = "dsO.fake", outputs = outputs,
+    capabilities = stats::setNames(
+      rep(list(list(disclosure = disclosure)), length(conns)), names(conns)
+    )
+  )
+}
+
+test_that("analysis scope obeys negotiated table and total-source caps", {
+  conns <- list(a = "A", b = "B")
+  assign("omop", .acat_test_session(conns, scope_cap = 1L),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+  contacted <- FALSE
+  local_mocked_bindings(
+    datashield.aggregate = function(...) {
+      contacted <<- TRUE
+      stop("metadata should not be contacted", call. = FALSE)
+    },
+    .package = "DSI"
+  )
+
+  expect_error(
+    ds.omop.analysis.run("dsomop:x", tables = c("scope_a", "scope_b")),
+    "max_analysis_scope_tables cap of 1"
+  )
+  expect_error(
+    ds.omop.analysis.run("dsomop:x", cohort = c(1L, 2L, 3L)),
+    "total source cap of 2"
+  )
+  expect_false(contacted)
+})
+
+test_that("analysis execution rejects inconsistent cross-server metadata", {
+  conns <- list(a = "A", b = "B")
+  assign("omop", .acat_test_session(conns),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+
+  local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      server <- names(conns)[[1L]]
+      mode <- if (identical(server, "a")) "aggregate" else "assign"
+      stats::setNames(list(list(name = "dsomop:x", mode = mode)), server)
+    },
+    .package = "DSI"
+  )
+  expect_error(ds.omop.analysis.run("dsomop:x"),
+               "differs across servers")
+})
+
+test_that("aggregate analysis never publishes a partial federation", {
+  conns <- list(a = "A", b = "B")
+  assign("omop", .acat_test_session(conns),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+
+  local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      server <- names(conns)[[1L]]
+      head <- if (is.call(expr)) as.character(expr[[1L]]) else ""
+      if (identical(head, "omopAnalysisGetDS")) {
+        return(stats::setNames(
+          list(list(name = "dsomop:x", mode = "aggregate")), server
+        ))
+      }
+      if (identical(server, "b")) stop("simulated analysis failure")
+      stats::setNames(list(data.frame(n_persons = 10)), server)
+    },
+    .package = "DSI"
+  )
+
+  expect_error(
+    ds.omop.analysis.run("dsomop:x"),
+    "Partial-site analysis results are not published"
+  )
+})
+
+test_that("partial assign-mode analysis is removed from every server", {
+  conns <- list(a = "A", b = "B")
+  assign("omop", .acat_test_session(conns),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+  symbols <- list(a = character(0), b = character(0))
+  assigned <- NULL
+
+  local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      server <- names(conns)[[1L]]
+      stats::setNames(list(list(name = "dsomop:loader", mode = "assign")),
+                      server)
+    },
+    datashield.symbols = function(conns, ...) symbols[names(conns)],
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      assigned <<- symbol
+      symbols$a <<- union(symbols$a, symbol)
+      success("a")
+      error("b", "simulated failure")
+      invisible(NULL)
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      server <- names(conns)[[1L]]
+      symbols[[server]] <<- setdiff(symbols[[server]], symbol)
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+
+  expect_error(ds.omop.analysis.run("dsomop:loader"), "rolled back")
+  expect_true(is.character(assigned) && length(assigned) == 1L)
+  expect_false(any(vapply(symbols, function(x) assigned %in% x, logical(1))))
+})
+
+test_that("assign-mode analysis commits only after every server owns the symbol", {
+  conns <- list(a = "A", b = "B")
+  assign("omop", .acat_test_session(conns, outputs = NULL),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+  symbols <- list(a = character(0), b = character(0))
+
+  local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      server <- names(conns)[[1L]]
+      stats::setNames(list(list(name = "dsomop:loader", mode = "assign")),
+                      server)
+    },
+    datashield.symbols = function(conns, ...) symbols[names(conns)],
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      for (server in names(conns)) {
+        symbols[[server]] <<- union(symbols[[server]], symbol)
+        success(server)
+      }
+      invisible(NULL)
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      server <- names(conns)[[1L]]
+      symbols[[server]] <<- setdiff(symbols[[server]], symbol)
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+
+  result <- ds.omop.analysis.run("dsomop:loader")
+  assigned <- result$meta$assign_symbol
+  expect_true(all(vapply(symbols, function(x) assigned %in% x, logical(1))))
+  expect_identical(result$per_site, list(a = TRUE, b = TRUE))
+  session <- get("omop", envir = dsOMOPClient:::.dsomop_client_env)
+  expect_true(assigned %in% session$outputs)
 })
 
 # --- One-liner delegation (mocked DataSHIELD) --------------------------------
@@ -463,7 +744,7 @@ test_that("ds.omop.meta.effect_estimate has the expected signature", {
 .acat_with_mocked_meta <- function(per_server_frames, code) {
   conns <- stats::setNames(as.list(rep("FAKE", length(per_server_frames))),
                            names(per_server_frames))
-  assign("omop", list(conns = conns, res_symbol = "dsO.fake"),
+  assign("omop", .acat_test_session(conns),
          envir = dsOMOPClient:::.dsomop_client_env)
   withr::defer_parent(
     if (exists("omop", envir = dsOMOPClient:::.dsomop_client_env)) {

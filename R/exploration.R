@@ -4,11 +4,10 @@
 #' Get safe numeric cutpoints for a column
 #'
 #' @description
-#' Computes disclosure-safe bin edges for a numeric column in an OMOP CDM
-#' table. Each bin is guaranteed to contain enough persons to satisfy the
-#' minimum cell count threshold, making the resulting breakpoints safe for
-#' use as filter boundaries or histogram edges. The cutpoints are computed
-#' server-side and returned without exposing individual-level data.
+#' Returns a public numeric grid configured by the data controller for an OMOP
+#' column. The server releases the complete grid only when every bin is
+#' supported by the minimum number of distinct persons after one-contribution-
+#' per-person reduction. Edges are not estimated from protected values.
 #'
 #' @param table Character; the OMOP CDM table name (e.g.,
 #'   \code{"measurement"}, \code{"observation"}).
@@ -16,8 +15,9 @@
 #'   \code{"value_as_number"}).
 #' @param concept_id Integer or NULL; optional concept ID to restrict
 #'   rows before computing bins (default: NULL for all rows).
-#' @param n_bins Integer; the target number of bins (default: 10). The
-#'   server may return fewer bins if disclosure constraints require merging.
+#' @param n_bins Integer; exact number of bins in the controller-configured
+#'   public grid (default: 10). Unsupported or under-populated grids fail
+#'   closed; bins are never merged based on protected counts.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #'   Cutpoints are inherently per-site; pooled scope is accepted but the
 #'   pooled slot will be NULL.
@@ -27,7 +27,8 @@
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
-#'   where each element contains a list with \code{breaks} and \code{counts}),
+#'   where each element contains public \code{breaks}, banded \code{counts}, a
+#'   session \code{contract}, and clipping/grid metadata),
 #'   \code{$pooled} (always NULL for cutpoints), and \code{$meta} (list with
 #'   \code{call_code} and \code{scope}).
 #' @examples
@@ -74,6 +75,46 @@ ds.omop.safe.cutpoints <- function(table, column, concept_id = NULL,
     meta = list(call_code = code, scope = scope, warnings = warnings))
 }
 
+#' Resolve one numeric-bin contract that every connected site issued
+#'
+#' @keywords internal
+.common_safe_bins <- function(cuts, table, column) {
+  if (!inherits(cuts, "dsomop_result")) {
+    stop("cuts must be a dsomop_result from ds.omop.safe.cutpoints().",
+         call. = FALSE)
+  }
+  if (length(cuts$meta$warnings %||% character(0)) > 0L) {
+    stop("At least one connected site did not issue safe numeric cutpoints; ",
+         "a shared recipe was not created.", call. = FALSE)
+  }
+  site_bins <- cuts$per_site
+  valid <- vapply(site_bins, function(x) {
+    is.list(x) && is.numeric(x$breaks) && length(x$breaks) >= 3L &&
+      all(is.finite(x$breaks)) && is.list(x$contract)
+  }, logical(1))
+  if (length(site_bins) == 0L || !all(valid)) {
+    stop("Every connected site must return one complete safe numeric grid for ",
+         table, ".", column, ".", call. = FALSE)
+  }
+
+  contracts <- lapply(site_bins, `[[`, "contract")
+  contract_json <- vapply(contracts, jsonlite::toJSON, character(1),
+                          auto_unbox = TRUE, null = "null")
+  if (length(unique(contract_json)) != 1L) {
+    stop("Connected sites returned incompatible numeric-bin scopes.",
+         call. = FALSE)
+  }
+  breaks <- Reduce(intersect,
+                   lapply(site_bins, function(x) as.numeric(x$breaks)))
+  breaks <- sort(unique(breaks[is.finite(breaks)]))
+  if (length(breaks) < 2L) {
+    stop("Connected sites have no common server-issued numeric interval; ",
+         "run site-specific recipes or configure a shared public grid.",
+         call. = FALSE)
+  }
+  list(breaks = breaks, contract = contracts[[1]])
+}
+
 #' Create a safe numeric value filter using server-computed bins
 #'
 #' @description
@@ -116,21 +157,57 @@ ds.omop.safe.filter.value <- function(table, column, threshold,
   cuts <- ds.omop.safe.cutpoints(table, column,
     concept_id = concept_id, n_bins = n_bins,
     scope = "per_site", symbol = symbol, conns = conns)
-  # Use first server's breaks (all should be compatible)
-  breaks <- NULL
-  for (srv in names(cuts$per_site)) {
-    srv_data <- cuts$per_site[[srv]]
-    if (is.list(srv_data) && !is.null(srv_data$breaks)) {
-      breaks <- srv_data$breaks
-      break
-    }
-  }
-  if (is.null(breaks)) {
-    stop("Could not obtain safe cutpoints for ", table, ".", column, call. = FALSE)
-  }
+  safe_bins <- .common_safe_bins(cuts, table, column)
   omop_filter_value(column = column, threshold = threshold,
                      direction = direction,
-                     safe_bins = list(breaks = breaks))
+                     safe_bins = safe_bins)
+}
+
+#' Create a safe population filter for a numeric measurement interval
+#'
+#' Requests the controller-configured public grid for one measurement concept,
+#' then snaps the requested closed-open interval outwards to edges issued by
+#' every connected site. The result is executable as a population-level
+#' \code{has_measurement} filter. Exact or one-sided client-authored thresholds
+#' are deliberately not supported.
+#'
+#' @param concept_id One measurement concept ID.
+#' @param min_value,max_value Finite requested interval limits. Both are
+#'   required and must lie inside the common public grid.
+#' @inheritParams ds.omop.safe.filter.value
+#' @return An authenticated population-level \code{omop_filter}.
+#' @export
+ds.omop.safe.filter.measurement <- function(concept_id, min_value, max_value,
+                                             n_bins = 10L,
+                                             symbol = "omop", conns = NULL) {
+  concept_id <- suppressWarnings(as.integer(concept_id))
+  min_value <- suppressWarnings(as.numeric(min_value))
+  max_value <- suppressWarnings(as.numeric(max_value))
+  if (length(concept_id) != 1L || is.na(concept_id) ||
+      length(min_value) != 1L || length(max_value) != 1L ||
+      !is.finite(min_value) || !is.finite(max_value) ||
+      min_value >= max_value) {
+    stop("concept_id must be one integer and min_value/max_value must be a ",
+         "finite increasing interval.", call. = FALSE)
+  }
+  cuts <- ds.omop.safe.cutpoints(
+    "measurement", "value_as_number", concept_id = concept_id,
+    n_bins = n_bins, scope = "per_site", symbol = symbol, conns = conns
+  )
+  safe_bins <- .common_safe_bins(cuts, "measurement", "value_as_number")
+  edges <- safe_bins$breaks
+  if (min_value < min(edges) || max_value > max(edges)) {
+    stop("Requested measurement interval lies outside the common public grid.",
+         call. = FALSE)
+  }
+  lower <- max(edges[edges <= min_value])
+  upper <- min(edges[edges >= max_value])
+  omop_filter_has_measurement(
+    concept_id = concept_id,
+    min_value = lower,
+    max_value = upper,
+    safe_bins = safe_bins
+  )
 }
 
 #' Get concept prevalence for a table
@@ -155,6 +232,13 @@ ds.omop.safe.filter.value <- function(table, column, threshold,
 #' @param window List with \code{start} and \code{end} date strings
 #'   (ISO 8601) for temporal filtering, or NULL for no date restriction
 #'   (default: NULL).
+#' @param offset Integer; number of ranked concepts to skip for pagination
+#'   (default: 0).
+#' @param global Logical; if \code{TRUE}, rank concepts across all supported
+#'   clinical tables rather than only \code{table} (default: \code{FALSE}).
+#' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
+#'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+#'   Takes precedence over \code{cohort_table}.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #' @param pooling_policy Character; \code{"strict"} (default) requires all
 #'   servers to succeed, \code{"pooled_only_ok"} allows partial results.
@@ -256,6 +340,9 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
 #'   for filtering, or NULL (default: NULL).
 #' @param window List with \code{start}/\code{end} date strings for
 #'   temporal filtering, or NULL (default: NULL).
+#' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
+#'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+#'   Takes precedence over \code{cohort_table}.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #' @param pooling_policy Character; \code{"strict"} (default) or
 #'   \code{"pooled_only_ok"}.
@@ -266,6 +353,8 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
 #' @param plot Logical; if \code{TRUE}, draw a federation-wide bar chart of the
 #'   pooled, shared-edge bins (forces \code{scope = "pooled"}) and return the
 #'   result invisibly. Default \code{FALSE}.
+#' @param nbins Integer; number of display bins used when \code{plot = TRUE}
+#'   (default: 9).
 #' @param xlab,main,col Axis label, title and bar colour used when
 #'   \code{plot = TRUE}.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
@@ -290,9 +379,11 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
                                      plot = FALSE, nbins = 9L, xlab = NULL,
                                      main = NULL, col = "#4C72B0") {
   scope <- match.arg(scope)
-  # When asked to plot, use the per-site bins (clean long format) and re-bin
-  # their midpoints onto a common grid into one federation-wide bar chart.
-  if (isTRUE(plot)) scope <- "per_site"
+  pooling_policy <- match.arg(pooling_policy,
+                              c("strict", "pooled_only_ok"))
+  # A federation-wide plot must pass through the same pooling policy as the
+  # returned data; it must never sum per-site frames behind a failed pool.
+  if (isTRUE(plot)) scope <- "pooled"
   cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.value.histogram",
@@ -333,36 +424,88 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
     # Two-pass pooling: compute shared bin edges across servers
     # Pass 1: Get p05/p95 ranges from each server
     range_raw <- .ds_safe_aggregate(conns, expr = .range_call())
+    range_errors <- attr(range_raw, "ds_errors") %||% list()
+    missing_ranges <- setdiff(names(conns), names(range_raw))
+    for (server in missing_ranges) {
+      if (is.null(range_errors[[server]])) {
+        range_errors[[server]] <- "server returned no verifiable range result"
+      }
+    }
+    usable_range <- vapply(range_raw, function(value) {
+      if (!is.list(value) || is.null(value$p05) || is.null(value$p95)) {
+        return(FALSE)
+      }
+      p05 <- suppressWarnings(as.numeric(value$p05))
+      p95 <- suppressWarnings(as.numeric(value$p95))
+      length(p05) == 1L && length(p95) == 1L &&
+        is.finite(p05) && is.finite(p95) && p05 <= p95
+    }, logical(1L))
+    invalid_ranges <- names(range_raw)[!usable_range]
+    for (server in invalid_ranges) {
+      range_errors[[server]] <- "server returned no usable disclosure-safe range"
+    }
+    eligible_servers <- names(range_raw)[usable_range]
 
-    # Compute shared breaks from global p05/p95
-    p05s <- vapply(range_raw, function(s) {
-      if (is.list(s) && !is.null(s$p05)) s$p05 else NA_real_
-    }, numeric(1))
-    p95s <- vapply(range_raw, function(s) {
-      if (is.list(s) && !is.null(s$p95)) s$p95 else NA_real_
-    }, numeric(1))
-
-    global_p05 <- min(p05s, na.rm = TRUE)
-    global_p95 <- max(p95s, na.rm = TRUE)
-
-    if (is.finite(global_p05) && is.finite(global_p95) &&
-        global_p05 < global_p95) {
-      shared_breaks <- seq(global_p05, global_p95, length.out = as.integer(bins) + 1L)
-
-      # Pass 2: Histogram with shared breaks
-      raw <- .ds_safe_aggregate(conns,
-        expr = .hist_call(.ds_encode(shared_breaks)))
-
-      pool_out <- .pool_result(raw, "histogram", pooling_policy)
-      pooled <- pool_out$result
-      warnings <- pool_out$warnings
+    if (pooling_policy == "strict" && length(range_errors) > 0L) {
+      # No histogram query was issued, so do not expose range objects in the
+      # per-site histogram slot. Preserve the failed range nodes as errors.
+      raw <- list()
+      attr(raw, "ds_errors") <- range_errors
+      warnings <- paste0(
+        "Strict pooling failed before histogram calculation: incomplete ",
+        "range federation; unavailable server(s): ",
+        paste(names(range_errors), collapse = ", "), "."
+      )
+    } else if (length(eligible_servers) == 0L) {
+      raw <- list()
+      if (length(range_errors) > 0L) attr(raw, "ds_errors") <- range_errors
+      warnings <- "No server returned a usable disclosure-safe histogram range."
     } else {
-      # Fallback: single-pass (ranges are degenerate)
-      raw <- .ds_safe_aggregate(conns, expr = .hist_call())
+      # The second pass must use exactly the nodes represented in the shared
+      # range. Otherwise a recovered node could be counted against edges it did
+      # not help define, silently truncating its distribution.
+      histogram_conns <- conns[eligible_servers]
+      p05s <- vapply(range_raw[eligible_servers], function(s) {
+        as.numeric(s$p05)
+      }, numeric(1L))
+      p95s <- vapply(range_raw[eligible_servers], function(s) {
+        as.numeric(s$p95)
+      }, numeric(1L))
+      global_p05 <- min(p05s)
+      global_p95 <- max(p95s)
+
+      if (global_p05 < global_p95) {
+        shared_breaks <- seq(
+          global_p05, global_p95, length.out = as.integer(bins) + 1L
+        )
+        raw <- .ds_safe_aggregate(
+          histogram_conns,
+          expr = .hist_call(.ds_encode(shared_breaks))
+        )
+      } else {
+        raw <- .ds_safe_aggregate(histogram_conns, expr = .hist_call())
+        warnings <- c(
+          warnings,
+          "Degenerate range: fell back to single-pass histogram"
+        )
+      }
+
+      histogram_errors <- attr(raw, "ds_errors") %||% list()
+      all_errors <- c(range_errors, histogram_errors)
+      if (length(all_errors) > 0L) attr(raw, "ds_errors") <- all_errors
+      if (pooling_policy == "pooled_only_ok" && length(range_errors) > 0L) {
+        warnings <- c(
+          warnings,
+          paste0(
+            "Pooled only servers with a usable shared-range contribution: ",
+            paste(eligible_servers, collapse = ", "), ". Excluded: ",
+            paste(names(range_errors), collapse = ", "), "."
+          )
+        )
+      }
       pool_out <- .pool_result(raw, "histogram", pooling_policy)
       pooled <- pool_out$result
-      warnings <- c(pool_out$warnings,
-                     "Degenerate range: fell back to single-pass histogram")
+      warnings <- c(warnings, pool_out$warnings)
     }
   } else {
     # Per-site: single pass (no pooling needed)
@@ -390,14 +533,12 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
 #' @keywords internal
 .omopPlotHistogram <- function(hist_result, nbins = 9L, xlab = NULL,
                                 main = NULL, col = "#4C72B0") {
-  # Combine the per-site bins (clean long format: bin_start/bin_end/count) by
-  # re-binning their midpoints onto a common equal-width grid, then sum the
-  # counts -- one federation-wide bar chart. (The $pooled slot carries a
-  # wide/flattened shape unsuited to plotting, so we use per_site.)
-  df <- tryCatch(do.call(rbind, hist_result$per_site), error = function(e) NULL)
+  # Re-bin only the disclosure-controlled pooled histogram. Falling back to a
+  # sum of per-site frames here would bypass strict federation failure.
+  df <- hist_result$pooled
   if (is.null(df) || !is.data.frame(df) || nrow(df) == 0 ||
       !all(c("bin_start", "bin_end") %in% names(df))) {
-    warning("No histogram data to plot (all bins suppressed or empty).")
+    warning("No pooled histogram data to plot (pooling failed or all bins are suppressed/empty).")
     return(invisible(NULL))
   }
   cc <- intersect(c("count", "count_value", "n"), names(df))[1]
@@ -449,6 +590,9 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
 #'   for filtering, or NULL (default: NULL).
 #' @param window List with \code{start}/\code{end} date strings for
 #'   temporal filtering, or NULL (default: NULL).
+#' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
+#'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+#'   Takes precedence over \code{cohort_table}.
 #' @param rounding Integer; number of decimal places to round quantile
 #'   values to (default: 2).
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.

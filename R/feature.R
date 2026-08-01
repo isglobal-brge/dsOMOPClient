@@ -155,18 +155,20 @@ omop.feature.first_value <- function(concept_set,
 #'
 #' @param concept_set Numeric vector of concept IDs, or an
 #'   \code{omop_concept_set} object defining the concepts to match.
-#' @param reference_date Character; ISO 8601 date string used as the
-#'   reference point for the time calculation. If \code{NULL}, the
-#'   cohort index date is used.
+#' @param reference_date Character/Date; fixed ISO 8601 date used as the
+#'   reference point. It is required: cohort-index recency is episode-specific
+#'   and is not supported by the person-level feature reducer.
 #' @param unit Character; time unit for the result. One of \code{"day"}
-#'   or \code{"month"}.
+#'   or \code{"month"}; months mean complete calendar months rather than
+#'   fixed 30-day intervals.
 #' @param name Character; optional custom name for the feature column.
 #'   If \code{NULL}, auto-generated from the concept and table context.
 #' @return An \code{omop_feature_spec} object with
 #'   \code{type = "time_since"}.
 #' @examples
 #' \dontrun{
-#' spec <- omop.feature.time_since(c(201826), unit = "day")
+#' spec <- omop.feature.time_since(c(201826),
+#'   reference_date = "2024-01-01", unit = "day")
 #' plan <- ds.omop.plan.features(plan, "recency",
 #'   "condition_occurrence",
 #'   specs = list(days_since_diabetes = spec))
@@ -179,6 +181,14 @@ omop.feature.time_since <- function(concept_set,
                                     reference_date = NULL,
                                     unit = "day",
                                     name = NULL) {
+  if (is.null(reference_date)) {
+    stop("time_since requires a fixed reference_date; cohort-index recency is ",
+         "episode-aware and is not supported by person-level features.",
+         call. = FALSE)
+  }
+  reference_date <- .plan_iso_date(reference_date,
+                                   "time_since reference_date")
+  unit <- match.arg(tolower(unit), c("day", "month"))
   spec <- list(
     type = "time_since",
     concept_set = concept_set,

@@ -4,18 +4,30 @@
 \alias{ds.omop.compare}
 \title{Compare schemas across servers}
 \usage{
-ds.omop.compare(symbol = "omop", conns = NULL)
+ds.omop.compare(symbol = "omop", conns = NULL, tables = NULL)
 }
 \arguments{
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s) or NULL to use the session default.}
+
+\item{tables}{Optional character vector limiting column introspection to the
+tables relevant to a plan. Table presence is still compared globally.}
 }
 \value{
-A list with three components: \code{common_tables} (character
+A list with schema components including \code{servers} (the exact
+  nodes compared), \code{common_tables} (character
   vector of table names present on all servers), \code{server_only}
   (named list of tables unique to each server), and
-  \code{column_diffs} (named list of per-table column differences).
+  \code{column_diffs} (named list of per-table column differences), plus
+  \code{common_columns} (the columns present on every server for each common
+  table with compatible type families), \code{common_column_types} (their
+  canonical type families), \code{column_type_diffs} (per-table type-family
+  mismatches), and \code{column_errors} (named character vector of tables
+  whose columns could not be inspected). \code{semantic_versions} records
+  the reported CDM, dsOMOP specification and vocabulary versions for each
+  node. An empty \code{column_errors} means that all requested common-table
+  column contracts were established successfully.
 }
 \description{
 Compares the OMOP CDM schemas across all connected servers to identify

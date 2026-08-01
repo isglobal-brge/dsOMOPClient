@@ -21,7 +21,8 @@ matching cohort algebra). A criteria population compiles its person-level
 filter chain to the SAME nested AND/OR \code{filter_tree} the base cohort uses
 (via \code{\link{.compile_population_filter_tree}}), so the server reuses its
 existing \code{.buildCohortFromFilters} path, and carries any
-\code{cohort_definition_id}. \code{filter_tree}/\code{cohort_definition_id}
-are included only when set so a bare population stays compact.
+\code{cohort_definition_id} and \code{episode_policy}.
+\code{filter_tree}/\code{cohort_definition_id}/\code{episode_policy} are
+included only when set so a bare population stays compact.
 }
 \keyword{internal}

@@ -12,6 +12,7 @@ ds.omop.analysis.run(
   combine = "union",
   pooling_policy = "strict",
   plot = FALSE,
+  date_handling = NULL,
   symbol = "omop",
   conns = NULL
 )
@@ -31,7 +32,9 @@ a \code{cohort_definition_id}, or a server-side cohort table name.
 
 \item{tables}{Optional character vector of server-side \code{omop.table}
 symbol names to scope the population to (their distinct persons). May be
-combined with \code{cohort}.}
+combined with \code{cohort}. Each table crosses DataSHIELD as its own bare
+named \code{scope_table_<n>} argument, never through a generic
+\code{list()} or \code{c()} AggregateMethod.}
 
 \item{combine}{Character; how to fold multiple scope sources together:
 \code{"union"} (the default) or \code{"intersect"}.}
@@ -49,6 +52,10 @@ touches \pkg{ggplot2}. The plot is purely a client-side rendering of numbers
 that already cleared the server's disclosure gate (see Safety, below). A
 broken/incompatible recipe degrades to a warning and a \code{NULL} plot — it
 never costs you the returned data.}
+
+\item{date_handling}{For assign-mode loaders, the server-side date policy:
+\code{"remove"} (default), \code{"relative"}, \code{"binned"}, or
+server-authorized \code{"absolute"}. Ignored for aggregate entries.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection was
 initialised (default: \code{"omop"}).}
@@ -110,16 +117,10 @@ Three layers, simplest first — reach for the lowest one that does the job:
 }
 
 \section{Safety (client-side plotting)}{
- Some entries ship an INERT plot recipe
-  — the source text of a \code{function(df, params)} that builds a
-  \code{ggplot} — which the server returns as metadata ALONGSIDE the gated
-  aggregate. That source ships inside the installed dsOMOP / analysis-pack
-  package (authored by the same maintainers as the disclosure gate). When
-  \code{plot = TRUE} the client evaluates it LOCALLY and calls it only on
-  \code{pooled} — data that has already passed the server's single per-patient
-  gate (small-cell suppressed, banded, distributions masked). The client never
-  sends plot code to the server and the server never evaluates it; a plot can
-  only redraw disclosure-controlled numbers, never recover a suppressed cell.
+ The server may advertise only an
+  allowlisted plot type and declarative column mappings. The client dispatches
+  to installed local renderers over already-gated pooled data; it never parses
+  or evaluates source code received from a server.
 }
 
 \examples{

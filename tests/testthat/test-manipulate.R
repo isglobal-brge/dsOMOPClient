@@ -37,9 +37,24 @@
 # call expression passed to DSI::datashield.assign.expr.
 .capture_assign <- function(expr_fn) {
   captured <- NULL
+  state <- new.env(parent = emptyenv())
+  state$symbols <- list(srv = c(
+    "cohort_a", "cohort_b", "a", "b", "feat", "wave1", "wave2"
+  ))
   testthat::local_mocked_bindings(
-    datashield.assign.expr = function(conns, symbol, expr, ...) {
+    datashield.symbols = function(conns, ...) state$symbols[names(conns)],
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
       captured <<- list(conns = conns, symbol = symbol, expr = expr)
+      for (server in names(conns)) {
+        state$symbols[[server]] <- union(state$symbols[[server]], symbol)
+        success(server)
+      }
+      invisible(NULL)
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      server <- names(conns)[[1L]]
+      state$symbols[[server]] <- setdiff(state$symbols[[server]], symbol)
       invisible(NULL)
     },
     .package = "DSI"
@@ -110,16 +125,13 @@ test_that("ds.omop.filter B64-encodes the operator and a scalar string value", {
   expect_equal(.ds_arg_decode(call_expr[[5]]), "M")
 })
 
-test_that("ds.omop.filter passes a numeric scalar value bare", {
+test_that("ds.omop.filter rejects arbitrary relational thresholds", {
   .with_fake_session()
-  out <- .capture_assign(function()
-    ds.omop.filter("feat", var = "age", op = ">=", value = 18, newobj = "f2"))
-
-  call_expr <- out$captured$expr
-  # operator still B64 (contains '>' '='); decodes to ">="
-  expect_equal(.ds_arg_decode(call_expr[[4]]), ">=")
-  # numeric scalar travels bare (no B64 wrapper)
-  expect_equal(call_expr[[5]], 18)
+  expect_error(
+    ds.omop.filter("feat", var = "age", op = ">=", value = 18,
+                   newobj = "f2"),
+    "should be one of"
+  )
 })
 
 test_that("ds.omop.filter B64-encodes a vector value for 'in'", {
@@ -203,4 +215,36 @@ test_that(".ds_encode_scalar round-trips comparison operators (lexer-safe)", {
     expect_false(grepl("[+/=]", substring(enc, 5)))
     expect_equal(.ds_arg_decode(enc), op)
   }
+})
+
+test_that("manipulation rejects output collisions and rolls back partial assigns", {
+  conns <- list(a = "A", b = "B")
+  assign("omop", list(conns = conns),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+  symbols <- list(a = c("feat", "taken"), b = c("feat"))
+
+  local_mocked_bindings(
+    datashield.symbols = function(conns, ...) symbols[names(conns)],
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      symbols$a <<- union(symbols$a, symbol)
+      success("a")
+      error("b", "simulated failure")
+      invisible(NULL)
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      server <- names(conns)[[1L]]
+      symbols[[server]] <<- setdiff(symbols[[server]], symbol)
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+
+  expect_error(ds.omop.select("feat", "x", newobj = "taken"),
+               "already exists")
+  expect_error(ds.omop.select("feat", "x", newobj = "fresh"),
+               "rolled back")
+  expect_false(any(vapply(symbols, function(x) "fresh" %in% x, logical(1))))
 })

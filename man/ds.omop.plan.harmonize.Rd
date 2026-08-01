@@ -7,6 +7,7 @@
 ds.omop.plan.harmonize(
   plan,
   mode = "intersection",
+  strict = TRUE,
   symbol = "omop",
   conns = NULL
 )
@@ -14,9 +15,15 @@ ds.omop.plan.harmonize(
 \arguments{
 \item{plan}{An \code{omop_plan} object.}
 
-\item{mode}{Character; harmonization strategy. \code{"intersection"}
-keeps only tables common to all servers. \code{"union_with_missing"}
-keeps all tables and fills missing columns with NA.}
+\item{mode}{Character; harmonization strategy. Only
+\code{"intersection"} is currently executable. The former
+\code{"union_with_missing"} placeholder is rejected until typed missing
+columns can be synthesized consistently on every backend.}
+
+\item{strict}{Logical; fail when any requested dependency is not common
+(default). If false, trim raw optional columns/tables or remove whole
+incompatible outputs with explicit warnings; population semantics are
+never weakened.}
 
 \item{symbol}{Character; name of the OMOP session symbol on the
 server (default \code{"omop"}).}
@@ -29,12 +36,16 @@ The harmonized \code{omop_plan} with outputs adjusted for
   cross-server compatibility.
 }
 \description{
-Adjusts a plan so that it is compatible across all connected servers
-by resolving schema differences. In \code{"intersection"} mode,
-person-level outputs are trimmed to include only tables present on
-all servers, and warnings are issued for event-level outputs that
-reference missing tables. This ensures consistent output structure
-when executing on heterogeneous OMOP CDM deployments.
+Inspects table and column availability across connected servers. In
+\code{"intersection"} mode the default strict policy rejects a plan whose
+requested tables, compatible column types, implicit feature dependencies,
+or output source contracts are not common to every server. With
+\code{strict = FALSE}, only semantics-preserving column intersections are
+attempted; an output is removed when its required dependencies are absent.
+Population/cohort dependencies always fail closed. The returned plan is
+bound to the compared servers and relevant schema snapshot and is rechecked
+by validate, preview, and execute. No unsupported strategy or output type is
+accepted silently.
 }
 \examples{
 \dontrun{

@@ -42,11 +42,12 @@ The modified \code{omop_plan} with the temporal covariates
   output appended.
 }
 \description{
-Produces FeatureExtraction-compatible sparse covariates binned into
-time windows relative to the cohort index date. Returns three symbols
+Produces FeatureExtraction-style sparse covariates binned into
+time windows relative to the cohort index date. Returns four symbols
 on the server: \code{<name>.temporalCovariates},
-\code{<name>.covariateRef}, and \code{<name>.timeRef}. Requires a
-cohort to be set.
+\code{<name>.covariateRef}, \code{<name>.timeRef}, and
+\code{<name>.personRef}. The last maps cohort episodes to pseudonymous
+persons. Requires a cohort to be set.
 }
 \examples{
 \dontrun{

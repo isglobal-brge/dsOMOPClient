@@ -41,6 +41,16 @@ to restrict the analysis to a specific cohort (default: NULL).}
 (ISO 8601) for temporal filtering, or NULL for no date restriction
 (default: NULL).}
 
+\item{offset}{Integer; number of ranked concepts to skip for pagination
+(default: 0).}
+
+\item{global}{Logical; if \code{TRUE}, rank concepts across all supported
+clinical tables rather than only \code{table} (default: \code{FALSE}).}
+
+\item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
+\code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+Takes precedence over \code{cohort_table}.}
+
 \item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) requires all

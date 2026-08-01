@@ -18,10 +18,10 @@ A named list (one element per server) of data frames with
 }
 \description{
 Retrieves the join relationship graph for the OMOP CDM schema from
-each connected server. The graph describes how tables can be joined
+each connected server. The graph describes standard OMOP relationships
 (e.g., via \code{person_id}, \code{visit_occurrence_id}, or concept
-foreign keys), which is used by the query builder and extraction
-pipeline to construct multi-table joins automatically.
+foreign keys). It is an introspection aid; current recipe/plan execution does
+not consume it to invent arbitrary joins automatically.
 }
 \examples{
 \dontrun{

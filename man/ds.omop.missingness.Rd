@@ -22,6 +22,9 @@ ds.omop.missingness(
 \item{columns}{Character vector; specific column names to check, or
 NULL to check all columns in the table (default: NULL).}
 
+\item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
+\code{cohort_definition_id}, or a server-side cohort table name), or NULL.}
+
 \item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or

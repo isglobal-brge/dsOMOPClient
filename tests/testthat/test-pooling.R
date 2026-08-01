@@ -10,6 +10,15 @@ test_that(".pool_counts sums correctly", {
   expect_equal(length(result$warnings), 0)
 })
 
+test_that("pooling policies reject typos instead of becoming permissive", {
+  expect_error(.pool_counts(c(a = 10, b = NA_real_), "strcit"),
+               "should be one of")
+  expect_error(.pool_histograms(list(), "permissive"),
+               "should be one of")
+  expect_error(.pool_result(list(a = list(rows = 10)), "table_stats", "typo"),
+               "should be one of")
+})
+
 test_that(".pool_counts strict policy returns NULL when any NA", {
   result <- .pool_counts(c(a = 100, b = NA, c = 300), "strict")
   expect_null(result$result)
@@ -245,6 +254,29 @@ test_that(".pool_result dispatches table_stats correctly", {
   expect_equal(result$result$persons, 130)
 })
 
+test_that(".pool_result strict fails closed on an incomplete federation", {
+  partial <- list(
+    a = data.frame(
+      table_name = "condition_occurrence",
+      n_records = 100,
+      n_persons = 80
+    )
+  )
+  attr(partial, "ds_errors") <- list(
+    b = "connection failed",
+    c = "server returned no verifiable aggregate result"
+  )
+
+  strict <- .pool_result(partial, "domain_coverage", "strict")
+  expect_null(strict$result)
+  expect_match(strict$warnings, "incomplete federation")
+  expect_match(strict$warnings, "b, c", fixed = TRUE)
+
+  permissive <- .pool_result(partial, "domain_coverage", "pooled_only_ok")
+  expect_equal(permissive$result$n_records, 100)
+  expect_equal(permissive$result$n_persons, 80)
+})
+
 test_that(".pool_result effect_estimate pools per-site CohortMethod arm frames", {
   # Each site returns the gated cm.effect_estimate frame: the log_estimate + SE
   # replicated across the target/comparator arm rows.
@@ -291,6 +323,10 @@ test_that(".pool_concept_metadata dedupes shared vocab to one clean view", {
   expect_equal(nrow(out), 2L)                       # 3 identical copies -> 2 rows
   expect_setequal(out$concept_id, c(80180, 40481087))
   expect_null(.pool_concept_metadata(list(a = data.frame(), b = NULL)))
+
+  partial <- list(a = one)
+  attr(partial, "ds_errors") <- list(b = "unavailable")
+  expect_null(.pool_concept_metadata(partial))
 })
 
 test_that(".pool_result ohdsi_results pools a MIXED-UNIT Table 1 (no stratum drop)", {
@@ -315,6 +351,59 @@ test_that(".pool_result ohdsi_results pools a MIXED-UNIT Table 1 (no stratum dro
   expect_equal(g$sum_value[g$level == "FEMALE"], 25)     # 10 + 15 summed
   expect_equal(g$sum_value[g$level == "MALE"], 45)       # 20 + 25 summed
   expect_true(all(is.na(out$result$average)))            # proportions not summed
+})
+
+test_that("contracted OHDSI pooling supports count-only global results", {
+  contract <- list(
+    version = 1L,
+    columns = list(n_persons = list(semantic = "count")),
+    max_rows = 1L
+  )
+  out <- .pool_result(
+    list(a = data.frame(n_persons = 10),
+         b = data.frame(n_persons = 20)),
+    "ohdsi_results", "strict", output_contract = contract
+  )
+
+  expect_identical(names(out$result), "n_persons")
+  expect_equal(out$result$n_persons, 30)
+})
+
+test_that("contracted OHDSI pooling uses semantic roles and rebuilds ratios", {
+  contract <- list(
+    version = 1L,
+    columns = list(
+      group = list(semantic = "category", levels = c("A", "B")),
+      numerator = list(semantic = "count"),
+      denominator = list(semantic = "count"),
+      proportion = list(
+        semantic = "ratio", numerator = "numerator",
+        denominator = "denominator", scale = 1
+      )
+    ),
+    max_rows = 2L
+  )
+  site <- function(n, d) data.frame(
+    group = "A", numerator = n, denominator = d,
+    proportion = n / d, stringsAsFactors = FALSE
+  )
+  out <- .pool_result(
+    list(a = site(10, 20), b = site(15, 30)),
+    "ohdsi_results", "strict", output_contract = contract
+  )
+
+  expect_identical(names(out$result), names(contract$columns))
+  expect_equal(out$result$numerator, 25)
+  expect_equal(out$result$denominator, 50)
+  expect_equal(out$result$proportion, 0.5)
+
+  duplicate <- rbind(site(10, 20), site(5, 10))
+  bad <- .pool_result(
+    list(a = duplicate, b = site(15, 30)),
+    "ohdsi_results", "strict", output_contract = contract
+  )
+  expect_null(bad$result)
+  expect_match(bad$warnings, "not unique")
 })
 
 test_that(".pool_result column_stats pools n, mean, and a correct cross-site SD", {

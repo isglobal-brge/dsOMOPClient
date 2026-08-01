@@ -18,6 +18,7 @@ ds.omop.value.histogram(
   conns = NULL,
   execute = TRUE,
   plot = FALSE,
+  nbins = 9L,
   xlab = NULL,
   main = NULL,
   col = "#4C72B0"
@@ -45,6 +46,10 @@ for filtering, or NULL (default: NULL).}
 \item{window}{List with \code{start}/\code{end} date strings for
 temporal filtering, or NULL (default: NULL).}
 
+\item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
+\code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+Takes precedence over \code{cohort_table}.}
+
 \item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or
@@ -60,6 +65,9 @@ containing only the generated call code (default: \code{TRUE}).}
 \item{plot}{Logical; if \code{TRUE}, draw a federation-wide bar chart of the
 pooled, shared-edge bins (forces \code{scope = "pooled"}) and return the
 result invisibly. Default \code{FALSE}.}
+
+\item{nbins}{Integer; number of display bins used when \code{plot = TRUE}
+(default: 9).}
 
 \item{xlab, main, col}{Axis label, title and bar colour used when
 \code{plot = TRUE}.}

@@ -1,35 +1,42 @@
 Package: dsOMOPClient
 Type: Package
 Title: DataSHIELD Client for OMOP CDM Databases
-Version: 2.4.28
+Version: 2.4.29
 Authors@R: c(
     person("David", "Sarrat González", role = c("aut", "cre"), email = "david.sarrat@isglobal.org"),
     person("Xavier", "Escribà-Montagut", role = "aut"),
     person("Juan R", "González", role = "aut"))
 Description: Client-side DataSHIELD package for interacting with OMOP CDM
-    databases. Provides an ergonomic plan-based API for safe data extraction,
-    schema exploration, vocabulary operations, cohort management, feature
-    engineering, and multi-server harmonization. Includes a recipe builder for
-    point-and-click cohort and feature construction, a curated query library,
-    and Achilles analytics integration.
+    databases through typed server-side operations. Provides a plan-based API
+    for schema exploration, vocabulary operations, cohort management, feature
+    engineering, extraction, and selected multi-server policy checks. Includes
+    a recipe builder, access to the server's curated query catalog, and selected
+    Achilles result contracts. Disclosure safety depends on the corresponding
+    server methods and deployment policy; the client does not accept arbitrary
+    SQL.
 License: MIT + file LICENSE
+URL: https://isglobal-brge.github.io/dsOMOPClient/,
+    https://github.com/isglobal-brge/dsOMOPClient
+BugReports: https://github.com/isglobal-brge/dsOMOPClient/issues
 Encoding: UTF-8
 Depends:
     R (>= 4.1.0)
 Imports:
     DSI,
-    methods,
     stats,
     utils,
     jsonlite,
     yaml
 Suggests:
     DSLite,
+    DSOpal,
     dsBaseClient,
     testthat (>= 3.0.0),
+    withr,
     clipr,
     knitr,
     rmarkdown,
+    remotes,
     ggplot2
 Config/testthat/edition: 3
 VignetteBuilder: knitr

@@ -43,16 +43,40 @@
   get(symbol, envir = dsOMOPClient:::.dsomop_client_env)
 }
 
+.ergo_bind_plan <- function(plan) {
+  plan$harmonization <- list(
+    version = 2L, mode = "intersection",
+    manifest = list(tables = list()), schema = list(),
+    plan_signature = ""
+  )
+  plan$harmonization$plan_signature <-
+    dsOMOPClient:::.plan_harmonization_signature(plan)
+  plan
+}
+
 # Run an execute/manipulate call with DSI mocked; capture every assign.expr.
 .ergo_capture <- function(fn) {
   calls <- list()
+  symbols <- c("D_other", "D_base", "D_y")
   testthat::local_mocked_bindings(
-    datashield.assign.expr = function(conns, symbol, expr, ...) {
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
       calls[[length(calls) + 1L]] <<- list(symbol = symbol, expr = expr)
+      symbols <<- union(symbols, symbol)
+      if (is.call(expr) && identical(as.character(expr[[1L]]),
+                                     "omopPlanExecuteDS")) {
+        mapping <- .ergo_b64_decode(expr[[4L]])
+        symbols <<- union(symbols, as.character(unlist(mapping,
+                                                        use.names = FALSE)))
+      }
+      if (is.function(success)) success("srv")
       invisible(NULL)
     },
-    datashield.rm = function(conns, symbol, ...) invisible(NULL),
-    datashield.symbols = function(conns, ...) list(srv = character(0)),
+    datashield.rm = function(conns, symbol, ...) {
+      symbols <<- setdiff(symbols, symbol)
+      invisible(NULL)
+    },
+    datashield.symbols = function(conns, ...) list(srv = symbols),
     .package = "DSI"
   )
   ret <- fn()
@@ -133,6 +157,17 @@ test_that("named out rejects a name that is not a plan output", {
   )
 })
 
+test_that("out symbols are fully validated before execution", {
+  p <- ds.omop.plan.baseline(ds.omop.plan(), name = "baseline")
+  expect_error(dsOMOPClient:::.resolve_plan_out(p, NA_character_),
+               "simple non-reserved")
+  expect_error(dsOMOPClient:::.resolve_plan_out(p, "bad symbol"),
+               "simple non-reserved")
+  expect_error(dsOMOPClient:::.resolve_plan_out(
+    p, "omop", reserved_symbols = "omop"
+  ), "cannot target OMOP resources")
+})
+
 test_that("a plan with no outputs errors early", {
   expect_error(dsOMOPClient:::.resolve_plan_out(ds.omop.plan(), NULL),
                "no outputs")
@@ -199,6 +234,244 @@ test_that("execute with bare out='D' on a multi-output plan errors before any as
   )
 })
 
+test_that("expected output ownership is exact for OHDSI composite formats", {
+  p <- ds.omop.plan.events(
+    ds.omop.plan(), "sparse", "condition_occurrence",
+    concept_set = 201820L, representation = list(format = "sparse")
+  )
+  p <- ds.omop.plan.temporal_covariates(
+    p, "condition_occurrence", 201820L, name = "temporal"
+  )
+  p <- ds.omop.plan.person_period(
+    p, "condition_occurrence", 201820L, name = "panel"
+  )
+  owned <- dsOMOPClient:::.plan_expected_output_symbols(
+    p, c(sparse = "S", temporal = "T", panel = "P")
+  )
+  expect_identical(owned$sparse,
+                   c("S.covariates", "S.covariateRef", "S.personRef"))
+  expect_identical(owned$temporal, c(
+    "T.temporalCovariates", "T.covariateRef", "T.timeRef", "T.personRef"
+  ))
+  expect_identical(owned$panel, c(
+    "P.temporalCovariates", "P.covariateRef", "P.timeRef", "P.personRef",
+    "P.personPeriods"
+  ))
+
+  family <- dsOMOPClient:::.plan_output_symbol_families(c(sparse = "S"))
+  expect_identical(family$sparse, c(
+    "S", "S.covariates", "S.covariateRef", "S.personRef",
+    "S.temporalCovariates", "S.timeRef", "S.personPeriods"
+  ))
+  expect_error(
+    dsOMOPClient:::.plan_output_symbol_families(
+      c(first = "D", second = "D.covariates")
+    ),
+    "overlapping reserved component families"
+  )
+})
+
+test_that("execute keeps unrelated objects and cleans a partial fresh output", {
+  symbol <- "atomic_execute"
+  conns <- list(a = "A", b = "B")
+  assign(symbol, list(
+    res_symbol = "dsO_res", conns = conns,
+    outputs = "D.model", last_output = "D.model"
+  ),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+  state <- list(
+    a = "D.model",
+    b = "D.model"
+  )
+  removed <- list(a = character(0), b = character(0))
+  testthat::local_mocked_bindings(
+    .session_harmonization_for_connections = function(...) NULL,
+    ds.omop.plan.harmonize = function(plan, ...) .ergo_bind_plan(plan),
+    .package = "dsOMOPClient"
+  )
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.rm = function(conns, target, ...) {
+      server <- names(conns)[[1L]]
+      state[[server]] <<- setdiff(state[[server]], target)
+      removed[[server]] <<- c(removed[[server]], target)
+      invisible(NULL)
+    },
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      state$a <<- union(state$a, "D")
+      success("a")
+      error("b", "backend failed")
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+  p <- ds.omop.plan.events(
+    ds.omop.plan(), "events", "condition_occurrence",
+    concept_set = 201820L
+  )
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE,
+                            translate_concepts = FALSE)
+  expect_error(
+    ds.omop.plan.execute(p, out = c(events = "D"), symbol = symbol),
+    "failed or was incomplete"
+  )
+  expect_false("D" %in% state$a)
+  expect_false("D" %in% state$b)
+  expect_true("D.model" %in% state$a)
+  expect_true("D.model" %in% state$b)
+  expect_true(all(vapply(removed, function(x) "D" %in% x, logical(1))))
+  expect_identical(dsOMOPClient:::.get_session(symbol)$last_output, "D.model")
+  expect_identical(dsOMOPClient:::.get_session(symbol)$outputs, "D.model")
+})
+
+test_that("execute refuses to overwrite any pre-existing output family", {
+  symbol <- "fresh_execute"
+  conns <- list(a = "A", b = "B")
+  assign(symbol, list(res_symbol = "dsO_res", conns = conns),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+  assigned <- FALSE
+  testthat::local_mocked_bindings(
+    .session_harmonization_for_connections = function(...) NULL,
+    ds.omop.plan.harmonize = function(plan, ...) .ergo_bind_plan(plan),
+    .package = "dsOMOPClient"
+  )
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) {
+      stats::setNames(rep(list(c("D", "other_session")), length(conns)),
+                      names(conns))
+    },
+    datashield.assign.expr = function(...) {
+      assigned <<- TRUE
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+  p <- ds.omop.plan.events(
+    ds.omop.plan(), "events", "condition_occurrence",
+    concept_set = 201820L
+  )
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE,
+                            translate_concepts = FALSE)
+
+  expect_error(
+    ds.omop.plan.execute(p, out = c(events = "D"), symbol = symbol),
+    "must be fresh"
+  )
+  expect_false(assigned)
+})
+
+test_that("execute rejects a missing composite component after server success", {
+  symbol <- "atomic_components"
+  conns <- list(a = "A", b = "B")
+  assign(symbol, list(res_symbol = "dsO_res", conns = conns),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+  state <- list(a = character(0), b = character(0))
+  expected <- c("D.covariates", "D.covariateRef", "D.personRef")
+  testthat::local_mocked_bindings(
+    .session_harmonization_for_connections = function(...) NULL,
+    ds.omop.plan.harmonize = function(plan, ...) .ergo_bind_plan(plan),
+    .package = "dsOMOPClient"
+  )
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.rm = function(conns, target, ...) {
+      server <- names(conns)[[1L]]
+      state[[server]] <<- setdiff(state[[server]], target)
+      invisible(NULL)
+    },
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      state$a <<- expected
+      state$b <<- setdiff(expected, "D.personRef")
+      success("a"); success("b")
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+  p <- ds.omop.plan.events(
+    ds.omop.plan(), "events", "condition_occurrence",
+    concept_set = 201820L, representation = list(format = "sparse")
+  )
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE,
+                            translate_concepts = FALSE)
+  expect_error(
+    ds.omop.plan.execute(p, out = c(events = "D"), symbol = symbol),
+    "did not materialize every requested output component"
+  )
+  expect_length(state$a, 0L)
+  expect_length(state$b, 0L)
+})
+
+test_that("multi-server execute strictly harmonizes an unbound plan", {
+  symbol <- "automatic_schema_harmonization"
+  conns <- list(a = "A", b = "B")
+  assign(symbol, list(res_symbol = "dsO_res", conns = conns),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+  state <- list(a = character(0), b = character(0))
+  called <- FALSE
+  testthat::local_mocked_bindings(
+    ds.omop.plan.harmonize = function(plan, mode, strict, symbol, conns) {
+      called <<- TRUE
+      expect_identical(mode, "intersection")
+      expect_true(strict)
+      .ergo_bind_plan(plan)
+    },
+    .session_harmonization_for_connections = function(...) NULL,
+    .package = "dsOMOPClient"
+  )
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.rm = function(conns, target, ...) {
+      server <- names(conns)[[1L]]
+      state[[server]] <<- setdiff(state[[server]], target)
+      invisible(NULL)
+    },
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      state$a <<- union(state$a, "D")
+      state$b <<- union(state$b, "D")
+      success("a"); success("b")
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+  p <- ds.omop.plan.events(
+    ds.omop.plan(), "events", "condition_occurrence",
+    concept_set = 201820L
+  )
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE,
+                            translate_concepts = FALSE)
+  expect_identical(
+    ds.omop.plan.execute(p, out = c(events = "D"), symbol = symbol),
+    c(events = "D")
+  )
+  expect_true(called)
+})
+
+test_that("failed-execution cleanup fails closed when removal is unprovable", {
+  conns <- list(a = "A")
+  testthat::local_mocked_bindings(
+    datashield.rm = function(...) invisible(NULL),
+    datashield.symbols = function(...) list(a = "D"),
+    .package = "DSI"
+  )
+  expect_error(
+    dsOMOPClient:::.plan_remove_output_symbols(
+      conns, list(result = "D"), verify = TRUE
+    ),
+    "cleanup could not be proven"
+  )
+})
+
 # ------------------------------------------------------------------------------
 # (b) session-symbol persistence
 # ------------------------------------------------------------------------------
@@ -215,6 +488,14 @@ test_that(".record_session_outputs records accumulated outputs + last_output", {
   s <- .ergo_session()
   expect_equal(s$outputs, c("D_a", "D_b", "D_c"))
   expect_equal(s$last_output, "D_c")
+
+  dsOMOPClient:::.record_session_outputs(
+    "omop", list(sparse = c("S.covariates", "S.covariateRef", "S.personRef"))
+  )
+  s <- .ergo_session()
+  expect_true(all(c("S.covariates", "S.covariateRef", "S.personRef") %in%
+                    s$outputs))
+  expect_equal(s$last_output, "S.covariates")
 })
 
 test_that(".record_session_outputs is a no-op when the session is absent", {
@@ -272,7 +553,7 @@ test_that("filter / merge / bind_rows all honour the session default for x", {
   .ergo_with_session(extra = list(last_output = "D_base"))
 
   res <- .ergo_capture(function() {
-    ds.omop.filter(var = "age", op = ">=", value = 18, newobj = "f")
+    ds.omop.filter(var = "sex", op = "==", value = "F", newobj = "f")
     ds.omop.merge(y = "D_y", newobj = "m")
     ds.omop.bind_rows(y = "D_y", newobj = "b")
   })
@@ -370,7 +651,41 @@ test_that("an explicit format on save overrides the file extension", {
   parsed <- jsonlite::fromJSON(paste(readLines(f, warn = FALSE),
                                      collapse = "\n"),
                                simplifyVector = FALSE)
-  expect_equal(parsed$version, "1.0")
+  expect_equal(parsed$version, "1.1")
+})
+
+test_that("plan persistence retains populations, scope, and schema binding", {
+  p <- .ergo_plan_rich()
+  p$populations <- list(base = list(
+    id = "base", kind = "criteria",
+    filter_tree = list(type = "sex", params = list(value = "F"))
+  ))
+  p$scope <- list(tables = c("eligible_a", "eligible_b"),
+                  combine = "intersect")
+  p$harmonization <- list(
+    version = 1L, mode = "intersection", strict = TRUE,
+    schema = list(
+      servers = c("a", "b"), tables = "person",
+      present = list(person = TRUE),
+      columns = list(person = c("gender_concept_id", "person_id")),
+      types = list(person = list(
+        gender_concept_id = "numeric", person_id = "numeric"
+      ))
+    ),
+    plan_signature = NULL
+  )
+  p$harmonization$plan_signature <-
+    dsOMOPClient:::.plan_harmonization_signature(p)
+  f <- withr::local_tempfile(fileext = ".json")
+  ds.omop.plan.save(p, f)
+  loaded <- ds.omop.plan.load(f)
+  expect_identical(loaded$populations, p$populations)
+  expect_identical(loaded$scope, p$scope)
+  expect_identical(loaded$harmonization, p$harmonization)
+  expect_identical(
+    dsOMOPClient:::.plan_harmonization_signature(loaded),
+    p$harmonization$plan_signature
+  )
 })
 
 test_that("save/load reject bad inputs and unknown formats", {

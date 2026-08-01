@@ -74,18 +74,20 @@ ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
   }
   newobj <- newobj %||% .generate_symbol("omop.merge")
 
-  DSI::datashield.assign.expr(
-    conns,
-    symbol = newobj,
+  .assign_expr_atomic(
+    conns, newobj,
     expr = call("omopMergeDS", as.name(x), as.name(y),
-                .ds_encode(by), type)
+                .ds_encode(by), type),
+    context = "OMOP merge", session_symbol = symbol,
+    required_symbols = c(x, y)
   )
   invisible(newobj)
 }
 
 #' Filter the rows of a server-side omop.table data frame
 #'
-#' Applies a single comparison filter to a server-side, token-keyed data frame.
+#' Applies a categorical equality/membership filter to a server-side,
+#' token-keyed data frame.
 #' Filtering on a protected/identifier column (the person token or any
 #' \code{dsomop_protected} column) is rejected server-side. The server re-gates
 #' the filtered result on its distinct-person count and fails closed if the
@@ -95,10 +97,10 @@ ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
 #'   \code{NULL} (the default), the session's most recently produced output
 #'   symbol is used.
 #' @param var Character; the (non-protected) column to filter on.
-#' @param op Character; one of \code{"=="}, \code{"!="}, \code{">"},
-#'   \code{">="}, \code{"<"}, \code{"<="}, \code{"in"}, \code{"not_in"}.
-#' @param value Comparison value(s); scalar for the relational operators, a
-#'   vector for \code{"in"} / \code{"not_in"}.
+#' @param op Character; one of \code{"=="}, \code{"!="}, \code{"in"}, or
+#'   \code{"not_in"}. Numeric/date thresholds belong in recipe filters with
+#'   disclosure-safe bins/ranges.
+#' @param value Category value(s).
 #' @param newobj Character; name of the server-side symbol to create. If
 #'   \code{NULL} (default), a unique name is generated.
 #' @param symbol Character; the session symbol used when the OMOP connection was
@@ -108,7 +110,7 @@ ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
 #' @return Invisibly, the name of the created server-side symbol (\code{newobj}).
 #' @examples
 #' \dontrun{
-#' adults <- ds.omop.filter("features", var = "age", op = ">=", value = 18)
+#' women <- ds.omop.filter("features", var = "sex", op = "==", value = "F")
 #' }
 #' @seealso \code{\link{ds.omop.select}}, \code{\link{ds.omop.merge}}
 #' @export
@@ -116,7 +118,7 @@ ds.omop.filter <- function(x = NULL, var, op, value,
                            newobj = NULL, symbol = "omop", conns = NULL) {
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
-  op <- match.arg(op, c("==", "!=", ">", ">=", "<", "<=", "in", "not_in"))
+  op <- match.arg(op, c("==", "!=", "in", "not_in"))
   x <- .resolve_target_symbol(x, session, "x")
   if (!is.character(var) || length(var) != 1L) {
     stop("var must be a single column name.", call. = FALSE)
@@ -130,10 +132,11 @@ ds.omop.filter <- function(x = NULL, var, op, value,
   value_enc <- if (is.character(value) && length(value) == 1L)
     .ds_encode_scalar(value) else .ds_encode(value)
 
-  DSI::datashield.assign.expr(
-    conns,
-    symbol = newobj,
-    expr = call("omopFilterDS", as.name(x), var, .ds_encode_scalar(op), value_enc)
+  .assign_expr_atomic(
+    conns, newobj,
+    expr = call("omopFilterDS", as.name(x), var, .ds_encode_scalar(op), value_enc),
+    context = "OMOP filter", session_symbol = symbol,
+    required_symbols = x
   )
   invisible(newobj)
 }
@@ -172,10 +175,11 @@ ds.omop.select <- function(x = NULL, cols,
   }
   newobj <- newobj %||% .generate_symbol("omop.select")
 
-  DSI::datashield.assign.expr(
-    conns,
-    symbol = newobj,
-    expr = call("omopSelectDS", as.name(x), .ds_encode(cols))
+  .assign_expr_atomic(
+    conns, newobj,
+    expr = call("omopSelectDS", as.name(x), .ds_encode(cols)),
+    context = "OMOP select", session_symbol = symbol,
+    required_symbols = x
   )
   invisible(newobj)
 }
@@ -217,10 +221,11 @@ ds.omop.bind_rows <- function(x = NULL, y,
   }
   newobj <- newobj %||% .generate_symbol("omop.bind")
 
-  DSI::datashield.assign.expr(
-    conns,
-    symbol = newobj,
-    expr = call("omopBindRowsDS", as.name(x), as.name(y))
+  .assign_expr_atomic(
+    conns, newobj,
+    expr = call("omopBindRowsDS", as.name(x), as.name(y)),
+    context = "OMOP row bind", session_symbol = symbol,
+    required_symbols = c(x, y)
   )
   invisible(newobj)
 }

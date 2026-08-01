@@ -2,23 +2,57 @@
 
 ## Introduction
 
-<img src="man/figures/dsomop_logo.png" align="left" width="110" style="margin-right: 10px;" />
+`dsOMOPClient` is the analyst-facing interface for typed operations over remote
+[OMOP Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/)
+resources exposed through
+[DataSHIELD](https://www.datashield.org/about/about-datashield-collated). It
+builds plans and recipes client-side; the companion `dsOMOP` package validates
+and executes them beside the database.
 
-The `dsOMOP` package is designed to facilitate the interaction with remote databases formatted in the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) from within a [DataSHIELD](https://www.datashield.org/about/about-datashield-collated) environment. It provides a suite of functions that allow users to fetch and transform data from these databases into a format that is intelligible and usable within the DataSHIELD analytical workflow. This integration ensures that data analysis complies with the DataSHIELD security model, which is crucial for maintaining the privacy and security of the data.
+This is not an arbitrary SQL or arbitrary-join gateway. Its usable surface is
+the set of reviewed table, filter, cohort, output and aggregate contracts
+implemented by the server. Installing the client does not by itself guarantee
+disclosure safety: that also depends on the server method allowlist, effective
+`nfilter`/`dsomop.*` policy, database privileges and any downstream package that
+can consume the assigned objects.
 
-Key features of the `dsOMOP` package include:
+Key features include:
 
-- **Data retrieval and transformation:** Functions to fetch data from OMOP CDM databases and transform it into a user-friendly table format.
-- **Compliance with DataSHIELD security model:** Ensures that all data manipulations and analyses are performed in a way that adheres to the disclosure control measures set by DataSHIELD.
-- **Support for database interaction:** Includes methods for checking database content (such as table, column and concept catalogs) and data filtering based on user-defined criteria. This enables researchers to tailor their data queries to specific research needs.
+- **Typed plans and recipes:** selections, concept scopes, nested reviewed
+  filters, cohort scopes, visit links, event windows and several output grains.
+- **Longitudinal outputs:** recurrent cohort episodes, event-long,
+  episode-grain wide/features, survival, interval-long, time-binned sparse
+  covariates and regular person-period panels linked by a stable cohort-row key.
+- **Controlled exploration:** schema/vocabulary discovery and aggregate
+  profiling under endpoint-specific server disclosure policies.
+- **Federated checks:** automatic strict schema/semantic harmonization for
+  multi-server plans, common age/date/capacity negotiation and deterministic
+  concept-factor coordination. Heterogeneous DBMS deployments still need live
+  integration validation.
+- **Staged execution:** private server-local Parquet, or CSV fallback,
+  validated package-neutral descriptors for bounded workflows that should not
+  keep the final table in the DataSHIELD R session.
+
+`ds.omop.connect()` fails closed unless every server returns a complete
+AggregateMethods inventory, and rejects methods named `c`/`list` or aliases
+whose target is `c`, `list`, `base::c` or `base::list`. Those generic
+constructors can otherwise wrap and return a protected server object without a
+reviewed disclosure gate. This preflight is defence in depth: the controller
+must remove the methods from the complete global DataSHIELD profile, because a
+caller using DSI directly can bypass the client package.
 
 ## Structure
 
-The `dsOMOP` ecosystem comprises two essential components designed to work in tandem: the server-side package (`dsOMOP`) and the client-side package (`dsOMOPClient`). Each component plays a pivotal role in the integration of OMOP CDM databases within the DataSHIELD environment. For comprehensive details on installation, setup, and usage, please refer to the respective repositories:
+The ecosystem has two components:
 
-- **Server-Side package `dsOMOP`**: This component is installed on the DataSHIELD server and is responsible for direct interactions with the OMOP CDM databases. It retrieves, transforms, and returns data in a format compatible with DataSHIELD's analytical tools. For code, installation instructions, and more, visit [https://github.com/isglobal-brge/dsOMOP](https://github.com/isglobal-brge/dsOMOP).
+- **Server-side `dsOMOP`:** owns database connections, schema policy,
+  pseudonymisation, extraction and disclosure gates. Its README contains the
+  actual DBMS matrix, deployment boundary and OHDSI integration status:
+  [isglobal-brge/dsOMOP](https://github.com/isglobal-brge/dsOMOP).
 
-- **Client-Side package `dsOMOPClient`**: Utilized by researchers and data analysts, this package facilitates the communication with the `dsOMOP` package on the server. It sends data requests and receives processed data for analysis, ensuring a user-friendly experience for specifying data needs and analysis parameters. For code, installation instructions, and more, visit [https://github.com/isglobal-brge/dsOMOPClient](https://github.com/isglobal-brge/dsOMOPClient).
+- **Client-side `dsOMOPClient`:** constructs and serializes typed requests,
+  negotiates selected federated contracts, and coordinates returned server
+  objects. It never receives database credentials or raw person identifiers.
 
 ## Installation
 
@@ -39,15 +73,64 @@ Once the package is installed, you can load it into your R environment using the
 library(dsOMOPClient)
 ```
 
+## Current boundaries
+
+Plans and recipes cover common epidemiological extraction shapes, but not every
+possible relational or longitudinal estimand. In particular:
+
+- multi-table `long` recipes split into one output per source table; there is no
+  arbitrary cross-table joined-long output;
+- federated `wide` output requires a closed integer `concept_set` and
+  `translate_concepts = FALSE`; every declared concept has the same
+  concept-ID-derived column on every node (filled with `NA` when locally
+  absent), and no undeclared concept can enter the output. Wide output also
+  requires at most one event per
+  declared grain and concept, so the request must use deterministic event
+  selection or an explicit reduction;
+- `event_select` defaults to global selection within a person/episode and can
+  use `by = "concept"` for independent first/last-N selection per concept;
+- recurrent cohort episodes and basic regular episode-by-period panels are
+  first-class contracts; general recurrent-event/counting-process risk sets and
+  competing-risk/multi-state outputs remain future work;
+- sparse output supports person or indexed episode grain and includes a complete
+  `personRef`; absent covariate rows represent zero for roster members with no
+  qualifying event;
+- the local Query Library is curated and incomplete, and the server provides no
+  formal differential privacy, sticky-noise mechanism or privacy ledger.
+
+Servers also impose configurable operational shape caps (by default 1,000
+feature specifications, 1,000 pivoted concepts, 5,000 output columns and 10,000
+temporal bins, plus filter trees of depth 32, 1,024 nodes and 10,000 values, and
+100 outputs per plan). Federated planning must respect the minimum compatible
+value across participating servers. These bounds limit memory/CPU
+amplification; they are separate from disclosure thresholds.
+
+Staged descriptors point to private server-local files. Successful local
+staging writes a version-2 manifest only after every file and descriptor is
+complete. Each component carries an exact semantic contract, while components
+of one composite output share a bundle contract and pseudonym-key identity.
+Consumers must use the server-side resolver to validate those contracts and the
+path rather than opening an embedded filename directly. Descriptors are not
+downloads and do not grant access to another service identity; cross-service
+consumption requires a separately reviewed broker. Only long untranslated
+event output currently streams without materialising the complete result in R.
+Execution is all-or-none for DataSHIELD-visible symbols, not a distributed
+filesystem transaction: after a cross-node failure, already committed private
+files may remain until handle cleanup, disconnect or TTL cleanup. See the *Data
+Extraction*, *Multi-Server* and *Security* vignettes for the precise contracts
+and limits.
+
 ## Community development and extensions
 
-The `dsOMOPClient` package serves as a gateway for interacting with databases in the OMOP CDM format, enabling the fetching of tables to be integrated into the DataSHIELD workflow. This integration adheres to the privacy standards and disclosure control mechanisms inherent to the DataSHIELD software, ensuring that the subsequent data manipulation and analysis operations are secure.
+Extensions that consume `omop.table` objects or staged descriptors become part
+of the disclosure boundary. They should be separately reviewed and allowlisted;
+the class name alone does not make a downstream method safe.
 
-While `dsOMOPClient` acts as an interface, the potential for automation or streamlining of processes through the creation of supplementary functions, scripts, and packages is vast. We strongly encourage the community to develop tools that build upon `dsOMOPClient`, tailoring them to specific use cases and research needs. Such community-driven development not only enhances the utility of `dsOMOPClient` but also fosters a collaborative ecosystem around the combined use of both DataSHIELD and OMOP CDM.
-
-<a href="https://github.com/isglobal-brge/dsOMOPHelper"><img src="man/figures/dsomophelper_logo.png" align="right" width="110" style="margin-left: 10px;" /></a>
-
-An example of this approach is **[`dsOMOPHelper`](https://github.com/isglobal-brge/dsOMOPHelper)**, a complementary package we have developed alongside `dsOMOPClient`. `dsOMOPHelper` illustrates how the process can be simplified by combining commands from `dsOMOPClient` and `dsBaseClient` (which invokes standard DataSHIELD workflow operations). This package significantly reduces the complexity of using `dsOMOPClient` for most simple use cases, where data from an OMOP CDM database may be used for epidemiological studies within the DataSHIELD environment. You can read more about `dsOMOPHelper` and its functionalities by visiting its GitHub repository: [https://github.com/isglobal-brge/dsOMOPHelper](https://github.com/isglobal-brge/dsOMOPHelper).
+An example is **[`dsOMOPHelper`](https://github.com/isglobal-brge/dsOMOPHelper)**,
+which combines calls from `dsOMOPClient` and `dsBaseClient` for common workflows.
+It is a separate package and must be reviewed against the same server allowlist
+and disclosure policy; this README does not assert compatibility with every
+dsOMOP output or deployment.
 
 ## Acknowledgements
 

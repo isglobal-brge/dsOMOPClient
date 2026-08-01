@@ -5,7 +5,7 @@
 \alias{.plan_int_fields}
 \title{Integer field names that must survive a plan round-trip}
 \format{
-An object of class \code{character} of length 14.
+An object of class \code{character} of length 17.
 }
 \usage{
 .plan_int_fields

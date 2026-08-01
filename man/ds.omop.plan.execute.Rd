@@ -40,8 +40,8 @@ server (default \code{"omop"}).}
 connections stored in the session.}
 
 \item{output_mode}{Character; \code{"memory"} (default, backwards
-compatible) or \code{"staged"} (writes to Parquet, returns
-descriptors). Staged mode requires \code{arrow} on the server.}
+compatible) or \code{"staged"} (writes server-local files and returns
+descriptors). Arrow provides Parquet; without it the server uses CSV.}
 }
 \value{
 Invisible; the resolved \code{out} symbol mapping (for chaining).
@@ -56,14 +56,40 @@ server-side \code{omopPlanExecuteDS} function processes the plan and
 assigns each output directly into the DataSHIELD session as named
 symbols specified in the \code{out} mapping. After execution, the
 symbols can be used with standard DataSHIELD analysis functions.
-Sparse outputs (e.g. temporal covariates) are split into multiple
-symbols: \code{<name>.covariates} and \code{<name>.covariateRef}.
+Sparse outputs are split into multiple symbols:
+\code{<name>.covariates}, \code{<name>.covariateRef}, and
+\code{<name>.personRef}. Temporal covariates analogously use
+\code{<name>.temporalCovariates}, \code{<name>.covariateRef},
+\code{<name>.timeRef}, and
+\code{<name>.personRef}. Person-period outputs additionally assign
+\code{<name>.personPeriods}, the complete episode-by-bin roster.
 }
 \details{
-When \code{output_mode = "staged"}, outputs are written to Parquet
-files on the server and assigned as \code{FlowerDatasetDescriptor}
-objects instead of data.frames. This avoids loading large datasets
-into R memory and enables zero-copy column projection with dsFlower.
+When \code{output_mode = "staged"}, outputs are written to server-local
+Parquet files (CSV fallback when Arrow is unavailable) and assigned as
+\code{FlowerDatasetDescriptor} objects instead of final data.frames. Long,
+untranslated event outputs stream in bounded chunks. Outputs that require an
+R-side reshape or derivation are materialized before staging. Descriptors are
+server paths readable under the server OS identity; other service accounts
+require a separately reviewed broker. They are not client download URLs and
+do not by themselves establish compatibility with a particular external
+package.
+Cleanup is all-or-none for DataSHIELD-visible symbols, not a distributed
+filesystem transaction: after a cross-node staged failure, private files may
+remain registered with a successful server handle until its cleanup or
+disconnect path runs.
+
+With two or more servers, execution first establishes (or revalidates) a
+strict schema/semantic harmonization contract. This binds the plan to the
+exact participating nodes, required OMOP columns and compatible type
+families; vocabulary-dependent plans additionally require one reported
+vocabulary version. All expected output components must land on every node.
+A node failure, incomplete composite output, or factor-harmonization failure
+removes the exact symbols owned by the attempted execution and fails closed.
+Every requested output family must be absent on every server before execution;
+existing workspace objects are never deleted or overwritten speculatively.
+Choose fresh \code{out} names (or explicitly remove obsolete objects through
+the ordinary DataSHIELD workspace API) when rerunning a plan.
 }
 \examples{
 \dontrun{

@@ -15,9 +15,8 @@
 Invisibly returns \code{x}.
 }
 \description{
-Displays a compact summary of a \code{dsomop_result} object, including
-the list of servers, scope, pooling status, any warnings, and a truncated
-preview of the reproducible R code.
+Prints the per-site result tables and the pooled (cross-server) result
+table, followed by any disclosure/pooling warnings.
 }
 \examples{
 \dontrun{

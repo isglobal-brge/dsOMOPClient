@@ -4,7 +4,7 @@
 \alias{.circe_criteria_to_filter}
 \title{Convert one Circe occurrence criteria back into a recipe filter}
 \usage{
-.circe_criteria_to_filter(crit, concept_sets, anchor = FALSE)
+.circe_criteria_to_filter(crit, concept_sets)
 }
 \description{
 Convert one Circe occurrence criteria back into a recipe filter

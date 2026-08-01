@@ -94,6 +94,25 @@ test_that("as.data.frame.dsomop_result returns first server when no pooled", {
   expect_equal(df$x, 1:3)
 })
 
+test_that("as.data.frame never falls back after strict pooled failure", {
+  partial <- list(a = data.frame(x = 1:3))
+  attr(partial, "ds_errors") <- list(b = "offline")
+  r <- dsomop_result(
+    per_site = partial,
+    pooled = NULL,
+    meta = list(
+      scope = "pooled",
+      pooling_policy = "strict",
+      warnings = "Strict pooling failed: incomplete federation"
+    )
+  )
+
+  df <- as.data.frame(r)
+  expect_s3_class(df, "data.frame")
+  expect_equal(nrow(df), 0L)
+  expect_false("x" %in% names(df))
+})
+
 test_that("as.data.frame.dsomop_result returns empty data.frame when empty", {
   r <- dsomop_result(per_site = list())
   df <- as.data.frame(r)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis.R
 \name{.analysis_scope_expr}
 \alias{.analysis_scope_expr}
-\title{Build the server-side scope expression for an analysis run}
+\title{Build named server-side scope arguments for an analysis run}
 \usage{
 .analysis_scope_expr(cohort = NULL, tables = NULL)
 }
@@ -14,27 +14,27 @@
 or \code{NULL}.}
 }
 \value{
-\code{NULL}, a single literal cohort value, or a \code{call} to
-  \code{list()} mixing the cohort literal and table symbols.
+\code{NULL} or a named local list of call arguments. Its values are
+  cohort literals and/or bare table symbols; it never contains a call.
 }
 \description{
-The server's \code{omopAnalysisRunDS}/\code{omopAnalysisRunAssignDS} take a
-single \code{scope} argument that may mix a cohort reference (a temp-table
-name or a \code{cohort_definition_id}) with one or more workspace
-\code{omop.table} frames. On the client we hold the \code{omop.table}s only by
-SYMBOL NAME, so we splice them into the call as unevaluated symbols
-(\code{as.name}) — exactly as the data-manipulation verbs and
-\code{omopFactorLevelsDS} do — and let DataSHIELD resolve each name to the
-server-side frame. The cohort reference travels as a literal value.
+A single cohort reference travels as the literal named argument \code{scope};
+multiple references travel as separate scalar \code{scope_cohort_1},
+\code{scope_cohort_2}, ... arguments.
+Workspace \code{omop.table} symbols travel separately as bare-symbol named
+arguments \code{scope_table_1}, \code{scope_table_2}, and so on. No nested
+\code{list()} or \code{c()} expression is emitted: allowing those generic
+AggregateMethods would let a caller evaluate an unreviewed container around
+protected objects.
 }
 \details{
 Forms produced:
 \itemize{
   \item no cohort, no tables -> \code{NULL} (no scoping argument).
-  \item a cohort only -> the resolved cohort value (string / id), passed as-is.
-  \item table symbol(s) (with or without a cohort) -> a \code{list(...)} call
-    whose elements are the cohort value (if any) followed by one
-    \code{as.name(<symbol>)} per table.
+  \item one cohort -> \code{list(scope = <literal>)}; multiple cohorts ->
+    sequential scalar \code{scope_cohort_<n>} arguments.
+  \item table symbol(s) -> a named list whose values are bare symbols and
+    whose names are the sequential \code{scope_table_<n>} arguments.
 }
 }
 \keyword{internal}

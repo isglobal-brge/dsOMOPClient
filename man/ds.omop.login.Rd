@@ -58,9 +58,11 @@ One-line entry point for first-time users: builds the DataSHIELD login
 then assigns + initialises the OMOP resource (\code{\link{ds.omop.connect}}),
 returning BOTH the live connections and the OMOP session. It is a thin
 convenience over the existing lower-level path — \code{datashield.login()}
-followed by \code{ds.omop.connect()} — and adds no new behaviour; reach for
-that two-step path when you need a custom login builder, multiple resources
-per server, or to reuse connections across several OMOP sessions.
+followed by \code{ds.omop.connect()} — with one ownership guarantee: if OMOP
+initialisation fails after authentication, it logs out those new DataSHIELD
+connections before propagating the error. Reach for the two-step path when
+you need a custom login builder, multiple resources per server, or to reuse
+connections across several OMOP sessions.
 }
 \details{
 The single-server common case is one call:

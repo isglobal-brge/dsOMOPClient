@@ -11,121 +11,258 @@
 # expressed by a cohort reference and/or one or more workspace \code{omop.table}
 # symbols, folded with \code{combine} server-side into one re-gated cohort.
 
-#' Build the server-side scope expression for an analysis run
+utils::globalVariables(".data")
+
+.analysis_scope_literal_is_valid <- function(value) {
+  (is.character(value) && length(value) == 1L && !is.na(value) &&
+     nzchar(value)) ||
+    (is.numeric(value) && length(value) == 1L && !is.na(value) &&
+       is.finite(value) && value == floor(value) &&
+       value > 0 && value <= .Machine$integer.max)
+}
+
+.analysis_cohort_literals <- function(cohort) {
+  if (is.null(cohort)) return(NULL)
+  if (is.call(cohort) || is.name(cohort) || is.environment(cohort)) {
+    stop("cohort must resolve to one or more literal cohort ids or table names.",
+         call. = FALSE)
+  }
+
+  # Preserve mixed target/comparator types by normalising each list element on
+  # its own. An atomic character vector mixing numeric-looking ids and table
+  # names is ambiguous after R's coercion (e.g. c(handle, 2L)); require a list.
+  items <- if (is.list(cohort) && !is.data.frame(cohort)) {
+    unname(cohort)
+  } else {
+    as.list(cohort)
+  }
+  if (length(items) == 0L) {
+    stop("cohort must resolve to one or more literal cohort ids or table names.",
+         call. = FALSE)
+  }
+
+  if (is.character(cohort) && length(cohort) > 1L) {
+    numeric_text <- grepl("^[+-]?[0-9]+$", cohort)
+    if (any(numeric_text) && !all(numeric_text)) {
+      stop("A mixed cohort id/table vector is ambiguous after R coercion; ",
+           "use list(table_handle, cohort_id) to preserve each type.",
+           call. = FALSE)
+    }
+  }
+
+  lapply(items, function(item) {
+    if (is.list(item) || is.call(item) || is.name(item) || length(item) != 1L) {
+      stop("Each cohort reference must be one scalar literal id or table name.",
+           call. = FALSE)
+    }
+    if (is.numeric(item) &&
+        (is.na(item) || !is.finite(item) || item != floor(item) ||
+         item <= 0 || item > .Machine$integer.max)) {
+      stop("cohort ids must be positive finite integer-like values.",
+           call. = FALSE)
+    }
+    if (is.character(item) && grepl("^[+-]?[0-9]+$", item)) {
+      numeric_id <- suppressWarnings(as.numeric(item))
+      if (!is.finite(numeric_id) || numeric_id != floor(numeric_id) ||
+          numeric_id <= 0 || numeric_id > .Machine$integer.max) {
+        stop("cohort ids must be positive finite integer-like values.",
+             call. = FALSE)
+      }
+    }
+    value <- .cohort_scope_arg(item)
+    if (is.character(value) && length(value) == 1L && !is.na(value) &&
+        nzchar(value)) {
+      return(unname(value))
+    }
+    if (is.numeric(value) && length(value) == 1L && !is.na(value) &&
+        is.finite(value) && value == floor(value) &&
+        value > 0 && value <= .Machine$integer.max) {
+      return(as.integer(value))
+    }
+    stop("cohort ids must be positive finite integer-like values and table ",
+         "names must be non-empty strings.", call. = FALSE)
+  })
+}
+
+#' Build named server-side scope arguments for an analysis run
 #'
-#' The server's \code{omopAnalysisRunDS}/\code{omopAnalysisRunAssignDS} take a
-#' single \code{scope} argument that may mix a cohort reference (a temp-table
-#' name or a \code{cohort_definition_id}) with one or more workspace
-#' \code{omop.table} frames. On the client we hold the \code{omop.table}s only by
-#' SYMBOL NAME, so we splice them into the call as unevaluated symbols
-#' (\code{as.name}) — exactly as the data-manipulation verbs and
-#' \code{omopFactorLevelsDS} do — and let DataSHIELD resolve each name to the
-#' server-side frame. The cohort reference travels as a literal value.
+#' A single cohort reference travels as the literal named argument \code{scope};
+#' multiple references travel as separate scalar \code{scope_cohort_1},
+#' \code{scope_cohort_2}, ... arguments.
+#' Workspace \code{omop.table} symbols travel separately as bare-symbol named
+#' arguments \code{scope_table_1}, \code{scope_table_2}, and so on. No nested
+#' \code{list()} or \code{c()} expression is emitted: allowing those generic
+#' AggregateMethods would let a caller evaluate an unreviewed container around
+#' protected objects.
 #'
 #' Forms produced:
 #' \itemize{
 #'   \item no cohort, no tables -> \code{NULL} (no scoping argument).
-#'   \item a cohort only -> the resolved cohort value (string / id), passed as-is.
-#'   \item table symbol(s) (with or without a cohort) -> a \code{list(...)} call
-#'     whose elements are the cohort value (if any) followed by one
-#'     \code{as.name(<symbol>)} per table.
+#'   \item one cohort -> \code{list(scope = <literal>)}; multiple cohorts ->
+#'     sequential scalar \code{scope_cohort_<n>} arguments.
+#'   \item table symbol(s) -> a named list whose values are bare symbols and
+#'     whose names are the sequential \code{scope_table_<n>} arguments.
 #' }
 #'
 #' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
 #'   \code{cohort_definition_id}, or a server-side table name) or \code{NULL}.
 #' @param tables Character vector of server-side \code{omop.table} symbol names,
 #'   or \code{NULL}.
-#' @return \code{NULL}, a single literal cohort value, or a \code{call} to
-#'   \code{list()} mixing the cohort literal and table symbols.
+#' @return \code{NULL} or a named local list of call arguments. Its values are
+#'   cohort literals and/or bare table symbols; it never contains a call.
 #' @keywords internal
 .analysis_scope_expr <- function(cohort = NULL, tables = NULL) {
-  cohort_val <- .cohort_scope_arg(cohort)
+  cohort_val <- .analysis_cohort_literals(cohort)
 
   if (!is.null(tables)) {
-    if (!is.character(tables)) {
+    if (!is.character(tables) || anyNA(tables) || any(!nzchar(tables)) ||
+        any(!grepl("^[A-Za-z.][A-Za-z0-9._]*$", tables)) ||
+        any(grepl("^\\.[0-9]", tables)) || anyDuplicated(tables)) {
       stop("tables must be the name(s) of server-side omop.table symbol(s).",
            call. = FALSE)
     }
-    tables <- tables[nzchar(tables)]
   }
 
-  if (is.null(tables) || length(tables) == 0) {
-    # Cohort-only (or nothing): pass the cohort value straight through, matching
-    # the exploration wrappers' single-cohort scope.
-    return(cohort_val)
+  if (is.null(cohort_val) && (is.null(tables) || length(tables) == 0L)) {
+    return(NULL)
   }
 
-  # One or more table symbols (optionally plus a cohort): build a list() call so
-  # the server receives a mixed scope of a cohort literal + omop.table frames.
-  elems <- c(
-    if (!is.null(cohort_val)) list(cohort_val) else list(),
-    lapply(tables, as.name)
-  )
-  as.call(c(as.name("list"), elems))
+  args <- if (length(cohort_val) == 1L) {
+    list(scope = cohort_val[[1L]])
+  } else if (length(cohort_val) > 1L) {
+    cohort_args <- cohort_val
+    names(cohort_args) <- paste0("scope_cohort_", seq_along(cohort_args))
+    cohort_args
+  } else list()
+  if (!is.null(tables) && length(tables) > 0L) {
+    table_args <- lapply(tables, as.name)
+    names(table_args) <- paste0("scope_table_", seq_along(table_args))
+    args <- c(args, table_args)
+  }
+  args
 }
 
 #' Build the (possibly scope-bearing) server-side analysis run call
 #'
 #' Constructs the unevaluated DataSHIELD call for \code{omopAnalysisRunDS} /
 #' \code{omopAnalysisRunAssignDS}. \code{params} is JSON/base64-encoded for Opal
-#' transport (\code{\link{.ds_encode}}); \code{scope_expr} (when present) is
-#' spliced in by NAME so a \code{list(as.name(<table>))} scope resolves to the
-#' server-side \code{omop.table} frames, and \code{combine} is passed by name so
-#' a \code{NULL} scope never shifts it into the wrong positional slot.
+#' transport (\code{\link{.ds_encode}}); \code{scope_args} is spliced as closed,
+#' named arguments. Table scopes are bare symbols, never nested calls.
+#' \code{combine} is passed by name so absent scope arguments cannot shift it
+#' into the wrong positional slot.
 #'
 #' @param fn Character; the server method name.
 #' @param res_symbol Character; the server-side handle symbol.
 #' @param name Character; the catalog entry name.
 #' @param params Named list of parameter values.
-#' @param scope_expr \code{NULL}, a literal cohort value, or a \code{list(...)}
-#'   call (from \code{\link{.analysis_scope_expr}}).
+#' @param scope_args \code{NULL} or the closed named argument list returned by
+#'   \code{\link{.analysis_scope_expr}}.
 #' @param combine Character; \code{"union"} or \code{"intersect"}.
 #' @return An unevaluated \code{call}.
 #' @keywords internal
-.analysis_run_call <- function(fn, res_symbol, name, params, scope_expr,
-                               combine) {
+.analysis_run_call <- function(fn, res_symbol, name, params, scope_args,
+                               combine, date_handling = NULL) {
   args <- list(as.name(fn), res_symbol, name, .ds_encode(params))
-  if (!is.null(scope_expr)) {
-    args <- c(args, list(scope = scope_expr))
+  if (!is.null(scope_args)) {
+    if (!is.list(scope_args) || is.null(names(scope_args)) ||
+        anyNA(names(scope_args)) || any(!nzchar(names(scope_args))) ||
+        anyDuplicated(names(scope_args))) {
+      stop("scope_args must be a closed named argument list.", call. = FALSE)
+    }
+    has_cohort <- "scope" %in% names(scope_args)
+    cohort_names <- grep("^scope_cohort_[0-9]+$", names(scope_args),
+                         value = TRUE)
+    table_names <- grep("^scope_table_[0-9]+$", names(scope_args), value = TRUE)
+    expected_names <- c(
+      if (has_cohort) "scope" else character(0),
+      if (length(cohort_names) > 0L) {
+        paste0("scope_cohort_", seq_along(cohort_names))
+      } else character(0),
+      if (length(table_names) > 0L) {
+        paste0("scope_table_", seq_along(table_names))
+      } else character(0)
+    )
+    if (!identical(names(scope_args), expected_names) ||
+        (has_cohort && length(cohort_names) > 0L) ||
+        (has_cohort && !.analysis_scope_literal_is_valid(scope_args$scope)) ||
+        any(!vapply(scope_args[cohort_names],
+                    .analysis_scope_literal_is_valid, logical(1L))) ||
+        any(!vapply(scope_args[table_names], is.name, logical(1L)))) {
+      stop("scope_args may contain only scalar literal scope/scope_cohort_<n> ",
+           "arguments and sequential bare scope_table_<n> symbols.",
+           call. = FALSE)
+    }
+    args <- c(args, scope_args)
   }
   args <- c(args, list(combine = combine))
+  if (!is.null(date_handling)) {
+    args <- c(args, list(date_handling = date_handling))
+  }
   as.call(args)
+}
+
+.analysis_consistent_metadata <- function(raw, expected_servers, context) {
+  errors <- attr(raw, "ds_errors") %||% list()
+  missing <- setdiff(expected_servers, names(raw))
+  if (length(errors) > 0L || length(missing) > 0L) {
+    stop("Cannot verify ", context, " on every server; unavailable: ",
+         paste(unique(c(names(errors), missing)), collapse = ", "), ".",
+         call. = FALSE)
+  }
+  reference <- raw[[expected_servers[[1L]]]]
+  different <- expected_servers[!vapply(raw[expected_servers], identical,
+                                        logical(1), reference)]
+  if (length(different) > 0L) {
+    stop("Federated ", context, " differs across servers: ",
+         paste(different, collapse = ", "),
+         ". Align dsOMOP and analysis-pack versions before execution.",
+         call. = FALSE)
+  }
+  reference
+}
+
+.analysis_complete_results <- function(raw, expected_servers, context) {
+  errors <- attr(raw, "ds_errors") %||% list()
+  missing <- setdiff(expected_servers, names(raw))
+  failed <- unique(c(names(errors), missing))
+  if (length(failed) > 0L) {
+    stop("Federated ", context, " failed or returned no verifiable result on: ",
+         paste(failed, collapse = ", "),
+         ". Partial-site analysis results are not published or pooled.",
+         call. = FALSE)
+  }
+  raw[expected_servers]
 }
 
 #' Render an entry's client-side plot over already-gated pooled data
 #'
 #' The plotting half of the analysis catalog runs ENTIRELY on the client, over
 #' data that has ALREADY passed the server's single per-patient disclosure gate.
-#' For entries that ship one, the server returns an INERT plot recipe in the
-#' entry metadata (\code{omopAnalysisGetDS}): \code{plot$type} (a label) and
-#' \code{plot$code}, the SOURCE TEXT of a \code{function(df, params)} that builds
-#' a \code{ggplot}. That source ships INSIDE the installed dsOMOP / analysis-pack
-#' package; it is authored by the same trusted maintainers as the gate itself.
+#' For entries that ship one, the server returns declarative plot metadata. The
+#' client accepts only an allowlisted \code{plot$type} plus optional column-name
+#' mappings and dispatches to local renderers. Remote source text is never
+#' parsed or evaluated.
 #'
-#' Safety model (why eval here is not a code-injection surface):
+#' Safety model:
 #' \itemize{
-#'   \item The client NEVER sends plot code to the server, and the server NEVER
-#'     evaluates it — the server only carries the inert text alongside the gated
-#'     aggregate. There is no client->server code path here.
-#'   \item The code is evaluated CLIENT-SIDE, in the analyst's own session, only
-#'     over \code{df} — the pooled data frame that already cleared the gate
-#'     (small-cell suppressed, banded, distributions masked). A plot can only
-#'     ever redraw disclosure-controlled numbers; it cannot reach back into any
-#'     server or recover a suppressed cell.
-#'   \item Evaluation is wrapped in \code{\link[base]{tryCatch}} so a broken or
-#'     incompatible plot recipe NEVER costs the analyst the (already returned)
-#'     data — it degrades to a warning and \code{NULL} plot.
+#'   \item Server metadata cannot execute code in the analyst's R process.
+#'   \item Only a local, allowlisted renderer sees \code{df} — the pooled data
+#'     frame that already cleared the gate (small-cell suppressed, banded and
+#'     distribution-protected). Remote source text is ignored.
+#'   \item Rendering is wrapped in \code{\link[base]{tryCatch}} so incompatible
+#'     declarative metadata never costs the analyst the already-returned data;
+#'     it degrades to a warning and \code{NULL} plot.
 #' }
 #' \pkg{ggplot2} is required only on this path (\code{plot = TRUE}); a clear
 #' message is raised if it is not installed, rather than failing obscurely inside
 #' the recipe.
 #'
 #' @param meta Named list; one entry's metadata from \code{omopAnalysisGetDS}.
-#'   The plot recipe is read from \code{meta$plot} (a \code{list(type, code)}),
+#'   The plot recipe is read from \code{meta$plot} (a \code{list(type, mapping)}),
 #'   tolerating a nested \code{meta$compute$plot} for forward compatibility.
 #' @param pooled Data frame; the pooled, gate-passed aggregate to plot.
-#' @param params Named list; the same parameter values passed to the run, handed
-#'   to the recipe's \code{function(df, params)} second argument.
+#' @param params Named list; retained for API compatibility with future local
+#'   renderers. It is never evaluated as code.
 #' @return A \code{ggplot} object, or \code{NULL} when the entry ships no plot
 #'   recipe or the recipe could not be built (with a warning in the latter case).
 #' @keywords internal
@@ -133,8 +270,8 @@
   # The recipe lives at meta$plot (flat, as omopAnalysisGetDS exposes it); accept
   # a nested compute$plot too so the client is robust to either metadata shape.
   recipe <- meta$plot %||% meta$compute$plot
-  code <- recipe$code
-  if (is.null(code) || !nzchar(code)) {
+  type <- tolower(recipe$type %||% "")
+  if (!nzchar(type)) {
     warning("Analysis '", meta$name %||% "?",
             "' does not provide a plot; returning data only.", call. = FALSE)
     return(NULL)
@@ -150,20 +287,84 @@
     return(NULL)
   }
 
-  # Parse + evaluate the recipe and call it on the already-gated pooled frame.
-  # A failure here must never lose the data the caller already has, so the whole
-  # build degrades to a warning + NULL plot.
+  allowed_types <- c("bar", "line", "step", "point", "scatter",
+                     "histogram", "box", "forest")
+  if (!type %in% allowed_types) {
+    warning("Analysis '", meta$name %||% "?", "' requested unsupported plot type '",
+            type, "'; returning data only.", call. = FALSE)
+    return(NULL)
+  }
+
+  # Optional declarative mappings are untrusted strings: accept only known
+  # roles pointing at columns that actually exist in the gated frame.
+  mapping <- recipe$mapping %||% list()
+  if (!is.list(mapping) ||
+      length(setdiff(names(mapping), c("x", "y", "fill", "colour",
+                                       "ymin", "ymax"))) > 0L ||
+      any(!vapply(mapping, function(x) is.character(x) && length(x) == 1L &&
+                                    !is.na(x) && x %in% names(pooled),
+                  logical(1)))) {
+    warning("Analysis '", meta$name %||% "?",
+            "' supplied an invalid declarative plot mapping; returning data only.",
+            call. = FALSE)
+    return(NULL)
+  }
+
+  numeric_cols <- names(pooled)[vapply(pooled, is.numeric, logical(1))]
+  label_cols <- setdiff(names(pooled), numeric_cols)
+  prefer <- function(candidates, pattern) {
+    hit <- grep(pattern, candidates, value = TRUE, ignore.case = TRUE)
+    if (length(hit)) hit[[1]] else if (length(candidates)) candidates[[1]] else NULL
+  }
+  x_col <- mapping$x %||% prefer(label_cols,
+    "step|stratum|concept|covariate|metric|category|arm|month|window|bin|day|time")
+  y_col <- mapping$y %||% prefer(numeric_cols,
+    "^(n|count|persons|subjects|person_count|n_persons|concept_count|outcome_events|outcomes|rate|average|median_value|estimate|irr|statistic|pct_treated|survival_probability)$")
+  if (is.null(x_col)) x_col <- setdiff(names(pooled), y_col)[1]
+
+  # A failure in local rendering must never lose the already-returned data.
   tryCatch({
-    plot_fn <- eval(parse(text = code))
-    if (!is.function(plot_fn)) {
-      stop("plot recipe did not evaluate to a function(df, params).",
-           call. = FALSE)
+    if (type == "box" && all(c("p10_value", "p25_value", "median_value",
+                                "p75_value", "p90_value") %in% names(pooled))) {
+      x_col <- x_col %||% names(pooled)[[1]]
+      return(ggplot2::ggplot(pooled, ggplot2::aes(x = .data[[x_col]])) +
+        ggplot2::geom_boxplot(ggplot2::aes(
+          lower = .data[["p25_value"]], upper = .data[["p75_value"]],
+          middle = .data[["median_value"]], ymin = .data[["p10_value"]],
+          ymax = .data[["p90_value"]]), stat = "identity"))
     }
-    p <- plot_fn(pooled, params)
-    if (!inherits(p, "ggplot")) {
-      stop("plot recipe did not return a ggplot object.", call. = FALSE)
+    if (type == "forest") {
+      y_col <- mapping$y %||% prefer(numeric_cols, "estimate|irr|effect")
+      ymin <- mapping$ymin %||% prefer(numeric_cols, "ci_lo|lower")
+      ymax <- mapping$ymax %||% prefer(numeric_cols, "ci_hi|upper")
+      if (any(vapply(list(x_col, y_col, ymin, ymax), is.null, logical(1)))) {
+        stop("forest plots require label, estimate, lower and upper columns.",
+             call. = FALSE)
+      }
+      return(ggplot2::ggplot(pooled, ggplot2::aes(
+        x = .data[[x_col]], y = .data[[y_col]])) +
+        ggplot2::geom_point() + ggplot2::geom_errorbar(
+          ggplot2::aes(ymin = .data[[ymin]], ymax = .data[[ymax]]), width = .1))
     }
-    p
+    if (type == "histogram" && is.null(y_col)) {
+      x_col <- mapping$x %||% numeric_cols[[1]]
+      return(ggplot2::ggplot(pooled, ggplot2::aes(x = .data[[x_col]])) +
+        ggplot2::geom_histogram(bins = 30L))
+    }
+    if (is.null(x_col) || is.null(y_col)) {
+      stop("plot type requires usable x and y columns.", call. = FALSE)
+    }
+    base <- ggplot2::ggplot(pooled, ggplot2::aes(
+      x = .data[[x_col]], y = .data[[y_col]],
+      fill = if (!is.null(mapping$fill)) .data[[mapping$fill]] else NULL,
+      colour = if (!is.null(mapping$colour)) .data[[mapping$colour]] else NULL))
+    switch(type,
+      bar =, histogram = base + ggplot2::geom_col(),
+      line = base + ggplot2::geom_line(),
+      step = base + ggplot2::geom_step(),
+      point =, scatter = base + ggplot2::geom_point(),
+      box = base + ggplot2::geom_boxplot()
+    )
   }, error = function(e) {
     warning("Analysis '", meta$name %||% "?", "' plot could not be built (",
             conditionMessage(e), "); returning data only.", call. = FALSE)
@@ -177,9 +378,9 @@
 #' the single registry that folds the curated QueryLibrary SQL templates, the
 #' pre-computed Achilles analyses, and the generic OHDSI result tables behind one
 #' stable, pack-prefixed naming scheme (\code{"dsomop:<id>"}). Because the
-#' catalog is defined by the server package, it is identical across servers and
-#' the first responding server's result is returned as the pooled view. No SQL,
-#' compute functions, or other server internals are exposed.
+#' catalog is defined by the server package, the client requires an identical
+#' response from every participating server before exposing a pooled view. No
+#' SQL, compute functions, or other server internals are exposed.
 #'
 #' @param domain Character; optional clinical-domain filter (e.g.
 #'   \code{"condition"}, \code{"person"}). \code{NULL} (the default) returns
@@ -218,8 +419,9 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
     expr = call("omopAnalysisListDS", session$res_symbol, domain)
   )
 
-  # Catalog is identical across servers: pooled view is the first server's.
-  pooled <- if (length(raw) > 0) raw[[1]] else NULL
+  pooled <- .analysis_consistent_metadata(
+    raw, names(conns), "analysis catalog"
+  )
 
   dsomop_result(
     per_site = raw, pooled = pooled,
@@ -231,8 +433,8 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
 #' Returns full metadata for a single catalog entry: its parameter specs,
 #' compute kind, disclosure spec, and scoping capabilities. Use it to discover
 #' an entry's parameters and to check whether it accepts cohort/table scoping
-#' before running it. The metadata is identical across servers, so the first
-#' responding server's result is returned as the pooled view.
+#' before running it. Execution requires identical metadata from every server;
+#' a mixed-version or partially unavailable federation fails closed.
 #'
 #' @param name Character; the entry id (e.g. \code{"dsomop:achilles.401"}) or a
 #'   shorthand for it (native id without the \code{"dsomop:"} prefix, or a unique
@@ -245,7 +447,9 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
 #'   element is a named list with the entry's \code{name}, \code{description},
 #'   \code{domain}, \code{mode}, \code{params}, \code{compute_kind},
 #'   \code{disclosure}, \code{scope}, \code{adapter}, and the inert client-side
-#'   \code{plot} recipe (\code{NULL} when the entry ships none).
+#'   \code{plot} recipe (\code{NULL} when the entry ships none). External packs
+#'   also expose their pinned package/version and closed output contract, so
+#'   federated execution can require exact metadata equality across nodes.
 #' @examples
 #' \dontrun{
 #' meta <- ds.omop.analysis.get("dsomop:achilles.401")
@@ -265,8 +469,9 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
     expr = call("omopAnalysisGetDS", session$res_symbol, name)
   )
 
-  # Metadata is identical across servers: pooled view is the first server's.
-  pooled <- if (length(raw) > 0) raw[[1]] else NULL
+  pooled <- .analysis_consistent_metadata(
+    raw, names(conns), paste0("analysis metadata for '", name, "'")
+  )
 
   dsomop_result(
     per_site = raw, pooled = pooled,
@@ -326,7 +531,9 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 #'   \code{NULL} (the default) means no cohort scoping.
 #' @param tables Optional character vector of server-side \code{omop.table}
 #'   symbol names to scope the population to (their distinct persons). May be
-#'   combined with \code{cohort}.
+#'   combined with \code{cohort}. Each table crosses DataSHIELD as its own bare
+#'   named \code{scope_table_<n>} argument, never through a generic
+#'   \code{list()} or \code{c()} AggregateMethod.
 #' @param combine Character; how to fold multiple scope sources together:
 #'   \code{"union"} (the default) or \code{"intersect"}.
 #' @param pooling_policy Character; how suppressed (NA) cells are handled when
@@ -341,6 +548,9 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 #'   that already cleared the server's disclosure gate (see Safety, below). A
 #'   broken/incompatible recipe degrades to a warning and a \code{NULL} plot — it
 #'   never costs you the returned data.
+#' @param date_handling For assign-mode loaders, the server-side date policy:
+#'   \code{"remove"} (default), \code{"relative"}, \code{"binned"}, or
+#'   server-authorized \code{"absolute"}. Ignored for aggregate entries.
 #' @param symbol Character; the session symbol used when the OMOP connection was
 #'   initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
@@ -353,16 +563,10 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 #'   \code{plot = TRUE} and the entry ships a plot recipe, the built \code{ggplot}
 #'   is attached as the \code{"plot"} attribute (and \code{meta$plot}).
 #'
-#' @section Safety (client-side plotting): Some entries ship an INERT plot recipe
-#'   — the source text of a \code{function(df, params)} that builds a
-#'   \code{ggplot} — which the server returns as metadata ALONGSIDE the gated
-#'   aggregate. That source ships inside the installed dsOMOP / analysis-pack
-#'   package (authored by the same maintainers as the disclosure gate). When
-#'   \code{plot = TRUE} the client evaluates it LOCALLY and calls it only on
-#'   \code{pooled} — data that has already passed the server's single per-patient
-#'   gate (small-cell suppressed, banded, distributions masked). The client never
-#'   sends plot code to the server and the server never evaluates it; a plot can
-#'   only redraw disclosure-controlled numbers, never recover a suppressed cell.
+#' @section Safety (client-side plotting): The server may advertise only an
+#'   allowlisted plot type and declarative column mappings. The client dispatches
+#'   to installed local renderers over already-gated pooled data; it never parses
+#'   or evaluates source code received from a server.
 #' @examples
 #' \dontrun{
 #' # Discover, inspect, then run an entry scoped to a cohort.
@@ -395,54 +599,135 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
                                  tables = NULL, combine = "union",
                                  pooling_policy = "strict", plot = FALSE,
+                                 date_handling = NULL,
                                  symbol = "omop", conns = NULL) {
   combine <- match.arg(combine, c("union", "intersect"))
+  pooling_policy <- match.arg(pooling_policy, c("strict", "pooled_only_ok"))
+  if (!is.logical(plot) || length(plot) != 1L || is.na(plot)) {
+    stop("plot must be TRUE or FALSE.", call. = FALSE)
+  }
 
   code <- .build_code("ds.omop.analysis.run", name = name, symbol = symbol)
 
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+  scope_args <- .analysis_scope_expr(cohort, tables)
+  contract <- .session_harmonization_for_connections(session, conns)
+  if (!is.null(contract)) {
+    table_cap <- contract$max_analysis_scope_tables
+    if (length(tables %||% character(0)) > table_cap) {
+      stop("Analysis scope exceeds negotiated max_analysis_scope_tables cap ",
+           "of ", table_cap, ".", call. = FALSE)
+    }
+    if (length(scope_args %||% list()) > table_cap + 1L) {
+      stop("Analysis scope exceeds negotiated total source cap of ",
+           table_cap + 1L, ".", call. = FALSE)
+    }
+  }
 
-  # Fetch the entry metadata once: it decides aggregate vs assign (assign loaders
-  # keep their result server-side) AND carries the inert plot recipe used below
-  # when plot = TRUE. Identical across servers, so the first server's view is used.
-  entry_meta <- tryCatch({
-    meta <- DSI::datashield.aggregate(
-      conns, expr = call("omopAnalysisGetDS", session$res_symbol, name))
-    if (length(meta) > 0) meta[[1]] else NULL
-  }, error = function(e) NULL)
+  # Mode and output semantics must be identical on every node. A first-server
+  # decision could otherwise route the same entry through aggregate on one site
+  # and assign on another.
+  metadata <- .ds_safe_aggregate(
+    conns, expr = call("omopAnalysisGetDS", session$res_symbol, name)
+  )
+  entry_meta <- .analysis_consistent_metadata(
+    metadata, names(conns), paste0("analysis metadata for '", name, "'")
+  )
+  if (!is.list(entry_meta) || !is.character(entry_meta$mode) ||
+      length(entry_meta$mode) != 1L || is.na(entry_meta$mode) ||
+      !entry_meta$mode %in% c("aggregate", "assign")) {
+    stop("Analysis metadata has no supported aggregate/assign mode.",
+         call. = FALSE)
+  }
   is_assign <- identical(entry_meta$mode, "assign")
 
-  scope_expr <- .analysis_scope_expr(cohort, tables)
+  if (!is.null(date_handling)) {
+    if (!is.character(date_handling) || length(date_handling) != 1L ||
+        is.na(date_handling) ||
+        !tolower(date_handling) %in% c("remove", "relative",
+                                       "relative_to_index", "binned",
+                                       "absolute")) {
+      stop("date_handling must be remove, relative, binned, or absolute.",
+           call. = FALSE)
+    }
+    date_handling <- tolower(date_handling)
+  }
 
   if (is_assign) {
-    # Assign-mode loader: the server stores the result; nothing returns to pool.
-    newobj <- .generate_symbol("omop.analysis")
+    # Assign-mode loader: reserve a fresh symbol, assign on every node, and
+    # commit only after post-execution inventory proves complete federation
+    # coverage. Any partial assignment is removed everywhere.
+    inventory <- .plan_symbol_inventory(conns, "analysis assignment preflight")
+    newobj <- NULL
+    for (attempt in seq_len(10L)) {
+      candidate <- .generate_symbol("omop.analysis")
+      if (all(!vapply(inventory, function(x) candidate %in% x, logical(1)))) {
+        newobj <- candidate
+        break
+      }
+    }
+    if (is.null(newobj)) {
+      stop("Could not reserve a collision-free analysis output symbol.",
+           call. = FALSE)
+    }
     run_expr <- .analysis_run_call(
       "omopAnalysisRunAssignDS", session$res_symbol, name, params,
-      scope_expr, combine)
-    per_site <- list()
-    for (srv in names(conns)) {
-      ok <- tryCatch({
-        DSI::datashield.assign.expr(conns[srv], symbol = newobj,
-                                    expr = run_expr)
-        TRUE
-      }, error = function(e) e$message)
-      per_site[[srv]] <- ok
+      scope_args, combine, date_handling = date_handling)
+    succeeded <- character(0)
+    failures <- character(0)
+    condition <- tryCatch({
+      DSI::datashield.assign.expr(
+        conns, symbol = newobj, expr = run_expr,
+        success = function(server) {
+          succeeded <<- c(succeeded, server)
+        },
+        error = function(server, message) {
+          failures[[server]] <<- message
+        }
+      )
+      NULL
+    }, error = identity)
+    incomplete <- unique(c(names(failures), setdiff(names(conns), succeeded)))
+    if (!is.null(condition) || length(incomplete) > 0L) {
+      .plan_remove_output_symbols(conns, list(newobj), verify = TRUE)
+      detail <- if (!is.null(condition)) conditionMessage(condition) else
+        paste(incomplete, collapse = ", ")
+      stop("Federated analysis assignment failed and was rolled back: ",
+           detail, ".", call. = FALSE)
     }
-    return(dsomop_result(
+    committed <- .plan_symbol_inventory(conns, "analysis assignment commit")
+    missing <- names(committed)[!vapply(
+      committed, function(x) newobj %in% x, logical(1)
+    )]
+    if (length(missing) > 0L) {
+      .plan_remove_output_symbols(conns, list(newobj), verify = TRUE)
+      stop("Could not prove analysis assignment commit on: ",
+           paste(missing, collapse = ", "), ".", call. = FALSE)
+    }
+    .record_session_outputs(symbol, newobj)
+    per_site <- stats::setNames(as.list(rep(TRUE, length(conns))), names(conns))
+    result <- dsomop_result(
       per_site = per_site, pooled = NULL,
       meta = list(call_code = code, scope = "per_site",
-                  assign_symbol = newobj)))
+                  assign_symbol = newobj))
+    result$meta$assign_symbol <- newobj
+    return(result)
   }
 
   # Aggregate entry: run on each server, then pool the returned frames.
   run_expr <- .analysis_run_call(
     "omopAnalysisRunDS", session$res_symbol, name, params,
-    scope_expr, combine)
+    scope_args, combine)
   raw <- .ds_safe_aggregate(conns, expr = run_expr)
+  raw <- .analysis_complete_results(
+    raw, names(conns), paste0("analysis '", name, "'")
+  )
 
-  pool_out <- .pool_result(raw, "ohdsi_results", pooling_policy)
+  pool_out <- .pool_result(
+    raw, "ohdsi_results", pooling_policy,
+    output_contract = entry_meta$output_contract %||% NULL
+  )
 
   # Optional client-side plot over the pooled, gate-passed data. The data is
   # already in hand; .analysis_render_plot degrades to NULL (with a warning) on

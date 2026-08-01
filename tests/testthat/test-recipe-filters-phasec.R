@@ -88,20 +88,14 @@ test_that("features output carries per-variable row filter on its feature spec",
   .expect_value_bin_leaf(out$representation$features[["hba1c"]]$filter)
 })
 
-test_that("covariates_sparse output carries per-variable row filter on its spec", {
-  r <- omop_recipe()
-  r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
-  r <- dsOMOPClient:::recipe_add_output(r,
-    omop_output(name = "labs", type = "covariates_sparse"))
-
-  out <- recipe_to_plan(r)$outputs[[1]]
-  expect_null(out$filters$custom)
-  .expect_value_bin_leaf(out$representation$features[["hba1c"]]$filter)
+test_that("legacy covariates_sparse fails instead of degrading to features", {
+  expect_error(omop_output(name = "labs", type = "covariates_sparse"),
+               "no faithful executable mapping")
 })
 
 test_that("survival output forwards per-variable row filter to filters$custom", {
   r <- omop_recipe()
-  r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
+  r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "raw"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "surv", type = "survival"))
 
   out <- recipe_to_plan(r)$outputs[["surv"]]
@@ -198,15 +192,14 @@ test_that("recipe-level and per-variable row filters AND-merge (neither lost)", 
   expect_true("and" %in% names(ft))
   expect_equal(length(ft$and), 2L)
 
-  # Flatten one level and confirm both the value_bin and the date bounds survive.
+  # Confirm both the value_bin and the single safe BETWEEN leaf survive.
   ops <- unlist(lapply(ft$and, function(node) {
     if (!is.null(node$op)) node$op
     else if (!is.null(node$and)) vapply(node$and, function(x) x$op, character(1))
     else NA_character_
   }))
   expect_true("value_bin" %in% ops)
-  expect_true(">=" %in% ops)
-  expect_true("<=" %in% ops)
+  expect_true("between" %in% ops)
 })
 
 # --- visit_filter + concept_col round-trip ------------------------------------

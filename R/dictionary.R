@@ -39,6 +39,7 @@ ds.omop.tables <- function(schema_category = NULL,
   )
 
   if (!is.null(schema_category)) {
+    result_attrs <- attributes(result)
     result <- lapply(result, function(df) {
       if (is.data.frame(df) && "schema_category" %in% names(df)) {
         df[tolower(df$schema_category) == tolower(schema_category), ,
@@ -47,6 +48,9 @@ ds.omop.tables <- function(schema_category = NULL,
         df
       }
     })
+    for (attribute_name in setdiff(names(result_attrs), "names")) {
+      attr(result, attribute_name) <- result_attrs[[attribute_name]]
+    }
   }
 
   result
@@ -88,10 +92,10 @@ ds.omop.columns <- function(table, symbol = "omop",
 #'
 #' @description
 #' Retrieves the join relationship graph for the OMOP CDM schema from
-#' each connected server. The graph describes how tables can be joined
+#' each connected server. The graph describes standard OMOP relationships
 #' (e.g., via \code{person_id}, \code{visit_occurrence_id}, or concept
-#' foreign keys), which is used by the query builder and extraction
-#' pipeline to construct multi-table joins automatically.
+#' foreign keys). It is an introspection aid; current recipe/plan execution does
+#' not consume it to invent arbitrary joins automatically.
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
 #' @param conns DSI connection object(s) or NULL to use the session default.
@@ -127,10 +131,21 @@ ds.omop.joins <- function(symbol = "omop", conns = NULL) {
 #'
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
 #' @param conns DSI connection object(s) or NULL to use the session default.
-#' @return A list with three components: \code{common_tables} (character
+#' @param tables Optional character vector limiting column introspection to the
+#'   tables relevant to a plan. Table presence is still compared globally.
+#' @return A list with schema components including \code{servers} (the exact
+#'   nodes compared), \code{common_tables} (character
 #'   vector of table names present on all servers), \code{server_only}
 #'   (named list of tables unique to each server), and
-#'   \code{column_diffs} (named list of per-table column differences).
+#'   \code{column_diffs} (named list of per-table column differences), plus
+#'   \code{common_columns} (the columns present on every server for each common
+#'   table with compatible type families), \code{common_column_types} (their
+#'   canonical type families), \code{column_type_diffs} (per-table type-family
+#'   mismatches), and \code{column_errors} (named character vector of tables
+#'   whose columns could not be inspected). \code{semantic_versions} records
+#'   the reported CDM, dsOMOP specification and vocabulary versions for each
+#'   node. An empty \code{column_errors} means that all requested common-table
+#'   column contracts were established successfully.
 #' @examples
 #' \dontrun{
 #' diff <- ds.omop.compare()
@@ -139,21 +154,76 @@ ds.omop.joins <- function(symbol = "omop", conns = NULL) {
 #' diff$column_diffs
 #' }
 #' @export
-ds.omop.compare <- function(symbol = "omop", conns = NULL) {
+ds.omop.compare <- function(symbol = "omop", conns = NULL, tables = NULL) {
   session <- .get_session(symbol)
+  conns <- conns %||% session$conns
   caps <- session$capabilities
+  if (!is.null(tables)) {
+    if (!is.character(tables) || anyNA(tables) || any(!nzchar(tables))) {
+      stop("tables must be NULL or a non-missing character vector.",
+           call. = FALSE)
+    }
+    tables <- unique(tolower(tables))
+  }
+  expected_servers <- names(conns)
+  if (is.null(expected_servers) || length(expected_servers) == 0L) {
+    expected_servers <- names(caps)
+  }
+
+  missing_capabilities <- setdiff(expected_servers, names(caps))
+  if (length(missing_capabilities) > 0L) {
+    return(list(
+      servers = expected_servers,
+      common_tables = character(0),
+      server_only = list(),
+      column_diffs = list(),
+      common_columns = list(),
+      common_column_types = list(),
+      column_type_diffs = list(),
+      semantic_versions = list(),
+      column_errors = c(
+        capabilities = paste0(
+          "Missing capability metadata for: ",
+          paste(missing_capabilities, collapse = ", ")
+        )
+      ),
+      message = "Schema comparison is incomplete."
+    ))
+  }
+  if (length(expected_servers) > 0L) {
+    caps <- caps[expected_servers]
+  }
+  semantic_versions <- lapply(caps, function(cap) {
+    scalar <- function(x) {
+      if (is.null(x) || length(x) != 1L || is.na(x) || !nzchar(as.character(x))) {
+        return(NA_character_)
+      }
+      as.character(x)
+    }
+    list(
+      cdm_version = scalar(cap$cdm_info$cdm_version),
+      spec_version = scalar(cap$spec_version),
+      vocabulary_version = scalar(cap$cdm_info$vocabulary_version)
+    )
+  })
 
   if (is.null(caps) || length(caps) < 2) {
     return(list(
-      common_tables = if (!is.null(caps))
+      servers = names(caps),
+      common_tables = if (!is.null(caps) && length(caps) > 0L)
         caps[[1]]$tables else character(0),
       server_only = list(),
       column_diffs = list(),
+      common_columns = list(),
+      common_column_types = list(),
+      column_type_diffs = list(),
+      semantic_versions = semantic_versions,
+      column_errors = character(0),
       message = "Need 2+ servers for comparison."
     ))
   }
 
-  all_tables <- lapply(caps, function(c) c$tables)
+  all_tables <- lapply(caps, function(c) sort(unique(tolower(c$tables))))
   common <- Reduce(intersect, all_tables)
   server_only <- lapply(
     stats::setNames(names(caps), names(caps)),
@@ -163,29 +233,153 @@ ds.omop.compare <- function(symbol = "omop", conns = NULL) {
     vapply(server_only, length, integer(1)) > 0]
 
   col_diffs <- list()
-  for (tbl in common) {
+  common_columns <- list()
+  common_column_types <- list()
+  column_type_diffs <- list()
+  column_errors <- character(0)
+  inspect_tables <- if (is.null(tables)) common else intersect(common, tables)
+  for (tbl in inspect_tables) {
     tryCatch({
       cols_per_server <- ds.omop.columns(
         tbl, symbol = symbol, conns = conns)
+      aggregate_errors <- attr(cols_per_server, "ds_errors")
+      missing_servers <- setdiff(expected_servers, names(cols_per_server))
+      if (length(aggregate_errors) > 0L || length(missing_servers) > 0L) {
+        details <- character(0)
+        if (length(aggregate_errors) > 0L) {
+          details <- c(details, paste(
+            names(aggregate_errors), unlist(aggregate_errors, use.names = FALSE),
+            sep = ": "
+          ))
+        }
+        missing_without_error <- setdiff(missing_servers,
+                                         names(aggregate_errors))
+        if (length(missing_without_error) > 0L) {
+          details <- c(details, paste0(
+            missing_without_error, ": no introspection result"
+          ))
+        }
+        stop(paste(details, collapse = "; "), call. = FALSE)
+      }
+      cols_per_server <- cols_per_server[expected_servers]
+      invalid_results <- expected_servers[!vapply(
+        cols_per_server,
+        function(df) is.data.frame(df) &&
+          "column_name" %in% names(df) &&
+          any(c("cdm_datatype", "db_datatype", "data_type") %in% names(df)) &&
+          !anyNA(df$column_name) &&
+          !any(!nzchar(as.character(df$column_name))) &&
+          !anyDuplicated(tolower(as.character(df$column_name))),
+        logical(1)
+      )]
+      if (length(invalid_results) > 0L) {
+        stop("Invalid column metadata from: ",
+             paste(invalid_results, collapse = ", "), call. = FALSE)
+      }
       all_col_names <- lapply(cols_per_server, function(df) {
-        if (is.data.frame(df)) df$column_name else character(0)
+        sort(unique(tolower(as.character(df$column_name))))
       })
-      common_cols <- Reduce(intersect, all_col_names)
+      common_by_name <- Reduce(intersect, all_col_names)
+      type_maps <- lapply(cols_per_server, function(df) {
+        columns <- tolower(as.character(df$column_name))
+        actual <- if ("db_datatype" %in% names(df)) {
+          df$db_datatype
+        } else if ("data_type" %in% names(df)) {
+          df$data_type
+        } else {
+          df$cdm_datatype
+        }
+        families <- .omop_column_type_family(actual)
+        stats::setNames(families, columns)
+      })
+      cdm_type_maps <- lapply(seq_along(cols_per_server), function(i) {
+        df <- cols_per_server[[i]]
+        columns <- tolower(as.character(df$column_name))
+        expected_families <- if ("cdm_datatype" %in% names(df)) {
+          .omop_column_type_family(df$cdm_datatype)
+        } else {
+          unname(type_maps[[i]])
+        }
+        # Authorized extension columns and introspection-only CDM versions have
+        # no OHDSI datatype declaration. Their actual DB family is the only
+        # executable contract and must still agree across every server.
+        missing_expected <- is.na(expected_families) |
+          !nzchar(expected_families)
+        expected_families[missing_expected] <-
+          unname(type_maps[[i]])[missing_expected]
+        stats::setNames(expected_families, columns)
+      })
+      type_mismatches <- list()
+      for (column in common_by_name) {
+        actual_families <- vapply(type_maps, function(types) {
+          unname(types[[column]])
+        }, character(1))
+        cdm_families <- vapply(cdm_type_maps, function(types) {
+          unname(types[[column]])
+        }, character(1))
+        invalid_implementation <- actual_families != cdm_families
+        if (anyNA(actual_families) || anyNA(cdm_families) ||
+            any(!nzchar(actual_families)) || any(!nzchar(cdm_families)) ||
+            any(invalid_implementation) ||
+            length(unique(actual_families)) > 1L ||
+            length(unique(cdm_families)) > 1L) {
+          display <- actual_families
+          display[invalid_implementation & !is.na(invalid_implementation)] <-
+            paste0("cdm=", cdm_families[invalid_implementation &
+                                          !is.na(invalid_implementation)],
+                   ";db=", actual_families[invalid_implementation &
+                                             !is.na(invalid_implementation)])
+          type_mismatches[[column]] <- display
+        }
+      }
+      common_cols <- setdiff(common_by_name, names(type_mismatches))
+      common_columns[[tbl]] <- common_cols
+      common_column_types[[tbl]] <- stats::setNames(
+        vapply(common_cols, function(column) {
+          unname(cdm_type_maps[[1L]][[column]])
+        }, character(1)),
+        common_cols
+      )
+      if (length(type_mismatches) > 0L) {
+        column_type_diffs[[tbl]] <- type_mismatches
+      }
       diff_cols <- lapply(
         stats::setNames(names(all_col_names), names(all_col_names)),
-        function(srv) setdiff(all_col_names[[srv]], common_cols)
+        function(srv) sort(setdiff(all_col_names[[srv]], common_by_name))
       )
       diff_cols <- diff_cols[
         vapply(diff_cols, length, integer(1)) > 0]
       if (length(diff_cols) > 0) col_diffs[[tbl]] <- diff_cols
-    }, error = function(e) NULL)
+    }, error = function(e) {
+      common_columns[[tbl]] <<- character(0)
+      column_errors[[tbl]] <<- conditionMessage(e)
+    })
   }
 
   list(
+    servers = expected_servers,
     common_tables = common,
     server_only = server_only,
-    column_diffs = col_diffs
+    column_diffs = col_diffs,
+    common_columns = common_columns,
+    common_column_types = common_column_types,
+    column_type_diffs = column_type_diffs,
+    semantic_versions = semantic_versions,
+    column_errors = column_errors
   )
+}
+
+.omop_column_type_family <- function(data_type) {
+  value <- tolower(trimws(as.character(data_type)))
+  value[is.na(data_type) | !nzchar(value)] <- NA_character_
+  result <- value
+  result[grepl("blob|binary|bytea|raw", value)] <- "binary"
+  result[grepl("char|text|clob|json|uuid|enum", value)] <- "character"
+  result[grepl("int|numeric|decimal|number|double|float|real|serial", value)] <-
+    "numeric"
+  result[grepl("bool|bit", value)] <- "logical"
+  result[grepl("date|time|interval", value)] <- "temporal"
+  result
 }
 
 #' Get a full schema snapshot
@@ -226,8 +420,9 @@ ds.omop.snapshot <- function(symbol = "omop", conns = NULL) {
     expr = call("omopRelationshipGraphDS", session$res_symbol)
   )
 
-  lapply(
-    stats::setNames(names(caps), names(caps)),
+  complete_servers <- intersect(names(caps), names(graph))
+  result <- lapply(
+    stats::setNames(complete_servers, complete_servers),
     function(srv) {
       list(
         tables = caps[[srv]]$tables,
@@ -236,4 +431,23 @@ ds.omop.snapshot <- function(symbol = "omop", conns = NULL) {
       )
     }
   )
+  cap_errors <- attr(caps, "ds_errors") %||% list()
+  graph_errors <- attr(graph, "ds_errors") %||% list()
+  incomplete <- setdiff(names(conns), complete_servers)
+  if (length(incomplete) > 0L) {
+    errors <- stats::setNames(lapply(incomplete, function(server) {
+      details <- c(
+        if (!is.null(cap_errors[[server]])) {
+          paste0("capabilities: ", cap_errors[[server]])
+        },
+        if (!is.null(graph_errors[[server]])) {
+          paste0("relationships: ", graph_errors[[server]])
+        }
+      )
+      if (length(details) == 0L) "incomplete schema snapshot" else
+        paste(details, collapse = "; ")
+    }), incomplete)
+    attr(result, "ds_errors") <- errors
+  }
+  result
 }

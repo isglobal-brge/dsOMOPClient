@@ -19,7 +19,9 @@ connections stored in the session.}
 A named list (one element per server). Each server's result is the
   preview payload, whose \code{$validation} sub-list reports
   \code{valid} (logical), \code{errors}, \code{warnings}, and
-  \code{available_tables}. (No row estimates or SQL are returned.)
+  \code{available_tables}. No raw rows or SQL are returned; the shared
+  preview payload can include only the optional disclosure-banded person
+  count described in \code{\link{ds.omop.plan.preview}}.
 }
 \description{
 Sends the plan to each connected server for structural validation,
@@ -28,6 +30,8 @@ unsupported output types, and schema compatibility issues. This
 performs a server-side check (via \code{omopPlanPreviewDS}) but does
 not execute the plan or create any data. Use this to catch errors
 before calling \code{\link{ds.omop.plan.execute}}.
+Multi-server validation first establishes or revalidates the same strict
+schema/semantic harmonization contract used by execution.
 }
 \details{
 Note: \code{ds.omop.plan.validate} and \code{\link{ds.omop.plan.preview}}

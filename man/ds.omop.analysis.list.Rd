@@ -31,9 +31,9 @@ Returns metadata for every entry in the server's unified analysis catalog —
 the single registry that folds the curated QueryLibrary SQL templates, the
 pre-computed Achilles analyses, and the generic OHDSI result tables behind one
 stable, pack-prefixed naming scheme (\code{"dsomop:<id>"}). Because the
-catalog is defined by the server package, it is identical across servers and
-the first responding server's result is returned as the pooled view. No SQL,
-compute functions, or other server internals are exposed.
+catalog is defined by the server package, the client requires an identical
+response from every participating server before exposing a pooled view. No
+SQL, compute functions, or other server internals are exposed.
 }
 \examples{
 \dontrun{

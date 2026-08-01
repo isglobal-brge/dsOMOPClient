@@ -1,6 +1,67 @@
 # Module: Achilles Analytics
 # Client-side wrappers for querying pre-computed Achilles aggregate statistics.
 
+.canonical_achilles_catalog <- function(x) {
+  if (!is.data.frame(x)) return(NULL)
+  x <- unique(x[, sort(names(x)), drop = FALSE])
+  if (nrow(x) > 1L && ncol(x) > 0L) {
+    ordering_columns <- lapply(x, function(column) {
+      if (is.factor(column)) as.character(column) else column
+    })
+    ordering <- tryCatch(
+      do.call(order, c(ordering_columns, list(na.last = TRUE))),
+      error = function(e) NULL
+    )
+    if (is.null(ordering)) return(NULL)
+    x <- x[ordering, , drop = FALSE]
+  }
+  rownames(x) <- NULL
+  x
+}
+
+.pool_achilles_catalog <- function(raw, label) {
+  aggregate_errors <- attr(raw, "ds_errors") %||% list()
+  if (length(aggregate_errors) > 0L) {
+    return(list(
+      result = NULL,
+      warnings = paste0(
+        "Federated ", label, " unavailable: incomplete federation; ",
+        "unavailable server(s): ",
+        paste(names(aggregate_errors), collapse = ", "), "."
+      )
+    ))
+  }
+  if (length(raw) == 0L) {
+    return(list(result = NULL,
+                warnings = paste0("No ", label, " metadata returned.")))
+  }
+
+  canonical <- lapply(raw, .canonical_achilles_catalog)
+  valid <- !vapply(canonical, is.null, logical(1L))
+  if (!all(valid)) {
+    return(list(
+      result = NULL,
+      warnings = paste0(
+        "Federated ", label, " unavailable: invalid metadata from server(s): ",
+        paste(names(raw)[!valid], collapse = ", "), "."
+      )
+    ))
+  }
+  reference <- canonical[[1L]]
+  consistent <- vapply(canonical, identical, logical(1L), reference)
+  if (!all(consistent)) {
+    return(list(
+      result = NULL,
+      warnings = paste0(
+        "Federated ", label, " unavailable: server catalogs differ: ",
+        paste(names(raw)[!consistent], collapse = ", "), "."
+      )
+    ))
+  }
+
+  list(result = raw[[1L]], warnings = character(0))
+}
+
 #' Check Achilles availability
 #'
 #' Queries each connected server to determine whether Achilles result tables
@@ -78,12 +139,12 @@ ds.omop.achilles.analyses <- function(domain = NULL, symbol = "omop",
     expr = call("omopAchillesAnalysesDS", session$res_symbol, domain)
   )
 
-  # Pick first server for pooled (catalog is identical)
-  pooled <- if (length(raw) > 0) raw[[1]] else NULL
+  catalog <- .pool_achilles_catalog(raw, "Achilles analyses catalog")
 
   dsomop_result(
-    per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = "pooled"))
+    per_site = raw, pooled = catalog$result,
+    meta = list(call_code = code, scope = "pooled",
+                warnings = catalog$warnings))
 }
 
 #' Get Achilles count results
@@ -281,34 +342,26 @@ ds.omop.achilles.catalog <- function(symbol = "omop", conns = NULL) {
     expr = call("omopAchillesCatalogDS", session$res_symbol)
   )
 
-  # Pick first server for pooled (catalog is identical)
-  pooled <- if (length(raw) > 0) raw[[1]] else NULL
+  catalog <- .pool_achilles_catalog(raw, "Achilles analysis catalog")
 
   dsomop_result(
-    per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = "pooled"))
+    per_site = raw, pooled = catalog$result,
+    meta = list(call_code = code, scope = "pooled",
+                warnings = catalog$warnings))
 }
 
 #' Get Achilles Heel data-quality warnings (per site)
 #'
-#' Returns disclosure-controlled Achilles Heel warnings for each connected
-#' server (record counts below nfilter are masked; numbers in the warning text
-#' are scrubbed server-side). Heel results describe which data-quality rules
-#' fired per site, so they are reported per-site (not pooled).
+#' Achilles Heel counts records and does not provide distinct-person support for
+#' each fired rule. It therefore cannot satisfy dsOMOP's person-level
+#' contribution contract and is no longer available through DataSHIELD. Run it
+#' only in a controller-side quality-assurance workflow.
 #'
 #' @param symbol Character; session symbol (default "omop").
 #' @param conns Optional DataSHIELD connections.
 #' @return A \code{dsomop_result} with per-site heel warning data frames.
 #' @export
 ds.omop.achilles.heel <- function(symbol = "omop", conns = NULL) {
-  code <- .build_code("ds.omop.achilles.heel", symbol = symbol)
-  session <- .get_session(symbol)
-  conns <- conns %||% session$conns
-  raw <- .ds_safe_aggregate(
-    conns,
-    expr = call("omopAchillesHeelDS", session$res_symbol)
-  )
-  dsomop_result(
-    per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site"))
+  stop("Achilles Heel is controller-only: its record counts have no reviewed ",
+       "distinct-person contribution contract.", call. = FALSE)
 }

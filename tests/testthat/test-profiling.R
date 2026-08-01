@@ -88,3 +88,49 @@ test_that("all profiling functions have scope parameter", {
     expect_true("execute" %in% names(args))
   }
 })
+
+test_that("strict profiling never publishes a partial federation", {
+  symbol <- "profiling_partial_federation"
+  assign(
+    symbol,
+    structure(
+      list(
+        conns = list(a = "FAKE_A", b = "FAKE_B"),
+        res_symbol = "dsO.partial",
+        server_names = c("a", "b")
+      ),
+      class = "omop_session"
+    ),
+    envir = dsOMOPClient:::.dsomop_client_env
+  )
+  on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      server <- names(conns)[[1L]]
+      if (identical(server, "b")) {
+        stop("connection failed", call. = FALSE)
+      }
+      stats::setNames(list(data.frame(
+        table_name = "condition_occurrence",
+        n_records = 100,
+        n_persons = 80
+      )), server)
+    },
+    .package = "DSI"
+  )
+
+  strict <- ds.omop.domain.coverage(
+    scope = "pooled", pooling_policy = "strict", symbol = symbol
+  )
+  expect_null(strict$pooled)
+  expect_named(attr(strict$per_site, "ds_errors"), "b")
+  expect_true(any(grepl("incomplete federation", strict$meta$warnings)))
+
+  permissive <- ds.omop.domain.coverage(
+    scope = "pooled", pooling_policy = "pooled_only_ok", symbol = symbol
+  )
+  expect_equal(permissive$pooled$n_records, 100)
+  expect_equal(permissive$pooled$n_persons, 80)
+})

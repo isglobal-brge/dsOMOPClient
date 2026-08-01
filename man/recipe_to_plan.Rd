@@ -17,8 +17,8 @@ Compiles the recipe into an \code{omop_plan} suitable for server-side
 execution via \code{\link{ds.omop.plan.execute}}. The conversion maps
 population-level filters to cohort specifications, groups variables by
 output and table, selects the appropriate plan builder (person_level,
-features, events, survival, intervals) for each output type, and attaches
-row-level filter trees.
+features, events, survival, intervals, baseline, temporal_covariates, or
+person_period) for each output type, and attaches row-level filter trees.
 }
 \details{
 Multiple populations and recipe-level scope are both serialized into the

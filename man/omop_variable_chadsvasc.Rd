@@ -4,10 +4,13 @@
 \alias{omop_variable_chadsvasc}
 \title{Create a CHA2DS2-VASc score variable}
 \usage{
-omop_variable_chadsvasc(name = "chadsvasc")
+omop_variable_chadsvasc(name = "chadsvasc", reference_date = NULL)
 }
 \arguments{
 \item{name}{Character; output column name (default \code{"chadsvasc"}).}
+
+\item{reference_date}{Date or \code{NULL}; date for the age component. When
+omitted, today's date is recorded at construction time.}
 }
 \value{
 An \code{omop_variable} with \code{format = "chadsvasc"}.

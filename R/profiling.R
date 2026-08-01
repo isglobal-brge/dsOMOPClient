@@ -98,6 +98,8 @@ ds.omop.table.stats <- function(table,
 #'   statistics (e.g., \code{value_as_number} for one measurement
 #'   concept). Default: NULL for all rows. The server applies the same
 #'   disclosure controls to the concept-filtered population.
+#' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
+#'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #' @param pooling_policy Character; \code{"strict"} (default) or
 #'   \code{"pooled_only_ok"}.
@@ -246,6 +248,8 @@ ds.omop.domain.coverage <- function(scope = c("per_site", "pooled"),
 #'   \code{"measurement"}, \code{"observation"}).
 #' @param columns Character vector; specific column names to check, or
 #'   NULL to check all columns in the table (default: NULL).
+#' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
+#'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #' @param pooling_policy Character; \code{"strict"} (default) or
 #'   \code{"pooled_only_ok"}.
@@ -332,6 +336,8 @@ ds.omop.missingness <- function(table, columns = NULL, cohort = NULL,
 #'   the \code{value_as_concept_id} categories for one measurement
 #'   concept). Default: NULL for all rows. The server applies the same
 #'   disclosure controls to the concept-filtered population.
+#' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
+#'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #' @param pooling_policy Character; \code{"strict"} (default) or
 #'   \code{"pooled_only_ok"}.
@@ -439,6 +445,9 @@ ds.omop.value.counts <- function(table, column, top_n = 20,
 #' @param stratify_by Character or NULL; optional third categorical column to
 #'   produce a named list of independent stratified 2-way slices. Default:
 #'   NULL.
+#' @param cohort Cohort reference (a \code{dsomop_cohort_handle}, a
+#'   \code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+#'   Takes precedence over \code{cohort_table}.
 #' @param scope Character; \code{"per_site"} (default) or \code{"pooled"}.
 #' @param pooling_policy Character; \code{"strict"} (default) or
 #'   \code{"pooled_only_ok"}. Under \code{strict}, a cell absent or suppressed

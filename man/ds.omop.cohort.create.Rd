@@ -18,11 +18,14 @@ ds.omop.cohort.create(
 \item{spec}{Named list defining the cohort. Must contain at least
 \code{type} (character; one of \code{"condition"}, \code{"drug"},
 \code{"measurement"}, \code{"observation"}, \code{"procedure"}) and
-\code{concept_set} (integer vector or \code{omop_concept_set} object).}
+\code{concept_set} (integer vector or \code{omop_concept_set} object),
+and optionally an authenticated \code{value_bin} filter returned by
+\code{ds.omop.safe.filter.value()}.}
 
 \item{mode}{Character; \code{"temporary"} (the default) creates a
 session-scoped temp table, \code{"persistent"} writes to the cohort
-schema for reuse across sessions.}
+schema for reuse across sessions. Persistent creation is restricted to one
+server because DataSHIELD cannot provide a distributed database commit.}
 
 \item{cohort_id}{Integer; cohort definition ID. If \code{NULL}, an
 auto-generated ID is used.}
@@ -42,8 +45,9 @@ connections stored in the active session are used.}
 \value{
 Invisibly; a \code{dsomop_cohort_handle} object carrying the
   deterministic server-side cohort TABLE name (e.g.
-  \code{"dsomop_cohort_1"}) for a temporary cohort, or \code{NULL} for a
-  persistent cohort. The table is assigned server-side via
+  \code{"dsomop_cohort_1"}, or \code{"dsomop_cohort_1_ic2"} after two
+  inclusion criteria) for a temporary cohort, or \code{NULL} for a persistent
+  cohort. The table is assigned server-side via
   \code{DSI::datashield.assign.expr}. Pass the returned handle straight
   into \code{ds.omop.cohort.combine()}.
 }

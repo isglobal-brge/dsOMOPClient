@@ -20,6 +20,40 @@ test_that("ds.omop.ohdsi.tables has expected signature", {
   expect_true("conns" %in% names(args))
 })
 
+test_that("ds.omop.ohdsi.tables never presents a partial catalog as pooled", {
+  symbol <- "ohdsi_tables_partial"
+  assign(
+    symbol,
+    structure(
+      list(
+        conns = list(a = "FAKE_A", b = "FAKE_B"),
+        res_symbol = "dsO.ohdsi",
+        server_names = c("a", "b")
+      ),
+      class = "omop_session"
+    ),
+    envir = dsOMOPClient:::.dsomop_client_env
+  )
+  on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      server <- names(conns)[[1L]]
+      if (identical(server, "b")) stop("offline", call. = FALSE)
+      stats::setNames(list(data.frame(
+        table_name = "cohort_count", tool_id = "cohort_diagnostics"
+      )), server)
+    },
+    .package = "DSI"
+  )
+
+  result <- ds.omop.ohdsi.tables(symbol = symbol)
+  expect_null(result$pooled)
+  expect_named(attr(result$per_site, "ds_errors"), "b")
+  expect_true(any(grepl("incomplete federation", result$meta$warnings)))
+})
+
 test_that("ds.omop.ohdsi.results has expected signature", {
   expect_true(is.function(ds.omop.ohdsi.results))
   args <- formals(ds.omop.ohdsi.results)

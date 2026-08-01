@@ -56,7 +56,13 @@ ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL) {
     expr = call("omopOhdsiTablesDS", session$res_symbol)
   )
 
-  # Pool: union of table catalogs
+  aggregate_errors <- attr(raw, "ds_errors") %||% list()
+  missing_servers <- setdiff(names(conns), names(raw))
+  unavailable <- unique(c(names(aggregate_errors), missing_servers))
+  warnings <- character(0)
+
+  # Pool only a complete federation. A partial union looks authoritative while
+  # silently omitting the result tables of an unavailable server.
   all_dfs <- list()
   for (srv in names(raw)) {
     df <- raw[[srv]]
@@ -65,7 +71,13 @@ ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL) {
       all_dfs[[srv]] <- df
     }
   }
-  pooled <- if (length(all_dfs) > 0) {
+  pooled <- if (length(unavailable) > 0L) {
+    warnings <- paste0(
+      "Federated OHDSI table catalog unavailable: incomplete federation; ",
+      "unavailable server(s): ", paste(unavailable, collapse = ", "), "."
+    )
+    NULL
+  } else if (length(all_dfs) > 0L) {
     result <- do.call(rbind, all_dfs)
     rownames(result) <- NULL
     result
@@ -73,7 +85,7 @@ ds.omop.ohdsi.tables <- function(symbol = "omop", conns = NULL) {
 
   dsomop_result(
     per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = "pooled"))
+    meta = list(call_code = code, scope = "pooled", warnings = warnings))
 }
 
 #' Query an OHDSI result table

@@ -8,13 +8,13 @@
 }
 \arguments{
 \item{meta}{Named list; one entry's metadata from \code{omopAnalysisGetDS}.
-The plot recipe is read from \code{meta$plot} (a \code{list(type, code)}),
+The plot recipe is read from \code{meta$plot} (a \code{list(type, mapping)}),
 tolerating a nested \code{meta$compute$plot} for forward compatibility.}
 
 \item{pooled}{Data frame; the pooled, gate-passed aggregate to plot.}
 
-\item{params}{Named list; the same parameter values passed to the run, handed
-to the recipe's \code{function(df, params)} second argument.}
+\item{params}{Named list; retained for API compatibility with future local
+renderers. It is never evaluated as code.}
 }
 \value{
 A \code{ggplot} object, or \code{NULL} when the entry ships no plot
@@ -23,26 +23,21 @@ A \code{ggplot} object, or \code{NULL} when the entry ships no plot
 \description{
 The plotting half of the analysis catalog runs ENTIRELY on the client, over
 data that has ALREADY passed the server's single per-patient disclosure gate.
-For entries that ship one, the server returns an INERT plot recipe in the
-entry metadata (\code{omopAnalysisGetDS}): \code{plot$type} (a label) and
-\code{plot$code}, the SOURCE TEXT of a \code{function(df, params)} that builds
-a \code{ggplot}. That source ships INSIDE the installed dsOMOP / analysis-pack
-package; it is authored by the same trusted maintainers as the gate itself.
+For entries that ship one, the server returns declarative plot metadata. The
+client accepts only an allowlisted \code{plot$type} plus optional column-name
+mappings and dispatches to local renderers. Remote source text is never
+parsed or evaluated.
 }
 \details{
-Safety model (why eval here is not a code-injection surface):
+Safety model:
 \itemize{
-  \item The client NEVER sends plot code to the server, and the server NEVER
-    evaluates it — the server only carries the inert text alongside the gated
-    aggregate. There is no client->server code path here.
-  \item The code is evaluated CLIENT-SIDE, in the analyst's own session, only
-    over \code{df} — the pooled data frame that already cleared the gate
-    (small-cell suppressed, banded, distributions masked). A plot can only
-    ever redraw disclosure-controlled numbers; it cannot reach back into any
-    server or recover a suppressed cell.
-  \item Evaluation is wrapped in \code{\link[base]{tryCatch}} so a broken or
-    incompatible plot recipe NEVER costs the analyst the (already returned)
-    data — it degrades to a warning and \code{NULL} plot.
+  \item Server metadata cannot execute code in the analyst's R process.
+  \item Only a local, allowlisted renderer sees \code{df} — the pooled data
+    frame that already cleared the gate (small-cell suppressed, banded and
+    distribution-protected). Remote source text is ignored.
+  \item Rendering is wrapped in \code{\link[base]{tryCatch}} so incompatible
+    declarative metadata never costs the analyst the already-returned data;
+    it degrades to a warning and \code{NULL} plot.
 }
 \pkg{ggplot2} is required only on this path (\code{plot = TRUE}); a clear
 message is raised if it is not installed, rather than failing obscurely inside

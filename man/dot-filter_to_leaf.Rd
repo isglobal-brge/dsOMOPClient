@@ -4,14 +4,17 @@
 \alias{.filter_to_leaf}
 \title{Convert an omop_filter to a leaf node matching the server's .compileFilter()}
 \usage{
-.filter_to_leaf(f)
+.filter_to_leaf(f, table = NULL)
 }
 \arguments{
 \item{f}{An \code{omop_filter} object.}
+
+\item{table}{Character or \code{NULL}; OMOP table used for standard date
+column inference.}
 }
 \value{
 A list with \code{var}, \code{op}, and \code{value} fields, or
-  \code{NULL} if the filter cannot be converted.
+  an error when the filter cannot be represented faithfully.
 }
 \description{
 Convert an omop_filter to a leaf node matching the server's .compileFilter()

@@ -20,17 +20,23 @@ A named list (one element per server). Each server's result holds
   \code{$validation} (see \code{\link{ds.omop.plan.validate}}),
   \code{$band_width} (the count-banding granularity), and \code{$outputs},
   a per-output list with \code{columns}, \code{missing_columns},
-  \code{n_persons} (banded; \code{NA} when below the disclosure floor),
+  \code{n_persons} (banded when available),
+  \code{n_persons_available}, \code{n_persons_unavailable_reason},
   \code{n_persons_banded}, \code{disclosive}, and \code{representation}.
 }
 \description{
 Sends the plan to each connected server for a dry-run preview that, per
-output, reports the resolvable column names, any requested-but-missing
-columns, and a \emph{disclosure-banded} distinct-person count, without
-creating any data. The person counts are banded down to a multiple of the
-server's \code{band_width} (and suppressed to \code{NA} below the
-disclosure floor) to defeat exact-count differencing; raw row counts,
-min/max, and the underlying SQL are deliberately never returned.
+output, reports its expected/resolvable columns and any requested-but-missing
+source columns without creating output data. A disclosure-banded
+distinct-person count is included only when it can be computed honestly from
+an unscoped, unfiltered, unreduced source. Cohort-, population-, filter-,
+temporal- or feature-scoped outputs instead return \code{n_persons = NA},
+\code{n_persons_available = FALSE}, and a reason; they are never labelled
+with the whole source table's population. Available counts are banded down to
+a multiple of the server's \code{band_width} and suppressed below the
+disclosure floor. Raw row counts, min/max and SQL are never returned.
+Multi-server preview first establishes or revalidates the same strict
+schema/semantic harmonization contract used by execution.
 }
 \details{
 Note: \code{ds.omop.plan.preview} and \code{\link{ds.omop.plan.validate}}
@@ -44,8 +50,10 @@ for per-output detail, and \code{$validation} under
 preview <- ds.omop.plan.preview(my_plan)
 # Resolvable columns for the "baseline" output on one server
 preview$server1$outputs$baseline$columns
-# Disclosure-banded distinct-person count (NA if below the floor)
+# Disclosure-banded count, or NA plus a reason for scoped outputs
 preview$server1$outputs$baseline$n_persons
+preview$server1$outputs$baseline$n_persons_available
+preview$server1$outputs$baseline$n_persons_unavailable_reason
 }
 }
 \seealso{

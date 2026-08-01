@@ -12,14 +12,17 @@
 \item{...}{Additional arguments (ignored).}
 }
 \value{
-A data frame: the pooled result, the first server's result, or
-  an empty data frame as fallback.
+A data frame: the pooled result, the first server's result for
+  per-site scope, or an empty data frame as fallback.
 }
 \description{
 Extracts a single data frame from a \code{dsomop_result} object. If a
 pooled result is available and is a data frame, it is returned. Otherwise,
-the first server's result is used. Returns an empty \code{data.frame()}
-if no valid data frame is found.
+the first server's result is used only for a per-site result. A pooled-scope
+result whose pooled value is \code{NULL} returns an empty
+\code{data.frame()} so a failed strict federation cannot silently degrade to
+one server. Returns an empty \code{data.frame()} if no valid data frame is
+found.
 }
 \examples{
 \dontrun{

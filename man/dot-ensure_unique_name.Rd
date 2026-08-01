@@ -12,10 +12,12 @@
 \item{existing}{Character vector; existing names to check against.}
 }
 \value{
-Character; a unique name (with \_2, \_3 suffixes if needed).
+Character; a unique name (with \code{_2}, \code{_3} suffixes if
+  needed).
 }
 \description{
-Appends numeric suffixes (\_2, \_3, etc.) to resolve collisions with
-existing names. Also escapes R reserved words by appending "\_var".
+Appends numeric suffixes (\code{_2}, \code{_3}, etc.) to resolve collisions
+with existing names. Also escapes R reserved words by appending
+\code{_var}.
 }
 \keyword{internal}

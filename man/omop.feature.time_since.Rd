@@ -15,12 +15,13 @@ omop.feature.time_since(
 \item{concept_set}{Numeric vector of concept IDs, or an
 \code{omop_concept_set} object defining the concepts to match.}
 
-\item{reference_date}{Character; ISO 8601 date string used as the
-reference point for the time calculation. If \code{NULL}, the
-cohort index date is used.}
+\item{reference_date}{Character/Date; fixed ISO 8601 date used as the
+reference point. It is required: cohort-index recency is episode-specific
+and is not supported by the person-level feature reducer.}
 
 \item{unit}{Character; time unit for the result. One of \code{"day"}
-or \code{"month"}.}
+or \code{"month"}; months mean complete calendar months rather than
+fixed 30-day intervals.}
 
 \item{name}{Character; optional custom name for the feature column.
 If \code{NULL}, auto-generated from the concept and table context.}
@@ -37,7 +38,8 @@ calculating recency of diagnoses, procedures, or measurements.
 }
 \examples{
 \dontrun{
-spec <- omop.feature.time_since(c(201826), unit = "day")
+spec <- omop.feature.time_since(c(201826),
+  reference_date = "2024-01-01", unit = "day")
 plan <- ds.omop.plan.features(plan, "recency",
   "condition_occurrence",
   specs = list(days_since_diabetes = spec))

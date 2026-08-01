@@ -4,10 +4,12 @@
 \alias{.variables_custom_filter}
 \title{Build a custom filter tree from a set of variables' row-level filters}
 \usage{
-.variables_custom_filter(vars)
+.variables_custom_filter(vars, table = NULL)
 }
 \arguments{
 \item{vars}{List of \code{omop_variable} objects (typically one table's).}
+
+\item{table}{Character or \code{NULL}; source OMOP table.}
 }
 \value{
 A filter-tree list, or \code{NULL} if no row filters are present.

@@ -21,26 +21,27 @@ The Circe JSON string (if \code{file} is \code{NULL}) or the file path
 }
 \description{
 Maps the recipe POPULATION / cohort layer to an OHDSI Circe cohort-expression
-JSON (the format ATLAS imports/exports). Circe entry events, inclusion rules,
-concept sets, demographic criteria and observation windows are derived from
-the population's inclusion-criteria filter tree. This is a pragmatic,
-documented SUBSET of Circe: the common cohort-definition constructs are
-supported and round-trip losslessly with \code{\link{recipe_import_circe}};
-everything else is warned about and omitted rather than silently dropped.
+JSON (the format ATLAS imports/exports). The entry event comes only from an
+explicit \code{\link{omop_index_event}}. This is an executable, fail-closed
+subset: unsupported semantics raise an error rather than being omitted and
+accidentally broadening the cohort.
 }
 \details{
 \strong{Supported constructs (recipe <-> Circe):}
 \itemize{
-  \item \code{omop_filter_has_concept} on a condition/drug/measurement/
-    observation/procedure/device/visit table -> the first positive event
-    becomes the PrimaryCriteria entry event; further ones become InclusionRule
-    occurrence criteria (occurrence "at least" \code{min_count}).
+  \item \code{omop_index_event} on a condition/drug/measurement/observation/
+    procedure/device/visit table -> PrimaryCriteria First/Last. Direct dsOMOP
+    plans also support All; Circe All is rejected because Circe subsequently
+    applies ERA collapse while dsOMOP preserves individual episodes.
+  \item \code{omop_filter_has_concept} -> InclusionRule occurrence criteria;
+    it is never implicitly promoted to an entry event.
   \item \code{omop_filter_not_has_concept} -> InclusionRule occurrence
     "exactly 0" criteria.
   \item \code{omop_filter_concept_count} -> InclusionRule occurrence "at
     least N" criteria.
-  \item \code{omop_filter_has_measurement} -> Measurement criteria with a
-    \code{ValueAsNumber} range.
+  \item Presence-only \code{omop_filter_has_measurement} -> Measurement
+    criteria. Numeric bounds are rejected because Circe cannot carry the
+    DataSHIELD-issued safe-bin contract.
   \item \code{omop_filter_sex} / \code{omop_filter_age} -> DemographicCriteria
     Gender / Age.
   \item Filter \code{window = list(start, end)} day offsets -> criteria
@@ -50,34 +51,29 @@ everything else is warned about and omitted rather than silently dropped.
   \item An \code{omop_filter_group(operator = "OR")} -> a nested Circe
     CriteriaGroup of Type ANY; the population's top-level AND criteria map to
     the cohort's implicit ALL.
-  \item A \strong{set-op} population (\code{union} / \code{intersect}) ->
-    a top-level CriteriaGroup ANY / ALL over the member populations'
-    criteria.
 }
 
-\strong{Intentionally unsupported} (warned + omitted, never silently lost):
-\code{setdiff} populations (Circe has no first-class person-set difference;
-negate the subtracted criteria manually), \code{cohort} /
-\code{cohort_definition_id} references, \code{age_group},
+\strong{Intentionally unsupported} (rejected, never silently lost):
+set-operation populations, \code{cohort_definition_id} references,
+fixed-reference ages/windows, \code{age_group},
 \code{visit_count}, \code{missing_measurement}, \code{value_bin} /
 \code{value_concept} / \code{date_range} (row-level) filters, and the recipe
-VARIABLE / output / feature layer (Circe describes cohort entry only, not
-feature extraction). Circe-only constructs with no recipe analog (custom
-correlated criteria, censoring, complex exit strategies) are dropped on
-import with a warning.
+variable/output layer. Circe-only end/censor strategies, non-start windows,
+unsupported occurrence operators, multiple primary criteria, and nested
+groups are rejected on import.
 }
 \examples{
 \dontrun{
 recipe <- omop_recipe(
   populations = omop_population(
     id = "t2d", label = "Type 2 diabetes, female, 18-65",
+    index_event = omop_index_event(201820, "condition_occurrence"),
     filters = list(
-      omop_filter_has_concept(201820, "condition_occurrence"),
       omop_filter_sex("F"),
       omop_filter_age(18, 65))),
   outputs = omop_output(type = "wide", population_id = "t2d"))
 circe_json <- recipe_export_circe(recipe, population_id = "t2d")
-# Round-trips the supported subset:
+# Imports the executable supported subset:
 pop <- recipe_import_circe(circe_json)
 }
 }

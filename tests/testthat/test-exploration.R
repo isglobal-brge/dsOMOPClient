@@ -2,6 +2,55 @@
 # Tests for client exploration wrappers
 # ==============================================================================
 
+test_that("common safe bins require successful compatible issuance at every site", {
+  contract <- list(
+    table = "measurement", column = "value_as_number",
+    concept_id = 3004410L, concept_col = "measurement_concept_id",
+    n_bins = 3L
+  )
+  cuts <- dsomop_result(per_site = list(
+    a = list(breaks = c(0, 5, 10, 20), contract = contract),
+    b = list(breaks = c(0, 10, 15, 20), contract = contract)
+  ))
+  common <- dsOMOPClient:::.common_safe_bins(
+    cuts, "measurement", "value_as_number")
+  expect_equal(common$breaks, c(0, 10, 20))
+  expect_identical(common$contract, contract)
+
+  cuts$meta$warnings <- "Server errors: b: grid unavailable"
+  expect_error(
+    dsOMOPClient:::.common_safe_bins(cuts, "measurement", "value_as_number"),
+    "At least one connected site"
+  )
+})
+
+test_that("safe measurement helper snaps outwards to issued public edges", {
+  contract <- list(
+    table = "measurement", column = "value_as_number",
+    concept_id = 3004410L, concept_col = "measurement_concept_id",
+    n_bins = 4L
+  )
+  cuts <- dsomop_result(per_site = list(
+    a = list(breaks = c(0, 4, 6, 10, 20), contract = contract),
+    b = list(breaks = c(0, 4, 6, 10, 20), contract = contract)
+  ))
+  testthat::local_mocked_bindings(
+    ds.omop.safe.cutpoints = function(...) cuts,
+    .package = "dsOMOPClient"
+  )
+  f <- ds.omop.safe.filter.measurement(
+    3004410L, min_value = 4.5, max_value = 8, n_bins = 4L)
+  expect_equal(f$params$min_value, 4)
+  expect_equal(f$params$max_value, 10)
+  expect_identical(f$params$safe_scope, contract)
+
+  expect_error(
+    ds.omop.safe.filter.measurement(
+      3004410L, min_value = -1, max_value = 8, n_bins = 4L),
+    "outside"
+  )
+})
+
 test_that("ds.omop.concept.drilldown has expected signature with new params", {
   expect_true(is.function(ds.omop.concept.drilldown))
   args <- formals(ds.omop.concept.drilldown)
@@ -56,6 +105,83 @@ test_that("ds.omop.value.histogram execute=FALSE returns dsomop_result", {
   expect_s3_class(result, "dsomop_result")
   expect_equal(length(result$per_site), 0)
   expect_true(grepl("ds.omop.value.histogram", result$meta$call_code))
+})
+
+test_that("two-pass histogram uses the same verified servers in both passes", {
+  symbol <- "histogram_partial_range"
+  assign(
+    symbol,
+    structure(
+      list(
+        conns = list(a = "FAKE_A", b = "FAKE_B"),
+        res_symbol = "dsO.hist",
+        server_names = c("a", "b")
+      ),
+      class = "omop_session"
+    ),
+    envir = dsOMOPClient:::.dsomop_client_env
+  )
+  on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
+          add = TRUE)
+
+  calls <- new.env(parent = emptyenv())
+  calls$values <- character(0)
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      server <- names(conns)[[1L]]
+      operation <- as.character(expr[[1L]])
+      calls$values <- c(calls$values, paste(operation, server, sep = ":"))
+      if (identical(operation, "omopNumericRangeDS")) {
+        if (identical(server, "b")) {
+          stop("range unavailable", call. = FALSE)
+        }
+        return(stats::setNames(list(list(p05 = 0, p95 = 10)), server))
+      }
+      if (identical(server, "b")) {
+        stop("histogram pass must not include b", call. = FALSE)
+      }
+      stats::setNames(list(data.frame(
+        bin_start = c(0, 5), bin_end = c(5, 10),
+        count = c(40, 60), suppressed = FALSE
+      )), server)
+    },
+    .package = "DSI"
+  )
+
+  strict <- ds.omop.value.histogram(
+    "measurement", "value_as_number", bins = 2L,
+    scope = "pooled", pooling_policy = "strict", symbol = symbol
+  )
+  expect_null(strict$pooled)
+  expect_length(strict$per_site, 0L)
+  expect_false(any(grepl("omopNumericHistogramDS", calls$values)))
+  expect_true(any(grepl("incomplete range federation",
+                        strict$meta$warnings)))
+
+  calls$values <- character(0)
+  permissive <- ds.omop.value.histogram(
+    "measurement", "value_as_number", bins = 2L,
+    scope = "pooled", pooling_policy = "pooled_only_ok", symbol = symbol
+  )
+  expect_named(permissive$per_site, "a")
+  expect_equal(permissive$pooled$count, c(40, 60))
+  expect_true("b" %in% names(attr(permissive$per_site, "ds_errors")))
+  expect_true(any(grepl("Excluded: b", permissive$meta$warnings,
+                        fixed = TRUE)))
+  expect_true("omopNumericHistogramDS:a" %in% calls$values)
+  expect_false("omopNumericHistogramDS:b" %in% calls$values)
+
+  calls$values <- character(0)
+  expect_warning(
+    plotted <- ds.omop.value.histogram(
+      "measurement", "value_as_number", bins = 2L,
+      pooling_policy = "strict", symbol = symbol, plot = TRUE
+    ),
+    "No pooled histogram data"
+  )
+  expect_identical(plotted$meta$scope, "pooled")
+  expect_null(plotted$pooled)
+  expect_false(any(grepl("omopNumericHistogramDS", calls$values)))
 })
 
 test_that("ds.omop.value.quantiles execute=FALSE returns dsomop_result", {

@@ -4,7 +4,14 @@
 \alias{ds.omop.plan.features}
 \title{Add feature extraction with feature specifications}
 \usage{
-ds.omop.plan.features(plan, name, table, specs)
+ds.omop.plan.features(
+  plan,
+  name,
+  table,
+  specs,
+  grain = "person",
+  temporal = NULL
+)
 }
 \arguments{
 \item{plan}{An \code{omop_plan} object.}
@@ -18,6 +25,14 @@ outputs list.}
 \item{specs}{Named list of \code{omop_feature_spec} objects created
 by the \code{omop.feature.*} family of functions (e.g.
 \code{\link{omop.feature.boolean}}, \code{\link{omop.feature.count}}).}
+
+\item{grain}{Character; \code{"person"} (default) or \code{"episode"}.
+Episode grain preserves one row per cohort episode and requires
+\code{temporal$index_window}.}
+
+\item{temporal}{Optional \code{omop.temporal()} specification. Supply an
+\code{index_window} when \code{grain = "episode"} or when feature specs
+contain episode-relative \code{time_window} values.}
 }
 \value{
 The modified \code{omop_plan} with the features output
@@ -27,8 +42,10 @@ The modified \code{omop_plan} with the features output
 Adds a feature-extraction output that computes person-level summary
 columns (boolean, count, mean, etc.) from event-level data in a
 single OMOP table. Each \code{omop_feature_spec} in \code{specs}
-produces one column in the resulting data frame. Concept IDs are
-automatically collected from all specs for server-side filtering.
+produces one column in the resulting data frame. Each spec is evaluated
+against its own concept scope. No output-wide concept prefilter is
+added: such a prefilter would change the meaning of an unscoped spec or of
+specs that use different \code{concept_col} values.
 }
 \examples{
 \dontrun{

@@ -20,11 +20,11 @@
 \title{Create a filter specification}
 \usage{
 omop_filter(
-  type = c("sex", "age_range", "age_group", "cohort", "has_concept", "date_range",
-    "concept_set", "min_count", "top_n", "dedup", "custom", "not_has_concept",
+  type = c("sex", "age_range", "age_group", "cohort", "has_concept", "not_has_concept",
     "concept_count", "prior_observation", "followup", "visit_count", "has_measurement",
-    "missing_measurement", "value_bin", "value_concept"),
-  level = c("population", "row", "output"),
+    "missing_measurement", "date_range", "concept_set", "value_bin", "value_concept",
+    "custom"),
+  level = c("population", "row"),
   params = list(),
   label = NULL
 )
@@ -33,7 +33,7 @@ omop_filter_sex(value)
 
 omop_filter_age(min = 0, max = 150, year = NULL, reference_date = NULL)
 
-omop_filter_age_group(groups)
+omop_filter_age_group(groups, year = NULL, reference_date = NULL)
 
 omop_filter_cohort(cohort_definition_id)
 
@@ -42,10 +42,11 @@ omop_filter_has_concept(
   table,
   concept_name = NULL,
   window = NULL,
-  min_count = 1L
+  min_count = 1L,
+  reference_date = NULL
 )
 
-omop_filter_date_range(start = NULL, end = NULL)
+omop_filter_date_range(start = NULL, end = NULL, date_column = NULL)
 
 omop_filter_value(
   column = "value_as_number",
@@ -64,33 +65,58 @@ omop_filter_not_has_concept(
   concept_id,
   table,
   concept_name = NULL,
-  window = NULL
+  window = NULL,
+  reference_date = NULL
 )
 
 omop_filter_concept_count(
   concept_id,
   table,
   min_count = 2L,
-  concept_name = NULL
+  concept_name = NULL,
+  window = NULL,
+  reference_date = NULL
 )
 
-omop_filter_prior_observation(min_days = 365L)
+omop_filter_prior_observation(min_days = 365L, reference_date = NULL)
 
-omop_filter_followup(min_days = 30L)
+omop_filter_followup(min_days = 30L, reference_date = NULL)
 
-omop_filter_visit_count(min_count = 1L, visit_concept_id = NULL)
+omop_filter_visit_count(
+  min_count = 1L,
+  visit_concept_id = NULL,
+  window = NULL,
+  reference_date = NULL
+)
 
-omop_filter_has_measurement(concept_id, min_value = NULL, max_value = NULL)
+omop_filter_has_measurement(
+  concept_id,
+  min_value = NULL,
+  max_value = NULL,
+  safe_bins = NULL,
+  window = NULL,
+  reference_date = NULL
+)
 
-omop_filter_missing_measurement(concept_id, window = NULL)
+omop_filter_missing_measurement(
+  concept_id,
+  window = NULL,
+  reference_date = NULL
+)
 }
 \arguments{
-\item{type}{Character; filter type. One of \code{"sex"}, \code{"age_range"},
-\code{"age_group"}, \code{"cohort"}, \code{"has_concept"},
-\code{"date_range"}, \code{"concept_set"},
-\code{"min_count"}, \code{"top_n"}, \code{"dedup"}, \code{"custom"}.}
+\item{type}{Character; executable filter type. Population filters are
+\code{"sex"}, \code{"age_range"}, \code{"age_group"}, \code{"cohort"},
+\code{"has_concept"}, \code{"not_has_concept"},
+\code{"concept_count"}, \code{"prior_observation"}, \code{"followup"},
+\code{"visit_count"}, \code{"has_measurement"}, and
+\code{"missing_measurement"}. Row filters are \code{"date_range"},
+\code{"concept_set"}, \code{"value_bin"}, \code{"value_concept"}, and
+the fail-closed typed \code{"custom"} predicate.}
 
-\item{level}{Character; \code{"population"}, \code{"row"}, or \code{"output"}.}
+\item{level}{Character; \code{"population"} or \code{"row"}. When omitted,
+the unique executable level for \code{type} is selected. Output-level
+filters are not part of the executable Recipe contract.}
 
 \item{params}{Named list; filter-specific parameters (varies by type).}
 
@@ -105,12 +131,12 @@ omop_filter_missing_measurement(concept_id, window = NULL)
 
 \item{max}{Numeric; maximum age (inclusive)}
 
-\item{year}{Integer or \code{NULL}; anchor age to this calendar year instead
-of the current year (e.g. \code{year = 2024} for a 2024 collection era).
-Keeps the filter consistent with \code{omop_variable_age(year = ...)}.}
+\item{year}{Integer or NULL; explicit calendar-year anchor (shorthand for
+July 1 of that year). A cohort index supplies the anchor when omitted.}
 
-\item{reference_date}{Date/string or \code{NULL}; explicit reference date
-(only its year is used). \code{year} is a shorthand for this.}
+\item{reference_date}{Date/string or \code{NULL}; fixed anchor for
+\code{window} when the population has no cohort index. An index is used
+when this is omitted.}
 
 \item{groups}{Character vector; age group labels (e.g. c("18-24", "25-34"))}
 
@@ -129,9 +155,15 @@ restricts absence to that window (e.g. "no HbA1c in the prior year")}
 
 \item{min_count}{Integer; minimum number of visits}
 
-\item{start}{Character; start date (YYYY-MM-DD) or NULL}
+\item{start}{Character; inclusive start date in ISO \code{YYYY-MM-DD} form.}
 
-\item{end}{Character; end date (YYYY-MM-DD) or NULL}
+\item{end}{Character; inclusive end date in ISO \code{YYYY-MM-DD} form and
+not before \code{start}. The server applies the authoritative minimum
+disclosure-safe width configured by the data controller.}
+
+\item{date_column}{Character or \code{NULL}; explicit OMOP date column. When
+\code{NULL}, \code{\link{recipe_to_plan}} infers the standard date column
+from the output's OMOP table.}
 
 \item{column}{Character; the value-concept column (default
 \code{"value_as_concept_id"})}
@@ -140,7 +172,9 @@ restricts absence to that window (e.g. "no HbA1c in the prior year")}
 
 \item{direction}{Character; "above" or "below"}
 
-\item{safe_bins}{List with $breaks numeric vector from ds.omop.safe.cutpoints()}
+\item{safe_bins}{Server-issued result for the same measurement concept from
+\code{ds.omop.safe.cutpoints()}. Required whenever a numeric range is
+supplied; client-authored thresholds are not executable.}
 
 \item{concept_ids}{Integer scalar or vector; the value concept(s) to keep
 (a record matches if its value concept is any of them)}
@@ -160,10 +194,12 @@ An \code{omop_filter} object (a named list with class
 }
 \description{
 Filters restrict the population or events included in the extraction.
-There are three levels: \code{"population"} (person-level inclusion criteria),
-\code{"row"} (event-level restrictions), and \code{"output"} (post-extraction
-transformations). Filters are passed to \code{\link{omop_recipe}} via its
-\code{filters} argument and can be nested into groups with
+There are two executable levels: \code{"population"} (person-level
+inclusion criteria) and \code{"row"} (event-level restrictions).
+Post-extraction transformations belong in the output specification rather
+than in a filter; the retired \code{"output"} filter level is rejected.
+Filters are passed to \code{\link{omop_recipe}} via its \code{filters}
+argument and can be nested into groups with
 \code{\link{omop_filter_group}}.
 }
 \details{

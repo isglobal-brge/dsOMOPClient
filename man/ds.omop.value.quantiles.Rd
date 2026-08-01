@@ -42,6 +42,10 @@ for filtering, or NULL (default: NULL).}
 \item{window}{List with \code{start}/\code{end} date strings for
 temporal filtering, or NULL (default: NULL).}
 
+\item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
+\code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+Takes precedence over \code{cohort_table}.}
+
 \item{rounding}{Integer; number of decimal places to round quantile
 values to (default: 2).}
 

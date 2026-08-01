@@ -14,13 +14,8 @@ A temporal spec list with \code{index_window}, or \code{NULL}.
 }
 \description{
 Variable \code{time_window}s are index-relative day offsets
-(\code{list(start=, end=)}). A single \code{long} output is one event stream,
-so when several variables carry windows we take their UNION (the minimum start
-and maximum end) as the output's \code{index_window}, rather than letting the
-first variable silently win and drop the others' events. This guarantees every
-windowed variable's events fall inside the extracted span; per-variable
-narrowing (e.g. distinct peri-index columns) is the job of the features/wide
-path, which scopes each spec independently. Returns \code{NULL} when no
-variable sets a window.
+(\code{list(start=, end=)}). One output stream may carry one common window;
+differing scopes must be split by the caller/compiler and are rejected here
+rather than unioned (which would broaden at least one variable).
 }
 \keyword{internal}

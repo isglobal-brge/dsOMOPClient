@@ -109,14 +109,13 @@ test_that("unionConceptLevels harmonizes a column present on only one server", {
   expect_equal(spec$gender_concept_id, c("8507", "8532"))
 })
 
-test_that("unionConceptLevels ignores NULL server entries", {
+test_that("unionConceptLevels rejects NULL server entries", {
   per_server <- list(
     a = list(levels = list(g_concept_id = c("2", "1")),
              unsafe = character(0), nfilter_levels_max = 40),
     b = NULL
   )
-  spec <- dsOMOPClient:::.unionConceptLevels(per_server)
-  expect_equal(spec$g_concept_id, c("1", "2"))
+  expect_error(dsOMOPClient:::.unionConceptLevels(per_server), "incomplete")
 })
 
 test_that("unionConceptLevels returns an empty list when nothing is harmonizable", {
@@ -138,4 +137,140 @@ test_that("unionConceptLevels falls back to cap 40 when a server omits it", {
   spec <- dsOMOPClient:::.unionConceptLevels(per_server)
   # 30 <= fallback cap 40, so it survives.
   expect_equal(length(spec$x_concept_id), 30L)
+})
+
+test_that("factor harmonization fails closed on unequal component sets", {
+  removed <- character(0)
+  conns <- list(a = "A", b = "B")
+  state <- list(a = c("D", "D.covariateRef"), b = "D")
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.rm = function(conns, symbol, ...) {
+      server <- names(conns)[[1L]]
+      state[[server]] <<- setdiff(state[[server]], symbol)
+      removed <<- c(removed, symbol)
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+  expect_error(
+    dsOMOPClient:::.harmonizeConceptFactors(
+      list(result = c("D", "D.covariateRef")), conns
+    ),
+    "exact component set"
+  )
+  expect_true(all(c("D", "D.covariateRef") %in% removed))
+})
+
+test_that("factor harmonization removes outputs when level collection fails", {
+  removed <- character(0)
+  conns <- list(a = "A", b = "B")
+  state <- list(a = "D", b = "D")
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.aggregate = function(conns, expr, ...) {
+      stop("aggregate unavailable")
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      server <- names(conns)[[1L]]
+      state[[server]] <<- setdiff(state[[server]], symbol)
+      removed <<- c(removed, symbol)
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+  expect_error(
+    dsOMOPClient:::.harmonizeConceptFactors(c(result = "D"), conns),
+    "freshly assigned outputs were removed"
+  )
+  expect_true("D" %in% removed)
+})
+
+test_that("factor harmonization rejects a NULL result from one server", {
+  removed <- character(0)
+  conns <- list(a = "A", b = "B")
+  state <- list(a = "D", b = "D")
+  report <- list(levels = list(gender_concept_id = c("8507", "8532")),
+                 unsafe = character(0), nfilter_levels_max = 40)
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.aggregate = function(conns, expr, success = NULL,
+                                    error = NULL, ...) {
+      success("a", report)
+      list(a = report, b = NULL)
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      server <- names(conns)[[1L]]
+      state[[server]] <<- setdiff(state[[server]], symbol)
+      removed <<- c(removed, symbol)
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+  expect_error(
+    dsOMOPClient:::.harmonizeConceptFactors(c(result = "D"), conns),
+    "freshly assigned outputs were removed"
+  )
+  expect_true("D" %in% removed)
+})
+
+test_that("factor harmonization verifies assign success on every server", {
+  removed <- character(0)
+  conns <- list(a = "A", b = "B")
+  state <- list(a = "D", b = "D")
+  report <- list(levels = list(gender_concept_id = c("8507", "8532")),
+                 unsafe = character(0), nfilter_levels_max = 40)
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.aggregate = function(conns, expr, success = NULL,
+                                    error = NULL, ...) {
+      success("a", report)
+      success("b", report)
+      list(a = report, b = report)
+    },
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      success("a")
+      error("b", "assignment failed")
+      invisible(NULL)
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      server <- names(conns)[[1L]]
+      state[[server]] <<- setdiff(state[[server]], symbol)
+      removed <<- c(removed, symbol)
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+  expect_error(
+    dsOMOPClient:::.harmonizeConceptFactors(c(result = "D"), conns),
+    "freshly assigned outputs were removed"
+  )
+  expect_true("D" %in% removed)
+})
+
+test_that("factor harmonization ignores unrelated prefixed user symbols", {
+  aggregated <- character(0)
+  conns <- list(a = "A", b = "B")
+  report <- list(levels = list(), unsafe = character(0),
+                 nfilter_levels_max = 40)
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) list(
+      a = c("D", "D.model"), b = c("D", "D.model")
+    ),
+    datashield.aggregate = function(conns, expr, success = NULL,
+                                    error = NULL, ...) {
+      aggregated <<- c(aggregated, deparse(expr))
+      success("a", report)
+      success("b", report)
+      list(a = report, b = report)
+    },
+    .package = "DSI"
+  )
+  expect_null(dsOMOPClient:::.harmonizeConceptFactors(
+    c(result = "D"), conns
+  ))
+  expect_length(aggregated, 1L)
+  expect_match(aggregated, "D")
+  expect_false(any(grepl("D.model", aggregated, fixed = TRUE)))
 })

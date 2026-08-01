@@ -22,15 +22,14 @@
   omop_recipe(
     populations = omop_population(
       id = "t2d", label = "Type 2 diabetes, female, 18-65",
+      index_event = omop_index_event(201820, "condition_occurrence"),
       filters = list(
-        omop_filter_has_concept(201820, "condition_occurrence"),       # anchor
         omop_filter_sex("F"),                                          # demographic
         omop_filter_age(18, 65),                                       # demographic
         omop_filter_has_concept(1503297, "drug_exposure",
                                 min_count = 2L),                       # -> concept_count
         omop_filter_not_has_concept(443238, "condition_occurrence"),    # exclusion
-        omop_filter_has_measurement(3004410, min_value = 6.5,
-                                    max_value = 10),                   # value range
+        omop_filter_has_measurement(3004410),                         # presence
         omop_filter_prior_observation(365),                           # obs window prior
         omop_filter_followup(30),                                     # obs window post
         omop_filter_group(                                            # OR group
@@ -110,7 +109,7 @@ test_that("recipe_export_circe emits well-formed Circe JSON for supported constr
     expect_true(!is.null(s$expression$items[[1]]$concept$CONCEPT_ID))
   }
 
-  # PrimaryCriteria entry event = the first positive has_concept (condition).
+  # PrimaryCriteria entry event = the explicit index event (condition).
   pc <- expr$PrimaryCriteria$CriteriaList
   expect_equal(length(pc), 1)
   expect_equal(names(pc[[1]]), "ConditionOccurrence")
@@ -127,18 +126,12 @@ test_that("recipe_export_circe emits well-formed Circe JSON for supported constr
   }
 })
 
-test_that("recipe_export_circe maps a single-positive demographics cohort to an 'any visit' entry", {
+test_that("recipe_export_circe never invents an implicit entry event", {
   r <- omop_recipe(
     populations = omop_population(id = "f", label = "Females 40+",
       filters = list(omop_filter_sex("F"), omop_filter_age(40, 150))),
     outputs = omop_output(type = "wide", population_id = "f"))
-  expr <- jsonlite::fromJSON(recipe_export_circe(r, "f"), simplifyVector = FALSE)
-  # No positive event -> permissive VisitOccurrence entry placeholder.
-  expect_equal(names(expr$PrimaryCriteria$CriteriaList[[1]]), "VisitOccurrence")
-  # Demographics surface as a DemographicCriteriaList inclusion rule.
-  demo_rule <- Filter(function(rl) length(rl$expression$DemographicCriteriaList) > 0,
-                      expr$InclusionRules)
-  expect_equal(length(demo_rule), 1)
+  expect_error(recipe_export_circe(r, "f"), "explicit omop_index_event")
 })
 
 # ==============================================================================
@@ -154,9 +147,11 @@ test_that("the supported Circe subset round-trips to an equivalent recipe popula
   expect_equal(pop$label, "Type 2 diabetes, female, 18-65")
 
   types <- .filter_types(pop$filters)
-  # All nine supported constructs are reconstructed (a non-anchor has_concept
-  # with min_count > 1 is recovered as the equivalent concept_count).
-  expect_true("has_concept" %in% types)        # anchor
+  expect_s3_class(pop$index_event, "omop_index_event")
+  expect_equal(pop$index_event$concept_id, 201820L)
+  expect_equal(pop$index_event$table, "condition_occurrence")
+  # Inclusion filters are reconstructed without duplicating the primary event.
+  expect_false("has_concept" %in% types)
   expect_true("concept_count" %in% types)       # drug min_count = 2
   expect_true("not_has_concept" %in% types)
   expect_true("has_measurement" %in% types)
@@ -166,20 +161,15 @@ test_that("the supported Circe subset round-trips to an equivalent recipe popula
   expect_true("followup" %in% types)
   expect_true("group:OR" %in% types)
 
-  # Anchor: concept + table recovered.
-  anchor <- .find_filter(pop$filters, "has_concept")
-  expect_equal(anchor$params$concept_id, 201820L)
-  expect_equal(anchor$params$table, "condition_occurrence")
-
   # Counts / exclusion recovered with the right semantics.
   expect_equal(.find_filter(pop$filters, "concept_count")$params$min_count, 2L)
   expect_equal(.find_filter(pop$filters, "not_has_concept")$params$concept_id,
                443238L)
 
-  # Measurement value range recovered.
+  # Presence-only measurement recovered.
   meas <- .find_filter(pop$filters, "has_measurement")
-  expect_equal(meas$params$min_value, 6.5)
-  expect_equal(meas$params$max_value, 10)
+  expect_null(meas$params$min_value)
+  expect_null(meas$params$max_value)
 
   # Demographics recovered.
   expect_equal(.find_filter(pop$filters, "sex")$params$value, "F")
@@ -201,6 +191,7 @@ test_that("the supported Circe subset round-trips to an equivalent recipe popula
 
   # The imported population is RUNNABLE: it compiles into a recipe plan.
   r2 <- omop_recipe(populations = pop,
+                    variables = omop_variable_age(),
                     outputs = omop_output(type = "wide", population_id = "t2d"))
   expect_silent(plan <- dsOMOPClient:::recipe_to_plan(r2))
 })
@@ -208,6 +199,8 @@ test_that("the supported Circe subset round-trips to an equivalent recipe popula
 test_that("multi-concept codesets round-trip and dedup shared concept sets", {
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
+      index_event = omop_index_event(c(201820, 201826),
+                                     "condition_occurrence"),
       filters = list(
         omop_filter_has_concept(c(201820, 201826), "condition_occurrence"),
         # Same id vector reused -> should share one concept set on export.
@@ -222,31 +215,27 @@ test_that("multi-concept codesets round-trip and dedup shared concept sets", {
                c(201820L, 201826L))
 })
 
-test_that("measurement one-sided value bounds (gte / lte) round-trip losslessly", {
+test_that("numeric measurement bounds fail closed on Circe export", {
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
+      index_event = omop_index_event(201820, "condition_occurrence"),
       filters = list(
-        omop_filter_has_concept(201820, "condition_occurrence"),
-        omop_filter_has_measurement(3004410, min_value = 6.5),   # gte
-        omop_filter_has_measurement(3013682, max_value = 140))), # lte
+        omop_filter(type = "has_measurement", level = "population",
+          params = list(concept_id = 3004410L, min_value = 6.5,
+                        max_value = NULL, safe_scope = NULL)),   # gte
+        omop_filter(type = "has_measurement", level = "population",
+          params = list(concept_id = 3013682L, min_value = NULL,
+                        max_value = 140, safe_scope = NULL)))),  # lte
     outputs = omop_output(type = "wide", population_id = "p"))
-  pop <- recipe_import_circe(recipe_export_circe(r, "p"))
-  ms <- Filter(function(f) identical(f$type, "has_measurement"), pop$filters)
-  gte <- Filter(function(m) identical(as.integer(m$params$concept_id), 3004410L),
-                ms)[[1]]
-  lte <- Filter(function(m) identical(as.integer(m$params$concept_id), 3013682L),
-                ms)[[1]]
-  expect_equal(gte$params$min_value, 6.5)
-  expect_null(gte$params$max_value)
-  expect_null(lte$params$min_value)
-  expect_equal(lte$params$max_value, 140)   # regression: lte bound must survive
+  expect_true("unbound_numeric_filter" %in% recipe_lint(r)$code)
+  expect_error(recipe_export_circe(r, "p"), "safe-bin contract")
 })
 
 test_that("non-anchor not_has_concept windows round-trip", {
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
+      index_event = omop_index_event(201820, "condition_occurrence"),
       filters = list(
-        omop_filter_has_concept(201820, "condition_occurrence"),
         omop_filter_not_has_concept(443238, "condition_occurrence",
                                     window = list(start = -30, end = 0)))),
     outputs = omop_output(type = "wide", population_id = "p"))
@@ -260,7 +249,7 @@ test_that("non-anchor not_has_concept windows round-trip", {
 # (CIRCE set-ops) union -> ANY, intersect -> ALL
 # ==============================================================================
 
-test_that("set-op populations export to a top-level CriteriaGroup (union ANY / intersect ALL)", {
+test_that("set-op populations fail closed on Circe export", {
   ru <- omop_recipe(populations = list(
     omop_population(id = "a", label = "a",
       filters = list(omop_filter_has_concept(201820, "condition_occurrence"))),
@@ -268,10 +257,7 @@ test_that("set-op populations export to a top-level CriteriaGroup (union ANY / i
       filters = list(omop_filter_has_concept(316866, "condition_occurrence"))),
     omop_population(id = "u", label = "u", union = c("a", "b"))),
     outputs = omop_output(type = "wide", population_id = "u"))
-  eu <- jsonlite::fromJSON(recipe_export_circe(ru, "u"), simplifyVector = FALSE)
-  ug <- Filter(function(x) grepl("Set-op", x$name), eu$InclusionRules)[[1]]
-  expect_equal(ug$expression$Type, "ANY")
-  expect_equal(length(ug$expression$CriteriaList), 2)
+  expect_error(recipe_export_circe(ru, "u"), "set-operation populations")
 
   ri <- omop_recipe(populations = list(
     omop_population(id = "a", label = "a",
@@ -280,36 +266,34 @@ test_that("set-op populations export to a top-level CriteriaGroup (union ANY / i
       filters = list(omop_filter_has_concept(316866, "condition_occurrence"))),
     omop_population(id = "i", label = "i", intersect = c("a", "b"))),
     outputs = omop_output(type = "wide", population_id = "i"))
-  ei <- jsonlite::fromJSON(recipe_export_circe(ri, "i"), simplifyVector = FALSE)
-  ig <- Filter(function(x) grepl("Set-op", x$name), ei$InclusionRules)[[1]]
-  expect_equal(ig$expression$Type, "ALL")
+  expect_error(recipe_export_circe(ri, "i"), "set-operation populations")
 })
 
 # ==============================================================================
 # (CIRCE unsupported) warned, never silently dropped
 # ==============================================================================
 
-test_that("an unsupported filter type warns on Circe export (not silently dropped)", {
+test_that("an unsupported filter type errors on Circe export", {
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
+      index_event = omop_index_event(201820, "condition_occurrence"),
       filters = list(
-        omop_filter_has_concept(201820, "condition_occurrence"),
         omop_filter_visit_count(2))),
     outputs = omop_output(type = "wide", population_id = "p"))
-  expect_warning(recipe_export_circe(r, "p"),
-                 "visit_count.*no Circe analog")
+  expect_error(recipe_export_circe(r, "p"), "visit_count.*outside")
 })
 
-test_that("an unsupported recipe table warns on Circe export", {
+test_that("an unsupported recipe table errors on Circe export", {
   # death has no Circe domain analog.
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
+      index_event = omop_index_event(201820, "condition_occurrence"),
       filters = list(omop_filter_has_concept(4306655, "death"))),
     outputs = omop_output(type = "wide", population_id = "p"))
-  expect_warning(recipe_export_circe(r, "p"), "no Circe domain analog")
+  expect_error(recipe_export_circe(r, "p"), "outside the executable")
 })
 
-test_that("setdiff populations warn and export the first member only", {
+test_that("setdiff populations fail closed", {
   r <- omop_recipe(populations = list(
     omop_population(id = "a", label = "a",
       filters = list(omop_filter_has_concept(201820, "condition_occurrence"))),
@@ -317,21 +301,18 @@ test_that("setdiff populations warn and export the first member only", {
       filters = list(omop_filter_has_concept(316866, "condition_occurrence"))),
     omop_population(id = "d", label = "d", setdiff = c("a", "b"))),
     outputs = omop_output(type = "wide", population_id = "d"))
-  expect_warning(json <- recipe_export_circe(r, "d"), "setdiff")
-  # First member's criteria are present (not silently lost).
-  expr <- jsonlite::fromJSON(json, simplifyVector = FALSE)
-  expect_gt(length(expr$ConceptSets), 0)
+  expect_error(recipe_export_circe(r, "d"), "set-operation populations")
 })
 
-test_that("a cohort_definition_id reference warns on Circe export", {
+test_that("a cohort_definition_id reference fails closed on Circe export", {
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
       cohort_definition_id = 42L),
     outputs = omop_output(type = "wide", population_id = "p"))
-  expect_warning(recipe_export_circe(r, "p"), "cohort_definition_id")
+  expect_error(recipe_export_circe(r, "p"), "cohort_definition_id")
 })
 
-test_that("Circe-only EndStrategy / CensoringCriteria warn on import (dropped)", {
+test_that("Circe-only EndStrategy / CensoringCriteria fail closed", {
   circe <- jsonlite::toJSON(list(
     ConceptSets = list(list(id = 0L, name = "DM",
       expression = list(items = list(list(concept = list(CONCEPT_ID = 201820L)))))),
@@ -342,10 +323,10 @@ test_that("Circe-only EndStrategy / CensoringCriteria warn on import (dropped)",
     InclusionRules = list(),
     EndStrategy = list(DateOffset = list(Offset = 30L)),
     CensoringCriteria = list()), auto_unbox = TRUE)
-  expect_warning(recipe_import_circe(circe), "EndStrategy")
+  expect_error(recipe_import_circe(circe), "EndStrategy")
 })
 
-test_that("nested CriteriaGroups beyond one level warn on import (dropped)", {
+test_that("nested CriteriaGroups beyond one level fail closed", {
   circe <- jsonlite::toJSON(list(
     ConceptSets = list(list(id = 0L, name = "DM",
       expression = list(items = list(list(concept = list(CONCEPT_ID = 201820L)))))),
@@ -359,7 +340,7 @@ test_that("nested CriteriaGroups beyond one level warn on import (dropped)", {
         Groups = list(list(Type = "ANY", CriteriaList = list(),
                            DemographicCriteriaList = list(),
                            Groups = list())))))), auto_unbox = TRUE)
-  expect_warning(recipe_import_circe(circe), "nested CriteriaGroups")
+  expect_error(recipe_import_circe(circe), "nested CriteriaGroups")
 })
 
 # ==============================================================================
@@ -385,13 +366,13 @@ test_that("an externally-authored minimal Circe JSON imports to a runnable recip
   expect_equal(pop$label, "External cohort")
 
   types <- .filter_types(pop$filters)
-  expect_true("has_concept" %in% types)
+  expect_false("has_concept" %in% types)
   expect_true("prior_observation" %in% types)
   expect_true("age_range" %in% types)
 
-  anchor <- .find_filter(pop$filters, "has_concept")
-  expect_equal(anchor$params$concept_id, 201820L)
-  expect_equal(anchor$params$table, "condition_occurrence")
+  expect_s3_class(pop$index_event, "omop_index_event")
+  expect_equal(pop$index_event$concept_id, 201820L)
+  expect_equal(pop$index_event$table, "condition_occurrence")
   expect_equal(.find_filter(pop$filters, "prior_observation")$params$min_days,
                365L)
   age <- .find_filter(pop$filters, "age_range")
@@ -400,6 +381,7 @@ test_that("an externally-authored minimal Circe JSON imports to a runnable recip
 
   # Runnable: drop it into a recipe and compile a plan.
   r <- omop_recipe(populations = pop,
+                   variables = omop_variable_age(),
                    outputs = omop_output(type = "wide", population_id = "ext"))
   expect_silent(dsOMOPClient:::recipe_to_plan(r))
 })
@@ -407,4 +389,154 @@ test_that("an externally-authored minimal Circe JSON imports to a runnable recip
 test_that("recipe_export_circe errors for an unknown population_id", {
   expect_error(recipe_export_circe(omop_recipe(), population_id = "nope"),
                "not found")
+})
+
+test_that("typed index events compile and survive recipe round-trips", {
+  idx <- omop_index_event(201820L, "CONDITION_OCCURRENCE",
+                          primary_limit = "LAST")
+  expect_s3_class(idx, "omop_index_event")
+  expect_equal(idx$table, "condition_occurrence")
+  expect_equal(idx$primary_limit, "last")
+  expect_error(omop_index_event(201820L, "death"), "must be one of")
+  expect_error(omop_index_event(1.5, "condition_occurrence"),
+               "non-negative integers")
+  expect_error(omop_population("x", union = c("a", "b"), index_event = idx),
+               "cannot also take")
+  expect_error(omop_population("x", episode_policy = "any_episode",
+                               index_event = idx), "cannot be combined")
+
+  pop <- omop_population(
+    "study", index_event = idx,
+    filters = omop_filter_has_concept(
+      255573L, "condition_occurrence", window = list(start = 0L, end = 30L)
+    )
+  )
+  r <- omop_recipe(populations = pop,
+                   variables = omop_variable_age(),
+                   outputs = omop_output(type = "wide",
+                                        population_id = "study"))
+  plan <- recipe_to_plan(r)
+  expect_equal(plan$populations$study$index_event,
+               list(table = "condition_occurrence", concept_set = 201820L,
+                    primary_limit = "last"))
+
+  from_json <- recipe_import_json(recipe_export_json(r))
+  from_yaml <- recipe_import_yaml(recipe_export_yaml(r))
+  from_code <- eval(parse(text = recipe_to_code(r)))
+  for (roundtrip in list(from_json, from_yaml, from_code)) {
+    expect_s3_class(roundtrip$populations$study$index_event,
+                    "omop_index_event")
+    expect_equal(roundtrip$populations$study$index_event$primary_limit, "last")
+  }
+})
+
+test_that("Circe PrimaryCriteria First and Last stay explicit", {
+  for (limit in c("first", "last")) {
+    pop <- omop_population(
+      "study",
+      index_event = omop_index_event(
+        201820L, "condition_occurrence", primary_limit = limit
+      ),
+      filters = omop_filter_has_concept(
+        255573L, "condition_occurrence", window = list(start = 0L, end = 30L)
+      )
+    )
+    r <- omop_recipe(populations = pop,
+                     outputs = omop_output(type = "wide",
+                                          population_id = "study"))
+    json <- recipe_export_circe(r, "study")
+    expr <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+    circe_limit <- c(first = "First", last = "Last", all = "All")[[limit]]
+    expect_equal(expr$PrimaryCriteria$PrimaryCriteriaLimit$Type, circe_limit)
+    expect_equal(names(expr$PrimaryCriteria$CriteriaList[[1]]),
+                 "ConditionOccurrence")
+
+    back <- recipe_import_circe(json)
+    expect_s3_class(back$index_event, "omop_index_event")
+    expect_equal(back$index_event$primary_limit, limit)
+    expect_equal(back$index_event$concept_id, 201820L)
+    expect_false(any(vapply(back$filters, function(f) {
+      identical(f$params$concept_id %||% NULL, 201820L)
+    }, logical(1))))
+    inclusion <- .find_filter(back$filters, "has_concept")
+    expect_equal(inclusion$params$window,
+                 list(start = 0L, end = 30L))
+  }
+})
+
+test_that("Circe All fails closed until ERA collapse is executable", {
+  pop <- omop_population(
+    "study",
+    index_event = omop_index_event(
+      201820L, "condition_occurrence", primary_limit = "all"
+    )
+  )
+  r <- omop_recipe(populations = pop,
+                   outputs = omop_output(type = "wide",
+                                        population_id = "study"))
+  expect_error(recipe_export_circe(r, "study"), "ERA collapse")
+
+  first <- .supported_recipe()
+  expr <- jsonlite::fromJSON(recipe_export_circe(first, "t2d"),
+                             simplifyVector = FALSE)
+  expr$PrimaryCriteria$PrimaryCriteriaLimit$Type <- "All"
+  expr$QualifiedLimit$Type <- "All"
+  expr$ExpressionLimit$Type <- "All"
+  all_json <- jsonlite::toJSON(expr, auto_unbox = TRUE, null = "null")
+  expect_error(recipe_import_circe(all_json), "ERA collapse")
+})
+
+test_that("Circe count windows and supported Age operators are preserved", {
+  pop <- omop_population(
+    "study",
+    index_event = omop_index_event(201820L, "condition_occurrence"),
+    filters = omop_filter_concept_count(
+      255573L, "condition_occurrence", min_count = 2L,
+      window = list(start = -30L, end = 7L)
+    )
+  )
+  r <- omop_recipe(populations = pop,
+                   outputs = omop_output(type = "wide",
+                                        population_id = "study"))
+  back <- recipe_import_circe(recipe_export_circe(r, "study"))
+  counted <- .find_filter(back$filters, "concept_count")
+  expect_equal(counted$params$min_count, 2L)
+  expect_equal(counted$params$window, list(start = -30L, end = 7L))
+
+  age_expr <- function(op, value, extent = NULL) {
+    age_demo <- list(Age = list(Value = value, Extent = extent, Op = op))
+    age_rule <- list(
+      name = "age",
+      expression = list(
+        Type = "ALL",
+        CriteriaList = list(),
+        DemographicCriteriaList = list(age_demo),
+        Groups = list()
+      )
+    )
+    expr <- list(
+      ConceptSets = list(list(id = 0L, name = "index",
+        expression = list(items = list(list(
+          concept = list(CONCEPT_ID = 201820L), isExcluded = FALSE,
+          includeDescendants = FALSE, includeMapped = FALSE))))),
+      PrimaryCriteria = list(
+        CriteriaList = list(list(ConditionOccurrence = list(CodesetId = 0L))),
+        ObservationWindow = list(PriorDays = 0L, PostDays = 0L),
+        PrimaryCriteriaLimit = list(Type = "First")),
+      InclusionRules = list(age_rule),
+      EndStrategy = list(), CensoringCriteria = list())
+    jsonlite::toJSON(expr, auto_unbox = TRUE, null = "null")
+  }
+  expected <- list(gte = c(18L, 150L), gt = c(19L, 150L),
+                   lte = c(0L, 65L), lt = c(0L, 64L),
+                   eq = c(65L, 65L), bt = c(18L, 65L))
+  for (op in names(expected)) {
+    value <- if (op %in% c("lte", "lt", "eq")) 65L else 18L
+    extent <- if (identical(op, "bt")) 65L else NULL
+    imported <- recipe_import_circe(age_expr(op, value, extent))
+    age <- .find_filter(imported$filters, "age_range")
+    expect_equal(c(age$params$min, age$params$max), expected[[op]])
+  }
+  expect_error(recipe_import_circe(age_expr("!eq", 65L)),
+               "unsupported Age operator")
 })

@@ -46,6 +46,10 @@ population (inner join on \code{subject_id}). Default: NULL.}
 produce a named list of independent stratified 2-way slices. Default:
 NULL.}
 
+\item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
+\code{cohort_definition_id}, or a server-side cohort table name), or NULL.
+Takes precedence over \code{cohort_table}.}
+
 \item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or

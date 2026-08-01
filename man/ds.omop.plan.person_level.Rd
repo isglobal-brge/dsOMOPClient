@@ -2,7 +2,7 @@
 % Please edit documentation in R/plan.R
 \name{ds.omop.plan.person_level}
 \alias{ds.omop.plan.person_level}
-\title{Add person-level tables to the plan (raw join)}
+\title{Add cardinality-safe person-level tables to the plan}
 \usage{
 ds.omop.plan.person_level(plan, tables, name = "person_data")
 }
@@ -11,10 +11,10 @@ ds.omop.plan.person_level(plan, tables, name = "person_data")
 
 \item{tables}{Named list; each element maps a table name to a
 character vector of column names to include, e.g.
-\code{list(person = c("gender_concept_id"), visit_occurrence = c("visit_concept_id"))}.
+\code{list(person = c("gender_concept_id", "race_concept_id"))}.
 Each column vector may be \emph{named} to rename columns in the output:
-\code{c(sex = "gender_concept_id", birth_year = "year_of_birth")} yields
-output columns \code{sex} and \code{birth_year}. Unnamed entries keep
+\code{c(sex = "gender_concept_id", race = "race_concept_id")} yields
+output columns \code{sex} and \code{race}. Unnamed entries keep
 their source name. Identifier columns cannot be renamed (they are
 stripped server-side regardless).}
 
@@ -26,19 +26,18 @@ The modified \code{omop_plan} with the person-level output
   appended.
 }
 \description{
-Joins one or more tables by person_id and merges into a single
-wide data.frame. For cohort-aware demographics with derived fields,
-use \code{\link{ds.omop.plan.baseline}} instead. This output type
-is useful when you need raw columns from multiple OMOP tables
-without cohort-relative computations.
+Merges one-row-per-person sources by \code{person_id}. Raw columns are
+accepted only from tables whose cardinality is guaranteed to be at most one
+row per person; repeatable clinical tables must be reduced through explicit
+feature specifications. For cohort-aware demographics and age at index, use
+\code{\link{ds.omop.plan.baseline}} instead.
 }
 \examples{
 \dontrun{
 plan <- ds.omop.plan()
 plan <- ds.omop.plan.person_level(plan,
   tables = list(
-    person = c("gender_concept_id", "year_of_birth"),
-    visit_occurrence = c("visit_concept_id", "visit_type_concept_id")
+    person = c("gender_concept_id", "race_concept_id")
   ),
   name = "demographics"
 )
@@ -46,7 +45,7 @@ plan <- ds.omop.plan.person_level(plan,
 # Rename columns at request time with a named vector
 plan <- ds.omop.plan.person_level(plan,
   tables = list(person = c(sex = "gender_concept_id",
-                           birth_year = "year_of_birth")),
+                           race = "race_concept_id")),
   name = "demographics"
 )
 }

@@ -111,16 +111,29 @@ test_that("narrow_filter: age_range width < 5 years", {
   expect_equal(sev_of(L, "narrow_filter"), "WARNING")
 })
 
-test_that("narrow_filter: date_range width < 30 days", {
+test_that("date_range width is not hard-coded by client lint", {
   r <- omop_recipe()
-  r <- dsOMOPClient:::recipe_add_population(r, omop_population(id = "base",
-         label = "All Persons",
-         filters = list(omop_filter(type = "date_range", level = "population",
-           params = list(start = "2020-01-01", end = "2020-01-10")))))
-  r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_sex())
-  r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "w", type = "wide"))
+  r <- dsOMOPClient:::recipe_add_filter(
+    r, omop_filter_date_range("2020-01-01", "2020-01-10"))
+  r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
+    name = "condition", table = "condition_occurrence", concept_id = 201820))
+  r <- dsOMOPClient:::recipe_add_output(
+    r, omop_output(name = "events", type = "long"))
   L <- recipe_lint(r)
-  expect_true(has_code(L, "narrow_filter"))
+  expect_false(has_code(L, "narrow_filter"))
+})
+
+test_that("time_since lint requires fixed reference semantics", {
+  v <- omop_variable(
+    name = "recency", table = "condition_occurrence", concept_id = 201820,
+    format = "time_since", reference_date = "2024-01-01", unit = "day")
+  v$derived$reference_date <- NULL
+  r <- omop_recipe(
+    variables = v,
+    outputs = omop_output(name = "features", type = "features"))
+  L <- recipe_lint(r)
+  expect_true(has_code(L, "time_since_spec"))
+  expect_equal(sev_of(L, "time_since_spec"), "ERROR")
 })
 
 test_that("highcard_factor: raw _concept_id column with factor_concepts=TRUE", {

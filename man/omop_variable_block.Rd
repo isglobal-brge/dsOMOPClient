@@ -15,7 +15,9 @@ omop_variable_block(
   suffix_mode = "index",
   filters = list(),
   population_id = "base",
-  expand = FALSE
+  expand = FALSE,
+  reference_date = NULL,
+  unit = NULL
 )
 }
 \arguments{
@@ -50,6 +52,12 @@ applied to all variables in the block.}
 
 \item{expand}{Logical; if \code{TRUE}, expand the block's concepts to
 include vocabulary descendants server-side (default \code{FALSE}).}
+
+\item{reference_date}{Character/Date or \code{NULL}; fixed reference date
+required for a \code{"time_since"} block.}
+
+\item{unit}{Character or \code{NULL}; \code{"day"} (default for
+\code{time_since}) or complete calendar \code{"month"} units.}
 }
 \value{
 An \code{omop_variable_block} object.

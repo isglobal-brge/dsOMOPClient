@@ -14,9 +14,9 @@
 #   - omop_population() set-op authoring (union / intersect / setdiff) validates
 #     fail-closed (one op, >= 2 members, never mixed with filters);
 #   - recipe-level scope serializes to plan$scope, and ds.omop.plan.execute()
-#     SPLICES the cohort literal + omop.table SYMBOLS into the omopPlanExecuteDS
-#     call by name (they cannot ride in the plan JSON) with combine passed by
-#     name — the ds.omop.analysis.run scope contract;
+#     SPLICES the cohort literal as `scope` plus each omop.table SYMBOL as a
+#     separate `scope_table_<n>` argument in omopPlanExecuteDS (they cannot ride
+#     in the plan JSON), with combine passed by name;
 #   - JSON/YAML and code round-trip set-op populations and scope;
 #   - single-population (base-only) recipes are byte-for-byte unchanged.
 #
@@ -41,12 +41,16 @@ headline_recipe <- function() {
         filters = list(
           omop_filter_sex("F"),
           omop_filter_has_concept(201820, "condition_occurrence"),
-          omop_filter_has_measurement(3004410, min_value = 7.0))),
+          omop_filter_has_measurement(
+            3004410, min_value = 7.0, max_value = 20,
+            safe_bins = .test_safe_bins(c(0, 5, 7, 20))))),
       omop_population("B", "women conditionY + HbA1c low",
         filters = list(
           omop_filter_sex("F"),
           omop_filter_has_concept(255573, "condition_occurrence"),
-          omop_filter_has_measurement(3004410, max_value = 5.0))),
+          omop_filter_has_measurement(
+            3004410, min_value = 0, max_value = 5.0,
+            safe_bins = .test_safe_bins(c(0, 5, 7, 20))))),
       omop_population("union_AB", "A or B", union = c("A", "B")),
       omop_population("hasMeasZ", "women creatinine present",
         filters = list(
@@ -111,12 +115,16 @@ test_that("declarative populations=list(...) matches the step-by-step build", {
     "A", "women conditionX + HbA1c high",
     filters = list(omop_filter_sex("F"),
                    omop_filter_has_concept(201820, "condition_occurrence"),
-                   omop_filter_has_measurement(3004410, min_value = 7.0))))
+                   omop_filter_has_measurement(
+                     3004410, min_value = 7.0, max_value = 20,
+                     safe_bins = .test_safe_bins(c(0, 5, 7, 20))))))
   step <- dsOMOPClient:::recipe_add_population(step, omop_population(
     "B", "women conditionY + HbA1c low",
     filters = list(omop_filter_sex("F"),
                    omop_filter_has_concept(255573, "condition_occurrence"),
-                   omop_filter_has_measurement(3004410, max_value = 5.0))))
+                   omop_filter_has_measurement(
+                     3004410, min_value = 0, max_value = 5.0,
+                     safe_bins = .test_safe_bins(c(0, 5, 7, 20))))))
   step <- dsOMOPClient:::recipe_add_population(step, omop_population(
     "union_AB", "A or B", union = c("A", "B")))
   step <- dsOMOPClient:::recipe_add_population(step, omop_population(
@@ -231,12 +239,29 @@ test_that("a scalar cohort to omop_recipe is scope, not the base cohort", {
 # backend is needed.
 .capture_exec_call <- function(plan, ...) {
   captured <- NULL
+  symbols <- character(0)
   testthat::local_mocked_bindings(
-    datashield.assign.expr = function(conns, symbol, expr, ...) {
-      captured <<- expr; invisible(NULL)
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      symbols <<- union(symbols, symbol)
+      if (is.call(expr) && identical(as.character(expr[[1L]]),
+                                     "omopPlanExecuteDS")) {
+        captured <<- expr
+        symbols <<- union(symbols, as.character(expr[[4L]]))
+      }
+      if (is.function(success)) success("srv")
+      invisible(NULL)
     },
-    datashield.aggregate = function(conns, expr, ...) list(srv = NULL),
-    datashield.rm = function(conns, symbol, ...) invisible(NULL),
+    datashield.aggregate = function(conns, expr, success = NULL, ...) {
+      report <- list(levels = list(), unsafe = character(0),
+                     nfilter_levels_max = 40)
+      if (is.function(success)) success("srv", report)
+      list(srv = report)
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      symbols <<- setdiff(symbols, symbol); invisible(NULL)
+    },
+    datashield.symbols = function(conns, ...) list(srv = symbols),
     .package = "DSI")
   ds.omop.plan.execute(plan, ...)
   captured
@@ -264,21 +289,21 @@ test_that("ds.omop.plan.execute splices scope symbols into the server call", {
   expect_identical(as.character(call_expr[[1]]), "omopPlanExecuteDS")
 
   args <- as.list(call_expr)
-  # scope and combine ride as NAMED args (so a NULL scope never shifts combine).
+  # Scope components and combine ride as separate NAMED args.
   expect_true("scope" %in% names(args))
+  expect_true(all(c("scope_table_1", "scope_table_2") %in% names(args)))
   expect_true("combine" %in% names(args))
   expect_identical(args$combine, "intersect")
 
-  # The scope expression is list(<cohort literal>, <table symbols...>): the
-  # cohort travels as a string, the omop.table NAMES as bare symbols DSI resolves
-  # to server-side frames (they cannot be JSON-encoded in the plan).
-  scope_expr <- args$scope
-  expect_identical(as.character(scope_expr[[1]]), "list")
-  expect_identical(scope_expr[[2]], "scope_tbl")          # cohort literal
-  expect_true(is.name(scope_expr[[3]]))                   # inc_a as a symbol
-  expect_true(is.name(scope_expr[[4]]))                   # inc_b as a symbol
-  expect_identical(as.character(scope_expr[[3]]), "inc_a")
-  expect_identical(as.character(scope_expr[[4]]), "inc_b")
+  expect_identical(args$scope, "scope_tbl")
+  expect_true(is.name(args$scope_table_1))
+  expect_true(is.name(args$scope_table_2))
+  expect_identical(as.character(args$scope_table_1), "inc_a")
+  expect_identical(as.character(args$scope_table_2), "inc_b")
+  nested_heads <- vapply(args[-1L], function(value) {
+    if (is.call(value)) as.character(value[[1L]]) else ""
+  }, character(1L))
+  expect_false(any(nested_heads %in% c("c", "list")))
 
   # The plan itself crosses encoded (B64/JSON), carrying the multi-population
   # contract the server executes.
@@ -297,7 +322,35 @@ test_that("ds.omop.plan.execute omits scope args when the recipe has none", {
   args <- as.list(call_expr)
   # No scope means no scope/combine args spliced in (pure positional call).
   expect_false("scope" %in% names(args))
+  expect_false(any(grepl("^scope_table_[0-9]+$", names(args))))
   expect_false("combine" %in% names(args))
+})
+
+test_that("execute rejects output and scope collisions before cleanup", {
+  .with_fake_session()
+  recipe <- omop_recipe(
+    variables = omop_variable_age(),
+    outputs = omop_output(name = "study", type = "wide"),
+    tables = "scope_tbl"
+  )
+  plan <- recipe_to_plan(recipe)
+  touched <- FALSE
+  testthat::local_mocked_bindings(
+    datashield.rm = function(...) {
+      touched <<- TRUE
+      invisible(NULL)
+    },
+    datashield.symbols = function(...) {
+      touched <<- TRUE
+      list(srv = "scope_tbl")
+    },
+    .package = "DSI"
+  )
+  expect_error(
+    ds.omop.plan.execute(plan, out = c(study = "scope_tbl")),
+    "collide with execution-scope"
+  )
+  expect_false(touched)
 })
 
 test_that("recipe_execute applies an execution-time scope override", {
@@ -310,12 +363,29 @@ test_that("recipe_execute applies an execution-time scope override", {
   expect_null(recipe$scope)
 
   captured <- NULL
+  symbols <- character(0)
   testthat::local_mocked_bindings(
-    datashield.assign.expr = function(conns, symbol, expr, ...) {
-      captured <<- expr; invisible(NULL)
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      symbols <<- union(symbols, symbol)
+      if (is.call(expr) && identical(as.character(expr[[1L]]),
+                                     "omopPlanExecuteDS")) {
+        captured <<- expr
+        symbols <<- union(symbols, as.character(expr[[4L]]))
+      }
+      if (is.function(success)) success("srv")
+      invisible(NULL)
     },
-    datashield.aggregate = function(conns, expr, ...) list(srv = NULL),
-    datashield.rm = function(conns, symbol, ...) invisible(NULL),
+    datashield.aggregate = function(conns, expr, success = NULL, ...) {
+      report <- list(levels = list(), unsafe = character(0),
+                     nfilter_levels_max = 40)
+      if (is.function(success)) success("srv", report)
+      list(srv = report)
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      symbols <<- setdiff(symbols, symbol); invisible(NULL)
+    },
+    datashield.symbols = function(conns, ...) list(srv = symbols),
     .package = "DSI")
   # factor harmonization is skipped because the recipe carries no factor opts by
   # default for a bare wide output; pass through recipe_execute directly.
@@ -325,9 +395,10 @@ test_that("recipe_execute applies an execution-time scope override", {
   expect_false(is.null(captured))
   args <- as.list(captured)
   expect_true("scope" %in% names(args))
+  expect_true("scope_table_1" %in% names(args))
   expect_identical(args$combine, "union")
-  expect_identical(args$scope[[2]], "ct")
-  expect_identical(as.character(args$scope[[3]]), "inc_a")
+  expect_identical(args$scope, "ct")
+  expect_identical(as.character(args$scope_table_1), "inc_a")
 })
 
 # ---------------------------------------------------------------------------

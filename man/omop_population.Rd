@@ -10,9 +10,11 @@ omop_population(
   parent_id = NULL,
   filters = list(),
   cohort_definition_id = NULL,
+  episode_policy = NULL,
   union = NULL,
   intersect = NULL,
-  setdiff = NULL
+  setdiff = NULL,
+  index_event = NULL
 )
 }
 \arguments{
@@ -30,15 +32,26 @@ executable dependency.}
 \item{cohort_definition_id}{Integer or \code{NULL}; base cohort definition ID
 (if the population is defined by a pre-existing cohort).}
 
+\item{episode_policy}{Character or \code{NULL}; explicit semantics for
+index-dependent filters when the index cohort can contain multiple episodes
+per person. One of \code{"any_episode"}, \code{"all_episodes"},
+\code{"first_episode"}, or \code{"last_episode"}. Without a policy the
+server rejects index-dependent filtering of recurrent cohorts.}
+
 \item{union, intersect, setdiff}{Character vector of two or more population IDs
 to derive this population from by the named set operation on the person key.
 Exactly one may be supplied, and only for a set-op population (mutually
 exclusive with \code{filters} / \code{cohort_definition_id}).}
+
+\item{index_event}{An \code{omop_index_event} or \code{NULL}.  When present,
+population filters are evaluated for each retained event episode and the
+event's start/end dates are preserved.}
 }
 \value{
 An \code{omop_population} object. A set-op population carries a
   \code{$setop = list(op, members)} field; a criteria population carries
-  \code{$filters} (and optionally \code{$cohort_definition_id}).
+  \code{$filters} (and optionally \code{$cohort_definition_id} and
+  \code{$episode_policy}).
 }
 \description{
 A recipe defines one or more populations and every output targets one (via

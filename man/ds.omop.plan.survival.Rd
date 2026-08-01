@@ -35,9 +35,10 @@ outputs list.}
 The modified \code{omop_plan} with the survival output appended.
 }
 \description{
-Produces one row per cohort member with an event indicator (0/1) and
-time-to-event in days. No calendar dates appear in the output, making
-it safe for federated disclosure control. Requires a cohort to be set.
+Produces one row per cohort episode with an event indicator (0/1) and
+time-to-event in days. Calendar dates are omitted; the assigned server-side
+object remains subject to the ordinary DataSHIELD disclosure controls.
+Requires a cohort to be set.
 }
 \examples{
 \dontrun{

@@ -4,7 +4,15 @@
 \alias{.analysis_run_call}
 \title{Build the (possibly scope-bearing) server-side analysis run call}
 \usage{
-.analysis_run_call(fn, res_symbol, name, params, scope_expr, combine)
+.analysis_run_call(
+  fn,
+  res_symbol,
+  name,
+  params,
+  scope_args,
+  combine,
+  date_handling = NULL
+)
 }
 \arguments{
 \item{fn}{Character; the server method name.}
@@ -15,8 +23,8 @@
 
 \item{params}{Named list of parameter values.}
 
-\item{scope_expr}{\code{NULL}, a literal cohort value, or a \code{list(...)}
-call (from \code{\link{.analysis_scope_expr}}).}
+\item{scope_args}{\code{NULL} or the closed named argument list returned by
+\code{\link{.analysis_scope_expr}}.}
 
 \item{combine}{Character; \code{"union"} or \code{"intersect"}.}
 }
@@ -26,9 +34,9 @@ An unevaluated \code{call}.
 \description{
 Constructs the unevaluated DataSHIELD call for \code{omopAnalysisRunDS} /
 \code{omopAnalysisRunAssignDS}. \code{params} is JSON/base64-encoded for Opal
-transport (\code{\link{.ds_encode}}); \code{scope_expr} (when present) is
-spliced in by NAME so a \code{list(as.name(<table>))} scope resolves to the
-server-side \code{omop.table} frames, and \code{combine} is passed by name so
-a \code{NULL} scope never shifts it into the wrong positional slot.
+transport (\code{\link{.ds_encode}}); \code{scope_args} is spliced as closed,
+named arguments. Table scopes are bare symbols, never nested calls.
+\code{combine} is passed by name so absent scope arguments cannot shift it
+into the wrong positional slot.
 }
 \keyword{internal}

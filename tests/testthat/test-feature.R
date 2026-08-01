@@ -29,6 +29,9 @@ test_that("omop.feature.time_since creates correct spec", {
   expect_equal(spec$type, "time_since")
   expect_equal(spec$reference_date, "2024-01-01")
   expect_equal(spec$unit, "day")
+  expect_error(omop.feature.time_since(201820), "fixed reference_date")
+  expect_error(omop.feature.time_since(
+    201820, reference_date = "2024-02-30"), "valid calendar date")
 })
 
 test_that("omop.feature.mean_value creates correct spec", {
@@ -53,7 +56,7 @@ test_that("feature specs have omop_feature_spec class", {
     omop.feature.count(1),
     omop.feature.latest_value(1),
     omop.feature.first_value(1),
-    omop.feature.time_since(1),
+    omop.feature.time_since(1, reference_date = "2024-01-01"),
     omop.feature.mean_value(1),
     omop.feature.min_value(1),
     omop.feature.max_value(1)

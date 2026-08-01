@@ -16,5 +16,6 @@ An \code{omop_variable} with \code{format = "followup"}.
 }
 \description{
 Produces a derived variable computing days from a reference date (default
-today) to observation end.
+fixed reference date to observation end. When omitted, today's date is
+recorded in the variable specification at construction time.
 }

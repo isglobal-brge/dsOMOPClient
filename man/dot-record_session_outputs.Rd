@@ -9,7 +9,8 @@
 \arguments{
 \item{symbol}{Character; the session symbol used for the execution.}
 
-\item{out}{Named character vector mapping outputs to server symbols.}
+\item{out}{Named list of exact produced component symbols, or a character
+vector for backwards-compatible internal use.}
 }
 \value{
 \code{NULL} invisibly.

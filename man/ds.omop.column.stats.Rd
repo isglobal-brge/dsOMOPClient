@@ -29,6 +29,9 @@ statistics (e.g., \code{value_as_number} for one measurement
 concept). Default: NULL for all rows. The server applies the same
 disclosure controls to the concept-filtered population.}
 
+\item{cohort}{Cohort reference (a \code{dsomop_cohort_handle}, a
+\code{cohort_definition_id}, or a server-side cohort table name), or NULL.}
+
 \item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.}
 
 \item{pooling_policy}{Character; \code{"strict"} (default) or

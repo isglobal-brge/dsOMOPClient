@@ -9,6 +9,7 @@
   concept_ids,
   name = NULL,
   include_descendants = FALSE,
+  include_mapped = FALSE,
   is_excluded = FALSE
 )
 }

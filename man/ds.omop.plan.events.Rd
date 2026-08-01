@@ -59,8 +59,10 @@ to visits of those \code{visit_concept_id} values via the
 \code{"unit_concept_id"} to extract one unit for harmonization.}
 
 \item{representation}{Named list with \code{format} (one of
-\code{"long"}, \code{"wide"}, \code{"features"}) and optional
-format-specific settings.}
+\code{"long"}, \code{"wide"}, \code{"features"}, or \code{"sparse"}) and
+optional format-specific settings. Wide/features/sparse may set \code{grain} to
+\code{"person"} (default) or \code{"episode"}; an index-relative window
+requires episode grain.}
 }
 \value{
 The modified \code{omop_plan} with the event-level output

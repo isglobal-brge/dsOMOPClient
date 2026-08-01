@@ -6,7 +6,7 @@
 \usage{
 ds.omop.plan.baseline(
   plan,
-  columns = c("gender_concept_id", "year_of_birth", "race_concept_id"),
+  columns = c("gender_concept_id", "race_concept_id"),
   derived = c("age_at_index"),
   name = "baseline"
 )
@@ -15,10 +15,9 @@ ds.omop.plan.baseline(
 \item{plan}{An \code{omop_plan} object.}
 
 \item{columns}{Character vector; person-table columns to include
-(e.g. \code{"gender_concept_id"}, \code{"year_of_birth"},
-\code{"race_concept_id"}). Pass a \emph{named} vector to rename columns
-in the output, e.g. \code{c(sex = "gender_concept_id", birth_year =
-"year_of_birth")} yields columns \code{sex} and \code{birth_year}.
+(e.g. \code{"gender_concept_id"}, \code{"race_concept_id"}). Exact birth
+components are not releasable; request \code{"age_at_index"} through
+\code{derived} instead. Pass a \emph{named} vector to rename columns.
 Unnamed entries keep their source name. Identifier columns cannot be
 renamed (they are stripped server-side regardless).}
 
@@ -33,18 +32,18 @@ outputs list and as the default symbol name on the server.}
 The modified \code{omop_plan} with the baseline output appended.
 }
 \description{
-Produces one row per cohort member with demographics from the person
-table and optional derived fields. Requires a cohort to be set.
-This is the recommended way to retrieve person-level demographic
-variables when a cohort has been defined, because it can compute
-cohort-relative derived fields such as age at index.
+Produces one row per cohort episode, preserving \code{cohort_row_id} when a
+person has recurrent membership, with demographics from the person table and
+optional derived fields. Requires a cohort to be set. This is the recommended
+way to retrieve cohort-indexed demographic variables because it can compute
+episode-relative fields such as age at index.
 }
 \examples{
 \dontrun{
 plan <- ds.omop.plan()
 plan <- ds.omop.plan.cohort(plan, cohort_definition_id = 1)
 plan <- ds.omop.plan.baseline(plan,
-  columns = c("gender_concept_id", "year_of_birth"),
+  columns = c("gender_concept_id", "race_concept_id"),
   derived = c("age_at_index", "prior_observation")
 )
 }

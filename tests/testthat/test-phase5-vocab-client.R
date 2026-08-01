@@ -138,6 +138,17 @@ test_that("ds.omop.concept.ancestors builds omopConceptAncestorsDS and unions", 
   expect_setequal(pooled$concept_id, c(441840L, 4034964L, 9999L))
 })
 
+test_that("vocabulary pooling is withheld when any server has no result", {
+  .with_fake_vocab_session()
+  out <- .capture_aggregate(
+    function() ds.omop.concept.ancestors(201826),
+    list(s1 = data.frame(concept_id = 201826L))
+  )
+  expect_null(out$ret$pooled)
+  expect_named(attr(out$ret$per_site, "ds_errors"), "s2")
+  expect_true(any(grepl("s2", out$ret$meta$warnings, fixed = TRUE)))
+})
+
 test_that("ds.omop.concept.synonyms builds omopConceptSynonymsDS", {
   .with_fake_vocab_session()
   out <- .capture_aggregate(function() ds.omop.concept.synonyms(201826))
@@ -197,6 +208,20 @@ test_that("ds.omop.concept.list passes OFFSET/LIMIT + filters and sums totals", 
   expect_equal(out$ret$pooled$limit, 2L)
   # Concept_id 2 is shared across both sites -> de-duplicated in the union.
   expect_setequal(out$ret$pooled$rows$concept_id, c(1L, 2L, 3L))
+})
+
+test_that("concept catalog does not publish partial pooled totals", {
+  .with_fake_vocab_session()
+  out <- .capture_aggregate(
+    function() ds.omop.concept.list(limit = 2),
+    list(s1 = list(
+      rows = data.frame(concept_id = c(1L, 2L)),
+      total_count = 2, offset = 0L, limit = 2L
+    ))
+  )
+  expect_null(out$ret$pooled$rows)
+  expect_true(is.na(out$ret$pooled$total_count))
+  expect_named(attr(out$ret$per_site, "ds_errors"), "s2")
 })
 
 # ------------------------------------------------------------------------------

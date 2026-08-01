@@ -15,8 +15,8 @@ ds.omop.achilles.heel(symbol = "omop", conns = NULL)
 A \code{dsomop_result} with per-site heel warning data frames.
 }
 \description{
-Returns disclosure-controlled Achilles Heel warnings for each connected
-server (record counts below nfilter are masked; numbers in the warning text
-are scrubbed server-side). Heel results describe which data-quality rules
-fired per site, so they are reported per-site (not pooled).
+Achilles Heel counts records and does not provide distinct-person support for
+each fired rule. It therefore cannot satisfy dsOMOP's person-level
+contribution contract and is no longer available through DataSHIELD. Run it
+only in a controller-side quality-assurance workflow.
 }

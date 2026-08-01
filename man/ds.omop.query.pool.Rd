@@ -26,9 +26,9 @@ pooling rules to. If \code{NULL} (the default), auto-detected from
 query metadata or column name patterns.}
 
 \item{pool_strategy}{Character; pooling method. \code{"sum"} (the default)
-sums count columns across servers; \code{"weighted_mean"} pools means
-weighted by count; \code{"none"} returns the first server's result
-without pooling.}
+sums count columns across servers; \code{"none"} returns the first server's
+result without pooling. The legacy \code{"weighted_mean"} value fails
+closed; use \code{ds.omop.analysis.run()} for contracted pooling.}
 
 \item{policy}{Character; suppression propagation policy. \code{"strict"}
 (the default) sets the pooled value to NA if any server suppressed the
@@ -48,7 +48,8 @@ pools them according to the query's pool strategy. Supports two pooling
 methods:
 \itemize{
   \item \code{sum}: Sum count columns across servers (default)
-  \item \code{weighted_mean}: Pool means weighted by count
+  \item \code{weighted_mean}: legacy metadata value; rejected because the
+    deprecated helper has no closed numerator/denominator contract
 }
 }
 \details{

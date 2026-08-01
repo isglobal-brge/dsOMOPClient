@@ -4,10 +4,10 @@
 \alias{.harmonizeConceptFactors}
 \title{Harmonize concept-id columns into federation-wide factors}
 \usage{
-.harmonizeConceptFactors(out, conns)
+.harmonizeConceptFactors(owned, conns)
 }
 \arguments{
-\item{out}{Named character vector mapping plan outputs to server symbols.}
+\item{owned}{Named list mapping plan outputs to their exact server symbols.}
 
 \item{conns}{DSI connections object.}
 }
@@ -25,8 +25,9 @@ coding. This is what makes pooled \code{ds.glm}, \code{ds.glmSLMA}, and
 }
 \details{
 A value present on only some sites becomes an empty level on the sites
-that lack it (valid base R; the modelling functions tolerate it). Symbols
-absent on a server are skipped there, and any error harmonizing one symbol
-is downgraded to a warning so the remaining outputs are unaffected.
+that lack it (valid base R; the modelling functions tolerate it). Every
+expected output component must exist on every server. Any discovery,
+level-collection, or recoding error fails closed and removes the freshly
+assigned output symbols rather than leaving inconsistent factors available.
 }
 \keyword{internal}

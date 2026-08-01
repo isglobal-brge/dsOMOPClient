@@ -17,11 +17,12 @@ The modified \code{omop_plan} with the cohort membership
   output appended.
 }
 \description{
-Produces the standard OHDSI cohort table as a named output with
-row_id, subject_id, cohort_definition_id, cohort_start_date, and
-cohort_end_date. Requires a cohort to be set on the plan via
-\code{\link{ds.omop.plan.cohort}}. This is useful when you need
-the raw cohort membership data alongside other outputs.
+Produces a protected cohort-membership view with \code{row_id} (the
+\code{cohort_row_id} alias), pseudonymized \code{subject_id},
+\code{cohort_definition_id}, and dates transformed by the configured date
+policy (removed by default). Recurrent episodes remain distinct. Requires a
+cohort to be set on the plan via \code{\link{ds.omop.plan.cohort}}; this is
+not an unrestricted raw export of the OHDSI cohort table.
 }
 \examples{
 \dontrun{

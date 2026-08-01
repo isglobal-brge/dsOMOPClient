@@ -21,6 +21,38 @@ test_that("ds.omop.achilles.analyses has expected signature", {
   expect_null(args$domain)
 })
 
+test_that("Achilles catalogs require complete, set-consistent metadata", {
+  a <- data.frame(
+    analysis_id = c(1L, 2L),
+    analysis_name = c("Persons", "Gender"),
+    stringsAsFactors = FALSE
+  )
+  b_reordered <- a[2:1, , drop = FALSE]
+  rownames(b_reordered) <- NULL
+
+  consistent <- dsOMOPClient:::.pool_achilles_catalog(
+    list(a = a, b = b_reordered), "Achilles catalog"
+  )
+  expect_equal(consistent$result, a)
+  expect_length(consistent$warnings, 0L)
+
+  b_different <- b_reordered
+  b_different$analysis_name[b_different$analysis_id == 2L] <- "Sex"
+  inconsistent <- dsOMOPClient:::.pool_achilles_catalog(
+    list(a = a, b = b_different), "Achilles catalog"
+  )
+  expect_null(inconsistent$result)
+  expect_match(inconsistent$warnings, "catalogs differ")
+
+  partial <- list(a = a)
+  attr(partial, "ds_errors") <- list(b = "offline")
+  incomplete <- dsOMOPClient:::.pool_achilles_catalog(
+    partial, "Achilles catalog"
+  )
+  expect_null(incomplete$result)
+  expect_match(incomplete$warnings, "unavailable server\\(s\\): b")
+})
+
 test_that("ds.omop.achilles.results has expected signature", {
   expect_true(is.function(ds.omop.achilles.results))
   args <- formals(ds.omop.achilles.results)

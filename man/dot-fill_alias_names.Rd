@@ -15,7 +15,7 @@ The normalised spec: unnamed vectors unchanged; named vectors
 }
 \description{
 Raw-column specs may be passed as named vectors to alias the output
-columns, e.g. \code{c(sex = "gender_concept_id", "year_of_birth")}. Two
+columns, e.g. \code{c(sex = "gender_concept_id", "race_concept_id")}. Two
 things must hold for the aliases to reach the server intact:
 \enumerate{
   \item No blank object keys: any element left unnamed is given a name

@@ -10,7 +10,8 @@
 \item{per_server}{List of per-server results, each a list with
 \code{levels} (named list of column -> character levels), \code{unsafe}
 (character vector of disclosive columns), and \code{nfilter_levels_max}
-(numeric server cap). \code{NULL} entries are ignored.}
+(numeric server cap). \code{NULL} entries are rejected because a
+federation cannot be harmonized from partial results.}
 }
 \value{
 A named list mapping each harmonizable column to its shared,

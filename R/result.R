@@ -42,6 +42,13 @@ dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
   # list attributes -- lapply() drops them, and per_site carries a `ds_errors`
   # attribute with per-server error messages that must survive.
   ps_attrs <- attributes(per_site)
+  ds_errors <- attr(per_site, "ds_errors")
+  error_warnings <- if (length(ds_errors) > 0L) {
+    paste0("Server errors: ", paste(
+      names(ds_errors), unlist(ds_errors, use.names = FALSE),
+      sep = ": ", collapse = "; "
+    ))
+  } else character(0)
   per_site <- lapply(per_site, .hide_suppressed)
   for (a in setdiff(names(ps_attrs), "names")) attr(per_site, a) <- ps_attrs[[a]]
   pooled   <- .hide_suppressed(pooled)
@@ -54,7 +61,8 @@ dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
       servers        = names(per_site),
       scope          = meta$scope %||% "per_site",
       pooling_policy = meta$pooling_policy %||% "strict",
-      warnings       = meta$warnings %||% character(0)
+      warnings       = unique(c(meta$warnings %||% character(0),
+                                error_warnings))
     )
   )
   class(obj) <- c("dsomop_result", "list")
@@ -78,7 +86,16 @@ dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
 print.dsomop_result <- function(x, ...) {
   ps     <- .subset2(x, "per_site")
   pooled <- .subset2(x, "pooled")
-  warns  <- .subset2(x, "meta")$warnings
+  meta   <- .subset2(x, "meta")
+  warns  <- meta$warnings
+
+  cat("<dsomop_result>\n")
+  cat("Servers: ", if (length(names(ps)) > 0L) {
+    paste(names(ps), collapse = ", ")
+  } else {
+    "<none>"
+  }, "\n", sep = "")
+  cat("Scope: ", meta$scope %||% "per_site", "\n\n", sep = "")
 
   for (nm in names(ps)) {
     cat("$", nm, "\n", sep = "")
@@ -128,13 +145,16 @@ print.dsomop_result <- function(x, ...) {
 #'
 #' Extracts a single data frame from a \code{dsomop_result} object. If a
 #' pooled result is available and is a data frame, it is returned. Otherwise,
-#' the first server's result is used. Returns an empty \code{data.frame()}
-#' if no valid data frame is found.
+#' the first server's result is used only for a per-site result. A pooled-scope
+#' result whose pooled value is \code{NULL} returns an empty
+#' \code{data.frame()} so a failed strict federation cannot silently degrade to
+#' one server. Returns an empty \code{data.frame()} if no valid data frame is
+#' found.
 #'
 #' @param x A \code{dsomop_result} object.
 #' @param ... Additional arguments (ignored).
-#' @return A data frame: the pooled result, the first server's result, or
-#'   an empty data frame as fallback.
+#' @return A data frame: the pooled result, the first server's result for
+#'   per-site scope, or an empty data frame as fallback.
 #' @examples
 #' \dontrun{
 #' res <- ds.omop.achilles.results(analysis_ids = 1, scope = "pooled")
@@ -146,6 +166,7 @@ as.data.frame.dsomop_result <- function(x, ...) {
   if (!is.null(x$pooled) && is.data.frame(x$pooled)) {
     return(x$pooled)
   }
+  if (identical(x$meta$scope, "pooled")) return(data.frame())
   ps <- x$per_site
   if (length(ps) > 0) {
     first <- ps[[1]]

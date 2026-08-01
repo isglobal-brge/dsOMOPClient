@@ -4,7 +4,13 @@
 \alias{.omopPlotHistogram}
 \title{Draw a federation-wide histogram from a value-histogram result}
 \usage{
-.omopPlotHistogram(hist_result, xlab = NULL, main = NULL, col = "#4C72B0")
+.omopPlotHistogram(
+  hist_result,
+  nbins = 9L,
+  xlab = NULL,
+  main = NULL,
+  col = "#4C72B0"
+)
 }
 \description{
 Sums the disclosure-safe, shared-edge bins across sites into one bar chart.

@@ -25,8 +25,9 @@ ds.omop.safe.cutpoints(
 \item{concept_id}{Integer or NULL; optional concept ID to restrict
 rows before computing bins (default: NULL for all rows).}
 
-\item{n_bins}{Integer; the target number of bins (default: 10). The
-server may return fewer bins if disclosure constraints require merging.}
+\item{n_bins}{Integer; exact number of bins in the controller-configured
+public grid (default: 10). Unsupported or under-populated grids fail
+closed; bins are never merged based on protected counts.}
 
 \item{scope}{Character; \code{"per_site"} (default) or \code{"pooled"}.
 Cutpoints are inherently per-site; pooled scope is accepted but the
@@ -42,16 +43,16 @@ containing only the generated call code (default: \code{TRUE}).}
 }
 \value{
 A \code{dsomop_result} object with \code{$per_site} (named list
-  where each element contains a list with \code{breaks} and \code{counts}),
+  where each element contains public \code{breaks}, banded \code{counts}, a
+  session \code{contract}, and clipping/grid metadata),
   \code{$pooled} (always NULL for cutpoints), and \code{$meta} (list with
   \code{call_code} and \code{scope}).
 }
 \description{
-Computes disclosure-safe bin edges for a numeric column in an OMOP CDM
-table. Each bin is guaranteed to contain enough persons to satisfy the
-minimum cell count threshold, making the resulting breakpoints safe for
-use as filter boundaries or histogram edges. The cutpoints are computed
-server-side and returned without exposing individual-level data.
+Returns a public numeric grid configured by the data controller for an OMOP
+column. The server releases the complete grid only when every bin is
+supported by the minimum number of distinct persons after one-contribution-
+per-person reduction. Edges are not estimated from protected values.
 }
 \examples{
 \dontrun{

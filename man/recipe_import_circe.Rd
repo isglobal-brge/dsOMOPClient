@@ -21,11 +21,9 @@ An \code{omop_population} object.
 Reverse of \code{\link{recipe_export_circe}}: parses an OHDSI Circe
 cohort-expression JSON (as produced by ATLAS or by
 \code{recipe_export_circe}) into an \code{omop_population}, reconstructing the
-supported constructs (entry event, inclusion-rule occurrence / measurement
-criteria, demographic criteria, observation windows, OR groups). The
-\strong{supported subset round-trips losslessly}; Circe features with no
-recipe analog (custom correlated criteria, censoring, exit strategies, nested
-grouping beyond one OR level) are warned about and dropped. See
+supported constructs (explicit entry event, inclusion-rule occurrence /
+presence criteria, demographics, observation windows, OR groups). Unsupported
+semantics are rejected rather than warned about and dropped. See
 \code{\link{recipe_export_circe}} for the full supported-constructs list.
 }
 \examples{

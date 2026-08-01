@@ -7,7 +7,7 @@
 omop_output(
   name = "output_1",
   type = c("wide", "long", "features", "survival", "intervals", "baseline",
-    "covariates_sparse"),
+    "temporal_covariates", "person_period"),
   variables = NULL,
   population_id = "base",
   options = list(),
@@ -19,9 +19,13 @@ omop_output(
 
 \item{type}{Character; output layout type. One of \code{"wide"},
 \code{"long"}, \code{"features"}, \code{"survival"}, \code{"intervals"},
-\code{"baseline"}, \code{"covariates_sparse"}. A \code{"long"} output that
+\code{"baseline"}, \code{"temporal_covariates"}, or
+\code{"person_period"}. A \code{"long"} output that
 spans multiple source tables always splits into one per-table output
-(named \code{<name>_<table>}); there is no single cross-table joined frame.}
+(named \code{<name>_<table>}); there is no single cross-table joined frame.
+The former \code{"joined_long"} and \code{"covariates_sparse"} recipe
+labels are rejected because they had no faithful executable mapping; use
+split \code{"long"} outputs or the lower-level temporal-covariates plan API.}
 
 \item{variables}{Character vector or \code{NULL}; variable names to include
 (\code{NULL} means all variables in the recipe).}

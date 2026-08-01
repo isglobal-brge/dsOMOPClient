@@ -29,7 +29,10 @@ applies to all servers; a named list maps server names to resource names.}
 
 \item{temp_schema}{Character; temp schema override (NULL uses server default).}
 
-\item{strict}{Logical; if TRUE, fail immediately on any server error.}
+\item{strict}{Logical; whether unknown/missing names in a named resource map
+are immediate mapping errors (\code{TRUE}) or warnings where possible.
+Transactional connection still requires a valid resource and successful
+initialization on every requested server regardless of this value.}
 
 \item{conns}{DSI connections object (NULL uses default connections).}
 }
@@ -43,6 +46,18 @@ capabilities, and returns an \code{omop_session} object. This is the entry
 point for all dsOMOPClient operations.
 }
 \details{
+Connection setup is all-or-none across the requested servers. The public
+handle symbol must be absent everywhere, one resource must resolve for every
+node, and capabilities plus transient-resource cleanup are verified before
+the local session is recorded. Partial initialization is closed and removed.
+Schema arguments are passed as literal call values, never parsed into code.
+
+Before assigning any resource, the client requires a complete AggregateMethods
+inventory from every node. A method named \code{c}/\code{list}, or an alias
+targeting \code{base::c}/\code{base::list}, aborts connection because it can
+wrap and release an unreviewed protected object. This safety preflight is
+mandatory even when \code{strict = FALSE}.
+
 The connection is self-healing: the server-side OMOP database connection
 auto-reconnects on demand, so a dropped or timed-out database connection is
 transparently re-established on the next call. There is therefore no need to

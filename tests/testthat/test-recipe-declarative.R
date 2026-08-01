@@ -139,19 +139,19 @@ add_arch("04_value_bin_above",
   decl = function() omop_recipe(
     filters = omop_filter_value("value_as_number", threshold = 7,
                                 direction = "above",
-                                safe_bins = list(breaks = c(0, 5, 7, 9, 15))),
+                                safe_bins = .test_safe_bins(c(0, 5, 7, 9, 15))),
     variables = omop_variable(table = "measurement", concept_id = 3004410,
-                              concept_name = "HbA1c", format = "mean",
+                              concept_name = "HbA1c", format = "raw",
                               value_source = "value_as_number"),
     outputs = omop_output(name = "m", type = "long")),
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_value(
       "value_as_number", threshold = 7, direction = "above",
-      safe_bins = list(breaks = c(0, 5, 7, 9, 15))))
+      safe_bins = .test_safe_bins(c(0, 5, 7, 9, 15))))
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
-      format = "mean", value_source = "value_as_number"))
+      format = "raw", value_source = "value_as_number"))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "m",
                                                          type = "long"))
     r
@@ -163,25 +163,25 @@ add_arch("05_value_below_concept_date",
     filters = list(
       omop_filter_value("value_as_number", threshold = 5,
                         direction = "below",
-                        safe_bins = list(breaks = c(0, 4, 6, 8, 20))),
+                        safe_bins = .test_safe_bins(c(0, 4, 6, 8, 20))),
       omop_filter_value_concept(c(4171373L, 45877994L),
                                 concept_name = c("High", "VeryHigh")),
       omop_filter_date_range("2015-01-01", "2022-12-31")),
     variables = omop_variable(table = "measurement", concept_id = 3013682,
-                              format = "last_value",
+                              format = "raw",
                               value_source = "value_as_number"),
     outputs = omop_output(name = "lab", type = "long")),
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_value(
       "value_as_number", threshold = 5, direction = "below",
-      safe_bins = list(breaks = c(0, 4, 6, 8, 20))))
+      safe_bins = .test_safe_bins(c(0, 4, 6, 8, 20))))
     r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_value_concept(
       c(4171373L, 45877994L), concept_name = c("High", "VeryHigh")))
     r <- dsOMOPClient:::recipe_add_filter(r,
       omop_filter_date_range("2015-01-01", "2022-12-31"))
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
-      table = "measurement", concept_id = 3013682, format = "last_value",
+      table = "measurement", concept_id = 3013682, format = "raw",
       value_source = "value_as_number"))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "lab",
                                                          type = "long"))
@@ -251,7 +251,9 @@ add_arch("09_missing_and_has_measurement",
     filters = list(
       omop_filter_missing_measurement(c(3004410L, 3013682L),
                                       window = list(start = -180, end = 0)),
-      omop_filter_has_measurement(3004410, min_value = 4, max_value = 14)),
+      omop_filter_has_measurement(
+        3004410, min_value = 4, max_value = 14,
+        safe_bins = .test_safe_bins(c(0, 4, 14, 20)))),
     variables = omop_variable_age(),
     outputs = omop_output(name = "w", type = "wide")),
   step = function() {
@@ -259,7 +261,8 @@ add_arch("09_missing_and_has_measurement",
     r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_missing_measurement(
       c(3004410L, 3013682L), window = list(start = -180, end = 0)))
     r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_has_measurement(
-      3004410, min_value = 4, max_value = 14))
+      3004410, min_value = 4, max_value = 14,
+      safe_bins = .test_safe_bins(c(0, 4, 14, 20))))
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_age())
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "w",
                                                          type = "wide"))
@@ -450,10 +453,15 @@ add_arch("17_multi_output_mixed",
                     concept_name = "T2DM", format = "binary"),
       omop_variable(table = "measurement", concept_id = 3004410,
                     concept_name = "HbA1c", format = "mean",
-                    value_source = "value_as_number")),
+                    value_source = "value_as_number"),
+      omop_variable(name = "hba1c_events", table = "measurement",
+                    concept_id = 3004410, concept_name = "HbA1c events",
+                    format = "raw", value_source = "value_as_number")),
     outputs = list(
-      omop_output(name = "wide_all", type = "wide"),
-      omop_output(name = "long_meas", type = "long", variables = c("hba1c")),
+      omop_output(name = "wide_all", type = "wide",
+                  variables = c("age", "t2dm", "hba1c")),
+      omop_output(name = "long_meas", type = "long",
+                  variables = c("hba1c_events")),
       omop_output(name = "feat_cond", type = "features", variables = c("t2dm")))),
   step = function() {
     r <- omop_recipe()
@@ -464,10 +472,15 @@ add_arch("17_multi_output_mixed",
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
       format = "mean", value_source = "value_as_number"))
-    r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "wide_all",
-                                                         type = "wide"))
+    r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
+      name = "hba1c_events", table = "measurement", concept_id = 3004410,
+      concept_name = "HbA1c events", format = "raw",
+      value_source = "value_as_number"))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(
-      name = "long_meas", type = "long", variables = c("hba1c")))
+      name = "wide_all", type = "wide",
+      variables = c("age", "t2dm", "hba1c")))
+    r <- dsOMOPClient:::recipe_add_output(r, omop_output(
+      name = "long_meas", type = "long", variables = c("hba1c_events")))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(
       name = "feat_cond", type = "features", variables = c("t2dm")))
     r
@@ -514,15 +527,18 @@ add_arch("19_intervals",
     r
   })
 
-# 20. covariates_sparse over multiple tables.
-add_arch("20_covariates_sparse",
+# 20. Executable temporal covariates over multiple tables.
+add_arch("20_temporal_covariates",
   decl = function() omop_recipe(
     variables = list(
       omop_variable(table = "condition_occurrence", concept_id = 201820,
                     concept_name = "T2DM", format = "binary"),
       omop_variable(table = "drug_exposure", concept_id = 1124300,
                     concept_name = "Metformin", format = "count")),
-    outputs = omop_output(name = "sparse", type = "covariates_sparse")),
+    outputs = omop_output(
+      name = "temporal", type = "temporal_covariates",
+      options = list(bin_width = 30L, window_start = -365L,
+                     window_end = 0L))),
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
@@ -532,7 +548,9 @@ add_arch("20_covariates_sparse",
       table = "drug_exposure", concept_id = 1124300,
       concept_name = "Metformin", format = "count"))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(
-      name = "sparse", type = "covariates_sparse"))
+      name = "temporal", type = "temporal_covariates",
+      options = list(bin_width = 30L, window_start = -365L,
+                     window_end = 0L)))
     r
   })
 
@@ -576,24 +594,24 @@ add_arch("22_block_plus_vars",
     r
   })
 
-# 23. Variable block with time_window + row filters + expand descendants.
+# 23. Long variable block with time_window + row filters + expansion.
 add_arch("23_block_window_expand_filters",
   decl = function() omop_recipe(
     blocks = omop_variable_block(
       table = "drug_exposure", concept_ids = c(1124300L, 1503297L),
-      concept_names = c("Metformin", "Glipizide"), format = "count",
+      concept_names = c("Metformin", "Glipizide"), format = "raw",
       time_window = list(start = -730, end = 0), expand = TRUE,
       filters = list(omop_filter_date_range("2018-01-01", "2022-12-31"))),
-    outputs = omop_output(name = "drugs", type = "features")),
+    outputs = omop_output(name = "drugs", type = "long")),
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_block(r, omop_variable_block(
       table = "drug_exposure", concept_ids = c(1124300L, 1503297L),
-      concept_names = c("Metformin", "Glipizide"), format = "count",
+      concept_names = c("Metformin", "Glipizide"), format = "raw",
       time_window = list(start = -730, end = 0), expand = TRUE,
       filters = list(omop_filter_date_range("2018-01-01", "2022-12-31"))))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "drugs",
-                                                         type = "features"))
+                                                         type = "long"))
     r
   })
 
@@ -618,14 +636,14 @@ add_arch("25_temporal_covariates",
   decl = function() omop_recipe(
     variables = omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
-      format = "mean", value_source = "value_as_number",
+      format = "raw", value_source = "value_as_number",
       time_window = list(start = -365, end = 0)),
     outputs = omop_output(name = "cov", type = "long")),
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
-      format = "mean", value_source = "value_as_number",
+      format = "raw", value_source = "value_as_number",
       time_window = list(start = -365, end = 0)))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "cov",
                                                          type = "long"))
@@ -637,20 +655,20 @@ add_arch("26_visit_filter_concept_col",
   decl = function() omop_recipe(
     variables = omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
-      format = "mean", value_source = "value_as_number",
+      format = "raw", value_source = "value_as_number",
       visit_filter = list(concept_ids = c(9201L, 9203L)),
       concept_col = "unit_concept_id"),
     outputs = omop_output(name = "cov", type = "long",
-                          options = list(date_handling = "first"))),
+                          options = list(date_handling = "relative"))),
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
-      format = "mean", value_source = "value_as_number",
+      format = "raw", value_source = "value_as_number",
       visit_filter = list(concept_ids = c(9201L, 9203L)),
       concept_col = "unit_concept_id"))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(
-      name = "cov", type = "long", options = list(date_handling = "first")))
+      name = "cov", type = "long", options = list(date_handling = "relative")))
     r
   })
 
@@ -809,23 +827,23 @@ add_arch("35_per_variable_row_filters",
   decl = function() omop_recipe(
     variables = omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
-      format = "mean", value_source = "value_as_number",
+      format = "raw", value_source = "value_as_number",
       filters = list(
         omop_filter_date_range("2019-01-01", "2022-12-31"),
         omop_filter_value("value_as_number", threshold = 6,
                           direction = "above",
-                          safe_bins = list(breaks = c(0, 4, 6, 8, 12))))),
+                          safe_bins = .test_safe_bins(c(0, 4, 6, 8, 12))))),
     outputs = omop_output(name = "labs", type = "long")),
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
-      format = "mean", value_source = "value_as_number",
+      format = "raw", value_source = "value_as_number",
       filters = list(
         omop_filter_date_range("2019-01-01", "2022-12-31"),
         omop_filter_value("value_as_number", threshold = 6,
                           direction = "above",
-                          safe_bins = list(breaks = c(0, 4, 6, 8, 12))))))
+                          safe_bins = .test_safe_bins(c(0, 4, 6, 8, 12))))))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs",
                                                          type = "long"))
     r
@@ -845,12 +863,16 @@ add_arch("36_maintainer_example",
           omop_filter_group(
             omop_filter_has_concept(316866, "condition_occurrence",
                                     concept_name = "condX"),
-            omop_filter_has_measurement(3004410, min_value = 7.0),
+            omop_filter_has_measurement(
+              3004410, min_value = 7.0, max_value = 20,
+              safe_bins = .test_safe_bins(c(0, 5, 7, 20))),
             operator = "AND"),
           omop_filter_group(
             omop_filter_has_concept(201820, "condition_occurrence",
                                     concept_name = "condY"),
-            omop_filter_has_measurement(3004410, max_value = 5.0),
+            omop_filter_has_measurement(
+              3004410, min_value = 0, max_value = 5.0,
+              safe_bins = .test_safe_bins(c(0, 5, 7, 20))),
             operator = "AND"),
           operator = "OR"),
         omop_filter_has_measurement(3013682),
@@ -871,12 +893,16 @@ add_arch("36_maintainer_example",
         omop_filter_group(
           omop_filter_has_concept(316866, "condition_occurrence",
                                   concept_name = "condX"),
-          omop_filter_has_measurement(3004410, min_value = 7.0),
+          omop_filter_has_measurement(
+            3004410, min_value = 7.0, max_value = 20,
+            safe_bins = .test_safe_bins(c(0, 5, 7, 20))),
           operator = "AND"),
         omop_filter_group(
           omop_filter_has_concept(201820, "condition_occurrence",
                                   concept_name = "condY"),
-          omop_filter_has_measurement(3004410, max_value = 5.0),
+          omop_filter_has_measurement(
+            3004410, min_value = 0, max_value = 5.0,
+            safe_bins = .test_safe_bins(c(0, 5, 7, 20))),
           operator = "AND"),
         operator = "OR"),
       omop_filter_has_measurement(3013682),
@@ -987,8 +1013,9 @@ add_arch("38_kitchen_sink",
         omop_filter_followup(min_days = 180L),
         operator = "AND")),
     outputs = list(
-      omop_output(name = "wide_all", type = "wide"),
-      omop_output(name = "feat_drugs", type = "features",
+      omop_output(name = "wide_all", type = "wide",
+                  variables = c("age", "sex", "charlson", "pci")),
+      omop_output(name = "feat_drugs", type = "temporal_covariates",
                   variables = c("metformin", "glipizide"))),
     cohort = 99L,
     options = list(translate_concepts = TRUE, block_sensitive = FALSE,
@@ -1018,10 +1045,11 @@ add_arch("38_kitchen_sink",
                               concept_name = "T2DM"),
       omop_filter_followup(min_days = 180L),
       operator = "AND"))
-    r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "wide_all",
-                                                         type = "wide"))
     r <- dsOMOPClient:::recipe_add_output(r, omop_output(
-      name = "feat_drugs", type = "features",
+      name = "wide_all", type = "wide",
+      variables = c("age", "sex", "charlson", "pci")))
+    r <- dsOMOPClient:::recipe_add_output(r, omop_output(
+      name = "feat_drugs", type = "temporal_covariates",
       variables = c("metformin", "glipizide")))
     r <- dsOMOPClient:::recipe_set_scope(r, cohort = 99L)
     r <- dsOMOPClient:::recipe_set_options(r, translate_concepts = TRUE,
@@ -1057,12 +1085,13 @@ add_arch("39_rare_domains",
     r
   })
 
-# 40. time_since + first_value + count over a single condition (mixed formats).
+# 40. Fixed-reference time_since + first_value + count (mixed formats).
 add_arch("40_time_since_firstvalue_count",
   decl = function() omop_recipe(
     variables = list(
       omop_variable(table = "condition_occurrence", concept_id = 316866,
-                    concept_name = "MI since", format = "time_since"),
+                    concept_name = "MI since", format = "time_since",
+                    reference_date = "2024-01-31", unit = "month"),
       omop_variable(table = "measurement", concept_id = 3004410,
                     concept_name = "HbA1c first", format = "first_value",
                     value_source = "value_as_number"),
@@ -1073,7 +1102,8 @@ add_arch("40_time_since_firstvalue_count",
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
       table = "condition_occurrence", concept_id = 316866,
-      concept_name = "MI since", format = "time_since"))
+      concept_name = "MI since", format = "time_since",
+      reference_date = "2024-01-31", unit = "month"))
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
       table = "measurement", concept_id = 3004410,
       concept_name = "HbA1c first", format = "first_value",
@@ -1086,14 +1116,14 @@ add_arch("40_time_since_firstvalue_count",
     r
   })
 
-# 41. dedup / min_count / top_n output-level + custom filter (generic types).
+# 41. Generic typed custom row predicate.
 add_arch("41_generic_filter_types",
   decl = function() omop_recipe(
     filters = list(
-      omop_filter(type = "min_count", level = "population",
-                  params = list(min_count = 2L)),
-      omop_filter(type = "dedup", level = "output", params = list()),
-      omop_filter(type = "top_n", level = "output", params = list(n = 100L))),
+      omop_filter(
+        type = "custom", level = "row",
+        params = list(var = "condition_type_concept_id", op = "in",
+                      value = 32020L, description = "EHR conditions"))),
     variables = omop_variable(table = "condition_occurrence",
                               concept_id = 201820, concept_name = "T2DM",
                               format = "binary"),
@@ -1101,12 +1131,9 @@ add_arch("41_generic_filter_types",
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_filter(r, omop_filter(
-      type = "min_count", level = "population",
-      params = list(min_count = 2L)))
-    r <- dsOMOPClient:::recipe_add_filter(r, omop_filter(
-      type = "dedup", level = "output", params = list()))
-    r <- dsOMOPClient:::recipe_add_filter(r, omop_filter(
-      type = "top_n", level = "output", params = list(n = 100L)))
+      type = "custom", level = "row",
+      params = list(var = "condition_type_concept_id", op = "in",
+                    value = 32020L, description = "EHR conditions")))
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
       table = "condition_occurrence", concept_id = 201820,
       concept_name = "T2DM", format = "binary"))
@@ -1115,29 +1142,34 @@ add_arch("41_generic_filter_types",
     r
   })
 
-# 42. concept_set row filter + binned format + suffix_mode label.
+# 42. concept_set row filter + executable binned date handling.
 add_arch("42_concept_set_binned",
   decl = function() omop_recipe(
     filters = omop_filter(type = "concept_set", level = "row",
                           params = list(concept_ids = c(201820L, 320128L),
-                                        concept_col = "condition_concept_id")),
+                                        concept_col = "measurement_concept_id")),
     variables = omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
-      format = "binned", value_source = "value_as_number",
+      format = "raw", value_source = "value_as_number",
       suffix_mode = "label"),
-    outputs = omop_output(name = "binned_out", type = "long")),
+    outputs = omop_output(
+      name = "binned_out", type = "long",
+      options = list(date_handling = list(mode = "binned",
+                                         bin_width = "month")))),
   step = function() {
     r <- omop_recipe()
     r <- dsOMOPClient:::recipe_add_filter(r, omop_filter(
       type = "concept_set", level = "row",
       params = list(concept_ids = c(201820L, 320128L),
-                    concept_col = "condition_concept_id")))
+                    concept_col = "measurement_concept_id")))
     r <- dsOMOPClient:::recipe_add_variable(r, omop_variable(
       table = "measurement", concept_id = 3004410, concept_name = "HbA1c",
-      format = "binned", value_source = "value_as_number",
+      format = "raw", value_source = "value_as_number",
       suffix_mode = "label"))
-    r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "binned_out",
-                                                         type = "long"))
+    r <- dsOMOPClient:::recipe_add_output(r, omop_output(
+      name = "binned_out", type = "long",
+      options = list(date_handling = list(mode = "binned",
+                                         bin_width = "month"))))
     r
   })
 

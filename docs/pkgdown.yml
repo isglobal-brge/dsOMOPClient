@@ -1,8 +1,14 @@
-pandoc: '3.5'
-pkgdown: 2.1.0
+pandoc: 3.8.3
+pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
-  01_object: 01_object.html
-  02_tables: 02_tables.html
-  03_integration: 03_integration.html
-last_built: 2024-12-14T15:10Z
+  v01_getting_started: v01_getting_started.html
+  v02_exploration: v02_exploration.html
+  v03_cohorts: v03_cohorts.html
+  v04_extraction: v04_extraction.html
+  v05_multi_server: v05_multi_server.html
+  v06_security: v06_security.html
+last_built: 2026-08-01T04:56Z
+urls:
+  reference: https://isglobal-brge.github.io/dsOMOPClient/reference
+  article: https://isglobal-brge.github.io/dsOMOPClient/articles

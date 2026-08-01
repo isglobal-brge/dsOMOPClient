@@ -1,0 +1,562 @@
+# Data Extraction with the Plan DSL
+
+## Overview
+
+The **extraction plan DSL** specifies a typed subset of data and
+transformations over the OMOP CDM. A plan is a serializable object
+describing a cohort, one or more outputs, their representations, and
+global options. Plans are built client-side, inspected against the
+server schema, and executed to produce server-side `omop.table` objects.
+They are not raw SQL and do not permit arbitrary joins or output
+schemas.
+
+For higher-level, named, save/loadable extractions, the **recipe** API
+wraps the plan (covered at the end of this vignette).
+
+## Building a Plan
+
+``` r
+
+library(dsOMOPClient)
+
+plan <- ds.omop.plan()
+plan <- ds.omop.plan.cohort(plan,
+  spec = list(type = "condition", concept_set = c(201826)))
+# Concept translation and federation-wide concept factors are ON by default
+# (translate_concepts = TRUE, factor_concepts = TRUE). This example adds an
+# inline index cohort because baseline/episode outputs need one.
+```
+
+### Baseline demographics
+
+[`ds.omop.plan.baseline()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.baseline.md)
+adds a cohort-episode-level output of demographic columns from the
+`person` table, plus optional derived columns (e.g. `age_at_index`):
+
+``` r
+
+plan <- ds.omop.plan.baseline(plan,
+  columns = c("gender_concept_id", "race_concept_id"),
+  derived = c("age_at_index"),
+  name = "demographics")
+```
+
+Baseline requires a cohort and emits one row per cohort episode. Raw
+birth components are blocked; `age_at_index` is returned on the
+controller’s public age grid rather than as `year_of_birth` or exact
+completed age.
+
+To merge reviewed one-row-per-person tables, use
+[`ds.omop.plan.person_level()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.person_level.md):
+
+``` r
+
+plan <- ds.omop.plan.person_level(plan,
+  tables = list(
+    person = c("gender_concept_id", "race_concept_id"),
+    death = c("cause_concept_id")),
+  name = "person_data")
+```
+
+Raw person-level sources are limited to `person` and `death`; repeatable
+tables such as measurements, visits and observation periods must be
+requested as events or reduced explicitly to features. The compiler will
+not pick one of several records implicitly.
+
+### Event-level data
+
+[`ds.omop.plan.events()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.events.md)
+extracts rows from a clinical event table:
+
+``` r
+
+plan <- ds.omop.plan.events(plan,
+  name = "conditions",
+  table = "condition_occurrence",
+  columns = c("person_id", "condition_concept_id", "condition_start_date"),
+  concept_set = c(201826, 255573, 4329847),
+  representation = list(format = "long"))
+```
+
+### Outcomes and feature sets
+
+[`ds.omop.plan.outcome()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.outcome.md)
+is a convenience wrapper for a binary condition outcome (it adds an
+event output with the `features` representation):
+
+``` r
+
+plan <- ds.omop.plan.outcome(plan, name = "copd", concept_set = c(255573))
+```
+
+[`ds.omop.plan.features()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.features.md)
+builds a person- or cohort-episode-level feature set from explicit
+feature specs (see the `omop.feature.*` constructors). Episode grain
+requires an index window and preserves `cohort_row_id`:
+
+``` r
+
+plan <- ds.omop.plan.features(plan,
+  name = "hba1c_features",
+  table = "measurement",
+  specs = list(
+    omop.feature.mean_value(concept_set = c(3004410)),
+    omop.feature.latest_value(concept_set = c(3004410)),
+    omop.feature.sd_value(concept_set = c(3004410))))
+```
+
+## Representations
+
+Each event output uses one of four representations with an explicit row
+grain:
+
+- **`long`** (default): one row per qualifying event or, with an index
+  window, per event/episode match. Raw date columns are removed by
+  default; request relative or binned handling explicitly.
+- **`wide`**: pivots on the concept column at `grain = "person"`
+  (default) or `grain = "episode"`. More than one event per
+  grain/concept is rejected; use deterministic `event_select` or a
+  feature reduction first. Federated wide output additionally requires a
+  closed integer `concept_set` and `translate_concepts = FALSE`: every
+  declared concept produces the same concept-ID-derived column on every
+  node, including an all-`NA` column when absent locally, and undeclared
+  concepts cannot enter the output.
+- **`features`**: explicit reducers (counts, ever-flags, mean/sd,
+  first/latest, durations, etc.) at person or episode grain. An
+  `index_window` on wide or features requires `grain = "episode"`,
+  preserving `cohort_row_id`.
+- **`sparse`**: FeatureExtraction-style covariate triplets at person
+  grain or, with an `index_window`, episode grain. Its complete
+  `personRef` maps each `rowId` to the pseudonymized person and, for
+  episode grain, `cohort_row_id`; a missing covariate row means implicit
+  zero.
+
+``` r
+
+plan <- ds.omop.plan.options(plan, translate_concepts = FALSE)
+plan <- ds.omop.plan.events(plan, name = "labs_wide",
+  table = "measurement", concept_set = c(3004410),
+  temporal = omop.temporal(
+    index_window = list(start = -365L, end = 0L),
+    event_select = list(order = "last", n = 1L)),
+  representation = list(format = "wide", grain = "episode"))
+```
+
+### Other longitudinal output contracts
+
+The lower-level plan API also provides:
+
+| Output | Grain and current limit |
+|----|----|
+| baseline / cohort membership | one row per `cohort_row_id` |
+| survival | one binary outcome/censoring row per cohort episode; first or last qualifying event; fixed-offset or cohort-end censoring only |
+| intervals-long | one source interval per cohort episode with start/end days from index |
+| temporal covariates | sparse concept-by-time-bin values keyed by episode `rowId`, plus `personRef` |
+| person-period | complete episode-by-regular-bin roster plus sparse binary/count covariates; index-relative time only |
+| sparse | person or indexed episode grain; complete `personRef`; no covariate row means implicit zero for a roster member |
+
+Overlapping episodes can legitimately repeat one clinical event under
+different `cohort_row_id` values. `event_select` is applied per episode
+when an index window is present, and otherwise per person. It selects
+globally within that grain by default. Set
+`event_select = list(order = "first", n = 1, by = "concept")` for
+independent first/last-N selection per concept, or use explicit
+`first_value`/`latest_value` feature reducers for concept-set-specific
+values. `min_gap = 30L` chains same-concept events no more than 30 days
+apart; the full policy can declare
+`list(days = 30L, by = "concept", keep = "first")`. Collapse is per
+cohort episode when an index window is present and uses the standard
+OMOP event primary key to break same-date ties deterministically.
+
+A basic regular person-period panel is available through
+[`ds.omop.plan.person_period()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.person_period.md)
+or Recipe output `type = "person_period"`. It emits `personPeriods`,
+`temporalCovariates`, `covariateRef`, `timeRef`, and `personRef`;
+missing sparse tuples are zeros. It intentionally requires episode grain
+and index-relative bins and emits neither absolute dates nor raw event
+identifiers. Explicit censoring/risk-interval semantics for general
+counting-process, recurrent-event and competing-risk/multi-state models
+remain future work. Multi-table long recipes split into one output per
+table rather than fabricating an arbitrary cross-table join.
+
+Representations that expand a request are subject to
+controller-configurable operational caps. The defaults allow at most
+1,000 explicit feature specifications (`dsomop.max_feature_specs`),
+1,000 concepts expanded into wide/sparse/temporal output
+(`dsomop.max_pivot_concepts`), 5,000 final wide/feature columns
+(`dsomop.max_output_columns`) and 10,000 temporal bins in a window
+(`dsomop.max_temporal_bins`). Filter trees are capped at depth 32, 1,024
+nodes and 10,000 literal values, and a plan at 100 outputs. These are
+controller-configurable memory/CPU safeguards rather than disclosure
+guarantees. Across servers, construct a request within the lowest
+compatible cap advertised by every participating site.
+
+### Dates and ages
+
+Use
+[`omop.date_handling()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.date_handling.md)
+to make temporal precision explicit:
+
+- `mode = "remove"` is the default and removes every date/datetime
+  column;
+- `mode = "relative"` emits integer days from the cohort index and
+  replaces the index date itself with zero;
+- `mode = "binned"` emits calendar year, month or Monday-based week
+  bins;
+- `mode = "absolute"` keeps raw dates only when the controller has
+  enabled `dsomop.allow_absolute_dates`. That opt-in does not make raw
+  dates harmless.
+
+``` r
+
+plan <- ds.omop.plan.events(
+  plan, name = "relative_conditions", table = "condition_occurrence",
+  concept_set = c(201826),
+  temporal = omop.temporal(index_window = list(start = -365L, end = 30L)),
+  date_handling = omop.date_handling(mode = "relative", reference = "index")
+)
+```
+
+When exact dates are disabled, selecting only some date columns for
+conversion cannot leave the others untouched. Datetimes are converted
+using the controller-owned timezone. Raw birth year/month/day are
+blocked. Derived age is annual-resolution
+`reference_year - year_of_birth` and is released on the controller’s
+public age grid; it is not birthday-aware completed age. Closed age/date
+filters must meet their configured minimum widths, and age-group labels
+must be unions of the public grid. A federation negotiates the stricter
+common contract described in the *Multi-Server* vignette.
+
+## Typed Filtering and Scoping
+
+### Row-level filter DSL
+
+Beyond a concept set,
+[`ds.omop.plan.events()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.events.md)
+accepts a `filters` argument that takes a **nested AND/OR tree of
+row-level predicates**. Build leaves with the `omop_filter*`
+constructors and combine them with
+`omop_filter_group(..., operator = "AND" | "OR")`:
+
+``` r
+
+lab_bin <- ds.omop.safe.filter.value(
+  table = "measurement",
+  column = "value_as_number",
+  threshold = 6.5,
+  direction = "above",
+  concept_id = 3004410,
+  symbol = "omop",
+  conns = conns
+)
+
+filt <- omop_filter_group(
+  lab_bin,
+  omop_filter_date_range(start = "2020-01-01", end = "2023-12-31"),
+  operator = "AND")
+
+plan <- ds.omop.plan.events(plan, name = "labs_filtered",
+  table = "measurement", concept_set = c(3004410),
+  filters = filt)
+```
+
+Disclosure note: the custom filter DSL is fail-closed. Categories use
+reviewed membership/null predicates (`in`, `not_in`, `is_null`,
+`not_null`); dates use a bounded `between` range that satisfies the
+controller’s minimum width. Exact matches and client-authored ordered
+thresholds (`==`, `!=`, `>=`, `>`, `<=`, `<`) are **rejected
+server-side**. Numeric filtering uses only an authenticated `value_bin`
+whose public grid was configured by the controller and issued by the
+current resource session. Filtering on the person token or any protected
+/ identifier column is also rejected, and the distinct-person gate still
+runs on the filtered result. Use
+[`ds.omop.safe.filter.value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.safe.filter.value.md)
+for row filters or
+[`ds.omop.safe.filter.measurement()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.safe.filter.measurement.md)
+for a population-level measurement range.
+
+### Unit / type concept-column scoping
+
+By default a table is profiled and filtered on its domain concept
+column. Pass `concept_col` to scope to a different concept column
+instead – e.g. a unit (`unit_concept_id`), a record-type
+(`*_type_concept_id`), or a value concept (`value_as_concept_id`):
+
+``` r
+
+plan <- ds.omop.plan.events(plan, name = "labs_by_unit",
+  table = "measurement", concept_set = c(8840),  # mg/dL
+  concept_col = "unit_concept_id")
+```
+
+### Visit linkage
+
+`visit_filter` restricts events to those occurring during a visit of a
+given type, via an `EXISTS` join on `visit_occurrence_id`:
+
+``` r
+
+plan <- ds.omop.plan.events(plan, name = "inpatient_dx",
+  table = "condition_occurrence", concept_set = c(201826),
+  visit_filter = list(concept_ids = c(9201)))  # inpatient
+```
+
+## Concept Translation
+
+`translate_concepts` is **ON by default**. Concept-ID columns are
+replaced with human-readable concept names from the vocabulary, so
+`condition_concept_id = 201826` is returned as
+`"Type 2 diabetes mellitus"`. Toggle it (and the related options) with
+[`ds.omop.plan.options()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.options.md):
+
+``` r
+
+plan <- ds.omop.plan.options(plan,
+  translate_concepts = TRUE,
+  factor_concepts = TRUE,
+  block_sensitive = TRUE)
+```
+
+`factor_concepts = TRUE` (the default) coordinates releasable concept
+levels and their ordering across servers in memory mode. This removes
+one common coding mismatch, but does not by itself guarantee that an
+arbitrary downstream model supports the output’s grain or
+missing/suppressed levels.
+
+## Plan Lifecycle
+
+### Preview (server-side dry run)
+
+[`ds.omop.plan.preview()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.preview.md)
+sends the plan for a schema/structure preview that returns per-server
+declared columns and a banded source-table support indicator without
+creating assignment outputs:
+
+``` r
+
+preview <- ds.omop.plan.preview(plan, symbol = "omop", conns = conns)
+
+# Per-server, per-output details:
+preview$server1$outputs$conditions$columns
+preview$server1$outputs$conditions$n_persons_available
+preview$server1$outputs$conditions$n_persons   # banded when available; else NA
+preview$server1$outputs$conditions$n_persons_unavailable_reason
+```
+
+A person count is returned only for an honestly countable unscoped,
+unfiltered, unreduced source. Cohort-, population-, filter-, temporal-
+and feature-scoped outputs return `n_persons = NA`,
+`n_persons_available = FALSE` and a reason; preview never substitutes
+the whole source table’s population. An available count is banded down
+to a multiple of `band_width` and suppressed below the disclosure floor.
+Preview is structural and is not proof that execution will pass its
+disclosure gate or DBMS-specific compiler.
+[`ds.omop.plan.validate()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.validate.md)
+calls the same limited endpoint; execution remains authoritative.
+
+### Execute
+
+[`ds.omop.plan.execute()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.execute.md)
+runs the plan and assigns each output into the DataSHIELD session under
+the symbols given in `out`. `out` is a **named** character vector
+mapping each plan output name to a server-side symbol:
+
+``` r
+
+ds.omop.plan.execute(plan,
+  out = c(demographics = "D", conditions = "E"),
+  symbol = "omop", conns = conns)
+
+# D and E are protected server-side omop.table objects. Use a downstream
+# method only after it has been reviewed for these classes and output grains.
+dsBaseClient::ds.summary("D")
+dsBaseClient::ds.dim("E")
+```
+
+With two or more servers, `validate`, `preview` and `execute`
+automatically establish strict schema/semantic harmonization when the
+plan is not already bound, or revalidate its existing contract. The
+contract binds the exact nodes, required columns, compatible type
+families and, for vocabulary-dependent plans, one identical non-missing
+reported vocabulary version. Calling
+[`ds.omop.plan.harmonize()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.harmonize.md)
+explicitly remains useful when the analyst wants to inspect that
+contract before execution.
+
+Before assignment, the client removes and verifies stale symbols in the
+exact namespace owned by the requested outputs. Every expected component
+must then land on every node. A node failure, incomplete composite
+output or factor- harmonization failure removes and verifies all
+DataSHIELD-visible symbols from the attempt. This is symbol-level
+all-or-none cleanup; previous symbols are not restored.
+
+The server-side manipulation verbs use the same discipline: every source
+must exist on every requested node, the destination must be fresh, and a
+partial `merge`, `filter`, `select` or `bind_rows` assignment is removed
+and verified across the federation. They never silently overwrite a
+pre-existing symbol.
+
+For large extractions, `output_mode = "staged"` writes server-local
+files and assigns descriptors inheriting from both
+`FlowerDatasetDescriptor` and the package-neutral
+`OMOPStagedDatasetDescriptor`, instead of keeping the final result as an
+R data frame. With `arrow` installed the files are Parquet (otherwise
+the server uses its CSV fallback). Long, untranslated event outputs are
+fetched and sanitised in chunks, so the complete result is never
+materialised in the R session. Formats that require an R-side
+transformation (for example wide, features, baseline, survival and
+sparse/temporal composites) are currently materialised first and only
+then staged.
+
+Staging is a local commit protocol: a pre-commit error removes the new
+dataset directory, while a successful transaction writes the private
+`manifest.json` version 2 only after every file and descriptor is
+complete. A v2 descriptor binds its dataset/source/origin/token
+identity, path, format, owner-only permissions and expiry. Its metadata
+also carries pseudonym-key ID/epoch, an exact component
+`semantic_contract`, and an output-level `bundle_contract` shared by
+sibling components.
+
+The descriptor is intended for another reviewed server-side package or
+application running under the same OS identity. Direct access by a
+different service account is intentionally blocked by the 0700/0600
+permissions, even on a shared filesystem; such applications need a
+separately reviewed server-side broker. It is not a client download URL
+or a general export capability. A same-account consumer should call
+`dsOMOP::omopStagedDatasetPath()` instead of trusting the embedded path.
+For sibling components, pass the first descriptor’s `bundle_contract`,
+non-secret pseudonym-key ID and epoch as the expected values; compare an
+exact `semantic_contract` only between like-shaped datasets, because
+`personRef`, `timeRef`, covariates and roster components intentionally
+have different shapes. The resolver also validates identity,
+confinement, format, expiry and file permissions. Consumers still need a
+reviewed/allowlisted analysis contract; a descriptor class alone is not
+authorization. Person- bearing staging requires a resource-scoped key
+provider; the deprecated global legacy key is deliberately refused at
+this broader interoperability boundary.
+
+The all-or-none guarantee above covers DataSHIELD-visible symbols, not a
+distributed filesystem transaction. If another node fails after one node
+has committed its local manifest, the client removes the descriptors but
+its private files may remain registered with that server handle until
+handle cleanup, disconnect or TTL cleanup.
+
+The controller can bound each output’s rows (`dsomop.max_staged_rows`),
+the total bytes in one staged dataset directory
+(`dsomop.max_staged_bytes`), the number of outputs in a staged plan
+(`dsomop.max_staged_outputs`), and retained staging directories per OMOP
+handle (`dsomop.max_staging_dirs_per_handle`). Directories and files are
+private to the server account (0700/0600), carry a TTL, and are removed
+on handle cleanup; stale-TTL cleanup also runs when the server package
+loads or attaches. It is not a background scheduler, so a production
+deployment should additionally enforce filesystem quotas and run a
+controller-owned periodic cleanup job. `expires_at` is an upper-bound
+lease, not a persistence guarantee: explicit handle/session cleanup can
+remove the directory sooner, and a consumer must open the file promptly
+and handle an expired or missing descriptor.
+
+## The Recipe API (named, reusable extractions)
+
+A **recipe** is a higher-level, named container of populations,
+variables, and outputs that compiles down to a plan. It is the most
+ergonomic path and the one that supports saving/loading.
+
+A recipe is authored as a **single declarative
+[`omop_recipe()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
+call**: pass the whole extraction as one nested expression built from
+the leaf constructors (`omop_variable*`, `omop_filter*`, `omop_output`,
+`omop_population`, `omop_variable_block`). Each argument (`variables`,
+`filters`, `outputs`, `populations`, `blocks`, `cohort`, `options`)
+accepts a single object or a list of objects, and the recipe is
+assembled in dependency order so later items can reference earlier ones.
+
+``` r
+
+rec <- omop_recipe(
+  populations = omop_population(
+    id = "base",
+    index_event = omop_index_event(
+      table = "condition_occurrence",
+      concept_id = 201826,
+      primary_limit = "all"
+    )
+  ),
+  variables = list(
+    omop_variable(table = "person", column = "gender_concept_id",
+                  format = "sex_mf"),
+    omop_variable(table = "measurement", concept_id = 3004410,
+                  format = "mean",
+                  # per-variable row filters and a per-variable time window
+                  filters = list(omop_filter_date_range(start = "2020-01-01",
+                                                        end = "2023-12-31")),
+                  time_window = list(start = -365, end = 0))
+  ),
+  outputs = omop_output(
+    name = "study",
+    type = "features",
+    options = list(grain = "episode")
+  )
+)
+```
+
+Per-variable `filters` are forwarded as row-level predicates and
+`time_window` (in days, relative to the cohort index date) becomes the
+variable’s temporal window when the recipe is compiled to a plan.
+Temporal wide/features outputs must declare episode grain; person-grain
+temporal reduction fails closed.
+
+Grouping many concepts from one table, declaring sub-populations,
+pinning a base cohort, and toggling plan options all flow through the
+same call:
+
+``` r
+
+rec2 <- omop_recipe(
+  blocks = omop_variable_block(
+    table = "condition_occurrence",
+    concept_ids = c(201820, 320128),
+    concept_names = c("Type 2 diabetes", "Essential hypertension"),
+    format = "binary"),
+  variables = omop_variable_age(),
+  filters = list(adults = omop_filter_age(min = 18, max = 65)),
+  outputs = omop_output(name = "study", type = "wide"),
+  cohort = 42,                              # base cohort_definition_id
+  options = list(translate_concepts = TRUE) # only supplied keys override defaults
+)
+```
+
+A named `filters` list (e.g. `adults = ...`) uses each name as the
+filter ID.
+
+### Validate, preview, execute
+
+``` r
+
+recipe_validate(rec, symbol = "omop", conns = conns)
+recipe_preview(rec, symbol = "omop", conns = conns)
+
+# Ergonomic execute: with no `out`, symbols are derived from the output names
+# (here "study" -> "D_study"). This is the simplest single-output form.
+recipe_execute(rec, symbol = "omop", conns = conns)
+
+# Or assign explicit symbols, exactly like ds.omop.plan.execute():
+recipe_execute(rec, out = c(study = "D"), symbol = "omop", conns = conns)
+```
+
+### Save and load (YAML / JSON)
+
+Recipes round-trip to disk; the format is inferred from the file
+extension (or set `format =` explicitly):
+
+``` r
+
+recipe_save(rec, "study.yaml")        # or "study.json"
+rec2 <- recipe_load("study.yaml")
+
+# Or work with strings instead of files:
+yaml_txt <- recipe_export_yaml(rec)
+rec3 <- recipe_import_yaml(yaml_txt)
+```
+
+You can also emit runnable R for the whole recipe with
+`recipe_to_code(rec)`.

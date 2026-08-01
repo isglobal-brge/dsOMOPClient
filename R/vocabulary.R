@@ -328,12 +328,15 @@ ds.omop.concept.expand <- function(concept_set,
 #' site view is simply their set union (not a sum). This helper row-binds the
 #' per-site data frames (intersecting on common columns so heterogeneous schemas
 #' still combine) and drops duplicate rows. Empty / non-data-frame entries are
-#' skipped. Returns \code{NULL} when there is nothing to pool.
+#' skipped. A partial server response returns \code{NULL} rather than claiming
+#' an incomplete union is federation-wide. Returns \code{NULL} when there is
+#' nothing to pool.
 #'
 #' @param per_site Named list of per-server data frames.
 #' @return A single de-duplicated data frame, or \code{NULL}.
 #' @keywords internal
 .pool_vocab_union <- function(per_site) {
+  if (length(attr(per_site, "ds_errors")) > 0L) return(NULL)
   dfs <- Filter(function(d) is.data.frame(d) && nrow(d) > 0, per_site)
   if (length(dfs) == 0) return(NULL)
   common <- Reduce(intersect, lapply(dfs, names))
@@ -605,13 +608,17 @@ ds.omop.concept.list <- function(domain = NULL, vocabulary = NULL,
   # reports the size of ITS own matching set, so the cross-site total is a sum).
   page_rows <- lapply(raw, function(s) if (is.list(s)) s$rows else NULL)
   names(page_rows) <- names(raw)
+  attr(page_rows, "ds_errors") <- attr(raw, "ds_errors")
   totals <- vapply(raw, function(s) {
     if (is.list(s) && !is.null(s$total_count)) as.numeric(s$total_count)
     else NA_real_
   }, numeric(1))
   pooled <- list(
     rows = .pool_vocab_union(page_rows),
-    total_count = if (all(is.na(totals))) NA_real_ else sum(totals, na.rm = TRUE),
+    total_count = if (length(attr(raw, "ds_errors")) > 0L ||
+                        all(is.na(totals))) {
+      NA_real_
+    } else sum(totals, na.rm = TRUE),
     offset = as.integer(offset),
     limit = as.integer(limit)
   )

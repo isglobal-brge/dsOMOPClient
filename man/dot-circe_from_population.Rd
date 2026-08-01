@@ -7,11 +7,11 @@
 .circe_from_population(pop, sets)
 }
 \description{
-Splits the population's flat criteria into: a PrimaryCriteria anchor (the
-first occurrence-style filter, else an "any visit" placeholder), an
-ObservationWindow (from prior_observation / followup), demographic criteria,
-and the remaining occurrence/measurement criteria for InclusionRules. OR
+Splits the population's flat criteria into an ObservationWindow (from
+prior_observation / followup), demographic criteria, and occurrence/
+measurement criteria for InclusionRules. The PrimaryCriteria comes only from
+an explicit \code{omop_index_event}; inclusion filters are never promoted. OR
 \code{omop_filter_group}s become nested Circe CriteriaGroups (Type ANY).
-Unsupported filter types are warned about and skipped.
+Unsupported filter types fail closed.
 }
 \keyword{internal}

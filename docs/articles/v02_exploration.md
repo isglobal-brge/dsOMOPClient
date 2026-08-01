@@ -1,0 +1,254 @@
+# Schema Exploration
+
+## Overview
+
+Before extracting data, you need to understand what’s available in each
+CDM. dsOMOP v2 provides schema metadata and **aggregate** exploration
+functions without returning clinical rows to the client.
+
+Each reviewed aggregate has its own disclosure contract. Person-bearing
+summaries gate on distinct persons; counts/cells may then be banded,
+omitted or blocked (see the *Security* vignette). This is not a blanket
+guarantee for unrestricted adaptive queries or for methods exported by
+other server packages. Client wrappers return a `dsomop_result` object
+with a `$per_site` list (one entry per server), an optional `$pooled`
+slot (when `scope = "pooled"`), and a `$meta` slot that records the
+generated call and any server warnings.
+
+## Prerequisites
+
+``` r
+
+library(dsOMOPClient)
+# Assume connections are established and the OMOP resource is attached:
+# ds.omop.connect(resource = "project.omop_cdm", conns = conns, symbol = "omop")
+```
+
+## Listing Tables and Columns
+
+``` r
+
+tables <- ds.omop.tables(symbol = "omop", conns = conns)
+# Per-site character vectors of discovered table names
+
+cols <- ds.omop.columns("condition_occurrence", symbol = "omop", conns = conns)
+# Per-site column metadata: name, type, nullability
+```
+
+dsOMOP combines runtime schema introspection with an authorized OHDSI
+CDM specification. Standard tables/columns outside the recognized
+version fail closed; custom tables and columns appear only when the
+controller explicitly lists them in `dsomop.allowed_cdm_extensions`.
+
+## Relationships
+
+``` r
+
+joins <- ds.omop.joins(symbol = "omop", conns = conns)
+# Inferred join edges (person_id, visit_occurrence_id, *_concept_id, ...)
+```
+
+## Table and Column Statistics
+
+``` r
+
+ts <- ds.omop.table.stats("measurement", symbol = "omop", conns = conns)
+# row_count and person_count (COUNT(DISTINCT person_id)); suppressed if small
+
+cs <- ds.omop.column.stats("measurement", "value_as_number",
+  concept_id = 3004410, symbol = "omop", conns = conns)
+cs$per_site$server1
+```
+
+[`ds.omop.column.stats()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.column.stats.md)
+returns banded support/completeness fields and, for a reviewed numeric
+measure, a mean and sample `sd` over one within-person mean per
+contributor. The mean and standard deviation have different
+minimum-support floors. Raw minima/maxima and quantiles are deliberately
+absent; request the separately gated quantile or histogram endpoints
+when their estimand is appropriate.
+
+## Concept Prevalence
+
+The most frequent concepts in a table, ranked by distinct persons
+(default) or records:
+
+``` r
+
+prev <- ds.omop.concept.prevalence("condition_occurrence",
+  metric = "persons", top_n = 50, symbol = "omop", conns = conns)
+head(prev$per_site$server1)
+```
+
+### Person-column prevalence (demographics)
+
+Pass an explicit `concept_col` to rank the categorical concepts on the
+`person` table. This is how you obtain gender, race, and ethnicity
+breakdowns:
+
+``` r
+
+ds.omop.concept.prevalence("person", concept_col = "gender_concept_id",
+  symbol = "omop", conns = conns)
+ds.omop.concept.prevalence("person", concept_col = "race_concept_id",
+  symbol = "omop", conns = conns)
+ds.omop.concept.prevalence("person", concept_col = "ethnicity_concept_id",
+  symbol = "omop", conns = conns)
+```
+
+### Death table
+
+The `death` table is explored the same way, naming its cause concept
+column:
+
+``` r
+
+ds.omop.concept.prevalence("death", concept_col = "cause_concept_id",
+  symbol = "omop", conns = conns)
+```
+
+### All-concepts / global prevalence with pagination
+
+`global = TRUE` ranks concepts across **all** person-bearing CDM tables
+in one merged, re-gated ranking instead of a single table. Use `offset`
+together with `top_n` to page through the ranking (the page is
+`[offset+1 .. offset+top_n]`):
+
+``` r
+
+# First page of the 25 most prevalent concepts across the whole CDM
+page1 <- ds.omop.concept.prevalence(global = TRUE, top_n = 25,
+  symbol = "omop", conns = conns)
+
+# Next page
+page2 <- ds.omop.concept.prevalence(global = TRUE, top_n = 25, offset = 25,
+  symbol = "omop", conns = conns)
+```
+
+Small cells are suppressed over the merged set *before* the page is
+taken, so pagination never reveals a count that the single-table gate
+would have blocked.
+
+## Value Frequencies and Histograms
+
+``` r
+
+ds.omop.value.counts("person", "gender_concept_id",
+  symbol = "omop", conns = conns)
+
+ds.omop.value.histogram("measurement", "value_as_number",
+  concept_id = 3004410, symbol = "omop", conns = conns)
+
+ds.omop.value.quantiles("measurement", "value_as_number",
+  symbol = "omop", conns = conns)
+```
+
+Value counts enforce small-cell suppression and a maximum number of
+distinct levels (see *Security*).
+
+## Other Profiling
+
+``` r
+
+ds.omop.domain.coverage(scope = "pooled", symbol = "omop", conns = conns)
+ds.omop.missingness("measurement",
+  columns = c("value_as_number", "value_as_concept_id"),
+  symbol = "omop", conns = conns)
+ds.omop.crosstab("person", "gender_concept_id", "race_concept_id",
+  symbol = "omop", conns = conns)
+```
+
+## Scoping Exploration to a Cohort
+
+Most exploration functions accept a unified `cohort =` argument so you
+can run the same profiling within a subpopulation. The argument accepts
+a cohort handle (from
+[`ds.omop.cohort.create()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.create.md)
+/
+[`ds.omop.cohort.combine()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.combine.md)
+/
+[`ds.omop.cohort.from_table()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.from_table.md)),
+a numeric cohort definition id, or a server-side cohort table name:
+
+``` r
+
+dm <- ds.omop.cohort.create(
+  spec = list(type = "condition", concept_set = c(201826)),
+  symbol = "omop", conns = conns)
+
+# Prevalence, statistics and missingness restricted to the diabetes cohort
+ds.omop.concept.prevalence("drug_exposure", cohort = dm,
+  symbol = "omop", conns = conns)
+ds.omop.column.stats("measurement", "value_as_number",
+  concept_id = 3004410, cohort = dm, symbol = "omop", conns = conns)
+ds.omop.missingness("measurement", cohort = dm,
+  symbol = "omop", conns = conns)
+```
+
+See the *Cohort Management* vignette for building cohorts, including
+turning a workspace `omop.table` into a reusable cohort with
+[`ds.omop.cohort.from_table()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.from_table.md).
+
+## Disclosure-Gated Manipulation of Extracted Tables
+
+Once a plan or recipe has produced a server-side `omop.table` (see
+*Extraction*), you can reshape it **without** pulling any row-level data
+using four disclosure-aware verbs. Each verb takes the *name(s)* of
+server-side `omop.table` symbols, computes the new frame on every
+server, and stores it under `newobj`. Only `omop.table` inputs are
+accepted; the result is re-gated on the number of **distinct person
+tokens** and re-tagged as an `omop.table`. Merge and row-bind can
+increase row counts (and a person-key join can multiply longitudinal
+rows), so analysts must still choose the intended grain. The
+distinct-person gate is reapplied and the verbs fail closed when support
+is insufficient.
+
+``` r
+
+# Join two token-keyed frames on the person key (only the person key is allowed)
+joined <- ds.omop.merge("baseline", "labs", by = "person_id", type = "left",
+  symbol = "omop", conns = conns)
+
+# Keep broad categories; numeric/date ranges belong in the recipe filter DSL
+women <- ds.omop.filter("baseline", var = "sex", op = "==", value = "F",
+  symbol = "omop", conns = conns)
+
+# Project to a subset of columns (the person token is always retained)
+slim <- ds.omop.select(joined, cols = c("age", "gender_concept_id"),
+  symbol = "omop", conns = conns)
+
+# Row-bind two schema-identical frames; the gate counts DISTINCT persons,
+# so binding a frame to itself cannot inflate the count past the threshold
+stacked <- ds.omop.bind_rows("wave1", "wave2", symbol = "omop", conns = conns)
+```
+
+Each call returns (invisibly) the name of the new server-side symbol,
+which you can feed into further reviewed verbs, into
+[`ds.omop.cohort.from_table()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.from_table.md),
+or into an allowlisted analysis method that explicitly supports the
+object’s grain and protected columns. Generic `dsBaseClient`
+compatibility is not implied.
+
+## Multi-Server Schema Comparison
+
+When working with several servers, compare their schemas before
+planning:
+
+``` r
+
+comparison <- ds.omop.compare(symbol = "omop", conns = conns)
+comparison$common_tables   # tables present on every server
+comparison$server_only     # tables unique to particular servers
+comparison$column_diffs    # column differences across servers
+```
+
+This comparison feeds plan harmonization (see the *Multi-Server*
+vignette).
+
+## Schema Snapshot
+
+``` r
+
+snapshot <- ds.omop.snapshot(symbol = "omop", conns = conns)
+# Tables, columns and relationships per server, for documentation/visualisation
+```

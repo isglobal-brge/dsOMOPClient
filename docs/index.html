@@ -5,16 +5,16 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Client-Side DataSHIELD Integration for OMOP CDM Databases • dsOMOPClient</title>
+<title>DataSHIELD Client for OMOP CDM Databases • dsOMOPClient</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/Source_Sans_Pro-0.4.9/font.css" rel="stylesheet">
-<link href="deps/Source_Code_Pro-0.4.9/font.css" rel="stylesheet">
-<link href="deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Client-Side DataSHIELD Integration for OMOP CDM Databases">
-<meta name="description" content="This package facilitates interaction with remote databases in the OMOP CDM format from a DataSHIELD environment. It enables users to invoke server-side functions that perform fetching and transforming of data from OMOP CDM databases, integrating these operations into the DataSHIELD workflow to maintain adherence to the DataSHIELD security model.">
-<meta property="og:description" content="This package facilitates interaction with remote databases in the OMOP CDM format from a DataSHIELD environment. It enables users to invoke server-side functions that perform fetching and transforming of data from OMOP CDM databases, integrating these operations into the DataSHIELD workflow to maintain adherence to the DataSHIELD security model.">
+<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="DataSHIELD Client for OMOP CDM Databases">
+<meta name="description" content="Client-side DataSHIELD package for interacting with OMOP CDM databases through typed server-side operations. Provides a plan-based API for schema exploration, vocabulary operations, cohort management, feature engineering, extraction, and selected multi-server policy checks. Includes a recipe builder, access to the server's curated query catalog, and selected Achilles result contracts. Disclosure safety depends on the corresponding server methods and deployment policy; the client does not accept arbitrary SQL.">
+<meta property="og:description" content="Client-side DataSHIELD package for interacting with OMOP CDM databases through typed server-side operations. Provides a plan-based API for schema exploration, vocabulary operations, cohort management, feature engineering, extraction, and selected multi-server policy checks. Includes a recipe builder, access to the server's curated query catalog, and selected Achilles result contracts. Disclosure safety depends on the corresponding server methods and deployment policy; the client does not accept arbitrary SQL.">
 </head>
 <body>
     <a href="#container" class="visually-hidden-focusable">Skip to content</a>
@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.29</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,9 +37,12 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/01_object.html">1. Creating an interface object</a></li>
-    <li><a class="dropdown-item" href="articles/02_tables.html">2. Retrieving tables from the database</a></li>
-    <li><a class="dropdown-item" href="articles/03_integration.html">3. Integrating data into the workflow</a></li>
+<li><a class="dropdown-item" href="articles/v01_getting_started.html">Getting Started with dsOMOP v2</a></li>
+    <li><a class="dropdown-item" href="articles/v02_exploration.html">Schema Exploration</a></li>
+    <li><a class="dropdown-item" href="articles/v03_cohorts.html">Cohort Management</a></li>
+    <li><a class="dropdown-item" href="articles/v04_extraction.html">Data Extraction with the Plan DSL</a></li>
+    <li><a class="dropdown-item" href="articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
+    <li><a class="dropdown-item" href="articles/v06_security.html">Security and Disclosure Controls</a></li>
   </ul>
 </li>
       </ul>
@@ -47,6 +50,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/isglobal-brge/dsOMOPClient/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -60,25 +64,30 @@
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p><img src="reference/figures/dsomop_logo.png" align="left" width="110" style="margin-right: 10px;"></p>
-<p>The <code>dsOMOP</code> package is designed to facilitate the interaction with remote databases formatted in the <a href="https://www.ohdsi.org/data-standardization/" class="external-link">Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)</a> from within a <a href="https://www.datashield.org/about/about-datashield-collated" class="external-link">DataSHIELD</a> environment. It provides a suite of functions that allow users to fetch and transform data from these databases into a format that is intelligible and usable within the DataSHIELD analytical workflow. This integration ensures that data analysis complies with the DataSHIELD security model, which is crucial for maintaining the privacy and security of the data.</p>
-<p>Key features of the <code>dsOMOP</code> package include:</p>
+<p><code>dsOMOPClient</code> is the analyst-facing interface for typed operations over remote <a href="https://www.ohdsi.org/data-standardization/" class="external-link">OMOP Common Data Model (CDM)</a> resources exposed through <a href="https://www.datashield.org/about/about-datashield-collated" class="external-link">DataSHIELD</a>. It builds plans and recipes client-side; the companion <code>dsOMOP</code> package validates and executes them beside the database.</p>
+<p>This is not an arbitrary SQL or arbitrary-join gateway. Its usable surface is the set of reviewed table, filter, cohort, output and aggregate contracts implemented by the server. Installing the client does not by itself guarantee disclosure safety: that also depends on the server method allowlist, effective <code>nfilter</code>/<code>dsomop.*</code> policy, database privileges and any downstream package that can consume the assigned objects.</p>
+<p>Key features include:</p>
 <ul>
 <li>
-<strong>Data retrieval and transformation:</strong> Functions to fetch data from OMOP CDM databases and transform it into a user-friendly table format.</li>
+<strong>Typed plans and recipes:</strong> selections, concept scopes, nested reviewed filters, cohort scopes, visit links, event windows and several output grains.</li>
 <li>
-<strong>Compliance with DataSHIELD security model:</strong> Ensures that all data manipulations and analyses are performed in a way that adheres to the disclosure control measures set by DataSHIELD.</li>
+<strong>Longitudinal outputs:</strong> recurrent cohort episodes, event-long, episode-grain wide/features, survival, interval-long, time-binned sparse covariates and regular person-period panels linked by a stable cohort-row key.</li>
 <li>
-<strong>Support for database interaction:</strong> Includes methods for checking database content (such as table, column and concept catalogs) and data filtering based on user-defined criteria. This enables researchers to tailor their data queries to specific research needs.</li>
+<strong>Controlled exploration:</strong> schema/vocabulary discovery and aggregate profiling under endpoint-specific server disclosure policies.</li>
+<li>
+<strong>Federated checks:</strong> automatic strict schema/semantic harmonization for multi-server plans, common age/date/capacity negotiation and deterministic concept-factor coordination. Heterogeneous DBMS deployments still need live integration validation.</li>
+<li>
+<strong>Staged execution:</strong> private server-local Parquet, or CSV fallback, validated package-neutral descriptors for bounded workflows that should not keep the final table in the DataSHIELD R session.</li>
 </ul>
+<p><code><a href="reference/ds.omop.connect.html">ds.omop.connect()</a></code> fails closed unless every server returns a complete AggregateMethods inventory, and rejects methods named <code>c</code>/<code>list</code> or aliases whose target is <code>c</code>, <code>list</code>, <code><a href="https://rdrr.io/r/base/c.html" class="external-link">base::c</a></code> or <code><a href="https://rdrr.io/r/base/list.html" class="external-link">base::list</a></code>. Those generic constructors can otherwise wrap and return a protected server object without a reviewed disclosure gate. This preflight is defence in depth: the controller must remove the methods from the complete global DataSHIELD profile, because a caller using DSI directly can bypass the client package.</p>
 </div>
 <div class="section level2">
 <h2 id="structure">Structure<a class="anchor" aria-label="anchor" href="#structure"></a>
 </h2>
-<p>The <code>dsOMOP</code> ecosystem comprises two essential components designed to work in tandem: the server-side package (<code>dsOMOP</code>) and the client-side package (<code>dsOMOPClient</code>). Each component plays a pivotal role in the integration of OMOP CDM databases within the DataSHIELD environment. For comprehensive details on installation, setup, and usage, please refer to the respective repositories:</p>
+<p>The ecosystem has two components:</p>
 <ul>
-<li><p><strong>Server-Side package <code>dsOMOP</code></strong>: This component is installed on the DataSHIELD server and is responsible for direct interactions with the OMOP CDM databases. It retrieves, transforms, and returns data in a format compatible with DataSHIELD’s analytical tools. For code, installation instructions, and more, visit <a href="https://github.com/isglobal-brge/dsOMOP" class="external-link">https://github.com/isglobal-brge/dsOMOP</a>.</p></li>
-<li><p><strong>Client-Side package <code>dsOMOPClient</code></strong>: Utilized by researchers and data analysts, this package facilitates the communication with the <code>dsOMOP</code> package on the server. It sends data requests and receives processed data for analysis, ensuring a user-friendly experience for specifying data needs and analysis parameters. For code, installation instructions, and more, visit <a href="https://github.com/isglobal-brge/dsOMOPClient" class="external-link">https://github.com/isglobal-brge/dsOMOPClient</a>.</p></li>
+<li><p><strong>Server-side <code>dsOMOP</code>:</strong> owns database connections, schema policy, pseudonymisation, extraction and disclosure gates. Its README contains the actual DBMS matrix, deployment boundary and OHDSI integration status: <a href="https://github.com/isglobal-brge/dsOMOP" class="external-link">isglobal-brge/dsOMOP</a>.</p></li>
+<li><p><strong>Client-side <code>dsOMOPClient</code>:</strong> constructs and serializes typed requests, negotiates selected federated contracts, and coordinates returned server objects. It never receives database credentials or raw person identifiers.</p></li>
 </ul>
 </div>
 <div class="section level2">
@@ -96,21 +105,34 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">dsOMOPClient</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="current-boundaries">Current boundaries<a class="anchor" aria-label="anchor" href="#current-boundaries"></a>
+</h2>
+<p>Plans and recipes cover common epidemiological extraction shapes, but not every possible relational or longitudinal estimand. In particular:</p>
+<ul>
+<li>multi-table <code>long</code> recipes split into one output per source table; there is no arbitrary cross-table joined-long output;</li>
+<li>federated <code>wide</code> output requires a closed integer <code>concept_set</code> and <code>translate_concepts = FALSE</code>; every declared concept has the same concept-ID-derived column on every node (filled with <code>NA</code> when locally absent), and no undeclared concept can enter the output. Wide output also requires at most one event per declared grain and concept, so the request must use deterministic event selection or an explicit reduction;</li>
+<li>
+<code>event_select</code> defaults to global selection within a person/episode and can use <code>by = "concept"</code> for independent first/last-N selection per concept;</li>
+<li>recurrent cohort episodes and basic regular episode-by-period panels are first-class contracts; general recurrent-event/counting-process risk sets and competing-risk/multi-state outputs remain future work;</li>
+<li>sparse output supports person or indexed episode grain and includes a complete <code>personRef</code>; absent covariate rows represent zero for roster members with no qualifying event;</li>
+<li>the local Query Library is curated and incomplete, and the server provides no formal differential privacy, sticky-noise mechanism or privacy ledger.</li>
+</ul>
+<p>Servers also impose configurable operational shape caps (by default 1,000 feature specifications, 1,000 pivoted concepts, 5,000 output columns and 10,000 temporal bins, plus filter trees of depth 32, 1,024 nodes and 10,000 values, and 100 outputs per plan). Federated planning must respect the minimum compatible value across participating servers. These bounds limit memory/CPU amplification; they are separate from disclosure thresholds.</p>
+<p>Staged descriptors point to private server-local files. Successful local staging writes a version-2 manifest only after every file and descriptor is complete. Each component carries an exact semantic contract, while components of one composite output share a bundle contract and pseudonym-key identity. Consumers must use the server-side resolver to validate those contracts and the path rather than opening an embedded filename directly. Descriptors are not downloads and do not grant access to another service identity; cross-service consumption requires a separately reviewed broker. Only long untranslated event output currently streams without materialising the complete result in R. Execution is all-or-none for DataSHIELD-visible symbols, not a distributed filesystem transaction: after a cross-node failure, already committed private files may remain until handle cleanup, disconnect or TTL cleanup. See the <em>Data Extraction</em>, <em>Multi-Server</em> and <em>Security</em> vignettes for the precise contracts and limits.</p>
+</div>
+<div class="section level2">
 <h2 id="community-development-and-extensions">Community development and extensions<a class="anchor" aria-label="anchor" href="#community-development-and-extensions"></a>
 </h2>
-<p>The <code>dsOMOPClient</code> package serves as a gateway for interacting with databases in the OMOP CDM format, enabling the fetching of tables to be integrated into the DataSHIELD workflow. This integration adheres to the privacy standards and disclosure control mechanisms inherent to the DataSHIELD software, ensuring that the subsequent data manipulation and analysis operations are secure.</p>
-<p>While <code>dsOMOPClient</code> acts as an interface, the potential for automation or streamlining of processes through the creation of supplementary functions, scripts, and packages is vast. We strongly encourage the community to develop tools that build upon <code>dsOMOPClient</code>, tailoring them to specific use cases and research needs. Such community-driven development not only enhances the utility of <code>dsOMOPClient</code> but also fosters a collaborative ecosystem around the combined use of both DataSHIELD and OMOP CDM.</p>
-<p><a href="https://github.com/isglobal-brge/dsOMOPHelper" class="external-link"><img src="reference/figures/dsomophelper_logo.png" align="right" width="110" style="margin-left: 10px;"></a></p>
-<p>An example of this approach is <strong><a href="https://github.com/isglobal-brge/dsOMOPHelper" class="external-link"><code>dsOMOPHelper</code></a></strong>, a complementary package we have developed alongside <code>dsOMOPClient</code>. <code>dsOMOPHelper</code> illustrates how the process can be simplified by combining commands from <code>dsOMOPClient</code> and <code>dsBaseClient</code> (which invokes standard DataSHIELD workflow operations). This package significantly reduces the complexity of using <code>dsOMOPClient</code> for most simple use cases, where data from an OMOP CDM database may be used for epidemiological studies within the DataSHIELD environment. You can read more about <code>dsOMOPHelper</code> and its functionalities by visiting its GitHub repository: <a href="https://github.com/isglobal-brge/dsOMOPHelper" class="external-link">https://github.com/isglobal-brge/dsOMOPHelper</a>.</p>
+<p>Extensions that consume <code>omop.table</code> objects or staged descriptors become part of the disclosure boundary. They should be separately reviewed and allowlisted; the class name alone does not make a downstream method safe.</p>
+<p>An example is <strong><a href="https://github.com/isglobal-brge/dsOMOPHelper" class="external-link"><code>dsOMOPHelper</code></a></strong>, which combines calls from <code>dsOMOPClient</code> and <code>dsBaseClient</code> for common workflows. It is a separate package and must be reviewed against the same server allowlist and disclosure policy; this README does not assert compatibility with every dsOMOP output or deployment.</p>
 </div>
 <div class="section level2">
 <h2 id="acknowledgements">Acknowledgements<a class="anchor" aria-label="anchor" href="#acknowledgements"></a>
 </h2>
 <ul>
 <li>The development of dsOMOP has been supported by the <strong><a href="https://github.com/isglobal-brge/RadGen4COPD" class="external-link">RadGen4COPD</a></strong>, <strong><a href="https://www.clinicbarcelona.org/en/projects-and-clinical-assays/detail/p4copd-prediction-prevention-personalized-and-precision-management-of-copd-in-young-adults" class="external-link">P4COPD</a></strong>, <strong><a href="https://www.ersnet.org/science-and-research/clinical-research-collaboration-application-programme/cadset-chronic-airway-diseases-early-stratification/" class="external-link">CADSET</a></strong>, and <strong><a href="https://datos-cat.github.io/LandingPage" class="external-link">DATOS-CAT</a></strong> projects. These collaborations have not only provided essential financial backing but have also affirmed the project’s relevance and application in significant research endeavors.</li>
-<li>This project has received funding from the <strong><a href="https://www.ciencia.gob.es/en/" class="external-link">Spanish Ministry of Science and Innovation</a></strong> and <strong><a href="https://www.aei.gob.es/en" class="external-link">State Research Agency</a></strong> through the <strong>“Centro de Excelencia Severo Ochoa 2019-2023” Program [CEX2018-000806-S]</strong> and <strong><a href="https://www.aei.gob.es/en" class="external-link">State Research Agency</a></strong> and <strong><a href="https://ec.europa.eu/regional_policy/funding/erdf_en" class="external-link">Fondo Europeo de Desarrollo Regional, UE</a> (PID2021-122855OB-I00)</strong>, and support from the <strong><a href="https://web.gencat.cat/en/inici/index.html" class="external-link">Generalitat de Catalunya</a></strong> through the <strong>CERCA Program</strong> and <strong><a href="https://recercaiuniversitats.gencat.cat/en/inici/" class="external-link">Ministry of Research and Universities</a> (2021 SGR 01563)</strong>.</li>
-<li>This project has received funding from the <strong>“Complementary Plan for Biotechnology Applied to Health”</strong>, coordinated by the <strong><a href="https://ibecbarcelona.eu/" class="external-link">Institut de Bioenginyeria de Catalunya (IBEC)</a></strong> within the framework of the <strong>Recovery, Transformation, and Resilience Plan (C17.I1)</strong> - Funded by the <strong><a href="https://european-union.europa.eu/index_en" class="external-link">European Union</a></strong> - <strong><a href="https://next-generation-eu.europa.eu/index_en" class="external-link">NextGenerationEU</a></strong>.</li>
-<li>Special thanks to <strong><a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a></strong> for his invaluable support in the development process.</li>
+<li>This project has received funding from the <strong><a href="https://www.ciencia.gob.es/en/" class="external-link">Spanish Ministry of Education, Innovation and Universities</a></strong>, the <strong><a href="https://www.aei.gob.es/en" class="external-link">National Agency for Research</a></strong>, and the <strong><a href="https://ec.europa.eu/regional_policy/funding/erdf_en" class="external-link">Fund for Regional Development</a></strong> <strong>(PID2021-122855OB-I00)</strong>. We also acknowledge support from the grant <strong>CEX2023-0001290-S</strong> funded by <strong>MCIN/AEI/10.13039/501100011033</strong>, and support from the <strong><a href="https://web.gencat.cat/en/inici/index.html" class="external-link">Generalitat de Catalunya</a></strong> through the <strong><a href="https://cerca.cat/en/" class="external-link">CERCA Program</a></strong> and the <strong>Consolidated Group on HEALTH ANALYTICS (2021 SGR 01563)</strong>.</li>
+<li>Additionally, this project has received funding from the <strong><a href="https://www.isciii.es/" class="external-link">Instituto de Salud Carlos III (ISCIII)</a></strong> through the project <strong>“PMP21/00090,”</strong> co-funded by the <strong><a href="https://european-union.europa.eu/index_en" class="external-link">European Union’s</a></strong> <strong>Resilience and Recovery Facility</strong>. It has also been partially funded by the <strong>“Complementary Plan for Biotechnology Applied to Health,”</strong> coordinated by the <strong><a href="https://ibecbarcelona.eu/" class="external-link">Institut de Bioenginyeria de Catalunya (IBEC)</a></strong> within the framework of the <strong>Recovery, Transformation, and Resilience Plan (C17.I1)</strong> – Funded by the <strong><a href="https://european-union.europa.eu/index_en" class="external-link">European Union</a></strong> – <strong><a href="https://next-generation-eu.europa.eu/index_en" class="external-link">NextGenerationEU</a></strong>.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -129,10 +151,20 @@
 <p>For more information about the <strong>Barcelona Institute for Global Health (ISGlobal)</strong>, visit <a href="https://www.isglobal.org" class="external-link">https://www.isglobal.org</a>.</p>
 </div>
 </div>
-  </main><aside class="col-md-3"><div class="license">
+  </main><aside class="col-md-3"><div class="links">
+<h2 data-toc-skip>Links</h2>
+<ul class="list-unstyled">
+<li><a href="https://github.com/isglobal-brge/dsOMOPClient/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/isglobal-brge/dsOMOPClient/issues" class="external-link">Report a bug</a></li>
+</ul>
+</div>
+
+<div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a></li>
+<li>
+<a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a>
+</li>
 </ul>
 </div>
 
@@ -148,11 +180,11 @@
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>
-<a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a> <br><small class="roles"> Author, maintainer </small>  </li>
+<a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a> <br><small class="roles"> Author, maintainer </small>   </li>
 <li>
-<a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a> <br><small class="roles"> Author </small>  </li>
+<a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a> <br><small class="roles"> Author </small>   </li>
 <li>
-<a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a> <br><small class="roles"> Author </small>  </li>
+<a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a> <br><small class="roles"> Author </small>   </li>
 </ul>
 </div>
 
@@ -169,7 +201,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
   </div></footer>

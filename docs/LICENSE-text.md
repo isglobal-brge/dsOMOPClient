@@ -1,0 +1,4 @@
+# License
+
+    YEAR: 2024
+    COPYRIGHT HOLDER: Bioinformatic Research Group in Epidemiology (BRGE)

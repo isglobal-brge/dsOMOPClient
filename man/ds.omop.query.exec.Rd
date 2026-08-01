@@ -18,8 +18,9 @@ ds.omop.query.exec(
 
 \item{inputs}{Named list; parameter values for the entry. Default: empty list.}
 
-\item{mode}{Character; \code{"aggregate"} (the default) returns results to the
-client, \code{"assign"} stores the result server-side.}
+\item{mode}{Character; only \code{"aggregate"} is accepted. The deprecated
+\code{"assign"} value now fails closed; assign behavior is selected from
+trusted server catalog metadata by \code{\link{ds.omop.analysis.run}}.}
 
 \item{symbol}{Character; the session symbol used when the OMOP connection
 was initialised (default: \code{"omop"}).}
@@ -28,19 +29,19 @@ was initialised (default: \code{"omop"}).}
 connections stored in the active session are used.}
 }
 \value{
-For \code{mode = "aggregate"}: a named list of per-server data frames.
-  For \code{mode = "assign"}: \code{TRUE} invisibly. Use
-  \code{\link{ds.omop.query.pool}} to combine aggregate results, or prefer the
-  pooled view returned by \code{\link{ds.omop.analysis.run}} directly.
+A named list of per-server disclosure-controlled data frames. Use
+  \code{\link{ds.omop.query.pool}} to combine them, or prefer the pooled view
+  returned by \code{\link{ds.omop.analysis.run}} directly.
 }
 \description{
 Deprecated shim for \code{\link{ds.omop.analysis.run}}. Forwards to
 \code{ds.omop.analysis.run()} using the entry's pack-prefixed catalog name.
-For back-compatibility the return value matches the old contract:
-\code{"aggregate"} mode returns a named list of per-server data frames, and
-\code{"assign"} mode returns \code{TRUE} invisibly (the result stays on the
-server). Disclosure controls and (in aggregate mode) cross-server pooling are
-handled by the analysis run path.
+For back-compatibility, \code{"aggregate"} mode returns a named list of
+per-server data frames. The legacy caller-selected \code{"assign"} mode is
+rejected: whether an analysis is an assign loader is server-owned catalog
+metadata and must not be asserted by the client. Use
+\code{\link{ds.omop.analysis.run}} directly for catalog-managed loaders.
+Disclosure controls and cross-server pooling are handled by that path.
 }
 \examples{
 \dontrun{

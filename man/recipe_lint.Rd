@@ -33,10 +33,13 @@ or wrong), and \code{"INFO"} (advisory). Rules:
     \code{concept_id} (0 or NA).}
   \item{concept_unnamed (WARNING)}{\code{concept_id} present but
     \code{concept_name} missing.}
+  \item{time_since_spec (ERROR)}{a \code{time_since} variable lacks a valid
+    fixed ISO \code{derived$reference_date} or \code{derived$unit}.}
   \item{age_no_index (WARNING)}{\code{format = "age"} with index reference
     but the base population has neither a cohort nor a date filter.}
   \item{narrow_filter (WARNING)}{population \code{age_range} width < 5 years
-    or \code{date_range} width < 30 days (server rejects).}
+    (server rejects). Calendar-window width is server policy and is therefore
+    not hard-coded by this client lint.}
   \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column with
     \code{factor_concepts = TRUE}, or a categorical format on a
     high-cardinality domain.}

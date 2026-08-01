@@ -22,7 +22,9 @@ omop_variable(
   filters = list(),
   visit_filter = NULL,
   concept_col = NULL,
-  expand = FALSE
+  expand = FALSE,
+  reference_date = NULL,
+  unit = NULL
 )
 }
 \arguments{
@@ -43,7 +45,11 @@ omop_variable(
 
 \item{format}{Character; output format. One of \code{"raw"}, \code{"binary"},
 \code{"count"}, \code{"first_value"}, \code{"last_value"}, \code{"mean"},
-\code{"min"}, \code{"max"}, \code{"time_since"}, \code{"binned"}.}
+\code{"min"}, \code{"max"}, and \code{"time_since"}, plus the documented
+derived and longitudinal summary formats. \code{"time_since"} requires a
+fixed \code{reference_date}; cohort-index recency remains episode-specific
+and is rejected. Calendar binning is configured with
+\code{\link{omop.date_handling}}, not as a variable format.}
 
 \item{value_source}{Character or \code{NULL}; column to extract value from
 (e.g. \code{"value_as_number"} for measurements).}
@@ -66,6 +72,13 @@ e.g. \code{"unit_concept_id"} to extract a single unit for harmonization.}
 
 \item{expand}{Logical; if \code{TRUE}, expand the concept to include
 vocabulary descendants server-side (default \code{FALSE}).}
+
+\item{reference_date}{Character/Date or \code{NULL}; fixed ISO reference date
+required when \code{format = "time_since"}.}
+
+\item{unit}{Character or \code{NULL}; \code{"day"} (default for
+\code{time_since}) or \code{"month"}. Months are complete calendar months,
+not fixed 30-day intervals.}
 }
 \value{
 An \code{omop_variable} object (a named list with class

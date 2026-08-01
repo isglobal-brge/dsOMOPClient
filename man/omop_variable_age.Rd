@@ -29,7 +29,8 @@ An \code{omop_variable} object with \code{format = "age"} and
 }
 \description{
 Produces a derived variable that computes age from \code{year_of_birth}.
-With \code{reference = "today"}, age is \code{current_year - year_of_birth}.
+With \code{reference = "today"}, the constructor records today's ISO date
+in the recipe so later executions remain reproducible.
 With \code{reference = "index"}, age is computed relative to the cohort
 start date.
 }

@@ -16,5 +16,6 @@ An \code{omop_variable} with \code{format = "prior_obs"}.
 }
 \description{
 Produces a derived variable computing days from observation start to a
-reference date (default today).
+fixed reference date. When omitted, today's date is recorded in the variable
+specification at construction time.
 }

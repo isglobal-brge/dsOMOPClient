@@ -18,6 +18,8 @@ domain, or concept class exists independently on each server, so the cross-
 site view is simply their set union (not a sum). This helper row-binds the
 per-site data frames (intersecting on common columns so heterogeneous schemas
 still combine) and drops duplicate rows. Empty / non-data-frame entries are
-skipped. Returns \code{NULL} when there is nothing to pool.
+skipped. A partial server response returns \code{NULL} rather than claiming
+an incomplete union is federation-wide. Returns \code{NULL} when there is
+nothing to pool.
 }
 \keyword{internal}
