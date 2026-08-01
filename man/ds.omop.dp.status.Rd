@@ -32,6 +32,10 @@ person-local provenance capsule; a copied class or plain attribute is not
 sufficient.
 Each status contains the custodian's public \code{snapshot_id}. Federated
 sites may legitimately report different snapshot identifiers.
+Release preflight rejects duplicate noise domains, ledgers, or
+domain-scoped ledger authentication keys so the same logical privacy node
+cannot be pooled twice, including while replicas converge on a rotated noise
+root or when durable state was accidentally forked.
 }
 \examples{
 \dontrun{ds.omop.dp.status()}

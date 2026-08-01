@@ -99,7 +99,15 @@ The client cannot choose epsilon, a seed, nonce, epoch or reroll. Domains,
 date breaks, clipping bounds and longitudinal contribution caps are public
 parts of the request; noise allocation, sticky identity and the durable ledger
 remain server-owned. See `?omop_privacy` and `?ds.omop.dp.release` for the five
-supported primitives and their reducers.
+supported primitives and their reducers. Before any release, the client checks
+the server continuity identifiers and refuses a federated request through two
+connections that share a logical noise domain, a ledger, or the same
+domain-scoped ledger authentication key. These checks prevent duplicate-node
+pooling while replicas converge during a noise-root rotation and detect
+accidentally forked durable ledgers. Such a rotation changes `noise_key_id`,
+`noise_domain_id` and `privacy_instance_id`, while `ledger_id` and
+`ledger_key_id` remain stable; operators should refresh any monitoring pins
+after the coordinated rollout.
 
 ## Current boundaries
 

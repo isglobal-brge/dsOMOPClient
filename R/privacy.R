@@ -441,6 +441,10 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' sufficient.
 #' Each status contains the custodian's public \code{snapshot_id}. Federated
 #' sites may legitimately report different snapshot identifiers.
+#' Release preflight rejects duplicate noise domains, ledgers, or
+#' domain-scoped ledger authentication keys so the same logical privacy node
+#' cannot be pooled twice, including while replicas converge on a rotated noise
+#' root or when durable state was accidentally forked.
 #'
 #' @param datasources Named DataSHIELD connection list. \code{NULL} uses
 #'   \code{DSI::datashield.connections_find()}.
@@ -478,7 +482,9 @@ ds.omop.dp.status <- function(datasources = NULL) {
     "max_levels", "max_contributions", "numeric_grid", "bounded_accounting",
     "bounded_composition", "never_budget_blocked", "budget_behavior",
     "supported_statistics", "longitudinal_contract", "privacy_epoch",
-    "next_release_epsilon", "next_release_degraded"
+    "next_release_epsilon", "next_release_degraded", "domain",
+    "privacy_instance_id",
+    "noise_domain_id", "ledger_id", "ledger_key_id", "noise_key_id"
   )
   for (server in names(statuses)) {
     missing <- required_fields[
@@ -492,7 +498,9 @@ ds.omop.dp.status <- function(datasources = NULL) {
       "protocol", "canonical_protocol", "mechanism", "sampler",
       "privacy_guarantee", "epsilon_semantics", "delta_semantics",
       "provenance_protocol", "adjacency", "accounting_mode", "allocator",
-      "budget_behavior", "longitudinal_contract"
+      "budget_behavior", "longitudinal_contract", "domain",
+      "privacy_instance_id",
+      "noise_domain_id", "ledger_id", "ledger_key_id", "noise_key_id"
     )
     if (any(!vapply(statuses[[server]][character_fields], function(value) {
       is.character(value) && length(value) == 1L && !is.na(value) &&
@@ -564,6 +572,18 @@ ds.omop.dp.status <- function(datasources = NULL) {
       stop("Server '", server, "' returned an incoherent budget behavior.",
            call. = FALSE)
     }
+    identifiers <- statuses[[server]]
+    valid_identifiers <-
+      grepl("^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$", identifiers$domain) &&
+      grepl("^dpi_[0-9a-f]{40}$", identifiers$privacy_instance_id) &&
+      grepl("^dpn_[0-9a-f]{40}$", identifiers$noise_domain_id) &&
+      grepl("^[0-9a-f]{64}$", identifiers$ledger_id) &&
+      grepl("^dpl_[0-9a-f]{40}$", identifiers$ledger_key_id) &&
+      grepl("^dpk_[0-9a-f]{40}$", identifiers$noise_key_id)
+    if (!isTRUE(valid_identifiers)) {
+      stop("Server '", server, "' returned invalid DP continuity ",
+           "identifiers.", call. = FALSE)
+    }
     statistics <- statuses[[server]]$supported_statistics
     if (!is.character(statistics) || length(statistics) < 1L ||
         anyNA(statistics) || any(!nzchar(statistics)) ||
@@ -593,6 +613,38 @@ ds.omop.dp.status <- function(datasources = NULL) {
       stop("Server '", server, "' does not attest formal DP with bounded ",
            "composition.", call. = FALSE)
     }
+  }
+  noise_domains <- vapply(
+    statuses, `[[`, character(1L), "noise_domain_id"
+  )
+  duplicated_domains <- unique(noise_domains[duplicated(noise_domains)])
+  if (length(duplicated_domains) > 0L) {
+    affected <- names(noise_domains)[noise_domains %in% duplicated_domains]
+    stop("Selected servers share a DP noise domain (",
+         paste(affected, collapse = ", "), "); refusing a duplicate ",
+         "federated release from one logical privacy node.", call. = FALSE)
+  }
+  ledger_ids <- vapply(statuses, `[[`, character(1L), "ledger_id")
+  duplicated_ledgers <- unique(ledger_ids[duplicated(ledger_ids)])
+  if (length(duplicated_ledgers) > 0L) {
+    affected <- names(ledger_ids)[ledger_ids %in% duplicated_ledgers]
+    stop("Selected servers share a DP ledger (",
+         paste(affected, collapse = ", "), "); refusing a duplicate ",
+         "federated release from one logical privacy node.", call. = FALSE)
+  }
+  ledger_domains <- vapply(statuses, function(status) {
+    paste(status$domain, status$ledger_key_id, sep = "\u001f")
+  }, character(1L))
+  duplicated_ledger_domains <- unique(
+    ledger_domains[duplicated(ledger_domains)]
+  )
+  if (length(duplicated_ledger_domains) > 0L) {
+    affected <- names(ledger_domains)[
+      ledger_domains %in% duplicated_ledger_domains
+    ]
+    stop("Selected servers share a domain-scoped DP ledger key (",
+         paste(affected, collapse = ", "), "); refusing a duplicate ",
+         "federated release from forked privacy state.", call. = FALSE)
   }
   common_fields <- c(
     "protocol", "canonical_protocol", "mechanism", "sampler",

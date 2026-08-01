@@ -3,7 +3,10 @@
                        allocator = NULL, total_epsilon = 1,
                        never_budget_blocked = TRUE,
                        disjoint_persons = NULL,
-                       snapshot_id = "snapshot-2026-08-01") {
+                       snapshot_id = "snapshot-2026-08-01",
+                       noise_domain_id = NULL, ledger_id = NULL,
+                       ledger_key_id = NULL,
+                       domain = "dsomop-dp-test") {
   accounted <- identical(accounting_mode, "bounded_accounted")
   if (is.null(allocator)) {
     allocator <- if (accounted) {
@@ -28,6 +31,7 @@
     person_local_provenance_required = TRUE,
     provenance_protocol = "dsomop-dp-person-local-provenance-v2",
     adjacency = "add_remove_person",
+    domain = domain,
     snapshot_id = snapshot_id,
     accounting_mode = accounting_mode,
     allocator = allocator,
@@ -58,6 +62,9 @@
   if (!is.null(disjoint_persons)) {
     value$disjoint_persons <- disjoint_persons
   }
+  if (!is.null(noise_domain_id)) value$noise_domain_id <- noise_domain_id
+  if (!is.null(ledger_id)) value$ledger_id <- ledger_id
+  if (!is.null(ledger_key_id)) value$ledger_key_id <- ledger_key_id
   value
 }
 
@@ -164,6 +171,21 @@
 }
 
 .with_dp_backend <- function(statuses, releases, code, disclosures = NULL) {
+  for (index in seq_along(statuses)) {
+    digit <- c(as.character(0:9), letters[1:6])[[index + 1L]]
+    defaults <- list(
+      privacy_instance_id = paste0("dpi_", strrep(digit, 40L)),
+      noise_domain_id = paste0("dpn_", strrep(digit, 40L)),
+      ledger_id = strrep(digit, 64L),
+      ledger_key_id = paste0("dpl_", strrep(digit, 40L)),
+      noise_key_id = paste0("dpk_", strrep(digit, 40L))
+    )
+    for (field in names(defaults)) {
+      if (is.null(statuses[[index]][[field]])) {
+        statuses[[index]][[field]] <- defaults[[field]]
+      }
+    }
+  }
   datasources <- stats::setNames(
     as.list(paste0("FAKE_", seq_along(statuses))), names(statuses)
   )
@@ -382,6 +404,72 @@ test_that("DP release preflight rejects policy drift before data release", {
       ds.omop.dp.release("analysis_table", omop_privacy("count"),
                          datasources),
       "allocator.*differs"
+    )
+    heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
+                    character(1L))
+    expect_false("omopDpReleaseDS" %in% heads)
+  })
+})
+
+test_that("DP release refuses duplicate logical noise domains", {
+  shared <- paste0("dpn_", strrep("a", 40L))
+  statuses <- list(
+    a = .dp_status(noise_domain_id = shared),
+    b = .dp_status(noise_domain_id = shared)
+  )
+  releases <- list(a = .dp_release("count", noisy_count = 10),
+                   b = .dp_release("count", noisy_count = 20))
+  .with_dp_backend(statuses, releases, function(datasources, sent) {
+    expect_error(
+      ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                         datasources),
+      "share a DP noise domain"
+    )
+    heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
+                    character(1L))
+    expect_false("omopDpReleaseDS" %in% heads)
+  })
+})
+
+test_that("DP release refuses one ledger exposed during root rotation", {
+  shared <- strrep("a", 64L)
+  statuses <- list(
+    a = .dp_status(
+      ledger_id = shared,
+      noise_domain_id = paste0("dpn_", strrep("a", 40L))
+    ),
+    b = .dp_status(
+      ledger_id = shared,
+      noise_domain_id = paste0("dpn_", strrep("b", 40L))
+    )
+  )
+  releases <- list(a = .dp_release("count", noisy_count = 10),
+                   b = .dp_release("count", noisy_count = 20))
+  .with_dp_backend(statuses, releases, function(datasources, sent) {
+    expect_error(
+      ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                         datasources),
+      "share a DP ledger"
+    )
+    heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
+                    character(1L))
+    expect_false("omopDpReleaseDS" %in% heads)
+  })
+})
+
+test_that("DP release refuses forked ledgers with one domain key", {
+  shared <- paste0("dpl_", strrep("a", 40L))
+  statuses <- list(
+    a = .dp_status(ledger_key_id = shared),
+    b = .dp_status(ledger_key_id = shared)
+  )
+  releases <- list(a = .dp_release("count", noisy_count = 10),
+                   b = .dp_release("count", noisy_count = 20))
+  .with_dp_backend(statuses, releases, function(datasources, sent) {
+    expect_error(
+      ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                         datasources),
+      "share a domain-scoped DP ledger key"
     )
     heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
                     character(1L))
