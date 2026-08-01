@@ -73,6 +73,34 @@ Once the package is installed, you can load it into your R environment using the
 library(dsOMOPClient)
 ```
 
+## Dedicated sticky privacy releases
+
+When the custodian has enabled the dedicated service, inspect its contract and
+request a typed person-bounded statistic from an eligible server-side plan or
+reviewed loader output:
+
+```R
+ds.omop.dp.status(conns)
+
+privacy <- omop_privacy(
+  "numeric_histogram",
+  variable = "measurement_date",
+  breaks = c("2025-01-01", "2025-04-01", "2025-07-01", "2026-01-01"),
+  reducer = "records",
+  max_contributions = 2L,
+  order_by = "measurement_date"
+)
+result <- ds.omop.dp.release(
+  "measurement_events", privacy, datasources = conns, format = "long"
+)
+```
+
+The client cannot choose epsilon, a seed, nonce, epoch or reroll. Domains,
+date breaks, clipping bounds and longitudinal contribution caps are public
+parts of the request; noise allocation, sticky identity and the durable ledger
+remain server-owned. See `?omop_privacy` and `?ds.omop.dp.release` for the five
+supported primitives and their reducers.
+
 ## Current boundaries
 
 Plans and recipes cover common epidemiological extraction shapes, but not every
@@ -95,8 +123,12 @@ possible relational or longitudinal estimand. In particular:
 - sparse output supports person or indexed episode grain and includes a complete
   `personRef`; absent covariate rows represent zero for roster members with no
   qualifying event;
-- the local Query Library is curated and incomplete, and the server provides no
-  formal differential privacy, sticky-noise mechanism or privacy ledger.
+- the local Query Library is curated and incomplete. The opt-in privacy path
+  currently supports five person-bounded sticky-noise primitives with a durable
+  authenticated ledger; it explicitly reports `formal_dp = FALSE` because its
+  sampler and the atomic end-to-end DP measurement are not formally certified.
+  Eligible inputs do carry authenticated semantic lineage; that is a security
+  control, not by itself a formal privacy proof.
 
 Servers also impose configurable operational shape caps (by default 1,000
 feature specifications, 1,000 pivoted concepts, 5,000 output columns and 10,000

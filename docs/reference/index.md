@@ -94,6 +94,10 @@
   : Continuous-value distribution over a cohort, in one call
 - [`ds.omop.domain.coverage()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.domain.coverage.md)
   : Get cross-table domain coverage
+- [`ds.omop.dp.release()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.release.md)
+  : Request a sticky privacy release
+- [`ds.omop.dp.status()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.status.md)
+  : Inspect sticky privacy-release services
 - [`ds.omop.filter()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.filter.md)
   : Filter the rows of a server-side omop.table data frame
 - [`ds.omop.joins()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.joins.md)
@@ -260,6 +264,8 @@
   : Create an output specification
 - [`omop_population()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_population.md)
   : Create a population node
+- [`omop_privacy()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_privacy.md)
+  : Define a server-owned sticky privacy release
 - [`omop_recipe()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
   : Create an extraction recipe declaratively
 - [`omop_variable()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md)

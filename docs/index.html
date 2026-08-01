@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.29</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,7 +102,27 @@
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'isglobal-brge/dsOMOPClient'</span><span class="op">)</span></span></code></pre></div>
 <p>Once the package is installed, you can load it into your R environment using the following command:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">dsOMOPClient</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="dedicated-sticky-privacy-releases">Dedicated sticky privacy releases<a class="anchor" aria-label="anchor" href="#dedicated-sticky-privacy-releases"></a>
+</h2>
+<p>When the custodian has enabled the dedicated service, inspect its contract and request a typed person-bounded statistic from an eligible server-side plan or reviewed loader output:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/ds.omop.dp.status.html">ds.omop.dp.status</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">privacy</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/omop_privacy.html">omop_privacy</a></span><span class="op">(</span></span>
+<span>  <span class="st">"numeric_histogram"</span>,</span>
+<span>  variable <span class="op">=</span> <span class="st">"measurement_date"</span>,</span>
+<span>  breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2025-01-01"</span>, <span class="st">"2025-04-01"</span>, <span class="st">"2025-07-01"</span>, <span class="st">"2026-01-01"</span><span class="op">)</span>,</span>
+<span>  reducer <span class="op">=</span> <span class="st">"records"</span>,</span>
+<span>  max_contributions <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>  order_by <span class="op">=</span> <span class="st">"measurement_date"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ds.omop.dp.release.html">ds.omop.dp.release</a></span><span class="op">(</span></span>
+<span>  <span class="st">"measurement_events"</span>, <span class="va">privacy</span>, datasources <span class="op">=</span> <span class="va">conns</span>, format <span class="op">=</span> <span class="st">"long"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The client cannot choose epsilon, a seed, nonce, epoch or reroll. Domains, date breaks, clipping bounds and longitudinal contribution caps are public parts of the request; noise allocation, sticky identity and the durable ledger remain server-owned. See <code><a href="reference/omop_privacy.html">?omop_privacy</a></code> and <code><a href="reference/ds.omop.dp.release.html">?ds.omop.dp.release</a></code> for the five supported primitives and their reducers.</p>
 </div>
 <div class="section level2">
 <h2 id="current-boundaries">Current boundaries<a class="anchor" aria-label="anchor" href="#current-boundaries"></a>
@@ -115,7 +135,7 @@
 <code>event_select</code> defaults to global selection within a person/episode and can use <code>by = "concept"</code> for independent first/last-N selection per concept;</li>
 <li>recurrent cohort episodes and basic regular episode-by-period panels are first-class contracts; general recurrent-event/counting-process risk sets and competing-risk/multi-state outputs remain future work;</li>
 <li>sparse output supports person or indexed episode grain and includes a complete <code>personRef</code>; absent covariate rows represent zero for roster members with no qualifying event;</li>
-<li>the local Query Library is curated and incomplete, and the server provides no formal differential privacy, sticky-noise mechanism or privacy ledger.</li>
+<li>the local Query Library is curated and incomplete. The opt-in privacy path currently supports five person-bounded sticky-noise primitives with a durable authenticated ledger; it explicitly reports <code>formal_dp = FALSE</code> because its sampler and the atomic end-to-end DP measurement are not formally certified. Eligible inputs do carry authenticated semantic lineage; that is a security control, not by itself a formal privacy proof.</li>
 </ul>
 <p>Servers also impose configurable operational shape caps (by default 1,000 feature specifications, 1,000 pivoted concepts, 5,000 output columns and 10,000 temporal bins, plus filter trees of depth 32, 1,024 nodes and 10,000 values, and 100 outputs per plan). Federated planning must respect the minimum compatible value across participating servers. These bounds limit memory/CPU amplification; they are separate from disclosure thresholds.</p>
 <p>Staged descriptors point to private server-local files. Successful local staging writes a version-2 manifest only after every file and descriptor is complete. Each component carries an exact semantic contract, while components of one composite output share a bundle contract and pseudonym-key identity. Consumers must use the server-side resolver to validate those contracts and the path rather than opening an embedded filename directly. Descriptors are not downloads and do not grant access to another service identity; cross-service consumption requires a separately reviewed broker. Only long untranslated event output currently streams without materialising the complete result in R. Execution is all-or-none for DataSHIELD-visible symbols, not a distributed filesystem transaction: after a cross-node failure, already committed private files may remain until handle cleanup, disconnect or TTL cleanup. See the <em>Data Extraction</em>, <em>Multi-Server</em> and <em>Security</em> vignettes for the precise contracts and limits.</p>

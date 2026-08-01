@@ -17,14 +17,14 @@
 <meta property="og:description" content="Understand disclosure gates, pseudonym keys and deployment boundaries.">
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
     <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4.29</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,7 +56,7 @@
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -230,9 +230,11 @@ not reinterpret it as a generic differential-privacy budget or add it to
 arbitrary query results.</li>
 <li>
 <code>formal_dp_enabled</code>, <code>sticky_noise_enabled</code>,
-<code>privacy_ledger_enabled</code>: explicit capability flags, all
-currently <code>FALSE</code>. They are status, not
-administrator-switchable promises of an implemented DP mechanism.</li>
+<code>privacy_ledger_enabled</code>: runtime capability flags. All are
+<code>FALSE</code> by default; the latter two become true only after the
+opt-in sticky service and durable ledger bootstrap successfully.
+<code>formal_dp_enabled</code> remains false for the built-in
+sampler.</li>
 <li>
 <code>dsomop.nfilter.dist</code> (default <code>10</code>): minimum
 support for distribution-style outputs.</li>
@@ -492,8 +494,23 @@ guarantee. A secure deployment must restrict methods, users and database
 privileges and should monitor query composition. Supporting arbitrary
 adaptive aggregates would need a defined privacy unit, contribution
 bounds, public clipping ranges, sticky noise and a server-side privacy
-ledger. The standard <code>nfilter.noise</code> option does not supply
-those properties on its own.</p>
+ledger. The dedicated sticky endpoint supplies authenticated
+person-local lineage, bounded primitives and durable replay, but its
+current sampler and the complete recipe-to-release path are not one
+certified atomic DP measurement, so it deliberately reports
+<code>formal_dp = FALSE</code>. The standard <code>nfilter.noise</code>
+option does not supply those properties on its own.</p>
+<p>A formal path would mediate the canonical recipe and bounded
+statistic in one server call, use add/remove-one-person adjacency across
+all joined OMOP tables, apply only public contribution and clipping
+contracts, and persist the first output of a vetted finite-precision
+mechanism before returning it. Exact retries would then be ledger
+replay. If deployments require unlimited later interaction without a
+budget-exhaustion failure, the strongest practical design is a fixed DP
+synopsis followed by unlimited post-processing. Unlimited new
+informative measurements cannot also retain both fixed utility and a
+finite lifetime privacy loss; the current bounded mode therefore
+degrades to a marked data-independent response instead of blocking.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -501,9 +518,7 @@ those properties on its own.</p>
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
 </div>
 
@@ -511,6 +526,12 @@ those properties on its own.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

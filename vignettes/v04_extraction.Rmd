@@ -294,7 +294,13 @@ plan <- ds.omop.plan.options(plan,
 `factor_concepts = TRUE` (the default) coordinates releasable concept levels and
 their ordering across servers in memory mode. This removes one common coding
 mismatch, but does not by itself guarantee that an arbitrary downstream model
-supports the output's grain or missing/suppressed levels.
+supports the output's grain or missing/suppressed levels. Recoding is
+representation-only: every locally observed level must already pass the
+server's person-support/cardinality gate and must be covered by the shared
+contract. Otherwise the complete recoding call is a silent no-op. This keeps
+the original values intact and prevents a partial factor contract from being
+used as a category-presence probe; safe levels seen only at another site can
+still be retained locally as empty factor levels.
 
 ## Plan Lifecycle
 

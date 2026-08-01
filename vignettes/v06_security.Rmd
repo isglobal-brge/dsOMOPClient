@@ -142,8 +142,9 @@ declares the direct option names used by a standard installation.
   dsOMOP reports and validates. dsOMOP does not reinterpret it as a generic
   differential-privacy budget or add it to arbitrary query results.
 - `formal_dp_enabled`, `sticky_noise_enabled`, `privacy_ledger_enabled`:
-  explicit capability flags, all currently `FALSE`. They are status, not
-  administrator-switchable promises of an implemented DP mechanism.
+  runtime capability flags. All are `FALSE` by default; the latter two become
+  true only after the opt-in sticky service and durable ledger bootstrap
+  successfully. `formal_dp_enabled` remains false for the built-in sampler.
 - `dsomop.nfilter.dist` (default `10`): minimum support for distribution-style
   outputs.
 - `dsomop.nfilter.band` (default `5`): width used to floor protected counts.
@@ -340,5 +341,20 @@ controls; they do not provide a formal differential-privacy guarantee. A secure
 deployment must restrict methods, users and database privileges and should
 monitor query composition. Supporting arbitrary adaptive aggregates would need
 a defined privacy unit, contribution bounds, public clipping ranges, sticky
-noise and a server-side privacy ledger. The standard `nfilter.noise` option does
-not supply those properties on its own.
+noise and a server-side privacy ledger. The dedicated sticky endpoint supplies
+authenticated person-local lineage, bounded primitives and durable replay, but
+its current sampler and the complete recipe-to-release path are not one
+certified atomic DP measurement, so it deliberately reports `formal_dp =
+FALSE`. The standard `nfilter.noise` option does not supply those properties on
+its own.
+
+A formal path would mediate the canonical recipe and bounded statistic in one
+server call, use add/remove-one-person adjacency across all joined OMOP tables,
+apply only public contribution and clipping contracts, and persist the first
+output of a vetted finite-precision mechanism before returning it. Exact
+retries would then be ledger replay. If deployments require unlimited later
+interaction without a budget-exhaustion failure, the strongest practical
+design is a fixed DP synopsis followed by unlimited post-processing. Unlimited
+new informative measurements cannot also retain both fixed utility and a
+finite lifetime privacy loss; the current bounded mode therefore degrades to a
+marked data-independent response instead of blocking.
