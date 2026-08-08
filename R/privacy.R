@@ -3,6 +3,26 @@
 # server-owned sticky-noise API.  The client deliberately has no seed, nonce,
 # epsilon, epoch, reset, or force controls.
 
+.DP_PRIVACY_GUARANTEE <- paste0(
+  "sticky_person_bounded_noise_with_authenticated_lineage_",
+  "and_nominal_accounting"
+)
+
+.dp_normalize_legacy_attestation <- function(value) {
+  if (!is.list(value)) return(value)
+  if (identical(
+    value$privacy_guarantee,
+    "sticky_noise_not_formally_certified_dp"
+  )) {
+    value$privacy_guarantee <- .DP_PRIVACY_GUARANTEE
+  }
+  value[c(
+    "formal_dp", "sampler_certified", "epsilon_semantics", "delta_semantics",
+    "bounded_composition"
+  )] <- NULL
+  value
+}
+
 .dp_scalar_character <- function(value, name, nullable = FALSE) {
   if (is.null(value) && nullable) return(NULL)
   if (!is.character(value) || length(value) != 1L || is.na(value) ||
@@ -136,26 +156,31 @@
 #' and \code{"last"} reducers require an explicit public \code{order_by}
 #' column; row order is never treated as longitudinal time.
 #'
-#' @param statistic One of \code{"count"},
+#' @param statistic One of \code{"count"}, \code{"bounded_record_count"},
 #'   \code{"categorical_histogram"}, \code{"numeric_histogram"},
-#'   \code{"bounded_mean"}, or \code{"binary_rate"}.
-#' @param variable Bare column name for all statistics except \code{"count"}.
+#'   \code{"bounded_distinct"}, \code{"bounded_mean"}, or
+#'   \code{"binary_rate"}.
+#' @param variable Bare column name except for \code{"count"} and
+#'   \code{"bounded_record_count"}.
 #' @param levels Public, fixed character domain for a categorical histogram.
 #'   The server returns every requested level, including zero-count levels.
 #' @param breaks Public, fixed, strictly increasing finite numbers, canonical
 #'   \code{YYYY-MM-DD} dates, or \code{YYYY-MM-DDTHH:MM:SSZ} UTC datetimes.
 #' @param lower,upper Public finite bounds for a bounded mean.
 #' @param reducer Per-person reducer. Categorical histograms accept
-#'   \code{"presence"}, \code{"mode"}, \code{"first"}, and \code{"last"};
+#'   \code{"presence"}, \code{"mode"}, \code{"first"}, \code{"last"}, and
+#'   \code{"records"};
 #'   numeric histograms also accept \code{"min"}, \code{"max"},
 #'   \code{"mean"}, \code{"median"}, and \code{"records"}; bounded means
 #'   accept the numeric one-value reducers; binary rates accept \code{"any"},
 #'   \code{"all"}, \code{"first"}, and \code{"last"}. For compatibility,
-#'   categorical \code{"any"} becomes \code{"presence"}, while numeric and
-#'   bounded-mean \code{"any"} becomes \code{"mean"}.
+#'   categorical \code{"any"} becomes \code{"presence"}, numeric and
+#'   bounded-mean \code{"any"} becomes \code{"mean"}, and the two scalar
+#'   bounded primitives canonicalize it to their sole reducer.
 #' @param max_contributions Positive integer person-level contribution cap.
-#'   Values above one apply only to categorical histograms and numeric
-#'   histograms reduced with \code{"presence"} or \code{"records"}.
+#'   Values above one apply to bounded record counts, bounded distinct counts,
+#'   categorical \code{"presence"}/\code{"records"} histograms, and numeric
+#'   \code{"records"} histograms.
 #' @param positive Non-empty public value vector defining positive binary-rate
 #'   records. It is canonicalized to sorted, unique character labels.
 #' @param order_by Optional bare column defining longitudinal order. Required
@@ -182,8 +207,10 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
                          denominator = c("all_persons", "nonmissing"),
                          population_id = NULL) {
   denominator_supplied <- !missing(denominator)
-  statistics <- c("count", "categorical_histogram", "numeric_histogram",
-                  "bounded_mean", "binary_rate")
+  statistics <- c(
+    "count", "bounded_record_count", "categorical_histogram",
+    "numeric_histogram", "bounded_distinct", "bounded_mean", "binary_rate"
+  )
   statistic <- .dp_choice(statistic, statistics, "statistic")
   reducer <- .dp_scalar_character(reducer, "reducer")
   if (!is.numeric(max_contributions) || length(max_contributions) != 1L ||
@@ -211,6 +238,17 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
     }
     spec <- list(statistic = statistic, reducer = reducer,
                  max_contributions = 1L)
+  } else if (identical(statistic, "bounded_record_count")) {
+    .dp_assert_unused(list(variable = variable, levels = levels,
+                           breaks = breaks, lower = lower, upper = upper,
+                           positive = positive, order_by = order_by,
+                           denominator = if (denominator_supplied) {
+                             denominator
+                           } else NULL), statistic)
+    reducer <- .dp_choice(reducer, c("any", "records"), "reducer")
+    if (identical(reducer, "any")) reducer <- "records"
+    spec <- list(statistic = statistic, reducer = reducer,
+                 max_contributions = max_contributions)
   } else if (identical(statistic, "categorical_histogram")) {
     variable <- .dp_variable(variable)
     .dp_assert_unused(list(breaks = breaks, lower = lower, upper = upper,
@@ -219,7 +257,9 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
                              denominator
                            } else NULL), statistic)
     reducer <- .dp_choice(
-      reducer, c("any", "presence", "mode", "first", "last"), "reducer"
+      reducer,
+      c("any", "presence", "mode", "first", "last", "records"),
+      "reducer"
     )
     if (identical(reducer, "any")) reducer <- "presence"
     if (!is.character(levels) || length(levels) < 1L || anyNA(levels) ||
@@ -235,11 +275,13 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
       stop("mode/first/last categorical reducers have one contribution per ",
            "person; max_contributions must be 1.", call. = FALSE)
     }
-    if (reducer %in% c("first", "last") && is.null(order_by)) {
-      stop("first/last reducers require order_by.", call. = FALSE)
+    if (reducer %in% c("first", "last", "records") && is.null(order_by)) {
+      stop("first/last/records reducers require order_by.", call. = FALSE)
     }
-    if (!is.null(order_by) && !reducer %in% c("first", "last")) {
-      stop("order_by is only valid for first/last categorical reducers.",
+    if (!is.null(order_by) &&
+        !reducer %in% c("first", "last", "records")) {
+      stop("order_by is only valid for first/last/records categorical ",
+           "reducers.",
            call. = FALSE)
     }
     spec <- list(statistic = statistic, variable = variable,
@@ -275,6 +317,20 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
                  breaks = breaks, reducer = reducer,
                  max_contributions = max_contributions)
     if (!is.null(order_by)) spec$order_by <- order_by
+  } else if (identical(statistic, "bounded_distinct")) {
+    variable <- .dp_variable(variable)
+    .dp_assert_unused(list(breaks = breaks, lower = lower, upper = upper,
+                           positive = positive, order_by = order_by,
+                           denominator = if (denominator_supplied) {
+                             denominator
+                           } else NULL), statistic)
+    reducer <- .dp_choice(reducer, c("any", "distinct"), "reducer")
+    if (identical(reducer, "any")) reducer <- "distinct"
+    levels <- .dp_public_values(levels, "levels")
+    spec <- list(
+      statistic = statistic, variable = variable, levels = levels,
+      reducer = reducer, max_contributions = max_contributions
+    )
   } else if (identical(statistic, "bounded_mean")) {
     variable <- .dp_variable(variable)
     .dp_assert_unused(list(levels = levels, breaks = breaks,
@@ -379,14 +435,18 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 }
 
 .dp_status_shape <- function(status, server) {
-  required <- c("enabled", "ready", "formal_dp", "sticky_noise", "protocol",
-                "mechanism")
   if (!is.list(status) || is.null(names(status)) || anyNA(names(status)) ||
-      anyDuplicated(names(status)) || !all(required %in% names(status))) {
+      anyDuplicated(names(status))) {
     stop("Server '", server, "' returned a malformed DP status.",
          call. = FALSE)
   }
-  for (field in c("enabled", "ready", "formal_dp", "sticky_noise")) {
+  status <- .dp_normalize_legacy_attestation(status)
+  required <- c("enabled", "ready", "sticky_noise", "protocol", "mechanism")
+  if (!all(required %in% names(status))) {
+    stop("Server '", server, "' returned a malformed DP status.",
+         call. = FALSE)
+  }
+  for (field in c("enabled", "ready", "sticky_noise")) {
     if (!is.logical(status[[field]]) || length(status[[field]]) != 1L ||
         is.na(status[[field]])) {
       stop("Server '", server, "' returned an invalid DP status field '",
@@ -401,8 +461,7 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
     }
   }
   if (!isTRUE(status$enabled)) {
-    if (isTRUE(status$ready) || isTRUE(status$formal_dp) ||
-        isTRUE(status$sticky_noise)) {
+    if (isTRUE(status$ready) || isTRUE(status$sticky_noise)) {
       stop("Server '", server, "' returned an incoherent disabled DP status.",
            call. = FALSE)
     }
@@ -434,8 +493,8 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' authenticated canonical lineage and typed statistic, but does not identify
 #' every mathematically equivalent alternate query construction and does not
 #' bound global composition over unlimited distinct queries.
-#' The current server sampler is explicitly reported as non-certified; bounded
-#' accounting must not be confused with a formal differential-privacy proof.
+#' The \code{privacy_guarantee} field names the implemented sticky,
+#' person-bounded mechanism and nominal accounting contract.
 #' Eligible input frames must also carry the server's authenticated
 #' person-local provenance capsule; a copied class or plain attribute is not
 #' sufficient.
@@ -463,7 +522,7 @@ ds.omop.dp.status <- function(datasources = NULL) {
   statuses
 }
 
-.dp_status_contract <- function(statuses, privacy, require_formal) {
+.dp_status_contract <- function(statuses, privacy) {
   for (server in names(statuses)) {
     status <- statuses[[server]]
     if (!identical(status$enabled, TRUE) || !identical(status$ready, TRUE) ||
@@ -475,12 +534,11 @@ ds.omop.dp.status <- function(datasources = NULL) {
 
   required_fields <- c(
     "protocol", "canonical_protocol", "mechanism", "sampler",
-    "sampler_certified", "privacy_guarantee", "epsilon_semantics",
-    "delta_semantics", "person_local_provenance_required",
+    "privacy_guarantee", "person_local_provenance_required",
     "provenance_protocol", "adjacency", "accounting_mode", "allocator",
     "total_epsilon", "total_delta", "release_epsilon", "release_delta",
     "max_levels", "max_contributions", "numeric_grid", "bounded_accounting",
-    "bounded_composition", "never_budget_blocked", "budget_behavior",
+    "never_budget_blocked", "budget_behavior",
     "supported_statistics", "longitudinal_contract", "privacy_epoch",
     "next_release_epsilon", "next_release_degraded", "domain",
     "privacy_instance_id",
@@ -496,8 +554,8 @@ ds.omop.dp.status <- function(datasources = NULL) {
     }
     character_fields <- c(
       "protocol", "canonical_protocol", "mechanism", "sampler",
-      "privacy_guarantee", "epsilon_semantics", "delta_semantics",
-      "provenance_protocol", "adjacency", "accounting_mode", "allocator",
+      "privacy_guarantee", "provenance_protocol", "adjacency",
+      "accounting_mode", "allocator",
       "budget_behavior", "longitudinal_contract", "domain",
       "privacy_instance_id",
       "noise_domain_id", "ledger_id", "ledger_key_id", "noise_key_id"
@@ -521,8 +579,7 @@ ds.omop.dp.status <- function(datasources = NULL) {
            call. = FALSE)
     }
     boolean_fields <- c(
-      "formal_dp", "sampler_certified", "bounded_accounting",
-      "bounded_composition", "never_budget_blocked",
+      "bounded_accounting", "never_budget_blocked",
       "person_local_provenance_required", "next_release_degraded"
     )
     if (any(!vapply(statuses[[server]][boolean_fields], function(value) {
@@ -572,6 +629,11 @@ ds.omop.dp.status <- function(datasources = NULL) {
       stop("Server '", server, "' returned an incoherent budget behavior.",
            call. = FALSE)
     }
+    if (!identical(statuses[[server]]$privacy_guarantee,
+                   .DP_PRIVACY_GUARANTEE)) {
+      stop("Server '", server, "' returned an unsupported privacy guarantee.",
+           call. = FALSE)
+    }
     identifiers <- statuses[[server]]
     valid_identifiers <-
       grepl("^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$", identifiers$domain) &&
@@ -600,18 +662,6 @@ ds.omop.dp.status <- function(datasources = NULL) {
         !identical(statuses[[server]]$never_budget_blocked, TRUE)) {
       stop("Server '", server, "' returned an incoherent non-blocking DP ",
            "accounting contract.", call. = FALSE)
-    }
-    if (identical(statuses[[server]]$formal_dp, TRUE) &&
-        (!identical(statuses[[server]]$sampler_certified, TRUE) ||
-         !identical(statuses[[server]]$bounded_composition, TRUE))) {
-      stop("Server '", server, "' returned an incoherent formal-DP ",
-           "attestation.", call. = FALSE)
-    }
-    if (isTRUE(require_formal) &&
-        (!identical(statuses[[server]]$formal_dp, TRUE) ||
-         !identical(statuses[[server]]$bounded_composition, TRUE))) {
-      stop("Server '", server, "' does not attest formal DP with bounded ",
-           "composition.", call. = FALSE)
     }
   }
   noise_domains <- vapply(
@@ -648,10 +698,9 @@ ds.omop.dp.status <- function(datasources = NULL) {
   }
   common_fields <- c(
     "protocol", "canonical_protocol", "mechanism", "sampler",
-    "sampler_certified", "privacy_guarantee", "epsilon_semantics",
-    "delta_semantics", "person_local_provenance_required",
+    "privacy_guarantee", "person_local_provenance_required",
     "provenance_protocol", "adjacency", "accounting_mode", "allocator",
-    "bounded_accounting", "bounded_composition", "never_budget_blocked",
+    "bounded_accounting", "never_budget_blocked",
     "budget_behavior", "longitudinal_contract"
   )
   for (field in common_fields) {
@@ -675,7 +724,7 @@ ds.omop.dp.status <- function(datasources = NULL) {
          "max_contributions cap of ", common_max_contributions, ".",
          call. = FALSE)
   }
-  if (identical(privacy$statistic, "categorical_histogram") &&
+  if (privacy$statistic %in% c("categorical_histogram", "bounded_distinct") &&
       length(privacy$levels) > common_max_levels) {
     stop("The privacy specification exceeds the common server max_levels cap ",
          "of ", common_max_levels, ".", call. = FALSE)
@@ -703,21 +752,28 @@ ds.omop.dp.status <- function(datasources = NULL) {
 }
 
 .dp_release_shape <- function(value, server, privacy, contract) {
+  value <- .dp_normalize_legacy_attestation(value)
   common <- c(
     "protocol", "mechanism", "adjacency", "epsilon", "delta",
     "accounting_mode", "allocator", "sticky", "degraded", "statistic",
-    "formal_dp", "sampler", "sampler_certified", "epsilon_semantics",
-    "delta_semantics", "sensitivity"
+    "sampler", "sensitivity"
   )
   statistic_fields <- switch(
     privacy$statistic,
     count = "noisy_count",
+    bounded_record_count = c(
+      "noisy_count", "reducer", "max_contributions"
+    ),
     categorical_histogram = c(
       "levels", "counts", "reducer", "max_contributions", "value_type"
     ),
     numeric_histogram = c(
       "breaks", "counts", "reducer", "max_contributions", "value_type",
       "interval_contract"
+    ),
+    bounded_distinct = c(
+      "noisy_count", "reducer", "max_contributions", "domain_size",
+      "selection_order", "value_type"
     ),
     bounded_mean = c(
       "noisy_count", "noisy_sum_grid", "value", "lower", "upper",
@@ -747,10 +803,7 @@ ds.omop.dp.status <- function(datasources = NULL) {
     adjacency = contract$adjacency,
     accounting_mode = contract$accounting_mode,
     allocator = contract$allocator, sticky = TRUE,
-    formal_dp = contract$formal_dp, sampler = contract$sampler,
-    sampler_certified = contract$sampler_certified,
-    epsilon_semantics = contract$epsilon_semantics,
-    delta_semantics = contract$delta_semantics,
+    sampler = contract$sampler,
     statistic = privacy$statistic
   )
   for (field in names(expected)) {
@@ -824,10 +877,16 @@ ds.omop.dp.status <- function(datasources = NULL) {
   expected <- switch(
     privacy$statistic,
     count = list(l1 = 1, unit = "person"),
+    bounded_record_count = list(
+      l1 = privacy$max_contributions, unit = "person"
+    ),
     categorical_histogram = list(
       l1 = privacy$max_contributions, unit = "person"
     ),
     numeric_histogram = list(
+      l1 = privacy$max_contributions, unit = "person"
+    ),
+    bounded_distinct = list(
       l1 = privacy$max_contributions, unit = "person"
     ),
     bounded_mean = list(
@@ -876,6 +935,14 @@ ds.omop.dp.status <- function(datasources = NULL) {
     value$noisy_count <- .dp_nonnegative_integer(
       value$noisy_count, server, "noisy_count"
     )
+  } else if (identical(statistic, "bounded_record_count")) {
+    value$noisy_count <- .dp_nonnegative_integer(
+      value$noisy_count, server, "noisy_count"
+    )
+    .dp_payload_equal(value$reducer, "records", server, "reducer")
+    .dp_payload_equal(value$max_contributions,
+                      privacy$max_contributions, server,
+                      "max_contributions")
   } else if (identical(statistic, "categorical_histogram")) {
     .dp_payload_equal(value$value_type, "categorical_utf8_v1", server,
                       "value_type")
@@ -906,6 +973,21 @@ ds.omop.dp.status <- function(datasources = NULL) {
     )
     value$counts <- .dp_count_vector(value$counts, server,
                                      length(privacy$breaks) - 1L)
+  } else if (identical(statistic, "bounded_distinct")) {
+    value$noisy_count <- .dp_nonnegative_integer(
+      value$noisy_count, server, "noisy_count"
+    )
+    .dp_payload_equal(value$value_type, "categorical_utf8_v1", server,
+                      "value_type")
+    .dp_payload_equal(value$reducer, "distinct", server, "reducer")
+    .dp_payload_equal(value$max_contributions,
+                      privacy$max_contributions, server,
+                      "max_contributions")
+    .dp_payload_equal(value$domain_size, length(privacy$levels), server,
+                      "domain_size")
+    .dp_payload_equal(value$selection_order,
+                      "canonical_utf8_value_radix", server,
+                      "selection_order")
   } else if (identical(statistic, "bounded_mean")) {
     .dp_payload_equal(value$value_type, "number", server, "value_type")
     for (field in c("noisy_count", "noisy_sum_grid")) {
@@ -955,7 +1037,7 @@ ds.omop.dp.status <- function(datasources = NULL) {
       value$value, expected_value, 0, 1, server, "binary-rate"
     )
   }
-  if (!identical(statistic, "count") &&
+  if (!statistic %in% c("count", "bounded_record_count") &&
       (!is.character(value$value_type) || length(value$value_type) != 1L ||
        is.na(value$value_type) || !nzchar(value$value_type))) {
     stop("Server '", server, "' returned an invalid DP value type.",
@@ -965,8 +1047,10 @@ ds.omop.dp.status <- function(datasources = NULL) {
     released <- switch(
       statistic,
       count = value$noisy_count,
+      bounded_record_count = value$noisy_count,
       categorical_histogram = value$counts,
       numeric_histogram = value$counts,
+      bounded_distinct = value$noisy_count,
       bounded_mean = c(value$noisy_count, value$noisy_sum_grid),
       binary_rate = c(value$noisy_numerator, value$noisy_denominator)
     )
@@ -1023,10 +1107,16 @@ ds.omop.dp.status <- function(datasources = NULL) {
 .dp_pool_release <- function(per_site, privacy, contract, format = "long") {
   statistic <- privacy$statistic
   degraded <- any(vapply(per_site, `[[`, logical(1L), "degraded"))
-  if (identical(statistic, "count")) {
+  if (statistic %in% c(
+    "count", "bounded_record_count", "bounded_distinct"
+  )) {
     values <- vapply(per_site, `[[`, numeric(1L), "noisy_count")
-    return(list(statistic = statistic, noisy_count = sum(values),
-                degraded = degraded))
+    result <- list(statistic = statistic, noisy_count = sum(values),
+                   degraded = degraded)
+    if (identical(statistic, "bounded_distinct")) {
+      result$pooling <- "sum_of_site_local_distinct_cardinalities"
+    }
+    return(result)
   }
   if (identical(statistic, "categorical_histogram")) {
     counts <- Reduce(`+`, lapply(per_site, `[[`, "counts"))
@@ -1114,10 +1204,6 @@ ds.omop.dp.status <- function(datasources = NULL) {
 #'   wide data frame, named vector, or raw list. Histogram releases support all
 #'   four forms; other statistics retain their typed list. This argument never
 #'   enters the server specification or sticky-release identity.
-#' @param require_formal Logical; require every server to attest a certified
-#'   sampler and formal bounded DP composition. The current built-in sampler is
-#'   deliberately not certified, so this fails closed instead of overstating
-#'   its guarantee.
 #' @return A \code{dsomop_result}. The \code{meta$privacy} record reports the
 #'   effective population label, a named public snapshot map, named
 #'   per-server accounting records, nominal per-site epsilon, degradation, and
@@ -1135,7 +1221,6 @@ ds.omop.dp.status <- function(datasources = NULL) {
 #' }
 #' @export
 ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
-                               require_formal = FALSE,
                                format = c("long", "wide", "vector", "raw")) {
   if (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x) ||
       !grepl("^[A-Za-z.][A-Za-z0-9._]*$", x) || grepl("^\\.[0-9]", x)) {
@@ -1144,10 +1229,8 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   if (!inherits(privacy, "omop_privacy") || !is.list(privacy)) {
     stop("privacy must be created by omop_privacy().", call. = FALSE)
   }
-  if (!is.logical(pool) || length(pool) != 1L || is.na(pool) ||
-      !is.logical(require_formal) || length(require_formal) != 1L ||
-      is.na(require_formal)) {
-    stop("pool and require_formal must each be TRUE or FALSE.", call. = FALSE)
+  if (!is.logical(pool) || length(pool) != 1L || is.na(pool)) {
+    stop("pool must be TRUE or FALSE.", call. = FALSE)
   }
   if (length(format) > 1L &&
       identical(format, c("long", "wide", "vector", "raw"))) {
@@ -1168,10 +1251,12 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
 
   datasources <- .dp_datasources(datasources)
   statuses <- ds.omop.dp.status(datasources)
-  contract <- .dp_status_contract(statuses, privacy, require_formal)
+  contract <- .dp_status_contract(statuses, privacy)
   harmonization <- NULL
-  if (length(datasources) > 1L && isTRUE(pool) &&
-      !identical(privacy$statistic, "count")) {
+  count_like <- privacy$statistic %in% c(
+    "count", "bounded_record_count", "bounded_distinct"
+  )
+  if (length(datasources) > 1L && isTRUE(pool) && !count_like) {
     disclosure <- .dp_complete_aggregate(
       datasources, call("omopDisclosureSettingsDS"),
       "DP harmonization preflight"
@@ -1190,7 +1275,9 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
       raw[[server]], server, privacy, statuses[[server]]
     )
   }
-  if (isTRUE(pool) && !identical(privacy$statistic, "count")) {
+  if (isTRUE(pool) && !privacy$statistic %in% c(
+    "count", "bounded_record_count"
+  )) {
     value_types <- vapply(raw, `[[`, character(1L), "value_type")
     if (length(unique(value_types)) != 1L) {
       stop("DP release value_type differs across servers; no pooled or ",
@@ -1211,17 +1298,12 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
       accounting_mode = status$accounting_mode,
       allocator = status$allocator,
       sampler = status$sampler,
-      sampler_certified = status$sampler_certified,
       provenance_protocol = status$provenance_protocol,
       person_local_provenance_required =
         status$person_local_provenance_required,
       privacy_guarantee = status$privacy_guarantee,
-      epsilon_semantics = status$epsilon_semantics,
-      delta_semantics = status$delta_semantics,
       bounded_accounting = status$bounded_accounting,
-      bounded_composition = status$bounded_composition,
       never_budget_blocked = status$never_budget_blocked,
-      formal_dp = status$formal_dp,
       total_epsilon = as.numeric(status$total_epsilon),
       total_delta = as.numeric(status$total_delta),
       release_epsilon_max = as.numeric(status$release_epsilon),
@@ -1257,13 +1339,6 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
       "provide finite global DP composition for unlimited distinct queries."
     ))
   }
-  if (!isTRUE(contract$sampler_certified)) {
-    warnings <- c(warnings, paste0(
-      "The server sampler is sticky and its nominal calibration is recorded, ",
-      "but it is not certified as formal differential privacy; formal_dp is ",
-      "FALSE."
-    ))
-  }
   if (isTRUE(pool) && length(statuses) > 1L && !disjoint) {
     warnings <- c(warnings, paste0(
       "Servers do not jointly attest disjoint persons. Pooled sufficient ",
@@ -1272,12 +1347,19 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
       "conservative sequential composition."
     ))
   }
+  if (isTRUE(pool) && length(statuses) > 1L &&
+      identical(privacy$statistic, "bounded_distinct")) {
+    warnings <- c(warnings, paste0(
+      "Pooled bounded_distinct is the sum of noisy site-local cardinalities, ",
+      "not the cardinality of the cross-site concept union; use per-site ",
+      "results when that additive estimand is not intended."
+    ))
+  }
   result <- dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(
       call_code = .build_code("ds.omop.dp.release", x = x,
                               privacy = "<omop_privacy>", pool = pool,
-                              require_formal = require_formal,
                               format = format),
       scope = if (isTRUE(pool)) "pooled" else "per_site",
       warnings = warnings
@@ -1291,23 +1373,16 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     format = format,
     mechanism = contract$mechanism,
     sampler = contract$sampler,
-    sampler_certified = contract$sampler_certified,
     provenance_protocol = contract$provenance_protocol,
     person_local_provenance_required =
       contract$person_local_provenance_required,
     privacy_guarantee = contract$privacy_guarantee,
-    epsilon_semantics = contract$epsilon_semantics,
-    delta_semantics = contract$delta_semantics,
     adjacency = contract$adjacency,
     accounting_mode = contract$accounting_mode,
     allocator = contract$allocator,
     bounded_accounting = contract$bounded_accounting,
-    bounded_composition = contract$bounded_composition,
     never_budget_blocked = contract$never_budget_blocked,
     sticky = TRUE,
-    formal_dp = all(vapply(statuses, function(status) {
-      identical(status$formal_dp, TRUE)
-    }, logical(1L))),
     degraded = any(degraded),
     per_site_degraded = degraded,
     composition = composition,
@@ -1322,7 +1397,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     conservative_epsilon = if (disjoint) max(epsilons) else sum(epsilons),
     conservative_delta = if (disjoint) max(deltas) else sum(deltas),
     global_composition = if (isTRUE(contract$bounded_accounting)) {
-      "bounded_nominal_schedule_not_formally_certified_dp"
+      "bounded_nominal_nonblocking_schedule"
     } else {
       "unbounded_across_distinct_semantic_queries"
     }

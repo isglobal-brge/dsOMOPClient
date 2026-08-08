@@ -20,11 +20,13 @@ omop_privacy(
 )
 }
 \arguments{
-\item{statistic}{One of \code{"count"},
+\item{statistic}{One of \code{"count"}, \code{"bounded_record_count"},
 \code{"categorical_histogram"}, \code{"numeric_histogram"},
-\code{"bounded_mean"}, or \code{"binary_rate"}.}
+\code{"bounded_distinct"}, \code{"bounded_mean"}, or
+\code{"binary_rate"}.}
 
-\item{variable}{Bare column name for all statistics except \code{"count"}.}
+\item{variable}{Bare column name except for \code{"count"} and
+\code{"bounded_record_count"}.}
 
 \item{levels}{Public, fixed character domain for a categorical histogram.
 The server returns every requested level, including zero-count levels.}
@@ -35,17 +37,20 @@ The server returns every requested level, including zero-count levels.}
 \item{lower, upper}{Public finite bounds for a bounded mean.}
 
 \item{reducer}{Per-person reducer. Categorical histograms accept
-\code{"presence"}, \code{"mode"}, \code{"first"}, and \code{"last"};
+\code{"presence"}, \code{"mode"}, \code{"first"}, \code{"last"}, and
+\code{"records"};
 numeric histograms also accept \code{"min"}, \code{"max"},
 \code{"mean"}, \code{"median"}, and \code{"records"}; bounded means
 accept the numeric one-value reducers; binary rates accept \code{"any"},
 \code{"all"}, \code{"first"}, and \code{"last"}. For compatibility,
-categorical \code{"any"} becomes \code{"presence"}, while numeric and
-bounded-mean \code{"any"} becomes \code{"mean"}.}
+categorical \code{"any"} becomes \code{"presence"}, numeric and
+bounded-mean \code{"any"} becomes \code{"mean"}, and the two scalar
+bounded primitives canonicalize it to their sole reducer.}
 
 \item{max_contributions}{Positive integer person-level contribution cap.
-Values above one apply only to categorical histograms and numeric
-histograms reduced with \code{"presence"} or \code{"records"}.}
+Values above one apply to bounded record counts, bounded distinct counts,
+categorical \code{"presence"}/\code{"records"} histograms, and numeric
+\code{"records"} histograms.}
 
 \item{positive}{Non-empty public value vector defining positive binary-rate
 records. It is canonicalized to sorted, unique character labels.}

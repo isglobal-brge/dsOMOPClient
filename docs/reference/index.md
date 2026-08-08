@@ -169,6 +169,8 @@
   : List available query templates (DEPRECATED)
 - [`ds.omop.query.pool()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.query.pool.md)
   : Pool query template results across servers
+- [`ds.omop.querylibrary.sticky.release()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.querylibrary.sticky.release.md)
+  : Release a pinned QueryLibrary sticky redesign
 - [`ds.omop.safe.cutpoints()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.safe.cutpoints.md)
   : Get safe numeric cutpoints for a column
 - [`ds.omop.safe.filter.measurement()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.safe.filter.measurement.md)
@@ -266,6 +268,11 @@
   : Create a population node
 - [`omop_privacy()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_privacy.md)
   : Define a server-owned sticky privacy release
+- [`omop_querylibrary_sticky()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_querylibrary_sticky.md)
+  : Build an executable sticky redesign of an OHDSI QueryLibrary
+  question
+- [`omop_querylibrary_sticky_catalog()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_querylibrary_sticky_catalog.md)
+  : List audited sticky redesign mappings for OHDSI QueryLibrary
 - [`omop_recipe()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
   : Create an extraction recipe declaratively
 - [`omop_variable()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md)

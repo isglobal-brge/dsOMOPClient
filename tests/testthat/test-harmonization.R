@@ -6,6 +6,7 @@
                            max_pivot_concepts = 1000,
                            max_output_columns = 5000,
                            max_temporal_bins = 10000,
+                           max_events_per_group = 100,
                            max_filter_depth = 32,
                            max_filter_nodes = 1024,
                            max_filter_values = 10000,
@@ -26,6 +27,7 @@
     max_pivot_concepts = max_pivot_concepts,
     max_output_columns = max_output_columns,
     max_temporal_bins = max_temporal_bins,
+    max_events_per_group = max_events_per_group,
     max_filter_depth = max_filter_depth,
     max_filter_nodes = max_filter_nodes,
     max_filter_values = max_filter_values,
@@ -55,9 +57,11 @@ test_that("v3 federations negotiate every operational cap by minimum", {
   settings <- list(
     a = .harm_settings(max_feature_specs = 80, max_pivot_concepts = 70,
                        max_output_columns = 600, max_temporal_bins = 500,
+                       max_events_per_group = 20,
                        max_analysis_scope_tables = 6),
     b = .harm_settings(max_feature_specs = 40, max_pivot_concepts = 50,
                        max_output_columns = 300, max_temporal_bins = 200,
+                       max_events_per_group = 8,
                        max_analysis_scope_tables = 3)
   )
   contract <- .federated_harmonization_contract(settings)
@@ -66,6 +70,7 @@ test_that("v3 federations negotiate every operational cap by minimum", {
   expect_equal(contract$max_pivot_concepts, 50)
   expect_equal(contract$max_output_columns, 300)
   expect_equal(contract$max_temporal_bins, 200)
+  expect_equal(contract$max_events_per_group, 8)
   expect_equal(contract$max_filter_depth, 32)
   expect_equal(contract$max_filter_nodes, 1024)
   expect_equal(contract$max_filter_values, 10000)
@@ -184,6 +189,13 @@ test_that("plan validation enforces negotiated v3 caps recursively", {
                   grain = "episode", time_origin = "index",
                   bin_width = 10, window_start = -20, window_end = 0))),
     contract), "max_temporal_bins")
+  interval_contract <- .federated_harmonization_contract(list(
+    a = .harm_settings(max_events_per_group = 3),
+    b = .harm_settings(max_events_per_group = 2)
+  ))
+  expect_error(.validate_plan_harmonization(list(outputs = list(
+    intervals = list(type = "intervals_long", select_n = 3L)
+  )), interval_contract), "max_events_per_group")
   expect_invisible(.validate_plan_harmonization(list(outputs = list(
     nested = list(type = "temporal_covariates", concept_set = 1:2,
                   bin_width = 10, window_start = -10, window_end = 0))),

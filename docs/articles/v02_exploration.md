@@ -70,8 +70,10 @@ when their estimand is appropriate.
 
 ## Concept Prevalence
 
-The most frequent concepts in a table, ranked by distinct persons
-(default) or records:
+Concepts in a table can be ranked by distinct persons (default) or
+records. The server suppresses small cells first and orders by the
+released count band, then by the public concept key; `top_n` never
+exposes exact within-band rank:
 
 ``` r
 
@@ -111,8 +113,8 @@ ds.omop.concept.prevalence("death", concept_col = "cause_concept_id",
 
 `global = TRUE` ranks concepts across **all** person-bearing CDM tables
 in one merged, re-gated ranking instead of a single table. Use `offset`
-together with `top_n` to page through the ranking (the page is
-`[offset+1 .. offset+top_n]`):
+together with `top_n` to page through the banded, public-key-stabilized
+ordering (the page is `[offset+1 .. offset+top_n]`):
 
 ``` r
 
@@ -126,8 +128,8 @@ page2 <- ds.omop.concept.prevalence(global = TRUE, top_n = 25, offset = 25,
 ```
 
 Small cells are suppressed over the merged set *before* the page is
-taken, so pagination never reveals a count that the single-table gate
-would have blocked.
+taken, so pagination never reveals a blocked count or the exact ordering
+inside a count band.
 
 ## Value Frequencies and Histograms
 
@@ -143,8 +145,11 @@ ds.omop.value.quantiles("measurement", "value_as_number",
   symbol = "omop", conns = conns)
 ```
 
-Value counts enforce small-cell suppression and a maximum number of
-distinct levels (see *Security*).
+Value counts enforce small-cell suppression, band-based ordering and a
+maximum number of distinct levels (see *Security*). Profiling a
+clinical/results table also requires a reviewed direct route to
+`person_id`; dsOMOP does not silently treat repeated event rows as
+independent people or ignore an inapplicable cohort scope.
 
 ## Other Profiling
 

@@ -1,13 +1,20 @@
 #' Add a regular episode-by-period panel to an extraction plan
 #'
-#' Declares a complete roster of cohort episodes crossed with regular relative
-#' time bins. Event covariates are stored sparsely; a missing
-#' \code{(rowId, timeId, covariateId)} row represents zero. The output contains
-#' no absolute dates or source event identifiers.
+#' Declares the regular relative-time bins that intersect the unique OMOP
+#' observation period covering each cohort index date. Event covariates are
+#' stored sparsely; a missing \code{(rowId, timeId, covariateId)} row represents
+#' zero only when that \code{(rowId, timeId)} exists in \code{personPeriods}.
+#' Each roster row keeps the requested \code{startDay}/\code{endDay} bin and
+#' adds inclusive \code{observationStartDay}, \code{observationEndDay}, and
+#' \code{daysObserved} for the observed part of the bin. The output contains no
+#' absolute dates or source event identifiers. It is a descriptive panel, not
+#' an inferred risk set: use survival/counting-process output when cohort end,
+#' death, or another censoring rule must define time at risk.
 #'
 #' @param plan An \code{omop_plan} object.
 #' @param table OMOP event table used for covariates.
-#' @param concept_set Integer concept IDs.
+#' @param concept_set Optional concept IDs or an OHDSI-style concept-set spec.
+#'   \code{NULL} requests all observed concepts subject to the server cap.
 #' @param bin_width Positive integer bin width in days.
 #' @param window_start,window_end Inclusive integer days from index.
 #' @param analyses Unique subset of \code{"binary"} and \code{"count"}.
@@ -19,7 +26,7 @@
 #' @export
 ds.omop.plan.person_period <- function(plan,
                                        table,
-                                       concept_set,
+                                       concept_set = NULL,
                                        bin_width = 30L,
                                        window_start = -365L,
                                        window_end = 0L,

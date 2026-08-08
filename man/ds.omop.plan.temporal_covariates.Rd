@@ -7,7 +7,7 @@
 ds.omop.plan.temporal_covariates(
   plan,
   table,
-  concept_set,
+  concept_set = NULL,
   bin_width = 30L,
   window_start = -365L,
   window_end = 0L,
@@ -20,8 +20,11 @@ ds.omop.plan.temporal_covariates(
 
 \item{table}{Character; source OMOP table to extract covariates from.}
 
-\item{concept_set}{Numeric vector; concept IDs to include in the
-covariate computation.}
+\item{concept_set}{Optional concept IDs or an OHDSI-style concept-set spec
+with \code{concepts}, \code{include_descendants},
+\code{include_mapped}, and \code{exclude}. When \code{NULL}, all concepts
+present in the bounded event stream are retained, subject to the server
+concept cap.}
 
 \item{bin_width}{Integer; width of each time bin in days.}
 

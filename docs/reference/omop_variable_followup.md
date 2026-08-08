@@ -3,6 +3,8 @@
 Produces a derived variable computing days from a reference date
 (default fixed reference date to observation end. When omitted, today's
 date is recorded in the variable specification at construction time.
+With multiple spells, the unique period containing the reference date is
+selected.
 
 ## Usage
 

@@ -64,6 +64,42 @@ ds.omop.plan <- function() {
   as.integer(value)
 }
 
+.plan_concept_set <- function(value, field, allow_null = FALSE) {
+  if (is.null(value)) {
+    if (allow_null) return(NULL)
+    stop(field, " must not be NULL.", call. = FALSE)
+  }
+  if (!is.list(value) || is.null(value$concepts)) {
+    return(.plan_integer_vector(value, field))
+  }
+  allowed <- c(
+    "concepts", "include_descendants", "include_mapped", "exclude"
+  )
+  if (is.null(names(value)) || any(!nzchar(names(value))) ||
+      anyDuplicated(names(value)) || length(setdiff(names(value), allowed))) {
+    stop(field, " may contain only concepts, include_descendants, ",
+         "include_mapped, and exclude.", call. = FALSE)
+  }
+  normalized <- list(
+    concepts = .plan_integer_vector(value$concepts, paste0(field, "$concepts"))
+  )
+  for (flag in c("include_descendants", "include_mapped")) {
+    if (!is.null(value[[flag]])) {
+      if (!is.logical(value[[flag]]) || length(value[[flag]]) != 1L ||
+          is.na(value[[flag]])) {
+        stop(field, "$", flag, " must be TRUE or FALSE.", call. = FALSE)
+      }
+      normalized[[flag]] <- value[[flag]]
+    }
+  }
+  if (!is.null(value$exclude)) {
+    normalized$exclude <- .plan_integer_vector(
+      value$exclude, paste0(field, "$exclude"), allow_empty = TRUE
+    )
+  }
+  normalized
+}
+
 .plan_iso_date <- function(value, field) {
   if (inherits(value, "Date")) value <- format(value, "%Y-%m-%d")
   if (length(value) != 1L || !is.character(value) || is.na(value) ||
@@ -129,7 +165,8 @@ ds.omop.plan <- function() {
 #'
 #' Attaches a cohort definition to the plan, restricting all downstream
 #' outputs to the selected cohort episodes. A person may therefore contribute
-#' multiple non-overlapping episodes under the same definition. Exactly one of
+#' multiple episodes under the same definition, including overlapping episodes.
+#' Exactly one of
 #' \code{cohort_definition_id} or \code{spec} must be provided. Use
 #' \code{cohort_definition_id} to reference an existing cohort definition,
 #' or \code{spec} to define a cohort inline using the DSL.
@@ -313,22 +350,35 @@ ds.omop.plan.person_level <- function(plan, tables,
 
 #' Add a survival (time-to-event) output to the plan
 #'
-#' Produces one row per cohort episode with an event indicator (0/1) and
-#' time-to-event in days. Calendar dates are omitted; the assigned server-side
-#' object remains subject to the ordinary DataSHIELD disclosure controls.
-#' Requires a cohort to be set.
+#' The historical single-outcome call produces one row per cohort episode with
+#' an event indicator and time-to-event in days. Advanced calls can retain named
+#' endpoints as survival, competing-risk, recurrent-event, or counting-process
+#' data. Calendar dates and source event identifiers are never returned.
+#' Requires a cohort to be set. Historical plans without an explicit censoring
+#' field are censored at the end of the observation period containing the index
+#' episode; they never bridge an unobserved gap to a later period.
 #'
 #' @param plan An \code{omop_plan} object.
 #' @param outcome_table Character; OMOP table containing outcome events
 #'   (e.g. \code{"condition_occurrence"}, \code{"procedure_occurrence"}).
-#' @param outcome_concepts Numeric vector; concept IDs that define the
-#'   outcome event.
+#' @param outcome_concepts Numeric vector; concept IDs defining the historical
+#'   composite outcome. Omit when using `outcomes`.
 #' @param tar Named list; time-at-risk window with \code{start_offset}
 #'   and \code{end_offset} (integer days relative to cohort_start_date).
 #' @param event_order Character; \code{"first"} or \code{"last"} to
-#'   select which event occurrence determines the time-to-event value.
-#' @param name Character; output name used as a key in the plan's
-#'   outputs list.
+#'   select which event occurrence determines the time-to-event value;
+#'   advanced recurrent/counting formats also accept `all`.
+#' @param name Character; output name used as a key in the plan's outputs list.
+#' @param outcomes Named list of endpoint specifications. Each endpoint contains
+#'   `table`, `concept_set`, and optional safe row `filters`.
+#' @param censoring Named list controlling observation-period, death, cohort-end,
+#'   and optional administrative-date censoring.
+#' @param format Character; `survival`, `competing_risk`, `recurrent_events`, or
+#'   `counting_process`.
+#' @param washout_days Non-negative integer washout between events of the same
+#'   named endpoint.
+#' @param tie_policy Character; `priority`, `error`, or `all`. The latter is
+#'   restricted to recurrent-event output.
 #' @return The modified \code{omop_plan} with the survival output appended.
 #' @examples
 #' \dontrun{
@@ -346,13 +396,20 @@ ds.omop.plan.person_level <- function(plan, tables,
 #' @export
 ds.omop.plan.survival <- function(plan,
                                   outcome_table = "condition_occurrence",
-                                  outcome_concepts,
+                                  outcome_concepts = NULL,
                                   tar = list(start_offset = 0,
                                              end_offset = 730),
                                   event_order = "first",
-                                  name = "survival") {
-  outcome_concepts <- .plan_integer_vector(
-    outcome_concepts, "outcome_concepts")
+                                  name = "survival",
+                                  outcomes = NULL,
+                                  censoring = NULL,
+                                  format = NULL,
+                                  washout_days = 0L,
+                                  tie_policy = "priority") {
+  if (!is.character(event_order) || length(event_order) != 1L ||
+      is.na(event_order)) {
+    stop("event_order must be first, last, or all.", call. = FALSE)
+  }
   if (!is.list(tar) || is.null(names(tar)) || any(!nzchar(names(tar))) ||
       anyDuplicated(names(tar)) ||
       length(setdiff(names(tar), c("start_offset", "end_offset"))) > 0L) {
@@ -368,16 +425,131 @@ ds.omop.plan.survival <- function(plan,
   }
   tar <- list(start_offset = start_offset)
   if (!is.null(end_offset)) tar$end_offset <- end_offset
-  event_order <- match.arg(event_order, c("first", "last"))
-  plan$outputs[[name]] <- list(
-    type = "survival",
-    outcome = list(
+  washout_days <- .plan_integer_scalar(washout_days, "washout_days",
+                                       min_value = 0L)
+  tie_policy <- match.arg(tie_policy, c("priority", "error", "all"))
+  advanced <- !is.null(outcomes) || !is.null(censoring) || !is.null(format) ||
+    washout_days != 0L || tie_policy != "priority" ||
+    identical(tolower(event_order), "all")
+
+  normalize_outcome <- function(outcome, label) {
+    if (!is.list(outcome) || is.null(names(outcome)) ||
+        any(!nzchar(names(outcome))) || anyDuplicated(names(outcome)) ||
+        !all(c("table", "concept_set") %in% names(outcome)) ||
+        length(setdiff(names(outcome),
+                       c("table", "concept_set", "filters"))) > 0L) {
+      stop("Outcome '", label,
+           "' must contain table and concept_set, with optional filters only.",
+           call. = FALSE)
+    }
+    if (!is.character(outcome$table) || length(outcome$table) != 1L ||
+        is.na(outcome$table) ||
+        !grepl("^[A-Za-z_][A-Za-z0-9_.]*$", outcome$table)) {
+      stop("Outcome '", label, "' has an invalid table name.", call. = FALSE)
+    }
+    outcome$concept_set <- .plan_concept_set(
+      outcome$concept_set, paste0("outcomes$", label, "$concept_set")
+    )
+    if (!is.null(outcome$filters) && !is.list(outcome$filters)) {
+      stop("Outcome '", label, "' filters must be a filter DSL list.",
+           call. = FALSE)
+    }
+    outcome
+  }
+
+  if (is.null(outcomes)) {
+    outcome_concepts <- .plan_concept_set(
+      outcome_concepts, "outcome_concepts"
+    )
+    legacy_outcome <- list(
       table = outcome_table,
       concept_set = outcome_concepts
-    ),
-    tar = tar,
-    event_order = event_order
+    )
+    if (!advanced) {
+      event_order <- match.arg(event_order, c("first", "last"))
+      plan$outputs[[name]] <- list(
+        type = "survival",
+        outcome = legacy_outcome,
+        tar = tar,
+        event_order = event_order
+      )
+      return(plan)
+    }
+    outcomes <- list(outcome = legacy_outcome)
+  } else {
+    if (!is.null(outcome_concepts)) {
+      stop("Use either outcome_concepts or outcomes, not both.",
+           call. = FALSE)
+    }
+    if (!is.list(outcomes) || length(outcomes) == 0L ||
+        is.null(names(outcomes)) || any(!nzchar(names(outcomes))) ||
+        anyDuplicated(names(outcomes)) ||
+        any(!grepl("^[A-Za-z][A-Za-z0-9_.-]*$", names(outcomes)))) {
+      stop("outcomes must be a non-empty uniquely named list with safe names.",
+           call. = FALSE)
+    }
+  }
+  outcome_names <- names(outcomes)
+  outcomes <- lapply(seq_along(outcomes), function(i) {
+    normalize_outcome(outcomes[[i]], outcome_names[i])
+  })
+  names(outcomes) <- outcome_names
+
+  format <- match.arg(
+    format %||% "survival",
+    c("survival", "competing_risk", "recurrent_events", "counting_process")
   )
+  event_order <- match.arg(event_order, c("first", "last", "all"))
+  if (identical(format, "survival") && event_order == "all") {
+    stop("survival requires event_order first or last.", call. = FALSE)
+  }
+  if (identical(format, "competing_risk") && event_order != "first") {
+    stop("competing_risk requires event_order='first'.", call. = FALSE)
+  }
+  if (format %in% c("recurrent_events", "counting_process") &&
+      event_order == "last") {
+    stop("Recurrent/counting formats require event_order first or all.",
+         call. = FALSE)
+  }
+  if (tie_policy == "all" && format != "recurrent_events") {
+    stop("tie_policy='all' is supported only for recurrent_events.",
+         call. = FALSE)
+  }
+  if (!is.null(censoring)) {
+    if (!is.list(censoring) || is.null(names(censoring)) ||
+        any(!nzchar(names(censoring))) || anyDuplicated(names(censoring)) ||
+        length(setdiff(names(censoring), c(
+          "cohort_end", "observation_period_end", "death", "admin_date"
+        ))) > 0L) {
+      stop("censoring contains unsupported fields.", call. = FALSE)
+    }
+    for (field in intersect(names(censoring),
+                            c("cohort_end", "observation_period_end", "death"))) {
+      if (!is.logical(censoring[[field]]) ||
+          length(censoring[[field]]) != 1L || is.na(censoring[[field]])) {
+        stop("censoring$", field, " must be TRUE or FALSE.", call. = FALSE)
+      }
+    }
+    if (identical(censoring$cohort_end, FALSE)) {
+      stop("censoring$cohort_end must remain TRUE.", call. = FALSE)
+    }
+    if (!is.null(censoring$admin_date)) {
+      censoring$admin_date <- .plan_iso_date(
+        censoring$admin_date, "censoring$admin_date"
+      )
+    }
+  }
+  output <- list(
+    type = "survival",
+    outcomes = outcomes,
+    tar = tar,
+    format = format,
+    event_order = event_order,
+    washout_days = washout_days,
+    tie_policy = tie_policy
+  )
+  if (!is.null(censoring)) output$censoring <- censoring
+  plan$outputs[[name]] <- output
   plan
 }
 
@@ -704,9 +876,23 @@ ds.omop.plan.cohort_membership <- function(plan,
 #' @param tables Character vector; OMOP tables to extract intervals from.
 #'   Defaults to observation_period, visit_occurrence, drug_exposure,
 #'   and condition_occurrence.
-#' @param concept_filter Named list; per-table concept ID filters where
-#'   each element maps a table name to a numeric vector of concept IDs.
-#'   If \code{NULL}, no concept filtering is applied.
+#' @param concept_filter Named list; each table maps to concept IDs or a
+#'   standard concept-set specification with \code{concepts}, optional
+#'   descendant/mapped expansion, and exclusions. If \code{NULL}, no concept
+#'   filtering is applied.
+#' @param filters Optional uniquely named per-table list of reviewed filter DSL
+#'   trees. Each tree applies only to its named source table.
+#' @param window Optional index-relative window. Supply start/end offsets for
+#'   overlap, start, or end matching, or an at offset for active-at matching.
+#' @param interval_match Interval relationship: \code{"overlaps"},
+#'   \code{"starts_in"}, \code{"ends_in"}, or \code{"active_at"}. Without
+#'   an explicit window, matching is against the cohort episode itself.
+#' @param event_select Repeated-event policy: \code{"all"}, \code{"first"},
+#'   \code{"last"}, or \code{"nearest"}.
+#' @param select_n Positive number of intervals retained per selection group.
+#' @param select_by Group selection by episode and source, optionally also by
+#'   concept.
+#' @param anchor Integer days from index used by nearest-event selection.
 #' @param name Character; output name used as a key in the plan's
 #'   outputs list.
 #' @return The modified \code{omop_plan} with the intervals output
@@ -729,12 +915,119 @@ ds.omop.plan.intervals <- function(plan,
                                                "drug_exposure",
                                                "condition_occurrence"),
                                     concept_filter = NULL,
+                                    filters = NULL,
+                                    window = NULL,
+                                    interval_match = "overlaps",
+                                    event_select = "all",
+                                    select_n = 1L,
+                                    select_by = "episode_source",
+                                    anchor = 0L,
                                     name = "intervals") {
-  plan$outputs[[name]] <- list(
+  if (!is.character(tables) || length(tables) == 0L || anyNA(tables) ||
+      any(!nzchar(tables)) || anyDuplicated(tolower(tables))) {
+    stop("tables must be a non-empty unique character vector.",
+         call. = FALSE)
+  }
+  tables <- tolower(tables)
+  if (!is.null(concept_filter)) {
+    if (!is.list(concept_filter) || is.null(names(concept_filter)) ||
+        any(!nzchar(names(concept_filter))) ||
+        anyDuplicated(tolower(names(concept_filter))) ||
+        length(setdiff(tolower(names(concept_filter)), tolower(tables))) > 0L) {
+      stop("concept_filter must be a uniquely named per-table list.",
+           call. = FALSE)
+    }
+    concept_filter <- lapply(concept_filter, function(ids) {
+      if (!is.list(ids) || is.null(ids$concepts)) {
+        return(.plan_integer_vector(ids, "concept_filter"))
+      }
+      allowed <- c(
+        "concepts", "include_descendants", "include_mapped", "exclude"
+      )
+      if (is.null(names(ids)) || any(!nzchar(names(ids))) ||
+          anyDuplicated(names(ids)) || length(setdiff(names(ids), allowed))) {
+        stop("Interval concept-set specs may contain only concepts, ",
+             "include_descendants, include_mapped, and exclude.",
+             call. = FALSE)
+      }
+      normalized <- list(
+        concepts = .plan_integer_vector(ids$concepts, "concept_filter concepts")
+      )
+      for (flag in c("include_descendants", "include_mapped")) {
+        if (!is.null(ids[[flag]])) {
+          if (!is.logical(ids[[flag]]) || length(ids[[flag]]) != 1L ||
+              is.na(ids[[flag]])) {
+            stop("Interval concept-set expansion flags must be TRUE/FALSE.",
+                 call. = FALSE)
+          }
+          normalized[[flag]] <- ids[[flag]]
+        }
+      }
+      if (!is.null(ids$exclude)) {
+        normalized$exclude <- .plan_integer_vector(
+          ids$exclude, "concept_filter exclude", allow_empty = TRUE
+        )
+      }
+      normalized
+    })
+    names(concept_filter) <- tolower(names(concept_filter))
+  }
+  if (!is.null(filters) &&
+      (!is.list(filters) || is.null(names(filters)) ||
+       any(!nzchar(names(filters))) || anyDuplicated(tolower(names(filters))) ||
+       length(setdiff(tolower(names(filters)), tolower(tables))) > 0L)) {
+    stop("filters must be a uniquely named per-table list.", call. = FALSE)
+  }
+  if (!is.null(filters)) names(filters) <- tolower(names(filters))
+  interval_match <- match.arg(
+    interval_match, c("overlaps", "starts_in", "ends_in", "active_at")
+  )
+  if (!is.null(window)) {
+    if (!is.list(window) || length(window) == 0L || is.null(names(window)) ||
+        any(!nzchar(names(window))) || anyDuplicated(names(window))) {
+      stop("window must be a non-empty uniquely named list.", call. = FALSE)
+    }
+    allowed_window <- if (identical(interval_match, "active_at")) {
+      "at"
+    } else {
+      c("start", "end")
+    }
+    if (length(setdiff(names(window), allowed_window)) > 0L ||
+        (identical(interval_match, "active_at") &&
+         !identical(names(window), "at"))) {
+      stop("window fields do not match interval_match.", call. = FALSE)
+    }
+    window <- lapply(window, function(value) {
+      .plan_integer_scalar(value, "longitudinal window offset")
+    })
+    if (!is.null(window$start) && !is.null(window$end) &&
+        window$start > window$end) {
+      stop("window$start must not be after window$end.", call. = FALSE)
+    }
+  }
+  event_select <- match.arg(
+    event_select, c("all", "first", "last", "nearest")
+  )
+  select_by <- match.arg(
+    select_by, c("episode_source", "episode_source_concept")
+  )
+  select_n <- .plan_integer_scalar(select_n, "select_n")
+  if (select_n < 1L) stop("select_n must be positive.", call. = FALSE)
+  anchor <- .plan_integer_scalar(anchor, "anchor")
+
+  output <- list(
     type = "intervals_long",
     tables = tables,
-    concept_filter = concept_filter
+    concept_filter = concept_filter,
+    interval_match = interval_match,
+    event_select = event_select,
+    select_n = select_n,
+    select_by = select_by,
+    anchor = anchor
   )
+  if (!is.null(filters)) output$source_filters <- filters
+  if (!is.null(window)) output$window <- window
+  plan$outputs[[name]] <- output
   plan
 }
 
@@ -749,8 +1042,11 @@ ds.omop.plan.intervals <- function(plan,
 #'
 #' @param plan An \code{omop_plan} object.
 #' @param table Character; source OMOP table to extract covariates from.
-#' @param concept_set Numeric vector; concept IDs to include in the
-#'   covariate computation.
+#' @param concept_set Optional concept IDs or an OHDSI-style concept-set spec
+#'   with \code{concepts}, \code{include_descendants},
+#'   \code{include_mapped}, and \code{exclude}. When \code{NULL}, all concepts
+#'   present in the bounded event stream are retained, subject to the server
+#'   concept cap.
 #' @param bin_width Integer; width of each time bin in days.
 #' @param window_start Integer; start of the observation window in days
 #'   relative to the cohort index date (negative = before index).
@@ -780,13 +1076,15 @@ ds.omop.plan.intervals <- function(plan,
 #' @export
 ds.omop.plan.temporal_covariates <- function(plan,
                                               table,
-                                              concept_set,
+                                              concept_set = NULL,
                                               bin_width = 30L,
                                               window_start = -365L,
                                               window_end = 0L,
                                               analyses = c("binary"),
                                               name = "temporal") {
-  concept_set <- .plan_integer_vector(concept_set, "concept_set")
+  concept_set <- .plan_concept_set(
+    concept_set, "concept_set", allow_null = TRUE
+  )
   bin_width <- .plan_integer_scalar(bin_width, "bin_width", min_value = 1L)
   window_start <- .plan_integer_scalar(window_start, "window_start")
   window_end <- .plan_integer_scalar(window_end, "window_end")
@@ -1166,12 +1464,17 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' \code{<name>.timeRef}, and
 #' \code{<name>.personRef}. Person-period outputs additionally assign
 #' \code{<name>.personPeriods}, the complete episode-by-bin roster.
+#' Recurrent-event survival outputs assign \code{<name>.events} and
+#' \code{<name>.riskSets}.
 #'
 #' When \code{output_mode = "staged"}, outputs are written to server-local
-#' Parquet files (CSV fallback when Arrow is unavailable) and assigned as
-#' \code{FlowerDatasetDescriptor} objects instead of final data.frames. Long,
-#' untranslated event outputs stream in bounded chunks. Outputs that require an
-#' R-side reshape or derivation are materialized before staging. Descriptors are
+#' Parquet files (CSV fallback when Arrow is unavailable) and
+#' assigned as \code{FlowerDatasetDescriptor} objects instead of final
+#' data.frames. Long event and interval outputs preserve numeric OMOP concept
+#' IDs and stream in bounded chunks to Parquet row groups in one file; labels
+#' can be supplied as a separate concept-reference output. Outputs that still
+#' require an R-side reshape or
+#' derivation are materialized before staging. Descriptors are
 #' server paths readable under the server OS identity; other service accounts
 #' require a separately reviewed broker. They are not client download URLs and
 #' do not by themselves establish compatibility with a particular external
@@ -1256,6 +1559,19 @@ ds.omop.plan.execute <- function(plan, out = NULL,
                                  conns = NULL,
                                  output_mode = "memory") {
   output_mode <- match.arg(output_mode, c("memory", "staged"))
+  if (identical(output_mode, "staged")) {
+    # Standard concept identifiers are the stable OHDSI interchange encoding
+    # and allow the server to stream fact tables without per-chunk vocabulary
+    # lookups on an active DB cursor.
+    if (!identical(plan$options$translate_concepts, FALSE)) {
+      plan$options$translate_concepts <- FALSE
+      # Translation changes the output schema covered by a pre-existing
+      # federation signature. Force the normal preparation path to rebuild the
+      # contract for the staged representation instead of rejecting it as a
+      # post-harmonization mutation or, worse, reusing stale schema evidence.
+      plan$harmonization <- NULL
+    }
+  }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   plan <- .prepare_plan_for_federation(plan, symbol, conns)
@@ -1513,6 +1829,11 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     if (identical(format, "sparse")) {
       return(paste0(base, c(".covariates", ".covariateRef", ".personRef")))
     }
+    if (identical(type, "survival") &&
+        identical(tolower(spec$format %||% "survival"),
+                  "recurrent_events")) {
+      return(paste0(base, c(".events", ".riskSets")))
+    }
     base
   }), names(out))
 }
@@ -1530,7 +1851,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 .plan_output_symbol_families <- function(out) {
   suffixes <- c(
     "", ".covariates", ".covariateRef", ".personRef",
-    ".temporalCovariates", ".timeRef", ".personPeriods"
+    ".temporalCovariates", ".timeRef", ".personPeriods", ".events",
+    ".riskSets"
   )
   families <- stats::setNames(lapply(unname(out), function(base) {
     paste0(base, suffixes)
@@ -2385,11 +2707,31 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       if (translate) add_vocab_translation(reason)
     } else if (type == "survival") {
       require_cohort(reason)
-      table <- tolower(out$outcome$table %||% "")
-      add(table, c("person_id", .plan_domain_concept_column(table),
-                   .default_omop_date_column(table),
-                   .plan_filter_columns(out$filters$custom)), reason)
-      add_concept_set(out$outcome$concept_set, reason)
+      outcomes <- out$outcomes %||% list(outcome = out$outcome)
+      for (endpoint in outcomes) {
+        table <- tolower(endpoint$table %||% "")
+        add(table, c(
+          "person_id", .plan_domain_concept_column(table),
+          .default_omop_date_column(table),
+          .plan_filter_columns(endpoint$filters),
+          .plan_filter_columns(out$filters$custom)
+        ), reason)
+        add_concept_set(endpoint$concept_set, reason)
+      }
+      censoring <- out$censoring %||% if (is.null(out$outcomes)) {
+        list(observation_period_end = TRUE, death = FALSE)
+      } else {
+        list()
+      }
+      if (!identical(censoring$observation_period_end, FALSE)) {
+        add("observation_period", c(
+          "person_id", "observation_period_start_date",
+          "observation_period_end_date"
+        ), reason)
+      }
+      if (!identical(censoring$death, FALSE)) {
+        add("death", c("person_id", "death_date"), reason)
+      }
     } else if (type == "concept_dictionary") {
       add_vocab_translation(reason, dictionary = TRUE)
       sources <- out$source_outputs
@@ -2402,12 +2744,18 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     } else if (type == "intervals_long") {
       require_cohort(reason)
       for (table in tolower(out$tables %||% character(0))) {
+        filter_index <- match(table, tolower(names(out$source_filters)))
+        source_filter <- if (is.na(filter_index)) {
+          out$filters$custom
+        } else {
+          out$source_filters[[filter_index]]
+        }
         add(table, c("person_id", .default_omop_date_column(table),
                      .plan_end_date_column(table),
                      .plan_primary_key_column(table),
                      if (!is.null(out$concept_filter[[table]]))
                        .plan_domain_concept_column(table),
-                     .plan_filter_columns(out$filters$custom)), reason)
+                     .plan_filter_columns(source_filter)), reason)
         add_concept_set(out$concept_filter[[table]], reason)
       }
     } else if (type %in% c("temporal_covariates", "person_period")) {
@@ -2834,12 +3182,34 @@ ds.omop.plan.harmonize <- function(plan,
         )
       }
     } else if (identical(out_type, "survival")) {
-      required_tables <- tolower(out$outcome$table %||% "")
-      if (nzchar(required_tables[[1L]])) {
-        required_by_table[[required_tables[[1L]]]] <- c(
-          "person_id", .plan_domain_concept_column(required_tables[[1L]]),
-          .default_omop_date_column(required_tables[[1L]])
+      outcomes <- out$outcomes %||% list(outcome = out$outcome)
+      for (endpoint in outcomes) {
+        table <- tolower(endpoint$table %||% "")
+        if (!nzchar(table)) next
+        required_tables <- unique(c(required_tables, table))
+        required_by_table[[table]] <- unique(c(
+          required_by_table[[table]], "person_id",
+          .plan_domain_concept_column(table),
+          .default_omop_date_column(table),
+          .plan_filter_columns(endpoint$filters),
+          .plan_filter_columns(out$filters$custom)
+        ))
+      }
+      censoring <- out$censoring %||% if (is.null(out$outcomes)) {
+        list(observation_period_end = TRUE, death = FALSE)
+      } else {
+        list()
+      }
+      if (!identical(censoring$observation_period_end, FALSE)) {
+        required_tables <- unique(c(required_tables, "observation_period"))
+        required_by_table$observation_period <- c(
+          "person_id", "observation_period_start_date",
+          "observation_period_end_date"
         )
+      }
+      if (!identical(censoring$death, FALSE)) {
+        required_tables <- unique(c(required_tables, "death"))
+        required_by_table$death <- c("person_id", "death_date")
       }
     } else if (identical(out_type, "concept_dictionary")) {
       required_tables <- "concept"
@@ -2853,10 +3223,17 @@ ds.omop.plan.harmonize <- function(plan,
         start <- .default_omop_date_column(table)
         end <- if (!is.null(start)) sub("_start_date$", "_end_date", start)
           else NULL
+        filter_index <- match(table, tolower(names(out$source_filters)))
+        source_filter <- if (is.na(filter_index)) {
+          out$filters$custom
+        } else {
+          out$source_filters[[filter_index]]
+        }
         required_by_table[[table]] <- unique(c(
           "person_id", start, end,
           if (!is.null(out$concept_filter[[table]]))
-            .plan_domain_concept_column(table) else character(0)
+            .plan_domain_concept_column(table) else character(0),
+          .plan_filter_columns(source_filter)
         ))
       }
     } else if (out_type %in% c("temporal_covariates", "person_period")) {
@@ -3253,11 +3630,21 @@ print.omop_plan <- function(x, ...) {
       cat("  [baseline] ", name, ": ",
           n_cols, " columns, ", n_derived, " derived\n")
     } else if (otype == "survival") {
-      n_concepts <- length(out$outcome$concept_set %||% integer(0))
       tar_end <- out$tar$end_offset %||% "cohort_end"
-      cat("  [survival] ", name, ": ",
-          out$outcome$table %||% "?", " (",
-          n_concepts, " concepts), TAR 0-", tar_end, " days\n")
+      if (is.null(out$outcomes)) {
+        n_concepts <- length(out$outcome$concept_set %||% integer(0))
+        cat("  [survival] ", name, ": ",
+            out$outcome$table %||% "?", " (",
+            n_concepts, " concepts), TAR 0-", tar_end, " days\n")
+      } else {
+        n_concepts <- sum(vapply(out$outcomes, function(endpoint) {
+          length(endpoint$concept_set %||% integer(0))
+        }, integer(1)))
+        cat("  [survival:", out$format %||% "survival", "] ", name, ": ",
+            length(out$outcomes), " endpoints (", n_concepts,
+            " concepts), TAR ", out$tar$start_offset %||% 0L, "-",
+            tar_end, " days\n")
+      }
     } else if (otype == "concept_dictionary") {
       srcs <- out$source_outputs %||% "all"
       cat("  [dictionary] ", name, ": from ",
@@ -3322,9 +3709,13 @@ print.omop_plan <- function(x, ...) {
     person_level = paste0(length(out$tables %||% character(0)), " tables"),
     baseline = paste0(length(out$columns %||% character(0)), " cols, ",
                       length(out$derived %||% character(0)), " derived"),
-    survival = paste0(out$outcome$table %||% "?", ", ",
-                      length(out$outcome$concept_set %||% integer(0)),
-                      " concepts"),
+    survival = if (is.null(out$outcomes)) {
+      paste0(out$outcome$table %||% "?", ", ",
+             length(out$outcome$concept_set %||% integer(0)), " concepts")
+    } else {
+      paste0(length(out$outcomes), " endpoints, ",
+             out$format %||% "survival")
+    },
     concept_dictionary = paste0("from ",
                       paste(out$source_outputs %||% "all", collapse = ", ")),
     cohort_membership = "OHDSI cohort format",

@@ -243,7 +243,8 @@
   date_min <- scalar_nums("nfilter_date_range")
   cap_names <- c(
     "max_feature_specs", "max_pivot_concepts", "max_output_columns",
-    "max_temporal_bins", "max_filter_depth", "max_filter_nodes",
+    "max_temporal_bins", "max_events_per_group", "max_filter_depth",
+    "max_filter_nodes",
     "max_filter_values", "max_plan_outputs", "max_analysis_scope_tables"
   )
   cap_values <- stats::setNames(lapply(cap_names, scalar_nums), cap_names)
@@ -284,6 +285,9 @@
     max_pivot_concepts = unname(negotiated_caps[["max_pivot_concepts"]]),
     max_output_columns = unname(negotiated_caps[["max_output_columns"]]),
     max_temporal_bins = unname(negotiated_caps[["max_temporal_bins"]]),
+    max_events_per_group = unname(
+      negotiated_caps[["max_events_per_group"]]
+    ),
     max_filter_depth = unname(negotiated_caps[["max_filter_depth"]]),
     max_filter_nodes = unname(negotiated_caps[["max_filter_nodes"]]),
     max_filter_values = unname(negotiated_caps[["max_filter_values"]]),
@@ -418,7 +422,8 @@
 
   cap_names <- c(
     "max_feature_specs", "max_pivot_concepts", "max_output_columns",
-    "max_temporal_bins", "max_filter_depth", "max_filter_nodes",
+    "max_temporal_bins", "max_events_per_group", "max_filter_depth",
+    "max_filter_nodes",
     "max_filter_values", "max_plan_outputs", "max_analysis_scope_tables"
   )
   caps <- vapply(cap_names, function(name) {
@@ -679,6 +684,13 @@
           length(window_end) == 1L && is.finite(window_end)) {
         n_bins <- floor((window_end - window_start) / bin_width) + 1
         assert_cap(n_bins, "max_temporal_bins", path)
+      }
+    }
+
+    if (identical(type, "intervals_long")) {
+      select_n <- suppressWarnings(as.numeric(x$select_n %||% 1L))
+      if (length(select_n) == 1L && is.finite(select_n)) {
+        assert_cap(select_n, "max_events_per_group", path)
       }
     }
 

@@ -48,6 +48,9 @@ accidentally broadening the cohort.
     \code{StartWindow} (index-relative days).
   \item \code{omop_filter_prior_observation} / \code{omop_filter_followup} ->
     the entry event \code{ObservationWindow} (PriorDays / PostDays).
+  \item An explicit OHDSI \code{DateOffset} end strategy (\code{StartDate}
+    or \code{EndDate} plus an integer offset) -> \code{EndStrategy}. With no
+    strategy, cohort exit defaults to the covering observation-period end.
   \item An \code{omop_filter_group(operator = "OR")} -> a nested Circe
     CriteriaGroup of Type ANY; the population's top-level AND criteria map to
     the cohort's implicit ALL.
@@ -58,9 +61,9 @@ set-operation populations, \code{cohort_definition_id} references,
 fixed-reference ages/windows, \code{age_group},
 \code{visit_count}, \code{missing_measurement}, \code{value_bin} /
 \code{value_concept} / \code{date_range} (row-level) filters, and the recipe
-variable/output layer. Circe-only end/censor strategies, non-start windows,
-unsupported occurrence operators, multiple primary criteria, and nested
-groups are rejected on import.
+variable/output layer. Circe end strategies other than DateOffset, censoring
+strategies, non-start windows, unsupported occurrence operators, multiple
+primary criteria, and nested groups are rejected on import.
 }
 \examples{
 \dontrun{

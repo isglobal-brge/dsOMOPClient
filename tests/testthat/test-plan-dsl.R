@@ -1008,6 +1008,52 @@ test_that("plan.intervals adds intervals_long output", {
                c(201820))
 })
 
+test_that("plan.intervals normalizes table keys and preserves OHDSI concept sets", {
+  plan <- ds.omop.plan.intervals(
+    ds.omop.plan(),
+    tables = "Condition_Occurrence",
+    concept_filter = list(Condition_Occurrence = list(
+      concepts = 201820,
+      include_descendants = TRUE,
+      exclude = integer(0)
+    )),
+    filters = list(Condition_Occurrence = list(
+      var = "condition_type_concept_id", op = "in", value = 32020
+    ))
+  )
+
+  expect_identical(plan$outputs$intervals$tables, "condition_occurrence")
+  expect_named(plan$outputs$intervals$concept_filter, "condition_occurrence")
+  expect_true(plan$outputs$intervals$concept_filter[[1]]$include_descendants)
+  expect_named(plan$outputs$intervals$source_filters, "condition_occurrence")
+})
+
+test_that("longitudinal builders preserve OHDSI and dynamic concept scope", {
+  dynamic <- ds.omop.plan.temporal_covariates(
+    ds.omop.plan(), table = "condition_occurrence", concept_set = NULL
+  )
+  expect_null(dynamic$outputs$temporal$concept_set)
+
+  concept_spec <- list(
+    concepts = c(201820L, 201826L),
+    include_descendants = TRUE,
+    include_mapped = FALSE,
+    exclude = 999999L
+  )
+  temporal <- ds.omop.plan.temporal_covariates(
+    ds.omop.plan(), table = "condition_occurrence",
+    concept_set = concept_spec
+  )
+  expect_identical(temporal$outputs$temporal$concept_set, concept_spec)
+
+  survival <- ds.omop.plan.survival(
+    ds.omop.plan(), outcome_concepts = concept_spec
+  )
+  expect_identical(
+    survival$outputs$survival$outcome$concept_set, concept_spec
+  )
+})
+
 test_that("plan.intervals has default tables", {
   plan <- ds.omop.plan()
   plan <- ds.omop.plan.intervals(plan)

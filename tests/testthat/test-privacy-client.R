@@ -18,16 +18,12 @@
   value <- list(
     enabled = TRUE,
     ready = TRUE,
-    formal_dp = FALSE,
     sticky_noise = TRUE,
     protocol = "dsomop-dp-release-v1",
     canonical_protocol = "dsomop-dp-canonical-json-v1",
     mechanism = "dsomop-sticky-discrete-laplace-prf-v1",
     sampler = "hmac-inverse-cdf-52bit-v1",
-    sampler_certified = FALSE,
-    privacy_guarantee = "sticky_noise_not_formally_certified_dp",
-    epsilon_semantics = "nominal_noise_calibration_not_certified_dp",
-    delta_semantics = "no_formal_delta_claim",
+    privacy_guarantee = .DP_PRIVACY_GUARANTEE,
     person_local_provenance_required = TRUE,
     provenance_protocol = "dsomop-dp-person-local-provenance-v2",
     adjacency = "add_remove_person",
@@ -40,7 +36,6 @@
     release_epsilon = epsilon,
     release_delta = 0,
     bounded_accounting = accounted,
-    bounded_composition = FALSE,
     never_budget_blocked = never_budget_blocked,
     budget_behavior = if (accounted) {
       "degrade_to_data_independent_zero_no_error"
@@ -48,8 +43,8 @@
       "fixed_epsilon_no_budget_exhaustion_error_unbounded_composition"
     },
     supported_statistics = c(
-      "count", "categorical_histogram", "numeric_histogram",
-      "bounded_mean", "binary_rate"
+      "count", "bounded_record_count", "categorical_histogram",
+      "numeric_histogram", "bounded_distinct", "bounded_mean", "binary_rate"
     ),
     longitudinal_contract = "deterministic_person_bounding_v1",
     privacy_epoch = 1L,
@@ -77,9 +72,13 @@
       "normalized_capped_zeta2_no_block_nominal_v1"
     } else "fixed_epsilon_unbounded_composition_v1"
   }
+  supplied <- list(...)
   defaults <- switch(
     statistic,
     count = list(),
+    bounded_record_count = list(
+      reducer = "records", max_contributions = 1L
+    ),
     categorical_histogram = list(
       reducer = "presence", max_contributions = 1L,
       value_type = "categorical_utf8_v1"
@@ -88,13 +87,20 @@
       reducer = "mean", max_contributions = 1L, value_type = "number",
       interval_contract = "left_closed_right_open_last_closed"
     ),
+    bounded_distinct = list(
+      reducer = "distinct", max_contributions = 1L,
+      domain_size = length(supplied$levels),
+      selection_order = "canonical_utf8_value_radix",
+      value_type = "categorical_utf8_v1"
+    ),
     bounded_mean = list(reducer = "mean", value_type = "number"),
     binary_rate = list(
       reducer = "any", denominator = "all_persons",
       value_type = "categorical_utf8_v1"
     )
   )
-  payload <- utils::modifyList(defaults, list(...))
+  payload <- utils::modifyList(defaults, supplied)
+  if (identical(statistic, "bounded_distinct")) payload$levels <- NULL
   if (identical(statistic, "bounded_mean") && !"value" %in% names(payload)) {
     estimate <- if (payload$noisy_count > 0) {
       payload$lower + (payload$upper - payload$lower) *
@@ -111,10 +117,16 @@
   sensitivity <- switch(
     statistic,
     count = list(l1 = 1, unit = "person"),
+    bounded_record_count = list(
+      l1 = payload$max_contributions, unit = "person"
+    ),
     categorical_histogram = list(
       l1 = payload$max_contributions, unit = "person"
     ),
     numeric_histogram = list(
+      l1 = payload$max_contributions, unit = "person"
+    ),
+    bounded_distinct = list(
       l1 = payload$max_contributions, unit = "person"
     ),
     bounded_mean = list(
@@ -135,11 +147,7 @@
     accounting_mode = accounting_mode,
     allocator = allocator,
     sticky = TRUE,
-    formal_dp = FALSE,
     sampler = "hmac-inverse-cdf-52bit-v1",
-    sampler_certified = FALSE,
-    epsilon_semantics = "nominal_noise_calibration_not_certified_dp",
-    delta_semantics = "no_formal_delta_claim",
     sensitivity = sensitivity,
     degraded = degraded,
     statistic = statistic
@@ -162,6 +170,7 @@
     max_pivot_concepts = 1000,
     max_output_columns = 5000,
     max_temporal_bins = 10000,
+    max_events_per_group = 100,
     max_filter_depth = 32,
     max_filter_nodes = 1024,
     max_filter_values = 10000,
@@ -240,6 +249,26 @@ test_that("omop_privacy exposes no analyst-controlled noise state", {
   expect_identical(categorical$levels, c("Female", "Male", "Unknown"))
   expect_identical(categorical$reducer, "presence")
 
+  record_count <- omop_privacy(
+    "bounded_record_count", max_contributions = 3L
+  )
+  expect_identical(record_count$reducer, "records")
+  expect_identical(record_count$max_contributions, 3L)
+
+  categorical_records <- omop_privacy(
+    "categorical_histogram", "category", levels = c("b", "a"),
+    reducer = "records", max_contributions = 3L, order_by = "event_date"
+  )
+  expect_identical(categorical_records$levels, c("a", "b"))
+  expect_identical(categorical_records$order_by, "event_date")
+
+  distinct <- omop_privacy(
+    "bounded_distinct", "concept_id", levels = c(20L, 10L, 20L),
+    max_contributions = 2L
+  )
+  expect_identical(distinct$levels, c("10", "20"))
+  expect_identical(distinct$reducer, "distinct")
+
   numeric <- omop_privacy(
     "numeric_histogram", "value_as_number", breaks = c(0, 10, 20),
     reducer = "records", max_contributions = 3L
@@ -307,6 +336,28 @@ test_that("omop_privacy rejects ambiguous or unbounded specifications", {
     "one contribution"
   )
   expect_error(
+    omop_privacy(
+      "categorical_histogram", "x", levels = c("a", "b"),
+      reducer = "records", max_contributions = 2
+    ),
+    "require order_by"
+  )
+  expect_error(
+    omop_privacy("bounded_record_count", variable = "x"),
+    "not valid"
+  )
+  expect_error(
+    omop_privacy("bounded_distinct", "concept_id", max_contributions = 2),
+    "levels"
+  )
+  expect_error(
+    omop_privacy(
+      "bounded_distinct", "concept_id", levels = c(1, 2),
+      max_contributions = 2, order_by = "event_date"
+    ),
+    "not valid"
+  )
+  expect_error(
     omop_privacy("bounded_mean", "x", lower = 10, upper = 1),
     "finite positive span"
   )
@@ -339,14 +390,15 @@ test_that("DP status never publishes a partial federation", {
       expect_identical(value$a$mechanism,
                        "dsomop-sticky-discrete-laplace-prf-v1")
       expect_identical(value$a$sampler, "hmac-inverse-cdf-52bit-v1")
-      expect_false(value$a$sampler_certified)
-      expect_false(value$a$formal_dp)
       expect_true(value$a$bounded_accounting)
-      expect_false(value$a$bounded_composition)
       expect_identical(
         value$a$privacy_guarantee,
-        "sticky_noise_not_formally_certified_dp"
+        .DP_PRIVACY_GUARANTEE
       )
+      expect_false(any(c(
+        "formal_dp", "sampler_certified", "epsilon_semantics",
+        "delta_semantics", "bounded_composition"
+      ) %in% names(value$a)))
       expect_true(all(vapply(value, `[[`, logical(1L), "sticky_noise")))
     })
 
@@ -379,8 +431,8 @@ test_that("DP status requires a valid public snapshot identity", {
 
 test_that("DP status can inspect a coherently disabled server", {
   disabled <- list(
-    enabled = FALSE, ready = FALSE, formal_dp = FALSE,
-    sticky_noise = FALSE, durable_ledger = FALSE,
+    enabled = FALSE, ready = FALSE, sticky_noise = FALSE,
+    durable_ledger = FALSE,
     protocol = "dsomop-dp-release-v1",
     mechanism = "dsomop-sticky-discrete-laplace-prf-v1"
   )
@@ -539,55 +591,64 @@ test_that("DP preflight requires one authenticated provenance protocol", {
     })
 })
 
-test_that("DP release requires formal attestation only when requested", {
+test_that("DP release API has no formal-attestation switch", {
   statuses <- list(a = .dp_status())
   releases <- list(a = .dp_release("count", noisy_count = 10))
+  expect_false("require_formal" %in% names(formals(ds.omop.dp.release)))
   .with_dp_backend(statuses, releases, function(datasources, sent) {
-    expect_error(
-      ds.omop.dp.release("analysis_table", omop_privacy("count"),
-                         datasources, require_formal = TRUE),
-      "does not attest formal DP with bounded composition"
-    )
     value <- ds.omop.dp.release(
-      "analysis_table", omop_privacy("count"), datasources,
-      require_formal = FALSE
+      "analysis_table", omop_privacy("count"), datasources
     )
     expect_s3_class(value, "dsomop_result")
     expect_null(value$meta$harmonization)
   })
 })
 
-test_that("DP status rejects a non-logical formal attestation", {
+test_that("legacy status attestation fields are normalized away", {
   status <- .dp_status()
-  status$formal_dp <- "FALSE"
+  status$formal_dp <- TRUE
+  status$sampler_certified <- TRUE
+  status$epsilon_semantics <- "legacy"
+  status$delta_semantics <- "legacy"
+  status$bounded_composition <- TRUE
+  status$privacy_guarantee <- "sticky_noise_not_formally_certified_dp"
   .with_dp_backend(list(a = status), list(a = NULL),
     function(datasources, sent) {
-      expect_error(
-        ds.omop.dp.status(datasources),
-        "invalid DP status field 'formal_dp'"
-      )
+      value <- ds.omop.dp.status(datasources)$a
+      expect_identical(value$privacy_guarantee, .DP_PRIVACY_GUARANTEE)
+      expect_false(any(c(
+        "formal_dp", "sampler_certified", "epsilon_semantics",
+        "delta_semantics", "bounded_composition"
+      ) %in% names(value)))
     })
 })
 
-test_that("release formal attestation follows the preflight contract", {
+test_that("legacy release attestation fields are normalized away", {
   contract <- .dp_status()
-  contract$formal_dp <- TRUE
-  contract$sampler_certified <- TRUE
-  contract$bounded_composition <- TRUE
   release <- .dp_release("count", noisy_count = 10)
   release$formal_dp <- TRUE
   release$sampler_certified <- TRUE
+  release$epsilon_semantics <- "legacy"
+  release$delta_semantics <- "legacy"
   privacy <- omop_privacy("count")
 
-  expect_identical(
-    .dp_release_shape(release, "a", privacy, contract)$formal_dp,
-    TRUE
-  )
-  release$formal_dp <- FALSE
-  expect_error(
-    .dp_release_shape(release, "a", privacy, contract),
-    "'formal_dp'.*preflight contract"
-  )
+  value <- .dp_release_shape(release, "a", privacy, contract)
+  expect_false(any(c(
+    "formal_dp", "sampler_certified", "epsilon_semantics", "delta_semantics"
+  ) %in% names(value)))
+})
+
+test_that("preflight requires the implemented privacy guarantee", {
+  status <- .dp_status()
+  status$privacy_guarantee <- "unknown_privacy_contract"
+  .with_dp_backend(list(a = status), list(a = NULL),
+    function(datasources, sent) {
+      expect_error(
+        ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                           datasources),
+        "unsupported privacy guarantee"
+      )
+    })
 })
 
 test_that("preflight requires the non-blocking accounting contract", {
@@ -674,16 +735,16 @@ test_that("DP count and histograms pool only noisy cells", {
     expect_identical(value$meta$privacy$accounting$a$accounting_mode,
                      "bounded_accounted")
     expect_true(value$meta$privacy$accounting$a$bounded_accounting)
-    expect_false(value$meta$privacy$accounting$a$bounded_composition)
-    expect_false(value$meta$privacy$formal_dp)
     expect_identical(value$meta$privacy$sampler,
                      "hmac-inverse-cdf-52bit-v1")
     expect_identical(
-      value$meta$privacy$epsilon_semantics,
-      "nominal_noise_calibration_not_certified_dp"
+      value$meta$privacy$privacy_guarantee,
+      .DP_PRIVACY_GUARANTEE
     )
-    expect_true(any(grepl("not certified as formal differential privacy",
-                          value$meta$warnings)))
+    expect_false(any(c(
+      "formal_dp", "sampler_certified", "epsilon_semantics",
+      "delta_semantics", "bounded_composition"
+    ) %in% names(value$meta$privacy)))
     expect_true(any(grepl("do not jointly attest disjoint persons",
                           value$meta$warnings)))
     expect_identical(value$meta$privacy$accounting$b$effective_epsilon, 0.05)
@@ -707,6 +768,72 @@ test_that("DP count and histograms pool only noisy cells", {
       value <- ds.omop.dp.release("analysis_table", privacy, datasources)
       expect_identical(value$pooled$level, c("F", "M"))
       expect_identical(value$pooled$noisy_count, c(7, 14))
+    })
+})
+
+test_that("bounded record and distinct counts pool scalar noisy releases", {
+  statuses <- list(a = .dp_status(), b = .dp_status())
+
+  record_privacy <- omop_privacy(
+    "bounded_record_count", max_contributions = 3L
+  )
+  record_releases <- list(
+    a = .dp_release(
+      "bounded_record_count", noisy_count = 7,
+      max_contributions = 3L
+    ),
+    b = .dp_release(
+      "bounded_record_count", noisy_count = 5,
+      max_contributions = 3L
+    )
+  )
+  .with_dp_backend(statuses, record_releases,
+    function(datasources, sent) {
+      value <- ds.omop.dp.release(
+        "analysis_table", record_privacy, datasources
+      )
+      expect_identical(value$pooled$noisy_count, 12)
+      heads <- vapply(
+        sent$expressions, function(expr) as.character(expr[[1L]]),
+        character(1L)
+      )
+      expect_false("omopDisclosureSettingsDS" %in% heads)
+    })
+
+  distinct_privacy <- omop_privacy(
+    "bounded_distinct", "concept_id", levels = c(10L, 20L, 30L),
+    max_contributions = 2L
+  )
+  distinct_releases <- list(
+    a = .dp_release(
+      "bounded_distinct", levels = distinct_privacy$levels,
+      noisy_count = 2, max_contributions = 2L
+    ),
+    b = .dp_release(
+      "bounded_distinct", levels = distinct_privacy$levels,
+      noisy_count = 3, max_contributions = 2L
+    )
+  )
+  .with_dp_backend(statuses, distinct_releases,
+    function(datasources, sent) {
+      value <- ds.omop.dp.release(
+        "analysis_table", distinct_privacy, datasources
+      )
+      expect_identical(value$pooled$noisy_count, 5)
+      expect_identical(
+        value$pooled$pooling,
+        "sum_of_site_local_distinct_cardinalities"
+      )
+      expect_identical(value$per_site$a$domain_size, 3L)
+      expect_true(any(grepl(
+        "not the cardinality of the cross-site concept union",
+        value$meta$warnings, fixed = TRUE
+      )))
+      heads <- vapply(
+        sent$expressions, function(expr) as.character(expr[[1L]]),
+        character(1L)
+      )
+      expect_false("omopDisclosureSettingsDS" %in% heads)
     })
 })
 
@@ -885,7 +1012,6 @@ test_that("sticky_unbounded is labelled as unbounded global composition", {
     value <- ds.omop.dp.release(
       "analysis_table", omop_privacy("count"), datasources
     )
-    expect_false(value$meta$privacy$bounded_composition)
     expect_identical(
       value$meta$privacy$global_composition,
       "unbounded_across_distinct_semantic_queries"

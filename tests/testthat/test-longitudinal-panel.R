@@ -58,7 +58,11 @@ test_that("person-period recipes compile without inventing longitudinal fields",
 
   schema <- recipe_preview_schema(recipe)$panel
   expect_true(all(paste0("personPeriods.",
-                         c("rowId", "timeId", "startDay", "endDay")) %in%
+                         c(
+                           "rowId", "timeId", "startDay", "endDay",
+                           "observationStartDay", "observationEndDay",
+                           "daysObserved"
+                         )) %in%
                     schema$column))
   expect_equal(attr(schema, "join_key"), "rowId")
 

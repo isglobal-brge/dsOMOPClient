@@ -1,9 +1,15 @@
 # Add a regular episode-by-period panel to an extraction plan
 
-Declares a complete roster of cohort episodes crossed with regular
-relative time bins. Event covariates are stored sparsely; a missing
-`(rowId, timeId, covariateId)` row represents zero. The output contains
-no absolute dates or source event identifiers.
+Declares the regular relative-time bins that intersect the unique OMOP
+observation period covering each cohort index date. Event covariates are
+stored sparsely; a missing `(rowId, timeId, covariateId)` row represents
+zero only when that `(rowId, timeId)` exists in `personPeriods`. Each
+roster row keeps the requested `startDay`/`endDay` bin and adds
+inclusive `observationStartDay`, `observationEndDay`, and `daysObserved`
+for the observed part of the bin. The output contains no absolute dates
+or source event identifiers. It is a descriptive panel, not an inferred
+risk set: use survival/counting-process output when cohort end, death,
+or another censoring rule must define time at risk.
 
 ## Usage
 
@@ -11,7 +17,7 @@ no absolute dates or source event identifiers.
 ds.omop.plan.person_period(
   plan,
   table,
-  concept_set,
+  concept_set = NULL,
   bin_width = 30L,
   window_start = -365L,
   window_end = 0L,
@@ -34,7 +40,8 @@ ds.omop.plan.person_period(
 
 - concept_set:
 
-  Integer concept IDs.
+  Optional concept IDs or an OHDSI-style concept-set spec. `NULL`
+  requests all observed concepts subject to the server cap.
 
 - bin_width:
 

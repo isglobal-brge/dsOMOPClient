@@ -291,6 +291,25 @@ test_that("omop_variable_obs_duration creates correct structure", {
   expect_equal(v$name, "obs_duration")
   expect_equal(v$format, "obs_duration")
   expect_equal(v$derived$kind, "obs_duration")
+  expect_equal(v$derived$period_policy, "total")
+  expect_equal(
+    omop_variable_obs_duration(period_policy = "longest")$derived$period_policy,
+    "longest"
+  )
+  expect_error(omop_variable_obs_duration(period_policy = "union"),
+               "should be one of")
+
+  r <- omop_recipe(
+    variables = omop_variable_obs_duration(period_policy = "longest"),
+    outputs = omop_output(type = "wide")
+  )
+  code <- recipe_to_code(r)
+  expect_match(code, 'period_policy = "longest"', fixed = TRUE)
+  rebuilt <- eval(parse(text = code), envir = new.env(parent = globalenv()))
+  expect_equal(
+    rebuilt$variables$obs_duration$derived$period_policy,
+    "longest"
+  )
 })
 
 test_that("omop_variable_drug_duration creates correct structure", {
@@ -2071,6 +2090,7 @@ test_that("omop_variable_prior_obs creates correct structure", {
   expect_s3_class(v, "omop_variable")
   expect_equal(v$format, "prior_obs")
   expect_equal(v$derived$kind, "prior_obs")
+  expect_equal(v$derived$period_policy, "containing")
   expect_equal(v$name, "prior_obs")
   expect_equal(v$derived$reference_date, format(Sys.Date(), "%Y-%m-%d"))
 })
@@ -2080,6 +2100,7 @@ test_that("omop_variable_followup creates correct structure", {
   expect_s3_class(v, "omop_variable")
   expect_equal(v$format, "followup")
   expect_equal(v$derived$kind, "followup")
+  expect_equal(v$derived$period_policy, "containing")
   expect_equal(v$derived$reference_date, format(Sys.Date(), "%Y-%m-%d"))
 })
 

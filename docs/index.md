@@ -124,7 +124,16 @@ the durable ledger remain server-owned. See
 [`?omop_privacy`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_privacy.md)
 and
 [`?ds.omop.dp.release`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.release.md)
-for the five supported primitives and their reducers.
+for the seven supported primitives and their reducers. Before any
+release, the client checks the server continuity identifiers and refuses
+a federated request through two connections that share a logical noise
+domain, a ledger, or the same domain-scoped ledger authentication key.
+These checks prevent duplicate-node pooling while replicas converge
+during a noise-root rotation and detect accidentally forked durable
+ledgers. Such a rotation changes `noise_key_id`, `noise_domain_id` and
+`privacy_instance_id`, while `ledger_id` and `ledger_key_id` remain
+stable; operators should refresh any monitoring pins after the
+coordinated rollout.
 
 ## Current boundaries
 
@@ -143,27 +152,31 @@ not every possible relational or longitudinal estimand. In particular:
 - `event_select` defaults to global selection within a person/episode
   and can use `by = "concept"` for independent first/last-N selection
   per concept;
-- recurrent cohort episodes and basic regular episode-by-period panels
-  are first-class contracts; general recurrent-event/counting-process
-  risk sets and competing-risk/multi-state outputs remain future work;
+- recurrent cohort episodes, regular episode-by-period panels, and named
+  competing-risk, recurrent-event and counting-process outputs are
+  first-class contracts; arbitrary multi-state transition models remain
+  outside the reviewed output contracts;
 - sparse output supports person or indexed episode grain and includes a
   complete `personRef`; absent covariate rows represent zero for roster
   members with no qualifying event;
 - the local Query Library is curated and incomplete. The opt-in privacy
-  path currently supports five person-bounded sticky-noise primitives
-  with a durable authenticated ledger; it explicitly reports
-  `formal_dp = FALSE` because its sampler and the atomic end-to-end DP
-  measurement are not formally certified. Eligible inputs do carry
-  authenticated semantic lineage; that is a security control, not by
-  itself a formal privacy proof.
+  path currently supports seven person-bounded sticky-noise primitives
+  with a durable authenticated ledger. Its single public guarantee is
+  `sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting`;
+  there is no separate certification mode. Eligible inputs carry
+  authenticated semantic lineage and deterministic person-level
+  contribution bounds. The pinned upstream snapshot is exhaustively
+  classified as 129 executable bounded redesigns, 54
+  vocabulary/reference metadata questions and 18 blocked shapes; none
+  authorizes literal upstream SQL.
 
 Servers also impose configurable operational shape caps (by default
 1,000 feature specifications, 1,000 pivoted concepts, 5,000 output
-columns and 10,000 temporal bins, plus filter trees of depth 32, 1,024
-nodes and 10,000 values, and 100 outputs per plan). Federated planning
-must respect the minimum compatible value across participating servers.
-These bounds limit memory/CPU amplification; they are separate from
-disclosure thresholds.
+columns and 10,000 temporal bins, 100 selected events per episode/source
+group, plus filter trees of depth 32, 1,024 nodes and 10,000 values, and
+100 outputs per plan). Federated planning must respect the minimum
+compatible value across participating servers. These bounds limit
+memory/CPU amplification; they are separate from disclosure thresholds.
 
 Staged descriptors point to private server-local files. Successful local
 staging writes a version-2 manifest only after every file and descriptor
@@ -173,13 +186,15 @@ pseudonym-key identity. Consumers must use the server-side resolver to
 validate those contracts and the path rather than opening an embedded
 filename directly. Descriptors are not downloads and do not grant access
 to another service identity; cross-service consumption requires a
-separately reviewed broker. Only long untranslated event output
-currently streams without materialising the complete result in R.
-Execution is all-or-none for DataSHIELD-visible symbols, not a
-distributed filesystem transaction: after a cross-node failure, already
-committed private files may remain until handle cleanup, disconnect or
-TTL cleanup. See the *Data Extraction*, *Multi-Server* and *Security*
-vignettes for the precise contracts and limits.
+separately reviewed broker. SQL-backed long-event, intervals, survival,
+temporal-covariate and person-period components stream without
+materialising the complete result in R; wide/features, baseline and
+person-level outputs still materialise before staging. Execution is
+all-or-none for DataSHIELD-visible symbols, not a distributed filesystem
+transaction: after a cross-node failure, already committed private files
+may remain until handle cleanup, disconnect or TTL cleanup. See the
+*Data Extraction*, *Multi-Server* and *Security* vignettes for the
+precise contracts and limits.
 
 ## Community development and extensions
 

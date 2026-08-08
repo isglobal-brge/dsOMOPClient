@@ -65,6 +65,10 @@ The Circe JSON string (if `file` is `NULL`) or the file path invisibly.
 - `omop_filter_prior_observation` / `omop_filter_followup` -\> the entry
   event `ObservationWindow` (PriorDays / PostDays).
 
+- An explicit OHDSI `DateOffset` end strategy (`StartDate` or `EndDate`
+  plus an integer offset) -\> `EndStrategy`. With no strategy, cohort
+  exit defaults to the covering observation-period end.
+
 - An `omop_filter_group(operator = "OR")` -\> a nested Circe
   CriteriaGroup of Type ANY; the population's top-level AND criteria map
   to the cohort's implicit ALL.
@@ -73,10 +77,10 @@ The Circe JSON string (if `file` is `NULL`) or the file path invisibly.
 set-operation populations, `cohort_definition_id` references,
 fixed-reference ages/windows, `age_group`, `visit_count`,
 `missing_measurement`, `value_bin` / `value_concept` / `date_range`
-(row-level) filters, and the recipe variable/output layer. Circe-only
-end/censor strategies, non-start windows, unsupported occurrence
-operators, multiple primary criteria, and nested groups are rejected on
-import.
+(row-level) filters, and the recipe variable/output layer. Circe end
+strategies other than DateOffset, censoring strategies, non-start
+windows, unsupported occurrence operators, multiple primary criteria,
+and nested groups are rejected on import.
 
 ## See also
 

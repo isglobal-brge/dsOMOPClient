@@ -25,8 +25,8 @@ compatibility mode \code{"sticky_unbounded"} remains sticky for an exact
 authenticated canonical lineage and typed statistic, but does not identify
 every mathematically equivalent alternate query construction and does not
 bound global composition over unlimited distinct queries.
-The current server sampler is explicitly reported as non-certified; bounded
-accounting must not be confused with a formal differential-privacy proof.
+The \code{privacy_guarantee} field names the implemented sticky,
+person-bounded mechanism and nominal accounting contract.
 Eligible input frames must also carry the server's authenticated
 person-local provenance capsule; a copied class or plain attribute is not
 sufficient.

@@ -10,7 +10,8 @@ omop_index_event(
   concept_name = NULL,
   primary_limit = c("first", "last", "all"),
   include_descendants = FALSE,
-  include_mapped = FALSE
+  include_mapped = FALSE,
+  end_strategy = NULL
 )
 }
 \arguments{
@@ -27,6 +28,13 @@ procedure_occurrence, device_exposure, and visit_occurrence.}
 \code{"all"} candidate events per person.}
 
 \item{include_descendants, include_mapped}{Logical concept-set expansion flags.}
+
+\item{end_strategy}{\code{NULL} for the OHDSI/Circe default (exit at the end
+of the unique observation period covering the index), or the transport-safe
+OHDSI DateOffset shape \code{list(DateOffset = list(DateField =
+"StartDate"|"EndDate", Offset = <integer>))}. Use \code{EndDate} with
+offset zero to select the physical event end (capped at observation-period
+end, as in Circe).}
 }
 \value{
 An \code{omop_index_event} object.

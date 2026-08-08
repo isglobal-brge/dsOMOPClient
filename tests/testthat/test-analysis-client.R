@@ -511,6 +511,7 @@ test_that("ds.omop.analysis.run(plot=TRUE) on an entry with no recipe keeps the 
     nfilter_age_range = 5, nfilter_date_range = 30, nfilter_band = 5,
     max_feature_specs = 1000, max_pivot_concepts = 1000,
     max_output_columns = 5000, max_temporal_bins = 10000,
+    max_events_per_group = 100,
     max_filter_depth = 32, max_filter_nodes = 1024,
     max_filter_values = 10000, max_plan_outputs = 100,
     max_analysis_scope_tables = scope_cap

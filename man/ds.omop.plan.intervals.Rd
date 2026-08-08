@@ -9,6 +9,13 @@ ds.omop.plan.intervals(
   tables = c("observation_period", "visit_occurrence", "drug_exposure",
     "condition_occurrence"),
   concept_filter = NULL,
+  filters = NULL,
+  window = NULL,
+  interval_match = "overlaps",
+  event_select = "all",
+  select_n = 1L,
+  select_by = "episode_source",
+  anchor = 0L,
   name = "intervals"
 )
 }
@@ -19,9 +26,30 @@ ds.omop.plan.intervals(
 Defaults to observation_period, visit_occurrence, drug_exposure,
 and condition_occurrence.}
 
-\item{concept_filter}{Named list; per-table concept ID filters where
-each element maps a table name to a numeric vector of concept IDs.
-If \code{NULL}, no concept filtering is applied.}
+\item{concept_filter}{Named list; each table maps to concept IDs or a
+standard concept-set specification with \code{concepts}, optional
+descendant/mapped expansion, and exclusions. If \code{NULL}, no concept
+filtering is applied.}
+
+\item{filters}{Optional uniquely named per-table list of reviewed filter DSL
+trees. Each tree applies only to its named source table.}
+
+\item{window}{Optional index-relative window. Supply start/end offsets for
+overlap, start, or end matching, or an at offset for active-at matching.}
+
+\item{interval_match}{Interval relationship: \code{"overlaps"},
+\code{"starts_in"}, \code{"ends_in"}, or \code{"active_at"}. Without
+an explicit window, matching is against the cohort episode itself.}
+
+\item{event_select}{Repeated-event policy: \code{"all"}, \code{"first"},
+\code{"last"}, or \code{"nearest"}.}
+
+\item{select_n}{Positive number of intervals retained per selection group.}
+
+\item{select_by}{Group selection by episode and source, optionally also by
+concept.}
+
+\item{anchor}{Integer days from index used by nearest-event selection.}
 
 \item{name}{Character; output name used as a key in the plan's
 outputs list.}

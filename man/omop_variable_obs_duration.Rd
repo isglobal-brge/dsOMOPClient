@@ -4,10 +4,16 @@
 \alias{omop_variable_obs_duration}
 \title{Create an observation duration variable}
 \usage{
-omop_variable_obs_duration(name = "obs_duration")
+omop_variable_obs_duration(
+  name = "obs_duration",
+  period_policy = c("total", "first", "last", "longest")
+)
 }
 \arguments{
 \item{name}{Character; output column name (default \code{"obs_duration"}).}
+
+\item{period_policy}{Character; one of \code{"total"}, \code{"first"},
+\code{"last"}, or \code{"longest"}.}
 }
 \value{
 An \code{omop_variable} object with \code{format = "obs_duration"}
@@ -16,7 +22,9 @@ An \code{omop_variable} object with \code{format = "obs_duration"}
 \description{
 Produces a derived variable that computes the number of days between
 \code{observation_period_start_date} and
-\code{observation_period_end_date}.
+\code{observation_period_end_date}. Multiple non-overlapping observation
+periods are handled explicitly: sum all observed spells, or select the
+first, last, or longest spell.
 }
 \examples{
 \dontrun{

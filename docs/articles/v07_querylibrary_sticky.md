@@ -1,0 +1,131 @@
+# OHDSI QueryLibrary Sticky Redesigns
+
+The QueryLibrary integration distinguishes an upstream clinical question
+from its published SQL. The SQL is training/reference material and is
+never executed by the sticky redesign path. Instead, a typed Recipe or
+Plan prepares a server-side person-local `omop.table`, and a pinned
+mapping fixes one of the seven sticky primitives and its longitudinal
+reducer.
+
+This is deliberately not a QueryLibrary SQL runner or an arbitrary
+join/query gateway. An upstream ID selects only a reviewed semantic
+mapping; it neither submits the upstream SQL nor constructs a
+data-dependent query. Preparation and release remain two explicit, typed
+steps.
+
+There is also no `formal_dp` mode or certification flag. The client
+cannot choose epsilon, seed, nonce, privacy epoch or rerolls. Actual
+releases use the single server-owned sticky contract reported by
+[`ds.omop.dp.status()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.status.md),
+currently
+`sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting`.
+That contract provides deterministic sticky replay, person-level
+contribution bounds and durable nominal accounting; it must not be
+described as a general formal-DP proof for unlimited distinct or
+semantically equivalent queries.
+
+``` r
+
+catalog <- omop_querylibrary_sticky_catalog()
+table(catalog$statistic)
+#>
+#>           binary_rate      bounded_distinct          bounded_mean
+#>                     7                     1                     7
+#>  bounded_record_count categorical_histogram                 count
+#>                     4                    31                     8
+#>     numeric_histogram
+#>                    71
+```
+
+Every category domain, numeric/date break, bound, concept set, time
+window, ordering rule and record cap must be public and fixed before
+data access. Observed categories and data-dependent top-N selection are
+not valid inputs.
+
+For example, PE12 can be redesigned as a coarse
+age-at-a-fixed-public-year distribution. This avoids placing exact birth
+components in the prepared table and uses public decade breaks:
+
+``` r
+
+age_at_2025 <- omop_querylibrary_sticky(
+  "PE12",
+  variable = "age_at_2025",
+  breaks = seq(0, 120, by = 10)
+)
+age_at_2025
+#> OHDSI QueryLibrary sticky redesign: PE12
+#>   Primitive: numeric_histogram
+#>   Reducer: mean
+#>   Upstream SQL authorized: no
+```
+
+Prepare one protected output explicitly and then release the mapping:
+
+``` r
+
+recipe <- omop_recipe(
+  variables = omop_variable_age(name = "age_at_2025", year = 2025),
+  outputs = omop_output(name = "ages", type = "wide")
+)
+recipe_execute(recipe, out = c(ages = "D_ages"))
+
+result <- ds.omop.querylibrary.sticky.release(
+  "D_ages", age_at_2025, datasources = conns
+)
+```
+
+Longitudinal numeric and categorical record histograms use a
+deterministic declared order and a finite per-person record cap:
+
+``` r
+
+monthly_conditions <- omop_querylibrary_sticky(
+  "CO19",
+  variable = "month_number",
+  breaks = seq(0.5, 12.5, by = 1),
+  max_contributions = 12,
+  order_by = "month_number"
+)
+```
+
+Scalar record totals and site-local database-wide distinct drug
+cardinality are also available only as explicitly capped estimands. The
+latter uses a complete public vocabulary-derived concept domain and
+canonical server-owned ordering:
+
+``` r
+
+condition_records <- omop_querylibrary_sticky(
+  "CO10", max_contributions = 25
+)
+
+distinct_rxnorm <- omop_querylibrary_sticky(
+  "DEX06",
+  variable = "drug_concept_id",
+  levels = public_standard_rxnorm_ids,
+  max_contributions = 50
+)
+```
+
+For one server, DEX06 estimates the distinct cardinality across that
+site’s database. Across multiple servers there is no privacy-safe
+cross-site entity linkage for computing a set union: `pool = TRUE`
+therefore returns the explicit sum of site-local bounded distinct counts
+and may count a concept once per site. Use `pool = FALSE` when
+site-specific cardinalities are the intended estimand; do not interpret
+the pooled sum as a global union cardinality.
+
+Exact ZIP, source/free-text labels and patient/event rows remain
+unavailable. They do not silently fall back to a different query:
+
+``` r
+
+omop_querylibrary_sticky("PE08")
+#> Error: QueryLibrary PE08 is blocked: exact ZIP geography.
+```
+
+Use `omop_querylibrary_sticky_catalog(include_unavailable = TRUE)` to
+inspect the complete 201-ID partition: 129 executable bounded redesigns,
+54 vocabulary/reference metadata questions, and 18 blocked result
+shapes.

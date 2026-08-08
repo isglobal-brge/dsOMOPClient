@@ -10,14 +10,14 @@ absent: epsilon, seeds, nonces, privacy epochs, and ledger controls are owned
 by each data custodian and cannot be supplied by the analyst.
 The specification alone does not claim bounded lifetime privacy; that
 depends on the server accounting mode reported by ds.omop.dp.status()."></head><body>
-    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
 
 
     <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,6 +34,7 @@ depends on the server accounting mode reported by ds.omop.dp.status()."></head><
     <li><a class="dropdown-item" href="../articles/v04_extraction.html">Data Extraction with the Plan DSL</a></li>
     <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
+    <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -42,7 +43,7 @@ depends on the server accounting mode reported by ds.omop.dp.status()."></head><
 
 
   </div>
-</nav><div class="container template-reference-topic">
+</nav><div class="container template-reference-topic" id="container">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
@@ -83,13 +84,15 @@ depends on the server accounting mode reported by <code><a href="ds.omop.dp.stat
 
 
 <dl><dt id="arg-statistic">statistic<a class="anchor" aria-label="anchor" href="#arg-statistic"></a></dt>
-<dd><p>One of <code>"count"</code>,
+<dd><p>One of <code>"count"</code>, <code>"bounded_record_count"</code>,
 <code>"categorical_histogram"</code>, <code>"numeric_histogram"</code>,
-<code>"bounded_mean"</code>, or <code>"binary_rate"</code>.</p></dd>
+<code>"bounded_distinct"</code>, <code>"bounded_mean"</code>, or
+<code>"binary_rate"</code>.</p></dd>
 
 
 <dt id="arg-variable">variable<a class="anchor" aria-label="anchor" href="#arg-variable"></a></dt>
-<dd><p>Bare column name for all statistics except <code>"count"</code>.</p></dd>
+<dd><p>Bare column name except for <code>"count"</code> and
+<code>"bounded_record_count"</code>.</p></dd>
 
 
 <dt id="arg-levels">levels<a class="anchor" aria-label="anchor" href="#arg-levels"></a></dt>
@@ -108,19 +111,22 @@ The server returns every requested level, including zero-count levels.</p></dd>
 
 <dt id="arg-reducer">reducer<a class="anchor" aria-label="anchor" href="#arg-reducer"></a></dt>
 <dd><p>Per-person reducer. Categorical histograms accept
-<code>"presence"</code>, <code>"mode"</code>, <code>"first"</code>, and <code>"last"</code>;
+<code>"presence"</code>, <code>"mode"</code>, <code>"first"</code>, <code>"last"</code>, and
+<code>"records"</code>;
 numeric histograms also accept <code>"min"</code>, <code>"max"</code>,
 <code>"mean"</code>, <code>"median"</code>, and <code>"records"</code>; bounded means
 accept the numeric one-value reducers; binary rates accept <code>"any"</code>,
 <code>"all"</code>, <code>"first"</code>, and <code>"last"</code>. For compatibility,
-categorical <code>"any"</code> becomes <code>"presence"</code>, while numeric and
-bounded-mean <code>"any"</code> becomes <code>"mean"</code>.</p></dd>
+categorical <code>"any"</code> becomes <code>"presence"</code>, numeric and
+bounded-mean <code>"any"</code> becomes <code>"mean"</code>, and the two scalar
+bounded primitives canonicalize it to their sole reducer.</p></dd>
 
 
 <dt id="arg-max-contributions">max_contributions<a class="anchor" aria-label="anchor" href="#arg-max-contributions"></a></dt>
 <dd><p>Positive integer person-level contribution cap.
-Values above one apply only to categorical histograms and numeric
-histograms reduced with <code>"presence"</code> or <code>"records"</code>.</p></dd>
+Values above one apply to bounded record counts, bounded distinct counts,
+categorical <code>"presence"</code>/<code>"records"</code> histograms, and numeric
+<code>"records"</code> histograms.</p></dd>
 
 
 <dt id="arg-positive">positive<a class="anchor" aria-label="anchor" href="#arg-positive"></a></dt>
@@ -220,7 +226,9 @@ column; row order is never treated as longitudinal time.</p>
     </nav></aside></div>
 
 
-    <footer><div class="pkgdown-footer-left">
+   </div>
+  <footer><div class="container">
+  <div class="pkgdown-footer-left">
   <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
 </div>
 
@@ -228,10 +236,4 @@ column; row order is never treated as longitudinal time.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
-    </footer></div>
-
-
-
-
-
-  </body></html>
+  </div></footer></body></html>

@@ -16,6 +16,13 @@ ds.omop.plan.intervals(
   tables = c("observation_period", "visit_occurrence", "drug_exposure",
     "condition_occurrence"),
   concept_filter = NULL,
+  filters = NULL,
+  window = NULL,
+  interval_match = "overlaps",
+  event_select = "all",
+  select_n = 1L,
+  select_by = "episode_source",
+  anchor = 0L,
   name = "intervals"
 )
 ```
@@ -34,9 +41,41 @@ ds.omop.plan.intervals(
 
 - concept_filter:
 
-  Named list; per-table concept ID filters where each element maps a
-  table name to a numeric vector of concept IDs. If `NULL`, no concept
-  filtering is applied.
+  Named list; each table maps to concept IDs or a standard concept-set
+  specification with `concepts`, optional descendant/mapped expansion,
+  and exclusions. If `NULL`, no concept filtering is applied.
+
+- filters:
+
+  Optional uniquely named per-table list of reviewed filter DSL trees.
+  Each tree applies only to its named source table.
+
+- window:
+
+  Optional index-relative window. Supply start/end offsets for overlap,
+  start, or end matching, or an at offset for active-at matching.
+
+- interval_match:
+
+  Interval relationship: `"overlaps"`, `"starts_in"`, `"ends_in"`, or
+  `"active_at"`. Without an explicit window, matching is against the
+  cohort episode itself.
+
+- event_select:
+
+  Repeated-event policy: `"all"`, `"first"`, `"last"`, or `"nearest"`.
+
+- select_n:
+
+  Positive number of intervals retained per selection group.
+
+- select_by:
+
+  Group selection by episode and source, optionally also by concept.
+
+- anchor:
+
+  Integer days from index used by nearest-event selection.
 
 - name:
 

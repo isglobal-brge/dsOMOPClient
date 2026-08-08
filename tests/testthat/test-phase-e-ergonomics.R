@@ -245,8 +245,15 @@ test_that("expected output ownership is exact for OHDSI composite formats", {
   p <- ds.omop.plan.person_period(
     p, "condition_occurrence", 201820L, name = "panel"
   )
+  p <- ds.omop.plan.survival(
+    p,
+    outcomes = list(mi = list(
+      table = "condition_occurrence", concept_set = 201820L
+    )),
+    format = "recurrent_events", event_order = "all", name = "recurrent"
+  )
   owned <- dsOMOPClient:::.plan_expected_output_symbols(
-    p, c(sparse = "S", temporal = "T", panel = "P")
+    p, c(sparse = "S", temporal = "T", panel = "P", recurrent = "R")
   )
   expect_identical(owned$sparse,
                    c("S.covariates", "S.covariateRef", "S.personRef"))
@@ -257,11 +264,13 @@ test_that("expected output ownership is exact for OHDSI composite formats", {
     "P.temporalCovariates", "P.covariateRef", "P.timeRef", "P.personRef",
     "P.personPeriods"
   ))
+  expect_identical(owned$recurrent, c("R.events", "R.riskSets"))
 
   family <- dsOMOPClient:::.plan_output_symbol_families(c(sparse = "S"))
   expect_identical(family$sparse, c(
     "S", "S.covariates", "S.covariateRef", "S.personRef",
-    "S.temporalCovariates", "S.timeRef", "S.personPeriods"
+    "S.temporalCovariates", "S.timeRef", "S.personPeriods", "S.events",
+    "S.riskSets"
   ))
   expect_error(
     dsOMOPClient:::.plan_output_symbol_families(

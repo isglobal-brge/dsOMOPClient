@@ -63,13 +63,18 @@ Sparse outputs are split into multiple symbols:
 \code{<name>.timeRef}, and
 \code{<name>.personRef}. Person-period outputs additionally assign
 \code{<name>.personPeriods}, the complete episode-by-bin roster.
+Recurrent-event survival outputs assign \code{<name>.events} and
+\code{<name>.riskSets}.
 }
 \details{
 When \code{output_mode = "staged"}, outputs are written to server-local
-Parquet files (CSV fallback when Arrow is unavailable) and assigned as
-\code{FlowerDatasetDescriptor} objects instead of final data.frames. Long,
-untranslated event outputs stream in bounded chunks. Outputs that require an
-R-side reshape or derivation are materialized before staging. Descriptors are
+Parquet files (CSV fallback when Arrow is unavailable) and
+assigned as \code{FlowerDatasetDescriptor} objects instead of final
+data.frames. Long event and interval outputs preserve numeric OMOP concept
+IDs and stream in bounded chunks to Parquet row groups in one file; labels
+can be supplied as a separate concept-reference output. Outputs that still
+require an R-side reshape or
+derivation are materialized before staging. Descriptors are
 server paths readable under the server OS identity; other service accounts
 require a separately reviewed broker. They are not client download URLs and
 do not by themselves establish compatibility with a particular external

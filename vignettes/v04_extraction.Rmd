@@ -145,10 +145,10 @@ The lower-level plan API also provides:
 | Output | Grain and current limit |
 |---|---|
 | baseline / cohort membership | one row per `cohort_row_id` |
-| survival | one binary outcome/censoring row per cohort episode; first or last qualifying event; fixed-offset or cohort-end censoring only |
+| survival | episode-grain survival, named competing risks, recurrent events or counting-process risk sets; first/last/all event policies as allowed by the selected format; cohort, observation-period, death and administrative censoring |
 | intervals-long | one source interval per cohort episode with start/end days from index |
-| temporal covariates | sparse concept-by-time-bin values keyed by episode `rowId`, plus `personRef` |
-| person-period | complete episode-by-regular-bin roster plus sparse binary/count covariates; index-relative time only |
+| temporal covariates | sparse concept-by-time-bin values keyed by episode `rowId`, restricted to the unique OMOP observation period covering index, plus `personRef` |
+| person-period | observation-aware episode-by-regular-bin roster plus sparse binary/count covariates; index-relative time only |
 | sparse | person or indexed episode grain; complete `personRef`; no covariate row means implicit zero for a roster member |
 
 Overlapping episodes can legitimately repeat one clinical event under different
@@ -161,23 +161,40 @@ values. `min_gap = 30L` chains same-concept events no more than 30 days apart;
 the full policy can declare `list(days = 30L, by = "concept", keep = "first")`.
 Collapse is per cohort episode when an index window is present and uses the
 standard OMOP event primary key to break same-date ties deterministically.
+Named person-level OHDSI estimands deliberately reduce recurrent index episodes
+to one deterministic episode per person and pre-aggregate recurrent outcomes;
+this prevents joins from multiplying person-time while still counting repeated
+outcome events. General long, episode, recurrent-event and counting-process
+outputs do not perform that person-level reduction.
+Longitudinal windows, bins, washout and risk intervals currently use calendar
+days, consistent with required OMOP `*_date` fields and the federated date
+contract. Optional `*_datetime` values do not change ordering or create sub-day
+risk sets. The source primary key stays internal, so repeated attachments are
+not linkable across episodes through a released high-cardinality event token.
 
-A basic regular person-period panel is available through
+A regular person-period panel is available through
 `ds.omop.plan.person_period()` or Recipe output `type = "person_period"`. It
 emits `personPeriods`, `temporalCovariates`, `covariateRef`, `timeRef`, and
-`personRef`; missing sparse tuples are zeros. It intentionally requires
-episode grain and index-relative bins and emits neither absolute dates nor raw
-event identifiers. Explicit censoring/risk-interval semantics for general
-counting-process, recurrent-event and competing-risk/multi-state models remain
-future work. Multi-table long recipes split into one output per table rather
-than fabricating an arbitrary cross-table join.
+`personRef`. Every cohort episode must have exactly one OMOP
+`observation_period` covering its index date. Only bins intersecting that period
+appear in `personPeriods`; `startDay`/`endDay` remain the requested bin limits,
+while `observationStartDay`, `observationEndDay`, and inclusive `daysObserved`
+describe the observed part. A missing sparse tuple means zero only when its
+`(rowId, timeId)` roster row exists. The descriptive panel intentionally does
+not treat cohort end or death as observation/censoring. Use survival or
+counting-process output for explicit time-at-risk, washout, tie, and censoring
+policies. Arbitrary multi-state transition models remain outside the reviewed
+contracts. Multi-table long recipes split into one output per table rather than
+fabricating an arbitrary cross-table join.
 
 Representations that expand a request are subject to controller-configurable
 operational caps. The defaults allow at most 1,000 explicit feature
 specifications (`dsomop.max_feature_specs`), 1,000 concepts expanded into
 wide/sparse/temporal output (`dsomop.max_pivot_concepts`), 5,000 final
 wide/feature columns (`dsomop.max_output_columns`) and 10,000 temporal bins in a
-window (`dsomop.max_temporal_bins`). Filter trees are capped at depth 32, 1,024
+window (`dsomop.max_temporal_bins`). Longitudinal first/last/nearest selection
+retains at most 100 events per episode/source group
+(`dsomop.max_events_per_group`). Filter trees are capped at depth 32, 1,024
 nodes and 10,000 literal values, and a plan at 100 outputs. These are
 controller-configurable memory/CPU safeguards rather than disclosure
 guarantees. Across servers, construct a request within the lowest compatible
@@ -354,12 +371,12 @@ plans, one identical non-missing reported vocabulary version. Calling
 `ds.omop.plan.harmonize()` explicitly remains useful when the analyst wants to
 inspect that contract before execution.
 
-Before assignment, the client removes and verifies stale symbols in the exact
-namespace owned by the requested outputs. Every expected component must then
-land on every node. A node failure, incomplete composite output or factor-
-harmonization failure removes and verifies all DataSHIELD-visible symbols from
-the attempt. This is symbol-level all-or-none cleanup; previous symbols are not
-restored.
+Before assignment, the client verifies that the exact namespace owned by the
+requested outputs is fresh and refuses to start if any requested destination
+already exists. Every expected component must then land on every node. A node
+failure, incomplete composite output or factor-harmonization failure removes
+and verifies all DataSHIELD-visible symbols created by the attempt. This is
+symbol-level all-or-none cleanup; pre-existing symbols are never overwritten.
 
 The server-side manipulation verbs use the same discipline: every source must
 exist on every requested node, the destination must be fresh, and a partial
@@ -369,12 +386,12 @@ across the federation. They never silently overwrite a pre-existing symbol.
 For large extractions, `output_mode = "staged"` writes server-local files and
 assigns descriptors inheriting from both `FlowerDatasetDescriptor` and the
 package-neutral `OMOPStagedDatasetDescriptor`, instead of keeping the final
-result as an R data frame. With `arrow` installed the files are Parquet (otherwise the
-server uses its CSV fallback). Long, untranslated event outputs are fetched and
-sanitised in chunks, so the complete result is never materialised in the R
-session. Formats that require an R-side transformation (for example wide,
-features, baseline, survival and sparse/temporal composites) are currently
-materialised first and only then staged.
+result as an R data frame. With `arrow` installed the files are Parquet
+(otherwise the server uses its CSV fallback). Long event and interval outputs,
+plus SQL-first temporal/person-period components, are fetched and sanitised in
+bounded chunks into row groups of one Parquet file, so the complete result is
+never materialised in the R session. Formats that require an R-side
+transformation are materialised first and only then staged.
 
 Staging is a local commit protocol: a pre-commit error removes the new dataset
 directory, while a successful transaction writes the private `manifest.json`

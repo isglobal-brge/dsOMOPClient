@@ -359,9 +359,13 @@ omop_variable_sex <- function(name = "sex") {
 #'
 #' Produces a derived variable that computes the number of days between
 #' \code{observation_period_start_date} and
-#' \code{observation_period_end_date}.
+#' \code{observation_period_end_date}. Multiple non-overlapping observation
+#' periods are handled explicitly: sum all observed spells, or select the
+#' first, last, or longest spell.
 #'
 #' @param name Character; output column name (default \code{"obs_duration"}).
+#' @param period_policy Character; one of \code{"total"}, \code{"first"},
+#'   \code{"last"}, or \code{"longest"}.
 #' @return An \code{omop_variable} object with \code{format = "obs_duration"}
 #'   and a \code{$derived} metadata field.
 #' @examples
@@ -371,11 +375,14 @@ omop_variable_sex <- function(name = "sex") {
 #' }
 #' @seealso \code{\link{omop_variable}}, \code{\link{omop_variable_age}}
 #' @export
-omop_variable_obs_duration <- function(name = "obs_duration") {
+omop_variable_obs_duration <- function(
+    name = "obs_duration",
+    period_policy = c("total", "first", "last", "longest")) {
+  period_policy <- match.arg(period_policy)
   v <- omop_variable(
     name = name, table = "observation_period", format = "obs_duration"
   )
-  v$derived <- list(kind = "obs_duration")
+  v$derived <- list(kind = "obs_duration", period_policy = period_policy)
   v
 }
 
@@ -494,7 +501,9 @@ omop_variable_n_distinct <- function(table, name = NULL) {
 #'
 #' Produces a derived variable computing days from observation start to a
 #' fixed reference date. When omitted, today's date is recorded in the variable
-#' specification at construction time.
+#' specification at construction time. With multiple observation spells, the
+#' unique period containing the reference date is selected; no covering period
+#' yields a missing value and overlapping covering periods fail closed.
 #'
 #' @param name Character; output column name (default \code{"prior_obs"}).
 #' @param reference_date Date or \code{NULL}; explicit reference date.
@@ -507,7 +516,10 @@ omop_variable_prior_obs <- function(name = "prior_obs",
   v <- omop_variable(
     name = name, table = "observation_period", format = "prior_obs"
   )
-  v$derived <- list(kind = "prior_obs", reference_date = reference_date)
+  v$derived <- list(
+    kind = "prior_obs", reference_date = reference_date,
+    period_policy = "containing"
+  )
   v
 }
 
@@ -515,7 +527,8 @@ omop_variable_prior_obs <- function(name = "prior_obs",
 #'
 #' Produces a derived variable computing days from a reference date (default
 #' fixed reference date to observation end. When omitted, today's date is
-#' recorded in the variable specification at construction time.
+#' recorded in the variable specification at construction time. With multiple
+#' spells, the unique period containing the reference date is selected.
 #'
 #' @param name Character; output column name (default \code{"followup"}).
 #' @param reference_date Date or \code{NULL}; explicit reference date.
@@ -528,7 +541,10 @@ omop_variable_followup <- function(name = "followup",
   v <- omop_variable(
     name = name, table = "observation_period", format = "followup"
   )
-  v$derived <- list(kind = "followup", reference_date = reference_date)
+  v$derived <- list(
+    kind = "followup", reference_date = reference_date,
+    period_policy = "containing"
+  )
   v
 }
 
@@ -1581,6 +1597,12 @@ omop_filter_missing_measurement <- function(concept_id, window = NULL,
 #' @param primary_limit Character; \code{"first"}, \code{"last"}, or
 #'   \code{"all"} candidate events per person.
 #' @param include_descendants,include_mapped Logical concept-set expansion flags.
+#' @param end_strategy \code{NULL} for the OHDSI/Circe default (exit at the end
+#'   of the unique observation period covering the index), or the transport-safe
+#'   OHDSI DateOffset shape \code{list(DateOffset = list(DateField =
+#'   "StartDate"|"EndDate", Offset = <integer>))}. Use \code{EndDate} with
+#'   offset zero to select the physical event end (capped at observation-period
+#'   end, as in Circe).
 #' @return An \code{omop_index_event} object.
 #' @export
 omop_index_event <- function(concept_id = NULL,
@@ -1588,7 +1610,8 @@ omop_index_event <- function(concept_id = NULL,
                              concept_name = NULL,
                              primary_limit = c("first", "last", "all"),
                              include_descendants = FALSE,
-                             include_mapped = FALSE) {
+                             include_mapped = FALSE,
+                             end_strategy = NULL) {
   allowed_tables <- c(
     "condition_occurrence", "drug_exposure", "measurement", "observation",
     "procedure_occurrence", "device_exposure", "visit_occurrence"
@@ -1644,6 +1667,8 @@ omop_index_event <- function(concept_id = NULL,
     )
   )
 
+  end_strategy <- .normalize_index_end_strategy(end_strategy)
+
   obj <- list(
     table = table,
     concept_id = concept_id,
@@ -1652,8 +1677,44 @@ omop_index_event <- function(concept_id = NULL,
     include_descendants = include_descendants,
     include_mapped = include_mapped
   )
+  if (!is.null(end_strategy)) obj$end_strategy <- end_strategy
   class(obj) <- c("omop_index_event", "list")
   obj
+}
+
+.normalize_index_end_strategy <- function(end_strategy) {
+  if (is.null(end_strategy)) return(NULL)
+  if (!is.list(end_strategy) || is.null(names(end_strategy)) ||
+      any(!nzchar(names(end_strategy))) || anyDuplicated(names(end_strategy)) ||
+      !identical(names(end_strategy), "DateOffset")) {
+    stop("omop_index_event(): end_strategy must be NULL or exactly one OHDSI ",
+         "DateOffset strategy.", call. = FALSE)
+  }
+  offset <- end_strategy$DateOffset
+  if (!is.list(offset) || is.null(names(offset)) ||
+      any(!nzchar(names(offset))) || anyDuplicated(names(offset)) ||
+      !setequal(names(offset), c("DateField", "Offset")) ||
+      length(names(offset)) != 2L) {
+    stop("omop_index_event(): end_strategy$DateOffset must contain exactly ",
+         "DateField and Offset.", call. = FALSE)
+  }
+  date_field <- offset$DateField
+  if (!is.character(date_field) || length(date_field) != 1L ||
+      is.na(date_field) ||
+      !date_field %in% c("StartDate", "EndDate")) {
+    stop("omop_index_event(): end_strategy DateField must be StartDate or ",
+         "EndDate.", call. = FALSE)
+  }
+  value <- offset$Offset
+  number <- suppressWarnings(as.numeric(value))
+  integer <- suppressWarnings(as.integer(value))
+  if (!is.numeric(value) || length(value) != 1L || length(number) != 1L ||
+      is.na(number) || !is.finite(number) || length(integer) != 1L ||
+      is.na(integer) || number != integer) {
+    stop("omop_index_event(): end_strategy Offset must be one finite exact ",
+         "integer.", call. = FALSE)
+  }
+  list(DateOffset = list(DateField = date_field, Offset = integer))
 }
 
 #' Create a population node
@@ -2824,8 +2885,15 @@ print.omop_recipe <- function(x, ...) {
       c("temporal", "time_window", "date_handling", "grain"),
     temporal_covariates =, person_period =
       c("bin_width", "window_start", "window_end", "analyses"),
-    survival = c("tar", "event_order"),
-    baseline =, intervals = character(0),
+    survival = c(
+      "tar", "event_order", "format", "censoring", "washout_days",
+      "tie_policy", "outcome_mode"
+    ),
+    intervals = c(
+      "window", "interval_match", "event_select", "select_n", "select_by",
+      "anchor"
+    ),
+    baseline = character(0),
     character(0)
   )
   unsupported <- setdiff(names(options), allowed)
@@ -2858,9 +2926,152 @@ print.omop_recipe <- function(x, ...) {
     }
   }
   if (!is.null(options$event_order) &&
-      !options$event_order %in% c("first", "last")) {
-    stop("Survival option 'event_order' must be 'first' or 'last'.",
+      (!is.character(options$event_order) ||
+       length(options$event_order) != 1L || is.na(options$event_order) ||
+       !tolower(options$event_order) %in% c("first", "last", "all"))) {
+    stop("Survival option 'event_order' must be first, last, or all.",
          call. = FALSE)
+  }
+  if (identical(out$type, "survival")) {
+    format <- options$format %||% "survival"
+    if (!is.character(format) || length(format) != 1L || is.na(format)) {
+      stop("Survival option 'format' is unsupported.", call. = FALSE)
+    }
+    format <- tolower(format)
+    if (!format %in% c(
+          "survival", "competing_risk", "recurrent_events",
+          "counting_process"
+        )) {
+      stop("Survival option 'format' is unsupported.", call. = FALSE)
+    }
+    outcome_mode <- options$outcome_mode %||%
+      if (format == "survival") "composite" else "named"
+    if (!is.character(outcome_mode) || length(outcome_mode) != 1L ||
+        is.na(outcome_mode)) {
+      stop("Survival option 'outcome_mode' must be composite or named.",
+           call. = FALSE)
+    }
+    outcome_mode <- tolower(outcome_mode)
+    if (!outcome_mode %in% c("composite", "named")) {
+      stop("Survival option 'outcome_mode' must be composite or named.",
+           call. = FALSE)
+    }
+    event_order <- tolower(options$event_order %||%
+      if (format %in% c("recurrent_events", "counting_process")) "all" else "first")
+    if (format == "survival" && event_order == "all") {
+      stop("survival requires event_order first or last.", call. = FALSE)
+    }
+    if (format == "competing_risk" && event_order != "first") {
+      stop("competing_risk requires event_order='first'.", call. = FALSE)
+    }
+    if (format %in% c("recurrent_events", "counting_process") &&
+        event_order == "last") {
+      stop("Recurrent/counting formats require event_order first or all.",
+           call. = FALSE)
+    }
+    tie_policy <- options$tie_policy %||% "priority"
+    if (!is.character(tie_policy) || length(tie_policy) != 1L ||
+        is.na(tie_policy)) {
+      stop("Survival option 'tie_policy' is unsupported.", call. = FALSE)
+    }
+    tie_policy <- tolower(tie_policy)
+    if (!tie_policy %in% c("priority", "error", "all")) {
+      stop("Survival option 'tie_policy' is unsupported.", call. = FALSE)
+    }
+    if (tie_policy == "all" && format != "recurrent_events") {
+      stop("tie_policy='all' is supported only for recurrent_events.",
+           call. = FALSE)
+    }
+    if (!is.null(options$washout_days)) {
+      washout <- suppressWarnings(as.numeric(options$washout_days))
+      if (length(washout) != 1L || is.na(washout) || !is.finite(washout) ||
+          washout != as.integer(washout) || washout < 0) {
+        stop("Survival option 'washout_days' must be a non-negative integer.",
+             call. = FALSE)
+      }
+    }
+    if (!is.null(options$censoring)) {
+      censoring <- options$censoring
+      allowed_censoring <- c(
+        "cohort_end", "observation_period_end", "death", "admin_date"
+      )
+      if (!is.list(censoring) || is.null(names(censoring)) ||
+          any(!nzchar(names(censoring))) || anyDuplicated(names(censoring)) ||
+          length(setdiff(names(censoring), allowed_censoring)) > 0L) {
+        stop("Survival option 'censoring' contains unsupported fields.",
+             call. = FALSE)
+      }
+      for (field in intersect(
+        names(censoring), c("cohort_end", "observation_period_end", "death")
+      )) {
+        if (!is.logical(censoring[[field]]) ||
+            length(censoring[[field]]) != 1L || is.na(censoring[[field]])) {
+          stop("Survival censoring flag '", field,
+               "' must be TRUE or FALSE.", call. = FALSE)
+        }
+      }
+      if (identical(censoring$cohort_end, FALSE)) {
+        stop("Survival censoring must retain cohort_end.", call. = FALSE)
+      }
+      if (!is.null(censoring$admin_date)) {
+        .plan_iso_date(censoring$admin_date, "censoring$admin_date")
+      }
+    }
+  }
+  if (identical(out$type, "intervals")) {
+    if (!is.null(options$interval_match) &&
+        !options$interval_match %in%
+          c("overlaps", "starts_in", "ends_in", "active_at")) {
+      stop("Intervals option 'interval_match' is unsupported.",
+           call. = FALSE)
+    }
+    if (!is.null(options$event_select) &&
+        !options$event_select %in% c("all", "first", "last", "nearest")) {
+      stop("Intervals option 'event_select' is unsupported.",
+           call. = FALSE)
+    }
+    if (!is.null(options$select_by) &&
+        !options$select_by %in%
+          c("episode_source", "episode_source_concept")) {
+      stop("Intervals option 'select_by' is unsupported.", call. = FALSE)
+    }
+    if (!is.null(options$select_n) &&
+        .plan_integer_scalar(options$select_n, "Intervals select_n") < 1L) {
+      stop("Intervals option 'select_n' must be positive.", call. = FALSE)
+    }
+    if (!is.null(options$anchor)) {
+      .plan_integer_scalar(options$anchor, "Intervals anchor")
+    }
+    if (!is.null(options$window)) {
+      if (!is.list(options$window) || length(options$window) == 0L ||
+          is.null(names(options$window)) ||
+          any(!nzchar(names(options$window))) ||
+          anyDuplicated(names(options$window)) ||
+          length(setdiff(names(options$window), c("start", "end", "at"))) > 0L) {
+        stop("Intervals option 'window' must contain start/end or at offsets.",
+             call. = FALSE)
+      }
+      invisible(lapply(options$window, function(value) {
+        .plan_integer_scalar(value, "Intervals window offset")
+      }))
+      match_mode <- options$interval_match %||% "overlaps"
+      if (identical(match_mode, "active_at")) {
+        if (!identical(names(options$window), "at")) {
+          stop("Intervals active_at matching requires window=list(at=...).",
+               call. = FALSE)
+        }
+      } else if (any(!names(options$window) %in% c("start", "end")) ||
+                 !any(c("start", "end") %in% names(options$window))) {
+        stop("Intervals overlap/start/end matching requires start and/or end.",
+             call. = FALSE)
+      }
+      if (!is.null(options$window$start) && !is.null(options$window$end) &&
+          .plan_integer_scalar(options$window$start, "Intervals window start") >
+            .plan_integer_scalar(options$window$end,
+                                 "Intervals window end")) {
+        stop("Intervals window start must not be after end.", call. = FALSE)
+      }
+    }
   }
   if (!is.null(options$grain) &&
       (!is.character(options$grain) || length(options$grain) != 1L ||
@@ -2950,6 +3161,9 @@ print.omop_recipe <- function(x, ...) {
       concept_set = concept_set,
       primary_limit = ie$primary_limit
     )
+    if (!is.null(ie$end_strategy)) {
+      spec$index_event$end_strategy <- ie$end_strategy
+    }
   }
   spec
 }
@@ -3134,6 +3348,19 @@ recipe_to_plan <- function(recipe) {
     recipe <- recipe_add_output(recipe, omop_output(name = "output", type = "wide"))
   }
 
+  compiled_output_owners <- character(0)
+  register_compiled_output <- function(name, owner) {
+    previous <- unname(compiled_output_owners[name])
+    if (length(previous) == 1L && !is.na(previous)) {
+      stop("Recipe compiled output name collision: '", name,
+           "' is produced by both '", previous, "' and '", owner,
+           "'. Rename one output so every compiled dataset is explicit.",
+           call. = FALSE)
+    }
+    compiled_output_owners[name] <<- owner
+    invisible(NULL)
+  }
+
   # Group variables by output
   for (out_name in names(recipe$outputs)) {
     out <- recipe$outputs[[out_name]]
@@ -3219,6 +3446,7 @@ recipe_to_plan <- function(recipe) {
           columns = columns,
           derived = derived,
           name = out_name)
+        register_compiled_output(out_name, out_name)
         created_vars[[out_name]] <- vars
       } else {
         # Separate person-derived variables from event/raw variables
@@ -3273,6 +3501,7 @@ recipe_to_plan <- function(recipe) {
             representation = "features",
             derived_columns = derived_specs
           )
+          register_compiled_output(out_name, out_name)
           created_vars[[out_name]] <- vars
         } else if (has_formats) {
           # Re-group event_vars by table
@@ -3303,6 +3532,7 @@ recipe_to_plan <- function(recipe) {
                 NULL
               }
             )
+            register_compiled_output(out_name, out_name)
             created_vars[[out_name]] <- vs
             # Per-variable row filters now ride on each feature spec (per-spec
             # scoping in .build_feature_specs), so the server applies them inside
@@ -3341,6 +3571,7 @@ recipe_to_plan <- function(recipe) {
               representation = "features",
               derived_columns = derived_specs
             )
+            register_compiled_output(out_name, out_name)
             created_vars[[out_name]] <- vars
           }
         } else {
@@ -3363,6 +3594,7 @@ recipe_to_plan <- function(recipe) {
             plan <- ds.omop.plan.person_level(plan, tables = tables_spec,
                                                name = out_name)
           }
+          register_compiled_output(out_name, out_name)
           created_vars[[out_name]] <- vars
         }
       }
@@ -3421,6 +3653,7 @@ recipe_to_plan <- function(recipe) {
             visit_filter = visit_filter,
             concept_col = concept_col
           )
+          register_compiled_output(nm, out_name)
           created_vars[[nm]] <- group
         }
       }
@@ -3456,6 +3689,7 @@ recipe_to_plan <- function(recipe) {
           representation = "features",
           derived_columns = derived_specs
         )
+        register_compiled_output(out_name, out_name)
         created_vars[[out_name]] <- derived_vars
       } else {
         for (tbl in names(by_table)) {
@@ -3482,61 +3716,75 @@ recipe_to_plan <- function(recipe) {
           # Per-variable row filters ride on each feature spec (per-spec scoping
           # in .build_feature_specs); the server applies them inside .toFeatures
           # per column rather than ANDing them all into one output-level WHERE.
+          register_compiled_output(nm, out_name)
           created_vars[[nm]] <- vs
         }
       }
     } else if (out$type %in% c("temporal_covariates", "person_period")) {
       for (tbl in names(by_table)) {
         vs <- by_table[[tbl]]
-        missing_concepts <- Filter(function(v) {
-          length(v$concept_id %||% integer(0)) == 0L
-        }, vs)
-        if (length(missing_concepts) > 0L) {
+        concept_scoped <- vapply(vs, function(v) {
+          length(v$concept_id %||% integer(0)) > 0L
+        }, logical(1))
+        if (any(concept_scoped) && !all(concept_scoped)) {
           stop("Temporal-covariates output '", out_name,
-               "' requires every variable to be concept-scoped.",
+               "' cannot mix concept-scoped variables with an all-concepts ",
+               "variable in one source table. Split them into outputs.",
                call. = FALSE)
         }
-        concept_ids <- unique(unlist(lapply(vs, function(v) v$concept_id)))
-        concept_ids <- as.integer(concept_ids[!is.na(concept_ids)])
-        if (length(concept_ids) == 0L) {
+        dynamic_concepts <- !any(concept_scoped)
+        expands <- vapply(vs, function(v) isTRUE(v$expand), logical(1))
+        if (dynamic_concepts && any(expands)) {
           stop("Temporal-covariates output '", out_name,
-               "' requires concept_id values for every source table.",
+               "' cannot expand descendants without a concept_id.",
                call. = FALSE)
+        }
+        if (!dynamic_concepts && any(expands) && !all(expands)) {
+          stop("Temporal-covariates output '", out_name,
+               "' mixes expanded and exact concept variables. Split them so ",
+               "descendant scope remains explicit.", call. = FALSE)
+        }
+        concept_ids <- if (dynamic_concepts) integer(0) else {
+          ids <- unique(unlist(lapply(vs, function(v) v$concept_id)))
+          as.integer(ids[!is.na(ids)])
         }
         unsupported <- Filter(function(v) {
           !v$format %in% c("raw", "binary", "count") ||
             !is.null(v$column) || !is.null(v$value_source) ||
-            !is.null(v$visit_filter) || !is.null(v$concept_col) ||
-            isTRUE(v$expand)
+            !is.null(v$visit_filter) || !is.null(v$concept_col)
         }, vs)
         if (length(unsupported) > 0L) {
           stop("Temporal-covariates output '", out_name,
                "' supports concept presence/count variables only (formats ",
                "raw, binary, count), without raw columns, visit/concept-column ",
-               "overrides, or descendant expansion.", call. = FALSE)
+               "overrides.", call. = FALSE)
         }
 
         # The server computes the Cartesian product concept_set x analyses.
         # Permit mixed binary/count declarations only when that product is
         # exactly what the recipe declared; otherwise it would invent columns.
-        requested_pairs <- unique(do.call(rbind, lapply(vs, function(v) {
-          analysis <- if (identical(v$format, "count")) "count" else "binary"
-          data.frame(concept = as.character(v$concept_id),
-                     analysis = analysis, stringsAsFactors = FALSE)
-        })))
-        requested_analyses <- unique(requested_pairs$analysis)
+        requested_analyses <- unique(vapply(vs, function(v) {
+          if (identical(v$format, "count")) "count" else "binary"
+        }, character(1)))
         effective_analyses <- out$options$analyses %||% requested_analyses
-        emitted_pairs <- expand.grid(
-          concept = unique(requested_pairs$concept),
-          analysis = effective_analyses,
-          stringsAsFactors = FALSE
-        )
-        pair_key <- function(x) paste(x$concept, x$analysis, sep = "\r")
-        if (!setequal(pair_key(requested_pairs), pair_key(emitted_pairs))) {
-          stop("Temporal-covariates output '", out_name,
-               "' mixes analyses by concept in a way the server would expand ",
-               "to an undeclared concept-by-analysis Cartesian product. Split ",
-               "the variables into separate outputs.", call. = FALSE)
+        if (!dynamic_concepts) {
+          requested_pairs <- unique(do.call(rbind, lapply(vs, function(v) {
+            analysis <- if (identical(v$format, "count")) "count" else "binary"
+            data.frame(concept = as.character(v$concept_id),
+                       analysis = analysis, stringsAsFactors = FALSE)
+          })))
+          emitted_pairs <- expand.grid(
+            concept = unique(requested_pairs$concept),
+            analysis = effective_analyses,
+            stringsAsFactors = FALSE
+          )
+          pair_key <- function(x) paste(x$concept, x$analysis, sep = "\r")
+          if (!setequal(pair_key(requested_pairs), pair_key(emitted_pairs))) {
+            stop("Temporal-covariates output '", out_name,
+                 "' mixes analyses by concept in a way the server would expand ",
+                 "to an undeclared concept-by-analysis Cartesian product. Split ",
+                 "the variables into separate outputs.", call. = FALSE)
+          }
         }
 
         variable_window <- .common_recipe_time_window(
@@ -3577,32 +3825,42 @@ recipe_to_plan <- function(recipe) {
         plan <- temporal_builder(
           plan,
           table = tbl,
-          concept_set = concept_ids,
+          concept_set = if (dynamic_concepts) {
+            NULL
+          } else {
+            .concept_set_arg(vs, concept_ids)
+          },
           bin_width = out$options$bin_width %||% 30L,
           window_start = window_start,
           window_end = window_end,
           analyses = analyses,
           name = nm
         )
+        register_compiled_output(nm, out_name)
         created_vars[[nm]] <- vs
       }
     } else if (out$type == "survival") {
-      if (length(by_table) != 1L) {
-        stop("Survival output '", out_name,
-             "' must use outcome variables from exactly one OMOP table.",
+      survival_format <- tolower(out$options$format %||% "survival")
+      outcome_mode <- tolower(out$options$outcome_mode %||%
+        if (survival_format == "survival") "composite" else "named")
+      if (outcome_mode == "composite" && length(by_table) != 1L) {
+        stop("Composite survival output '", out_name,
+             "' must use outcome variables from exactly one OMOP table; use ",
+             "outcome_mode='named' to keep endpoints from multiple tables.",
              call. = FALSE)
       }
       unsupported <- Filter(function(v) {
         !v$format %in% c("raw", "binary") ||
           !is.null(v$column) || !is.null(v$value_source) ||
           !is.null(v$visit_filter) || !is.null(v$concept_col) ||
-          isTRUE(v$expand)
+          !is.null(v$time_window)
       }, vars)
       if (length(unsupported) > 0L) {
         stop("Survival output '", out_name,
              "' accepts outcome concept variables only (raw/binary); value ",
-             "columns, visit/concept-column overrides, descendant expansion, ",
-             "and aggregation formats cannot be represented.",
+             "columns, visit/concept-column overrides, ",
+             "variable-specific time windows, and aggregation formats cannot ",
+             "be represented. Use the output TAR for the common risk window.",
              call. = FALSE)
       }
       if (any(vapply(vars, function(v) {
@@ -3612,35 +3870,94 @@ recipe_to_plan <- function(recipe) {
              "' requires every outcome variable to be concept-scoped.",
              call. = FALSE)
       }
-      concept_ids <- unique(unlist(lapply(vars, function(v) v$concept_id)))
-      concept_ids <- concept_ids[!is.null(concept_ids)]
-      if (length(concept_ids) == 0L) {
-        stop("Survival output '", out_name,
-             "' requires at least one outcome concept_id.", call. = FALSE)
-      }
-      tbl <- names(by_table)[1] %||% "condition_occurrence"
       tar <- out$options$tar %||% list(start_offset = 0, end_offset = 730)
-      plan <- ds.omop.plan.survival(
-        plan, outcome_table = tbl,
-        outcome_concepts = concept_ids,
-        tar = tar,
-        event_order = out$options$event_order %||% "first",
-        name = out_name
-      )
+      event_order <- out$options$event_order %||%
+        if (survival_format %in%
+            c("recurrent_events", "counting_process")) "all" else "first"
+      advanced <- outcome_mode == "named" ||
+        length(setdiff(names(out$options %||% list()),
+                       c("tar", "event_order"))) > 0L
+      if (outcome_mode == "named") {
+        endpoint_names <- character(0)
+        outcomes <- vector("list", length(vars))
+        for (i in seq_along(vars)) {
+          variable <- vars[[i]]
+          endpoint_name <- .ensure_unique_name(
+            .sanitize_name(variable$name %||% names(vars)[i]),
+            endpoint_names
+          )
+          endpoint_names <- c(endpoint_names, endpoint_name)
+          endpoint <- list(
+            table = variable$table,
+            concept_set = .concept_set_arg(list(variable), variable$concept_id)
+          )
+          if (length(variable$filters %||% list()) > 0L) {
+            endpoint$filters <- .compile_filter_tree(
+              variable$filters, level = "row", table = variable$table
+            )
+          }
+          outcomes[[i]] <- endpoint
+        }
+        names(outcomes) <- endpoint_names
+      } else {
+        concept_ids <- unique(unlist(lapply(vars, function(v) v$concept_id)))
+        if (length(concept_ids) == 0L) {
+          stop("Survival output '", out_name,
+               "' requires at least one outcome concept_id.", call. = FALSE)
+        }
+        expands <- vapply(vars, function(v) isTRUE(v$expand), logical(1))
+        if (any(expands) && !all(expands)) {
+          stop("Composite survival output '", out_name,
+               "' mixes expanded and exact concepts. Use named outcomes or ",
+               "split the output.", call. = FALSE)
+        }
+        tbl <- names(by_table)[1] %||% "condition_occurrence"
+        if (!advanced) {
+          plan <- ds.omop.plan.survival(
+            plan, outcome_table = tbl,
+            outcome_concepts = .concept_set_arg(vars, concept_ids),
+            tar = tar,
+            event_order = event_order,
+            name = out_name
+          )
+        } else {
+          endpoint <- list(
+            table = tbl,
+            concept_set = .concept_set_arg(vars, concept_ids)
+          )
+          endpoint_filter <- .common_variable_filter(vars, out_name, tbl)
+          if (!is.null(endpoint_filter)) endpoint$filters <- endpoint_filter
+          outcomes <- list(outcome = endpoint)
+        }
+      }
+      if (advanced) {
+        plan <- ds.omop.plan.survival(
+          plan,
+          outcomes = outcomes,
+          tar = tar,
+          event_order = event_order,
+          name = out_name,
+          censoring = out$options$censoring,
+          format = survival_format,
+          washout_days = out$options$washout_days %||% 0L,
+          tie_policy = out$options$tie_policy %||% "priority"
+        )
+      }
+      register_compiled_output(out_name, out_name)
       created_vars[[out_name]] <- vars
     } else if (out$type == "intervals") {
       tables <- names(by_table)
       invalid <- Filter(function(v) {
         !identical(v$format %||% "raw", "raw") ||
           !is.null(v$column) || !is.null(v$value_source) ||
-          !is.null(v$visit_filter) || !is.null(v$concept_col) ||
-          isTRUE(v$expand)
+          !is.null(v$visit_filter) || !is.null(v$concept_col)
       }, vars)
       if (length(invalid) > 0L) {
         stop("Intervals output '", out_name,
              "' only accepts raw concept variables; explicit columns and ",
              "aggregated formats, visit/concept-column overrides, and ",
-             "descendant expansion cannot be represented.", call. = FALSE)
+             "unsupported value projections cannot be represented.",
+             call. = FALSE)
       }
       mixed_scope <- vapply(by_table, function(vs) {
         scoped <- vapply(vs, function(v) {
@@ -3657,14 +3974,54 @@ recipe_to_plan <- function(recipe) {
       concept_filter <- lapply(by_table, function(vs) {
         ids <- unique(unlist(lapply(vs, function(v) v$concept_id)))
         ids <- as.integer(ids[!is.na(ids)])
-        if (length(ids) > 0L) ids else NULL
+        expands <- vapply(vs, function(v) isTRUE(v$expand), logical(1))
+        if (any(expands) && !all(expands)) {
+          stop("Intervals output '", out_name,
+               "' mixes expanded and exact concepts in one table. Split ",
+               "them so descendant scope remains explicit.", call. = FALSE)
+        }
+        if (length(ids) > 0L) .concept_set_arg(vs, ids) else NULL
       })
       if (all(vapply(concept_filter, is.null, logical(1)))) {
         concept_filter <- NULL
       }
+      source_filters <- lapply(names(by_table), function(table) {
+        table_vars <- by_table[[table]]
+        if (!any(vapply(table_vars, function(variable) {
+          length(variable$filters %||% list()) > 0L
+        }, logical(1)))) {
+          return(NULL)
+        }
+        .common_variable_filter(table_vars, out_name, table)
+      })
+      names(source_filters) <- names(by_table)
+      source_filters <- Filter(Negate(is.null), source_filters)
+      if (length(source_filters) == 0L) source_filters <- NULL
+      variable_window <- .common_recipe_time_window(vars, out_name)
+      interval_window <- out$options$window %||% variable_window
+      if (!is.null(out$options$window) && !is.null(variable_window) &&
+          !identical(
+            .normalize_recipe_time_window(out$options$window, out_name),
+            variable_window
+          )) {
+        stop("Intervals output '", out_name,
+             "' has conflicting variable and output windows.",
+             call. = FALSE)
+      }
       plan <- ds.omop.plan.intervals(plan, tables = tables,
                                       concept_filter = concept_filter,
+                                      filters = source_filters,
+                                      window = interval_window,
+                                      interval_match = out$options$interval_match %||%
+                                        "overlaps",
+                                      event_select = out$options$event_select %||%
+                                        "all",
+                                      select_n = out$options$select_n %||% 1L,
+                                      select_by = out$options$select_by %||%
+                                        "episode_source",
+                                      anchor = out$options$anchor %||% 0L,
                                       name = out_name)
+      register_compiled_output(out_name, out_name)
       created_vars[[out_name]] <- vars
     } else {
       stop("Recipe output '", out_name, "' has unsupported type '",
@@ -3686,6 +4043,39 @@ recipe_to_plan <- function(recipe) {
   row_filter_items <- .extract_filters_by_level(recipe$filters, "row")
   if (length(row_filter_items) > 0) {
     for (out_name in names(plan$outputs)) {
+      if (identical(plan$outputs[[out_name]]$type, "survival") &&
+          !is.null(plan$outputs[[out_name]]$outcomes)) {
+        plan$outputs[[out_name]]$outcomes <- lapply(
+          plan$outputs[[out_name]]$outcomes,
+          function(endpoint) {
+            filter_tree <- .compile_filter_tree(
+              row_filter_items, level = "row", table = endpoint$table
+            )
+            endpoint$filters <- .combine_filter_trees(
+              endpoint$filters, filter_tree
+            )
+            endpoint
+          }
+        )
+        next
+      }
+      if (identical(plan$outputs[[out_name]]$type, "intervals_long")) {
+        interval_output <- plan$outputs[[out_name]]
+        source_filters <- interval_output$source_filters %||% list()
+        source_names <- tolower(names(source_filters) %||% character(0))
+        for (table in interval_output$tables) {
+          filter_tree <- .compile_filter_tree(
+            row_filter_items, level = "row", table = table
+          )
+          index <- match(tolower(table), source_names)
+          current <- if (is.na(index)) NULL else source_filters[[index]]
+          source_filters[[tolower(table)]] <- .combine_filter_trees(
+            current, filter_tree
+          )
+        }
+        plan$outputs[[out_name]]$source_filters <- source_filters
+        next
+      }
       table <- .plan_output_filter_table(plan$outputs[[out_name]], out_name)
       filter_tree <- .compile_filter_tree(row_filter_items, level = "row",
                                           table = table)
@@ -3854,7 +4244,8 @@ recipe_to_plan <- function(recipe) {
   date_handling <- options$date_handling
   has_feature_specs <- .output_has_feature_specs(output)
   variable_window <- if (output$type %in%
-                         c("temporal_covariates", "person_period")) {
+                         c("temporal_covariates", "person_period",
+                           "intervals_long")) {
     NULL
   } else if (has_feature_specs) {
     .feature_recipe_outer_window(vars, output_name)
@@ -3932,6 +4323,15 @@ recipe_to_plan <- function(recipe) {
            "' cannot attach per-variable filters to raw columns alongside ",
            "feature specs.", call. = FALSE)
     }
+  } else if (identical(output$type, "intervals_long") &&
+             !is.null(output$source_filters)) {
+    # Multi-source interval recipes compile each variable filter against its
+    # own OMOP table before decoration. Reattaching one shared tree here would
+    # either broaden semantics or reference columns absent from other sources.
+  } else if (identical(output$type, "survival") &&
+             !is.null(output$outcomes)) {
+    # Advanced survival endpoints already carry their variable-specific
+    # filters, compiled against each endpoint's own OMOP table.
   } else {
     table <- .plan_output_filter_table(output, output_name,
                                        allow_no_filter = TRUE)
@@ -4621,7 +5021,8 @@ recipe_to_code <- function(recipe) {
           concept_name = ie$concept_name,
           primary_limit = ie$primary_limit,
           include_descendants = if (isTRUE(ie$include_descendants)) TRUE else NULL,
-          include_mapped = if (isTRUE(ie$include_mapped)) TRUE else NULL))
+          include_mapped = if (isTRUE(ie$include_mapped)) TRUE else NULL,
+          end_strategy = ie$end_strategy))
       }
       pop_code <- c(pop_code, .codegen_call("omop_population",
         id = p$id, label = p$label, parent_id = p$parent_id,
@@ -4675,7 +5076,8 @@ recipe_to_code <- function(recipe) {
           reference_date = v$derived$reference_date),
         "sex_mf" = .codegen_call("omop_variable_sex", name = v$name),
         "obs_duration" = .codegen_call("omop_variable_obs_duration",
-          name = v$name),
+          name = v$name,
+          period_policy = v$derived$period_policy %||% "total"),
         "drug_duration" = .codegen_call("omop_variable_drug_duration",
           concept_id = v$concept_id,
           concept_name = v$concept_name,
@@ -5095,7 +5497,8 @@ recipe_to_code <- function(recipe) {
             concept_name = ie$concept_name,
             primary_limit = ie$primary_limit %||% "first",
             include_descendants = isTRUE(ie$include_descendants),
-            include_mapped = isTRUE(ie$include_mapped)
+            include_mapped = isTRUE(ie$include_mapped),
+            end_strategy = ie$end_strategy
           )
         }
         recipe$populations[[pid]] <- omop_population(
@@ -5172,12 +5575,18 @@ recipe_to_code <- function(recipe) {
     recipe$outputs <- list()
     for (nm in names(data$outputs)) {
       o <- data$outputs[[nm]]
+      output_options <- o$options %||% list()
+      if (!is.null(output_options$analyses)) {
+        output_options$analyses <- .recipe_restore_chr(unlist(
+          output_options$analyses, use.names = FALSE
+        ))
+      }
       recipe$outputs[[nm]] <- omop_output(
         name = o$name %||% nm,
         type = o$type %||% "wide",
         variables = o$variables,
         population_id = o$population_id %||% "base",
-        options = o$options %||% list(),
+        options = output_options,
         result_symbol = o$result_symbol
       )
     }
@@ -5668,6 +6077,9 @@ recipe_import_yaml <- function(yaml) {
 #'     \code{StartWindow} (index-relative days).
 #'   \item \code{omop_filter_prior_observation} / \code{omop_filter_followup} ->
 #'     the entry event \code{ObservationWindow} (PriorDays / PostDays).
+#'   \item An explicit OHDSI \code{DateOffset} end strategy (\code{StartDate}
+#'     or \code{EndDate} plus an integer offset) -> \code{EndStrategy}. With no
+#'     strategy, cohort exit defaults to the covering observation-period end.
 #'   \item An \code{omop_filter_group(operator = "OR")} -> a nested Circe
 #'     CriteriaGroup of Type ANY; the population's top-level AND criteria map to
 #'     the cohort's implicit ALL.
@@ -5678,9 +6090,9 @@ recipe_import_yaml <- function(yaml) {
 #' fixed-reference ages/windows, \code{age_group},
 #' \code{visit_count}, \code{missing_measurement}, \code{value_bin} /
 #' \code{value_concept} / \code{date_range} (row-level) filters, and the recipe
-#' variable/output layer. Circe-only end/censor strategies, non-start windows,
-#' unsupported occurrence operators, multiple primary criteria, and nested
-#' groups are rejected on import.
+#' variable/output layer. Circe end strategies other than DateOffset, censoring
+#' strategies, non-start windows, unsupported occurrence operators, multiple
+#' primary criteria, and nested groups are rejected on import.
 #'
 #' @param recipe An \code{omop_recipe} object.
 #' @param population_id Character; which population to export (default
@@ -5769,7 +6181,7 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
     InclusionRules = inclusion_rules,
     QualifiedLimit = list(Type = downstream_limit),
     ExpressionLimit = list(Type = downstream_limit),
-    EndStrategy = list(),
+    EndStrategy = pop$index_event$end_strategy %||% list(),
     CensoringCriteria = list(),
     CensorWindow = NULL,
     CollapseSettings = list(CollapseType = "ERA", EraPad = 0L),
@@ -6015,7 +6427,8 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
 
 #' Convert one Circe PrimaryCriteria item to an explicit index event
 #' @keywords internal
-.circe_primary_to_index <- function(primary, concept_sets, primary_limit) {
+.circe_primary_to_index <- function(primary, concept_sets, primary_limit,
+                                    end_strategy = NULL) {
   domains <- intersect(names(primary) %||% character(0),
                        unlist(.circe_domain_map))
   if (length(domains) != 1L || length(names(primary) %||% character(0)) != 1L) {
@@ -6041,13 +6454,25 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
     concept_name = details$name,
     primary_limit = primary_limit,
     include_descendants = details$include_descendants,
-    include_mapped = details$include_mapped
+    include_mapped = details$include_mapped,
+    end_strategy = end_strategy
   )
 }
 
 #' Whether a decoded Circe field carries executable content
 #' @keywords internal
 .circe_has_content <- function(x) !is.null(x) && length(x) > 0L
+
+.circe_end_strategy_to_index <- function(end_strategy) {
+  if (!.circe_has_content(end_strategy)) return(NULL)
+  tryCatch(
+    .normalize_index_end_strategy(end_strategy),
+    error = function(e) {
+      stop("Circe import: unsupported EndStrategy: ", conditionMessage(e),
+           call. = FALSE)
+    }
+  )
+}
 
 #' Import an OHDSI Circe cohort expression as a recipe population
 #'
@@ -6079,14 +6504,15 @@ recipe_import_circe <- function(file_or_json, id = NULL, label = NULL) {
   expr <- jsonlite::fromJSON(file_or_json, simplifyVector = FALSE)
   concept_sets <- expr$ConceptSets %||% list()
 
-  unsupported_top <- c("AdditionalCriteria", "EndStrategy",
-                       "CensoringCriteria", "CensorWindow")
+  unsupported_top <- c("AdditionalCriteria", "CensoringCriteria",
+                       "CensorWindow")
   for (field in unsupported_top) {
     if (.circe_has_content(expr[[field]])) {
       stop("Circe import: ", field,
            " is not supported by the executable recipe subset.", call. = FALSE)
     }
   }
+  end_strategy <- .circe_end_strategy_to_index(expr$EndStrategy)
   collapse <- expr$CollapseSettings
   if (.circe_has_content(collapse)) {
     collapse_type <- toupper(collapse$CollapseType %||% "")
@@ -6150,8 +6576,9 @@ recipe_import_circe <- function(file_or_json, id = NULL, label = NULL) {
            "' in the executable subset.", call. = FALSE)
     }
   }
-  index_event <- .circe_primary_to_index(primary[[1]], concept_sets,
-                                          primary_type)
+  index_event <- .circe_primary_to_index(
+    primary[[1]], concept_sets, primary_type, end_strategy = end_strategy
+  )
   filters <- list()
 
   # Observation window -> prior_observation / followup, anchored per episode.
@@ -6503,14 +6930,43 @@ recipe_preview_schema <- function(recipe) {
     }
 
     if (out$type == "survival") {
-      column_types <- c(
-        row_id = "integer", cohort_row_id = "integer", person_id = "integer",
-        event = "integer", time_to_event_days = "integer"
-      )
+      plan_survival <- plan$outputs[[plan_names[[1L]]]]
+      survival_format <- plan_survival$format %||% "survival"
+      column_types <- if (is.null(plan_survival$outcomes)) {
+        c(
+          row_id = "integer", cohort_row_id = "integer",
+          person_id = "integer", event = "integer",
+          time_to_event_days = "integer"
+        )
+      } else if (identical(survival_format, "recurrent_events")) {
+        c(
+          row_id = "integer", cohort_row_id = "integer",
+          person_id = "integer", outcome_name = "character",
+          event = "integer", event_number = "integer",
+          outcome_event_number = "integer",
+          event_days_from_index = "integer",
+          entry_days_from_index = "integer",
+          exit_days_from_index = "integer"
+        )
+      } else if (identical(survival_format, "counting_process")) {
+        c(
+          row_id = "integer", cohort_row_id = "integer",
+          person_id = "integer", outcome_name = "character",
+          event = "integer", interval_number = "integer",
+          interval_start_days = "integer", interval_end_days = "integer"
+        )
+      } else {
+        c(
+          row_id = "integer", cohort_row_id = "integer",
+          person_id = "integer", outcome_name = "character",
+          event = "integer", entry_days_from_index = "integer",
+          exit_days_from_index = "integer", follow_up_days = "integer"
+        )
+      }
       for (column in names(column_types)) {
         add_row(make_row(out_name, column, "derived",
                          type = unname(column_types[[column]]),
-                         format = "survival",
+                         format = survival_format,
                          r_type = if (identical(column, "person_id")) {
                            "character"
                          } else {
@@ -6549,7 +7005,8 @@ recipe_preview_schema <- function(recipe) {
         components <- c(list(
           personPeriods = c(
             rowId = "integer", timeId = "integer", startDay = "integer",
-            endDay = "integer")
+            endDay = "integer", observationStartDay = "integer",
+            observationEndDay = "integer", daysObserved = "integer")
         ), components)
       }
       for (nm in plan_names) {
@@ -6646,6 +7103,17 @@ recipe_preview_schema <- function(recipe) {
     attr(schema, "output_type")   <- out$type
     attr(schema, "population_id") <- out$population_id
     attr(schema, "plan_outputs")  <- plan_names
+    if (identical(out$type, "survival") &&
+        identical(plan$outputs[[plan_names[[1L]]]]$format,
+                  "recurrent_events")) {
+      attr(schema, "components") <- list(
+        events = names(column_types),
+        risk_sets = c(
+          "row_id", "cohort_row_id", "person_id",
+          "entry_days_from_index", "exit_days_from_index", "follow_up_days"
+        )
+      )
+    }
 
     schemas[[out_name]] <- schema
   }

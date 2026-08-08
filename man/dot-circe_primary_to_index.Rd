@@ -4,7 +4,12 @@
 \alias{.circe_primary_to_index}
 \title{Convert one Circe PrimaryCriteria item to an explicit index event}
 \usage{
-.circe_primary_to_index(primary, concept_sets, primary_limit)
+.circe_primary_to_index(
+  primary,
+  concept_sets,
+  primary_limit,
+  end_strategy = NULL
+)
 }
 \description{
 Convert one Circe PrimaryCriteria item to an explicit index event

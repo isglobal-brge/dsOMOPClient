@@ -113,6 +113,8 @@ test_that("recipe_export_circe emits well-formed Circe JSON for supported constr
   pc <- expr$PrimaryCriteria$CriteriaList
   expect_equal(length(pc), 1)
   expect_equal(names(pc[[1]]), "ConditionOccurrence")
+  # Empty means Circe's default exit: the covering observation-period end.
+  expect_length(expr$EndStrategy, 0L)
 
   # Observation window came from prior_observation / followup.
   expect_equal(as.integer(expr$PrimaryCriteria$ObservationWindow$PriorDays), 365L)
@@ -312,7 +314,31 @@ test_that("a cohort_definition_id reference fails closed on Circe export", {
   expect_error(recipe_export_circe(r, "p"), "cohort_definition_id")
 })
 
-test_that("Circe-only EndStrategy / CensoringCriteria fail closed", {
+test_that("supported Circe DateOffset round-trips without changing shape", {
+  strategies <- list(
+    list(DateOffset = list(DateField = "StartDate", Offset = 30L)),
+    list(DateOffset = list(DateField = "EndDate", Offset = 0L)),
+    list(DateOffset = list(DateField = "EndDate", Offset = -7L))
+  )
+  for (strategy in strategies) {
+    r <- omop_recipe(
+      populations = omop_population(
+        id = "p",
+        index_event = omop_index_event(
+          201820L, "condition_occurrence", end_strategy = strategy
+        )
+      ),
+      outputs = omop_output(type = "wide", population_id = "p")
+    )
+    exported <- recipe_export_circe(r, "p")
+    expr <- jsonlite::fromJSON(exported, simplifyVector = FALSE)
+    expect_equal(expr$EndStrategy, strategy)
+    expect_equal(recipe_import_circe(exported)$index_event$end_strategy,
+                 strategy)
+  }
+})
+
+test_that("unsupported EndStrategy and CensoringCriteria fail closed", {
   circe <- jsonlite::toJSON(list(
     ConceptSets = list(list(id = 0L, name = "DM",
       expression = list(items = list(list(concept = list(CONCEPT_ID = 201820L)))))),
@@ -323,7 +349,18 @@ test_that("Circe-only EndStrategy / CensoringCriteria fail closed", {
     InclusionRules = list(),
     EndStrategy = list(DateOffset = list(Offset = 30L)),
     CensoringCriteria = list()), auto_unbox = TRUE)
-  expect_error(recipe_import_circe(circe), "EndStrategy")
+  expect_error(recipe_import_circe(circe), "DateField and Offset")
+
+  unsupported <- jsonlite::fromJSON(circe, simplifyVector = FALSE)
+  unsupported$EndStrategy <- list(CustomEra = list(DrugCodesetId = 1L))
+  expect_error(recipe_import_circe(jsonlite::toJSON(
+    unsupported, auto_unbox = TRUE, null = "null")), "EndStrategy")
+
+  censored <- jsonlite::fromJSON(circe, simplifyVector = FALSE)
+  censored$EndStrategy <- list()
+  censored$CensoringCriteria <- list(list(Death = list()))
+  expect_error(recipe_import_circe(jsonlite::toJSON(
+    censored, auto_unbox = TRUE, null = "null")), "CensoringCriteria")
 })
 
 test_that("nested CriteriaGroups beyond one level fail closed", {
@@ -392,14 +429,34 @@ test_that("recipe_export_circe errors for an unknown population_id", {
 })
 
 test_that("typed index events compile and survive recipe round-trips", {
+  physical_end <- list(DateOffset = list(
+    DateField = "EndDate", Offset = 0L
+  ))
   idx <- omop_index_event(201820L, "CONDITION_OCCURRENCE",
-                          primary_limit = "LAST")
+                          primary_limit = "LAST",
+                          end_strategy = physical_end)
   expect_s3_class(idx, "omop_index_event")
   expect_equal(idx$table, "condition_occurrence")
   expect_equal(idx$primary_limit, "last")
   expect_error(omop_index_event(201820L, "death"), "must be one of")
   expect_error(omop_index_event(1.5, "condition_occurrence"),
                "non-negative integers")
+  expect_error(omop_index_event(
+    201820L, "condition_occurrence",
+    end_strategy = list(DateOffset = list(DateField = "EndDate"))
+  ), "DateField and Offset")
+  expect_error(omop_index_event(
+    201820L, "condition_occurrence",
+    end_strategy = list(DateOffset = list(
+      DateField = "EndDate", Offset = 0.5
+    ))
+  ), "exact integer")
+  expect_error(omop_index_event(
+    201820L, "condition_occurrence",
+    end_strategy = list(DateOffset = list(
+      DateField = "OtherDate", Offset = 0L
+    ))
+  ), "StartDate or EndDate")
   expect_error(omop_population("x", union = c("a", "b"), index_event = idx),
                "cannot also take")
   expect_error(omop_population("x", episode_policy = "any_episode",
@@ -418,7 +475,7 @@ test_that("typed index events compile and survive recipe round-trips", {
   plan <- recipe_to_plan(r)
   expect_equal(plan$populations$study$index_event,
                list(table = "condition_occurrence", concept_set = 201820L,
-                    primary_limit = "last"))
+                    primary_limit = "last", end_strategy = physical_end))
 
   from_json <- recipe_import_json(recipe_export_json(r))
   from_yaml <- recipe_import_yaml(recipe_export_yaml(r))
@@ -427,6 +484,8 @@ test_that("typed index events compile and survive recipe round-trips", {
     expect_s3_class(roundtrip$populations$study$index_event,
                     "omop_index_event")
     expect_equal(roundtrip$populations$study$index_event$primary_limit, "last")
+    expect_equal(roundtrip$populations$study$index_event$end_strategy,
+                 physical_end)
   }
 })
 

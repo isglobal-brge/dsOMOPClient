@@ -7,10 +7,15 @@
 ds.omop.plan.survival(
   plan,
   outcome_table = "condition_occurrence",
-  outcome_concepts,
+  outcome_concepts = NULL,
   tar = list(start_offset = 0, end_offset = 730),
   event_order = "first",
-  name = "survival"
+  name = "survival",
+  outcomes = NULL,
+  censoring = NULL,
+  format = NULL,
+  washout_days = 0L,
+  tie_policy = "priority"
 )
 }
 \arguments{
@@ -19,26 +24,44 @@ ds.omop.plan.survival(
 \item{outcome_table}{Character; OMOP table containing outcome events
 (e.g. \code{"condition_occurrence"}, \code{"procedure_occurrence"}).}
 
-\item{outcome_concepts}{Numeric vector; concept IDs that define the
-outcome event.}
+\item{outcome_concepts}{Numeric vector; concept IDs defining the historical
+composite outcome. Omit when using `outcomes`.}
 
 \item{tar}{Named list; time-at-risk window with \code{start_offset}
 and \code{end_offset} (integer days relative to cohort_start_date).}
 
 \item{event_order}{Character; \code{"first"} or \code{"last"} to
-select which event occurrence determines the time-to-event value.}
+select which event occurrence determines the time-to-event value;
+advanced recurrent/counting formats also accept `all`.}
 
-\item{name}{Character; output name used as a key in the plan's
-outputs list.}
+\item{name}{Character; output name used as a key in the plan's outputs list.}
+
+\item{outcomes}{Named list of endpoint specifications. Each endpoint contains
+`table`, `concept_set`, and optional safe row `filters`.}
+
+\item{censoring}{Named list controlling observation-period, death, cohort-end,
+and optional administrative-date censoring.}
+
+\item{format}{Character; `survival`, `competing_risk`, `recurrent_events`, or
+`counting_process`.}
+
+\item{washout_days}{Non-negative integer washout between events of the same
+named endpoint.}
+
+\item{tie_policy}{Character; `priority`, `error`, or `all`. The latter is
+restricted to recurrent-event output.}
 }
 \value{
 The modified \code{omop_plan} with the survival output appended.
 }
 \description{
-Produces one row per cohort episode with an event indicator (0/1) and
-time-to-event in days. Calendar dates are omitted; the assigned server-side
-object remains subject to the ordinary DataSHIELD disclosure controls.
-Requires a cohort to be set.
+The historical single-outcome call produces one row per cohort episode with
+an event indicator and time-to-event in days. Advanced calls can retain named
+endpoints as survival, competing-risk, recurrent-event, or counting-process
+data. Calendar dates and source event identifiers are never returned.
+Requires a cohort to be set. Historical plans without an explicit censoring
+field are censored at the end of the observation period containing the index
+episode; they never bridge an unobserved gap to a later period.
 }
 \examples{
 \dontrun{

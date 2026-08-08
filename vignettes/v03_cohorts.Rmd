@@ -221,6 +221,13 @@ observation, procedure, device and visit-occurrence tables with a standard
 person key, event date/end and stable primary key. It implements a deliberate
 Circe-like subset; it is not arbitrary CirceR/CohortGenerator execution.
 Primary first/last/all selection occurs before inclusion filters.
+By default each retained index episode ends at the end of the unique OMOP
+observation period covering its index, matching Circe. To request a bounded
+offset, use for example
+`end_strategy = list(DateOffset = list(DateField = "StartDate", Offset = 30L))`.
+`DateField = "EndDate", Offset = 0L` explicitly requests the source event's
+physical end (capped at observation-period end). Missing or overlapping
+observation periods and unsupported Circe end strategies fail closed.
 
 When an externally generated cohort can be recurrent and a population filter
 uses its index date, set `episode_policy` to `"any_episode"`, `"all_episodes"`,

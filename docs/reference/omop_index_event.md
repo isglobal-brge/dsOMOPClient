@@ -15,7 +15,8 @@ omop_index_event(
   concept_name = NULL,
   primary_limit = c("first", "last", "all"),
   include_descendants = FALSE,
-  include_mapped = FALSE
+  include_mapped = FALSE,
+  end_strategy = NULL
 )
 ```
 
@@ -43,6 +44,15 @@ omop_index_event(
 - include_descendants, include_mapped:
 
   Logical concept-set expansion flags.
+
+- end_strategy:
+
+  `NULL` for the OHDSI/Circe default (exit at the end of the unique
+  observation period covering the index), or the transport-safe OHDSI
+  DateOffset shape
+  `list(DateOffset = list(DateField = "StartDate"|"EndDate", Offset = <integer>))`.
+  Use `EndDate` with offset zero to select the physical event end
+  (capped at observation-period end, as in Circe).
 
 ## Value
 

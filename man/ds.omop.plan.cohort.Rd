@@ -21,7 +21,8 @@ The modified \code{omop_plan} with the cohort slot populated.
 \description{
 Attaches a cohort definition to the plan, restricting all downstream
 outputs to the selected cohort episodes. A person may therefore contribute
-multiple non-overlapping episodes under the same definition. Exactly one of
+multiple episodes under the same definition, including overlapping episodes.
+Exactly one of
 \code{cohort_definition_id} or \code{spec} must be provided. Use
 \code{cohort_definition_id} to reference an existing cohort definition,
 or \code{spec} to define a cohort inline using the DSL.

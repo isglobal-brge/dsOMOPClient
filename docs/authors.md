@@ -15,13 +15,13 @@ Source:
 [`DESCRIPTION`](https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/DESCRIPTION)
 
 Sarrat González D, Escribà-Montagut X, González J (2026). *dsOMOPClient:
-DataSHIELD Client for OMOP CDM Databases*. R package version 2.5.0,
+DataSHIELD Client for OMOP CDM Databases*. R package version 2.5.1,
 <https://isglobal-brge.github.io/dsOMOPClient/>.
 
     @Manual{,
       title = {dsOMOPClient: DataSHIELD Client for OMOP CDM Databases},
       author = {David {Sarrat González} and Xavier Escribà-Montagut and Juan R González},
       year = {2026},
-      note = {R package version 2.5.0},
+      note = {R package version 2.5.1},
       url = {https://isglobal-brge.github.io/dsOMOPClient/},
     }

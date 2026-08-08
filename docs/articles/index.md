@@ -32,3 +32,6 @@
   Controls](https://isglobal-brge.github.io/dsOMOPClient/articles/v06_security.md):
 
   Understand disclosure gates, pseudonym keys and deployment boundaries.
+
+- [OHDSI QueryLibrary Sticky
+  Redesigns](https://isglobal-brge.github.io/dsOMOPClient/articles/v07_querylibrary_sticky.md):

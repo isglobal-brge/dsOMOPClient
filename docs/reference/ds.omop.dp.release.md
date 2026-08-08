@@ -31,7 +31,6 @@ ds.omop.dp.release(
   privacy,
   datasources = NULL,
   pool = TRUE,
-  require_formal = FALSE,
   format = c("long", "wide", "vector", "raw")
 )
 ```
@@ -56,13 +55,6 @@ ds.omop.dp.release(
 - pool:
 
   Logical; pool the complete set of noisy site releases.
-
-- require_formal:
-
-  Logical; require every server to attest a certified sampler and formal
-  bounded DP composition. The current built-in sampler is deliberately
-  not certified, so this fails closed instead of overstating its
-  guarantee.
 
 - format:
 

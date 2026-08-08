@@ -12,7 +12,7 @@ to pseudonymous persons. Requires a cohort to be set.
 ds.omop.plan.temporal_covariates(
   plan,
   table,
-  concept_set,
+  concept_set = NULL,
   bin_width = 30L,
   window_start = -365L,
   window_end = 0L,
@@ -33,7 +33,10 @@ ds.omop.plan.temporal_covariates(
 
 - concept_set:
 
-  Numeric vector; concept IDs to include in the covariate computation.
+  Optional concept IDs or an OHDSI-style concept-set spec with
+  `concepts`, `include_descendants`, `include_mapped`, and `exclude`.
+  When `NULL`, all concepts present in the bounded event stream are
+  retained, subject to the server concept cap.
 
 - bin_width:
 

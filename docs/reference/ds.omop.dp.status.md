@@ -29,13 +29,16 @@ compatibility mode `"sticky_unbounded"` remains sticky for an exact
 authenticated canonical lineage and typed statistic, but does not
 identify every mathematically equivalent alternate query construction
 and does not bound global composition over unlimited distinct queries.
-The current server sampler is explicitly reported as non-certified;
-bounded accounting must not be confused with a formal
-differential-privacy proof. Eligible input frames must also carry the
-server's authenticated person-local provenance capsule; a copied class
-or plain attribute is not sufficient. Each status contains the
-custodian's public `snapshot_id`. Federated sites may legitimately
-report different snapshot identifiers.
+The `privacy_guarantee` field names the implemented sticky,
+person-bounded mechanism and nominal accounting contract. Eligible input
+frames must also carry the server's authenticated person-local
+provenance capsule; a copied class or plain attribute is not sufficient.
+Each status contains the custodian's public `snapshot_id`. Federated
+sites may legitimately report different snapshot identifiers. Release
+preflight rejects duplicate noise domains, ledgers, or domain-scoped
+ledger authentication keys so the same logical privacy node cannot be
+pooled twice, including while replicas converge on a rotated noise root
+or when durable state was accidentally forked.
 
 ## Examples
 

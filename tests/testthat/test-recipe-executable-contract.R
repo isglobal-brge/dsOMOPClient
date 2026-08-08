@@ -163,6 +163,33 @@ test_that("multi-table long splits and never creates a joined event frame", {
   }, logical(1))))
 })
 
+test_that("compiled multi-table output names cannot overwrite explicit outputs", {
+  recipe <- omop_recipe(
+    variables = list(
+      omop_variable(
+        name = "condition", table = "condition_occurrence",
+        concept_id = 201820
+      ),
+      omop_variable(
+        name = "measurement", table = "measurement",
+        concept_id = 3004410
+      )
+    ),
+    outputs = list(
+      omop_output(
+        name = "x", type = "long",
+        variables = c("condition", "measurement")
+      ),
+      omop_output(
+        name = "x_condition_occurrence", type = "long",
+        variables = "measurement"
+      )
+    )
+  )
+
+  expect_error(recipe_to_plan(recipe), "compiled output name collision")
+})
+
 test_that("same-table long variables with different scopes split by variable", {
   a <- omop_variable(
     name = "early", table = "measurement", concept_id = 1,
@@ -413,10 +440,11 @@ test_that("temporal covariates reject undeclared Cartesian products", {
 
   unscoped <- binary
   unscoped$concept_id <- NULL
-  expect_error(recipe_to_plan(omop_recipe(
+  dynamic <- recipe_to_plan(omop_recipe(
     variables = unscoped,
-    outputs = omop_output(name = "tc", type = "temporal_covariates"))),
-    "every variable to be concept-scoped")
+    outputs = omop_output(name = "tc", type = "temporal_covariates")))
+  expect_null(dynamic$outputs$tc$concept_set)
+  expect_identical(dynamic$outputs$tc$analyses, "binary")
 
   complete <- omop_recipe(
     variables = list(
@@ -429,6 +457,63 @@ test_that("temporal covariates reject undeclared Cartesian products", {
     outputs = omop_output(name = "tc", type = "temporal_covariates"))
   expect_equal(recipe_to_plan(complete)$outputs$tc$analyses,
                c("binary", "count"))
+})
+
+test_that("temporal analyses survive a JSON recipe round-trip", {
+  recipe <- omop_recipe(
+    variables = list(
+      omop_variable(
+        name = "presence", table = "measurement",
+        concept_id = 1, format = "binary"
+      ),
+      omop_variable(
+        name = "records", table = "measurement",
+        concept_id = 1, format = "count"
+      )
+    ),
+    outputs = omop_output(
+      name = "tc", type = "temporal_covariates",
+      options = list(analyses = c("binary", "count"))
+    )
+  )
+
+  restored <- recipe_import_json(recipe_export_json(recipe))
+  expect_identical(restored$outputs$tc$options$analyses,
+                   c("binary", "count"))
+  expect_identical(recipe_to_plan(restored)$outputs$tc$analyses,
+                   c("binary", "count"))
+})
+
+test_that("longitudinal recipes preserve descendant concept scope", {
+  expanded <- omop_variable(
+    name = "dx", table = "condition_occurrence", concept_id = 201820,
+    format = "raw", expand = TRUE
+  )
+
+  intervals <- recipe_to_plan(omop_recipe(
+    variables = expanded,
+    outputs = omop_output(name = "iv", type = "intervals")
+  ))
+  expect_true(
+    intervals$outputs$iv$concept_filter$condition_occurrence$
+      include_descendants
+  )
+
+  survival <- recipe_to_plan(omop_recipe(
+    variables = expanded,
+    outputs = omop_output(name = "tte", type = "survival")
+  ))
+  expect_true(
+    survival$outputs$tte$outcome$concept_set$include_descendants
+  )
+
+  temporal_variable <- expanded
+  temporal_variable$format <- "binary"
+  temporal <- recipe_to_plan(omop_recipe(
+    variables = temporal_variable,
+    outputs = omop_output(name = "tc", type = "temporal_covariates")
+  ))
+  expect_true(temporal$outputs$tc$concept_set$include_descendants)
 })
 
 test_that("temporal preview includes the row-to-person reference", {

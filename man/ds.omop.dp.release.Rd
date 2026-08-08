@@ -9,7 +9,6 @@ ds.omop.dp.release(
   privacy,
   datasources = NULL,
   pool = TRUE,
-  require_formal = FALSE,
   format = c("long", "wide", "vector", "raw")
 )
 }
@@ -25,11 +24,6 @@ public compatibility label. This label does not control sticky identity.}
 \code{DSI::datashield.connections_find()}.}
 
 \item{pool}{Logical; pool the complete set of noisy site releases.}
-
-\item{require_formal}{Logical; require every server to attest a certified
-sampler and formal bounded DP composition. The current built-in sampler is
-deliberately not certified, so this fails closed instead of overstating
-its guarantee.}
 
 \item{format}{Client-only pooled-result format: long data frame, one-row
 wide data frame, named vector, or raw list. Histogram releases support all

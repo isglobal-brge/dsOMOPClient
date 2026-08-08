@@ -31,12 +31,13 @@ omop_privacy(
 
 - statistic:
 
-  One of `"count"`, `"categorical_histogram"`, `"numeric_histogram"`,
-  `"bounded_mean"`, or `"binary_rate"`.
+  One of `"count"`, `"bounded_record_count"`, `"categorical_histogram"`,
+  `"numeric_histogram"`, `"bounded_distinct"`, `"bounded_mean"`, or
+  `"binary_rate"`.
 
 - variable:
 
-  Bare column name for all statistics except `"count"`.
+  Bare column name except for `"count"` and `"bounded_record_count"`.
 
 - levels:
 
@@ -55,18 +56,20 @@ omop_privacy(
 - reducer:
 
   Per-person reducer. Categorical histograms accept `"presence"`,
-  `"mode"`, `"first"`, and `"last"`; numeric histograms also accept
-  `"min"`, `"max"`, `"mean"`, `"median"`, and `"records"`; bounded means
-  accept the numeric one-value reducers; binary rates accept `"any"`,
-  `"all"`, `"first"`, and `"last"`. For compatibility, categorical
-  `"any"` becomes `"presence"`, while numeric and bounded-mean `"any"`
-  becomes `"mean"`.
+  `"mode"`, `"first"`, `"last"`, and `"records"`; numeric histograms
+  also accept `"min"`, `"max"`, `"mean"`, `"median"`, and `"records"`;
+  bounded means accept the numeric one-value reducers; binary rates
+  accept `"any"`, `"all"`, `"first"`, and `"last"`. For compatibility,
+  categorical `"any"` becomes `"presence"`, numeric and bounded-mean
+  `"any"` becomes `"mean"`, and the two scalar bounded primitives
+  canonicalize it to their sole reducer.
 
 - max_contributions:
 
   Positive integer person-level contribution cap. Values above one apply
-  only to categorical histograms and numeric histograms reduced with
-  `"presence"` or `"records"`.
+  to bounded record counts, bounded distinct counts, categorical
+  `"presence"`/`"records"` histograms, and numeric `"records"`
+  histograms.
 
 - positive:
 

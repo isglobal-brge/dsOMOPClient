@@ -2,7 +2,10 @@
 
 Produces a derived variable computing days from observation start to a
 fixed reference date. When omitted, today's date is recorded in the
-variable specification at construction time.
+variable specification at construction time. With multiple observation
+spells, the unique period containing the reference date is selected; no
+covering period yields a missing value and overlapping covering periods
+fail closed.
 
 ## Usage
 

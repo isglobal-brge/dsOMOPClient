@@ -17,14 +17,14 @@
 <meta property="og:description" content="Understand disclosure gates, pseudonym keys and deployment boundaries.">
 </head>
 <body>
-    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
 
 
     <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,7 @@
     <li><a class="dropdown-item" href="../articles/v04_extraction.html">Data Extraction with the Plan DSL</a></li>
     <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
+    <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
   </ul>
 </li>
       </ul>
@@ -56,7 +57,7 @@
 
 
   </div>
-</nav><div class="container template-article">
+</nav><div class="container template-article" id="container">
 
 
 
@@ -229,12 +230,10 @@ DataSHIELD policy value that dsOMOP reports and validates. dsOMOP does
 not reinterpret it as a generic differential-privacy budget or add it to
 arbitrary query results.</li>
 <li>
-<code>formal_dp_enabled</code>, <code>sticky_noise_enabled</code>,
-<code>privacy_ledger_enabled</code>: runtime capability flags. All are
-<code>FALSE</code> by default; the latter two become true only after the
-opt-in sticky service and durable ledger bootstrap successfully.
-<code>formal_dp_enabled</code> remains false for the built-in
-sampler.</li>
+<code>sticky_noise_enabled</code>,
+<code>privacy_ledger_enabled</code>: runtime capability flags. Both are
+<code>FALSE</code> by default and become true only after the opt-in
+sticky service and durable ledger bootstrap successfully.</li>
 <li>
 <code>dsomop.nfilter.dist</code> (default <code>10</code>): minimum
 support for distribution-style outputs.</li>
@@ -448,11 +447,12 @@ schema and role are configured.</p>
 <div class="section level2">
 <h2 id="staged-files-are-a-separate-trust-boundary">Staged files are a separate trust boundary<a class="anchor" aria-label="anchor" href="#staged-files-are-a-separate-trust-boundary"></a>
 </h2>
-<p>Staged mode can stream untranslated long-event chunks to Parquet when
-Arrow is available, with CSV as the fallback.
-Wide/features/baseline/survival and other composite outputs are
-materialized in the server R process before being staged; staged mode
-therefore does not make every representation memory-bounded.</p>
+<p>Staged mode can stream untranslated long-event and interval chunks to
+Parquet row groups in one file when Arrow is available, with CSV as the
+fallback. SQL-first temporal/person-period components are streamed in
+the same way. Outputs that inherently require an R-side reshape are
+materialized before being staged, so staged mode does not make every
+representation memory-bounded.</p>
 <p>Files live under a private server directory with <code>0700</code>
 directories and <code>0600</code> files and are governed by row, byte,
 output-count, directory and TTL limits. A local staging transaction
@@ -489,27 +489,16 @@ interoperability surface.</p>
 <h2 id="limits-of-the-current-model">Limits of the current model<a class="anchor" aria-label="anchor" href="#limits-of-the-current-model"></a>
 </h2>
 <p>Thresholds, omission, protected tails and banding are deterministic
-disclosure controls; they do not provide a formal differential-privacy
-guarantee. A secure deployment must restrict methods, users and database
-privileges and should monitor query composition. Supporting arbitrary
-adaptive aggregates would need a defined privacy unit, contribution
-bounds, public clipping ranges, sticky noise and a server-side privacy
-ledger. The dedicated sticky endpoint supplies authenticated
-person-local lineage, bounded primitives and durable replay, but its
-current sampler and the complete recipe-to-release path are not one
-certified atomic DP measurement, so it deliberately reports
-<code>formal_dp = FALSE</code>. The standard <code>nfilter.noise</code>
-option does not supply those properties on its own.</p>
-<p>A formal path would mediate the canonical recipe and bounded
-statistic in one server call, use add/remove-one-person adjacency across
-all joined OMOP tables, apply only public contribution and clipping
-contracts, and persist the first output of a vetted finite-precision
-mechanism before returning it. Exact retries would then be ledger
-replay. If deployments require unlimited later interaction without a
-budget-exhaustion failure, the strongest practical design is a fixed DP
-synopsis followed by unlimited post-processing. Unlimited new
-informative measurements cannot also retain both fixed utility and a
-finite lifetime privacy loss; the current bounded mode therefore
+disclosure controls. A secure deployment must restrict methods, users
+and database privileges and should monitor query composition. The
+dedicated sticky endpoint adds authenticated person-local lineage,
+deterministic contribution bounds, sticky noise and a durable ledger. It
+exposes one descriptive contract,
+<code>privacy_guarantee = "sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting"</code>;
+there is no separate certification switch. The standard
+<code>nfilter.noise</code> option does not supply these properties on
+its own. Unlimited new informative measurements cannot retain both fixed
+utility and finite lifetime privacy loss; the bounded mode therefore
 degrades to a marked data-independent response instead of blocking.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -518,7 +507,9 @@ degrades to a marked data-independent response instead of blocking.</p>
 
 
 
-    <footer><div class="pkgdown-footer-left">
+   </div>
+  <footer><div class="container">
+  <div class="pkgdown-footer-left">
   <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
 </div>
 
@@ -526,12 +517,6 @@ degrades to a marked data-independent response instead of blocking.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
-    </footer>
-</div>
-
-
-
-
-
-  </body>
+  </div></footer>
+</body>
 </html>

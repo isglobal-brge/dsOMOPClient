@@ -17,14 +17,14 @@
 <meta property="og:description" content="Build typed longitudinal extraction plans and output representations.">
 </head>
 <body>
-    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
 
 
     <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,7 @@
     <li><a class="dropdown-item" href="../articles/v04_extraction.html">Data Extraction with the Plan DSL</a></li>
     <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
+    <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
   </ul>
 </li>
       </ul>
@@ -56,7 +57,7 @@
 
 
   </div>
-</nav><div class="container template-article">
+</nav><div class="container template-article" id="container">
 
 
 
@@ -228,8 +229,10 @@ covariate row means implicit zero.</li>
 </tr>
 <tr class="even">
 <td>survival</td>
-<td>one binary outcome/censoring row per cohort episode; first or last
-qualifying event; fixed-offset or cohort-end censoring only</td>
+<td>episode-grain survival, named competing risks, recurrent events or
+counting-process risk sets; first/last/all event policies as allowed by
+the selected format; cohort, observation-period, death and
+administrative censoring</td>
 </tr>
 <tr class="odd">
 <td>intervals-long</td>
@@ -239,13 +242,14 @@ index</td>
 <tr class="even">
 <td>temporal covariates</td>
 <td>sparse concept-by-time-bin values keyed by episode
-<code>rowId</code>, plus <code>personRef</code>
+<code>rowId</code>, restricted to the unique OMOP observation period
+covering index, plus <code>personRef</code>
 </td>
 </tr>
 <tr class="odd">
 <td>person-period</td>
-<td>complete episode-by-regular-bin roster plus sparse binary/count
-covariates; index-relative time only</td>
+<td>observation-aware episode-by-regular-bin roster plus sparse
+binary/count covariates; index-relative time only</td>
 </tr>
 <tr class="even">
 <td>sparse</td>
@@ -266,19 +270,37 @@ same-concept events no more than 30 days apart; the full policy can
 declare <code>list(days = 30L, by = "concept", keep = "first")</code>.
 Collapse is per cohort episode when an index window is present and uses
 the standard OMOP event primary key to break same-date ties
-deterministically.</p>
-<p>A basic regular person-period panel is available through
+deterministically. Named person-level OHDSI estimands deliberately
+reduce recurrent index episodes to one deterministic episode per person
+and pre-aggregate recurrent outcomes; this prevents joins from
+multiplying person-time while still counting repeated outcome events.
+General long, episode, recurrent-event and counting-process outputs do
+not perform that person-level reduction. Longitudinal windows, bins,
+washout and risk intervals currently use calendar days, consistent with
+required OMOP <code>*_date</code> fields and the federated date
+contract. Optional <code>*_datetime</code> values do not change ordering
+or create sub-day risk sets. The source primary key stays internal, so
+repeated attachments are not linkable across episodes through a released
+high-cardinality event token.</p>
+<p>A regular person-period panel is available through
 <code><a href="../reference/ds.omop.plan.person_period.html">ds.omop.plan.person_period()</a></code> or Recipe output
 <code>type = "person_period"</code>. It emits
 <code>personPeriods</code>, <code>temporalCovariates</code>,
 <code>covariateRef</code>, <code>timeRef</code>, and
-<code>personRef</code>; missing sparse tuples are zeros. It
-intentionally requires episode grain and index-relative bins and emits
-neither absolute dates nor raw event identifiers. Explicit
-censoring/risk-interval semantics for general counting-process,
-recurrent-event and competing-risk/multi-state models remain future
-work. Multi-table long recipes split into one output per table rather
-than fabricating an arbitrary cross-table join.</p>
+<code>personRef</code>. Every cohort episode must have exactly one OMOP
+<code>observation_period</code> covering its index date. Only bins
+intersecting that period appear in <code>personPeriods</code>;
+<code>startDay</code>/<code>endDay</code> remain the requested bin
+limits, while <code>observationStartDay</code>,
+<code>observationEndDay</code>, and inclusive <code>daysObserved</code>
+describe the observed part. A missing sparse tuple means zero only when
+its <code>(rowId, timeId)</code> roster row exists. The descriptive
+panel intentionally does not treat cohort end or death as
+observation/censoring. Use survival or counting-process output for
+explicit time-at-risk, washout, tie, and censoring policies. Arbitrary
+multi-state transition models remain outside the reviewed contracts.
+Multi-table long recipes split into one output per table rather than
+fabricating an arbitrary cross-table join.</p>
 <p>Representations that expand a request are subject to
 controller-configurable operational caps. The defaults allow at most
 1,000 explicit feature specifications
@@ -286,11 +308,14 @@ controller-configurable operational caps. The defaults allow at most
 wide/sparse/temporal output (<code>dsomop.max_pivot_concepts</code>),
 5,000 final wide/feature columns
 (<code>dsomop.max_output_columns</code>) and 10,000 temporal bins in a
-window (<code>dsomop.max_temporal_bins</code>). Filter trees are capped
-at depth 32, 1,024 nodes and 10,000 literal values, and a plan at 100
-outputs. These are controller-configurable memory/CPU safeguards rather
-than disclosure guarantees. Across servers, construct a request within
-the lowest compatible cap advertised by every participating site.</p>
+window (<code>dsomop.max_temporal_bins</code>). Longitudinal
+first/last/nearest selection retains at most 100 events per
+episode/source group (<code>dsomop.max_events_per_group</code>). Filter
+trees are capped at depth 32, 1,024 nodes and 10,000 literal values, and
+a plan at 100 outputs. These are controller-configurable memory/CPU
+safeguards rather than disclosure guarantees. Across servers, construct
+a request within the lowest compatible cap advertised by every
+participating site.</p>
 </div>
 <div class="section level3">
 <h3 id="dates-and-ages">Dates and ages<a class="anchor" aria-label="anchor" href="#dates-and-ages"></a>
@@ -480,12 +505,13 @@ compatible type families and, for vocabulary-dependent plans, one
 identical non-missing reported vocabulary version. Calling
 <code><a href="../reference/ds.omop.plan.harmonize.html">ds.omop.plan.harmonize()</a></code> explicitly remains useful when the
 analyst wants to inspect that contract before execution.</p>
-<p>Before assignment, the client removes and verifies stale symbols in
-the exact namespace owned by the requested outputs. Every expected
-component must then land on every node. A node failure, incomplete
-composite output or factor- harmonization failure removes and verifies
-all DataSHIELD-visible symbols from the attempt. This is symbol-level
-all-or-none cleanup; previous symbols are not restored.</p>
+<p>Before assignment, the client verifies that the exact namespace owned
+by the requested outputs is fresh and refuses to start if any requested
+destination already exists. Every expected component must then land on
+every node. A node failure, incomplete composite output or
+factor-harmonization failure removes and verifies all DataSHIELD-visible
+symbols created by the attempt. This is symbol-level all-or-none
+cleanup; pre-existing symbols are never overwritten.</p>
 <p>The server-side manipulation verbs use the same discipline: every
 source must exist on every requested node, the destination must be
 fresh, and a partial <code>merge</code>, <code>filter</code>,
@@ -497,12 +523,12 @@ server-local files and assigns descriptors inheriting from both
 <code>FlowerDatasetDescriptor</code> and the package-neutral
 <code>OMOPStagedDatasetDescriptor</code>, instead of keeping the final
 result as an R data frame. With <code>arrow</code> installed the files
-are Parquet (otherwise the server uses its CSV fallback). Long,
-untranslated event outputs are fetched and sanitised in chunks, so the
-complete result is never materialised in the R session. Formats that
-require an R-side transformation (for example wide, features, baseline,
-survival and sparse/temporal composites) are currently materialised
-first and only then staged.</p>
+are Parquet (otherwise the server uses its CSV fallback). Long event and
+interval outputs, plus SQL-first temporal/person-period components, are
+fetched and sanitised in bounded chunks into row groups of one Parquet
+file, so the complete result is never materialised in the R session.
+Formats that require an R-side transformation are materialised first and
+only then staged.</p>
 <p>Staging is a local commit protocol: a pre-commit error removes the
 new dataset directory, while a successful transaction writes the private
 <code>manifest.json</code> version 2 only after every file and
@@ -654,7 +680,9 @@ extension (or set <code>format =</code> explicitly):</p>
 
 
 
-    <footer><div class="pkgdown-footer-left">
+   </div>
+  <footer><div class="container">
+  <div class="pkgdown-footer-left">
   <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
 </div>
 
@@ -662,12 +690,6 @@ extension (or set <code>format =</code> explicitly):</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
-    </footer>
-</div>
-
-
-
-
-
-  </body>
+  </div></footer>
+</body>
 </html>

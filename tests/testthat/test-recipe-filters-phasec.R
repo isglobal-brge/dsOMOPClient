@@ -202,6 +202,32 @@ test_that("recipe-level and per-variable row filters AND-merge (neither lost)", 
   expect_true("between" %in% ops)
 })
 
+test_that("interval recipes apply global filters to every source with AND", {
+  r <- omop_recipe()
+  condition <- omop_variable(
+    name = "condition", table = "condition_occurrence", concept_id = 201820,
+    filters = list(omop_filter_date_range("2019-01-01", "2024-12-31"))
+  )
+  drug <- omop_variable(
+    name = "drug", table = "drug_exposure", concept_id = 1127078
+  )
+  r <- dsOMOPClient:::recipe_add_variable(r, condition)
+  r <- dsOMOPClient:::recipe_add_variable(r, drug)
+  r <- dsOMOPClient:::recipe_add_filter(
+    r, omop_filter_date_range("2020-01-01", "2023-12-31")
+  )
+  r <- dsOMOPClient:::recipe_add_output(
+    r, omop_output(name = "iv", type = "intervals")
+  )
+
+  filters <- recipe_to_plan(r)$outputs$iv$source_filters
+  expect_setequal(names(filters), c("condition_occurrence", "drug_exposure"))
+  expect_true("and" %in% names(filters$condition_occurrence))
+  expect_equal(length(filters$condition_occurrence$and), 2L)
+  expect_identical(filters$drug_exposure$var, "drug_exposure_start_date")
+  expect_identical(filters$drug_exposure$op, "between")
+})
+
 # --- visit_filter + concept_col round-trip ------------------------------------
 
 test_that("ds.omop.plan.events stores visit_filter and concept_col", {
