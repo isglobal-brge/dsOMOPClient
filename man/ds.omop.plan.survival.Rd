@@ -15,7 +15,11 @@ ds.omop.plan.survival(
   censoring = NULL,
   format = NULL,
   washout_days = 0L,
-  tie_policy = "priority"
+  tie_policy = "priority",
+  transitions = NULL,
+  initial_state = NULL,
+  state_hierarchy = NULL,
+  state_step = NULL
 )
 }
 \arguments{
@@ -32,7 +36,7 @@ and \code{end_offset} (integer days relative to cohort_start_date).}
 
 \item{event_order}{Character; \code{"first"} or \code{"last"} to
 select which event occurrence determines the time-to-event value;
-advanced recurrent/counting formats also accept `all`.}
+advanced recurrent/counting/multi-state formats also accept `all`.}
 
 \item{name}{Character; output name used as a key in the plan's outputs list.}
 
@@ -42,14 +46,28 @@ advanced recurrent/counting formats also accept `all`.}
 \item{censoring}{Named list controlling observation-period, death, cohort-end,
 and optional administrative-date censoring.}
 
-\item{format}{Character; `survival`, `competing_risk`, `recurrent_events`, or
-`counting_process`.}
+\item{format}{Character; `survival`, `competing_risk`, `recurrent_events`,
+`counting_process`, or `multi_state`.}
 
 \item{washout_days}{Non-negative integer washout between events of the same
 named endpoint.}
 
-\item{tie_policy}{Character; `priority`, `error`, or `all`. The latter is
-restricted to recurrent-event output.}
+\item{tie_policy}{Character; `priority`, `all`, or `sequential`.
+`all` is restricted to recurrent events. `sequential` orders simultaneous
+reachable state transitions within their observed day and is restricted
+to multi-state output. The historical `error` policy is rejected before
+querying because data-dependent failures create a disclosure oracle.}
+
+\item{transitions}{For `multi_state`, either an `mstate` transition matrix,
+a named adjacency list, or the canonical `list(states, edges)` form.}
+
+\item{initial_state}{Initial state name for `multi_state` (default `index`).}
+
+\item{state_hierarchy}{Optional public state priority used to resolve tied
+dates. Omitted states are appended in transition-state order.}
+
+\item{state_step}{Positive within-day analytic offset used only by
+`tie_policy = "sequential"`; defaults to 0.01 days.}
 }
 \value{
 The modified \code{omop_plan} with the survival output appended.
@@ -57,8 +75,9 @@ The modified \code{omop_plan} with the survival output appended.
 \description{
 The historical single-outcome call produces one row per cohort episode with
 an event indicator and time-to-event in days. Advanced calls can retain named
-endpoints as survival, competing-risk, recurrent-event, or counting-process
-data. Calendar dates and source event identifiers are never returned.
+endpoints as survival, competing-risk, recurrent-event, counting-process,
+or OHDSI-style expanded multi-state data. Calendar dates and source event
+identifiers are never returned.
 Requires a cohort to be set. Historical plans without an explicit censoring
 field are censored at the end of the observation period containing the index
 episode; they never bridge an unobserved gap to a later period.

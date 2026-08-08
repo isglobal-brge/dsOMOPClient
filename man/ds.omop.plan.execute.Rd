@@ -65,6 +65,8 @@ Sparse outputs are split into multiple symbols:
 \code{<name>.personPeriods}, the complete episode-by-bin roster.
 Recurrent-event survival outputs assign \code{<name>.events} and
 \code{<name>.riskSets}.
+Multi-state outputs assign \code{<name>.msdata} and the public transition
+dictionary \code{<name>.transitionRef}.
 }
 \details{
 When \code{output_mode = "staged"}, outputs are written to server-local

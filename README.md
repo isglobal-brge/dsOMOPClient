@@ -126,9 +126,11 @@ possible relational or longitudinal estimand. In particular:
 - `event_select` defaults to global selection within a person/episode and can
   use `by = "concept"` for independent first/last-N selection per concept;
 - recurrent cohort episodes, regular episode-by-period panels, and named
-  competing-risk, recurrent-event and counting-process outputs are first-class
-  contracts; arbitrary multi-state transition models remain outside the
-  reviewed output contracts;
+  competing-risk, recurrent-event, counting-process and graph-declared
+  multi-state outputs are first-class contracts. Multi-state plans accept an
+  `mstate` transition matrix or an equivalent public adjacency graph, including
+  cycles and repeated visits to a state; the graph cannot be inferred privately
+  from site data and arbitrary SQL remains outside the contract;
 - sparse output supports person or indexed episode grain and includes a complete
   `personRef`; absent covariate rows represent zero for roster members with no
   qualifying event;

@@ -348,12 +348,239 @@ ds.omop.plan.person_level <- function(plan, tables,
   plan
 }
 
+.plan_multistate_names <- function(value, field, allow_empty = FALSE) {
+  if (is.list(value) && !is.data.frame(value)) {
+    if (length(value) == 0L && allow_empty) return(character(0))
+    valid <- vapply(value, function(item) {
+      is.character(item) && length(item) == 1L && !is.na(item)
+    }, logical(1L))
+    if (!all(valid)) {
+      stop(field, " must contain only state names.", call. = FALSE)
+    }
+    value <- unlist(value, use.names = FALSE)
+  }
+  if (!is.character(value) || (!allow_empty && length(value) == 0L) ||
+      anyNA(value) || any(!nzchar(value))) {
+    stop(field, " must contain only state names.", call. = FALSE)
+  }
+  unname(value)
+}
+
+.plan_multistate_transition_id <- function(value, field) {
+  number <- suppressWarnings(as.numeric(value))
+  integer <- suppressWarnings(as.integer(value))
+  if (length(number) != 1L || is.na(number) || !is.finite(number) ||
+      length(integer) != 1L || is.na(integer) || number != integer ||
+      integer < 1L) {
+    stop(field, " must be one positive exact integer.", call. = FALSE)
+  }
+  integer
+}
+
+.plan_multistate_step <- function(value, n_states) {
+  number <- suppressWarnings(as.numeric(value %||% 0.01))
+  if (length(number) != 1L || is.na(number) || !is.finite(number) ||
+      number <= 0 || number != round(number, 9L) ||
+      number * max(0L, n_states - 1L) >= 1) {
+    stop("state_step must be a positive decimal with at most nine places, and ",
+         "state_step * (number of states - 1) must be below one day.",
+         call. = FALSE)
+  }
+  number
+}
+
+# Convert mstate transition matrices and compact adjacency lists into the same
+# plain graph that is transported in plan/recipe JSON. Transition numbering is
+# public and deterministic; it never depends on which events occur at a site.
+.plan_normalize_multistate <- function(outcome_names, transitions,
+                                       initial_state,
+                                       state_hierarchy = NULL,
+                                       state_step = NULL) {
+  initial_state <- .plan_multistate_names(
+    initial_state %||% "index", "initial_state"
+  )
+  if (length(initial_state) != 1L) {
+    stop("initial_state must be one state name.", call. = FALSE)
+  }
+  expected_states <- unique(c(initial_state, outcome_names))
+  if (any(!grepl("^[A-Za-z][A-Za-z0-9_.-]*$", expected_states)) ||
+      anyDuplicated(tolower(expected_states))) {
+    stop("Multi-state names must be portable and case-insensitively unique.",
+         call. = FALSE)
+  }
+
+  edges <- NULL
+  states <- NULL
+  if (is.matrix(transitions)) {
+    if (nrow(transitions) < 2L || nrow(transitions) != ncol(transitions) ||
+        is.null(rownames(transitions)) || is.null(colnames(transitions)) ||
+        !identical(rownames(transitions), colnames(transitions))) {
+      stop("transitions matrix must be square with identical state dimnames.",
+           call. = FALSE)
+    }
+    states <- rownames(transitions)
+    if (any(!is.na(diag(transitions)))) {
+      stop("Self transitions are not supported; the matrix diagonal must be NA.",
+           call. = FALSE)
+    }
+    positions <- which(!is.na(transitions), arr.ind = TRUE)
+    ids <- suppressWarnings(as.numeric(transitions[positions]))
+    integer_ids <- suppressWarnings(as.integer(ids))
+    if (length(ids) == 0L || anyNA(ids) || any(!is.finite(ids)) ||
+        anyNA(integer_ids) || any(ids != integer_ids) ||
+        !setequal(integer_ids, seq_along(integer_ids))) {
+      stop("Non-NA transition matrix entries must be unique integers 1..K.",
+           call. = FALSE)
+    }
+    positions <- positions[order(integer_ids), , drop = FALSE]
+    edges <- lapply(seq_len(nrow(positions)), function(index) {
+      list(
+        from = states[positions[index, 1L]],
+        to = states[positions[index, 2L]],
+        trans = as.integer(index)
+      )
+    })
+  } else if (is.list(transitions) && length(transitions) == 2L &&
+             !is.null(names(transitions)) &&
+             !anyDuplicated(names(transitions)) &&
+             setequal(names(transitions), c("states", "edges"))) {
+    states <- .plan_multistate_names(
+      transitions$states, "transitions$states"
+    )
+    if (!is.list(transitions$edges) || length(transitions$edges) == 0L) {
+      stop("transitions$edges must be a non-empty list.", call. = FALSE)
+    }
+    edges <- lapply(seq_along(transitions$edges), function(index) {
+      edge <- transitions$edges[[index]]
+      if (!is.list(edge) || length(edge) != 3L || is.null(names(edge)) ||
+          anyDuplicated(names(edge)) ||
+          !setequal(names(edge), c("from", "to", "trans"))) {
+        stop("Each transitions$edges entry must contain from, to and trans.",
+             call. = FALSE)
+      }
+      from <- .plan_multistate_names(
+        edge$from, paste0("transitions$edges[[", index, "]]$from")
+      )
+      to <- .plan_multistate_names(
+        edge$to, paste0("transitions$edges[[", index, "]]$to")
+      )
+      if (length(from) != 1L || length(to) != 1L) {
+        stop("Every transition edge must have one from and one to state.",
+             call. = FALSE)
+      }
+      list(
+        from = from,
+        to = to,
+        trans = .plan_multistate_transition_id(
+          edge$trans, paste0("transitions$edges[[", index, "]]$trans")
+        )
+      )
+    })
+    edge_ids <- vapply(edges, `[[`, integer(1L), "trans")
+    edges <- edges[order(edge_ids)]
+  } else if (is.list(transitions) && length(transitions) > 0L) {
+    states <- names(transitions)
+    if (is.null(states) || any(!nzchar(states)) || anyDuplicated(states)) {
+      stop("Adjacency transitions must be a uniquely named state list.",
+           call. = FALSE)
+    }
+    edges <- list()
+    transition_id <- 0L
+    for (from_index in seq_along(transitions)) {
+      targets <- transitions[[from_index]]
+      if (is.null(targets) || length(targets) == 0L) next
+      if (is.list(targets)) targets <- unlist(targets, use.names = FALSE)
+      numeric_targets <- is.numeric(targets) ||
+        (is.character(targets) && all(grepl("^[0-9]+$", targets)))
+      if (numeric_targets) {
+        positions <- suppressWarnings(as.numeric(targets))
+        integer_positions <- suppressWarnings(as.integer(targets))
+        if (anyNA(positions) || anyNA(integer_positions) ||
+            any(positions != integer_positions) ||
+            any(integer_positions < 1L | integer_positions > length(states))) {
+          stop("Numeric transition targets must be valid state positions.",
+               call. = FALSE)
+        }
+        targets <- states[integer_positions]
+      } else {
+        targets <- .plan_multistate_names(
+          targets, paste0("transitions$", states[from_index]),
+          allow_empty = TRUE
+        )
+      }
+      if (anyDuplicated(targets)) {
+        stop("A state cannot declare the same destination twice.",
+             call. = FALSE)
+      }
+      for (target in targets) {
+        transition_id <- transition_id + 1L
+        edges[[transition_id]] <- list(
+          from = states[from_index], to = target, trans = transition_id
+        )
+      }
+    }
+  } else {
+    stop("multi_state requires a transition matrix or adjacency list.",
+         call. = FALSE)
+  }
+
+  states <- .plan_multistate_names(states, "transition state names")
+  if (anyDuplicated(states) || anyDuplicated(tolower(states)) ||
+      !setequal(states, expected_states)) {
+    stop("Transition states must match initial_state plus named outcomes.",
+         call. = FALSE)
+  }
+  if (length(edges) == 0L) {
+    stop("The multi-state graph must declare at least one transition.",
+         call. = FALSE)
+  }
+  ids <- vapply(edges, `[[`, integer(1L), "trans")
+  if (!identical(ids, seq_along(edges))) {
+    stop("Transition identifiers must be unique contiguous integers 1..K.",
+         call. = FALSE)
+  }
+  from <- vapply(edges, `[[`, character(1L), "from")
+  to <- vapply(edges, `[[`, character(1L), "to")
+  if (any(!from %in% states) || any(!to %in% states) || any(from == to) ||
+      anyDuplicated(paste(from, to, sep = "\r"))) {
+    stop("Transition edges must uniquely connect declared distinct states.",
+         call. = FALSE)
+  }
+  reachable <- initial_state
+  repeat {
+    next_states <- unique(c(reachable, to[from %in% reachable]))
+    if (setequal(next_states, reachable)) break
+    reachable <- next_states
+  }
+  if (length(setdiff(states, reachable)) > 0L) {
+    stop("Every state must be graph-reachable from initial_state.",
+         call. = FALSE)
+  }
+  hierarchy <- if (is.null(state_hierarchy) || length(state_hierarchy) == 0L) {
+    states
+  } else {
+    .plan_multistate_names(state_hierarchy, "state_hierarchy")
+  }
+  if (anyDuplicated(hierarchy) || any(!hierarchy %in% states)) {
+    stop("state_hierarchy must contain unique declared state names.",
+         call. = FALSE)
+  }
+  hierarchy <- c(hierarchy, setdiff(states, hierarchy))
+  list(
+    initial_state = initial_state,
+    transitions = list(states = unname(states), edges = edges),
+    state_hierarchy = unname(hierarchy),
+    state_step = .plan_multistate_step(state_step, length(states))
+  )
+}
+
 #' Add a survival (time-to-event) output to the plan
 #'
 #' The historical single-outcome call produces one row per cohort episode with
 #' an event indicator and time-to-event in days. Advanced calls can retain named
-#' endpoints as survival, competing-risk, recurrent-event, or counting-process
-#' data. Calendar dates and source event identifiers are never returned.
+#' endpoints as survival, competing-risk, recurrent-event, counting-process,
+#' or OHDSI-style expanded multi-state data. Calendar dates and source event
+#' identifiers are never returned.
 #' Requires a cohort to be set. Historical plans without an explicit censoring
 #' field are censored at the end of the observation period containing the index
 #' episode; they never bridge an unobserved gap to a later period.
@@ -367,18 +594,28 @@ ds.omop.plan.person_level <- function(plan, tables,
 #'   and \code{end_offset} (integer days relative to cohort_start_date).
 #' @param event_order Character; \code{"first"} or \code{"last"} to
 #'   select which event occurrence determines the time-to-event value;
-#'   advanced recurrent/counting formats also accept `all`.
+#'   advanced recurrent/counting/multi-state formats also accept `all`.
 #' @param name Character; output name used as a key in the plan's outputs list.
 #' @param outcomes Named list of endpoint specifications. Each endpoint contains
 #'   `table`, `concept_set`, and optional safe row `filters`.
 #' @param censoring Named list controlling observation-period, death, cohort-end,
 #'   and optional administrative-date censoring.
-#' @param format Character; `survival`, `competing_risk`, `recurrent_events`, or
-#'   `counting_process`.
+#' @param format Character; `survival`, `competing_risk`, `recurrent_events`,
+#'   `counting_process`, or `multi_state`.
 #' @param washout_days Non-negative integer washout between events of the same
 #'   named endpoint.
-#' @param tie_policy Character; `priority`, `error`, or `all`. The latter is
-#'   restricted to recurrent-event output.
+#' @param tie_policy Character; `priority`, `all`, or `sequential`.
+#'   `all` is restricted to recurrent events. `sequential` orders simultaneous
+#'   reachable state transitions within their observed day and is restricted
+#'   to multi-state output. The historical `error` policy is rejected before
+#'   querying because data-dependent failures create a disclosure oracle.
+#' @param transitions For `multi_state`, either an `mstate` transition matrix,
+#'   a named adjacency list, or the canonical `list(states, edges)` form.
+#' @param initial_state Initial state name for `multi_state` (default `index`).
+#' @param state_hierarchy Optional public state priority used to resolve tied
+#'   dates. Omitted states are appended in transition-state order.
+#' @param state_step Positive within-day analytic offset used only by
+#'   `tie_policy = "sequential"`; defaults to 0.01 days.
 #' @return The modified \code{omop_plan} with the survival output appended.
 #' @examples
 #' \dontrun{
@@ -405,7 +642,12 @@ ds.omop.plan.survival <- function(plan,
                                   censoring = NULL,
                                   format = NULL,
                                   washout_days = 0L,
-                                  tie_policy = "priority") {
+                                  tie_policy = "priority",
+                                  transitions = NULL,
+                                  initial_state = NULL,
+                                  state_hierarchy = NULL,
+                                  state_step = NULL) {
+  event_order_missing <- missing(event_order)
   if (!is.character(event_order) || length(event_order) != 1L ||
       is.na(event_order)) {
     stop("event_order must be first, last, or all.", call. = FALSE)
@@ -427,10 +669,19 @@ ds.omop.plan.survival <- function(plan,
   if (!is.null(end_offset)) tar$end_offset <- end_offset
   washout_days <- .plan_integer_scalar(washout_days, "washout_days",
                                        min_value = 0L)
-  tie_policy <- match.arg(tie_policy, c("priority", "error", "all"))
+  tie_policy <- match.arg(
+    tie_policy, c("priority", "error", "all", "sequential")
+  )
+  if (identical(tie_policy, "error")) {
+    stop("tie_policy='error' is unavailable because a data-dependent query ",
+         "failure creates a disclosure oracle; use deterministic priority or ",
+         "the format-specific all/sequential policy.", call. = FALSE)
+  }
   advanced <- !is.null(outcomes) || !is.null(censoring) || !is.null(format) ||
     washout_days != 0L || tie_policy != "priority" ||
-    identical(tolower(event_order), "all")
+    identical(tolower(event_order), "all") || !is.null(transitions) ||
+    !is.null(initial_state) || !is.null(state_hierarchy) ||
+    !is.null(state_step)
 
   normalize_outcome <- function(outcome, label) {
     if (!is.list(outcome) || is.null(names(outcome)) ||
@@ -497,8 +748,12 @@ ds.omop.plan.survival <- function(plan,
 
   format <- match.arg(
     format %||% "survival",
-    c("survival", "competing_risk", "recurrent_events", "counting_process")
+    c("survival", "competing_risk", "recurrent_events", "counting_process",
+      "multi_state")
   )
+  if (identical(format, "multi_state") && event_order_missing) {
+    event_order <- "all"
+  }
   event_order <- match.arg(event_order, c("first", "last", "all"))
   if (identical(format, "survival") && event_order == "all") {
     stop("survival requires event_order first or last.", call. = FALSE)
@@ -514,6 +769,32 @@ ds.omop.plan.survival <- function(plan,
   if (tie_policy == "all" && format != "recurrent_events") {
     stop("tie_policy='all' is supported only for recurrent_events.",
          call. = FALSE)
+  }
+  if (identical(format, "multi_state") && event_order != "all") {
+    stop("multi_state requires event_order='all'.", call. = FALSE)
+  }
+  if (tie_policy == "sequential" && format != "multi_state") {
+    stop("tie_policy='sequential' is supported only for multi_state.",
+         call. = FALSE)
+  }
+  graph_fields <- list(
+    transitions = transitions,
+    initial_state = initial_state,
+    state_hierarchy = state_hierarchy,
+    state_step = state_step
+  )
+  if (!identical(format, "multi_state") &&
+      any(!vapply(graph_fields, is.null, logical(1L)))) {
+    stop("Multi-state graph fields require format='multi_state'.",
+         call. = FALSE)
+  }
+  multistate <- if (identical(format, "multi_state")) {
+    .plan_normalize_multistate(
+      names(outcomes), transitions, initial_state,
+      state_hierarchy = state_hierarchy, state_step = state_step
+    )
+  } else {
+    NULL
   }
   if (!is.null(censoring)) {
     if (!is.list(censoring) || is.null(names(censoring)) ||
@@ -548,6 +829,7 @@ ds.omop.plan.survival <- function(plan,
     washout_days = washout_days,
     tie_policy = tie_policy
   )
+  if (!is.null(multistate)) output <- c(output, multistate)
   if (!is.null(censoring)) output$censoring <- censoring
   plan$outputs[[name]] <- output
   plan
@@ -1466,6 +1748,8 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' \code{<name>.personPeriods}, the complete episode-by-bin roster.
 #' Recurrent-event survival outputs assign \code{<name>.events} and
 #' \code{<name>.riskSets}.
+#' Multi-state outputs assign \code{<name>.msdata} and the public transition
+#' dictionary \code{<name>.transitionRef}.
 #'
 #' When \code{output_mode = "staged"}, outputs are written to server-local
 #' Parquet files (CSV fallback when Arrow is unavailable) and
@@ -1834,6 +2118,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
                   "recurrent_events")) {
       return(paste0(base, c(".events", ".riskSets")))
     }
+    if (identical(type, "survival") &&
+        identical(tolower(spec$format %||% "survival"), "multi_state")) {
+      return(paste0(base, c(".msdata", ".transitionRef")))
+    }
     base
   }), names(out))
 }
@@ -1852,7 +2140,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   suffixes <- c(
     "", ".covariates", ".covariateRef", ".personRef",
     ".temporalCovariates", ".timeRef", ".personPeriods", ".events",
-    ".riskSets"
+    ".riskSets", ".msdata", ".transitionRef"
   )
   families <- stats::setNames(lapply(unname(out), function(base) {
     paste0(base, suffixes)

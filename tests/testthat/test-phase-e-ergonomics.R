@@ -270,7 +270,7 @@ test_that("expected output ownership is exact for OHDSI composite formats", {
   expect_identical(family$sparse, c(
     "S", "S.covariates", "S.covariateRef", "S.personRef",
     "S.temporalCovariates", "S.timeRef", "S.personPeriods", "S.events",
-    "S.riskSets"
+    "S.riskSets", "S.msdata", "S.transitionRef"
   ))
   expect_error(
     dsOMOPClient:::.plan_output_symbol_families(

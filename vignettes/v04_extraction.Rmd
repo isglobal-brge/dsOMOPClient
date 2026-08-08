@@ -145,7 +145,7 @@ The lower-level plan API also provides:
 | Output | Grain and current limit |
 |---|---|
 | baseline / cohort membership | one row per `cohort_row_id` |
-| survival | episode-grain survival, named competing risks, recurrent events or counting-process risk sets; first/last/all event policies as allowed by the selected format; cohort, observation-period, death and administrative censoring |
+| survival | episode-grain survival, named competing risks, recurrent events, counting-process risk sets, or expanded multi-state transition risk sets; first/last/all event policies as allowed by the selected format; cohort, observation-period, death and administrative censoring |
 | intervals-long | one source interval per cohort episode with start/end days from index |
 | temporal covariates | sparse concept-by-time-bin values keyed by episode `rowId`, restricted to the unique OMOP observation period covering index, plus `personRef` |
 | person-period | observation-aware episode-by-regular-bin roster plus sparse binary/count covariates; index-relative time only |
@@ -164,8 +164,8 @@ standard OMOP event primary key to break same-date ties deterministically.
 Named person-level OHDSI estimands deliberately reduce recurrent index episodes
 to one deterministic episode per person and pre-aggregate recurrent outcomes;
 this prevents joins from multiplying person-time while still counting repeated
-outcome events. General long, episode, recurrent-event and counting-process
-outputs do not perform that person-level reduction.
+outcome events. General long, episode, recurrent-event, counting-process and
+multi-state outputs do not perform that person-level reduction.
 Longitudinal windows, bins, washout and risk intervals currently use calendar
 days, consistent with required OMOP `*_date` fields and the federated date
 contract. Optional `*_datetime` values do not change ordering or create sub-day
@@ -183,9 +183,66 @@ describe the observed part. A missing sparse tuple means zero only when its
 `(rowId, timeId)` roster row exists. The descriptive panel intentionally does
 not treat cohort end or death as observation/censoring. Use survival or
 counting-process output for explicit time-at-risk, washout, tie, and censoring
-policies. Arbitrary multi-state transition models remain outside the reviewed
-contracts. Multi-table long recipes split into one output per table rather than
+policies. Multi-table long recipes split into one output per table rather than
 fabricating an arbitrary cross-table join.
+
+### Multi-state disease courses
+
+`format = "multi_state"` treats each named OMOP outcome as a state observation.
+The public transition graph may be an `mstate`-style transition matrix, a named
+adjacency list, or canonical `states`/`edges`. It can contain cycles and a person
+may visit the same state repeatedly. Events that are not reachable from the
+person's current state are skipped until a reachable event occurs; the graph is
+never inferred from private site data.
+
+```{r multistate, eval=FALSE}
+transitions <- list(
+  index = "disease",
+  disease = c("recovery", "progression"),
+  recovery = "disease",
+  progression = character(0)
+)
+
+plan <- ds.omop.plan.survival(
+  plan,
+  outcomes = list(
+    disease = list(table = "condition_occurrence", concept_set = 1L),
+    recovery = list(table = "observation", concept_set = 2L),
+    progression = list(table = "condition_occurrence", concept_set = 3L)
+  ),
+  format = "multi_state",
+  transitions = transitions,
+  initial_state = "index",
+  state_hierarchy = c("progression", "disease", "recovery", "index"),
+  tie_policy = "priority",
+  name = "course"
+)
+```
+
+In memory, the server assigns `<name>.msdata` in expanded `(Tstart, Tstop]`
+form plus `<name>.transitionRef`; the former carries the usual `msdata`
+transition-matrix attribute. Staged mode streams the ordered OMOP event source
+through a bounded state machine directly to Parquet. Because Parquet does not
+preserve R attributes, the transition dictionary is staged separately. Source
+dates and event identifiers never enter either public component.
+
+For simultaneous states, `priority` permits one reachable transition on the
+day and `sequential` follows the public `state_hierarchy`. A data-dependent
+`error` policy is deliberately unavailable because success versus failure would
+reveal a cooccurrence bit outside DataSHIELD output controls. Sequential
+ordering uses `state_step` only to place analytic times inside the same observed
+calendar day; it does not claim clinical sub-day timing and never moves a
+transition beyond censoring. Repeated records of the same state on the same day
+collapse to one state observation because their order is not identifiable at
+OMOP date resolution. Staged descriptors mark sequential time explicitly as
+`calendar_day_with_public_within_day_offsets` rather than presenting those
+analytic fractions as observed timestamps.
+
+Malformed or incompletely observed longitudinal episodes are excluded by
+server-side eligibility rules. The distinct-person gate is then applied to the
+eligible risk set itself, so this filtering cannot expose a query-selective
+data-quality error; only the ordinary generic DataSHIELD threshold can stop the
+operation.
 
 Representations that expand a request are subject to controller-configurable
 operational caps. The defaults allow at most 1,000 explicit feature

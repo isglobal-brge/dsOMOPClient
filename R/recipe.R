@@ -2078,6 +2078,32 @@ omop_output <- function(name = "output_1",
   if (is.null(result_symbol)) {
     result_symbol <- paste0("D_", name)
   }
+  # Store every accepted graph spelling in one canonical form. In particular,
+  # matrices cannot retain dimnames through simplifyVector = FALSE JSON/YAML
+  # imports, and numeric adjacency vectors otherwise change representation.
+  if (identical(type, "survival") && !is.null(options$transitions)) {
+    initial_state <- options$initial_state %||% "index"
+    transition_states <- if (is.matrix(options$transitions)) {
+      rownames(options$transitions)
+    } else if (is.list(options$transitions) &&
+               length(options$transitions) == 2L &&
+               !is.null(names(options$transitions)) &&
+               !anyDuplicated(names(options$transitions)) &&
+               setequal(names(options$transitions), c("states", "edges"))) {
+      as.character(unlist(options$transitions$states, use.names = FALSE))
+    } else {
+      names(options$transitions)
+    }
+    inferred_outcomes <- setdiff(transition_states, initial_state)
+    normalized_graph <- .plan_normalize_multistate(
+      inferred_outcomes,
+      transitions = options$transitions,
+      initial_state = initial_state,
+      state_hierarchy = options$state_hierarchy,
+      state_step = options$state_step
+    )
+    options$transitions <- normalized_graph$transitions
+  }
   obj <- list(
     name          = name,
     type          = type,
@@ -2887,7 +2913,8 @@ print.omop_recipe <- function(x, ...) {
       c("bin_width", "window_start", "window_end", "analyses"),
     survival = c(
       "tar", "event_order", "format", "censoring", "washout_days",
-      "tie_policy", "outcome_mode"
+      "tie_policy", "outcome_mode", "transitions", "initial_state",
+      "state_hierarchy", "state_step"
     ),
     intervals = c(
       "window", "interval_match", "event_select", "select_n", "select_by",
@@ -2940,7 +2967,7 @@ print.omop_recipe <- function(x, ...) {
     format <- tolower(format)
     if (!format %in% c(
           "survival", "competing_risk", "recurrent_events",
-          "counting_process"
+          "counting_process", "multi_state"
         )) {
       stop("Survival option 'format' is unsupported.", call. = FALSE)
     }
@@ -2956,8 +2983,16 @@ print.omop_recipe <- function(x, ...) {
       stop("Survival option 'outcome_mode' must be composite or named.",
            call. = FALSE)
     }
+    if (format == "multi_state" && outcome_mode != "named") {
+      stop("multi_state requires outcome_mode='named'.", call. = FALSE)
+    }
     event_order <- tolower(options$event_order %||%
-      if (format %in% c("recurrent_events", "counting_process")) "all" else "first")
+      if (format %in%
+          c("recurrent_events", "counting_process", "multi_state")) {
+        "all"
+      } else {
+        "first"
+      })
     if (format == "survival" && event_order == "all") {
       stop("survival requires event_order first or last.", call. = FALSE)
     }
@@ -2969,17 +3004,36 @@ print.omop_recipe <- function(x, ...) {
       stop("Recurrent/counting formats require event_order first or all.",
            call. = FALSE)
     }
+    if (format == "multi_state" && event_order != "all") {
+      stop("multi_state requires event_order='all'.", call. = FALSE)
+    }
     tie_policy <- options$tie_policy %||% "priority"
     if (!is.character(tie_policy) || length(tie_policy) != 1L ||
         is.na(tie_policy)) {
       stop("Survival option 'tie_policy' is unsupported.", call. = FALSE)
     }
     tie_policy <- tolower(tie_policy)
-    if (!tie_policy %in% c("priority", "error", "all")) {
+    if (!tie_policy %in% c("priority", "error", "all", "sequential")) {
       stop("Survival option 'tie_policy' is unsupported.", call. = FALSE)
+    }
+    if (tie_policy == "error") {
+      stop("tie_policy='error' is unavailable because a data-dependent query ",
+           "failure creates a disclosure oracle.", call. = FALSE)
     }
     if (tie_policy == "all" && format != "recurrent_events") {
       stop("tie_policy='all' is supported only for recurrent_events.",
+           call. = FALSE)
+    }
+    if (tie_policy == "sequential" && format != "multi_state") {
+      stop("tie_policy='sequential' is supported only for multi_state.",
+           call. = FALSE)
+    }
+    graph_options <- c(
+      "transitions", "initial_state", "state_hierarchy", "state_step"
+    )
+    if (format != "multi_state" &&
+        any(graph_options %in% names(options))) {
+      stop("Multi-state graph options require format='multi_state'.",
            call. = FALSE)
     }
     if (!is.null(options$washout_days)) {
@@ -3873,7 +3927,11 @@ recipe_to_plan <- function(recipe) {
       tar <- out$options$tar %||% list(start_offset = 0, end_offset = 730)
       event_order <- out$options$event_order %||%
         if (survival_format %in%
-            c("recurrent_events", "counting_process")) "all" else "first"
+            c("recurrent_events", "counting_process", "multi_state")) {
+          "all"
+        } else {
+          "first"
+        }
       advanced <- outcome_mode == "named" ||
         length(setdiff(names(out$options %||% list()),
                        c("tar", "event_order"))) > 0L
@@ -3940,7 +3998,11 @@ recipe_to_plan <- function(recipe) {
           censoring = out$options$censoring,
           format = survival_format,
           washout_days = out$options$washout_days %||% 0L,
-          tie_policy = out$options$tie_policy %||% "priority"
+          tie_policy = out$options$tie_policy %||% "priority",
+          transitions = out$options$transitions,
+          initial_state = out$options$initial_state,
+          state_hierarchy = out$options$state_hierarchy,
+          state_step = out$options$state_step
         )
       }
       register_compiled_output(out_name, out_name)
@@ -5462,6 +5524,66 @@ recipe_to_code <- function(recipe) {
   as.character(x)
 }
 
+.recipe_restore_multistate_options <- function(options) {
+  transitions <- options$transitions
+  if (is.null(transitions)) return(options)
+  if (is.list(transitions) && length(transitions) == 2L &&
+      !is.null(names(transitions)) && !anyDuplicated(names(transitions)) &&
+      setequal(names(transitions), c("states", "edges"))) {
+    transitions$states <- .plan_multistate_names(
+      transitions$states, "transitions$states"
+    )
+    transitions$edges <- lapply(seq_along(transitions$edges), function(index) {
+      edge <- transitions$edges[[index]]
+      if (!is.list(edge) || length(edge) != 3L || is.null(names(edge)) ||
+          anyNA(names(edge)) || any(!nzchar(names(edge))) ||
+          anyDuplicated(names(edge)) ||
+          !setequal(names(edge), c("from", "to", "trans"))) {
+        stop("Each imported transitions$edges entry must contain exactly ",
+             "from, to and trans.", call. = FALSE)
+      }
+      from <- .plan_multistate_names(
+        edge$from, paste0("transitions$edges[[", index, "]]$from")
+      )
+      to <- .plan_multistate_names(
+        edge$to, paste0("transitions$edges[[", index, "]]$to")
+      )
+      if (length(from) != 1L || length(to) != 1L) {
+        stop("Every imported transition edge must have one from and one to ",
+             "state.", call. = FALSE)
+      }
+      list(
+        from = from,
+        to = to,
+        trans = .plan_multistate_transition_id(
+          edge$trans, paste0("transitions$edges[[", index, "]]$trans")
+        )
+      )
+    })
+    options$transitions <- transitions
+  } else if (is.list(transitions) && !is.null(names(transitions))) {
+    options$transitions <- lapply(transitions, function(targets) {
+      as.character(unlist(targets, use.names = FALSE))
+    })
+  }
+  if (!is.null(options$initial_state)) {
+    options$initial_state <- as.character(unlist(
+      options$initial_state, use.names = FALSE
+    ))
+  }
+  if (!is.null(options$state_hierarchy)) {
+    options$state_hierarchy <- as.character(unlist(
+      options$state_hierarchy, use.names = FALSE
+    ))
+  }
+  if (!is.null(options$state_step)) {
+    options$state_step <- as.numeric(unlist(
+      options$state_step, use.names = FALSE
+    ))
+  }
+  options
+}
+
 .recipe_from_plain <- function(data) {
   # The schema version is "1"; it only bumps on a real breaking change. Any other
   # tag is an unrecognized (e.g. future) schema, so warn but attempt a best-effort read.
@@ -5581,6 +5703,7 @@ recipe_to_code <- function(recipe) {
           output_options$analyses, use.names = FALSE
         ))
       }
+      output_options <- .recipe_restore_multistate_options(output_options)
       recipe$outputs[[nm]] <- omop_output(
         name = o$name %||% nm,
         type = o$type %||% "wide",
@@ -6955,6 +7078,14 @@ recipe_preview_schema <- function(recipe) {
           event = "integer", interval_number = "integer",
           interval_start_days = "integer", interval_end_days = "integer"
         )
+      } else if (identical(survival_format, "multi_state")) {
+        c(
+          row_id = "numeric", cohort_row_id = "numeric",
+          person_id = "integer", from = "integer", to = "integer",
+          trans = "integer", Tstart = "numeric", Tstop = "numeric",
+          time = "numeric", status = "integer", from_name = "character",
+          to_name = "character", state_visit_number = "integer"
+        )
       } else {
         c(
           row_id = "integer", cohort_row_id = "integer",
@@ -7111,6 +7242,17 @@ recipe_preview_schema <- function(recipe) {
         risk_sets = c(
           "row_id", "cohort_row_id", "person_id",
           "entry_days_from_index", "exit_days_from_index", "follow_up_days"
+        )
+      )
+    } else if (identical(out$type, "survival") &&
+               identical(plan$outputs[[plan_names[[1L]]]]$format,
+                         "multi_state")) {
+      attr(schema, "components") <- list(
+        msdata = names(column_types),
+        transition_ref = c(
+          "from", "to", "trans", "from_name", "to_name",
+          "from_hierarchy_rank", "to_hierarchy_rank", "from_is_initial",
+          "to_is_absorbing", "tie_policy", "state_step"
         )
       )
     }
