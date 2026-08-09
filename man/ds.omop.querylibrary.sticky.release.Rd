@@ -9,7 +9,8 @@ ds.omop.querylibrary.sticky.release(
   redesign,
   datasources = NULL,
   pool = TRUE,
-  format = c("long", "wide", "vector", "raw")
+  format = c("long", "wide", "vector", "raw"),
+  type = NULL
 )
 }
 \arguments{
@@ -26,6 +27,9 @@ connections.}
 not a cross-site set union; use \code{FALSE} for site-specific estimates.}
 
 \item{format}{Output format passed to \code{\link{ds.omop.dp.release}}.}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. When omitted, the legacy \code{pool} argument is preserved.}
 }
 \value{
 A \code{dsomop_result} from \code{\link{ds.omop.dp.release}}.

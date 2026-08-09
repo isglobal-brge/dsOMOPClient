@@ -12,7 +12,8 @@ ds.omop.prevalence(
   tables = NULL,
   plot = FALSE,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = "both"
 )
 }
 \arguments{
@@ -40,6 +41,9 @@ scope to (their distinct persons); may be combined with \code{cohort}.}
 
 \item{conns}{DSI connection object(s) or \code{NULL} to use the session
 default.}
+
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}; dsBaseClient-style aliases are accepted.}
 }
 \value{
 A \code{dsomop_result} (see \code{\link{ds.omop.analysis.run}}).

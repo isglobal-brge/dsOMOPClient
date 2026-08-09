@@ -187,7 +187,7 @@ test_that(".pool_histograms propagates suppressed flags", {
                     count = c(8, 12), suppressed = c(FALSE, FALSE))
   result <- .pool_histograms(list(a = h1, b = h2), "strict")
   expect_true(is.data.frame(result$result))
-  expect_equal(result$result$count, c(13, 12))
+  expect_equal(result$result$count, c(13, NA_real_))
   expect_equal(result$result$suppressed, c(FALSE, TRUE))
 })
 
@@ -277,44 +277,6 @@ test_that(".pool_result strict fails closed on an incomplete federation", {
   expect_equal(permissive$result$n_persons, 80)
 })
 
-test_that(".pool_result effect_estimate pools per-site CohortMethod arm frames", {
-  # Each site returns the gated cm.effect_estimate frame: the log_estimate + SE
-  # replicated across the target/comparator arm rows.
-  mk <- function(le, se) data.frame(
-    arm = c("target", "comparator"),
-    log_estimate = le, se_log_estimate = se, stringsAsFactors = FALSE)
-  per_site <- list(a = mk(log(1.5), 0.2), b = mk(log(2.0), 0.3))
-  out <- .pool_result(per_site, "effect_estimate", "strict")
-  w <- 1 / c(0.2, 0.3)^2
-  fe <- sum(w * c(log(1.5), log(2.0))) / sum(w)
-  expect_equal(out$result$n_databases, 2L)
-  expect_equal(out$result$estimate_fixed, exp(fe), tolerance = 1e-10)
-})
-
-test_that(".pool_result effect_estimate reads SCCS log_irr/se_log_irr columns", {
-  per_site <- list(
-    a = data.frame(log_irr = log(3.0), se_log_irr = 0.25),
-    b = data.frame(log_irr = log(2.0), se_log_irr = 0.25))
-  out <- .pool_result(per_site, "effect_estimate", "strict")
-  expect_equal(out$result$n_databases, 2L)
-  # Equal weights -> geometric-mean-ish pool on the log scale.
-  expect_equal(out$result$log_estimate_fixed,
-               (log(3.0) + log(2.0)) / 2, tolerance = 1e-10)
-})
-
-test_that(".pool_result effect_estimate treats an empty/NA site as suppressed", {
-  per_site <- list(
-    a = data.frame(log_estimate = log(1.5), se_log_estimate = 0.2),
-    b = data.frame(),  # server fail-closed -> empty frame
-    c = data.frame(log_estimate = NA_real_, se_log_estimate = NA_real_))
-  # strict: any suppressed site aborts.
-  expect_null(.pool_result(per_site, "effect_estimate", "strict")$result)
-  # pooled_only_ok: pool the one valid site.
-  out <- .pool_result(per_site, "effect_estimate", "pooled_only_ok")
-  expect_equal(out$result$n_databases, 1L)
-  expect_equal(out$result$estimate_fixed, 1.5, tolerance = 1e-10)
-})
-
 test_that(".pool_concept_metadata dedupes shared vocab to one clean view", {
   one <- data.frame(concept_id = c(80180, 40481087),
                     concept_name = c("Osteoarthritis", "Viral sinusitis"),
@@ -329,83 +291,6 @@ test_that(".pool_concept_metadata dedupes shared vocab to one clean view", {
   expect_null(.pool_concept_metadata(partial))
 })
 
-test_that(".pool_result ohdsi_results pools a MIXED-UNIT Table 1 (no stratum drop)", {
-  # Regression: distribution-stat / proportion VALUE columns are NA on person-unit
-  # rows of a Table 1. They must NOT become grouping keys, else split() drops every
-  # stratum and the pooled view collapses to NULL. Counts must still sum.
-  mk <- function(f, m) data.frame(
-    characteristic = c("gender", "gender", "age"),
-    level = c("FEMALE", "MALE", "mean"),
-    unit = c("person", "person", "dist"),
-    sum_value = c(f, m, NA),
-    average = c(f / (f + m), m / (f + m), NA),
-    count_value = c(NA, NA, f + m),
-    avg_value = c(NA, NA, 65),        # dist stat: NA on person rows
-    median_value = c(NA, NA, 64),
-    stringsAsFactors = FALSE)
-  per_site <- list(a = mk(10, 20), b = mk(15, 25))
-  out <- .pool_result(per_site, "ohdsi_results", "strict")
-  expect_false(is.null(out$result))
-  g <- out$result[out$result$characteristic == "gender", ]
-  expect_equal(nrow(g), 2L)                              # strata preserved
-  expect_equal(g$sum_value[g$level == "FEMALE"], 25)     # 10 + 15 summed
-  expect_equal(g$sum_value[g$level == "MALE"], 45)       # 20 + 25 summed
-  expect_true(all(is.na(out$result$average)))            # proportions not summed
-})
-
-test_that("contracted OHDSI pooling supports count-only global results", {
-  contract <- list(
-    version = 1L,
-    columns = list(n_persons = list(semantic = "count")),
-    max_rows = 1L
-  )
-  out <- .pool_result(
-    list(a = data.frame(n_persons = 10),
-         b = data.frame(n_persons = 20)),
-    "ohdsi_results", "strict", output_contract = contract
-  )
-
-  expect_identical(names(out$result), "n_persons")
-  expect_equal(out$result$n_persons, 30)
-})
-
-test_that("contracted OHDSI pooling uses semantic roles and rebuilds ratios", {
-  contract <- list(
-    version = 1L,
-    columns = list(
-      group = list(semantic = "category", levels = c("A", "B")),
-      numerator = list(semantic = "count"),
-      denominator = list(semantic = "count"),
-      proportion = list(
-        semantic = "ratio", numerator = "numerator",
-        denominator = "denominator", scale = 1
-      )
-    ),
-    max_rows = 2L
-  )
-  site <- function(n, d) data.frame(
-    group = "A", numerator = n, denominator = d,
-    proportion = n / d, stringsAsFactors = FALSE
-  )
-  out <- .pool_result(
-    list(a = site(10, 20), b = site(15, 30)),
-    "ohdsi_results", "strict", output_contract = contract
-  )
-
-  expect_identical(names(out$result), names(contract$columns))
-  expect_equal(out$result$numerator, 25)
-  expect_equal(out$result$denominator, 50)
-  expect_equal(out$result$proportion, 0.5)
-
-  duplicate <- rbind(site(10, 20), site(5, 10))
-  bad <- .pool_result(
-    list(a = duplicate, b = site(15, 30)),
-    "ohdsi_results", "strict", output_contract = contract
-  )
-  expect_null(bad$result)
-  expect_match(bad$warnings, "not unique")
-})
-
 test_that(".pool_result column_stats pools n, mean, and a correct cross-site SD", {
   # Per-site stats as returned by .profileColumnStats (sd over non-NULL values).
   # Server A: n_total=110, n_missing=10 -> n_eff=100, mean=10, sd=2 (var=4)
@@ -417,7 +302,8 @@ test_that(".pool_result column_stats pools n, mean, and a correct cross-site SD"
   result <- .pool_result(per_site, "column_stats", "strict")
 
   expect_equal(result$result$n_total, 320)               # sum of n_total
-  expect_equal(result$result$mean, (110 * 10 + 210 * 20) / 320, tolerance = 1e-10)
+  expect_equal(result$result$mean, (100 * 10 + 200 * 20) / 300,
+               tolerance = 1e-10)
 
   # Pooled SD must equal sqrt of the sum-of-squares pooled variance over n_eff.
   n <- c(a = 100, b = 200); m <- c(a = 10, b = 20); v <- c(a = 4, b = 9)
@@ -436,15 +322,16 @@ test_that(".pool_result column_stats omits SD when no site reports one", {
   expect_null(result$result$sd)
 })
 
-test_that(".pool_result column_stats pools SD over the sites that report it", {
-  # Server B suppressed its sd (small-sample NA); pooled sd should fall back to
-  # the single reporting site (A) rather than vanish.
+test_that(".pool_result column_stats strict SD propagates site suppression", {
+  # Server B suppressed its sd (small-sample NA). Treating that contribution as
+  # absent would make the pooled spread look complete and weaken strict mode.
   per_site <- list(
     a = list(n_total = 100, n_missing = 0, mean = 10, sd = 2),
     b = list(n_total = 200, n_missing = 0, mean = 20, sd = NA_real_)
   )
   result <- .pool_result(per_site, "column_stats", "strict")
-  expect_equal(result$result$sd, 2, tolerance = 1e-10)  # single-site var=4 -> sd=2
+  expect_null(result$result$sd)
+  expect_true(any(grepl("Strict pooling failed", result$warnings)))
 })
 
 test_that(".pool_result column_stats never pools n_distinct across sites", {

@@ -4,12 +4,15 @@
 \alias{ds.omop.ohdsi.tables}
 \title{List discovered OHDSI result tables}
 \usage{
-ds.omop.ohdsi.tables(symbol = "omop", conns = NULL)
+ds.omop.ohdsi.tables(symbol = "omop", conns = NULL, type = NULL)
 }
 \arguments{
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s). If \code{NULL}, uses active session.}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. The historical default is \code{"both"}.}
 }
 \value{
 A \code{dsomop_result} object. Pooled is the union of catalogs.

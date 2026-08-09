@@ -528,7 +528,7 @@ test_that("DP release API exposes no analyst privacy controls", {
   releases <- list(a = .dp_release("count", noisy_count = 10))
   expect_identical(
     names(formals(ds.omop.dp.release)),
-    c("x", "privacy", "datasources", "pool", "format")
+    c("x", "privacy", "datasources", "pool", "format", "type")
   )
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     value <- ds.omop.dp.release(
@@ -536,6 +536,26 @@ test_that("DP release API exposes no analyst privacy controls", {
     )
     expect_s3_class(value, "dsomop_result")
     expect_null(value$meta$harmonization)
+  })
+})
+
+test_that("DP release supports split, combine, and both result views", {
+  statuses <- list(a = .dp_status(), b = .dp_status())
+  releases <- list(
+    a = .dp_release("count", noisy_count = 10),
+    b = .dp_release("count", noisy_count = 15)
+  )
+  .with_dp_backend(statuses, releases, function(datasources, sent) {
+    cases <- list(s = c(2L, 0L), combined = c(0L, 1L), b = c(2L, 1L))
+    for (alias in names(cases)) {
+      value <- ds.omop.dp.release(
+        "analysis_table", omop_privacy("count"), datasources, type = alias
+      )
+      expect_s3_class(value, "dsomop_result")
+      expect_length(value$per_site, cases[[alias]][[1L]])
+      expect_identical(as.integer(!is.null(value$pooled)),
+                       cases[[alias]][[2L]])
+    }
   })
 })
 

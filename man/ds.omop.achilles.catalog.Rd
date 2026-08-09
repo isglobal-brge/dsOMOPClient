@@ -4,7 +4,7 @@
 \alias{ds.omop.achilles.catalog}
 \title{Get Achilles analysis catalog}
 \usage{
-ds.omop.achilles.catalog(symbol = "omop", conns = NULL)
+ds.omop.achilles.catalog(symbol = "omop", conns = NULL, type = NULL)
 }
 \arguments{
 \item{symbol}{Character; the session symbol used when the OMOP connection
@@ -12,6 +12,9 @@ was initialised (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s). If \code{NULL} (the default), the
 connections stored in the active session are used.}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. The historical default is \code{"both"}.}
 }
 \value{
 A \code{dsomop_result} object with \code{scope = "pooled"}.

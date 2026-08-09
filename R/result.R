@@ -16,6 +16,106 @@
   x
 }
 
+# Normalise the dsBaseClient-style result-view vocabulary used by aggregate
+# wrappers. Keep this internal so every public surface accepts exactly the same
+# aliases without duplicating validation.
+.normalize_result_type <- function(type) {
+  if (!is.character(type) || length(type) != 1L || is.na(type) ||
+      !nzchar(trimws(type))) {
+    stop("type must be one of 'split', 'combine', or 'both'.", call. = FALSE)
+  }
+  value <- tolower(trimws(type))
+  aliases <- c(
+    split = "split", splits = "split", s = "split", per_site = "split",
+    combine = "combine", combined = "combine", c = "combine",
+    pooled = "combine", both = "both", b = "both"
+  )
+  resolved <- unname(aliases[value])
+  if (length(resolved) != 1L || is.na(resolved)) {
+    stop("type must be one of 'split', 'combine', or 'both' ",
+         "(aliases: splits/s/per_site, combined/c/pooled, b).",
+         call. = FALSE)
+  }
+  resolved
+}
+
+# Resolve a new result view while retaining the established meanings of legacy
+# `scope` and `pool`. Historically `scope = "pooled"` and `pool = TRUE` kept
+# both the site results and the pooled result, hence they map to `both`.
+.resolve_result_type <- function(type = NULL, scope = NULL, pool = NULL,
+                                 scope_missing = TRUE, pool_missing = TRUE,
+                                 default_type = "split") {
+  resolved <- if (is.null(type)) {
+    if (!isTRUE(scope_missing)) {
+      if (identical(scope, "pooled")) "both" else "split"
+    } else if (!isTRUE(pool_missing)) {
+      if (isTRUE(pool)) "both" else "split"
+    } else {
+      .normalize_result_type(default_type)
+    }
+  } else {
+    .normalize_result_type(type)
+  }
+
+  if (!is.null(type) && !isTRUE(scope_missing)) {
+    compatible <- if (identical(scope, "pooled")) {
+      resolved %in% c("combine", "both")
+    } else {
+      identical(resolved, "split")
+    }
+    if (!compatible) {
+      stop("type and legacy scope request conflicting result views.",
+           call. = FALSE)
+    }
+  }
+  if (!is.null(type) && !isTRUE(pool_missing)) {
+    compatible <- if (isTRUE(pool)) {
+      resolved %in% c("combine", "both")
+    } else {
+      identical(resolved, "split")
+    }
+    if (!compatible) {
+      stop("type and legacy pool request conflicting result views.",
+           call. = FALSE)
+    }
+  }
+  resolved
+}
+
+.result_type_wants_combine <- function(type) {
+  type %in% c("combine", "both")
+}
+
+# Apply a result view only after dsomop_result() has captured server names and
+# aggregate errors. This deliberately removes a view; it never derives or
+# materialises individual-level data on the client.
+.result_type_view <- function(result, type, combine_reason = NULL) {
+  if (!inherits(result, "dsomop_result")) {
+    stop("result must be a dsomop_result object.", call. = FALSE)
+  }
+  type <- .normalize_result_type(type)
+  if (.result_type_wants_combine(type) && is.null(result[["pooled"]]) &&
+      !is.null(combine_reason) && length(combine_reason) > 0L) {
+    reason <- as.character(combine_reason[[1L]])
+    result[["meta"]]$warnings <- unique(c(
+      result[["meta"]]$warnings %||% character(0), reason
+    ))
+    result[["meta"]]$pooling_reason <- reason
+  }
+  if (identical(type, "split")) {
+    result["pooled"] <- list(NULL)
+  } else if (identical(type, "combine")) {
+    result[["per_site"]] <- list()
+  }
+  result[["meta"]]$type <- type
+  result[["meta"]]$scope <- if (identical(type, "split")) {
+    "per_site"
+  } else {
+    "pooled"
+  }
+  result
+}
+
 #' Create a dsomop_result object
 #'
 #' Constructs a standardised \code{dsomop_result} S3 object that wraps every
@@ -31,6 +131,8 @@
 #' @param meta Named list of metadata. Recognised elements:
 #'   \code{call_code} (character; reproducible R code),
 #'   \code{scope} (character; \code{"per_site"} or \code{"pooled"}),
+#'   \code{type} (character; \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}),
 #'   \code{pooling_policy} (character; \code{"strict"} or
 #'   \code{"pooled_only_ok"}),
 #'   \code{warnings} (character vector of pooling warnings).
@@ -58,8 +160,13 @@ dsomop_result <- function(per_site, pooled = NULL, meta = list()) {
     meta     = list(
       call_code      = meta$call_code %||% "",
       timestamp      = Sys.time(),
-      servers        = names(per_site),
+      servers        = meta$servers %||% names(per_site),
       scope          = meta$scope %||% "per_site",
+      type           = meta$type %||% if (identical(meta$scope, "pooled")) {
+        "both"
+      } else {
+        "split"
+      },
       pooling_policy = meta$pooling_policy %||% "strict",
       warnings       = unique(c(meta$warnings %||% character(0),
                                 error_warnings))
@@ -88,10 +195,11 @@ print.dsomop_result <- function(x, ...) {
   pooled <- .subset2(x, "pooled")
   meta   <- .subset2(x, "meta")
   warns  <- meta$warnings
+  servers <- meta$servers %||% names(ps)
 
   cat("<dsomop_result>\n")
-  cat("Servers: ", if (length(names(ps)) > 0L) {
-    paste(names(ps), collapse = ", ")
+  cat("Servers: ", if (length(servers) > 0L) {
+    paste(servers, collapse = ", ")
   } else {
     "<none>"
   }, "\n", sep = "")

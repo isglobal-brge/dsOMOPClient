@@ -26,6 +26,8 @@
 #' @param conns DSI connection object(s) or NULL to use the session default.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
 #'   where each element contains public \code{breaks}, banded \code{counts}, a
 #'   session \code{contract}, and clipping/grid metadata),
@@ -42,17 +44,22 @@ ds.omop.safe.cutpoints <- function(table, column, concept_id = NULL,
                                     n_bins = 10L,
                                     scope = c("per_site", "pooled"),
                                     symbol = "omop", conns = NULL,
-                                    execute = TRUE) {
+                                    execute = TRUE, type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
 
   code <- .build_code("ds.omop.safe.cutpoints",
     table = table, column = column, concept_id = concept_id,
-    n_bins = n_bins, scope = scope, symbol = symbol)
+    n_bins = n_bins, scope = if (is.null(type)) scope else NULL,
+    type = if (is.null(type)) NULL else result_type, symbol = symbol)
 
   if (!execute) {
-    return(dsomop_result(
+    return(.result_type_view(dsomop_result(
       per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)))
+      meta = list(call_code = code, scope = scope)), result_type))
   }
 
   session <- .get_session(symbol)
@@ -70,9 +77,11 @@ ds.omop.safe.cutpoints <- function(table, column, concept_id = NULL,
       paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
   } else character(0)
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = scope, warnings = warnings))
+    meta = list(call_code = code, scope = scope, warnings = warnings)),
+    result_type,
+    "Safe cutpoints are site-specific and cannot be combined.")
 }
 
 #' Resolve one numeric-bin contract that every connected site issued
@@ -246,6 +255,8 @@ ds.omop.safe.filter.measurement <- function(concept_id, min_value, max_value,
 #' @param conns DSI connection object(s) or NULL to use the session default.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
 #'   of data frames with columns \code{concept_id}, \code{concept_name},
 #'   \code{count_value}, etc.), \code{$pooled} (combined data frame when
@@ -269,20 +280,25 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
                                         scope = c("per_site", "pooled"),
                                         pooling_policy = "strict",
                                         symbol = "omop", conns = NULL,
-                                        execute = TRUE) {
+                                        execute = TRUE, type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
   cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.concept.prevalence",
     table = table, concept_col = concept_col, metric = metric,
     top_n = top_n, cohort_table = cohort_scope, window = window,
     offset = offset, global = global,
-    scope = scope, symbol = symbol)
+    scope = if (is.null(type)) scope else NULL,
+    type = if (is.null(type)) NULL else result_type, symbol = symbol)
 
   if (!execute) {
-    return(dsomop_result(
+    return(.result_type_view(dsomop_result(
       per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)))
+      meta = list(call_code = code, scope = scope)), result_type))
   }
 
   session <- .get_session(symbol)
@@ -303,16 +319,18 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
     warnings <- paste0("Server errors: ",
       paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
   }
-  if (scope == "pooled" && length(raw) > 0) {
+  if (.result_type_wants_combine(result_type) && length(raw) > 0) {
     pool_out <- .pool_result(raw, "concept_prevalence", pooling_policy)
     pooled <- pool_out$result
     warnings <- c(warnings, pool_out$warnings)
   }
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings))
+                pooling_policy = pooling_policy, warnings = warnings)),
+    result_type,
+    "No complete disclosure-safe pooled concept prevalence was available.")
 }
 
 #' Get a disclosure-safe numeric histogram
@@ -357,6 +375,9 @@ ds.omop.concept.prevalence <- function(table = NULL, concept_col = NULL,
 #'   (default: 9).
 #' @param xlab,main,col Axis label, title and bar colour used when
 #'   \code{plot = TRUE}.
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. A pooled plot requires \code{"combine"} or \code{"both"}.
+#'   When omitted, legacy \code{scope} behaviour is preserved.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
 #'   of data frames with columns \code{bin_start}, \code{bin_end},
 #'   \code{count_value}), \code{$pooled} (combined histogram when pooled),
@@ -377,24 +398,37 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
                                      symbol = "omop", conns = NULL,
                                      execute = TRUE,
                                      plot = FALSE, nbins = 9L, xlab = NULL,
-                                     main = NULL, col = "#4C72B0") {
+                                     main = NULL, col = "#4C72B0",
+                                     type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
   pooling_policy <- match.arg(pooling_policy,
                               c("strict", "pooled_only_ok"))
   # A federation-wide plot must pass through the same pooling policy as the
   # returned data; it must never sum per-site frames behind a failed pool.
-  if (isTRUE(plot)) scope <- "pooled"
+  if (isTRUE(plot)) {
+    if (!is.null(type) && identical(.normalize_result_type(type), "split")) {
+      stop("plot = TRUE requires type = 'combine' or type = 'both'.",
+           call. = FALSE)
+    }
+    scope <- "pooled"
+    if (is.null(type)) scope_missing <- FALSE
+  }
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
   cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.value.histogram",
     table = table, value_col = value_col, bins = bins,
     concept_id = concept_id, cohort_table = cohort_scope, window = window,
-    scope = scope, symbol = symbol)
+    scope = if (is.null(type)) scope else NULL,
+    type = if (is.null(type)) NULL else result_type, symbol = symbol)
 
   if (!execute) {
-    return(dsomop_result(
+    return(.result_type_view(dsomop_result(
       per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)))
+      meta = list(call_code = code, scope = scope)), result_type))
   }
 
   session <- .get_session(symbol)
@@ -420,7 +454,7 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
     do.call(call, args)
   }
 
-  if (scope == "pooled") {
+  if (.result_type_wants_combine(result_type)) {
     # Two-pass pooling: compute shared bin edges across servers
     # Pass 1: Get p05/p95 ranges from each server
     range_raw <- .ds_safe_aggregate(conns, expr = .range_call())
@@ -512,10 +546,12 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
     raw <- .ds_safe_aggregate(conns, expr = .hist_call())
   }
 
-  out <- dsomop_result(
+  out <- .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings))
+                pooling_policy = pooling_policy, warnings = warnings)),
+    result_type,
+    "No complete disclosure-safe pooled histogram was available.")
 
   if (isTRUE(plot)) {
     .omopPlotHistogram(out, nbins = nbins, xlab = xlab %||% value_col,
@@ -603,6 +639,10 @@ ds.omop.value.histogram <- function(table, value_col, bins = 20L,
 #' @param conns DSI connection object(s) or NULL to use the session default.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. Quantiles are not poolable; \code{"combine"} therefore
+#'   returns no pooled value and records the reason. When omitted, legacy
+#'   \code{scope} behaviour is preserved.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
 #'   of named numeric vectors or data frames with quantile values),
 #'   \code{$pooled} (always NULL since quantiles cannot be safely pooled),
@@ -623,19 +663,24 @@ ds.omop.value.quantiles <- function(table, value_col,
                                      scope = c("per_site", "pooled"),
                                      pooling_policy = "strict",
                                      symbol = "omop", conns = NULL,
-                                     execute = TRUE) {
+                                     execute = TRUE, type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
   cohort_scope <- .cohort_scope_arg(cohort) %||% cohort_table
 
   code <- .build_code("ds.omop.value.quantiles",
     table = table, value_col = value_col, probs = probs,
     concept_id = concept_id, cohort_table = cohort_scope, window = window,
-    rounding = rounding, scope = scope, symbol = symbol)
+    rounding = rounding, scope = if (is.null(type)) scope else NULL,
+    type = if (is.null(type)) NULL else result_type, symbol = symbol)
 
   if (!execute) {
-    return(dsomop_result(
+    return(.result_type_view(dsomop_result(
       per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)))
+      meta = list(call_code = code, scope = scope)), result_type))
   }
 
   session <- .get_session(symbol)
@@ -656,15 +701,17 @@ ds.omop.value.quantiles <- function(table, value_col,
     warnings <- paste0("Server errors: ",
       paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
   }
-  if (scope == "pooled") {
+  if (.result_type_wants_combine(result_type)) {
     warnings <- c(warnings,
       "Quantiles cannot be safely pooled without individual-level data")
   }
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = NULL,
     meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings))
+                pooling_policy = pooling_policy, warnings = warnings)),
+    result_type,
+    "Quantiles cannot be safely pooled without individual-level data")
 }
 
 #' Get record counts by time period
@@ -694,6 +741,8 @@ ds.omop.value.quantiles <- function(table, value_col,
 #' @param conns DSI connection object(s) or NULL to use the session default.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
 #'   of data frames with columns \code{period} and \code{count_value}),
 #'   \code{$pooled} (combined counts when pooled), and \code{$meta}.
@@ -711,18 +760,23 @@ ds.omop.date.counts <- function(table, date_col = NULL,
                                  scope = c("per_site", "pooled"),
                                  pooling_policy = "strict",
                                  symbol = "omop", conns = NULL,
-                                 execute = TRUE) {
+                                 execute = TRUE, type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
 
   code <- .build_code("ds.omop.date.counts",
     table = table, date_col = date_col, granularity = granularity,
     cohort_table = cohort_table, window = window,
-    scope = scope, symbol = symbol)
+    scope = if (is.null(type)) scope else NULL,
+    type = if (is.null(type)) NULL else result_type, symbol = symbol)
 
   if (!execute) {
-    return(dsomop_result(
+    return(.result_type_view(dsomop_result(
       per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)))
+      meta = list(call_code = code, scope = scope)), result_type))
   }
 
   session <- .get_session(symbol)
@@ -742,16 +796,18 @@ ds.omop.date.counts <- function(table, date_col = NULL,
     warnings <- paste0("Server errors: ",
       paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
   }
-  if (scope == "pooled" && length(raw) > 0) {
+  if (.result_type_wants_combine(result_type) && length(raw) > 0) {
     pool_out <- .pool_result(raw, "date_counts", pooling_policy)
     pooled <- pool_out$result
     warnings <- c(warnings, pool_out$warnings)
   }
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings))
+                pooling_policy = pooling_policy, warnings = warnings)),
+    result_type,
+    "No complete disclosure-safe pooled date counts were available.")
 }
 
 #' Get concept drilldown profile
@@ -777,6 +833,8 @@ ds.omop.date.counts <- function(table, date_col = NULL,
 #' @param conns DSI connection object(s) or NULL to use the session default.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
 #'   of lists containing \code{summary}, \code{numeric}, \code{categorical},
 #'   \code{date_range}, and \code{missingness} components), \code{$pooled}
@@ -794,18 +852,23 @@ ds.omop.concept.drilldown <- function(table, concept_id,
                                        scope = c("per_site", "pooled"),
                                        pooling_policy = "strict",
                                        symbol = "omop", conns = NULL,
-                                       execute = TRUE) {
+                                       execute = TRUE, type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
 
   code <- .build_code("ds.omop.concept.drilldown",
     table = table, concept_id = concept_id,
     concept_col = concept_col,
-    scope = scope, symbol = symbol)
+    scope = if (is.null(type)) scope else NULL,
+    type = if (is.null(type)) NULL else result_type, symbol = symbol)
 
   if (!execute) {
-    return(dsomop_result(
+    return(.result_type_view(dsomop_result(
       per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)))
+      meta = list(call_code = code, scope = scope)), result_type))
   }
 
   session <- .get_session(symbol)
@@ -827,16 +890,18 @@ ds.omop.concept.drilldown <- function(table, concept_id,
     warnings <- paste0("Server errors: ",
       paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
   }
-  if (scope == "pooled" && length(raw) > 0) {
+  if (.result_type_wants_combine(result_type) && length(raw) > 0) {
     pool_out <- .pool_result(raw, "concept_drilldown", pooling_policy)
     pooled <- pool_out$result
     warnings <- c(warnings, pool_out$warnings)
   }
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings))
+                pooling_policy = pooling_policy, warnings = warnings)),
+    result_type,
+    "No complete disclosure-safe pooled concept drilldown was available.")
 }
 
 #' Summarise a value column scoped to one concept of one table
@@ -884,6 +949,9 @@ ds.omop.concept.drilldown <- function(table, concept_id,
 #'   available sites rather than suppressed.
 #' @param symbol Character; the session symbol (default: \code{"omop"}).
 #' @param conns DSI connection object(s) or NULL to use the session default.
+#' @param type Optional result view propagated to every aggregate component:
+#'   \code{"split"}, \code{"combine"}, or \code{"both"}. When omitted,
+#'   legacy \code{scope} behaviour is preserved.
 #' @return A named list with \code{table}, \code{concept_id},
 #'   \code{numeric} (named-by-column list where each element is a list with
 #'   \code{stats} and \code{quantiles} \code{dsomop_result} objects, or
@@ -906,8 +974,13 @@ ds.omop.concept.drilldown <- function(table, concept_id,
 ds.omop.concept.summary <- function(table, concept_id, column = NULL,
                                     scope = c("per_site", "pooled"),
                                     pooling_policy = "strict",
-                                    symbol = "omop", conns = NULL) {
+                                    symbol = "omop", conns = NULL,
+                                    type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
 
   if (!is.null(column)) {
     cols <- column
@@ -930,17 +1003,17 @@ ds.omop.concept.summary <- function(table, concept_id, column = NULL,
     if (grepl("_concept_id$", col)) {
       categorical[[col]] <- ds.omop.value.counts(
         table, col, concept_id = concept_id,
-        scope = scope, pooling_policy = pooling_policy,
+        type = result_type, pooling_policy = pooling_policy,
         symbol = symbol, conns = conns)
     } else {
       numeric[[col]] <- list(
         stats = ds.omop.column.stats(
           table, col, concept_id = concept_id,
-          scope = scope, pooling_policy = pooling_policy,
+          type = result_type, pooling_policy = pooling_policy,
           symbol = symbol, conns = conns),
         quantiles = ds.omop.value.quantiles(
           table, col, concept_id = concept_id,
-          scope = scope, pooling_policy = pooling_policy,
+          type = result_type, pooling_policy = pooling_policy,
           symbol = symbol, conns = conns))
     }
   }
@@ -971,6 +1044,8 @@ ds.omop.concept.summary <- function(table, concept_id, column = NULL,
 #' @param conns DSI connection object(s) or NULL to use the session default.
 #' @param execute Logical; if \code{FALSE}, return a dry-run result
 #'   containing only the generated call code (default: \code{TRUE}).
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
 #' @return A \code{dsomop_result} object with \code{$per_site} (named list
 #'   of data frames with columns \code{concept_id}, \code{table_name},
 #'   \code{count_value}), \code{$pooled} (combined presence matrix when
@@ -985,17 +1060,22 @@ ds.omop.concept.locate <- function(concept_ids,
                                     scope = c("per_site", "pooled"),
                                     pooling_policy = "strict",
                                     symbol = "omop", conns = NULL,
-                                    execute = TRUE) {
+                                    execute = TRUE, type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
 
   code <- .build_code("ds.omop.concept.locate",
     concept_ids = concept_ids,
-    scope = scope, symbol = symbol)
+    scope = if (is.null(type)) scope else NULL,
+    type = if (is.null(type)) NULL else result_type, symbol = symbol)
 
   if (!execute) {
-    return(dsomop_result(
+    return(.result_type_view(dsomop_result(
       per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)))
+      meta = list(call_code = code, scope = scope)), result_type))
   }
 
   session <- .get_session(symbol)
@@ -1014,14 +1094,16 @@ ds.omop.concept.locate <- function(concept_ids,
     warnings <- paste0("Server errors: ",
       paste(names(ds_errors), ds_errors, sep = ": ", collapse = "; "))
   }
-  if (scope == "pooled" && length(raw) > 0) {
+  if (.result_type_wants_combine(result_type) && length(raw) > 0) {
     pool_out <- .pool_result(raw, "concept_locate", pooling_policy)
     pooled <- pool_out$result
     warnings <- c(warnings, pool_out$warnings)
   }
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings))
+                pooling_policy = pooling_policy, warnings = warnings)),
+    result_type,
+    "No complete disclosure-safe pooled concept-location result was available.")
 }

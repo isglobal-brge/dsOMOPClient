@@ -11,7 +11,8 @@ ds.omop.concept.summary(
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = NULL
 )
 }
 \arguments{
@@ -39,6 +40,10 @@ available sites rather than suppressed.}
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s) or NULL to use the session default.}
+
+\item{type}{Optional result view propagated to every aggregate component:
+\code{"split"}, \code{"combine"}, or \code{"both"}. When omitted,
+legacy \code{scope} behaviour is preserved.}
 }
 \value{
 A named list with \code{table}, \code{concept_id},

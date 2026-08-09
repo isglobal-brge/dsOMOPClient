@@ -4,7 +4,7 @@
 \alias{ds.omop.ohdsi.summary}
 \title{Get OHDSI tool summary}
 \usage{
-ds.omop.ohdsi.summary(tool_id, symbol = "omop", conns = NULL)
+ds.omop.ohdsi.summary(tool_id, symbol = "omop", conns = NULL, type = NULL)
 }
 \arguments{
 \item{tool_id}{Character; which tool to summarize (e.g.,
@@ -14,6 +14,10 @@ ds.omop.ohdsi.summary(tool_id, symbol = "omop", conns = NULL)
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s). If \code{NULL}, uses active session.}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. Tool summaries are site-specific, so a combined view has
+no value and records that reason.}
 }
 \value{
 A \code{dsomop_result} object with \code{scope = "per_site"}.

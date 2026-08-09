@@ -16,6 +16,8 @@ dsomop_result(per_site, pooled = NULL, meta = list())
 \item{meta}{Named list of metadata. Recognised elements:
 \code{call_code} (character; reproducible R code),
 \code{scope} (character; \code{"per_site"} or \code{"pooled"}),
+\code{type} (character; \code{"split"}, \code{"combine"}, or
+\code{"both"}),
 \code{pooling_policy} (character; \code{"strict"} or
 \code{"pooled_only_ok"}),
 \code{warnings} (character vector of pooling warnings).}

@@ -389,6 +389,9 @@ utils::globalVariables(".data")
 #'   initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}; dsBaseClient-style aliases are accepted. A split view
+#'   can inspect nodes whose catalogs differ; combined views require equality.
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
 #'   element is a data frame with one row per entry: \code{name} (the id),
 #'   \code{domain}, \code{adapter}, \code{mode}, disclosure \code{unit},
@@ -408,8 +411,10 @@ utils::globalVariables(".data")
 #' @seealso \code{\link{ds.omop.analysis.get}}, \code{\link{ds.omop.analysis.run}}
 #' @export
 ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
-                                  conns = NULL) {
-  code <- .build_code("ds.omop.analysis.list", domain = domain, symbol = symbol)
+                                  conns = NULL, type = "both") {
+  type <- .normalize_result_type(type)
+  code <- .build_code("ds.omop.analysis.list", domain = domain, symbol = symbol,
+                      type = type)
 
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
@@ -419,13 +424,15 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
     expr = call("omopAnalysisListDS", session$res_symbol, domain)
   )
 
-  pooled <- .analysis_consistent_metadata(
-    raw, names(conns), "analysis catalog"
-  )
+  pooled <- if (.result_type_wants_combine(type)) {
+    .analysis_consistent_metadata(raw, names(conns), "analysis catalog")
+  } else NULL
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = "pooled"))
+    meta = list(call_code = code, scope = if (.result_type_wants_combine(type)) {
+      "pooled"
+    } else "per_site", type = type)), type)
 }
 
 #' Get unified analysis catalog entry metadata
@@ -443,6 +450,9 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
 #'   initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}; dsBaseClient-style aliases are accepted. A split view
+#'   can inspect nodes whose metadata differ; combined views require equality.
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled
 #'   element is a named list with the entry's \code{name}, \code{description},
 #'   \code{domain}, \code{mode}, \code{params}, \code{compute_kind},
@@ -458,8 +468,11 @@ ds.omop.analysis.list <- function(domain = NULL, symbol = "omop",
 #' }
 #' @seealso \code{\link{ds.omop.analysis.list}}, \code{\link{ds.omop.analysis.run}}
 #' @export
-ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
-  code <- .build_code("ds.omop.analysis.get", name = name, symbol = symbol)
+ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL,
+                                 type = "both") {
+  type <- .normalize_result_type(type)
+  code <- .build_code("ds.omop.analysis.get", name = name, symbol = symbol,
+                      type = type)
 
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
@@ -469,13 +482,17 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
     expr = call("omopAnalysisGetDS", session$res_symbol, name)
   )
 
-  pooled <- .analysis_consistent_metadata(
-    raw, names(conns), paste0("analysis metadata for '", name, "'")
-  )
+  pooled <- if (.result_type_wants_combine(type)) {
+    .analysis_consistent_metadata(
+      raw, names(conns), paste0("analysis metadata for '", name, "'")
+    )
+  } else NULL
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
-    meta = list(call_code = code, scope = "pooled"))
+    meta = list(call_code = code, scope = if (.result_type_wants_combine(type)) {
+      "pooled"
+    } else "per_site", type = type)), type)
 }
 
 #' Run a unified analysis catalog entry
@@ -537,9 +554,10 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 #' @param combine Character; how to fold multiple scope sources together:
 #'   \code{"union"} (the default) or \code{"intersect"}.
 #' @param pooling_policy Character; how suppressed (NA) cells are handled when
-#'   pooling aggregate results across servers. \code{"strict"} (the default)
-#'   sets the pooled value to NA if any server suppressed it; \code{"pooled_only_ok"}
-#'   sums only the non-suppressed values.
+#'   pooling aggregate results across servers. \code{"strict"} (default)
+#'   requires each pooled group on every server; \code{"pooled_only_ok"} pools
+#'   only available disclosure-safe contributions. Kaplan-Meier curves still
+#'   require every preceding risk-set bin because their values are cumulative.
 #' @param plot Logical; when \code{TRUE} AND the entry ships a plot recipe, build
 #'   a \code{ggplot} CLIENT-SIDE over the pooled, gate-passed data and attach it
 #'   to the result (also returned via the \code{"plot"} attribute and
@@ -555,6 +573,13 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL) {
 #'   initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
+#' @param type Result view, following dsBaseClient terminology: \code{"both"}
+#'   (default) returns per-server and correctly combined results,
+#'   \code{"split"} returns only per-server results, and \code{"combine"}
+#'   returns only the combined result. The aliases \code{"b"},
+#'   \code{"splits"}/\code{"s"}, and \code{"combined"}/\code{"c"} are
+#'   accepted. Combining is performed only from the server-owned pooling
+#'   contract; no column-name heuristics are used.
 #' @return A \code{dsomop_result} object. For aggregate entries, \code{per_site}
 #'   holds each server's disclosure-controlled data frame and \code{pooled} holds
 #'   the cross-server aggregation. For assign-mode entries, \code{per_site} holds
@@ -600,14 +625,17 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
                                  tables = NULL, combine = "union",
                                  pooling_policy = "strict", plot = FALSE,
                                  date_handling = NULL,
-                                 symbol = "omop", conns = NULL) {
+                                 symbol = "omop", conns = NULL,
+                                 type = "both") {
   combine <- match.arg(combine, c("union", "intersect"))
   pooling_policy <- match.arg(pooling_policy, c("strict", "pooled_only_ok"))
+  type <- .resolve_result_type(type = type, default_type = "both")
   if (!is.logical(plot) || length(plot) != 1L || is.na(plot)) {
     stop("plot must be TRUE or FALSE.", call. = FALSE)
   }
 
-  code <- .build_code("ds.omop.analysis.run", name = name, symbol = symbol)
+  code <- .build_code("ds.omop.analysis.run", name = name, symbol = symbol,
+                      type = type)
 
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
@@ -641,6 +669,25 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
          call. = FALSE)
   }
   is_assign <- identical(entry_meta$mode, "assign")
+
+  if (is_assign && identical(type, "combine")) {
+    stop("Assign-mode analyses create server-side objects and cannot return a ",
+         "combined client result; use type = 'split' or 'both'.",
+         call. = FALSE)
+  }
+  if (!is_assign && .result_type_wants_combine(type)) {
+    # Validate before releasing any analysis result. A missing/malformed
+    # contract is a deployment error, never permission to fall back to a
+    # heuristic pooler.
+    .validate_analysis_pooling_contract(entry_meta$pooling_contract)
+    if (length(conns) > 1L &&
+        .analysis_pooling_contract_uses_counts(entry_meta$pooling_contract) &&
+        !is.null(contract) && !isTRUE(contract$poolable_counts)) {
+      stop("Federated count pooling blocked: server count-band settings are ",
+           "not identical. Align dsomop.nfilter.band across servers.",
+           call. = FALSE)
+    }
+  }
 
   if (!is.null(date_handling)) {
     if (!is.character(date_handling) || length(date_handling) != 1L ||
@@ -710,7 +757,7 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
     result <- dsomop_result(
       per_site = per_site, pooled = NULL,
       meta = list(call_code = code, scope = "per_site",
-                  assign_symbol = newobj))
+                  type = "split", assign_symbol = newobj))
     result$meta$assign_symbol <- newobj
     return(result)
   }
@@ -724,21 +771,34 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
     raw, names(conns), paste0("analysis '", name, "'")
   )
 
-  pool_out <- .pool_result(
-    raw, "ohdsi_results", pooling_policy,
-    output_contract = entry_meta$output_contract %||% NULL
-  )
+  pool_out <- if (.result_type_wants_combine(type)) {
+    .pool_analysis_contract(
+      raw, entry_meta$pooling_contract, policy = pooling_policy,
+      harmonization = contract
+    )
+  } else {
+    list(result = NULL, warnings = character(0), harmonization = contract)
+  }
 
   # Optional client-side plot over the pooled, gate-passed data. The data is
   # already in hand; .analysis_render_plot degrades to NULL (with a warning) on
   # any failure so plotting can never lose the returned aggregate.
-  gg <- if (isTRUE(plot)) {
+  gg <- if (isTRUE(plot) && .result_type_wants_combine(type)) {
     .analysis_render_plot(entry_meta, pool_out$result, params)
-  } else NULL
+  } else {
+    if (isTRUE(plot)) {
+      warning("plot = TRUE requires type = 'both' or 'combine'; no plot was ",
+              "built for the split view.", call. = FALSE)
+    }
+    NULL
+  }
 
   result <- dsomop_result(
     per_site = raw, pooled = pool_out$result,
-    meta = list(call_code = code, scope = "pooled",
+    meta = list(call_code = code,
+                scope = if (.result_type_wants_combine(type)) "pooled" else
+                  "per_site",
+                type = type, servers = names(raw),
                 pooling_policy = pooling_policy,
                 warnings = pool_out$warnings))
   # The dsomop_result constructor keeps only its known meta fields, so attach the
@@ -746,7 +806,15 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   # attribute and meta$plot). NULL when plot = FALSE or no recipe was built.
   attr(result, "plot") <- gg
   result$meta$plot <- gg
-  result
+  result$meta$pooling_contract <- entry_meta$pooling_contract
+  result$meta$harmonization <- pool_out$harmonization
+  .result_type_view(
+    result, type,
+    combine_reason = if (identical(entry_meta$pooling_contract$strategy,
+                                   "not_poolable")) {
+      entry_meta$pooling_contract$reason
+    } else NULL
+  )
 }
 
 # --- One-liner convenience wrappers (over ds.omop.analysis.run) --------------
@@ -836,6 +904,8 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
 #'   scope to (their distinct persons); may be combined with \code{cohort}.
 #' @param plot Logical; build the entry's client-side plot over the gated data
 #'   (default \code{FALSE}). See \code{\link{ds.omop.analysis.run}}.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}; dsBaseClient-style aliases are accepted.
 #' @param symbol Character; the session symbol (default \code{"omop"}).
 #' @param conns DSI connection object(s) or \code{NULL} to use the session
 #'   default.
@@ -854,7 +924,8 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
 ds.omop.prevalence <- function(concept_id = NULL, cohort = NULL,
                                domain = "condition", top_n = 50,
                                tables = NULL, plot = FALSE,
-                               symbol = "omop", conns = NULL) {
+                               symbol = "omop", conns = NULL,
+                               type = "both") {
   if (is.null(cohort) && is.null(tables)) {
     stop("ds.omop.prevalence() computes prevalence WITHIN a cohort: pass ",
          "cohort= (a cohort handle, cohort_definition_id, or cohort table) ",
@@ -866,7 +937,7 @@ ds.omop.prevalence <- function(concept_id = NULL, cohort = NULL,
                  top_n = as.integer(top_n))
   res <- ds.omop.analysis.run("dsomop:fe.prevalence", params = params,
                               cohort = cohort, tables = tables, plot = plot,
-                              symbol = symbol, conns = conns)
+                              symbol = symbol, conns = conns, type = type)
   .analysis_filter_concepts(res, concept_id)
 }
 
@@ -895,6 +966,8 @@ ds.omop.prevalence <- function(concept_id = NULL, cohort = NULL,
 #' @param tables Optional character vector of \code{omop.table} symbol names to
 #'   scope to; may be combined with \code{cohort}.
 #' @param plot Logical; build the entry's client-side plot (default \code{FALSE}).
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}; dsBaseClient-style aliases are accepted.
 #' @param symbol Character; the session symbol (default \code{"omop"}).
 #' @param conns DSI connection object(s) or \code{NULL} to use the session
 #'   default.
@@ -912,7 +985,8 @@ ds.omop.prevalence <- function(concept_id = NULL, cohort = NULL,
 ds.omop.distribution <- function(cohort = NULL, metric = "measurement_value",
                                  domain = "measurement", top_n = 50,
                                  concept_id = NULL, tables = NULL, plot = FALSE,
-                                 symbol = "omop", conns = NULL) {
+                                 symbol = "omop", conns = NULL,
+                                 type = "both") {
   if (is.null(cohort) && is.null(tables)) {
     stop("ds.omop.distribution() computes a distribution WITHIN a cohort: pass ",
          "cohort= (a cohort handle, cohort_definition_id, or cohort table) ",
@@ -923,7 +997,7 @@ ds.omop.distribution <- function(cohort = NULL, metric = "measurement_value",
                  top_n = as.integer(top_n))
   res <- ds.omop.analysis.run("dsomop:fe.continuous", params = params,
                               cohort = cohort, tables = tables, plot = plot,
-                              symbol = symbol, conns = conns)
+                              symbol = symbol, conns = conns, type = type)
   .analysis_filter_concepts(res, concept_id)
 }
 
@@ -965,6 +1039,8 @@ ds.omop.distribution <- function(cohort = NULL, metric = "measurement_value",
 #' @param symbol Character; the session symbol (default \code{"omop"}).
 #' @param conns DSI connection object(s) or \code{NULL} to use the session
 #'   default.
+#' @param type Result view: \code{"both"} (default), \code{"split"}, or
+#'   \code{"combine"}; see \code{\link{ds.omop.analysis.run}}.
 #' @return A \code{dsomop_result}: \code{per_site} holds each server's gated
 #'   per-site effect-estimate frame; \code{pooled} holds the one-row meta-analysis
 #'   (pooled HR/RR + CI under both models, \code{n_databases}, \code{i2},
@@ -983,19 +1059,13 @@ ds.omop.meta.effect_estimate <- function(name = "dsomop:cm.effect_estimate",
                                          params = list(), cohort = NULL,
                                          tables = NULL, combine = "union",
                                          pooling_policy = "strict",
-                                         symbol = "omop", conns = NULL) {
-  # Run the per-site effect estimate via the power path (inherits scoping, the
-  # single per-patient gate, and the per_site frames), then RE-POOL the per-site
-  # frames with the inverse-variance meta-analysis result_type. The default
-  # "ohdsi_results" pooling would wrongly stack the per-arm rows; effect
-  # estimates must be combined on the log scale, weighted by 1/SE^2.
-  res <- ds.omop.analysis.run(name, params = params, cohort = cohort,
-                              tables = tables, combine = combine,
-                              pooling_policy = pooling_policy, plot = FALSE,
-                              symbol = symbol, conns = conns)
-  pool_out <- .pool_result(res$per_site, "effect_estimate", pooling_policy)
-  res$pooled <- pool_out$result
-  res$meta$scope <- "pooled"
-  res$meta$warnings <- c(res$meta$warnings, pool_out$warnings)
-  res
+                                         symbol = "omop", conns = NULL,
+                                         type = "both") {
+  # The catalog's server-owned effect_estimate contract selects the
+  # inverse-variance dispatcher. No wrapper-side column-name inference is used.
+  ds.omop.analysis.run(
+    name, params = params, cohort = cohort, tables = tables,
+    combine = combine, pooling_policy = pooling_policy, plot = FALSE,
+    symbol = symbol, conns = conns, type = type
+  )
 }

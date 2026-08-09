@@ -42,7 +42,18 @@
 
   sent <- new.env(parent = emptyenv())
   sent$exprs <- list()
-  meta <- list(name = "dsomop:fe.prevalence", mode = "aggregate")
+  columns <- stats::setNames(lapply(names(gated), function(column) {
+    if (column %in% c("sum_value", "count_value", "n_persons")) {
+      list(role = "sum")
+    } else if (column %in% c("average", "avg_value")) {
+      list(role = "nonpoolable", reason = "No sufficient statistic.")
+    } else list(role = "key")
+  }), names(gated))
+  meta <- list(
+    name = "dsomop:fe.prevalence", mode = "aggregate",
+    pooling_contract = list(version = 1L, strategy = "tabular",
+                            columns = columns)
+  )
 
   testthat::local_mocked_bindings(
     datashield.aggregate = function(conns, expr, ...) {
@@ -83,11 +94,13 @@ test_that("the prevalence/distribution shortcuts are a single call with defaults
   expect_null(pa$concept_id)
   expect_false(isTRUE(pa$plot))            # plotting is opt-in
   expect_equal(pa$symbol, "omop")
+  expect_equal(pa$type, "both")
 
   da <- formals(ds.omop.distribution)
   expect_equal(da$metric, "measurement_value")
   expect_equal(da$domain, "measurement")
   expect_equal(da$top_n, 50)
+  expect_equal(da$type, "both")
 
   # ds.omop.login: the single-server happy path needs only url/user/pw/resource;
   # everything else (server name, driver, symbol) is defaulted.

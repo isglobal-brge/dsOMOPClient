@@ -17,18 +17,12 @@ ds.omop.query.pool(
 \item{results}{Named list of per-server data frames, as returned by
 \code{\link{ds.omop.query.exec}}.}
 
-\item{query_id}{Character; query ID used to look up the recommended pool
-strategy and sensitive field annotations from the query metadata. If
-\code{NULL}, the function falls back to auto-detection.}
+\item{query_id}{Optional character query ID; when supplied, it must match the
+analysis identity carried by \code{results}.}
 
-\item{sensitive_fields}{Character vector; column names to apply suppression
-pooling rules to. If \code{NULL} (the default), auto-detected from
-query metadata or column name patterns.}
+\item{sensitive_fields}{Deprecated and unsupported; must remain \code{NULL}.}
 
-\item{pool_strategy}{Character; pooling method. \code{"sum"} (the default)
-sums count columns across servers; \code{"none"} returns the first server's
-result without pooling. The legacy \code{"weighted_mean"} value fails
-closed; use \code{ds.omop.analysis.run()} for contracted pooling.}
+\item{pool_strategy}{Deprecated and unsupported; must remain \code{"sum"}.}
 
 \item{policy}{Character; suppression propagation policy. \code{"strict"}
 (the default) sets the pooled value to NA if any server suppressed the
@@ -38,36 +32,25 @@ cell. \code{"pooled_only_ok"} sums only the non-suppressed values.}
 was initialised (default: \code{"omop"}).}
 }
 \value{
-A data frame with pooled results, or \code{NULL} if pooling
-  failed (no valid data frames, all empty, etc.). For a single server,
-  its result is returned as-is.
+A data frame with contractually pooled results, or \code{NULL} when
+  the contracted estimand has no combinable result.
 }
 \description{
-Takes per-server results from \code{\link{ds.omop.query.exec}} and safely
-pools them according to the query's pool strategy. Supports two pooling
-methods:
-\itemize{
-  \item \code{sum}: Sum count columns across servers (default)
-  \item \code{weighted_mean}: legacy metadata value; rejected because the
-    deprecated helper has no closed numerator/denominator contract
-}
+Takes per-server results from \code{\link{ds.omop.query.exec}} and delegates
+to the exact server-owned pooling contract carried by that result. It never
+infers keys, count fields, rates, or statistics from column names.
 }
 \details{
 Suppression-safe pooling policy: if any server suppressed a cell (marked
 as NA by the server's disclosure controls), the corresponding pooled cell
 also becomes NA under \code{"strict"} policy. This prevents reconstructing
 small-site counts by subtracting the pooled total from known large sites.
-
-The function auto-detects sensitive (count-like) columns from column names
-matching patterns such as \code{n_*}, \code{*_count}, \code{count_value},
-and \code{num_*}. Non-sensitive columns are used as join keys for
-cross-server merging.
 }
 \section{Deprecated}{
 
 New code should use \code{\link{ds.omop.analysis.run}}, whose \code{pooled}
-element already contains the cross-server aggregation. This client-side pooler
-is retained for back-compatibility with results produced by the deprecated
+element already contains the cross-server aggregation. This helper remains
+only as a contractual bridge for results from deprecated
 \code{\link{ds.omop.query.exec}}.
 }
 
@@ -76,11 +59,6 @@ is retained for back-compatibility with results produced by the deprecated
 results <- ds.omop.query.exec("condition_prevalence")
 pooled <- ds.omop.query.pool(results, query_id = "condition_prevalence")
 pooled
-
-# Manual sensitive field specification
-pooled <- ds.omop.query.pool(results,
-  sensitive_fields = c("n_persons", "n_records"),
-  policy = "strict")
 }
 }
 \seealso{

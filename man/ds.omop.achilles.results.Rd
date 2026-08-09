@@ -10,7 +10,8 @@ ds.omop.achilles.results(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 }
 \arguments{
@@ -35,6 +36,9 @@ connections stored in the active session are used.}
 \item{execute}{Logical; if \code{FALSE}, returns a dry-run
 \code{dsomop_result} containing only the reproducible R code without
 contacting the servers.}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
 }
 \value{
 A \code{dsomop_result} object. The \code{per_site} element contains

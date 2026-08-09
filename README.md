@@ -73,6 +73,32 @@ Once the package is installed, you can load it into your R environment using the
 library(dsOMOPClient)
 ```
 
+## Federated result views
+
+Aggregate APIs use the same result vocabulary as dsBaseClient:
+
+```R
+per_site <- ds.omop.analysis.run("dsomop:incidence.rate", type = "split")
+pooled   <- ds.omop.analysis.run("dsomop:incidence.rate", type = "combine")
+both     <- ds.omop.analysis.run("dsomop:incidence.rate", type = "both")
+```
+
+The unified catalog covers QueryLibrary redesigns, Achilles, CohortDiagnostics,
+CohortIncidence, Characterization, CohortMethod, SCCS, PLP,
+EvidenceSynthesis, TreatmentPatterns and FeatureExtraction-style local ports.
+Every aggregate catalog entry publishes a server-owned pooling strategy:
+additive sufficient statistics, reconstructed ratios, weighted moments and
+pooled variance, inverse-variance effects, Kaplan-Meier risk sets, or an
+explicit `not_poolable` reason. The client never guesses the algebra from a
+column name. `ds.omop.ohdsi.results()` applies the same rule to reviewed
+physical OHDSI result tables and never substitutes a same-named live analysis.
+
+Pooled counts are sums of site contributions. Without privacy-preserving record
+linkage, a person represented in two databases contributes once in each; local
+distinct-person counts likewise cannot be turned into a global set union.
+Study/cohort identifiers and public bin definitions must describe the same
+estimand on every participating node.
+
 ## Dedicated sticky privacy releases
 
 When the custodian has enabled the dedicated service, inspect its contract and

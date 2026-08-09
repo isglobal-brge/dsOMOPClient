@@ -73,7 +73,7 @@ test_that("each mapped primitive builds a canonical privacy specification", {
   }, logical(1L))))
   expect_identical(
     names(formals(ds.omop.querylibrary.sticky.release)),
-    c("x", "redesign", "datasources", "pool", "format")
+    c("x", "redesign", "datasources", "pool", "format", "type")
   )
   expect_identical(count$privacy$statistic, "count")
   expect_identical(categorical$privacy$reducer, "presence")
@@ -225,6 +225,37 @@ test_that("release verifies the pinned mapping on every server", {
   expect_identical(released$x, "prepared")
   expect_identical(released$privacy, redesign$privacy)
   expect_identical(names(released$datasources), c("a", "b"))
+})
+
+test_that("sticky release forwards the requested result view", {
+  redesign <- omop_querylibrary_sticky("CO11")
+  server_catalog <- omop_querylibrary_sticky_catalog()
+  server_catalog$literal_sql_authorized <- FALSE
+  released <- list()
+
+  testthat::local_mocked_bindings(
+    .dp_datasources = function(datasources) datasources,
+    .dp_complete_aggregate = function(datasources, expr, operation) {
+      stats::setNames(lapply(datasources, function(x) server_catalog),
+                      names(datasources))
+    },
+    ds.omop.dp.release = function(x, privacy, datasources, pool, format,
+                                  type = NULL) {
+      released[[length(released) + 1L]] <<- list(pool = pool, type = type)
+      dsomop_result(list(), pooled = list(ok = TRUE))
+    },
+    .package = "dsOMOPClient"
+  )
+
+  for (alias in c("s", "combined", "b")) {
+    value <- ds.omop.querylibrary.sticky.release(
+      "prepared", redesign, datasources = list(a = "A"), type = alias
+    )
+    expect_s3_class(value, "dsomop_result")
+  }
+  expect_identical(released[[1L]], list(pool = FALSE, type = "split"))
+  expect_identical(released[[2L]], list(pool = TRUE, type = "combine"))
+  expect_identical(released[[3L]], list(pool = TRUE, type = "both"))
 })
 
 test_that("release rejects a locally mutated redesign before server access", {

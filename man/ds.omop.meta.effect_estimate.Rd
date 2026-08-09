@@ -12,7 +12,8 @@ ds.omop.meta.effect_estimate(
   combine = "union",
   pooling_policy = "strict",
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = "both"
 )
 }
 \arguments{
@@ -41,6 +42,9 @@ multi-source scope folding.}
 
 \item{conns}{DSI connection object(s) or \code{NULL} to use the session
 default.}
+
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}; see \code{\link{ds.omop.analysis.run}}.}
 }
 \value{
 A \code{dsomop_result}: \code{per_site} holds each server's gated

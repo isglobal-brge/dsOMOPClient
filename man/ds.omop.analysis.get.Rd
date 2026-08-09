@@ -4,7 +4,7 @@
 \alias{ds.omop.analysis.get}
 \title{Get unified analysis catalog entry metadata}
 \usage{
-ds.omop.analysis.get(name, symbol = "omop", conns = NULL)
+ds.omop.analysis.get(name, symbol = "omop", conns = NULL, type = "both")
 }
 \arguments{
 \item{name}{Character; the entry id (e.g. \code{"dsomop:achilles.401"}) or a
@@ -16,6 +16,10 @@ initialised (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s). If \code{NULL} (the default), the
 connections stored in the active session are used.}
+
+\item{type}{Result view: \code{"both"} (default), \code{"split"}, or
+\code{"combine"}; dsBaseClient-style aliases are accepted. A split view
+can inspect nodes whose metadata differ; combined views require equality.}
 }
 \value{
 A \code{dsomop_result} object with \code{scope = "pooled"}. The pooled

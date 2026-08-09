@@ -73,6 +73,9 @@
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. Status is site-specific, so a combined view has no value
+#'   and records that reason.
 #' @return A \code{dsomop_result} object with \code{scope = "per_site"}.
 #'   Each server's result is a list or data frame indicating whether the
 #'   Achilles tables exist and how many rows they contain.
@@ -82,8 +85,11 @@
 #' status$per_site[["server_a"]]$available
 #' }
 #' @export
-ds.omop.achilles.status <- function(symbol = "omop", conns = NULL) {
-  code <- .build_code("ds.omop.achilles.status", symbol = symbol)
+ds.omop.achilles.status <- function(symbol = "omop", conns = NULL,
+                                    type = NULL) {
+  result_type <- .resolve_result_type(type, default_type = "split")
+  code <- .build_code("ds.omop.achilles.status", symbol = symbol,
+                      type = if (is.null(type)) NULL else result_type)
 
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
@@ -93,9 +99,10 @@ ds.omop.achilles.status <- function(symbol = "omop", conns = NULL) {
     expr = call("omopAchillesStatusDS", session$res_symbol)
   )
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = NULL,
-    meta = list(call_code = code, scope = "per_site"))
+    meta = list(call_code = code, scope = "per_site")), result_type,
+    "Achilles availability status is site-specific and cannot be combined.")
 }
 
 #' List available Achilles analyses
@@ -113,6 +120,8 @@ ds.omop.achilles.status <- function(symbol = "omop", conns = NULL) {
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. The historical default is \code{"both"}.
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"}.
 #'   The pooled result is a data frame listing analysis IDs, names, and
 #'   associated domains.
@@ -127,9 +136,11 @@ ds.omop.achilles.status <- function(symbol = "omop", conns = NULL) {
 #' }
 #' @export
 ds.omop.achilles.analyses <- function(domain = NULL, symbol = "omop",
-                                       conns = NULL) {
+                                       conns = NULL, type = NULL) {
+  result_type <- .resolve_result_type(type, default_type = "both")
   code <- .build_code("ds.omop.achilles.analyses",
-    domain = domain, symbol = symbol)
+    domain = domain, symbol = symbol,
+    type = if (is.null(type)) NULL else result_type)
 
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
@@ -139,12 +150,17 @@ ds.omop.achilles.analyses <- function(domain = NULL, symbol = "omop",
     expr = call("omopAchillesAnalysesDS", session$res_symbol, domain)
   )
 
-  catalog <- .pool_achilles_catalog(raw, "Achilles analyses catalog")
+  catalog <- if (.result_type_wants_combine(result_type)) {
+    .pool_achilles_catalog(raw, "Achilles analyses catalog")
+  } else {
+    list(result = NULL, warnings = character(0))
+  }
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = catalog$result,
     meta = list(call_code = code, scope = "pooled",
-                warnings = catalog$warnings))
+                warnings = catalog$warnings)), result_type,
+    "No complete, consistent Achilles analyses catalog was available.")
 }
 
 #' Get Achilles count results
@@ -172,6 +188,8 @@ ds.omop.achilles.analyses <- function(domain = NULL, symbol = "omop",
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
 #' @return A \code{dsomop_result} object. The \code{per_site} element contains
 #'   per-server data frames with columns \code{analysis_id}, \code{stratum_1}
 #'   through \code{stratum_5}, and \code{count_value}. The \code{pooled}
@@ -191,17 +209,22 @@ ds.omop.achilles.results <- function(analysis_ids,
                                       scope = c("per_site", "pooled"),
                                       pooling_policy = "strict",
                                       symbol = "omop", conns = NULL,
-                                      execute = TRUE) {
+                                      execute = TRUE, type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
 
   code <- .build_code("ds.omop.achilles.results",
     analysis_ids = analysis_ids,
-    scope = scope, symbol = symbol)
+    scope = if (is.null(type)) scope else NULL,
+    type = if (is.null(type)) NULL else result_type, symbol = symbol)
 
   if (!execute) {
-    return(dsomop_result(
+    return(.result_type_view(dsomop_result(
       per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)))
+      meta = list(call_code = code, scope = scope)), result_type))
   }
 
   session <- .get_session(symbol)
@@ -215,16 +238,18 @@ ds.omop.achilles.results <- function(analysis_ids,
 
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (.result_type_wants_combine(result_type)) {
     pool_out <- .pool_result(raw, "achilles_results", pooling_policy)
     pooled <- pool_out$result
     warnings <- pool_out$warnings
   }
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings))
+                pooling_policy = pooling_policy, warnings = warnings)),
+    result_type,
+    "No complete disclosure-safe pooled Achilles count result was available.")
 }
 
 #' Get Achilles distribution results
@@ -254,6 +279,8 @@ ds.omop.achilles.results <- function(analysis_ids,
 #' @param execute Logical; if \code{FALSE}, returns a dry-run
 #'   \code{dsomop_result} containing only the reproducible R code without
 #'   contacting the servers.
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.
 #' @return A \code{dsomop_result} object. Per-site results contain
 #'   distribution data frames with columns \code{analysis_id},
 #'   \code{stratum_1}, \code{count_value}, \code{avg_value},
@@ -273,17 +300,22 @@ ds.omop.achilles.distribution <- function(analysis_ids,
                                             scope = c("per_site", "pooled"),
                                             pooling_policy = "strict",
                                             symbol = "omop", conns = NULL,
-                                            execute = TRUE) {
+                                            execute = TRUE, type = NULL) {
+  scope_missing <- missing(scope)
   scope <- match.arg(scope)
+  result_type <- .resolve_result_type(
+    type, scope = scope, scope_missing = scope_missing
+  )
 
   code <- .build_code("ds.omop.achilles.distribution",
     analysis_ids = analysis_ids,
-    scope = scope, symbol = symbol)
+    scope = if (is.null(type)) scope else NULL,
+    type = if (is.null(type)) NULL else result_type, symbol = symbol)
 
   if (!execute) {
-    return(dsomop_result(
+    return(.result_type_view(dsomop_result(
       per_site = list(), pooled = NULL,
-      meta = list(call_code = code, scope = scope)))
+      meta = list(call_code = code, scope = scope)), result_type))
   }
 
   session <- .get_session(symbol)
@@ -297,16 +329,18 @@ ds.omop.achilles.distribution <- function(analysis_ids,
 
   pooled <- NULL
   warnings <- character(0)
-  if (scope == "pooled") {
+  if (.result_type_wants_combine(result_type)) {
     pool_out <- .pool_result(raw, "achilles_distribution", pooling_policy)
     pooled <- pool_out$result
     warnings <- pool_out$warnings
   }
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = pooled,
     meta = list(call_code = code, scope = scope,
-                pooling_policy = pooling_policy, warnings = warnings))
+                pooling_policy = pooling_policy, warnings = warnings)),
+    result_type,
+    "No complete disclosure-safe pooled Achilles distribution was available.")
 }
 
 #' Get Achilles analysis catalog
@@ -322,6 +356,8 @@ ds.omop.achilles.distribution <- function(analysis_ids,
 #'   was initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. The historical default is \code{"both"}.
 #' @return A \code{dsomop_result} object with \code{scope = "pooled"}.
 #'   The pooled result is a data frame listing all available analysis IDs
 #'   and their descriptions.
@@ -331,8 +367,11 @@ ds.omop.achilles.distribution <- function(analysis_ids,
 #' head(catalog$pooled)
 #' }
 #' @export
-ds.omop.achilles.catalog <- function(symbol = "omop", conns = NULL) {
-  code <- .build_code("ds.omop.achilles.catalog", symbol = symbol)
+ds.omop.achilles.catalog <- function(symbol = "omop", conns = NULL,
+                                     type = NULL) {
+  result_type <- .resolve_result_type(type, default_type = "both")
+  code <- .build_code("ds.omop.achilles.catalog", symbol = symbol,
+                      type = if (is.null(type)) NULL else result_type)
 
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
@@ -342,12 +381,17 @@ ds.omop.achilles.catalog <- function(symbol = "omop", conns = NULL) {
     expr = call("omopAchillesCatalogDS", session$res_symbol)
   )
 
-  catalog <- .pool_achilles_catalog(raw, "Achilles analysis catalog")
+  catalog <- if (.result_type_wants_combine(result_type)) {
+    .pool_achilles_catalog(raw, "Achilles analysis catalog")
+  } else {
+    list(result = NULL, warnings = character(0))
+  }
 
-  dsomop_result(
+  .result_type_view(dsomop_result(
     per_site = raw, pooled = catalog$result,
     meta = list(call_code = code, scope = "pooled",
-                warnings = catalog$warnings))
+                warnings = catalog$warnings)), result_type,
+    "No complete, consistent Achilles analysis catalog was available.")
 }
 
 #' Get Achilles Heel data-quality warnings (per site)

@@ -17,7 +17,8 @@ ds.omop.value.quantiles(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 }
 \arguments{
@@ -61,6 +62,11 @@ Pooled quantiles are not computed (see Description).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. Quantiles are not poolable; \code{"combine"} therefore
+returns no pooled value and records the reason. When omitted, legacy
+\code{scope} behaviour is preserved.}
 }
 \value{
 A \code{dsomop_result} object with \code{$per_site} (named list

@@ -1102,6 +1102,9 @@ ds.omop.dp.status <- function(datasources = NULL) {
 #'   wide data frame, named vector, or raw list. Histogram releases support all
 #'   four forms; other statistics retain their typed list. This argument never
 #'   enters the server specification or sticky-release identity.
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. When omitted, the legacy \code{pool} argument is preserved:
+#'   \code{TRUE} means both views and \code{FALSE} means split only.
 #' @return A \code{dsomop_result}. The \code{meta$privacy} record reports the
 #'   effective population label, a named public snapshot map, fixed per-site
 #'   epsilon and conservative cross-site composition for this release. Parallel
@@ -1117,7 +1120,9 @@ ds.omop.dp.status <- function(datasources = NULL) {
 #' }
 #' @export
 ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
-                               format = c("long", "wide", "vector", "raw")) {
+                               format = c("long", "wide", "vector", "raw"),
+                               type = NULL) {
+  pool_missing <- missing(pool)
   if (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x) ||
       !grepl("^[A-Za-z.][A-Za-z0-9._]*$", x) || grepl("^\\.[0-9]", x)) {
     stop("x must be one bare DataSHIELD symbol.", call. = FALSE)
@@ -1128,6 +1133,10 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   if (!is.logical(pool) || length(pool) != 1L || is.na(pool)) {
     stop("pool must be TRUE or FALSE.", call. = FALSE)
   }
+  result_type <- .resolve_result_type(
+    type, pool = pool, pool_missing = pool_missing, default_type = "both"
+  )
+  want_combine <- .result_type_wants_combine(result_type)
   if (length(format) > 1L &&
       identical(format, c("long", "wide", "vector", "raw"))) {
     format <- format[[1L]]
@@ -1152,7 +1161,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   count_like <- privacy$statistic %in% c(
     "count", "bounded_record_count", "bounded_distinct"
   )
-  if (length(datasources) > 1L && isTRUE(pool) && !count_like) {
+  if (length(datasources) > 1L && want_combine && !count_like) {
     disclosure <- .dp_complete_aggregate(
       datasources, call("omopDisclosureSettingsDS"),
       "DP harmonization preflight"
@@ -1171,7 +1180,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
       raw[[server]], server, privacy, statuses[[server]]
     )
   }
-  if (isTRUE(pool) && !privacy$statistic %in% c(
+  if (want_combine && !privacy$statistic %in% c(
     "count", "bounded_record_count"
   )) {
     value_types <- vapply(raw, `[[`, character(1L), "value_type")
@@ -1181,7 +1190,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     }
   }
 
-  pooled <- if (isTRUE(pool)) {
+  pooled <- if (want_combine) {
     .dp_pool_release(raw, privacy, contract, format = format)
   } else NULL
   epsilons <- vapply(raw, function(value) as.numeric(value$epsilon), numeric(1L))
@@ -1194,7 +1203,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   composition <- if (disjoint) "parallel_disjoint_persons" else
     "conservative_sequential_across_sites"
   warnings <- character(0)
-  if (isTRUE(pool) && length(statuses) > 1L && !disjoint) {
+  if (want_combine && length(statuses) > 1L && !disjoint) {
     warnings <- c(warnings, paste0(
       "Servers do not jointly attest disjoint persons. Pooled sufficient ",
       "statistics sum site-local contributions, so a person present at ",
@@ -1202,7 +1211,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
       "composition is reported for this release."
     ))
   }
-  if (isTRUE(pool) && length(statuses) > 1L &&
+  if (want_combine && length(statuses) > 1L &&
       identical(privacy$statistic, "bounded_distinct")) {
     warnings <- c(warnings, paste0(
       "Pooled bounded_distinct is the sum of noisy site-local cardinalities, ",
@@ -1214,9 +1223,11 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     per_site = raw, pooled = pooled,
     meta = list(
       call_code = .build_code("ds.omop.dp.release", x = x,
-                              privacy = "<omop_privacy>", pool = pool,
+                              privacy = "<omop_privacy>",
+                              pool = if (is.null(type)) pool else NULL,
+                              type = if (is.null(type)) NULL else result_type,
                               format = format),
-      scope = if (isTRUE(pool)) "pooled" else "per_site",
+      scope = if (want_combine) "pooled" else "per_site",
       warnings = warnings
     )
   )
@@ -1248,5 +1259,8 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     conservative_delta = if (disjoint) max(deltas) else sum(deltas)
   )
   result[["meta"]]$harmonization <- harmonization
-  result
+  .result_type_view(
+    result, result_type,
+    "No complete disclosure-safe pooled DP release was available."
+  )
 }

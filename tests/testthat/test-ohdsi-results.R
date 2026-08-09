@@ -81,114 +81,200 @@ test_that("ds.omop.ohdsi.summary has expected signature", {
   expect_true("conns" %in% names(args))
 })
 
-# --- Pooling tests -----------------------------------------------------------
-
-test_that("ohdsi_results pooling sums count columns", {
-  per_site <- list(
-    server_a = data.frame(
-      cohort_id = c(1L, 2L),
-      cohort_entries = c(100L, 50L),
-      cohort_subjects = c(80L, 40L),
-      stringsAsFactors = FALSE
-    ),
-    server_b = data.frame(
-      cohort_id = c(1L, 2L),
-      cohort_entries = c(200L, 75L),
-      cohort_subjects = c(150L, 60L),
-      stringsAsFactors = FALSE
+test_that("combined OHDSI results use the physical contract before shaping", {
+  contract <- list(
+    version = 1L,
+    strategy = "tabular",
+    columns = list(
+      cohort_id = list(role = "key"),
+      cohort_entries = list(role = "sum"),
+      cohort_subjects = list(role = "sum")
     )
   )
-
-  result <- .pool_result(per_site, "ohdsi_results", "strict")
-  expect_false(is.null(result$result))
-  pooled <- result$result
-  expect_s3_class(pooled, "data.frame")
-  # Counts should be summed per cohort
-  c1 <- pooled[pooled$cohort_id == 1L, ]
-  expect_equal(c1$cohort_entries, 300L)
-  expect_equal(c1$cohort_subjects, 230L)
-})
-
-test_that("ohdsi_results pooling propagates NA for suppressed counts", {
+  contract_meta <- list(
+    contract_version = 1L,
+    tool_id = "cohort_diagnostics",
+    table_name = "cohort_count",
+    pooling_contract = contract
+  )
   per_site <- list(
-    server_a = data.frame(
-      cohort_id = 1L,
-      cohort_entries = 100L,
-      stringsAsFactors = FALSE
-    ),
-    server_b = data.frame(
-      cohort_id = 1L,
-      cohort_entries = NA_integer_,
-      stringsAsFactors = FALSE
-    )
+    a = data.frame(cohort_id = c(1L, 2L),
+                   cohort_entries = c(10, 20),
+                   cohort_subjects = c(5, 10)),
+    b = data.frame(cohort_id = c(1L, 2L),
+                   cohort_entries = c(30, 40),
+                   cohort_subjects = c(15, 20))
+  )
+  calls <- list()
+  testthat::local_mocked_bindings(
+    .get_session = function(symbol) {
+      list(conns = list(a = "A", b = "B"), res_symbol = "omop_obj")
+    },
+    .ds_safe_aggregate = function(conns, expr) {
+      calls[[length(calls) + 1L]] <<- expr
+      method <- as.character(expr[[1L]])
+      if (identical(method, "omopOhdsiResultContractDS")) {
+        return(list(a = contract_meta, b = contract_meta))
+      }
+      if (identical(method, "omopOhdsiResultsDS")) {
+        return(lapply(per_site, function(frame) {
+          frame[frame$cohort_id == 1L, , drop = FALSE]
+        }))
+      }
+      stop("unexpected aggregate method", call. = FALSE)
+    },
+    .session_harmonization_for_connections = function(session, conns, ...) {
+      list(poolable_counts = TRUE, count_band_width = 5L)
+    },
+    ds.omop.analysis.run = function(...) {
+      stop("live analysis catalog must not be called")
+    },
+    .pool_result = function(...) {
+      stop("heuristic pooler must not be called")
+    },
+    .package = "dsOMOPClient"
   )
 
-  result <- .pool_result(per_site, "ohdsi_results", "strict")
-  # With strict policy and NA propagation, the row should be dropped
-  # (all count cols NA -> row dropped)
-  expect_true(is.null(result$result) || nrow(result$result) == 0)
+  result <- ds.omop.ohdsi.results(
+    "cohort_count", columns = c("cohort_id", "cohort_subjects"),
+    filters = list(cohort_id = 1L), order_by = "cohort_subjects DESC",
+    limit = 1L, tool_id = "cohort_diagnostics", type = "both"
+  )
+  expect_s3_class(result, "dsomop_result")
+  expect_named(result$per_site, c("a", "b"))
+  expect_identical(names(result$pooled),
+                   c("cohort_id", "cohort_subjects"))
+  expect_identical(result$pooled$cohort_id, 1L)
+  expect_equal(result$pooled$cohort_subjects, 20)
+  expect_identical(result$meta$tool_id, "cohort_diagnostics")
+  expect_identical(result$meta$table_name, "cohort_count")
+
+  expect_length(calls, 2L)
+  expect_identical(as.character(calls[[1L]][[1L]]),
+                   "omopOhdsiResultContractDS")
+  results_call <- calls[[2L]]
+  expect_identical(as.character(results_call[[1L]]), "omopOhdsiResultsDS")
+  expect_null(results_call[[4L]])
+  expect_identical(results_call[[5L]], .ds_encode(list(cohort_id = 1L)))
+  expect_null(results_call[[6L]])
+  expect_identical(results_call[[7L]], 5000L)
 })
 
-test_that("ohdsi_results pooling sets rates to NA", {
-  per_site <- list(
-    server_a = data.frame(
-      outcome_id = 1L,
-      outcomes = 50L,
-      incidence_rate = 15.0,
-      stringsAsFactors = FALSE
-    ),
-    server_b = data.frame(
-      outcome_id = 1L,
-      outcomes = 30L,
-      incidence_rate = 12.0,
-      stringsAsFactors = FALSE
-    )
+test_that("physical OHDSI contract mismatch fails before result retrieval", {
+  contract <- list(version = 1L, strategy = "tabular", columns = list(
+    cohort_id = list(role = "key"),
+    cohort_subjects = list(role = "sum")
+  ))
+  meta_a <- list(contract_version = 1L, tool_id = "cohort_diagnostics",
+                 table_name = "cohort_count", pooling_contract = contract)
+  meta_b <- meta_a
+  meta_b$table_name <- "different_table"
+  results_requested <- FALSE
+  testthat::local_mocked_bindings(
+    .get_session = function(symbol) {
+      list(conns = list(a = "A", b = "B"), res_symbol = "omop_obj")
+    },
+    .ds_safe_aggregate = function(conns, expr) {
+      if (identical(as.character(expr[[1L]]),
+                    "omopOhdsiResultContractDS")) {
+        return(list(a = meta_a, b = meta_b))
+      }
+      results_requested <<- TRUE
+      stop("result endpoint must not be reached")
+    },
+    .package = "dsOMOPClient"
   )
 
-  result <- .pool_result(per_site, "ohdsi_results", "strict")
-  expect_false(is.null(result$result))
-  pooled <- result$result
-  # Rate should be NA (cannot sum rates)
-  expect_true(is.na(pooled$incidence_rate))
-  # Count should be summed
-  expect_equal(pooled$outcomes, 80L)
+  expect_error(
+    ds.omop.ohdsi.results("cohort_count", type = "combine"),
+    "differs across servers"
+  )
+  expect_false(results_requested)
 })
 
-test_that("ohdsi_results pooling handles empty input", {
-  per_site <- list(
-    server_a = data.frame(stringsAsFactors = FALSE)
+test_that("combined OHDSI results fail closed at the server row cap", {
+  contract <- list(version = 1L, strategy = "tabular", columns = list(
+    cohort_id = list(role = "key"),
+    cohort_subjects = list(role = "sum")
+  ))
+  contract_meta <- list(
+    contract_version = 1L, tool_id = "cohort_diagnostics",
+    table_name = "cohort_count", pooling_contract = contract
   )
-  result <- .pool_result(per_site, "ohdsi_results", "strict")
-  expect_true(is.null(result$result) ||
-    (is.data.frame(result$result) && nrow(result$result) == 0))
+  capped <- data.frame(cohort_id = seq_len(5000L), cohort_subjects = 5)
+  testthat::local_mocked_bindings(
+    .get_session = function(symbol) {
+      list(conns = list(a = "A", b = "B"), res_symbol = "omop_obj")
+    },
+    .ds_safe_aggregate = function(conns, expr) {
+      if (identical(as.character(expr[[1L]]),
+                    "omopOhdsiResultContractDS")) {
+        return(list(a = contract_meta, b = contract_meta))
+      }
+      list(a = capped, b = capped)
+    },
+    .package = "dsOMOPClient"
+  )
+
+  expect_error(
+    ds.omop.ohdsi.results("cohort_count", type = "combine"),
+    "5000-row server cap"
+  )
 })
 
-test_that("ohdsi_results pooling handles DQD data", {
-  per_site <- list(
-    server_a = data.frame(
-      check_name = "measurePersonCompleteness",
-      category = "Completeness",
-      num_violated_rows = 5L,
-      num_denominator_rows = 100L,
-      pct_violated_rows = 5.0,
-      stringsAsFactors = FALSE
-    ),
-    server_b = data.frame(
-      check_name = "measurePersonCompleteness",
-      category = "Completeness",
-      num_violated_rows = 10L,
-      num_denominator_rows = 200L,
-      pct_violated_rows = 5.0,
-      stringsAsFactors = FALSE
-    )
+test_that("split OHDSI results preserve direct server-side shaping", {
+  calls <- list()
+  filters <- list(cohort_id = 1L)
+  frame <- data.frame(cohort_id = 1L, cohort_subjects = 5)
+  testthat::local_mocked_bindings(
+    .get_session = function(symbol) {
+      list(conns = list(a = "A"), res_symbol = "omop_obj")
+    },
+    .ds_safe_aggregate = function(conns, expr) {
+      calls[[length(calls) + 1L]] <<- expr
+      list(a = frame)
+    },
+    .package = "dsOMOPClient"
   )
 
-  result <- .pool_result(per_site, "ohdsi_results", "strict")
-  expect_false(is.null(result$result))
-  pooled <- result$result
-  # Count cols summed
-  expect_equal(pooled$num_violated_rows, 15L)
-  expect_equal(pooled$num_denominator_rows, 300L)
-  # Percentage set to NA (it's a rate-like column)
-  expect_true(is.na(pooled$pct_violated_rows))
+  result <- ds.omop.ohdsi.results(
+    "cohort_count", columns = "cohort_subjects", filters = filters,
+    order_by = "cohort_subjects DESC", limit = 7L,
+    tool_id = "cohort_diagnostics", type = "split"
+  )
+  expect_s3_class(result, "dsomop_result")
+  expect_identical(result$per_site$a, frame)
+  expect_null(result$pooled)
+  expect_length(calls, 1L)
+  expect_identical(as.character(calls[[1L]][[1L]]), "omopOhdsiResultsDS")
+  expect_identical(calls[[1L]][[4L]], "cohort_subjects")
+  expect_identical(calls[[1L]][[5L]], .ds_encode(filters))
+  expect_identical(calls[[1L]][[6L]], "cohort_subjects DESC")
+  expect_identical(calls[[1L]][[7L]], 7L)
+})
+
+test_that("OHDSI result shaping is post-disclosure and deterministic", {
+  value <- data.frame(
+    cohort_id = c(2L, 1L, 1L),
+    cohort_subjects = c(30, 20, 10),
+    database_id = c("b", "a", "b")
+  )
+  shaped <- .ohdsi_shape_frame(
+    value, columns = c("database_id", "cohort_subjects"),
+    filters = list(cohort_id = 1L), order_by = "cohort_subjects DESC",
+    limit = 1L
+  )
+  expect_identical(names(shaped), c("database_id", "cohort_subjects"))
+  expect_identical(shaped$database_id, "a")
+  expect_identical(shaped$cohort_subjects, 20)
+})
+
+test_that("generic OHDSI heuristic pooling is unavailable", {
+  out <- .pool_result(
+    list(a = data.frame(n_persons = 10),
+         b = data.frame(n_persons = 20)),
+    "ohdsi_results", "strict"
+  )
+  expect_null(out$result)
+  expect_match(out$warnings, "Unknown result type")
 })

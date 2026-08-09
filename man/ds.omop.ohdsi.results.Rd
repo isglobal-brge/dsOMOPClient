@@ -14,7 +14,8 @@ ds.omop.ohdsi.results(
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = NULL
 )
 }
 \arguments{
@@ -38,14 +39,22 @@ ds.omop.ohdsi.results(
 \item{symbol}{Character; the session symbol (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s). If \code{NULL}, uses active session.}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
 }
 \value{
 A \code{dsomop_result} object.
 }
 \description{
 Reads rows from a pre-computed OHDSI result table with server-controlled
-disclosure. When \code{scope = "pooled"}, counts are summed across servers
-with suppression propagation; rates/proportions are set to NA.
+disclosure. Split-only requests preserve that compatibility endpoint.
+Combined requests obtain the physical result table's closed, server-owned
+pooling contract and combine complete disclosure-controlled frames through
+that contract; they never route through a same-named live analysis or a
+column-name pooling heuristic. Reviewed equality filters are applied
+server-side; selection, ordering, and the row limit are applied only after
+contractual pooling.
 }
 \examples{
 \dontrun{

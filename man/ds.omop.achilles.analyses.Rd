@@ -4,7 +4,12 @@
 \alias{ds.omop.achilles.analyses}
 \title{List available Achilles analyses}
 \usage{
-ds.omop.achilles.analyses(domain = NULL, symbol = "omop", conns = NULL)
+ds.omop.achilles.analyses(
+  domain = NULL,
+  symbol = "omop",
+  conns = NULL,
+  type = NULL
+)
 }
 \arguments{
 \item{domain}{Character; optional domain filter. Valid values include
@@ -17,6 +22,9 @@ was initialised (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s). If \code{NULL} (the default), the
 connections stored in the active session are used.}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. The historical default is \code{"both"}.}
 }
 \value{
 A \code{dsomop_result} object with \code{scope = "pooled"}.

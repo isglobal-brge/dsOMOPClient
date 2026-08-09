@@ -9,7 +9,8 @@ ds.omop.dp.release(
   privacy,
   datasources = NULL,
   pool = TRUE,
-  format = c("long", "wide", "vector", "raw")
+  format = c("long", "wide", "vector", "raw"),
+  type = NULL
 )
 }
 \arguments{
@@ -29,6 +30,10 @@ public compatibility label. This label does not control sticky identity.}
 wide data frame, named vector, or raw list. Histogram releases support all
 four forms; other statistics retain their typed list. This argument never
 enters the server specification or sticky-release identity.}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. When omitted, the legacy \code{pool} argument is preserved:
+\code{TRUE} means both views and \code{FALSE} means split only.}
 }
 \value{
 A \code{dsomop_result}. The \code{meta$privacy} record reports the

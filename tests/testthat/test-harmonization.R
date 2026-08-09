@@ -252,26 +252,22 @@ test_that("compatible banded pooling is labelled as approximate", {
 })
 
 test_that("deprecated query pool cannot bypass the count-band contract", {
-  symbol <- "harmonization_band_mismatch"
   settings <- list(a = .harm_settings(band = 5),
                    b = .harm_settings(band = 10))
-  caps <- lapply(settings, function(disclosure) list(disclosure = disclosure))
-  session <- structure(list(
-    symbol = symbol,
-    server_names = c("a", "b"),
-    conns = list(a = TRUE, b = TRUE),
-    capabilities = caps
-  ), class = "omop_session")
-  assign(symbol, session, envir = .dsomop_client_env)
-  on.exit(rm(list = symbol, envir = .dsomop_client_env), add = TRUE)
-
   results <- list(
     a = data.frame(group = "x", n = 45),
     b = data.frame(group = "x", n = 40))
+  attr(results, "dsomop.pooling_contract") <- list(
+    version = 1L, strategy = "tabular",
+    columns = list(group = list(role = "key"), n = list(role = "sum"))
+  )
+  attr(results, "dsomop.harmonization") <-
+    .federated_harmonization_contract(settings)
+  attr(results, "dsomop.analysis_name") <- "dsomop:test"
+  attr(results, "dsomop.expected_servers") <- c("a", "b")
   expect_error(
-    suppressWarnings(ds.omop.query.pool(results, sensitive_fields = "n",
-                                         symbol = symbol)),
-    "count pooling blocked")
+    suppressWarnings(ds.omop.query.pool(results)),
+    "count-band settings are incompatible")
 })
 
 test_that("date counts align by exact period, never row position", {

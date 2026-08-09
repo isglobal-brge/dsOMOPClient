@@ -12,7 +12,8 @@ ds.omop.safe.cutpoints(
   scope = c("per_site", "pooled"),
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 }
 \arguments{
@@ -40,6 +41,9 @@ connection (default: \code{"omop"}).}
 
 \item{execute}{Logical; if \code{FALSE}, return a dry-run result
 containing only the generated call code (default: \code{TRUE}).}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. When omitted, legacy \code{scope} behaviour is preserved.}
 }
 \value{
 A \code{dsomop_result} object with \code{$per_site} (named list

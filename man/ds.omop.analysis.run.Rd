@@ -14,7 +14,8 @@ ds.omop.analysis.run(
   plot = FALSE,
   date_handling = NULL,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = "both"
 )
 }
 \arguments{
@@ -40,9 +41,10 @@ named \code{scope_table_<n>} argument, never through a generic
 \code{"union"} (the default) or \code{"intersect"}.}
 
 \item{pooling_policy}{Character; how suppressed (NA) cells are handled when
-pooling aggregate results across servers. \code{"strict"} (the default)
-sets the pooled value to NA if any server suppressed it; \code{"pooled_only_ok"}
-sums only the non-suppressed values.}
+pooling aggregate results across servers. \code{"strict"} (default)
+requires each pooled group on every server; \code{"pooled_only_ok"} pools
+only available disclosure-safe contributions. Kaplan-Meier curves still
+require every preceding risk-set bin because their values are cumulative.}
 
 \item{plot}{Logical; when \code{TRUE} AND the entry ships a plot recipe, build
 a \code{ggplot} CLIENT-SIDE over the pooled, gate-passed data and attach it
@@ -62,6 +64,14 @@ initialised (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s). If \code{NULL} (the default), the
 connections stored in the active session are used.}
+
+\item{type}{Result view, following dsBaseClient terminology: \code{"both"}
+(default) returns per-server and correctly combined results,
+\code{"split"} returns only per-server results, and \code{"combine"}
+returns only the combined result. The aliases \code{"b"},
+\code{"splits"}/\code{"s"}, and \code{"combined"}/\code{"c"} are
+accepted. Combining is performed only from the server-owned pooling
+contract; no column-name heuristics are used.}
 }
 \value{
 A \code{dsomop_result} object. For aggregate entries, \code{per_site}

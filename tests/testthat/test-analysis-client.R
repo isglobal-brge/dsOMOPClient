@@ -14,38 +14,44 @@
 test_that("ds.omop.analysis.list has the expected signature", {
   expect_true(is.function(ds.omop.analysis.list))
   args <- formals(ds.omop.analysis.list)
-  expect_true(all(c("domain", "symbol", "conns") %in% names(args)))
+  expect_true(all(c("domain", "symbol", "conns", "type") %in% names(args)))
   expect_null(args$domain)
   expect_equal(args$symbol, "omop")
+  expect_equal(args$type, "both")
 })
 
 test_that("ds.omop.analysis.get has the expected signature", {
   expect_true(is.function(ds.omop.analysis.get))
   args <- formals(ds.omop.analysis.get)
-  expect_true(all(c("name", "symbol", "conns") %in% names(args)))
+  expect_true(all(c("name", "symbol", "conns", "type") %in% names(args)))
   expect_equal(args$symbol, "omop")
+  expect_equal(args$type, "both")
 })
 
 test_that("ds.omop.analysis.run has the expected signature", {
   expect_true(is.function(ds.omop.analysis.run))
   args <- formals(ds.omop.analysis.run)
   expect_true(all(c("name", "params", "cohort", "tables", "combine",
-                    "pooling_policy", "symbol", "conns") %in% names(args)))
+                    "pooling_policy", "symbol", "conns", "type") %in%
+                  names(args)))
   expect_equal(args$combine, "union")
   expect_equal(args$pooling_policy, "strict")
+  expect_equal(args$type, "both")
 })
 
 test_that("ds.omop.prevalence / ds.omop.distribution are thin one-liners", {
   expect_true(is.function(ds.omop.prevalence))
   pa <- formals(ds.omop.prevalence)
   expect_true(all(c("concept_id", "cohort", "domain", "top_n", "tables",
-                    "symbol", "conns") %in% names(pa)))
+                    "symbol", "conns", "type") %in% names(pa)))
   expect_equal(pa$domain, "condition")
+  expect_equal(pa$type, "both")
   expect_true(is.function(ds.omop.distribution))
   da <- formals(ds.omop.distribution)
   expect_true(all(c("cohort", "metric", "domain", "top_n", "concept_id",
-                    "tables", "symbol", "conns") %in% names(da)))
+                    "tables", "symbol", "conns", "type") %in% names(da)))
   expect_equal(da$metric, "measurement_value")
+  expect_equal(da$type, "both")
 })
 
 # --- .analysis_domain_code ---------------------------------------------------
@@ -377,7 +383,18 @@ test_that(".analysis_render_plot rejects unsupported plot types", {
 
   sent <- new.env(parent = emptyenv())
   sent$exprs <- list()
-  meta <- list(name = "dsomop:demo.person_count_by_gender", mode = "aggregate")
+  columns <- stats::setNames(lapply(names(gated), function(column) {
+    if (column %in% c("n_persons", "sum_value", "count_value")) {
+      list(role = "sum")
+    } else if (column %in% c("average", "avg_value")) {
+      list(role = "nonpoolable", reason = "No sufficient statistic.")
+    } else list(role = "key")
+  }), names(gated))
+  meta <- list(
+    name = "dsomop:demo.person_count_by_gender", mode = "aggregate",
+    pooling_contract = list(version = 1L, strategy = "tabular",
+                            columns = columns)
+  )
   if (!is.null(meta_plot)) meta$plot <- meta_plot
 
   testthat::local_mocked_bindings(
@@ -582,7 +599,13 @@ test_that("aggregate analysis never publishes a partial federation", {
       head <- if (is.call(expr)) as.character(expr[[1L]]) else ""
       if (identical(head, "omopAnalysisGetDS")) {
         return(stats::setNames(
-          list(list(name = "dsomop:x", mode = "aggregate")), server
+          list(list(
+            name = "dsomop:x", mode = "aggregate",
+            pooling_contract = list(
+              version = 1L, strategy = "tabular",
+              columns = list(n_persons = list(role = "sum"))
+            )
+          )), server
         ))
       }
       if (identical(server, "b")) stop("simulated analysis failure")
@@ -735,13 +758,14 @@ test_that("ds.omop.meta.effect_estimate has the expected signature", {
   expect_true(is.function(ds.omop.meta.effect_estimate))
   args <- formals(ds.omop.meta.effect_estimate)
   expect_true(all(c("name", "params", "cohort", "tables", "combine",
-                    "pooling_policy", "symbol", "conns") %in% names(args)))
+                    "pooling_policy", "symbol", "conns", "type") %in%
+                  names(args)))
   expect_equal(args$name, "dsomop:cm.effect_estimate")
   expect_equal(args$pooling_policy, "strict")
 })
 
-# Multi-server mock: each server returns its OWN per-site effect-estimate frame,
-# so the wrapper's inverse-variance re-pool produces a genuine 2-site meta.
+# Multi-server mock: each server returns its own contracted effect-estimate
+# frame, so the catalog dispatcher produces a genuine two-site meta-analysis.
 .acat_with_mocked_meta <- function(per_server_frames, code) {
   conns <- stats::setNames(as.list(rep("FAKE", length(per_server_frames))),
                            names(per_server_frames))
@@ -751,7 +775,23 @@ test_that("ds.omop.meta.effect_estimate has the expected signature", {
     if (exists("omop", envir = dsOMOPClient:::.dsomop_client_env)) {
       rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env)
     })
-  meta <- list(name = "dsomop:cm.effect_estimate", mode = "aggregate")
+  columns <- stats::setNames(lapply(names(per_server_frames[[1L]]), function(x) {
+    if (x %in% c("arm", "model_type")) {
+      list(role = "key")
+    } else if (x %in% c("persons", "person_days", "outcomes")) {
+      list(role = "sum")
+    } else {
+      list(role = "nonpoolable", reason = "Pooled by inverse variance.")
+    }
+  }), names(per_server_frames[[1L]]))
+  meta <- list(
+    name = "dsomop:cm.effect_estimate", mode = "aggregate",
+    pooling_contract = list(
+      version = 1L, strategy = "effect_estimate", columns = columns,
+      strata = c("arm", "model_type"), log_estimate = "log_estimate",
+      standard_error = "se_log_estimate", transform = "exp"
+    )
+  )
   testthat::local_mocked_bindings(
     datashield.aggregate = function(conns, expr, ...) {
       head <- if (is.call(expr)) as.character(expr[[1]]) else ""
@@ -765,20 +805,37 @@ test_that("ds.omop.meta.effect_estimate has the expected signature", {
 }
 
 test_that("ds.omop.meta.effect_estimate inverse-variance pools per-site HRs", {
-  mk <- function(le, se) data.frame(
-    arm = c("target", "comparator"),
-    log_estimate = le, se_log_estimate = se, stringsAsFactors = FALSE)
-  frames <- list(nairobi = mk(log(1.5), 0.2), douala = mk(log(2.0), 0.3))
+  mk <- function(le, se, persons, person_days, outcomes) data.frame(
+    arm = c("target", "comparator"), model_type = "cox",
+    persons = persons, person_days = person_days, outcomes = outcomes,
+    estimate = exp(le), ci_lo = exp(le - 1.96 * se),
+    ci_hi = exp(le + 1.96 * se), log_estimate = le,
+    se_log_estimate = se, stringsAsFactors = FALSE)
+  frames <- list(
+    nairobi = mk(log(1.5), 0.2, c(100, 90), c(1000, 900), c(20, 15)),
+    douala = mk(log(2.0), 0.3, c(120, 110), c(1200, 1100), c(24, 18))
+  )
   .acat_with_mocked_meta(frames, function() {
     res <- ds.omop.meta.effect_estimate(
       params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L))
     expect_s3_class(res, "dsomop_result")
-    # Pooled is the one-row meta-analysis, not the stacked per-arm frame.
-    expect_equal(nrow(res$pooled), 1L)
-    expect_equal(res$pooled$n_databases, 2L)
+    expect_setequal(res$pooled$arm, c("target", "comparator"))
+    expect_true(all(res$pooled$model_type == "cox"))
+    expect_true(all(res$pooled$n_databases == 2L))
+    target <- res$pooled[res$pooled$arm == "target", , drop = FALSE]
+    comparator <- res$pooled[res$pooled$arm == "comparator", , drop = FALSE]
+    expect_equal(target$persons, 220)
+    expect_equal(target$person_days, 2200)
+    expect_equal(target$outcomes, 44)
+    expect_equal(comparator$persons, 200)
+    expect_equal(comparator$person_days, 2000)
+    expect_equal(comparator$outcomes, 33)
+    expect_true(all(is.na(res$pooled$log_estimate)))
+    expect_true(all(is.na(res$pooled$se_log_estimate)))
     w <- 1 / c(0.2, 0.3)^2
     fe <- sum(w * c(log(1.5), log(2.0))) / sum(w)
-    expect_equal(res$pooled$estimate_fixed, exp(fe), tolerance = 1e-8)
+    expect_equal(res$pooled$estimate_fixed, rep(exp(fe), 2L),
+                 tolerance = 1e-8)
     # Per-site frames are retained intact.
     expect_named(res$per_site, c("nairobi", "douala"))
   })
@@ -786,6 +843,10 @@ test_that("ds.omop.meta.effect_estimate inverse-variance pools per-site HRs", {
 
 test_that("ds.omop.meta.effect_estimate strict fails closed if a site suppressed", {
   mk <- function(le, se) data.frame(
+    arm = c("target", "comparator"), model_type = "cox",
+    persons = c(100, 90), person_days = c(1000, 900),
+    outcomes = c(20, 15), estimate = exp(le),
+    ci_lo = exp(le - 1.96 * se), ci_hi = exp(le + 1.96 * se),
     log_estimate = le, se_log_estimate = se, stringsAsFactors = FALSE)
   # douala suppressed its estimate (small arm -> NA).
   frames <- list(nairobi = mk(log(1.5), 0.2),

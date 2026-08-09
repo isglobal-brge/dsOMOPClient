@@ -21,7 +21,8 @@ ds.omop.value.histogram(
   nbins = 9L,
   xlab = NULL,
   main = NULL,
-  col = "#4C72B0"
+  col = "#4C72B0",
+  type = NULL
 )
 }
 \arguments{
@@ -71,6 +72,10 @@ result invisibly. Default \code{FALSE}.}
 
 \item{xlab, main, col}{Axis label, title and bar colour used when
 \code{plot = TRUE}.}
+
+\item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
+\code{"both"}. A pooled plot requires \code{"combine"} or \code{"both"}.
+When omitted, legacy \code{scope} behaviour is preserved.}
 }
 \value{
 A \code{dsomop_result} object with \code{$per_site} (named list

@@ -619,16 +619,33 @@ print.omop_querylibrary_sticky <- function(x, ...) {
 #'   \code{bounded_distinct}, pooling is the sum of site-local cardinalities,
 #'   not a cross-site set union; use \code{FALSE} for site-specific estimates.
 #' @param format Output format passed to \code{\link{ds.omop.dp.release}}.
+#' @param type Optional result view: \code{"split"}, \code{"combine"}, or
+#'   \code{"both"}. When omitted, the legacy \code{pool} argument is preserved.
 #' @return A \code{dsomop_result} from \code{\link{ds.omop.dp.release}}.
 #' @export
 ds.omop.querylibrary.sticky.release <- function(
     x, redesign, datasources = NULL, pool = TRUE,
-    format = c("long", "wide", "vector", "raw")) {
+    format = c("long", "wide", "vector", "raw"), type = NULL) {
+  pool_missing <- missing(pool)
+  if (!is.logical(pool) || length(pool) != 1L || is.na(pool)) {
+    stop("pool must be TRUE or FALSE.", call. = FALSE)
+  }
+  result_type <- .resolve_result_type(
+    type, pool = pool, pool_missing = pool_missing, default_type = "both"
+  )
   .querylibrary_sticky_validate_redesign(redesign)
   datasources <- .dp_datasources(datasources)
   .querylibrary_sticky_server_preflight(redesign, datasources)
-  ds.omop.dp.release(
-    x = x, privacy = redesign$privacy, datasources = datasources,
-    pool = pool, format = format
-  )
+  if (is.null(type)) {
+    ds.omop.dp.release(
+      x = x, privacy = redesign$privacy, datasources = datasources,
+      pool = pool, format = format
+    )
+  } else {
+    ds.omop.dp.release(
+      x = x, privacy = redesign$privacy, datasources = datasources,
+      pool = .result_type_wants_combine(result_type), format = format,
+      type = result_type
+    )
+  }
 }
