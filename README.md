@@ -97,17 +97,15 @@ result <- ds.omop.dp.release(
 
 The client cannot choose epsilon, a seed, nonce, epoch or reroll. Domains,
 date breaks, clipping bounds and longitudinal contribution caps are public
-parts of the request; noise allocation, sticky identity and the durable ledger
-remain server-owned. See `?omop_privacy` and `?ds.omop.dp.release` for the seven
-supported primitives and their reducers. Before any release, the client checks
-the server continuity identifiers and refuses a federated request through two
-connections that share a logical noise domain, a ledger, or the same
-domain-scoped ledger authentication key. These checks prevent duplicate-node
-pooling while replicas converge during a noise-root rotation and detect
-accidentally forked durable ledgers. Such a rotation changes `noise_key_id`,
-`noise_domain_id` and `privacy_instance_id`, while `ledger_id` and
-`ledger_key_id` remain stable; operators should refresh any monitoring pins
-after the coordinated rollout.
+parts of the request; fixed per-release epsilon and sticky identity remain
+server-owned. The server derives each draw deterministically from its persistent
+secret root and the authenticated canonical semantic release, with no call
+counter or query quota. See `?omop_privacy` and `?ds.omop.dp.release` for the
+seven supported primitives and their reducers. Before any release, the client
+refuses a federated request through two connections that report either the same
+`noise_domain_id` or the same server-owned logical `domain`. This prevents one
+logical privacy node from being pooled twice, including through connections
+that expose different noise material.
 
 ## Current boundaries
 
@@ -135,11 +133,11 @@ possible relational or longitudinal estimand. In particular:
   `personRef`; absent covariate rows represent zero for roster members with no
   qualifying event;
 - the local Query Library is curated and incomplete. The opt-in privacy path
-  currently supports seven person-bounded sticky-noise primitives with a durable
-  authenticated ledger. Its single public guarantee is
-  `sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting`;
-  there is no separate certification mode. Eligible inputs carry authenticated
-  semantic lineage and deterministic person-level contribution bounds. The
+  currently supports seven person-bounded sticky-noise primitives. Its public
+  guarantee is `sticky_person_bounded_discrete_laplace_per_release_v1`, under
+  the `fixed_per_release_semantic_prf_v1` contract. Eligible inputs carry
+  authenticated semantic lineage and deterministic person-level contribution
+  bounds. The
   pinned upstream snapshot is exhaustively classified as 129 executable bounded
   redesigns, 54 vocabulary/reference metadata questions and 18 blocked shapes;
   none authorizes literal upstream SQL.

@@ -71,14 +71,10 @@ test_that("each mapped primitive builds a canonical privacy specification", {
     inherits(x$privacy, "omop_privacy") &&
       identical(x$mapping$literal_upstream_sql_authorized, FALSE)
   }, logical(1L))))
-  expect_true(all(vapply(values, function(x) {
-    !"formal_dp" %in% names(x) &&
-      !"formal_dp" %in% names(x$mapping) &&
-      !"formal_dp" %in% names(unclass(x$privacy))
-  }, logical(1L))))
-  expect_false("formal_dp" %in% names(formals(omop_querylibrary_sticky)))
-  expect_false("formal_dp" %in%
-                 names(formals(ds.omop.querylibrary.sticky.release)))
+  expect_identical(
+    names(formals(ds.omop.querylibrary.sticky.release)),
+    c("x", "redesign", "datasources", "pool", "format")
+  )
   expect_identical(count$privacy$statistic, "count")
   expect_identical(categorical$privacy$reducer, "presence")
   expect_identical(numeric$privacy$reducer, "mean")

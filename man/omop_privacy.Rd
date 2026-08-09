@@ -73,10 +73,10 @@ A strictly validated \code{omop_privacy} specification.
 \description{
 Constructs the public semantic specification for a dedicated dsOMOP
 sticky-noise release. Noise parameters and state are deliberately
-absent: epsilon, seeds, nonces, privacy epochs, and ledger controls are owned
-by each data custodian and cannot be supplied by the analyst.
-The specification alone does not claim bounded lifetime privacy; that
-depends on the server accounting mode reported by \code{ds.omop.dp.status()}.
+absent: epsilon, seeds, nonces, and privacy epochs are owned by each data
+custodian and cannot be supplied by the analyst. Every accepted semantic
+release uses the server's fixed per-release epsilon and deterministic sticky
+noise; there is no history-dependent state or call counter.
 }
 \details{
 Repeated longitudinal records are reduced or capped per person. Public

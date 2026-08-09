@@ -23,13 +23,12 @@ gateway. An upstream ID selects only a reviewed semantic mapping; it neither
 submits the upstream SQL nor constructs a data-dependent query. Preparation and
 release remain two explicit, typed steps.
 
-There is also no `formal_dp` mode or certification flag. The client cannot
-choose epsilon, seed, nonce, privacy epoch or rerolls. Actual releases use the
-single server-owned sticky contract reported by `ds.omop.dp.status()`, currently
-`sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting`.
-That contract provides deterministic sticky replay, person-level contribution
-bounds and durable nominal accounting; it must not be described as a general
-formal-DP proof for unlimited distinct or semantically equivalent queries.
+The client cannot choose epsilon, seed, nonce, privacy epoch or rerolls. Actual
+releases use the single server-owned contract reported by
+`ds.omop.dp.status()`: `sticky_person_bounded_discrete_laplace_per_release_v1`
+under `fixed_per_release_semantic_prf_v1`. It provides deterministic sticky
+replay and person-level contribution bounds without a query quota or
+history-dependent admission state.
 
 ```{r catalog}
 catalog <- omop_querylibrary_sticky_catalog()

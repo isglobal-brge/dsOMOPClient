@@ -66,7 +66,7 @@ The literal upstream SQL is never returned or executed. Exact ZIP,
 source/free-text labels, and patient/event rows fail closed. Record counts
 and distinct-concept cardinality are bounded per person and therefore target
 capped redesign estimands rather than the unbounded upstream estimands. The
-resulting object has no formal-DP switch: release delegates to
-the one server-owned sticky privacy service, whose status and result metadata
-state the implemented guarantee and accounting limitations.
+resulting object delegates release to the one server-owned fixed per-release
+sticky service, whose status and result metadata state the implemented
+guarantee.
 }

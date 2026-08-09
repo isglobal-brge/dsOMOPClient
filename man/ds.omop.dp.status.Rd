@@ -19,23 +19,19 @@ helpers, this function never returns a partial federation: each requested
 node must provide a well-formed status.
 }
 \details{
-\code{"bounded_accounted"} uses a summable, non-blocking nominal allocation
-and may eventually return data-independent degraded releases. The
-compatibility mode \code{"sticky_unbounded"} remains sticky for an exact
-authenticated canonical lineage and typed statistic, but does not identify
-every mathematically equivalent alternate query construction and does not
-bound global composition over unlimited distinct queries.
-The \code{privacy_guarantee} field names the implemented sticky,
-person-bounded mechanism and nominal accounting contract.
+The service exposes one fixed per-semantic-release contract. It has no query
+quota or history-dependent admission state: an exact authenticated canonical
+lineage and typed statistic always select the same deterministic noise draw.
+Epsilon, the semantic privacy epoch and the secret root remain server-owned.
 Eligible input frames must also carry the server's authenticated
 person-local provenance capsule; a copied class or plain attribute is not
 sufficient.
 Each status contains the custodian's public \code{snapshot_id}. Federated
 sites may legitimately report different snapshot identifiers.
-Release preflight rejects duplicate noise domains, ledgers, or
-domain-scoped ledger authentication keys so the same logical privacy node
-cannot be pooled twice, including while replicas converge on a rotated noise
-root or when durable state was accidentally forked.
+Release preflight rejects either a repeated \code{noise_domain_id} or a
+repeated server-owned logical \code{domain}. The second check also prevents
+one logical privacy node from being pooled twice when its connections expose
+different noise material.
 }
 \examples{
 \dontrun{ds.omop.dp.status()}

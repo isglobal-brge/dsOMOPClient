@@ -32,11 +32,9 @@ enters the server specification or sticky-release identity.}
 }
 \value{
 A \code{dsomop_result}. The \code{meta$privacy} record reports the
-  effective population label, a named public snapshot map, named
-  per-server accounting records, nominal per-site epsilon, degradation, and
-  conservative cross-site accounting. A pooled payload is marked degraded
-  if any site returned its data-independent fallback. Parallel accounting is
-  used only when every server explicitly attests
+  effective population label, a named public snapshot map, fixed per-site
+  epsilon and conservative cross-site composition for this release. Parallel
+  composition is used only when every server explicitly attests
   \code{disjoint_persons = TRUE}. Without that attestation, pooling sums
   site-local contributions and may count the same real person once per site;
   the privacy loss is composed sequentially. Multi-site results also carry
@@ -51,8 +49,8 @@ committed their sticky release; retrying the identical request returns the
 same noise rather than rerolling it.
 Sticky release identity is server-owned and bound to authenticated canonical
 dataset/recipe lineage, the typed statistic, and the custodian-owned public
-\code{snapshot_id}. A separate private fingerprint detects drift in the
-bounded sufficient statistic; protected values never select the noise draw.
+\code{snapshot_id}. A separate private fingerprint binds the bounded
+sufficient statistic into the deterministic draw without exposing it.
 The analyst's \code{population_id} compatibility label and server symbol
 alias do not participate, so changing either does not request or guarantee
 fresh noise. The custodian must rotate
@@ -68,15 +66,10 @@ Every input must have been produced by an audited person-local server path
 and carry its authenticated content-bound provenance capsule.
 }
 \details{
-No accounting mode hard-blocks a new operation. In
-\code{"bounded_accounted"} mode, the nominal noise calibration follows a
-summable server-owned schedule; once an informative allocation is too small,
-the endpoint returns a marked, data-independent degraded payload at epsilon
-zero. In
-\code{"sticky_unbounded"} mode, an exact authenticated canonical lineage and
-statistic cannot be rerolled. Alternate constructions that happen to be
-mathematically equivalent may still be distinct releases, and unlimited
-distinct queries do not have a finite global DP composition guarantee.
+Every release uses the fixed epsilon reported by its server and delta zero.
+There is no query quota, call counter or history-dependent admission check.
+Composition metadata describes only the participating sites in the current
+federated release.
 }
 \examples{
 \dontrun{

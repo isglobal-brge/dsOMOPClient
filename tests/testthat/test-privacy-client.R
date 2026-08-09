@@ -1,77 +1,45 @@
-.dp_status <- function(epsilon = 0.1,
-                       accounting_mode = "bounded_accounted",
-                       allocator = NULL, total_epsilon = 1,
-                       never_budget_blocked = TRUE,
-                       disjoint_persons = NULL,
+.dp_status <- function(epsilon = 0.1, disjoint_persons = NULL,
                        snapshot_id = "snapshot-2026-08-01",
-                       noise_domain_id = NULL, ledger_id = NULL,
-                       ledger_key_id = NULL,
-                       domain = "dsomop-dp-test") {
-  accounted <- identical(accounting_mode, "bounded_accounted")
-  if (is.null(allocator)) {
-    allocator <- if (accounted) {
-      "normalized_capped_zeta2_no_block_nominal_v1"
-    } else {
-      "fixed_epsilon_unbounded_composition_v1"
-    }
-  }
+                       noise_domain_id = NULL,
+                       domain = NULL) {
   value <- list(
     enabled = TRUE,
     ready = TRUE,
     sticky_noise = TRUE,
-    protocol = "dsomop-dp-release-v1",
+    protocol = "dsomop-dp-release-v2",
     canonical_protocol = "dsomop-dp-canonical-json-v1",
     mechanism = "dsomop-sticky-discrete-laplace-prf-v1",
     sampler = "hmac-inverse-cdf-52bit-v1",
     privacy_guarantee = .DP_PRIVACY_GUARANTEE,
+    privacy_contract = .DP_PRIVACY_CONTRACT,
     person_local_provenance_required = TRUE,
     provenance_protocol = "dsomop-dp-person-local-provenance-v2",
     adjacency = "add_remove_person",
     domain = domain,
     snapshot_id = snapshot_id,
-    accounting_mode = accounting_mode,
-    allocator = allocator,
-    total_epsilon = total_epsilon,
-    total_delta = 0,
     release_epsilon = epsilon,
     release_delta = 0,
-    bounded_accounting = accounted,
-    never_budget_blocked = never_budget_blocked,
-    budget_behavior = if (accounted) {
-      "degrade_to_data_independent_zero_no_error"
-    } else {
-      "fixed_epsilon_no_budget_exhaustion_error_unbounded_composition"
-    },
     supported_statistics = c(
       "count", "bounded_record_count", "categorical_histogram",
       "numeric_histogram", "bounded_distinct", "bounded_mean", "binary_rate"
     ),
     longitudinal_contract = "deterministic_person_bounding_v1",
     privacy_epoch = 1L,
-    next_release_epsilon = epsilon,
-    next_release_degraded = FALSE,
     max_levels = 100L,
     max_contributions = 10L,
-    numeric_grid = 100L
+    numeric_grid = 100L,
+    history_dependent = FALSE,
+    privacy_call_quota = "none",
+    persistent_state = "noise_root_only"
   )
   if (!is.null(disjoint_persons)) {
     value$disjoint_persons <- disjoint_persons
   }
   if (!is.null(noise_domain_id)) value$noise_domain_id <- noise_domain_id
-  if (!is.null(ledger_id)) value$ledger_id <- ledger_id
-  if (!is.null(ledger_key_id)) value$ledger_key_id <- ledger_key_id
   value
 }
 
-.dp_release <- function(statistic, epsilon = 0.1, degraded = FALSE,
-                        accounting_mode = "bounded_accounted",
-                        allocator = NULL, ...) {
-  if (isTRUE(degraded) && missing(epsilon)) epsilon <- 0
-  if (is.null(allocator)) {
-    allocator <- if (identical(accounting_mode, "bounded_accounted")) {
-      "normalized_capped_zeta2_no_block_nominal_v1"
-    } else "fixed_epsilon_unbounded_composition_v1"
-  }
+.dp_release <- function(statistic, epsilon = 0.1, ...) {
   supplied <- list(...)
   defaults <- switch(
     statistic,
@@ -139,17 +107,15 @@
     )
   )
   c(payload, list(
-    protocol = "dsomop-dp-release-v1",
+    protocol = "dsomop-dp-release-v2",
     mechanism = "dsomop-sticky-discrete-laplace-prf-v1",
     adjacency = "add_remove_person",
     epsilon = epsilon,
     delta = 0,
-    accounting_mode = accounting_mode,
-    allocator = allocator,
+    privacy_contract = .DP_PRIVACY_CONTRACT,
     sticky = TRUE,
     sampler = "hmac-inverse-cdf-52bit-v1",
     sensitivity = sensitivity,
-    degraded = degraded,
     statistic = statistic
   ))
 }
@@ -183,11 +149,8 @@
   for (index in seq_along(statuses)) {
     digit <- c(as.character(0:9), letters[1:6])[[index + 1L]]
     defaults <- list(
-      privacy_instance_id = paste0("dpi_", strrep(digit, 40L)),
       noise_domain_id = paste0("dpn_", strrep(digit, 40L)),
-      ledger_id = strrep(digit, 64L),
-      ledger_key_id = paste0("dpl_", strrep(digit, 40L)),
-      noise_key_id = paste0("dpk_", strrep(digit, 40L))
+      domain = paste0("dsomop-dp-test-", digit)
     )
     for (field in names(defaults)) {
       if (is.null(statuses[[index]][[field]])) {
@@ -390,15 +353,14 @@ test_that("DP status never publishes a partial federation", {
       expect_identical(value$a$mechanism,
                        "dsomop-sticky-discrete-laplace-prf-v1")
       expect_identical(value$a$sampler, "hmac-inverse-cdf-52bit-v1")
-      expect_true(value$a$bounded_accounting)
+      expect_identical(value$a$protocol, .DP_PROTOCOL)
+      expect_identical(value$a$privacy_contract, .DP_PRIVACY_CONTRACT)
+      expect_false(value$a$history_dependent)
+      expect_identical(value$a$privacy_call_quota, "none")
       expect_identical(
         value$a$privacy_guarantee,
         .DP_PRIVACY_GUARANTEE
       )
-      expect_false(any(c(
-        "formal_dp", "sampler_certified", "epsilon_semantics",
-        "delta_semantics", "bounded_composition"
-      ) %in% names(value$a)))
       expect_true(all(vapply(value, `[[`, logical(1L), "sticky_noise")))
     })
 
@@ -432,8 +394,7 @@ test_that("DP status requires a valid public snapshot identity", {
 test_that("DP status can inspect a coherently disabled server", {
   disabled <- list(
     enabled = FALSE, ready = FALSE, sticky_noise = FALSE,
-    durable_ledger = FALSE,
-    protocol = "dsomop-dp-release-v1",
+    protocol = "dsomop-dp-release-v2",
     mechanism = "dsomop-sticky-discrete-laplace-prf-v1"
   )
   .with_dp_backend(list(a = disabled), list(a = NULL),
@@ -445,17 +406,15 @@ test_that("DP status can inspect a coherently disabled server", {
 })
 
 test_that("DP release preflight rejects policy drift before data release", {
-  statuses <- list(
-    a = .dp_status(),
-    b = .dp_status(allocator = "different_allocator")
-  )
+  statuses <- list(a = .dp_status(), b = .dp_status())
+  statuses$b$canonical_protocol <- "different-canonical-protocol"
   releases <- list(a = .dp_release("count", noisy_count = 10),
                    b = .dp_release("count", noisy_count = 20))
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     expect_error(
       ds.omop.dp.release("analysis_table", omop_privacy("count"),
                          datasources),
-      "allocator.*differs"
+      "canonical_protocol.*differs"
     )
     heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
                     character(1L))
@@ -483,17 +442,10 @@ test_that("DP release refuses duplicate logical noise domains", {
   })
 })
 
-test_that("DP release refuses one ledger exposed during root rotation", {
-  shared <- strrep("a", 64L)
+test_that("DP release refuses one logical domain with different roots", {
   statuses <- list(
-    a = .dp_status(
-      ledger_id = shared,
-      noise_domain_id = paste0("dpn_", strrep("a", 40L))
-    ),
-    b = .dp_status(
-      ledger_id = shared,
-      noise_domain_id = paste0("dpn_", strrep("b", 40L))
-    )
+    a = .dp_status(domain = "shared-logical-node"),
+    b = .dp_status(domain = "shared-logical-node")
   )
   releases <- list(a = .dp_release("count", noisy_count = 10),
                    b = .dp_release("count", noisy_count = 20))
@@ -501,27 +453,7 @@ test_that("DP release refuses one ledger exposed during root rotation", {
     expect_error(
       ds.omop.dp.release("analysis_table", omop_privacy("count"),
                          datasources),
-      "share a DP ledger"
-    )
-    heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
-                    character(1L))
-    expect_false("omopDpReleaseDS" %in% heads)
-  })
-})
-
-test_that("DP release refuses forked ledgers with one domain key", {
-  shared <- paste0("dpl_", strrep("a", 40L))
-  statuses <- list(
-    a = .dp_status(ledger_key_id = shared),
-    b = .dp_status(ledger_key_id = shared)
-  )
-  releases <- list(a = .dp_release("count", noisy_count = 10),
-                   b = .dp_release("count", noisy_count = 20))
-  .with_dp_backend(statuses, releases, function(datasources, sent) {
-    expect_error(
-      ds.omop.dp.release("analysis_table", omop_privacy("count"),
-                         datasources),
-      "share a domain-scoped DP ledger key"
+      "share a DP logical domain"
     )
     heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
                     character(1L))
@@ -575,7 +507,7 @@ test_that("DP preflight requires one authenticated provenance protocol", {
       expect_error(
         ds.omop.dp.release("analysis_table", omop_privacy("count"),
                            datasources),
-        "incoherent non-blocking"
+        "incoherent fixed per-release"
       )
     })
 
@@ -591,10 +523,13 @@ test_that("DP preflight requires one authenticated provenance protocol", {
     })
 })
 
-test_that("DP release API has no formal-attestation switch", {
+test_that("DP release API exposes no analyst privacy controls", {
   statuses <- list(a = .dp_status())
   releases <- list(a = .dp_release("count", noisy_count = 10))
-  expect_false("require_formal" %in% names(formals(ds.omop.dp.release)))
+  expect_identical(
+    names(formals(ds.omop.dp.release)),
+    c("x", "privacy", "datasources", "pool", "format")
+  )
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     value <- ds.omop.dp.release(
       "analysis_table", omop_privacy("count"), datasources
@@ -604,60 +539,67 @@ test_that("DP release API has no formal-attestation switch", {
   })
 })
 
-test_that("legacy status attestation fields are normalized away", {
+test_that("v1 status is rejected before requesting a release", {
   status <- .dp_status()
-  status$formal_dp <- TRUE
-  status$sampler_certified <- TRUE
-  status$epsilon_semantics <- "legacy"
-  status$delta_semantics <- "legacy"
-  status$bounded_composition <- TRUE
-  status$privacy_guarantee <- "sticky_noise_not_formally_certified_dp"
-  .with_dp_backend(list(a = status), list(a = NULL),
-    function(datasources, sent) {
-      value <- ds.omop.dp.status(datasources)$a
-      expect_identical(value$privacy_guarantee, .DP_PRIVACY_GUARANTEE)
-      expect_false(any(c(
-        "formal_dp", "sampler_certified", "epsilon_semantics",
-        "delta_semantics", "bounded_composition"
-      ) %in% names(value)))
-    })
-})
-
-test_that("legacy release attestation fields are normalized away", {
-  contract <- .dp_status()
-  release <- .dp_release("count", noisy_count = 10)
-  release$formal_dp <- TRUE
-  release$sampler_certified <- TRUE
-  release$epsilon_semantics <- "legacy"
-  release$delta_semantics <- "legacy"
-  privacy <- omop_privacy("count")
-
-  value <- .dp_release_shape(release, "a", privacy, contract)
-  expect_false(any(c(
-    "formal_dp", "sampler_certified", "epsilon_semantics", "delta_semantics"
-  ) %in% names(value)))
-})
-
-test_that("preflight requires the implemented privacy guarantee", {
-  status <- .dp_status()
-  status$privacy_guarantee <- "unknown_privacy_contract"
+  status$protocol <- "dsomop-dp-release-v1"
   .with_dp_backend(list(a = status), list(a = NULL),
     function(datasources, sent) {
       expect_error(
         ds.omop.dp.release("analysis_table", omop_privacy("count"),
                            datasources),
-        "unsupported privacy guarantee"
+        "unsupported DP release contract"
       )
+      heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
+                      character(1L))
+      expect_false("omopDpReleaseDS" %in% heads)
     })
 })
 
-test_that("preflight requires the non-blocking accounting contract", {
-  statuses <- list(a = .dp_status(never_budget_blocked = FALSE))
+test_that("release schema rejects unexpected fields", {
+  contract <- .dp_status()
+  release <- .dp_release("count", noisy_count = 10)
+  release$unexpected <- TRUE
+  privacy <- omop_privacy("count")
+
+  expect_error(
+    .dp_release_shape(release, "a", privacy, contract),
+    "malformed DP release schema"
+  )
+})
+
+test_that("preflight requires the implemented release contract", {
+  for (field in c("privacy_guarantee", "privacy_contract")) {
+    status <- .dp_status()
+    status[[field]] <- "unknown-contract"
+    .with_dp_backend(list(a = status), list(a = NULL),
+      function(datasources, sent) {
+        expect_error(
+          ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                             datasources),
+          "unsupported DP release contract"
+        )
+      })
+  }
+})
+
+test_that("preflight requires a history-free service with no call quota", {
+  status <- .dp_status()
+  status$privacy_call_quota <- "daily"
+  statuses <- list(a = status)
   releases <- list(a = .dp_release("count", noisy_count = 10))
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     expect_error(
       ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
-      "incoherent non-blocking"
+      "incoherent fixed per-release"
+    )
+  })
+
+  status <- .dp_status()
+  status$history_dependent <- TRUE
+  .with_dp_backend(list(a = status), releases, function(datasources, sent) {
+    expect_error(
+      ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
+      "incoherent fixed per-release"
     )
   })
 })
@@ -713,7 +655,7 @@ test_that("explicit population label is canonical and sent unchanged", {
 test_that("DP count and histograms pool only noisy cells", {
   statuses <- list(
     a = .dp_status(snapshot_id = "site-a-snapshot-17"),
-    b = .dp_status(snapshot_id = "site-b-snapshot-42")
+    b = .dp_status(epsilon = 0.05, snapshot_id = "site-b-snapshot-42")
   )
   count_releases <- list(
     a = .dp_release("count", noisy_count = 10),
@@ -731,23 +673,21 @@ test_that("DP count and histograms pool only noisy cells", {
                      "conservative_sequential_across_sites")
     expect_identical(value$meta$privacy$snapshot_id,
                      c(a = "site-a-snapshot-17", b = "site-b-snapshot-42"))
-    expect_named(value$meta$privacy$accounting, c("a", "b"))
-    expect_identical(value$meta$privacy$accounting$a$accounting_mode,
-                     "bounded_accounted")
-    expect_true(value$meta$privacy$accounting$a$bounded_accounting)
+    expect_identical(value$meta$privacy$privacy_contract,
+                     .DP_PRIVACY_CONTRACT)
+    expect_identical(value$meta$privacy$composition_scope,
+                     "current_federated_release")
+    expect_identical(value$meta$privacy$privacy_call_quota, "none")
+    expect_false(value$meta$privacy$history_dependent)
     expect_identical(value$meta$privacy$sampler,
                      "hmac-inverse-cdf-52bit-v1")
     expect_identical(
       value$meta$privacy$privacy_guarantee,
       .DP_PRIVACY_GUARANTEE
     )
-    expect_false(any(c(
-      "formal_dp", "sampler_certified", "epsilon_semantics",
-      "delta_semantics", "bounded_composition"
-    ) %in% names(value$meta$privacy)))
     expect_true(any(grepl("do not jointly attest disjoint persons",
                           value$meta$warnings)))
-    expect_identical(value$meta$privacy$accounting$b$effective_epsilon, 0.05)
+    expect_identical(value$meta$privacy$per_site_epsilon[["b"]], 0.05)
     expect_null(value$meta$harmonization)
     heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
                     character(1L))
@@ -760,8 +700,8 @@ test_that("DP count and histograms pool only noisy cells", {
   histogram_releases <- list(
     a = .dp_release("categorical_histogram", levels = c("F", "M"),
                     counts = c(4, 6)),
-    b = .dp_release("categorical_histogram", levels = c("F", "M"),
-                    counts = c(3, 8))
+    b = .dp_release("categorical_histogram", epsilon = 0.05,
+                    levels = c("F", "M"), counts = c(3, 8))
   )
   .with_dp_backend(statuses, histogram_releases,
     function(datasources, sent) {
@@ -948,9 +888,7 @@ test_that("pooled formats are client-only post-processing of one semantic spec",
     )
     expect_identical(long$pooled$level, c("F", "M"))
     expect_identical(names(wide$pooled), c("F", "M"))
-    expect_identical(vector$pooled, structure(
-      c(F = 4, M = 7), degraded = FALSE
-    ))
+    expect_identical(vector$pooled, c(F = 4, M = 7))
     expect_identical(raw$pooled$levels, c("F", "M"))
     expect_identical(raw$pooled$counts, c(4, 7))
     expect_identical(vector$meta$privacy$format, "vector")
@@ -970,54 +908,25 @@ test_that("pooled formats are client-only post-processing of one semantic spec",
   })
 })
 
-test_that("bounded accounting degrades without blocking or leaking data", {
-  statuses <- list(a = .dp_status(), b = .dp_status())
-  releases <- list(
-    a = .dp_release("count", noisy_count = 10),
-    b = .dp_release("count", degraded = TRUE, noisy_count = 0)
-  )
+test_that("repeated releases have no client-side usage state", {
+  statuses <- list(a = .dp_status())
+  releases <- list(a = .dp_release("count", noisy_count = 10))
   .with_dp_backend(statuses, releases, function(datasources, sent) {
-    value <- ds.omop.dp.release(
+    values <- replicate(25L, ds.omop.dp.release(
       "analysis_table", omop_privacy("count"), datasources
-    )
-    expect_identical(value$pooled$noisy_count, 10)
-    expect_true(value$pooled$degraded)
-    expect_true(value$meta$privacy$degraded)
-    expect_identical(value$meta$privacy$per_site_degraded,
-                     c(a = FALSE, b = TRUE))
-    expect_identical(value$meta$privacy$per_site_epsilon,
-                     c(a = 0.1, b = 0))
-    expect_true(any(grepl("Data-independent degraded", value$meta$warnings)))
-  })
-
-  invalid <- list(a = .dp_release(
-    "count", degraded = TRUE, noisy_count = 1
-  ))
-  .with_dp_backend(list(a = .dp_status()), invalid,
-    function(datasources, sent) {
-      expect_error(
-        ds.omop.dp.release("analysis_table", omop_privacy("count"),
-                           datasources),
-        "non-constant degraded payload"
-      )
-    })
-})
-
-test_that("sticky_unbounded is labelled as unbounded global composition", {
-  statuses <- list(a = .dp_status(accounting_mode = "sticky_unbounded"))
-  releases <- list(a = .dp_release(
-    "count", noisy_count = 10, accounting_mode = "sticky_unbounded"
-  ))
-  .with_dp_backend(statuses, releases, function(datasources, sent) {
-    value <- ds.omop.dp.release(
-      "analysis_table", omop_privacy("count"), datasources
-    )
-    expect_identical(
-      value$meta$privacy$global_composition,
-      "unbounded_across_distinct_semantic_queries"
-    )
-    expect_true(any(grepl("does not provide finite global DP",
-                          value$meta$warnings)))
+    ), simplify = FALSE)
+    expect_true(all(vapply(values, function(value) {
+      identical(value$pooled$noisy_count, 10) &&
+        identical(value$meta$privacy$privacy_call_quota, "none") &&
+        identical(value$meta$privacy$composition_scope,
+                  "current_federated_release")
+    }, logical(1L))))
+    calls <- Filter(function(expr) {
+      identical(as.character(expr[[1L]]), "omopDpReleaseDS")
+    }, sent$expressions)
+    expect_length(calls, 25L)
+    specs <- lapply(calls, `[[`, 3L)
+    expect_true(all(vapply(specs[-1L], identical, logical(1L), specs[[1L]])))
   })
 })
 
@@ -1116,17 +1025,41 @@ test_that("DP releases enforce a closed statistic-specific schema", {
     })
 })
 
-test_that("effective epsilon is validated against the server maximum", {
-  statuses <- list(a = .dp_status(epsilon = 0.1))
-  releases <- list(a = .dp_release(
-    "count", epsilon = 0.2, noisy_count = 10
-  ))
-  .with_dp_backend(statuses, releases, function(datasources, sent) {
-    expect_error(
-      ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
-      "invalid effective DP allocation"
-    )
-  })
+test_that("release epsilon must equal the server's fixed value", {
+  for (epsilon in c(0.05, 0.2)) {
+    statuses <- list(a = .dp_status(epsilon = 0.1))
+    releases <- list(a = .dp_release(
+      "count", epsilon = epsilon, noisy_count = 10
+    ))
+    .with_dp_backend(statuses, releases, function(datasources, sent) {
+      expect_error(
+        ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
+        "fixed per-release contract"
+      )
+    })
+  }
+})
+
+test_that("status and release require delta zero", {
+  status <- .dp_status()
+  status$release_delta <- 1e-6
+  .with_dp_backend(list(a = status), list(a = NULL),
+    function(datasources, sent) {
+      expect_error(
+        ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
+        "out-of-range DP contract"
+      )
+    })
+
+  release <- .dp_release("count", noisy_count = 10)
+  release$delta <- 1e-6
+  .with_dp_backend(list(a = .dp_status()), list(a = release),
+    function(datasources, sent) {
+      expect_error(
+        ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
+        "fixed per-release contract"
+      )
+    })
 })
 
 test_that("parallel epsilon is used only with explicit all-site attestation", {

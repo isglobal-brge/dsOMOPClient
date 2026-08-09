@@ -122,8 +122,8 @@ change its tokens even when the node root is unchanged. Treat such a change as
 a key migration, or pin the old exact per-resource key while saved objects are
 still in use.
 
-This root controls pseudonym identity only. It is not a seed for noise, an
-epsilon/delta budget or a privacy ledger.
+This root controls pseudonym identity only. It is not the secret root used for
+sticky privacy noise.
 
 ## Disclosure settings
 
@@ -140,10 +140,10 @@ declares the direct option names used by a standard installation.
   input string limits.
 - `nfilter.noise` (default `0.25`): a standard DataSHIELD policy value that
   dsOMOP reports and validates. dsOMOP does not reinterpret it as a generic
-  differential-privacy budget or add it to arbitrary query results.
-- `sticky_noise_enabled`, `privacy_ledger_enabled`: runtime capability flags.
-  Both are `FALSE` by default and become true only after the opt-in sticky
-  service and durable ledger bootstrap successfully.
+  differential-privacy epsilon or add it to arbitrary query results.
+- `sticky_noise_enabled`: runtime capability flag. It is `FALSE` by default and
+  becomes true only after the opt-in sticky service is ready with its persistent
+  secret root.
 - `dsomop.nfilter.dist` (default `10`): minimum support for distribution-style
   outputs.
 - `dsomop.nfilter.band` (default `5`): width used to floor protected counts.
@@ -340,11 +340,14 @@ Thresholds, omission, protected tails and banding are deterministic disclosure
 controls. A secure deployment must restrict methods, users and database
 privileges and should monitor query composition. The dedicated sticky endpoint
 adds authenticated person-local lineage, deterministic contribution bounds,
-sticky noise and a durable ledger. It exposes one descriptive contract,
+and sticky noise. It exposes one descriptive contract,
 `privacy_guarantee =
-"sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting"`;
-there is no separate certification switch. The standard `nfilter.noise` option
-does not supply these properties on its own. Unlimited new informative
-measurements cannot retain both fixed utility and finite lifetime privacy loss;
-the bounded mode therefore degrades to a marked data-independent response
-instead of blocking.
+"sticky_person_bounded_discrete_laplace_per_release_v1"` with
+`privacy_contract = "fixed_per_release_semantic_prf_v1"`. The standard
+`nfilter.noise` option does not supply these properties on its own. Every
+semantic release uses fixed server-owned epsilon and delta zero; requests are
+not admitted or refused according to prior use, and exact repeats select the
+same deterministic draw. Federated preflight rejects both a repeated
+`noise_domain_id` and a repeated server-owned logical `domain`, so one logical
+privacy node cannot be pooled twice under either the same or different noise
+material.

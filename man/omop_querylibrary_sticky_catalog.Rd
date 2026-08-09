@@ -26,8 +26,7 @@ records vocabulary/reference questions and blocked result shapes. Those rows
 are not sticky-DP mappings and never authorize literal upstream SQL.
 }
 \details{
-The catalog is not an arbitrary SQL or join gateway and does not certify
-formal differential privacy. It exposes no \code{formal_dp} mode, epsilon,
-seed, nonce, epoch, or reroll control. The server-owned sticky service and
-its advertised accounting contract govern every actual release.
+The catalog is not an arbitrary SQL or join gateway. It exposes no analyst
+control over epsilon, seed, nonce, epoch, or rerolls. The server-owned fixed
+per-release sticky contract governs every actual release.
 }

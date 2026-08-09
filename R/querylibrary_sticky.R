@@ -226,10 +226,9 @@
 #' records vocabulary/reference questions and blocked result shapes. Those rows
 #' are not sticky-DP mappings and never authorize literal upstream SQL.
 #'
-#' The catalog is not an arbitrary SQL or join gateway and does not certify
-#' formal differential privacy. It exposes no \code{formal_dp} mode, epsilon,
-#' seed, nonce, epoch, or reroll control. The server-owned sticky service and
-#' its advertised accounting contract govern every actual release.
+#' The catalog is not an arbitrary SQL or join gateway. It exposes no analyst
+#' control over epsilon, seed, nonce, epoch, or rerolls. The server-owned fixed
+#' per-release sticky contract governs every actual release.
 #'
 #' @param include_unavailable Include vocabulary/reference metadata,
 #'   explicitly held-back, and blocked upstream IDs as well as executable
@@ -268,9 +267,9 @@ omop_querylibrary_sticky_catalog <- function(include_unavailable = FALSE) {
 #' source/free-text labels, and patient/event rows fail closed. Record counts
 #' and distinct-concept cardinality are bounded per person and therefore target
 #' capped redesign estimands rather than the unbounded upstream estimands. The
-#' resulting object has no formal-DP switch: release delegates to
-#' the one server-owned sticky privacy service, whose status and result metadata
-#' state the implemented guarantee and accounting limitations.
+#' resulting object delegates release to the one server-owned fixed per-release
+#' sticky service, whose status and result metadata state the implemented
+#' guarantee.
 #'
 #' @param upstream_id Published QueryLibrary ID in the pinned catalog.
 #' @param variable Value column in the protected prepared table. Not used for a
@@ -609,8 +608,7 @@ print.omop_querylibrary_sticky <- function(x, ...) {
 #' redesign, then delegates to \code{\link{ds.omop.dp.release}}. \code{x} must be
 #' the single memory-mode output assigned by the Recipe/Plan preparation. The
 #' upstream QueryLibrary SQL is never submitted to a server. No client argument
-#' can select a separate formal-DP mode or control epsilon, seed, nonce, epoch,
-#' or rerolls.
+#' can control epsilon, seed, nonce, epoch, or rerolls.
 #'
 #' @param x Bare DataSHIELD symbol naming the prepared person-local table.
 #' @param redesign An object created by

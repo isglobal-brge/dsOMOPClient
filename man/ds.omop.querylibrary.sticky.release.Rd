@@ -35,6 +35,5 @@ Verifies that every selected server advertises the same pinned semantic
 redesign, then delegates to \code{\link{ds.omop.dp.release}}. \code{x} must be
 the single memory-mode output assigned by the Recipe/Plan preparation. The
 upstream QueryLibrary SQL is never submitted to a server. No client argument
-can select a separate formal-DP mode or control epsilon, seed, nonce, epoch,
-or rerolls.
+can control epsilon, seed, nonce, epoch, or rerolls.
 }
