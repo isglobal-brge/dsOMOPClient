@@ -38,8 +38,9 @@ enters the server specification or sticky-release identity.}
 \value{
 A \code{dsomop_result}. The \code{meta$privacy} record reports the
   effective population label, a named public snapshot map, fixed per-site
-  epsilon and conservative cross-site composition for this release. Parallel
-  composition is used only when every server explicitly attests
+  epsilon, the effective disjoint-persons attestation and conservative
+  cross-site composition for this release. Parallel composition is used only
+  when every server explicitly attests
   \code{disjoint_persons = TRUE}. Without that attestation, pooling sums
   site-local contributions and may count the same real person once per site;
   the privacy loss is composed sequentially. Multi-site results also carry

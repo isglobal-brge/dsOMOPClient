@@ -1107,8 +1107,9 @@ ds.omop.dp.status <- function(datasources = NULL) {
 #'   \code{TRUE} means both views and \code{FALSE} means split only.
 #' @return A \code{dsomop_result}. The \code{meta$privacy} record reports the
 #'   effective population label, a named public snapshot map, fixed per-site
-#'   epsilon and conservative cross-site composition for this release. Parallel
-#'   composition is used only when every server explicitly attests
+#'   epsilon, the effective disjoint-persons attestation and conservative
+#'   cross-site composition for this release. Parallel composition is used only
+#'   when every server explicitly attests
 #'   \code{disjoint_persons = TRUE}. Without that attestation, pooling sums
 #'   site-local contributions and may count the same real person once per site;
 #'   the privacy loss is composed sequentially. Multi-site results also carry
@@ -1206,9 +1207,8 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   if (want_combine && length(statuses) > 1L && !disjoint) {
     warnings <- c(warnings, paste0(
       "Servers do not jointly attest disjoint persons. Pooled sufficient ",
-      "statistics sum site-local contributions, so a person present at ",
-      "multiple sites is counted once per site; conservative sequential ",
-      "composition is reported for this release."
+      "statistics are unchanged; conservative sequential composition is ",
+      "reported for this release."
     ))
   }
   if (want_combine && length(statuses) > 1L &&
@@ -1253,6 +1253,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     sticky = TRUE,
     composition_scope = "current_federated_release",
     composition = composition,
+    disjoint_persons = disjoint,
     per_site_epsilon = epsilons,
     per_site_delta = deltas,
     conservative_epsilon = if (disjoint) max(epsilons) else sum(epsilons),

@@ -691,6 +691,7 @@ test_that("DP count and histograms pool only noisy cells", {
                      c(a = 0.1, b = 0.05))
     expect_identical(value$meta$privacy$composition,
                      "conservative_sequential_across_sites")
+    expect_false(value$meta$privacy$disjoint_persons)
     expect_identical(value$meta$privacy$snapshot_id,
                      c(a = "site-a-snapshot-17", b = "site-b-snapshot-42"))
     expect_identical(value$meta$privacy$privacy_contract,
@@ -707,6 +708,10 @@ test_that("DP count and histograms pool only noisy cells", {
     )
     expect_true(any(grepl("do not jointly attest disjoint persons",
                           value$meta$warnings)))
+    expect_true(any(grepl(
+      "Pooled sufficient statistics are unchanged; conservative sequential",
+      value$meta$warnings, fixed = TRUE
+    )))
     expect_identical(value$meta$privacy$per_site_epsilon[["b"]], 0.05)
     expect_null(value$meta$harmonization)
     heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
@@ -1096,6 +1101,7 @@ test_that("parallel epsilon is used only with explicit all-site attestation", {
     expect_identical(value$meta$privacy$conservative_epsilon, 0.1)
     expect_identical(value$meta$privacy$composition,
                      "parallel_disjoint_persons")
+    expect_true(value$meta$privacy$disjoint_persons)
     expect_false(any(grepl("do not jointly attest disjoint persons",
                            value$meta$warnings)))
   })
