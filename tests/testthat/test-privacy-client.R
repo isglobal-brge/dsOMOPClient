@@ -1,4 +1,4 @@
-.dp_status <- function(epsilon = 0.1, disjoint_persons = NULL,
+.dp_status <- function(epsilon = 0.1,
                        snapshot_id = "snapshot-2026-08-01",
                        noise_domain_id = NULL,
                        domain = NULL) {
@@ -32,9 +32,6 @@
     privacy_call_quota = "none",
     persistent_state = "noise_root_only"
   )
-  if (!is.null(disjoint_persons)) {
-    value$disjoint_persons <- disjoint_persons
-  }
   if (!is.null(noise_domain_id)) value$noise_domain_id <- noise_domain_id
   value
 }
@@ -686,12 +683,11 @@ test_that("DP count and histograms pool only noisy cells", {
       "analysis_table", omop_privacy("count"), datasources
     )
     expect_identical(value$pooled$noisy_count, 25)
-    expect_equal(value$meta$privacy$conservative_epsilon, 0.15)
+    expect_equal(value$meta$privacy$conservative_epsilon, 0.1)
     expect_identical(value$meta$privacy$per_site_epsilon,
                      c(a = 0.1, b = 0.05))
     expect_identical(value$meta$privacy$composition,
-                     "conservative_sequential_across_sites")
-    expect_false(value$meta$privacy$disjoint_persons)
+                     "parallel_across_sites")
     expect_identical(value$meta$privacy$snapshot_id,
                      c(a = "site-a-snapshot-17", b = "site-b-snapshot-42"))
     expect_identical(value$meta$privacy$privacy_contract,
@@ -706,12 +702,7 @@ test_that("DP count and histograms pool only noisy cells", {
       value$meta$privacy$privacy_guarantee,
       .DP_PRIVACY_GUARANTEE
     )
-    expect_true(any(grepl("do not jointly attest disjoint persons",
-                          value$meta$warnings)))
-    expect_true(any(grepl(
-      "Pooled sufficient statistics are unchanged; conservative sequential",
-      value$meta$warnings, fixed = TRUE
-    )))
+    expect_length(value$meta$warnings, 0L)
     expect_identical(value$meta$privacy$per_site_epsilon[["b"]], 0.05)
     expect_null(value$meta$harmonization)
     heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
@@ -1087,22 +1078,20 @@ test_that("status and release require delta zero", {
     })
 })
 
-test_that("parallel epsilon is used only with explicit all-site attestation", {
+test_that("federated releases always use parallel cross-site composition", {
   statuses <- list(
-    a = .dp_status(disjoint_persons = TRUE),
-    b = .dp_status(disjoint_persons = TRUE)
+    a = .dp_status(epsilon = 0.1),
+    b = .dp_status(epsilon = 0.05)
   )
   releases <- list(a = .dp_release("count", noisy_count = 10),
-                   b = .dp_release("count", noisy_count = 20))
+                   b = .dp_release("count", epsilon = 0.05, noisy_count = 20))
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     value <- ds.omop.dp.release(
       "analysis_table", omop_privacy("count"), datasources
     )
     expect_identical(value$meta$privacy$conservative_epsilon, 0.1)
     expect_identical(value$meta$privacy$composition,
-                     "parallel_disjoint_persons")
-    expect_true(value$meta$privacy$disjoint_persons)
-    expect_false(any(grepl("do not jointly attest disjoint persons",
-                           value$meta$warnings)))
+                     "parallel_across_sites")
+    expect_length(value$meta$warnings, 0L)
   })
 })

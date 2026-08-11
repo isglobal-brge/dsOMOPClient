@@ -38,13 +38,10 @@ enters the server specification or sticky-release identity.}
 \value{
 A \code{dsomop_result}. The \code{meta$privacy} record reports the
   effective population label, a named public snapshot map, fixed per-site
-  epsilon, the effective disjoint-persons attestation and conservative
-  cross-site composition for this release. Parallel composition is used only
-  when every server explicitly attests
-  \code{disjoint_persons = TRUE}. Without that attestation, pooling sums
-  site-local contributions and may count the same real person once per site;
-  the privacy loss is composed sequentially. Multi-site results also carry
-  \code{meta$harmonization} when non-count values were pooled.
+  epsilon and parallel cross-site composition for this release. Federated
+  nodes are modeled as separate populations, so the combined epsilon and
+  delta are the maxima of their per-site values. Multi-site results also
+  carry \code{meta$harmonization} when non-count values were pooled.
 }
 \description{
 Performs a complete-federation preflight, requests the same typed release

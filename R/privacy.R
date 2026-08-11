@@ -601,13 +601,6 @@ ds.omop.dp.status <- function(datasources = NULL) {
       stop("Server '", server, "' returned an incoherent fixed per-release DP ",
            "contract.", call. = FALSE)
     }
-    if ("disjoint_persons" %in% names(statuses[[server]]) &&
-        (!is.logical(statuses[[server]]$disjoint_persons) ||
-         length(statuses[[server]]$disjoint_persons) != 1L ||
-         is.na(statuses[[server]]$disjoint_persons))) {
-      stop("Server '", server, "' returned an invalid disjoint-persons ",
-           "attestation.", call. = FALSE)
-    }
   }
   noise_domains <- vapply(
     statuses, `[[`, character(1L), "noise_domain_id"
@@ -1107,13 +1100,10 @@ ds.omop.dp.status <- function(datasources = NULL) {
 #'   \code{TRUE} means both views and \code{FALSE} means split only.
 #' @return A \code{dsomop_result}. The \code{meta$privacy} record reports the
 #'   effective population label, a named public snapshot map, fixed per-site
-#'   epsilon, the effective disjoint-persons attestation and conservative
-#'   cross-site composition for this release. Parallel composition is used only
-#'   when every server explicitly attests
-#'   \code{disjoint_persons = TRUE}. Without that attestation, pooling sums
-#'   site-local contributions and may count the same real person once per site;
-#'   the privacy loss is composed sequentially. Multi-site results also carry
-#'   \code{meta$harmonization} when non-count values were pooled.
+#'   epsilon and parallel cross-site composition for this release. Federated
+#'   nodes are modeled as separate populations, so the combined epsilon and
+#'   delta are the maxima of their per-site values. Multi-site results also
+#'   carry \code{meta$harmonization} when non-count values were pooled.
 #' @examples
 #' \dontrun{
 #' p <- omop_privacy("count")
@@ -1197,20 +1187,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   epsilons <- vapply(raw, function(value) as.numeric(value$epsilon), numeric(1L))
   deltas <- vapply(raw, function(value) as.numeric(value$delta), numeric(1L))
   snapshot_ids <- vapply(statuses, `[[`, character(1L), "snapshot_id")
-  disjoint <- length(statuses) > 0L && all(vapply(
-    statuses, function(status) identical(status$disjoint_persons, TRUE),
-    logical(1L)
-  ))
-  composition <- if (disjoint) "parallel_disjoint_persons" else
-    "conservative_sequential_across_sites"
   warnings <- character(0)
-  if (want_combine && length(statuses) > 1L && !disjoint) {
-    warnings <- c(warnings, paste0(
-      "Servers do not jointly attest disjoint persons. Pooled sufficient ",
-      "statistics are unchanged; conservative sequential composition is ",
-      "reported for this release."
-    ))
-  }
   if (want_combine && length(statuses) > 1L &&
       identical(privacy$statistic, "bounded_distinct")) {
     warnings <- c(warnings, paste0(
@@ -1252,12 +1229,11 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     ),
     sticky = TRUE,
     composition_scope = "current_federated_release",
-    composition = composition,
-    disjoint_persons = disjoint,
+    composition = "parallel_across_sites",
     per_site_epsilon = epsilons,
     per_site_delta = deltas,
-    conservative_epsilon = if (disjoint) max(epsilons) else sum(epsilons),
-    conservative_delta = if (disjoint) max(deltas) else sum(deltas)
+    conservative_epsilon = max(epsilons),
+    conservative_delta = max(deltas)
   )
   result[["meta"]]$harmonization <- harmonization
   .result_type_view(

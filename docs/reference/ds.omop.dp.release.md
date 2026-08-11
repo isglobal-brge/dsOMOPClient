@@ -66,15 +66,11 @@ ds.omop.dp.release(
 ## Value
 
 A `dsomop_result`. The `meta$privacy` record reports the effective
-population label, a named public snapshot map, named per-server
-accounting records, nominal per-site epsilon, degradation, and
-conservative cross-site accounting. A pooled payload is marked degraded
-if any site returned its data-independent fallback. Parallel accounting
-is used only when every server explicitly attests
-`disjoint_persons = TRUE`. Without that attestation, pooling sums
-site-local contributions and may count the same real person once per
-site; the privacy loss is composed sequentially. Multi-site results also
-carry `meta$harmonization` when non-count values were pooled.
+population label, a named public snapshot map, fixed per-site epsilon and
+parallel cross-site composition for this release. Federated nodes are
+modeled as separate populations, so the combined epsilon and delta are
+the maxima of their per-site values. Multi-site results also carry
+`meta$harmonization` when non-count values were pooled.
 
 ## Details
 
