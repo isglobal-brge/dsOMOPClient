@@ -344,12 +344,45 @@ ds.omop.ohdsi.results <- function(table_name, columns = NULL,
     return(result)
   }
 
+  # Opal reparses aggregate expressions and interprets a multi-element
+  # character vector as c(...), which is not an allowlisted aggregate. Fetch
+  # the reviewed public schema in that case and apply only the projection on
+  # the client; filters, ordering, and the row cap remain server-side.
+  if (!is.null(columns) &&
+      (!is.character(columns) || length(columns) == 0L || anyNA(columns) ||
+       any(!nzchar(columns)))) {
+    stop("columns must be a non-empty character vector.", call. = FALSE)
+  }
+  project_columns <- !is.null(columns) && length(columns) > 1L
+  server_columns <- if (project_columns) NULL else columns
+  if (!is.null(order_by)) {
+    if (!is.character(order_by) || length(order_by) != 1L ||
+        is.na(order_by) ||
+        !grepl("^[A-Za-z_][A-Za-z0-9_]*( (ASC|DESC))?$", trimws(order_by),
+               ignore.case = TRUE)) {
+      stop("order_by must be one column with optional ASC or DESC.",
+           call. = FALSE)
+    }
+    order_by <- trimws(order_by)
+  }
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopOhdsiResultsDS", session$res_symbol,
-                table_name, columns, .ds_encode(filters), order_by,
+                table_name, server_columns, .ds_encode(filters),
+                if (is.null(order_by)) NULL else .ds_encode_scalar(order_by),
                 as.integer(limit), tool_id)
   )
+
+  if (project_columns) {
+    raw_attributes <- attributes(raw)
+    raw <- lapply(
+      raw, .ohdsi_shape_frame, columns = columns, filters = NULL,
+      order_by = NULL, limit = 5000L
+    )
+    for (attribute in setdiff(names(raw_attributes), "names")) {
+      attr(raw, attribute) <- raw_attributes[[attribute]]
+    }
+  }
 
   .result_type_view(dsomop_result(
     per_site = raw, pooled = NULL,

@@ -30,6 +30,13 @@ test_that(".cohort_scope_arg maps each accepted cohort form correctly", {
   expect_null(.cohort_scope_arg(NULL))                            # NULL -> NULL
 })
 
+test_that(".resolve_cohort_table recognises visible cohort status symbols", {
+  expect_identical(
+    .resolve_cohort_table("dsOcohort_5"),
+    "dsomop_cohort_5"
+  )
+})
+
 # --- 8. unified cohort= on the exploration wrappers --------------------------
 
 test_that("exploration wrappers expose a unified cohort argument", {

@@ -38,6 +38,57 @@ test_that("persistent cohort creation is blocked across several servers", {
   )
 })
 
+test_that("persistent cohort overwrite uses disposable visible status symbols", {
+  symbol <- "cohort_persistent_overwrite"
+  conns <- list(a = "A")
+  state <- list(a = character(0))
+  assigned <- character(0)
+  overwrite_values <- logical(0)
+  atomic_cohort_session(symbol, conns)
+  on.exit(remove_atomic_cohort_session(symbol), add = TRUE)
+
+  testthat::local_mocked_bindings(
+    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.assign.expr = function(conns, symbol, expr, success = NULL,
+                                      error = NULL, ...) {
+      assigned <<- c(assigned, symbol)
+      overwrite_values <<- c(overwrite_values, isTRUE(expr[[7L]]))
+      state$a <<- union(state$a, symbol)
+      success("a")
+      invisible(NULL)
+    },
+    datashield.rm = function(conns, symbol, ...) {
+      state$a <<- setdiff(state$a, symbol)
+      invisible(NULL)
+    },
+    .package = "DSI"
+  )
+
+  first <- expect_warning(
+    ds.omop.cohort.create(
+      list(type = "condition", concept_set = 201826L),
+      mode = "persistent", cohort_id = 7L, overwrite = FALSE,
+      symbol = symbol
+    ),
+    NA
+  )
+  second <- expect_warning(
+    ds.omop.cohort.create(
+      list(type = "condition", concept_set = 201826L),
+      mode = "persistent", cohort_id = 7L, overwrite = TRUE,
+      symbol = symbol
+    ),
+    NA
+  )
+
+  expect_null(first)
+  expect_null(second)
+  expect_identical(overwrite_values, c(FALSE, TRUE))
+  expect_length(unique(assigned), 2L)
+  expect_true(all(startsWith(assigned, "dsOcohortStatus.")))
+  expect_length(state$a, 0L)
+})
+
 test_that("temporary cohort handles follow the final inclusion-criteria table", {
   symbol <- "cohort_create_inclusions"
   conns <- list(a = "A", b = "B")
@@ -46,7 +97,9 @@ test_that("temporary cohort handles follow the final inclusion-criteria table", 
   on.exit(remove_atomic_cohort_session(symbol), add = TRUE)
 
   testthat::local_mocked_bindings(
-    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.symbols = function(conns, ...) {
+      lapply(state[names(conns)], function(x) x[!startsWith(x, ".")])
+    },
     datashield.assign.expr = function(conns, symbol, expr, success = NULL,
                                       error = NULL, ...) {
       expect_identical(as.character(expr[[1L]]), "omopCohortCreateDS")
@@ -68,7 +121,7 @@ test_that("temporary cohort handles follow the final inclusion-criteria table", 
   )
   expect_s3_class(handle, "dsomop_cohort_handle")
   expect_identical(unclass(handle)[[1L]], "dsomop_cohort_40_ic2")
-  expect_identical(attr(handle, "symbol"), ".cohort_40")
+  expect_identical(attr(handle, "symbol"), "dsOcohort_40")
 })
 
 test_that("partial temporary cohort creation performs exact verified rollback", {
@@ -263,7 +316,9 @@ test_that("cohort combination commits only after every callback and inventory", 
   on.exit(remove_atomic_cohort_session(symbol), add = TRUE)
 
   testthat::local_mocked_bindings(
-    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.symbols = function(conns, ...) {
+      lapply(state[names(conns)], function(x) x[!startsWith(x, ".")])
+    },
     datashield.assign.expr = function(conns, symbol, expr, success = NULL,
                                       error = NULL, ...) {
       expect_identical(as.character(expr[[1L]]), "omopCohortCombineDS")
@@ -283,9 +338,9 @@ test_that("cohort combination commits only after every callback and inventory", 
   expect_s3_class(handle, "dsomop_cohort_handle")
   expect_identical(unclass(handle)[[1L]], "dsomop_cohort_combined_safe1")
   expect_identical(attr(handle, "symbol"),
-                   ".dsomop_cohort_combined_safe1")
+                   "dsOcohort_dsomop_cohort_combined_safe1")
   expect_true(all(vapply(state, function(x) {
-    ".dsomop_cohort_combined_safe1" %in% x
+    "dsOcohort_dsomop_cohort_combined_safe1" %in% x
   }, logical(1))))
 })
 
@@ -323,7 +378,9 @@ test_that("cohort from_table returns a handle only after federated commit", {
   on.exit(remove_atomic_cohort_session(symbol), add = TRUE)
 
   testthat::local_mocked_bindings(
-    datashield.symbols = function(conns, ...) state[names(conns)],
+    datashield.symbols = function(conns, ...) {
+      lapply(state[names(conns)], function(x) x[!startsWith(x, ".")])
+    },
     datashield.assign.expr = function(conns, symbol, expr, success = NULL,
                                       error = NULL, ...) {
       expect_identical(as.character(expr[[1L]]), "omopCohortFromTableDS")
@@ -343,14 +400,14 @@ test_that("cohort from_table returns a handle only after federated commit", {
   expect_s3_class(handle, "dsomop_cohort_handle")
   expect_identical(unclass(handle)[[1L]], "dsomop_cohort_fromtbl_safe2")
   expect_true(all(vapply(state, function(x) {
-    ".dsomop_cohort_fromtbl_safe2" %in% x
+    "dsOcohort_dsomop_cohort_fromtbl_safe2" %in% x
   }, logical(1))))
 })
 
 test_that("cohort outputs never replace an occupied workspace symbol", {
   symbol <- "cohort_output_collision"
   conns <- list(a = "A", b = "B")
-  output <- ".dsomop_cohort_combined_taken"
+  output <- "dsOcohort_dsomop_cohort_combined_taken"
   state <- list(a = output, b = character(0))
   dispatched <- FALSE
   atomic_cohort_session(symbol, conns)

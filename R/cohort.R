@@ -1,6 +1,11 @@
 # Module: Cohort Operations
 # Client-side wrappers for cohort creation, combination, listing, and retrieval.
 
+.cohort_workspace_symbol <- function(suffix) {
+  # Opal's workspace inventory omits dot-prefixed bindings.
+  paste0("dsOcohort_", suffix)
+}
+
 .cohort_table_name <- function(x, label, pattern = NULL) {
   if (!is.character(x) || length(x) != 1L || is.na(x) ||
       !grepl("^[A-Za-z][A-Za-z0-9_]*$", x)) {
@@ -18,7 +23,7 @@
   for (attempt in seq_len(20L)) {
     suffix <- paste(sample(alphabet, 12L, replace = TRUE), collapse = "")
     candidate <- paste0(prefix, suffix)
-    output_symbol <- paste0(".", candidate)
+    output_symbol <- .cohort_workspace_symbol(candidate)
     if (all(!vapply(inventory, function(x) output_symbol %in% x,
                     logical(1)))) {
       return(candidate)
@@ -31,7 +36,7 @@
 .cohort_auto_id <- function(inventory) {
   for (attempt in seq_len(20L)) {
     candidate <- sample.int(900000L, 1L) + 99999L
-    output_symbol <- paste0(".cohort_", candidate)
+    output_symbol <- .cohort_workspace_symbol(candidate)
     if (all(!vapply(inventory, function(x) output_symbol %in% x,
                     logical(1)))) {
       return(as.integer(candidate))
@@ -469,14 +474,24 @@ ds.omop.cohort.create <- function(spec,
     }
     cohort_id <- as.integer(candidate_id)
   }
-  output_symbol <- paste0(".cohort_", cohort_id)
-  occupied <- names(inventory)[vapply(
-    inventory, function(x) output_symbol %in% x, logical(1)
-  )]
-  if (length(occupied) > 0L) {
-    stop("Cohort output symbol '", output_symbol, "' already exists on: ",
-         paste(occupied, collapse = ", "),
-         ". Choose a different cohort_id.", call. = FALSE)
+  if (identical(mode, "temporary")) {
+    output_symbol <- .cohort_workspace_symbol(cohort_id)
+    occupied <- names(inventory)[vapply(
+      inventory, function(x) output_symbol %in% x, logical(1)
+    )]
+    if (length(occupied) > 0L) {
+      stop("Cohort output symbol '", output_symbol, "' already exists on: ",
+           paste(occupied, collapse = ", "),
+           ". Choose a different cohort_id.", call. = FALSE)
+    }
+  } else {
+    # A persistent call assigns only a confirmation string to the workspace;
+    # the cohort itself lives in the results database. Use a fresh, visible
+    # status symbol and remove it after the call so repeated overwrite=TRUE
+    # operations are not blocked by their previous confirmation.
+    output_symbol <- .fresh_symbol_from_inventory(
+      inventory, "dsOcohortStatus", "persistent cohort creation"
+    )
   }
 
   # Opal's DataSHIELD expression grammar cannot lex an empty string literal
@@ -520,9 +535,35 @@ ds.omop.cohort.create <- function(spec,
       session_symbol = symbol, rollback_tables = rollback_tables
     )
   } else {
-    DSI::datashield.assign.expr(
-      conns, symbol = output_symbol, expr = create_expr
-    )
+    on.exit(for (server in names(conns)) {
+      tryCatch(
+        DSI::datashield.rm(conns[server], output_symbol),
+        error = function(error) NULL
+      )
+    }, add = TRUE)
+    succeeded <- character(0)
+    failures <- character(0)
+    condition <- tryCatch({
+      DSI::datashield.assign.expr(
+        conns, symbol = output_symbol, expr = create_expr,
+        success = function(server) {
+          succeeded <<- c(succeeded, server)
+        },
+        error = function(server, message) {
+          failures[[server]] <<- message
+        }
+      )
+      NULL
+    }, error = identity)
+    incomplete <- unique(c(names(failures), setdiff(names(conns), succeeded)))
+    if (!is.null(condition) || length(incomplete) > 0L) {
+      detail <- if (!is.null(condition)) conditionMessage(condition) else
+        paste0("incomplete server response (",
+               paste(incomplete, collapse = ", "), ")")
+      stop("Persistent cohort creation failed: ", detail, ".",
+           call. = FALSE)
+    }
+    return(invisible(NULL))
   }
 
   invisible(structure(
@@ -659,7 +700,7 @@ ds.omop.cohort.combine <- function(op, cohort_a, cohort_b,
     stop("new_name must differ from both input cohort tables.",
          call. = FALSE)
   }
-  output_symbol <- paste0(".", out_table)
+  output_symbol <- .cohort_workspace_symbol(out_table)
 
   .cohort_assign_temporary(
     conns = conns, res_symbol = session$res_symbol,
@@ -739,7 +780,7 @@ ds.omop.cohort.from_table <- function(x, new_name = NULL,
       "^dsomop_cohort_fromtbl_[A-Za-z0-9_]{4,64}$"
     )
   }
-  output_symbol <- paste0(".", out_table)
+  output_symbol <- .cohort_workspace_symbol(out_table)
 
   .cohort_assign_temporary(
     conns = conns, res_symbol = session$res_symbol,
@@ -775,8 +816,8 @@ ds.omop.cohort.from_table <- function(x, new_name = NULL,
   if (is.numeric(x)) {
     return(paste0("dsomop_cohort_", as.integer(x)))
   }
-  if (is.character(x) && grepl("^\\.cohort_", x)) {
-    return(sub("^\\.cohort_", "dsomop_cohort_", x))
+  if (is.character(x) && grepl("^dsOcohort_[0-9]+$", x)) {
+    return(sub("^dsOcohort_", "dsomop_cohort_", x))
   }
   x
 }

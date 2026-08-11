@@ -249,8 +249,110 @@ test_that("split OHDSI results preserve direct server-side shaping", {
   expect_identical(as.character(calls[[1L]][[1L]]), "omopOhdsiResultsDS")
   expect_identical(calls[[1L]][[4L]], "cohort_subjects")
   expect_identical(calls[[1L]][[5L]], .ds_encode(filters))
-  expect_identical(calls[[1L]][[6L]], "cohort_subjects DESC")
+  expect_identical(calls[[1L]][[6L]],
+                   .ds_encode_scalar("cohort_subjects DESC"))
   expect_identical(calls[[1L]][[7L]], 7L)
+
+  opal_expression <- parse(
+    text = paste(deparse(calls[[1L]]), collapse = "\n")
+  )[[1L]]
+  expect_identical(as.character(opal_expression[[6L]]),
+                   .ds_encode_scalar("cohort_subjects DESC"))
+})
+
+test_that("split OHDSI ordering is validated before scalar encoding", {
+  dispatched <- FALSE
+  testthat::local_mocked_bindings(
+    .get_session = function(symbol) {
+      list(conns = list(a = "A"), res_symbol = "omop_obj")
+    },
+    .ds_safe_aggregate = function(...) {
+      dispatched <<- TRUE
+      list()
+    },
+    .package = "dsOMOPClient"
+  )
+
+  invalid <- list(
+    c("cohort_id", "cohort_subjects"), NA_character_, 1L,
+    "", "cohort_id; DROP TABLE cohort"
+  )
+  for (value in invalid) {
+    expect_error(
+      ds.omop.ohdsi.results(
+        "cohort_count", order_by = value, type = "split"
+      ),
+      "order_by must be one column"
+    )
+  }
+  expect_false(dispatched)
+})
+
+test_that("split OHDSI columns are validated before dispatch", {
+  dispatched <- FALSE
+  testthat::local_mocked_bindings(
+    .get_session = function(symbol) {
+      list(conns = list(a = "A"), res_symbol = "omop_obj")
+    },
+    .ds_safe_aggregate = function(...) {
+      dispatched <<- TRUE
+      list()
+    },
+    .package = "dsOMOPClient"
+  )
+
+  for (value in list(character(), NA_character_, c("cohort_id", NA), 1:2)) {
+    expect_error(
+      ds.omop.ohdsi.results(
+        "cohort_count", columns = value, type = "split"
+      ),
+      "columns must be a non-empty character vector"
+    )
+  }
+  expect_false(dispatched)
+})
+
+test_that("split OHDSI results project multi-column requests without Opal c", {
+  calls <- list()
+  requested_columns <- c("cohort_id", "cohort_subjects")
+  frame <- data.frame(
+    cohort_id = 1L, cohort_entries = 7,
+    cohort_subjects = 5
+  )
+  testthat::local_mocked_bindings(
+    .get_session = function(symbol) {
+      list(conns = list(a = "A"), res_symbol = "omop_obj")
+    },
+    .ds_safe_aggregate = function(conns, expr) {
+      calls[[length(calls) + 1L]] <<- expr
+      list(a = frame)
+    },
+    .package = "dsOMOPClient"
+  )
+
+  result <- ds.omop.ohdsi.results(
+    "cohort_count", columns = requested_columns,
+    tool_id = "cohort_diagnostics", type = "split"
+  )
+
+  expect_identical(names(result$per_site$a), requested_columns)
+  expect_length(calls, 1L)
+  expect_null(calls[[1L]][[4L]])
+
+  # Simulate Opal's deparse/parse transport. Before the fix, the fourth
+  # argument reparsed as c("cohort_id", "cohort_subjects"), making Opal try
+  # to resolve an aggregate method named `c`.
+  opal_expression <- parse(
+    text = paste(deparse(calls[[1L]]), collapse = "\n")
+  )[[1L]]
+  call_heads <- function(expression) {
+    if (!is.call(expression)) return(character(0))
+    c(
+      as.character(expression[[1L]]),
+      unlist(lapply(as.list(expression)[-1L], call_heads), use.names = FALSE)
+    )
+  }
+  expect_false("c" %in% call_heads(opal_expression))
 })
 
 test_that("OHDSI result shaping is post-disclosure and deterministic", {
