@@ -284,14 +284,26 @@ test_that("ds.omop.concept.search accepts concept_id / standard / valid", {
 test_that("ds.omop.concept.search stays backward-compatible (pattern only)", {
   .with_fake_vocab_session()
   out <- .capture_aggregate(
-    function() ds.omop.concept.search("diabetes", domain = "Condition"))
+    function() ds.omop.concept.search("type 2 diabetes", domain = "Condition"))
   expect_equal(as.character(out$expr[[1]]), "omopSearchConceptsDS")
   # Positional: res_symbol, pattern, domain, vocabulary, standard_only, limit.
   expect_equal(out$expr[[2]], "dsO.test01")
-  expect_equal(out$expr[[3]], "diabetes")
+  expect_equal(.ds_arg_decode(out$expr[[3]]), "type 2 diabetes")
+  expect_false(identical(out$expr[[3]], "type 2 diabetes"))
   expect_equal(out$expr[[4]], "Condition")
   # No id filter -> concept_id arg omitted (NULL).
   expect_null(out$expr$concept_id)
+})
+
+test_that("ds.omop.concept.search rejects malformed patterns before transport", {
+  for (pattern in list(c("diabetes", "asthma"), 42, NA_character_,
+                       character(0))) {
+    expect_error(
+      ds.omop.concept.search(pattern, execute = FALSE),
+      "pattern must be NULL or one non-missing character string",
+      fixed = TRUE
+    )
+  }
 })
 
 # ------------------------------------------------------------------------------

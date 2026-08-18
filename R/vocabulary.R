@@ -73,6 +73,11 @@ ds.omop.concept.search <- function(pattern = NULL, domain = NULL,
                                    symbol = "omop",
                                    conns = NULL,
                                    execute = TRUE) {
+  if (!is.null(pattern) &&
+      (!is.character(pattern) || length(pattern) != 1L || is.na(pattern))) {
+    stop("pattern must be NULL or one non-missing character string.",
+         call. = FALSE)
+  }
   code <- .build_code("ds.omop.concept.search",
     pattern = pattern, domain = domain, vocabulary = vocabulary,
     standard_only = standard_only, limit = limit, concept_id = concept_id,
@@ -90,7 +95,8 @@ ds.omop.concept.search <- function(pattern = NULL, domain = NULL,
   raw <- .ds_safe_aggregate(
     conns,
     expr = call("omopSearchConceptsDS", session$res_symbol,
-                pattern, domain, vocabulary,
+                if (!is.null(pattern)) .ds_encode_scalar(pattern) else NULL,
+                domain, vocabulary,
                 standard_only, as.integer(limit),
                 concept_id = if (!is.null(concept_id))
                   .ds_encode(as.integer(concept_id)) else NULL,
