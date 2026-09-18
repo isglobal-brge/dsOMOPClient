@@ -96,7 +96,7 @@ library(dsOMOPClient)
 
 ## Dedicated sticky privacy releases
 
-When the custodian has enabled the dedicated service, inspect its
+Since server 2.6.0 the dedicated service is enabled by default; custodians may opt out with dsomop.dp.enabled = FALSE or DSOMOP_DP_ENABLED=0. Initialize the resource before inspecting its
 contract and request a typed person-bounded statistic from an eligible
 server-side plan or reviewed loader output:
 
@@ -159,7 +159,7 @@ not every possible relational or longitudinal estimand. In particular:
 - sparse output supports person or indexed episode grain and includes a
   complete `personRef`; absent covariate rows represent zero for roster
   members with no qualifying event;
-- the local Query Library is curated and incomplete. The opt-in privacy
+- the local Query Library is curated and incomplete. The dedicated privacy
   path currently supports seven person-bounded sticky-noise primitives
   with a durable authenticated ledger. Its single public guarantee is
   `sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting`;

@@ -230,10 +230,14 @@ DataSHIELD policy value that dsOMOP reports and validates. dsOMOP does
 not reinterpret it as a generic differential-privacy budget or add it to
 arbitrary query results.</li>
 <li>
-<code>sticky_noise_enabled</code>,
-<code>privacy_ledger_enabled</code>: runtime capability flags. Both are
-<code>FALSE</code> by default and become true only after the opt-in
-sticky service and durable ledger bootstrap successfully.</li>
+<code>sticky_noise_enabled</code>: runtime readiness flag. It remains
+<code>FALSE</code> until the persistent secret root and policy are ready.
+The DP release channel is enabled by default since server 2.6.0; custodians
+can opt out with <code>dsomop.dp.enabled = FALSE</code> or
+<code>DSOMOP_DP_ENABLED=0</code>. Unconfigured domain and snapshot identifiers
+are derived from the connected resource and CDM source metadata. Persistent
+state storage is required; advance <code>dsomop.dp.privacy_epoch</code> for
+ data changes without metadata changes.</li>
 <li>
 <code>dsomop.nfilter.dist</code> (default <code>10</code>): minimum
 support for distribution-style outputs.</li>

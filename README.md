@@ -101,8 +101,14 @@ estimand on every participating node.
 
 ## Dedicated sticky privacy releases
 
-When the custodian has enabled the dedicated service, inspect its contract and
-request a typed person-bounded statistic from an eligible server-side plan or
+The dedicated release service is enabled by default on dsOMOP servers since
+2.6.0; custodians can opt out with `dsomop.dp.enabled = FALSE` or
+`DSOMOP_DP_ENABLED=0`. Initialize the OMOP resource before inspecting its DP
+contract: unconfigured servers derive domain and snapshot identifiers from the
+resource and CDM source metadata and require persistent private state storage.
+Custodians must advance `dsomop.dp.privacy_epoch` when data change without metadata
+changes. Earlier server versions require explicit enablement. Inspect the
+contract and request a typed person-bounded statistic from an eligible server-side plan or
 reviewed loader output:
 
 ```R
@@ -158,7 +164,7 @@ possible relational or longitudinal estimand. In particular:
 - sparse output supports person or indexed episode grain and includes a complete
   `personRef`; absent covariate rows represent zero for roster members with no
   qualifying event;
-- the local Query Library is curated and incomplete. The opt-in privacy path
+- the local Query Library is curated and incomplete. The dedicated privacy path
   currently supports seven person-bounded sticky-noise primitives. Its public
   guarantee is `sticky_person_bounded_discrete_laplace_per_release_v1`, under
   the `fixed_per_release_semantic_prf_v1` contract. Eligible inputs carry

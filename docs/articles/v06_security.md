@@ -144,9 +144,13 @@ standard installation.
   that dsOMOP reports and validates. dsOMOP does not reinterpret it as a
   generic differential-privacy budget or add it to arbitrary query
   results.
-- `sticky_noise_enabled`, `privacy_ledger_enabled`: runtime capability
-  flags. Both are `FALSE` by default and become true only after the
-  opt-in sticky service and durable ledger bootstrap successfully.
+- `sticky_noise_enabled`: runtime readiness flag. It remains `FALSE` until
+  the persistent secret root and policy are ready. The DP release channel is
+  enabled by default since server 2.6.0; custodians can opt out with
+  `dsomop.dp.enabled = FALSE` or `DSOMOP_DP_ENABLED=0`. Unconfigured domain and
+  snapshot identifiers are derived from the connected resource and CDM source
+  metadata. Persistent state storage is required; custodians must advance
+  `dsomop.dp.privacy_epoch` for data changes without metadata changes.
 - `dsomop.nfilter.dist` (default `10`): minimum support for
   distribution-style outputs.
 - `dsomop.nfilter.band` (default `5`): width used to floor protected
