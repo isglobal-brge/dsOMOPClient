@@ -18,6 +18,7 @@ Named list of results (only successful servers).
 Calls each server individually and returns partial results when some
 servers fail (e.g., table not present on one server). Failed servers
 — including a missing or NULL DSI response — are omitted from the result and
-their errors are attached as an attribute.
+their errors are attached as an attribute. An exclusive-DP refusal stops
+the operation and directs the caller to the typed DP channel.
 }
 \keyword{internal}

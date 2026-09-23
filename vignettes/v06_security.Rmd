@@ -338,6 +338,22 @@ The deprecated global legacy pseudonym key remains readable for historical
 in-memory objects but cannot be used to create this wider interoperability
 surface.
 
+## Exclusive DP channel
+
+Since dsOMOP 2.7.0, `dsomop.dp.exclusive` defaults to `TRUE`. While DP is enabled,
+standard population-statistics endpoints are refused; use
+`ds.omop.dp.release()` with a typed `omop_privacy()` specification on an eligible
+prepared table. Only a custodian can opt out of exclusivity by setting
+`dsomop.dp.exclusive = FALSE`. The DP status printer reports this policy.
+
+Client 2.7.3 disables observed factor-level discovery for memory plans and
+recipes whenever any selected server is enabled and exclusive, explaining the
+change in a message. Raw concept identifiers or translated names stay intact;
+a categorical DP histogram requires public levels rather than discovering the
+observed support. Standard helpers raise an explanatory error instead of
+silently returning empty or partial statistics. Servers at 2.6.0 without an
+`exclusive` field keep their existing behavior.
+
 ## Limits of the current model
 
 Thresholds, omission, protected tails and banding are deterministic disclosure

@@ -346,6 +346,7 @@ test_that("execute rejects output and scope collisions before cleanup", {
     },
     .package = "DSI"
   )
+  plan$options$factor_concepts <- FALSE
   expect_error(
     ds.omop.plan.execute(plan, out = c(study = "scope_tbl")),
     "collide with execution-scope"
@@ -377,6 +378,12 @@ test_that("recipe_execute applies an execution-time scope override", {
       invisible(NULL)
     },
     datashield.aggregate = function(conns, expr, success = NULL, ...) {
+      if (identical(as.character(expr[[1L]]), "omopDpStatusDS")) {
+        return(list(srv = list(enabled = FALSE, ready = FALSE,
+                               sticky_noise = FALSE,
+                               protocol = "dsomop-dp-release-v2",
+                               mechanism = "dsomop-sticky-discrete-laplace-prf-v1")))
+      }
       report <- list(levels = list(), unsafe = character(0),
                      nfilter_levels_max = 40)
       if (is.function(success)) success("srv", report)

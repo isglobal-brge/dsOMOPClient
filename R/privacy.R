@@ -430,7 +430,9 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
     stop("Server '", server, "' returned a malformed DP status.",
          call. = FALSE)
   }
-  for (field in c("enabled", "ready", "sticky_noise")) {
+  # Servers before 2.7.0 expose the standard and DP channels together.
+  if (!"exclusive" %in% names(status)) status$exclusive <- FALSE
+  for (field in c("enabled", "ready", "sticky_noise", "exclusive")) {
     if (!is.logical(status[[field]]) || length(status[[field]]) != 1L ||
         is.na(status[[field]])) {
       stop("Server '", server, "' returned an invalid DP status field '",
@@ -478,6 +480,11 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' Eligible input frames must also carry the server's authenticated
 #' person-local provenance capsule; a copied class or plain attribute is not
 #' sufficient.
+#' Since server 2.7.0, \code{exclusive = TRUE} is the default policy. When
+#' both \code{enabled} and \code{exclusive} are true, standard population
+#' statistics are refused; use \code{\link{ds.omop.dp.release}}. Only the
+#' custodian can opt out with \code{dsomop.dp.exclusive = FALSE}. A missing
+#' \code{exclusive} field on older servers is treated as \code{FALSE}.
 #' Each status contains the custodian's public \code{snapshot_id}. Federated
 #' sites may legitimately report different snapshot identifiers.
 #' Release preflight rejects either a repeated \code{noise_domain_id} or a
@@ -487,7 +494,7 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #'
 #' @param datasources Named DataSHIELD connection list. \code{NULL} uses
 #'   \code{DSI::datashield.connections_find()}.
-#' @return A complete named list of per-server DP status records.
+#' @return An \code{omop_dp_status} named list of per-server DP status records.
 #' @examples
 #' \dontrun{ds.omop.dp.status()}
 #' @export
@@ -499,7 +506,25 @@ ds.omop.dp.status <- function(datasources = NULL) {
   for (server in names(statuses)) {
     statuses[[server]] <- .dp_status_shape(statuses[[server]], server)
   }
-  statuses
+  structure(statuses, class = c("omop_dp_status", "list"))
+}
+
+#' Print the release policy on each DP server
+#'
+#' @param x An \code{omop_dp_status} returned by
+#'   \code{\link{ds.omop.dp.status}}.
+#' @param ... Unused.
+#' @return \code{x}, invisibly.
+#' @export
+print.omop_dp_status <- function(x, ...) {
+  cat("OMOP differential privacy status\n")
+  for (server in names(x)) {
+    status <- x[[server]]
+    cat("  ", server, ": enabled=", status$enabled,
+        " ready=", status$ready,
+        " exclusive=", status$exclusive %||% FALSE, "\n", sep = "")
+  }
+  invisible(x)
 }
 
 .dp_status_contract <- function(statuses, privacy) {

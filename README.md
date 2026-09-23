@@ -101,6 +101,17 @@ estimand on every participating node.
 
 ## Dedicated sticky privacy releases
 
+Since dsOMOP 2.7.0, an enabled DP layer defaults to the exclusive channel:
+standard population-statistics helpers refuse access and point to
+`ds.omop.dp.release()`. Only the custodian can restore standard statistics with
+`dsomop.dp.exclusive = FALSE`; no client option bypasses the policy or noise.
+`ds.omop.dp.status()` prints each server's exclusivity. Client 2.7.3 automatically
+prepares memory plans and recipes without observed factor-level discovery when
+any selected server is exclusive, with a message explaining that concept IDs
+or translated names remain unchanged. For category counts, use the typed
+categorical histogram with a public level domain. Servers at 2.6.0 that omit
+`exclusive` retain their existing behavior.
+
 The dedicated release service is enabled by default on dsOMOP servers since
 2.6.0; custodians can opt out with `dsomop.dp.enabled = FALSE` or
 `DSOMOP_DP_ENABLED=0`. Initialize the OMOP resource before inspecting its DP

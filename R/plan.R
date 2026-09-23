@@ -1408,7 +1408,9 @@ ds.omop.plan.temporal_covariates <- function(plan,
 #'   servers, so pooled \code{ds.glm}/\code{ds.glmSLMA}/\code{ds.table}
 #'   see an identical level coding. Columns whose distinct values exceed
 #'   the server disclosure cap are left raw. Set \code{FALSE} to keep the
-#'   raw integer ids (or translated character names) unchanged.
+#'   raw integer ids (or translated character names) unchanged. Execution
+#'   automatically disables observed-level discovery for all selected servers
+#'   when any server has enabled exclusive DP, and explains this in a message.
 #' @return The modified \code{omop_plan} with updated options.
 #' @examples
 #' \dontrun{
@@ -1805,6 +1807,12 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' @param output_mode Character; \code{"memory"} (default, backwards
 #'   compatible) or \code{"staged"} (writes server-local files and returns
 #'   descriptors). Arrow provides Parquet; without it the server uses CSV.
+#' @details Memory execution reads the servers' DP status before preparation.
+#'   If any selected server enables exclusive DP, observed factor-level
+#'   discovery is disabled across the federation with an explanatory message.
+#'   The plan still executes and its concept identifiers or translated names
+#'   remain unchanged. Servers without an \code{exclusive} status field retain
+#'   the existing factor-discovery behavior.
 #' @return Invisible; the resolved \code{out} symbol mapping (for chaining).
 #'   The produced symbols are also recorded on the session so subsequent
 #'   manipulation wrappers (\code{\link{ds.omop.merge}},
@@ -1858,6 +1866,23 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+  if (identical(output_mode, "memory") &&
+      isTRUE(plan$options$factor_concepts %||% TRUE)) {
+    statuses <- ds.omop.dp.status(conns)
+    exclusive <- names(statuses)[vapply(statuses, function(status) {
+      isTRUE(status$enabled) && isTRUE(status$exclusive)
+    }, logical(1L))]
+    if (length(exclusive) > 0L) {
+      plan$options$factor_concepts <- FALSE
+      plan$harmonization <- NULL
+      message("Exclusive DP is active on ", paste(exclusive, collapse = ", "),
+              "; automatic factor-level discovery is disabled across the ",
+              "selected servers. Concept identifiers or translated names ",
+              "remain unchanged. Use ds.omop.dp.release() with ",
+              "omop_privacy(\"categorical_histogram\", ...) and public levels ",
+              "for differentially private category counts.")
+    }
+  }
   plan <- .prepare_plan_for_federation(plan, symbol, conns)
   contract <- .session_harmonization_for_connections(session, conns)
   if (!is.null(contract)) {
@@ -2356,7 +2381,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   expected_servers <- names(conns)
   aggregate_success <- character(0)
   aggregate_errors <- character(0)
-  per_server <- DSI::datashield.aggregate(
+  aggregate_condition <- NULL
+  per_server <- tryCatch(DSI::datashield.aggregate(
     conns,
     call("omopFactorLevelsDS", as.symbol(sym)),
     success = function(server, value) {
@@ -2365,7 +2391,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     error = function(server, message) {
       aggregate_errors[[server]] <<- message
     }
-  )
+  ), error = function(e) {
+    aggregate_condition <<- e
+    list()
+  })
   returned <- intersect(expected_servers, names(per_server))
   missing_results <- setdiff(expected_servers, names(per_server))
   null_results <- returned[vapply(per_server[returned], is.null, logical(1))]
@@ -2384,7 +2413,12 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   ))
   if (length(failed) > 0L) {
     stop("Concept-factor level collection failed or was incomplete on: ",
-         paste(failed, collapse = ", "), ".", call. = FALSE)
+         paste(failed, collapse = ", "), ". ",
+         if (length(aggregate_errors) > 0L) {
+           paste(aggregate_errors, collapse = "; ")
+         } else if (!is.null(aggregate_condition)) {
+           conditionMessage(aggregate_condition)
+         } else "", call. = FALSE)
   }
   per_server <- per_server[expected_servers]
   spec <- .unionConceptLevels(per_server)

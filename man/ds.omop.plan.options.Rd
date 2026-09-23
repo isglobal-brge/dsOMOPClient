@@ -27,7 +27,9 @@ into a factor whose levels are harmonized across all connected
 servers, so pooled \code{ds.glm}/\code{ds.glmSLMA}/\code{ds.table}
 see an identical level coding. Columns whose distinct values exceed
 the server disclosure cap are left raw. Set \code{FALSE} to keep the
-raw integer ids (or translated character names) unchanged.}
+raw integer ids (or translated character names) unchanged. Execution
+automatically disables observed-level discovery for all selected servers
+when any server has enabled exclusive DP, and explains this in a message.}
 }
 \value{
 The modified \code{omop_plan} with updated options.

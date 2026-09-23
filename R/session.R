@@ -62,7 +62,8 @@
 #' Calls each server individually and returns partial results when some
 #' servers fail (e.g., table not present on one server). Failed servers
 #' — including a missing or NULL DSI response — are omitted from the result and
-#' their errors are attached as an attribute.
+#' their errors are attached as an attribute. An exclusive-DP refusal stops
+#' the operation and directs the caller to the typed DP channel.
 #'
 #' @param conns DSI connections object.
 #' @param expr The call expression to evaluate.
@@ -74,16 +75,32 @@
   errors <- list()
   for (srv in server_names) {
     tryCatch({
-      res <- DSI::datashield.aggregate(conns[srv], expr = expr)
+      res <- DSI::datashield.aggregate(
+        conns[srv], expr = expr,
+        error = function(server, message) {
+          errors[[server]] <<- message
+        }
+      )
       if (!is.list(res) || !srv %in% names(res) || is.null(res[[srv]])) {
         stop("server returned no verifiable aggregate result", call. = FALSE)
       }
       results[[srv]] <- res[[srv]]
     }, error = function(e) {
-      errors[[srv]] <<- e$message
+      errors[[srv]] <<- errors[[srv]] %||% conditionMessage(e)
     })
   }
   if (length(errors) > 0) {
+    exclusive <- names(errors)[vapply(errors, function(error) {
+      grepl("DP-exclusive mode blocks standard statistical releases", error,
+            fixed = TRUE)
+    }, logical(1L))]
+    if (length(exclusive) > 0L) {
+      stop("Exclusive DP refuses this standard statistical helper on: ",
+           paste(exclusive, collapse = ", "),
+           ". Use ds.omop.dp.release() with an omop_privacy() typed statistic ",
+           "on a prepared server-side table. No partial result was returned.",
+           call. = FALSE)
+    }
     attr(results, "ds_errors") <- errors
   }
   results

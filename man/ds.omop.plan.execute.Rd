@@ -97,6 +97,13 @@ Every requested output family must be absent on every server before execution;
 existing workspace objects are never deleted or overwritten speculatively.
 Choose fresh \code{out} names (or explicitly remove obsolete objects through
 the ordinary DataSHIELD workspace API) when rerunning a plan.
+
+Memory execution reads the servers' DP status before preparation.
+  If any selected server enables exclusive DP, observed factor-level
+  discovery is disabled across the federation with an explanatory message.
+  The plan still executes and its concept identifiers or translated names
+  remain unchanged. Servers without an \code{exclusive} status field retain
+  the existing factor-discovery behavior.
 }
 \examples{
 \dontrun{

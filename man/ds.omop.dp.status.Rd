@@ -11,7 +11,7 @@ ds.omop.dp.status(datasources = NULL)
 \code{DSI::datashield.connections_find()}.}
 }
 \value{
-A complete named list of per-server DP status records.
+An \code{omop_dp_status} named list of per-server DP status records.
 }
 \description{
 Queries every selected DataSHIELD server. Unlike permissive exploration
@@ -26,6 +26,11 @@ Epsilon, the semantic privacy epoch and the secret root remain server-owned.
 Eligible input frames must also carry the server's authenticated
 person-local provenance capsule; a copied class or plain attribute is not
 sufficient.
+Since server 2.7.0, \code{exclusive = TRUE} is the default policy. When
+both \code{enabled} and \code{exclusive} are true, standard population
+statistics are refused; use \code{\link{ds.omop.dp.release}}. Only the
+custodian can opt out with \code{dsomop.dp.exclusive = FALSE}. A missing
+\code{exclusive} field on older servers is treated as \code{FALSE}.
 Each status contains the custodian's public \code{snapshot_id}. Federated
 sites may legitimately report different snapshot identifiers.
 Release preflight rejects either a repeated \code{noise_domain_id} or a
