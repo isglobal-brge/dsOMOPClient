@@ -11,6 +11,10 @@
 .DP_LEGACY_PRIVACY_CONTRACT <- "fixed_per_release_semantic_prf_v1"
 .DP_RELEASE_BINDING <- "snapshot_first_answer_v1"
 .DP_SERVICE_CAPACITY <- "public_identity_reservations_v1"
+.DP_VERSIONED_CONTRACT_FIELDS <- c(
+  "protocol", "privacy_contract", "history_dependent", "persistent_state",
+  "release_binding", "service_capacity"
+)
 
 .dp_scalar_character <- function(value, name, nullable = FALSE) {
   if (is.null(value) && nullable) return(NULL)
@@ -573,10 +577,14 @@ print.omop_dp_status <- function(x, ...) {
 }
 
 .dp_status_contract <- function(statuses, privacy) {
+  allow_legacy <- isTRUE(getOption("dsomop.dp.allow_legacy_servers", FALSE))
+  legacy <- vapply(statuses, function(status) {
+    identical(status$protocol, .DP_LEGACY_PROTOCOL) &&
+      identical(status$privacy_contract, .DP_LEGACY_PRIVACY_CONTRACT)
+  }, logical(1L))
   for (server in names(statuses)) {
     status <- statuses[[server]]
-    if (identical(status$protocol, .DP_LEGACY_PROTOCOL) &&
-        identical(status$privacy_contract, .DP_LEGACY_PRIVACY_CONTRACT)) {
+    if (legacy[[server]] && !allow_legacy) {
       stop("Server '", server, "' provides the legacy v2 DP contract without ",
            "first-answer binding. Upgrade to dsOMOP 2.7.1 or later before ",
            "requesting releases; old and new contracts cannot be pooled.",
@@ -600,9 +608,10 @@ print.omop_dp_status <- function(x, ...) {
     "service_capacity"
   )
   for (server in names(statuses)) {
-    missing <- required_fields[
-      !required_fields %in% names(statuses[[server]])
-    ]
+    site_required <- if (legacy[[server]]) {
+      setdiff(required_fields, c("release_binding", "service_capacity"))
+    } else required_fields
+    missing <- setdiff(site_required, names(statuses[[server]]))
     if (length(missing) > 0L) {
       stop("Server '", server, "' omitted DP contract field(s): ",
            paste(missing, collapse = ", "), ".", call. = FALSE)
@@ -614,6 +623,11 @@ print.omop_dp_status <- function(x, ...) {
       "noise_domain_id", "privacy_call_quota", "persistent_state",
       "release_binding", "service_capacity"
     )
+    if (legacy[[server]]) {
+      character_fields <- setdiff(
+        character_fields, c("release_binding", "service_capacity")
+      )
+    }
     if (any(!vapply(statuses[[server]][character_fields], function(value) {
       is.character(value) && length(value) == 1L && !is.na(value) &&
         nzchar(value)
@@ -650,11 +664,12 @@ print.omop_dp_status <- function(x, ...) {
       stop("Server '", server, "' returned out-of-range DP contract fields.",
            call. = FALSE)
     }
-    if (!identical(statuses[[server]]$protocol, .DP_PROTOCOL) ||
+    first_answer <- identical(statuses[[server]]$protocol, .DP_PROTOCOL) &&
+      identical(statuses[[server]]$privacy_contract, .DP_PRIVACY_CONTRACT)
+    if (!(first_answer || legacy[[server]]) ||
         !identical(statuses[[server]]$privacy_guarantee,
                    .DP_PRIVACY_GUARANTEE) ||
-        !identical(statuses[[server]]$privacy_contract,
-                   .DP_PRIVACY_CONTRACT)) {
+        (legacy[[server]] && !allow_legacy)) {
       stop("Server '", server, "' returned an unsupported DP release contract.",
            call. = FALSE)
     }
@@ -677,7 +692,19 @@ print.omop_dp_status <- function(x, ...) {
       stop("Server '", server, "' returned an incoherent first-answer DP ",
            "provenance contract.", call. = FALSE)
     }
-    .dp_first_answer_contract(statuses[[server]], server)
+    if (legacy[[server]]) {
+      status <- statuses[[server]]
+      if (!identical(status$history_dependent, FALSE) ||
+          !identical(status$privacy_call_quota, "none") ||
+          !identical(status$persistent_state, "noise_root_only") ||
+          !is.null(status$release_binding) ||
+          !is.null(status$service_capacity)) {
+        stop("Server '", server, "' returned an incoherent legacy v2 DP ",
+             "contract.", call. = FALSE)
+      }
+    } else {
+      .dp_first_answer_contract(statuses[[server]], server)
+    }
   }
   noise_domains <- vapply(
     statuses, `[[`, character(1L), "noise_domain_id"
@@ -708,6 +735,8 @@ print.omop_dp_status <- function(x, ...) {
     "history_dependent", "privacy_call_quota", "persistent_state",
     "release_binding", "service_capacity", "longitudinal_contract"
   )
+  # Only the exact, independently validated v2/v3 tuples may differ.
+  common_fields <- setdiff(common_fields, .DP_VERSIONED_CONTRACT_FIELDS)
   for (field in common_fields) {
     values <- lapply(statuses, `[[`, field)
     first <- values[[1L]]
@@ -718,6 +747,13 @@ print.omop_dp_status <- function(x, ...) {
   }
 
   reference <- statuses[[1L]]
+  for (field in .DP_VERSIONED_CONTRACT_FIELDS) {
+    values <- lapply(statuses, `[[`, field)
+    if (!all(vapply(values[-1L], identical, logical(1L), values[[1L]]))) {
+      # A mixed federation must not inherit the first site's stronger claim.
+      reference[field] <- list(NULL)
+    }
+  }
   common_max_contributions <- min(vapply(
     statuses, `[[`, numeric(1L), "max_contributions"
   ))
@@ -1242,6 +1278,19 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
       disclosure, expected_servers = names(datasources), fail = TRUE
     )
   }
+  legacy_servers <- names(statuses)[vapply(statuses, function(status) {
+    identical(status$protocol, .DP_LEGACY_PROTOCOL)
+  }, logical(1L))]
+  legacy_warnings <- vapply(legacy_servers, function(server) {
+    paste0(
+      "Legacy DP server '", server, "': no first-answer binding: an ",
+      "unrotated data refresh can reveal whether a released statistic ",
+      "changed; see isglobal-brge/dsOMOP#20."
+    )
+  }, character(1L), USE.NAMES = FALSE)
+  for (legacy_warning in legacy_warnings) {
+    warning(legacy_warning, call. = FALSE)
+  }
   raw <- .dp_complete_aggregate(
     datasources,
     call("omopDpReleaseDS", as.name(x), .ds_encode(server_privacy)),
@@ -1268,7 +1317,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   epsilons <- vapply(raw, function(value) as.numeric(value$epsilon), numeric(1L))
   deltas <- vapply(raw, function(value) as.numeric(value$delta), numeric(1L))
   snapshot_ids <- vapply(statuses, `[[`, character(1L), "snapshot_id")
-  warnings <- character(0)
+  warnings <- legacy_warnings
   if (want_combine && length(statuses) > 1L &&
       identical(privacy$statistic, "bounded_distinct")) {
     warnings <- c(warnings, paste0(
@@ -1307,6 +1356,14 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     persistent_state = contract$persistent_state,
     release_binding = contract$release_binding,
     service_capacity = contract$service_capacity,
+    per_site_contract = lapply(statuses, function(status) {
+      fields <- c(.DP_VERSIONED_CONTRACT_FIELDS, "privacy_call_quota")
+      stats::setNames(lapply(fields, function(field) status[[field]]), fields)
+    }),
+    mixed_contracts = length(unique(vapply(
+      statuses, `[[`, character(1L), "protocol"
+    ))) > 1L,
+    legacy_servers = legacy_servers,
     privacy_epoch = vapply(
       statuses, `[[`, numeric(1L), "privacy_epoch"
     ),

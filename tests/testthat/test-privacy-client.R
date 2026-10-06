@@ -1180,3 +1180,241 @@ test_that("protocol and privacy contract cannot be combined across versions", {
       expect_false("omopDpReleaseDS" %in% heads)
     })
 })
+
+.dp_legacy_status <- function(...) {
+  status <- .dp_status(...)
+  status$protocol <- .DP_LEGACY_PROTOCOL
+  status$privacy_contract <- .DP_LEGACY_PRIVACY_CONTRACT
+  status$history_dependent <- FALSE
+  status$persistent_state <- "noise_root_only"
+  status$release_binding <- NULL
+  status$service_capacity <- NULL
+  status
+}
+
+.dp_as_legacy_release <- function(release) {
+  release$protocol <- .DP_LEGACY_PROTOCOL
+  release$privacy_contract <- .DP_LEGACY_PRIVACY_CONTRACT
+  release
+}
+
+test_that("legacy release opt-in requires the literal TRUE option", {
+  for (setting in list(NULL, FALSE, NA, 1, "TRUE", c(TRUE, TRUE))) {
+    withr::local_options(list(dsomop.dp.allow_legacy_servers = setting))
+    .with_dp_backend(list(old = .dp_legacy_status()), list(old = NULL),
+      function(datasources, sent) {
+        expect_error(
+          ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                             datasources),
+          "legacy v2.*Upgrade to dsOMOP 2.7.1.*cannot be pooled"
+        )
+        heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
+                        character(1L))
+        expect_false("omopDpReleaseDS" %in% heads)
+      })
+  }
+})
+
+test_that("legacy opt-in warns for every old site and retains its contract", {
+  withr::local_options(dsomop.dp.allow_legacy_servers = TRUE)
+  statuses <- list(old_a = .dp_legacy_status(), old_b = .dp_legacy_status())
+  releases <- list(
+    old_a = .dp_as_legacy_release(.dp_release("count", noisy_count = 10)),
+    old_b = .dp_as_legacy_release(.dp_release("count", noisy_count = 20))
+  )
+  .with_dp_backend(statuses, releases, function(datasources, sent) {
+    warnings <- character()
+    value <- withCallingHandlers(
+      ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
+      warning = function(condition) {
+        warnings <<- c(warnings, conditionMessage(condition))
+        invokeRestart("muffleWarning")
+      }
+    )
+    expect_length(warnings, 2L)
+    residual <- paste0(
+      "no first-answer binding: an unrotated data refresh can reveal whether ",
+      "a released statistic changed; see isglobal-brge/dsOMOP#20"
+    )
+    for (index in seq_along(statuses)) {
+      expect_match(warnings[[index]], names(statuses)[[index]], fixed = TRUE)
+      expect_match(warnings[[index]], residual, fixed = TRUE)
+    }
+    expect_identical(value$meta$warnings, warnings)
+    expect_identical(value$pooled$noisy_count, 30)
+    expect_identical(value$meta$privacy$legacy_servers, names(statuses))
+    expect_false(value$meta$privacy$mixed_contracts)
+    expect_identical(value$meta$privacy$privacy_contract,
+                     .DP_LEGACY_PRIVACY_CONTRACT)
+    expect_false(value$meta$privacy$history_dependent)
+    expect_identical(value$meta$privacy$persistent_state, "noise_root_only")
+    expect_null(value$meta$privacy$release_binding)
+    for (server in names(statuses)) {
+      site <- value$meta$privacy$per_site_contract[[server]]
+      expect_identical(site$protocol, .DP_LEGACY_PROTOCOL)
+      expect_identical(site$privacy_contract, .DP_LEGACY_PRIVACY_CONTRACT)
+      expect_false(site$history_dependent)
+      expect_null(site$release_binding)
+    }
+  })
+})
+
+test_that("mixed releases record each contract in every result view and order", {
+  withr::local_options(dsomop.dp.allow_legacy_servers = TRUE)
+  statuses <- list(new = .dp_status(), old = .dp_legacy_status())
+  releases <- list(
+    new = .dp_release("count", noisy_count = 10),
+    old = .dp_as_legacy_release(.dp_release("count", noisy_count = 20))
+  )
+  for (order in list(c("new", "old"), c("old", "new"))) {
+    for (type in c("split", "combine", "both")) {
+      .with_dp_backend(statuses[order], releases[order],
+        function(datasources, sent) {
+          expect_warning(value <- ds.omop.dp.release(
+            "analysis_table", omop_privacy("count"), datasources, type = type
+          ), "Legacy DP server 'old': no first-answer binding")
+          expect_true(value$meta$privacy$mixed_contracts)
+          expect_identical(value$meta$privacy$legacy_servers, "old")
+          expect_length(value$meta$warnings, 1L)
+          expect_match(value$meta$warnings[[1L]], "isglobal-brge/dsOMOP#20",
+                       fixed = TRUE)
+          contracts <- value$meta$privacy$per_site_contract
+          expect_named(contracts, order)
+          expect_identical(contracts$new$protocol, .DP_PROTOCOL)
+          expect_identical(contracts$new$privacy_contract, .DP_PRIVACY_CONTRACT)
+          expect_identical(contracts$new$release_binding, .DP_RELEASE_BINDING)
+          expect_true(contracts$new$history_dependent)
+          expect_identical(contracts$old$protocol, .DP_LEGACY_PROTOCOL)
+          expect_identical(contracts$old$privacy_contract,
+                           .DP_LEGACY_PRIVACY_CONTRACT)
+          expect_false(contracts$old$history_dependent)
+          expect_null(contracts$old$release_binding)
+          for (field in .DP_VERSIONED_CONTRACT_FIELDS) {
+            expect_null(value$meta$privacy[[field]])
+          }
+          if (type != "split") expect_identical(value$pooled$noisy_count, 30)
+          if (type == "combine") expect_identical(value$per_site, list())
+        })
+    }
+  }
+})
+
+test_that("legacy opt-in retains the exact old contract and common checks", {
+  withr::local_options(dsomop.dp.allow_legacy_servers = TRUE)
+  mutations <- list(
+    history_dependent = TRUE,
+    privacy_call_quota = "daily",
+    persistent_state = "noise_root_and_release_bindings",
+    release_binding = .DP_RELEASE_BINDING,
+    service_capacity = .DP_SERVICE_CAPACITY,
+    person_local_provenance_required = FALSE,
+    privacy_guarantee = "unknown",
+    privacy_contract = .DP_PRIVACY_CONTRACT,
+    release_delta = 1e-6,
+    release_epsilon = 0,
+    sampler = "unknown",
+    mechanism = "unknown",
+    canonical_protocol = "unknown",
+    provenance_protocol = "unknown",
+    longitudinal_contract = "unknown",
+    adjacency = "unknown"
+  )
+  for (field in names(mutations)) {
+    status <- .dp_legacy_status()
+    status[[field]] <- mutations[[field]]
+    .with_dp_backend(list(new = .dp_status(), old = status),
+      list(new = NULL, old = NULL), function(datasources, sent) {
+        expect_error(
+          ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                             datasources),
+          "DP.*contract|DP.*provenance"
+        )
+        heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
+                        character(1L))
+        expect_false("omopDpReleaseDS" %in% heads)
+      })
+  }
+  for (field in c("history_dependent", "privacy_call_quota", "persistent_state",
+                  "person_local_provenance_required")) {
+    status <- .dp_legacy_status()
+    status[[field]] <- NULL
+    .with_dp_backend(list(old = status), list(old = NULL),
+      function(datasources, sent) {
+        expect_error(
+          ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
+          paste0("omitted DP contract.*", field)
+        )
+      })
+  }
+  for (field in c("domain", "noise_domain_id")) {
+    new <- .dp_status(noise_domain_id = paste0("dpn_", strrep("a", 40L)),
+                      domain = "site-a")
+    old <- .dp_legacy_status()
+    old[[field]] <- new[[field]]
+    .with_dp_backend(list(new = new, old = old), list(new = NULL, old = NULL),
+      function(datasources, sent) {
+        expect_error(
+          ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
+          "share a DP.*domain"
+        )
+      })
+  }
+})
+
+test_that("legacy opt-in rejects cross-version payloads after preflight", {
+  withr::local_options(dsomop.dp.allow_legacy_servers = TRUE)
+  modern_release <- .dp_release("count", noisy_count = 10)
+  old_release <- .dp_as_legacy_release(modern_release)
+  for (legacy_first in c(TRUE, FALSE)) {
+    statuses <- if (legacy_first) {
+      list(a = .dp_legacy_status(), b = .dp_status())
+    } else list(a = .dp_status(), b = .dp_legacy_status())
+    releases <- if (legacy_first) {
+      list(a = modern_release, b = modern_release)
+    } else list(a = old_release, b = old_release)
+    .with_dp_backend(statuses, releases, function(datasources, sent) {
+      expect_warning(expect_error(
+        ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
+        "protocol.*does not match the preflight contract"
+      ), "no first-answer binding")
+    })
+  }
+})
+
+test_that("all seven primitives keep pooling unchanged during mixed transition", {
+  withr::local_options(dsomop.dp.allow_legacy_servers = TRUE)
+  cases <- list(
+    list(omop_privacy("count"), .dp_release("count", noisy_count = 10)),
+    list(omop_privacy("bounded_record_count"),
+         .dp_release("bounded_record_count", noisy_count = 10)),
+    list(omop_privacy("categorical_histogram", "sex", levels = c("F", "M")),
+         .dp_release("categorical_histogram", levels = c("F", "M"),
+                     counts = c(4, 6))),
+    list(omop_privacy("numeric_histogram", "age", breaks = c(0, 50, 100)),
+         .dp_release("numeric_histogram", breaks = c(0, 50, 100),
+                     counts = c(4, 6))),
+    list(omop_privacy("bounded_distinct", "concept", levels = c("a", "b")),
+         .dp_release("bounded_distinct", levels = c("a", "b"), noisy_count = 2)),
+    list(omop_privacy("bounded_mean", "value", lower = 0, upper = 200),
+         .dp_release("bounded_mean", noisy_count = 10, noisy_sum_grid = 500,
+                     lower = 0, upper = 200, numeric_grid = 100)),
+    list(omop_privacy("binary_rate", "case", positive = 1L),
+         .dp_release("binary_rate", noisy_numerator = 2, noisy_denominator = 10))
+  )
+  for (case in cases) {
+    reference <- NULL
+    .with_dp_backend(list(a = .dp_status(), b = .dp_status()),
+      list(a = case[[2L]], b = case[[2L]]), function(datasources, sent) {
+        reference <<- ds.omop.dp.release("analysis_table", case[[1L]], datasources)
+      })
+    .with_dp_backend(list(a = .dp_status(), b = .dp_legacy_status()),
+      list(a = case[[2L]], b = .dp_as_legacy_release(case[[2L]])),
+      function(datasources, sent) {
+        expect_warning(value <- ds.omop.dp.release(
+          "analysis_table", case[[1L]], datasources
+        ), "Legacy DP server 'b'")
+        expect_identical(value$pooled, reference$pooled)
+        expect_identical(value$meta$harmonization, reference$meta$harmonization)
+      })
+  }
+})
