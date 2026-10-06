@@ -19,10 +19,21 @@ helpers, this function never returns a partial federation: each requested
 node must provide a well-formed status.
 }
 \details{
-The service exposes one fixed per-semantic-release contract. It has no query
-quota or history-dependent admission state: an exact authenticated canonical
-lineage and typed statistic always select the same deterministic noise draw.
-Epsilon, the semantic privacy epoch and the secret root remain server-owned.
+Since dsOMOP 2.7.1, the v3 service reports history-dependent first-answer
+binding: \code{persistent_state = "noise_root_and_release_bindings"},
+\code{release_binding = "snapshot_first_answer_v1"}, and
+\code{service_capacity = "public_identity_reservations_v1"}.
+It retains one complete answer per public request, snapshot and privacy
+epoch until the custodian rotates the snapshot or epoch. New public
+identities reserve storage; existing identities remain readable at capacity.
+There is no lifetime privacy budget or privacy call quota. Epsilon, the
+privacy epoch and the secret root remain server-owned. Legacy v2 status is
+inspectable and printed as legacy. Release calls require v3 by default.
+During a staged upgrade, \code{options(dsomop.dp.allow_legacy_servers = TRUE)}
+permits v2 releases, including mixed federations, with a warning naming each
+legacy server. The old contract has no first-answer binding: an unrotated
+data refresh can reveal whether a released statistic changed; see
+isglobal-brge/dsOMOP#20. The release result records every site's contract.
 Eligible input frames must also carry the server's authenticated
 person-local provenance capsule; a copied class or plain attribute is not
 sufficient.

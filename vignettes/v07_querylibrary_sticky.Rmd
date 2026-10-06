@@ -24,11 +24,27 @@ submits the upstream SQL nor constructs a data-dependent query. Preparation and
 release remain two explicit, typed steps.
 
 The client cannot choose epsilon, seed, nonce, privacy epoch or rerolls. Actual
-releases use the single server-owned contract reported by
+releases default to the server-owned contract reported by
 `ds.omop.dp.status()`: `sticky_person_bounded_discrete_laplace_per_release_v1`
-under `fixed_per_release_semantic_prf_v1`. It provides deterministic sticky
-replay and person-level contribution bounds without a query quota or
-history-dependent admission state.
+under `fixed_per_release_snapshot_first_answer_v1` (server 2.7.1, client
+2.7.4). It permanently retains one complete first answer per public request,
+snapshot and epoch, even after any size of unrotated source update. Custodian
+rotation restores freshness; new requests need not represent the same source
+version as previously answered requests. Person-level contribution bounds and
+first-release calibration are unchanged. Public new identities reserve storage;
+existing identities remain readable at capacity. There is no lifetime privacy
+budget or privacy call quota. Legacy v2 services remain inspectable and are
+refused for release by default. During site-by-site upgrades,
+`options(dsomop.dp.allow_legacy_servers = TRUE)` permits legacy and mixed v2/v3
+releases, including through `ds.omop.querylibrary.sticky.release()`. Every
+legacy server produces a warning: no first-answer binding: an unrotated data
+refresh can reveal whether a released statistic changed; see
+isglobal-brge/dsOMOP#20. First-answer replay applies only to the v3 sites.
+Results retain each site's protocol and contract in
+`meta$privacy$per_site_contract`, identify `legacy_servers` and
+`mixed_contracts`, and retain warnings in `meta$warnings`, even for pooled-only
+output. Shared contract fields that differ across sites are `NULL`. Return
+the option to its default `FALSE` after the federation upgrades.
 
 ```{r catalog}
 catalog <- omop_querylibrary_sticky_catalog()

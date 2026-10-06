@@ -117,10 +117,11 @@ The dedicated release service is enabled by default on dsOMOP servers since
 `DSOMOP_DP_ENABLED=0`. Initialize the OMOP resource before inspecting its DP
 contract: unconfigured servers derive domain and snapshot identifiers from the
 resource and CDM source metadata and require persistent private state storage.
-Custodians must advance `dsomop.dp.privacy_epoch` when data change without metadata
-changes. Earlier server versions require explicit enablement. Inspect the
-contract and request a typed person-bounded statistic from an eligible server-side plan or
-reviewed loader output:
+Custodians advance the public snapshot or `dsomop.dp.privacy_epoch` and restart
+sessions for each planned publication, including no-op refreshes. Earlier server
+versions require explicit enablement. Inspect the contract and request a typed
+person-bounded statistic from an eligible server-side plan or reviewed loader
+output:
 
 ```R
 ds.omop.dp.status(conns)
@@ -141,14 +142,72 @@ result <- ds.omop.dp.release(
 The client cannot choose epsilon, a seed, nonce, epoch or reroll. Domains,
 date breaks, clipping bounds and longitudinal contribution caps are public
 parts of the request; fixed per-release epsilon and sticky identity remain
-server-owned. The server derives each draw deterministically from its persistent
-secret root and the authenticated canonical semantic release, with no call
-counter or query quota. See `?omop_privacy` and `?ds.omop.dp.release` for the
-seven supported primitives and their reducers. Before any release, the client
+server-owned. Since server 2.7.1, one permanent first answer is stored per public
+request, snapshot and privacy epoch. Every later valid request returns the same
+complete response, even after one or arbitrarily many persons change. Answers
+remain stale until the custodian rotates the snapshot or epoch and restarts
+sessions. Different requests first answered at different times can reflect
+different source versions; they are not a coherent database snapshot.
+
+Client 2.7.4 defaults to requiring the v3
+`fixed_per_release_snapshot_first_answer_v1` contract for releases. Status reports
+`history_dependent = TRUE`, `persistent_state = "noise_root_and_release_bindings"`,
+`release_binding = "snapshot_first_answer_v1"`,
+`privacy_call_quota = "none"`, and
+`service_capacity = "public_identity_reservations_v1"`. Older v2 status remains
+inspectable and is printed as legacy. Releases from legacy sites are refused
+with an upgrade message unless the analyst explicitly sets:
+
+```r
+options(dsomop.dp.allow_legacy_servers = TRUE) # default FALSE
+```
+
+This transition option supports federations upgrading site by site, including
+mixed v2/v3 releases. Each legacy server produces a warning: **no first-answer
+binding: an unrotated data refresh can reveal whether a released statistic
+changed; see isglobal-brge/dsOMOP#20**. Shared mechanism, provenance, public
+harmonization and payload checks still apply. Every result records each site's
+protocol and contract in `result$meta$privacy$per_site_contract`, plus
+`legacy_servers` and `mixed_contracts`, even with `type = "combine"`. Contract
+fields that differ across sites are `NULL` in the shared privacy metadata;
+consult the per-site map. The warnings are also saved in `result$meta$warnings`.
+Return the option to `FALSE` once every site has upgraded.
+
+The server derives a first answer using the existing persistent root, private
+bounded-statistic fingerprint and calibrated mechanism. Later successful replies
+add no payload observation for the same identity and public admission schedule.
+This is no full temporal transcript DP guarantee: distinct requests and epochs,
+private-triggered rotation, validation failures and timing remain separate.
+There is no lifetime privacy budget or call counter. See `?omop_privacy` and
+`?ds.omop.dp.release` for the seven supported primitives and their reducers. Before any release, the client
 refuses a federated request through two connections that report either the same
 `noise_domain_id` or the same server-owned logical `domain`. This prevents one
 logical privacy node from being pooled twice, including through connections
 that expose different noise material.
+
+Fresh state and upgrades from 2.7.0 initialize the release store automatically
+on first DP use, recording its UUID in the owner-only `release-store-id` pin
+file in the state root, outside `release-bindings/`. Explicit setup with
+`omopInitializeReleaseStore()` remains available. Custodians should additionally
+pin the UUID outside `DSOMOP_STATE_DIR`; see the paired
+[dsOMOP README](https://github.com/isglobal-brge/dsOMOP#sticky-noise) for
+configuration. An externally configured UUID takes precedence and must match
+the local pin and store header. A retained local or external pin detects a
+missing store. Without an external UUID, deleting the whole state root is
+equivalent to a fresh install: the normal file-backed setup creates a new noise
+root and release domain; an injected root remains externally controlled.
+Deleting both the store and its local pin while retaining the root is a
+residual that only external pinning prevents.
+Retain the root and authenticated bindings together, including with injected
+roots and across replicas. Back up and restore the complete consistent state
+with workers stopped; whole-state rollback prevention is an operational
+assumption. Lost or corrupt established state fails closed and cannot be
+repaired by deleting the store or replacing the noise root. Storage reserves a
+public maximum per new request, defaults to 1 GiB via
+`dsomop.dp.release_store_bytes`, and never evicts bindings. Capacity can be
+increased without changing answers; previously admitted requests remain
+readable when new identities are refused. These credits limit service storage,
+not epsilon expenditure.
 
 ## Current boundaries
 
@@ -178,7 +237,7 @@ possible relational or longitudinal estimand. In particular:
 - the local Query Library is curated and incomplete. The dedicated privacy path
   currently supports seven person-bounded sticky-noise primitives. Its public
   guarantee is `sticky_person_bounded_discrete_laplace_per_release_v1`, under
-  the `fixed_per_release_semantic_prf_v1` contract. Eligible inputs carry
+  the `fixed_per_release_snapshot_first_answer_v1` contract. Eligible inputs carry
   authenticated semantic lineage and deterministic person-level contribution
   bounds. The
   pinned upstream snapshot is exhaustively classified as 129 executable bounded

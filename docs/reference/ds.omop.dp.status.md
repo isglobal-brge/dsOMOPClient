@@ -1,8 +1,8 @@
 # Inspect sticky privacy-release services
 
 Queries every selected DataSHIELD server. Unlike permissive exploration
-helpers, this function never returns a partial federation: each
-requested node must provide a well-formed status.
+helpers, this function never returns a partial federation: each requested
+node must provide a well-formed status.
 
 ## Usage
 
@@ -19,26 +19,39 @@ ds.omop.dp.status(datasources = NULL)
 
 ## Value
 
-A complete named list of per-server DP status records.
+An `omop_dp_status` named list of per-server DP status records.
 
 ## Details
 
-`"bounded_accounted"` uses a summable, non-blocking nominal allocation
-and may eventually return data-independent degraded releases. The
-compatibility mode `"sticky_unbounded"` remains sticky for an exact
-authenticated canonical lineage and typed statistic, but does not
-identify every mathematically equivalent alternate query construction
-and does not bound global composition over unlimited distinct queries.
-The `privacy_guarantee` field names the implemented sticky,
-person-bounded mechanism and nominal accounting contract. Eligible input
-frames must also carry the server's authenticated person-local
-provenance capsule; a copied class or plain attribute is not sufficient.
+Since dsOMOP 2.7.1, the v3 service reports history-dependent first-answer
+binding: `persistent_state = "noise_root_and_release_bindings"`,
+`release_binding = "snapshot_first_answer_v1"`, and
+`service_capacity = "public_identity_reservations_v1"`.
+It retains one complete answer per public request, snapshot and privacy
+epoch until the custodian rotates the snapshot or epoch. New public
+identities reserve storage; existing identities remain readable at capacity.
+There is no lifetime privacy budget or privacy call quota. Epsilon, the
+privacy epoch and the secret root remain server-owned. Legacy v2 status is
+inspectable and printed as legacy. Release calls require v3 by default.
+During a staged upgrade, `options(dsomop.dp.allow_legacy_servers = TRUE)`
+permits v2 releases, including mixed federations, with a warning naming each
+legacy server. The old contract has no first-answer binding: an unrotated
+data refresh can reveal whether a released statistic changed; see
+isglobal-brge/dsOMOP#20. The release result records every site's contract.
+Eligible input frames must also carry the server's authenticated
+person-local provenance capsule; a copied class or plain attribute is not
+sufficient.
+Since server 2.7.0, `exclusive = TRUE` is the default policy. When
+both `enabled` and `exclusive` are true, standard population
+statistics are refused; use `ds.omop.dp.release`. Only the
+custodian can opt out with `dsomop.dp.exclusive = FALSE`. A missing
+`exclusive` field on older servers is treated as `FALSE`.
 Each status contains the custodian's public `snapshot_id`. Federated
-sites may legitimately report different snapshot identifiers. Release
-preflight rejects duplicate noise domains, ledgers, or domain-scoped
-ledger authentication keys so the same logical privacy node cannot be
-pooled twice, including while replicas converge on a rotated noise root
-or when durable state was accidentally forked.
+sites may legitimately report different snapshot identifiers.
+Release preflight rejects either a repeated `noise_domain_id` or a
+repeated server-owned logical `domain`. The second check also prevents
+one logical privacy node from being pooled twice when its connections expose
+different noise material.
 
 ## Examples
 
