@@ -363,11 +363,30 @@ adds authenticated person-local lineage, deterministic contribution bounds,
 and sticky noise. It exposes one descriptive contract,
 `privacy_guarantee =
 "sticky_person_bounded_discrete_laplace_per_release_v1"` with
-`privacy_contract = "fixed_per_release_semantic_prf_v1"`. The standard
+`privacy_contract = "fixed_per_release_snapshot_first_answer_v1"`. The standard
 `nfilter.noise` option does not supply these properties on its own. Every
-semantic release uses fixed server-owned epsilon and delta zero; requests are
-not admitted or refused according to prior use, and exact repeats select the
-same deterministic draw. Federated preflight rejects both a repeated
+first answer uses fixed server-owned epsilon and delta zero. Its complete
+response is permanently retained per public request, snapshot and epoch;
+subsequent valid requests replay it even after arbitrarily large unrotated data
+changes. Only custodian rotation restores freshness. New requests can reflect a
+different source version from older answers, so there is no coherent snapshot
+guarantee across requests. Public new identities reserve storage; existing
+identities stay readable at capacity. There is no lifetime privacy budget or
+privacy call quota, and no full temporal transcript DP claim covering distinct
+requests, private-triggered rotation, admission failures or timing. Client 2.7.4
+requires server 2.7.1's v3 contract for releases by default. It explicitly
+recognizes v2 as legacy during status inspection. During a staged upgrade,
+`options(dsomop.dp.allow_legacy_servers = TRUE)` permits legacy and mixed v2/v3
+releases. This option defaults to `FALSE`. Each legacy server is named in a
+warning: no first-answer binding: an unrotated data refresh can reveal whether
+a released statistic changed; see isglobal-brge/dsOMOP#20. A result always keeps
+the per-server protocol and contract in `meta$privacy$per_site_contract`, plus
+`legacy_servers`, `mixed_contracts` and `meta$warnings`, including pooled-only
+results. Shared contract fields that differ across sites are `NULL`; consult
+the per-site map. All other preflight and payload checks remain in force.
+Return the option to `FALSE` after the last site upgrades.
+
+Federated preflight rejects both a repeated
 `noise_domain_id` and a repeated server-owned logical `domain`, so one logical
 privacy node cannot be pooled twice under either the same or different noise
 material.
