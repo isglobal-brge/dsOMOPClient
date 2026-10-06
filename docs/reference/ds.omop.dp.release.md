@@ -5,7 +5,13 @@ from every node, verifies the returned mechanism contract, and optionally
 pools only the noisy sufficient statistics. A failure at any site stops the
 call without publishing another site's value. Servers may already have
 committed their first answer; retrying the identical request returns that
-complete answer. The v3 contract requires dsOMOP 2.7.1 or later.
+complete answer. The default v3 contract requires dsOMOP 2.7.1 or later.
+For a staged upgrade only, the client option
+`dsomop.dp.allow_legacy_servers` (default `FALSE`) can be set to
+`TRUE` to permit legacy v2 servers, including mixed federations. Every
+legacy server is named in a warning: no first-answer binding: an unrotated
+data refresh can reveal whether a released statistic changed; see
+isglobal-brge/dsOMOP#20. The first-answer semantics below apply to v3 sites.
 Public request identity is server-owned and binds authenticated canonical
 dataset/recipe lineage, the typed statistic and mechanism contract, public
 `snapshot_id`, and privacy epoch. The first answer retains the private
@@ -79,6 +85,12 @@ A `dsomop_result`. The `meta$privacy` record reports the
   nodes are modeled as separate populations, so the combined epsilon and
   delta are the maxima of their per-site values. Multi-site results also
   carry `meta$harmonization` when non-count values were pooled.
+  `meta$privacy$per_site_contract` records each server's protocol and
+  state contract, including for `type = "combine"`.
+  `legacy_servers` names all v2 sites and `mixed_contracts` reports
+  whether v2 and v3 were combined. Shared contract fields that differ across
+  sites are `NULL`; consult `per_site_contract` for their values.
+  Legacy warnings are also retained in `meta$warnings`.
 
 ## Details
 

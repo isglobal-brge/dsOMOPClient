@@ -518,9 +518,12 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' identities reserve storage; existing identities remain readable at capacity.
 #' There is no lifetime privacy budget or privacy call quota. Epsilon, the
 #' privacy epoch and the secret root remain server-owned. Legacy v2 status is
-#' inspectable and printed as legacy; release calls require v3 and reject
-#' mixed contracts. The old contract has the unrotated-refresh equality
-#' residual and does not provide first-answer binding.
+#' inspectable and printed as legacy. Release calls require v3 by default.
+#' During a staged upgrade, \code{options(dsomop.dp.allow_legacy_servers = TRUE)}
+#' permits v2 releases, including mixed federations, with a warning naming each
+#' legacy server. The old contract has no first-answer binding: an unrotated
+#' data refresh can reveal whether a released statistic changed; see
+#' isglobal-brge/dsOMOP#20. The release result records every site's contract.
 #' Eligible input frames must also carry the server's authenticated
 #' person-local provenance capsule; a copied class or plain attribute is not
 #' sufficient.
@@ -1172,7 +1175,13 @@ print.omop_dp_status <- function(x, ...) {
 #' pools only the noisy sufficient statistics. A failure at any site stops the
 #' call without publishing another site's value. Servers may already have
 #' committed their first answer; retrying the identical request returns that
-#' complete answer. The v3 contract requires dsOMOP 2.7.1 or later.
+#' complete answer. The default v3 contract requires dsOMOP 2.7.1 or later.
+#' For a staged upgrade only, the client option
+#' \code{dsomop.dp.allow_legacy_servers} (default \code{FALSE}) can be set to
+#' \code{TRUE} to permit legacy v2 servers, including mixed federations. Every
+#' legacy server is named in a warning: no first-answer binding: an unrotated
+#' data refresh can reveal whether a released statistic changed; see
+#' isglobal-brge/dsOMOP#20. The first-answer semantics below apply to v3 sites.
 #' Public request identity is server-owned and binds authenticated canonical
 #' dataset/recipe lineage, the typed statistic and mechanism contract, public
 #' \code{snapshot_id}, and privacy epoch. The first answer retains the private
@@ -1221,6 +1230,12 @@ print.omop_dp_status <- function(x, ...) {
 #'   nodes are modeled as separate populations, so the combined epsilon and
 #'   delta are the maxima of their per-site values. Multi-site results also
 #'   carry \code{meta$harmonization} when non-count values were pooled.
+#'   \code{meta$privacy$per_site_contract} records each server's protocol and
+#'   state contract, including for \code{type = "combine"}.
+#'   \code{legacy_servers} names all v2 sites and \code{mixed_contracts} reports
+#'   whether v2 and v3 were combined. Shared contract fields that differ across
+#'   sites are \code{NULL}; consult \code{per_site_contract} for their values.
+#'   Legacy warnings are also retained in \code{meta$warnings}.
 #' @examples
 #' \dontrun{
 #' p <- omop_privacy("count")
