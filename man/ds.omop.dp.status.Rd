@@ -28,9 +28,12 @@ epoch until the custodian rotates the snapshot or epoch. New public
 identities reserve storage; existing identities remain readable at capacity.
 There is no lifetime privacy budget or privacy call quota. Epsilon, the
 privacy epoch and the secret root remain server-owned. Legacy v2 status is
-inspectable and printed as legacy; release calls require v3 and reject
-mixed contracts. The old contract has the unrotated-refresh equality
-residual and does not provide first-answer binding.
+inspectable and printed as legacy. Release calls require v3 by default.
+During a staged upgrade, \code{options(dsomop.dp.allow_legacy_servers = TRUE)}
+permits v2 releases, including mixed federations, with a warning naming each
+legacy server. The old contract has no first-answer binding: an unrotated
+data refresh can reveal whether a released statistic changed; see
+isglobal-brge/dsOMOP#20. The release result records every site's contract.
 Eligible input frames must also carry the server's authenticated
 person-local provenance capsule; a copied class or plain attribute is not
 sufficient.

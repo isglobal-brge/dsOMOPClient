@@ -5,11 +5,19 @@
   Validate the persistent binding and public storage-capacity status fields,
   and include them in federation compatibility and result metadata.
 - Keep legacy v2 status inspectable and explicitly labelled as old. Release
-  calls require the new contract and refuse old or mixed federations before
-  requesting payloads; older servers do not provide first-answer binding.
+  calls require the new contract by default. The opt-in client option
+  `dsomop.dp.allow_legacy_servers = TRUE` supports staged upgrades, including
+  mixed v2/v3 federations, with a warning naming every legacy server: no
+  first-answer binding: an unrotated data refresh can reveal whether a released
+  statistic changed; see isglobal-brge/dsOMOP#20. Results retain each server's
+  contract and legacy warnings, including pooled-only views; shared contract
+  fields that differ across sites are `NULL`. All mechanism, provenance,
+  harmonization and per-site payload checks remain in force.
 - Document permanent first answers, stale-until-custodian-rotation semantics,
-  persistent state recovery and the default 1 GiB public reservation capacity.
-  All seven primitives, sensitivities, epsilon/delta and pooling remain unchanged.
+  automatic server-store initialization with a local identity pin, recommended
+  external pinning, persistent state recovery and the default 1 GiB public
+  reservation capacity. All seven primitive calculations, sensitivities,
+  epsilon/delta and pooling formulas remain unchanged.
 
 # dsOMOPClient 2.7.3
 
