@@ -48,17 +48,18 @@ Performs a complete-federation preflight, requests the same typed release
 from every node, verifies the returned mechanism contract, and optionally
 pools only the noisy sufficient statistics. A failure at any site stops the
 call without publishing another site's value. Servers may already have
-committed their sticky release; retrying the identical request returns the
-same noise rather than rerolling it.
-Sticky release identity is server-owned and bound to authenticated canonical
-dataset/recipe lineage, the typed statistic, and the custodian-owned public
-\code{snapshot_id}. A separate private fingerprint binds the bounded
-sufficient statistic into the deterministic draw without exposing it.
-The analyst's \code{population_id} compatibility label and server symbol
-alias do not participate, so changing either does not request or guarantee
-fresh noise. The custodian must rotate
-\code{snapshot_id} when the protected ETL snapshot changes; that controlled
-rotation intentionally creates a new release identity.
+committed their first answer; retrying the identical request returns that
+complete answer. The v3 contract requires dsOMOP 2.7.1 or later.
+Public request identity is server-owned and binds authenticated canonical
+dataset/recipe lineage, the typed statistic and mechanism contract, public
+\code{snapshot_id}, and privacy epoch. The first answer retains the private
+bounded-statistic fingerprint in its noise context. Valid later requests
+return the stored answer without comparing fingerprints or re-noising,
+even after any size of unrotated source update. The analyst's
+\code{population_id} compatibility label and server symbol alias do not
+participate. Only custodian snapshot or epoch rotation restores freshness.
+Answers can remain stale indefinitely, and different requests first answered
+at different times need not represent one coherent source snapshot.
 For multiple sites, pooling a non-count statistic additionally requires one
 compatible public dsOMOP harmonization contract for age grids, date
 semantics, calendar-day granularity, UTC handling, week start, and
@@ -69,10 +70,13 @@ Every input must have been produced by an audited person-local server path
 and carry its authenticated content-bound provenance capsule.
 }
 \details{
-Every release uses the fixed epsilon reported by its server and delta zero.
-There is no query quota, call counter or history-dependent admission check.
-Composition metadata describes only the participating sites in the current
-federated release.
+Every first answer uses the fixed epsilon reported by its server and delta
+zero. Public new identities reserve persistent storage; existing identities
+remain readable at capacity. There is no lifetime privacy budget or privacy
+call quota. Composition metadata describes only the participating sites in
+the current federated release. First-answer replay closes the successful
+within-identity temporal equality selection; no full temporal transcript
+DP or timing, admission, or private-triggered rotation guarantee is claimed.
 }
 \examples{
 \dontrun{

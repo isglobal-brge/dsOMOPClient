@@ -3,10 +3,14 @@
 # server-owned sticky-noise API.  The client deliberately has no seed, nonce,
 # epsilon, epoch, reset, or force controls.
 
-.DP_PROTOCOL <- "dsomop-dp-release-v2"
+.DP_PROTOCOL <- "dsomop-dp-release-v3"
+.DP_LEGACY_PROTOCOL <- "dsomop-dp-release-v2"
 .DP_PRIVACY_GUARANTEE <-
   "sticky_person_bounded_discrete_laplace_per_release_v1"
-.DP_PRIVACY_CONTRACT <- "fixed_per_release_semantic_prf_v1"
+.DP_PRIVACY_CONTRACT <- "fixed_per_release_snapshot_first_answer_v1"
+.DP_LEGACY_PRIVACY_CONTRACT <- "fixed_per_release_semantic_prf_v1"
+.DP_RELEASE_BINDING <- "snapshot_first_answer_v1"
+.DP_SERVICE_CAPACITY <- "public_identity_reservations_v1"
 
 .dp_scalar_character <- function(value, name, nullable = FALSE) {
   if (is.null(value) && nullable) return(NULL)
@@ -133,7 +137,10 @@
 #' absent: epsilon, seeds, nonces, and privacy epochs are owned by each data
 #' custodian and cannot be supplied by the analyst. Every accepted semantic
 #' release uses the server's fixed per-release epsilon and deterministic sticky
-#' noise; there is no history-dependent state or call counter.
+#' noise. Since dsOMOP 2.7.1, the first complete answer is retained permanently
+#' for each public request, snapshot and privacy epoch. Valid repeats return
+#' that answer even if the underlying data change. Only custodian rotation
+#' restores freshness; there is no lifetime privacy budget or call counter.
 #'
 #' Repeated longitudinal records are reduced or capped per person. Public
 #' categorical levels are sorted canonically. Numeric histogram breaks may be
@@ -419,6 +426,28 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
   result[expected]
 }
 
+.dp_first_answer_contract <- function(status, server) {
+  expected <- list(
+    history_dependent = TRUE,
+    privacy_call_quota = "none",
+    persistent_state = "noise_root_and_release_bindings",
+    release_binding = .DP_RELEASE_BINDING,
+    service_capacity = .DP_SERVICE_CAPACITY
+  )
+  missing <- setdiff(names(expected), names(status))
+  if (length(missing) > 0L) {
+    stop("Server '", server, "' omitted DP contract field(s): ",
+         paste(missing, collapse = ", "), ".", call. = FALSE)
+  }
+  for (field in names(expected)) {
+    if (!identical(status[[field]], expected[[field]])) {
+      stop("Server '", server, "' returned an incoherent first-answer DP ",
+           "contract field '", field, "'.", call. = FALSE)
+    }
+  }
+  invisible(TRUE)
+}
+
 .dp_status_shape <- function(status, server) {
   if (!is.list(status) || is.null(names(status)) || anyNA(names(status)) ||
       anyDuplicated(names(status))) {
@@ -464,6 +493,9 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
     stop("Server '", server, "' returned an invalid public snapshot_id.",
          call. = FALSE)
   }
+  if (identical(status$protocol, .DP_PROTOCOL)) {
+    .dp_first_answer_contract(status, server)
+  }
   status
 }
 
@@ -473,10 +505,18 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' helpers, this function never returns a partial federation: each requested
 #' node must provide a well-formed status.
 #'
-#' The service exposes one fixed per-semantic-release contract. It has no query
-#' quota or history-dependent admission state: an exact authenticated canonical
-#' lineage and typed statistic always select the same deterministic noise draw.
-#' Epsilon, the semantic privacy epoch and the secret root remain server-owned.
+#' Since dsOMOP 2.7.1, the v3 service reports history-dependent first-answer
+#' binding: \code{persistent_state = "noise_root_and_release_bindings"},
+#' \code{release_binding = "snapshot_first_answer_v1"}, and
+#' \code{service_capacity = "public_identity_reservations_v1"}.
+#' It retains one complete answer per public request, snapshot and privacy
+#' epoch until the custodian rotates the snapshot or epoch. New public
+#' identities reserve storage; existing identities remain readable at capacity.
+#' There is no lifetime privacy budget or privacy call quota. Epsilon, the
+#' privacy epoch and the secret root remain server-owned. Legacy v2 status is
+#' inspectable and printed as legacy; release calls require v3 and reject
+#' mixed contracts. The old contract has the unrotated-refresh equality
+#' residual and does not provide first-answer binding.
 #' Eligible input frames must also carry the server's authenticated
 #' person-local provenance capsule; a copied class or plain attribute is not
 #' sufficient.
@@ -522,7 +562,12 @@ print.omop_dp_status <- function(x, ...) {
     status <- x[[server]]
     cat("  ", server, ": enabled=", status$enabled,
         " ready=", status$ready,
-        " exclusive=", status$exclusive %||% FALSE, "\n", sep = "")
+        " exclusive=", status$exclusive %||% FALSE,
+        if (identical(status$protocol, .DP_LEGACY_PROTOCOL)) {
+          " contract=legacy_v2 (no first-answer binding)"
+        } else if (identical(status$protocol, .DP_PROTOCOL)) {
+          paste0(" binding=", status$release_binding %||% "unavailable")
+        } else "", "\n", sep = "")
   }
   invisible(x)
 }
@@ -530,6 +575,13 @@ print.omop_dp_status <- function(x, ...) {
 .dp_status_contract <- function(statuses, privacy) {
   for (server in names(statuses)) {
     status <- statuses[[server]]
+    if (identical(status$protocol, .DP_LEGACY_PROTOCOL) &&
+        identical(status$privacy_contract, .DP_LEGACY_PRIVACY_CONTRACT)) {
+      stop("Server '", server, "' provides the legacy v2 DP contract without ",
+           "first-answer binding. Upgrade to dsOMOP 2.7.1 or later before ",
+           "requesting releases; old and new contracts cannot be pooled.",
+           call. = FALSE)
+    }
     if (!identical(status$enabled, TRUE) || !identical(status$ready, TRUE) ||
         !identical(status$sticky_noise, TRUE)) {
       stop("Server '", server, "' does not provide an enabled, ready sticky ",
@@ -544,7 +596,8 @@ print.omop_dp_status <- function(x, ...) {
     "release_epsilon", "release_delta", "max_levels", "max_contributions",
     "numeric_grid", "supported_statistics", "longitudinal_contract",
     "privacy_epoch", "domain", "noise_domain_id", "history_dependent",
-    "privacy_call_quota", "persistent_state"
+    "privacy_call_quota", "persistent_state", "release_binding",
+    "service_capacity"
   )
   for (server in names(statuses)) {
     missing <- required_fields[
@@ -558,7 +611,8 @@ print.omop_dp_status <- function(x, ...) {
       "protocol", "canonical_protocol", "mechanism", "sampler",
       "privacy_guarantee", "provenance_protocol", "adjacency",
       "privacy_contract", "longitudinal_contract", "domain",
-      "noise_domain_id", "privacy_call_quota", "persistent_state"
+      "noise_domain_id", "privacy_call_quota", "persistent_state",
+      "release_binding", "service_capacity"
     )
     if (any(!vapply(statuses[[server]][character_fields], function(value) {
       is.character(value) && length(value) == 1L && !is.na(value) &&
@@ -619,13 +673,11 @@ print.omop_dp_status <- function(x, ...) {
       stop("Server '", server, "' does not support the requested bounded DP ",
            "statistic.", call. = FALSE)
     }
-    if (!identical(statuses[[server]]$person_local_provenance_required, TRUE) ||
-        !identical(statuses[[server]]$history_dependent, FALSE) ||
-        !identical(statuses[[server]]$privacy_call_quota, "none") ||
-        !identical(statuses[[server]]$persistent_state, "noise_root_only")) {
-      stop("Server '", server, "' returned an incoherent fixed per-release DP ",
-           "contract.", call. = FALSE)
+    if (!identical(statuses[[server]]$person_local_provenance_required, TRUE)) {
+      stop("Server '", server, "' returned an incoherent first-answer DP ",
+           "provenance contract.", call. = FALSE)
     }
+    .dp_first_answer_contract(statuses[[server]], server)
   }
   noise_domains <- vapply(
     statuses, `[[`, character(1L), "noise_domain_id"
@@ -654,7 +706,7 @@ print.omop_dp_status <- function(x, ...) {
     "privacy_guarantee", "person_local_provenance_required",
     "provenance_protocol", "adjacency", "privacy_contract",
     "history_dependent", "privacy_call_quota", "persistent_state",
-    "longitudinal_contract"
+    "release_binding", "service_capacity", "longitudinal_contract"
   )
   for (field in common_fields) {
     values <- lapply(statuses, `[[`, field)
@@ -1083,17 +1135,18 @@ print.omop_dp_status <- function(x, ...) {
 #' from every node, verifies the returned mechanism contract, and optionally
 #' pools only the noisy sufficient statistics. A failure at any site stops the
 #' call without publishing another site's value. Servers may already have
-#' committed their sticky release; retrying the identical request returns the
-#' same noise rather than rerolling it.
-#' Sticky release identity is server-owned and bound to authenticated canonical
-#' dataset/recipe lineage, the typed statistic, and the custodian-owned public
-#' \code{snapshot_id}. A separate private fingerprint binds the bounded
-#' sufficient statistic into the deterministic draw without exposing it.
-#' The analyst's \code{population_id} compatibility label and server symbol
-#' alias do not participate, so changing either does not request or guarantee
-#' fresh noise. The custodian must rotate
-#' \code{snapshot_id} when the protected ETL snapshot changes; that controlled
-#' rotation intentionally creates a new release identity.
+#' committed their first answer; retrying the identical request returns that
+#' complete answer. The v3 contract requires dsOMOP 2.7.1 or later.
+#' Public request identity is server-owned and binds authenticated canonical
+#' dataset/recipe lineage, the typed statistic and mechanism contract, public
+#' \code{snapshot_id}, and privacy epoch. The first answer retains the private
+#' bounded-statistic fingerprint in its noise context. Valid later requests
+#' return the stored answer without comparing fingerprints or re-noising,
+#' even after any size of unrotated source update. The analyst's
+#' \code{population_id} compatibility label and server symbol alias do not
+#' participate. Only custodian snapshot or epoch rotation restores freshness.
+#' Answers can remain stale indefinitely, and different requests first answered
+#' at different times need not represent one coherent source snapshot.
 #' For multiple sites, pooling a non-count statistic additionally requires one
 #' compatible public dsOMOP harmonization contract for age grids, date
 #' semantics, calendar-day granularity, UTC handling, week start, and
@@ -1103,10 +1156,13 @@ print.omop_dp_status <- function(x, ...) {
 #' Every input must have been produced by an audited person-local server path
 #' and carry its authenticated content-bound provenance capsule.
 #'
-#' Every release uses the fixed epsilon reported by its server and delta zero.
-#' There is no query quota, call counter or history-dependent admission check.
-#' Composition metadata describes only the participating sites in the current
-#' federated release.
+#' Every first answer uses the fixed epsilon reported by its server and delta
+#' zero. Public new identities reserve persistent storage; existing identities
+#' remain readable at capacity. There is no lifetime privacy budget or privacy
+#' call quota. Composition metadata describes only the participating sites in
+#' the current federated release. First-answer replay closes the successful
+#' within-identity temporal equality selection; no full temporal transcript
+#' DP or timing, admission, or private-triggered rotation guarantee is claimed.
 #'
 #' @param x One bare DataSHIELD symbol containing a server-side
 #'   \code{omop.table}.
@@ -1249,6 +1305,8 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     history_dependent = contract$history_dependent,
     privacy_call_quota = contract$privacy_call_quota,
     persistent_state = contract$persistent_state,
+    release_binding = contract$release_binding,
+    service_capacity = contract$service_capacity,
     privacy_epoch = vapply(
       statuses, `[[`, numeric(1L), "privacy_epoch"
     ),

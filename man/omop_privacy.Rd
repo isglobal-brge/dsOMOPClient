@@ -76,7 +76,10 @@ sticky-noise release. Noise parameters and state are deliberately
 absent: epsilon, seeds, nonces, and privacy epochs are owned by each data
 custodian and cannot be supplied by the analyst. Every accepted semantic
 release uses the server's fixed per-release epsilon and deterministic sticky
-noise; there is no history-dependent state or call counter.
+noise. Since dsOMOP 2.7.1, the first complete answer is retained permanently
+for each public request, snapshot and privacy epoch. Valid repeats return
+that answer even if the underlying data change. Only custodian rotation
+restores freshness; there is no lifetime privacy budget or call counter.
 }
 \details{
 Repeated longitudinal records are reduced or capped per person. Public
