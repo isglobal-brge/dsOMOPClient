@@ -1,3 +1,16 @@
+# dsOMOPClient 2.7.4
+
+- Support dsOMOP 2.7.1's v3 snapshot-first-answer contract for
+  [isglobal-brge/dsOMOP#20](https://github.com/isglobal-brge/dsOMOP/issues/20).
+  Validate the persistent binding and public storage-capacity status fields,
+  and include them in federation compatibility and result metadata.
+- Keep legacy v2 status inspectable and explicitly labelled as old. Release
+  calls require the new contract and refuse old or mixed federations before
+  requesting payloads; older servers do not provide first-answer binding.
+- Document permanent first answers, stale-until-custodian-rotation semantics,
+  persistent state recovery and the default 1 GiB public reservation capacity.
+  All seven primitives, sensitivities, epsilon/delta and pooling remain unchanged.
+
 # dsOMOPClient 2.7.3
 
 - Adapt memory-mode plan and recipe execution to dsOMOP 2.7.0's default

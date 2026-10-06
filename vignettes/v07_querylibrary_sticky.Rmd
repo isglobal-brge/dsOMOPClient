@@ -26,9 +26,15 @@ release remain two explicit, typed steps.
 The client cannot choose epsilon, seed, nonce, privacy epoch or rerolls. Actual
 releases use the single server-owned contract reported by
 `ds.omop.dp.status()`: `sticky_person_bounded_discrete_laplace_per_release_v1`
-under `fixed_per_release_semantic_prf_v1`. It provides deterministic sticky
-replay and person-level contribution bounds without a query quota or
-history-dependent admission state.
+under `fixed_per_release_snapshot_first_answer_v1` (server 2.7.1, client
+2.7.4). It permanently retains one complete first answer per public request,
+snapshot and epoch, even after any size of unrotated source update. Custodian
+rotation restores freshness; new requests need not represent the same source
+version as previously answered requests. Person-level contribution bounds and
+first-release calibration are unchanged. Public new identities reserve storage;
+existing identities remain readable at capacity. There is no lifetime privacy
+budget or privacy call quota. Legacy v2 services remain inspectable but cannot
+release through this client or be pooled with the new contract.
 
 ```{r catalog}
 catalog <- omop_querylibrary_sticky_catalog()
