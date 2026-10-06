@@ -6,7 +6,7 @@
     enabled = TRUE,
     ready = TRUE,
     sticky_noise = TRUE,
-    protocol = "dsomop-dp-release-v2",
+    protocol = .DP_PROTOCOL,
     canonical_protocol = "dsomop-dp-canonical-json-v1",
     mechanism = "dsomop-sticky-discrete-laplace-prf-v1",
     sampler = "hmac-inverse-cdf-52bit-v1",
@@ -28,9 +28,11 @@
     max_levels = 100L,
     max_contributions = 10L,
     numeric_grid = 100L,
-    history_dependent = FALSE,
+    history_dependent = TRUE,
     privacy_call_quota = "none",
-    persistent_state = "noise_root_only"
+    persistent_state = "noise_root_and_release_bindings",
+    release_binding = .DP_RELEASE_BINDING,
+    service_capacity = .DP_SERVICE_CAPACITY
   )
   if (!is.null(noise_domain_id)) value$noise_domain_id <- noise_domain_id
   value
@@ -104,7 +106,7 @@
     )
   )
   c(payload, list(
-    protocol = "dsomop-dp-release-v2",
+    protocol = .DP_PROTOCOL,
     mechanism = "dsomop-sticky-discrete-laplace-prf-v1",
     adjacency = "add_remove_person",
     epsilon = epsilon,
@@ -352,7 +354,7 @@ test_that("DP status never publishes a partial federation", {
       expect_identical(value$a$sampler, "hmac-inverse-cdf-52bit-v1")
       expect_identical(value$a$protocol, .DP_PROTOCOL)
       expect_identical(value$a$privacy_contract, .DP_PRIVACY_CONTRACT)
-      expect_false(value$a$history_dependent)
+      expect_true(value$a$history_dependent)
       expect_identical(value$a$privacy_call_quota, "none")
       expect_identical(
         value$a$privacy_guarantee,
@@ -391,7 +393,7 @@ test_that("DP status requires a valid public snapshot identity", {
 test_that("DP status can inspect a coherently disabled server", {
   disabled <- list(
     enabled = FALSE, ready = FALSE, sticky_noise = FALSE,
-    protocol = "dsomop-dp-release-v2",
+    protocol = .DP_PROTOCOL,
     mechanism = "dsomop-sticky-discrete-laplace-prf-v1"
   )
   .with_dp_backend(list(a = disabled), list(a = NULL),
@@ -504,7 +506,7 @@ test_that("DP preflight requires one authenticated provenance protocol", {
       expect_error(
         ds.omop.dp.release("analysis_table", omop_privacy("count"),
                            datasources),
-        "incoherent fixed per-release"
+        "incoherent first-answer"
       )
     })
 
@@ -599,7 +601,7 @@ test_that("preflight requires the implemented release contract", {
   }
 })
 
-test_that("preflight requires a history-free service with no call quota", {
+test_that("preflight requires first-answer state with no privacy call quota", {
   status <- .dp_status()
   status$privacy_call_quota <- "daily"
   statuses <- list(a = status)
@@ -607,16 +609,16 @@ test_that("preflight requires a history-free service with no call quota", {
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     expect_error(
       ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
-      "incoherent fixed per-release"
+      "incoherent first-answer"
     )
   })
 
   status <- .dp_status()
-  status$history_dependent <- TRUE
+  status$history_dependent <- FALSE
   .with_dp_backend(list(a = status), releases, function(datasources, sent) {
     expect_error(
       ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
-      "incoherent fixed per-release"
+      "incoherent first-answer"
     )
   })
 })
@@ -695,7 +697,11 @@ test_that("DP count and histograms pool only noisy cells", {
     expect_identical(value$meta$privacy$composition_scope,
                      "current_federated_release")
     expect_identical(value$meta$privacy$privacy_call_quota, "none")
-    expect_false(value$meta$privacy$history_dependent)
+    expect_true(value$meta$privacy$history_dependent)
+    expect_identical(value$meta$privacy$persistent_state,
+                     "noise_root_and_release_bindings")
+    expect_identical(value$meta$privacy$release_binding, .DP_RELEASE_BINDING)
+    expect_identical(value$meta$privacy$service_capacity, .DP_SERVICE_CAPACITY)
     expect_identical(value$meta$privacy$sampler,
                      "hmac-inverse-cdf-52bit-v1")
     expect_identical(
@@ -1094,4 +1100,83 @@ test_that("federated releases always use parallel cross-site composition", {
                      "parallel_across_sites")
     expect_length(value$meta$warnings, 0L)
   })
+})
+
+
+test_that("v3 status validates the complete first-answer tuple", {
+  fields <- c("history_dependent", "persistent_state", "release_binding",
+              "privacy_call_quota", "service_capacity")
+  for (field in fields) {
+    for (invalid in list(NULL, NA, character(), c("a", "b"), "unknown", 1)) {
+      status <- .dp_status()
+      status[field] <- list(invalid)
+      .with_dp_backend(list(a = status), list(a = NULL),
+        function(datasources, sent) {
+          expect_error(ds.omop.dp.status(datasources),
+                       paste0("incoherent first-answer.*", field))
+          expect_error(
+            ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                               datasources),
+            paste0("incoherent first-answer.*", field)
+          )
+          heads <- vapply(sent$expressions, function(expr) {
+            as.character(expr[[1L]])
+          }, character(1L))
+          expect_false("omopDpReleaseDS" %in% heads)
+        })
+    }
+    status <- .dp_status()
+    status[[field]] <- NULL
+    .with_dp_backend(list(a = status), list(a = NULL),
+      function(datasources, sent) {
+        expect_error(ds.omop.dp.status(datasources),
+                     paste0("omitted DP contract.*", field))
+      })
+  }
+})
+
+test_that("legacy contracts remain inspectable but cannot release or pool", {
+  legacy <- .dp_status()
+  legacy$protocol <- .DP_LEGACY_PROTOCOL
+  legacy$privacy_contract <- .DP_LEGACY_PRIVACY_CONTRACT
+  legacy$history_dependent <- FALSE
+  legacy$persistent_state <- "noise_root_only"
+  legacy$release_binding <- NULL
+  legacy$service_capacity <- NULL
+  for (statuses in list(list(old = legacy),
+                        list(new = .dp_status(), old = legacy))) {
+    .with_dp_backend(statuses, rep(list(NULL), length(statuses)),
+      function(datasources, sent) {
+        inspected <- ds.omop.dp.status(datasources)
+        expect_identical(inspected$old$protocol, .DP_LEGACY_PROTOCOL)
+        expect_false(inspected$old$history_dependent)
+        printed <- paste(capture.output(print(inspected)), collapse = "\n")
+        expect_match(printed, "legacy_v2 (no first-answer binding)",
+                     fixed = TRUE)
+        expect_error(
+          ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                             datasources),
+          "legacy v2.*Upgrade to dsOMOP 2.7.1.*cannot be pooled"
+        )
+        heads <- vapply(sent$expressions, function(expr) {
+          as.character(expr[[1L]])
+        }, character(1L))
+        expect_false("omopDpReleaseDS" %in% heads)
+      })
+  }
+})
+
+test_that("protocol and privacy contract cannot be combined across versions", {
+  status <- .dp_status()
+  status$privacy_contract <- .DP_LEGACY_PRIVACY_CONTRACT
+  .with_dp_backend(list(a = status), list(a = NULL),
+    function(datasources, sent) {
+      expect_error(
+        ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
+        "unsupported DP release contract"
+      )
+      heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
+                      character(1L))
+      expect_false("omopDpReleaseDS" %in% heads)
+    })
 })
