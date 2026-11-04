@@ -1,11 +1,12 @@
 # dsOMOPClient 2.10.0
 
-- Support dsOMOP 2.10.0's seed-only DP binding: servers reporting
+- Support dsOMOP 2.10.0's seed-only DP: servers reporting
   `release_binding = "seed_data_versioned_v1"` (no stored answers; answers
   are deterministic from the server's secret root, the question and the
   data) are accepted for `ds.omop.dp.release()` and the sticky QueryLibrary
-  releases, alone or mixed with first-answer servers. `mixed_contracts` now
-  also reports a mix of bindings. The seed itself stays entirely server-side.
+  releases, alone or mixed with first-answer servers (dsOMOP 2.7.1 to 2.9.x).
+  `mixed_contracts` now also reports such a mix. The seed stays entirely
+  server-side; the client only learns the new contract label.
 
 # dsOMOPClient 2.9.1
 

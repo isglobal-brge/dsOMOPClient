@@ -19,23 +19,21 @@ helpers, this function never returns a partial federation: each requested
 node must provide a well-formed status.
 }
 \details{
-Since dsOMOP 2.10.0 the default v3 binding is seed-only:
+Since dsOMOP 2.10.0 the v3 service is seed-only:
 \code{release_binding = "seed_data_versioned_v1"},
 \code{persistent_state = "noise_root_only"},
 \code{service_capacity = "none"} and \code{history_dependent = FALSE}. Every
 answer is a deterministic function of the server's secret root, the
 question, the protected statistic and a private automatic database version,
 so it is identical after restarts and on every R server sharing the root,
-and a database reload re-draws every answer at once. Custodians can select
-the first-answer binding (dsOMOP 2.7.1 to 2.9.x default), which reports
-history-dependent first-answer binding:
+and a reload that adds rows re-draws every answer at once. Servers 2.7.1 to
+2.9.x report history-dependent first-answer binding instead:
 \code{persistent_state = "noise_root_and_release_bindings"},
 \code{release_binding = "snapshot_first_answer_v1"}, and
-\code{service_capacity = "public_identity_reservations_v1"}.
-It retains one complete answer per public request, snapshot and privacy
-epoch until the custodian rotates the snapshot or epoch. New public
-identities reserve storage; existing identities remain readable at capacity.
-There is no lifetime privacy budget or privacy call quota. Epsilon, the
+\code{service_capacity = "public_identity_reservations_v1"}. They retain one
+complete answer per public request, snapshot and privacy epoch until the
+custodian rotates the snapshot or epoch. Both contracts are accepted, also
+mixed in one federation. There is no lifetime privacy budget or privacy call quota. Epsilon, the
 privacy epoch and the secret root remain server-owned. Legacy v2 status is
 inspectable and printed as legacy. Release calls require v3 by default.
 During a staged upgrade, \code{options(dsomop.dp.allow_legacy_servers = TRUE)}
