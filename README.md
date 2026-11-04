@@ -107,12 +107,21 @@ query library). Connecting, loading tables, filters, concept factors, merges,
 cohorts and dsOMOP's own exploration never use it: since server 2.8.0 they run
 under the standard DataSHIELD disclosure controls only, as before DP was added.
 The community tools are enabled by default; a custodian can disable them with
-`dsomop.tools.enabled = FALSE`. When a custodian sets
-`dsomop.dp.exclusive = TRUE`, those tools release results only through
-`ds.omop.dp.release()`; no client option bypasses the policy or noise.
-`ds.omop.dp.status()` prints each server's exclusivity. (Servers 2.7.x applied
-exclusivity to standard statistics and refused factor discovery; with them, set
-`factor_concepts = FALSE` or upgrade the server.)
+`dsomop.tools.enabled = FALSE`. Since server 2.9.0 their protection is
+automatic (`dsomop.tools.mode = "auto"`, nothing to configure): outputs that
+the standard DataSHIELD controls protect adequately stay under those controls,
+and the query-library questions about per-person durations, per-person counts
+and demographic distributions are answered as histograms of one value per
+person (or complete public partitions) with sticky DP noise, or under the
+standard controls when a server's DP service is unavailable.
+`ds.omop.analysis.run()` reports each server's protection in
+`meta$protection` and prints it. A custodian can choose `"standard"` (no DP)
+or `"dp"` (DP only; `dsomop.dp.exclusive = TRUE` selects it), in which case
+the tools refuse every standard statistic; no client option bypasses the
+policy or noise. `ds.omop.dp.status()` prints each server's exclusivity and
+tools mode. (Servers 2.7.x applied exclusivity to standard statistics and
+refused factor discovery; with them, set `factor_concepts = FALSE` or upgrade
+the server.)
 
 The dedicated release service is enabled by default on dsOMOP servers since
 2.6.0; custodians can opt out with `dsomop.dp.enabled = FALSE` or

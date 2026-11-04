@@ -342,12 +342,20 @@ results, OHDSI results tables, the analysis catalog and the query library).
 Loading tables, filters, concept factors, merges, cohorts and dsOMOP's own
 statistics never use DP and run under the standard DataSHIELD disclosure
 controls. The community tools are enabled by default (a custodian can set
-`dsomop.tools.enabled = FALSE`). `dsomop.dp.exclusive` defaults to `FALSE`;
-when a custodian sets it, the community tools release results only through
-`ds.omop.dp.release()` with a typed `omop_privacy()` specification on a tool
-output. The DP status printer reports this policy. Servers 2.7.x applied
-exclusivity to standard statistics and refused observed factor-level
-discovery; with those servers set `factor_concepts = FALSE` or upgrade them.
+`dsomop.tools.enabled = FALSE`). Since dsOMOP 2.9.0 the custodial
+`dsomop.tools.mode` decides their protection per question: `"auto"` (default)
+keeps adequately protected outputs under the standard controls and releases
+the query-library per-person durations, per-person counts and demographic
+distributions with sticky DP noise of sensitivity one person (or under the
+standard controls when the DP service is unavailable); `"standard"` uses the
+standard controls only; `"dp"` (also selected by `dsomop.dp.exclusive = TRUE`)
+refuses every standard statistic of the tools. Each analysis result carries
+its protection label in `meta$protection`. Standard outputs are statistical
+disclosure control, not DP, and a session mixing both has no overall DP
+guarantee. The DP status printer reports exclusivity and the tools mode.
+Servers 2.7.x applied exclusivity to standard statistics and refused observed
+factor-level discovery; with those servers set `factor_concepts = FALSE` or
+upgrade them.
 
 ## Limits of the current model
 

@@ -532,7 +532,9 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' 2.8.0, \code{exclusive} is \code{FALSE} by default and, when a custodian
 #' sets it, applies only to the community tools (servers 2.7.x applied it to
 #' standard statistics). A missing \code{exclusive} field on older servers is
-#' treated as \code{FALSE}.
+#' treated as \code{FALSE}. Servers 2.9.0 and later also report
+#' \code{tools_mode}, the community tools' protection mode (\code{"auto"} by
+#' default, \code{"standard"} or \code{"dp"}).
 #' Each status contains the custodian's public \code{snapshot_id}. Federated
 #' sites may legitimately report different snapshot identifiers.
 #' Release preflight rejects either a repeated \code{noise_domain_id} or a
@@ -571,6 +573,9 @@ print.omop_dp_status <- function(x, ...) {
     cat("  ", server, ": enabled=", status$enabled,
         " ready=", status$ready,
         " exclusive=", status$exclusive %||% FALSE,
+        if (is.character(status$tools_mode)) {
+          paste0(" tools_mode=", status$tools_mode)
+        } else "",
         if (identical(status$protocol, .DP_LEGACY_PROTOCOL)) {
           " contract=legacy_v2 (no first-answer binding)"
         } else if (identical(status$protocol, .DP_PROTOCOL)) {

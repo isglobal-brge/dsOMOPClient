@@ -215,11 +215,43 @@ print.dsomop_result <- function(x, ...) {
     print(pooled, ...)
     cat("\n")
   }
+  .print_protection(meta$protection)
   if (length(warns) > 0) {
     cat("Warnings:\n")
     for (w in warns) cat("  - ", w, "\n", sep = "")
   }
   invisible(x)
+}
+
+# Print how each server protected its result (dsOMOP >= 2.9.0 servers).
+.print_protection <- function(protection) {
+  if (!is.list(protection) || length(protection) == 0L) return(invisible())
+  describe <- function(p) {
+    kind <- switch(p$protection,
+      dp = paste0("differential privacy (epsilon ", format(p$epsilon),
+                  ", sensitivity ", format(p$sensitivity), " person)"),
+      standard_fallback = "standard controls (DP unavailable on the server)",
+      standard = "standard DataSHIELD controls",
+      p$protection
+    )
+    kind
+  }
+  cat("Protection:\n")
+  kinds <- vapply(protection, describe, character(1))
+  if (length(unique(kinds)) == 1L) {
+    cat("  all servers: ", kinds[[1L]], "\n", sep = "")
+  } else {
+    for (nm in names(kinds)) cat("  ", nm, ": ", kinds[[nm]], "\n", sep = "")
+  }
+  estimands <- unique(unlist(lapply(protection, `[[`, "estimand")))
+  for (e in estimands) cat("  Estimand: ", e, "\n", sep = "")
+  notes <- unique(unlist(lapply(protection, `[[`, "note")))
+  for (n in notes) cat("  ", n, "\n", sep = "")
+  if (length(unique(vapply(protection, `[[`, "", "protection"))) > 1L) {
+    cat("  Servers differ in protection; pooled values mix them.\n")
+  }
+  cat("\n")
+  invisible()
 }
 
 #' Access dsomop_result elements with backward compatibility

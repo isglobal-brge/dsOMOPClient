@@ -37,7 +37,9 @@ A \code{dsomop_result} from \code{\link{ds.omop.dp.release}}.
 \description{
 Verifies that every selected server advertises the same pinned semantic
 redesign, then delegates to \code{\link{ds.omop.dp.release}}. \code{x} must be
-the single memory-mode output assigned by the Recipe/Plan preparation. The
+a person-local table assigned by a community-tool loader (an assign-mode
+analysis-catalog entry); plan and recipe outputs are refused by the server
+because the core never uses DP. The
 upstream QueryLibrary SQL is never submitted to a server. No client argument
 can control epsilon, seed, nonce, epoch, or rerolls.
 }

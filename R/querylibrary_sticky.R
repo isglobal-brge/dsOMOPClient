@@ -1,8 +1,8 @@
 # Module: executable sticky redesigns of OHDSI QueryLibrary questions
 #
 # The upstream SQL is evidence only. These mappings prepare a fixed
-# omop_privacy specification for use on a person-local omop.table created by a
-# typed Recipe/Plan. No arbitrary SQL or data-dependent domain is accepted.
+# omop_privacy specification for use on a person-local omop.table assigned by a
+# community-tool loader. No arbitrary SQL or data-dependent domain is accepted.
 
 .QUERYLIBRARY_STICKY_COMMIT <-
   "df8a21074b08519e581ca1afb7510468538117a4"
@@ -259,9 +259,15 @@ omop_querylibrary_sticky_catalog <- function(include_unavailable = FALSE) {
 #' Creates a validated workflow specification containing an
 #' \code{\link{omop_privacy}} object. The input table is not created by this
 #' function: it must be a server-created, person-local \code{omop.table}
-#' produced by the typed Recipe/Plan path, with the requested value and ordering
-#' columns. All levels, breaks, bounds, positive values and record caps are
-#' public analysis choices fixed before data access.
+#' assigned by a community-tool loader (an assign-mode analysis-catalog entry,
+#' for example \code{dsomop:condition_occurrence.load}), with the requested value
+#' and ordering columns. Since dsOMOP 2.8.0 tables loaded through plans, recipes
+#' or manipulation carry no DP provenance (the core never uses DP) and the server
+#' refuses them. The common per-person durations, counts and demographic
+#' distributions need no preparation: dsOMOP 2.9.0 answers them automatically in
+#' the analysis catalog (\code{dsomop.tools.mode = "auto"}). All levels, breaks,
+#' bounds, positive values and record caps are public analysis choices fixed
+#' before data access.
 #'
 #' The literal upstream SQL is never returned or executed. Exact ZIP,
 #' source/free-text labels, and patient/event rows fail closed. Record counts
@@ -288,9 +294,9 @@ omop_querylibrary_sticky_catalog <- function(include_unavailable = FALSE) {
 #' @param population_id Optional public compatibility label passed to
 #'   \code{\link{omop_privacy}}.
 #' @param preparation Optional \code{omop_recipe} or \code{omop_plan} documenting
-#'   how the protected input will be prepared. It must compile to exactly one
-#'   output. Execution remains explicit so the assigned symbol is visible to
-#'   the analyst and custodian.
+#'   the intended population. It must compile to exactly one output. It is kept
+#'   as documentation only: plan and recipe outputs carry no DP provenance since
+#'   dsOMOP 2.8.0, so the releasable input comes from a community-tool loader.
 #' @return An \code{omop_querylibrary_sticky} specification. Pass it to
 #'   \code{\link{ds.omop.querylibrary.sticky.release}} after preparing its input.
 #' @export
@@ -606,7 +612,9 @@ print.omop_querylibrary_sticky <- function(x, ...) {
 #'
 #' Verifies that every selected server advertises the same pinned semantic
 #' redesign, then delegates to \code{\link{ds.omop.dp.release}}. \code{x} must be
-#' the single memory-mode output assigned by the Recipe/Plan preparation. The
+#' a person-local table assigned by a community-tool loader (an assign-mode
+#' analysis-catalog entry); plan and recipe outputs are refused by the server
+#' because the core never uses DP. The
 #' upstream QueryLibrary SQL is never submitted to a server. No client argument
 #' can control epsilon, seed, nonce, epoch, or rerolls.
 #'

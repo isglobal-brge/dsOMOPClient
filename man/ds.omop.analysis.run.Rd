@@ -81,6 +81,12 @@ A \code{dsomop_result} object. For aggregate entries, \code{per_site}
   server-side symbol name is recorded in the result metadata. When
   \code{plot = TRUE} and the entry ships a plot recipe, the built \code{ggplot}
   is attached as the \code{"plot"} attribute (and \code{meta$plot}).
+  \code{meta$protection} holds each server's protection label (dsOMOP 2.9.0
+  or later): \code{"standard"} (DataSHIELD disclosure controls), \code{"dp"}
+  (differential privacy, with epsilon, sensitivity and the noise standard
+  deviation) or \code{"standard_fallback"} (standard controls because the
+  server's DP service is unavailable), plus the estimand. The server's
+  \code{dsomop.tools.mode} (default \code{"auto"}) decides it per question.
 }
 \description{
 Executes one catalog entry across every connected server through the server's
