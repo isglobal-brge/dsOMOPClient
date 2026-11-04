@@ -226,8 +226,12 @@ utils::globalVariables(".data")
   missing <- setdiff(expected_servers, names(raw))
   failed <- unique(c(names(errors), missing))
   if (length(failed) > 0L) {
+    reasons <- if (length(errors) > 0L) {
+      paste0(" (", paste(names(errors), unlist(errors), sep = ": ",
+                         collapse = "; "), ")")
+    } else ""
     stop("Federated ", context, " failed or returned no verifiable result on: ",
-         paste(failed, collapse = ", "),
+         paste(failed, collapse = ", "), reasons,
          ". Partial-site analysis results are not published or pooled.",
          call. = FALSE)
   }

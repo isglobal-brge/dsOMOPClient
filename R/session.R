@@ -62,8 +62,8 @@
 #' Calls each server individually and returns partial results when some
 #' servers fail (e.g., table not present on one server). Failed servers
 #' — including a missing or NULL DSI response — are omitted from the result and
-#' their errors are attached as an attribute. An exclusive-DP refusal stops
-#' the operation and directs the caller to the typed DP channel.
+#' their errors are attached as an attribute. A server reporting that the
+#' OHDSI community tools are disabled stops the operation with that reason.
 #'
 #' @param conns DSI connections object.
 #' @param expr The call expression to evaluate.
@@ -90,16 +90,15 @@
     })
   }
   if (length(errors) > 0) {
-    exclusive <- names(errors)[vapply(errors, function(error) {
-      grepl("DP-exclusive mode blocks standard statistical releases", error,
-            fixed = TRUE)
+    disabled <- names(errors)[vapply(errors, function(error) {
+      grepl("community tools", error, fixed = TRUE) &&
+        grepl("are disabled on this server", error, fixed = TRUE)
     }, logical(1L))]
-    if (length(exclusive) > 0L) {
-      stop("Exclusive DP refuses this standard statistical helper on: ",
-           paste(exclusive, collapse = ", "),
-           ". Use ds.omop.dp.release() with an omop_privacy() typed statistic ",
-           "on a prepared server-side table. No partial result was returned.",
-           call. = FALSE)
+    if (length(disabled) > 0L) {
+      stop("The OHDSI community tools (Achilles, OHDSI results, the analysis ",
+           "catalog and the query library) are disabled on: ",
+           paste(disabled, collapse = ", "), ". The data custodian can enable ",
+           "them again with the dsomop.tools.enabled option.", call. = FALSE)
     }
     attr(results, "ds_errors") <- errors
   }

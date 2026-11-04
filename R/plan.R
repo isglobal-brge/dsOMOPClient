@@ -1408,9 +1408,7 @@ ds.omop.plan.temporal_covariates <- function(plan,
 #'   servers, so pooled \code{ds.glm}/\code{ds.glmSLMA}/\code{ds.table}
 #'   see an identical level coding. Columns whose distinct values exceed
 #'   the server disclosure cap are left raw. Set \code{FALSE} to keep the
-#'   raw integer ids (or translated character names) unchanged. Execution
-#'   automatically disables observed-level discovery for all selected servers
-#'   when any server has enabled exclusive DP, and explains this in a message.
+#'   raw integer ids (or translated character names) unchanged.
 #' @return The modified \code{omop_plan} with updated options.
 #' @examples
 #' \dontrun{
@@ -1807,12 +1805,9 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' @param output_mode Character; \code{"memory"} (default, backwards
 #'   compatible) or \code{"staged"} (writes server-local files and returns
 #'   descriptors). Arrow provides Parquet; without it the server uses CSV.
-#' @details Memory execution reads the servers' DP status before preparation.
-#'   If any selected server enables exclusive DP, observed factor-level
-#'   discovery is disabled across the federation with an explanatory message.
-#'   The plan still executes and its concept identifiers or translated names
-#'   remain unchanged. Servers without an \code{exclusive} status field retain
-#'   the existing factor-discovery behavior.
+#' @details Loading tables never depends on differential privacy. After a
+#'   memory execution, concept columns are converted to factors harmonized
+#'   across servers (see \code{ds.omop.plan.options}).
 #' @return Invisible; the resolved \code{out} symbol mapping (for chaining).
 #'   The produced symbols are also recorded on the session so subsequent
 #'   manipulation wrappers (\code{\link{ds.omop.merge}},
@@ -1866,23 +1861,6 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
-  if (identical(output_mode, "memory") &&
-      isTRUE(plan$options$factor_concepts %||% TRUE)) {
-    statuses <- ds.omop.dp.status(conns)
-    exclusive <- names(statuses)[vapply(statuses, function(status) {
-      isTRUE(status$enabled) && isTRUE(status$exclusive)
-    }, logical(1L))]
-    if (length(exclusive) > 0L) {
-      plan$options$factor_concepts <- FALSE
-      plan$harmonization <- NULL
-      message("Exclusive DP is active on ", paste(exclusive, collapse = ", "),
-              "; automatic factor-level discovery is disabled across the ",
-              "selected servers. Concept identifiers or translated names ",
-              "remain unchanged. Use ds.omop.dp.release() with ",
-              "omop_privacy(\"categorical_histogram\", ...) and public levels ",
-              "for differentially private category counts.")
-    }
-  }
   plan <- .prepare_plan_for_federation(plan, symbol, conns)
   contract <- .session_harmonization_for_connections(session, conns)
   if (!is.null(contract)) {

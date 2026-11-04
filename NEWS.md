@@ -1,3 +1,15 @@
+# dsOMOPClient 2.8.0
+
+- Loading tables never depends on differential privacy (DP).
+  `ds.omop.plan.execute()` no longer requests DP status before execution and
+  always performs the requested concept-factor harmonization, as before DP
+  was added. Servers 2.7.x with exclusive DP refuse factor discovery: set
+  `factor_concepts = FALSE` there, or upgrade them to dsOMOP 2.8.0.
+- The shared aggregate helper no longer turns DP-exclusive refusals into a
+  special fatal error. It reports clearly when a server has the OHDSI
+  community tools disabled (`dsomop.tools.enabled`), and analysis failures now
+  include each server's reason.
+
 # dsOMOPClient 2.7.4
 
 - Support dsOMOP 2.7.1's v3 snapshot-first-answer contract for

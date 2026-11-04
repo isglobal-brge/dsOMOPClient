@@ -101,27 +101,29 @@ estimand on every participating node.
 
 ## Dedicated sticky privacy releases
 
-Since dsOMOP 2.7.0, an enabled DP layer defaults to the exclusive channel:
-standard population-statistics helpers refuse access and point to
-`ds.omop.dp.release()`. Only the custodian can restore standard statistics with
-`dsomop.dp.exclusive = FALSE`; no client option bypasses the policy or noise.
-`ds.omop.dp.status()` prints each server's exclusivity. Client 2.7.3 automatically
-prepares memory plans and recipes without observed factor-level discovery when
-any selected server is exclusive, with a message explaining that concept IDs
-or translated names remain unchanged. For category counts, use the typed
-categorical histogram with a public level domain. Servers at 2.6.0 that omit
-`exclusive` retain their existing behavior.
+Differential privacy (DP) concerns only the OHDSI community tools integrated in
+dsOMOP (Achilles results, OHDSI results tables, the analysis catalog and the
+query library). Connecting, loading tables, filters, concept factors, merges,
+cohorts and dsOMOP's own exploration never use it: since server 2.8.0 they run
+under the standard DataSHIELD disclosure controls only, as before DP was added.
+The community tools are enabled by default; a custodian can disable them with
+`dsomop.tools.enabled = FALSE`. When a custodian sets
+`dsomop.dp.exclusive = TRUE`, those tools release results only through
+`ds.omop.dp.release()`; no client option bypasses the policy or noise.
+`ds.omop.dp.status()` prints each server's exclusivity. (Servers 2.7.x applied
+exclusivity to standard statistics and refused factor discovery; with them, set
+`factor_concepts = FALSE` or upgrade the server.)
 
 The dedicated release service is enabled by default on dsOMOP servers since
 2.6.0; custodians can opt out with `dsomop.dp.enabled = FALSE` or
-`DSOMOP_DP_ENABLED=0`. Initialize the OMOP resource before inspecting its DP
-contract: unconfigured servers derive domain and snapshot identifiers from the
-resource and CDM source metadata and require persistent private state storage.
-Custodians advance the public snapshot or `dsomop.dp.privacy_epoch` and restart
-sessions for each planned publication, including no-op refreshes. Earlier server
-versions require explicit enablement. Inspect the contract and request a typed
-person-bounded statistic from an eligible server-side plan or reviewed loader
-output:
+`DSOMOP_DP_ENABLED=0`. Unconfigured servers derive domain and snapshot
+identifiers from the resource and CDM source metadata and require persistent
+private state storage. Custodians advance the public snapshot or
+`dsomop.dp.privacy_epoch` and restart sessions for each planned publication,
+including no-op refreshes. Inspect the contract and request a typed
+person-bounded statistic from an output of a community tool (for example an
+analysis-catalog loader); tables loaded through plans or recipes carry no DP
+provenance:
 
 ```R
 ds.omop.dp.status(conns)
@@ -135,7 +137,7 @@ privacy <- omop_privacy(
   order_by = "measurement_date"
 )
 result <- ds.omop.dp.release(
-  "measurement_events", privacy, datasources = conns, format = "long"
+  "tool_output", privacy, datasources = conns, format = "long"
 )
 ```
 
