@@ -506,7 +506,7 @@ test_that("DP preflight requires one authenticated provenance protocol", {
       expect_error(
         ds.omop.dp.release("analysis_table", omop_privacy("count"),
                            datasources),
-        "incoherent first-answer"
+        "incoherent v3 DP"
       )
     })
 
@@ -609,7 +609,7 @@ test_that("preflight requires first-answer state with no privacy call quota", {
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     expect_error(
       ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
-      "incoherent first-answer"
+      "incoherent v3 DP"
     )
   })
 
@@ -618,7 +618,7 @@ test_that("preflight requires first-answer state with no privacy call quota", {
   .with_dp_backend(list(a = status), releases, function(datasources, sent) {
     expect_error(
       ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources),
-      "incoherent first-answer"
+      "incoherent v3 DP"
     )
   })
 })
@@ -1113,11 +1113,11 @@ test_that("v3 status validates the complete first-answer tuple", {
       .with_dp_backend(list(a = status), list(a = NULL),
         function(datasources, sent) {
           expect_error(ds.omop.dp.status(datasources),
-                       paste0("incoherent first-answer.*", field))
+                       paste0("incoherent v3 DP.*", field))
           expect_error(
             ds.omop.dp.release("analysis_table", omop_privacy("count"),
                                datasources),
-            paste0("incoherent first-answer.*", field)
+            paste0("incoherent v3 DP.*", field)
           )
           heads <- vapply(sent$expressions, function(expr) {
             as.character(expr[[1L]])

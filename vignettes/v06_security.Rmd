@@ -365,20 +365,21 @@ privileges and should monitor query composition. The dedicated sticky endpoint
 adds authenticated person-local lineage, deterministic contribution bounds,
 and sticky noise. It exposes one descriptive contract,
 `privacy_guarantee =
-"sticky_person_bounded_discrete_laplace_per_release_v1"` with
-`privacy_contract = "fixed_per_release_snapshot_first_answer_v1"`. The standard
-`nfilter.noise` option does not supply these properties on its own. Every
-first answer uses fixed server-owned epsilon and delta zero. Its complete
-response is permanently retained per public request, snapshot and epoch;
-subsequent valid requests replay it even after arbitrarily large unrotated data
-changes. Only custodian rotation restores freshness. New requests can reflect a
-different source version from older answers, so there is no coherent snapshot
-guarantee across requests. Public new identities reserve storage; existing
-identities stay readable at capacity. There is no lifetime privacy budget or
-privacy call quota, and no full temporal transcript DP claim covering distinct
-requests, private-triggered rotation, admission failures or timing. Client 2.7.4
-requires server 2.7.1's v3 contract for releases by default. It explicitly
-recognizes v2 as legacy during status inspection. During a staged upgrade,
+"sticky_person_bounded_discrete_laplace_per_release_v1"`, with
+`privacy_contract = "fixed_per_release_seed_data_versioned_v1"` on dsOMOP
+2.10.0 servers and `"fixed_per_release_snapshot_first_answer_v1"` on 2.7.1 to
+2.9.x servers. The standard `nfilter.noise` option does not supply these
+properties on its own. Every answer uses fixed server-owned epsilon and delta
+zero. On 2.10.0 servers it is a deterministic function of the secret root, the
+question, the protected statistic and a private automatic database version:
+valid repeats return the same response, nothing but the root is stored, and a
+database reload that adds rows re-draws every answer at once. 2.7.1 to 2.9.x
+servers permanently retain the first complete response per public request,
+snapshot and epoch until custodian rotation. There is no lifetime privacy
+budget or privacy call quota, and no full temporal transcript DP claim covering
+distinct requests, database versions, rotations, admission failures or timing.
+Client 2.10.0 accepts both v3 contracts for releases, alone or mixed. It
+explicitly recognizes v2 as legacy during status inspection. During a staged upgrade,
 `options(dsomop.dp.allow_legacy_servers = TRUE)` permits legacy and mixed v2/v3
 releases. This option defaults to `FALSE`. Each legacy server is named in a
 warning: no first-answer binding: an unrotated data refresh can reveal whether
