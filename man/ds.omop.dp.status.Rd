@@ -37,11 +37,12 @@ isglobal-brge/dsOMOP#20. The release result records every site's contract.
 Eligible input frames must also carry the server's authenticated
 person-local provenance capsule; a copied class or plain attribute is not
 sufficient.
-Since server 2.7.0, \code{exclusive = TRUE} is the default policy. When
-both \code{enabled} and \code{exclusive} are true, standard population
-statistics are refused; use \code{\link{ds.omop.dp.release}}. Only the
-custodian can opt out with \code{dsomop.dp.exclusive = FALSE}. A missing
-\code{exclusive} field on older servers is treated as \code{FALSE}.
+DP concerns only the OHDSI community tools: connecting, loading tables,
+filters, factors and dsOMOP's own exploration never use it. Since server
+2.8.0, \code{exclusive} is \code{FALSE} by default and, when a custodian
+sets it, applies only to the community tools (servers 2.7.x applied it to
+standard statistics). A missing \code{exclusive} field on older servers is
+treated as \code{FALSE}.
 Each status contains the custodian's public \code{snapshot_id}. Federated
 sites may legitimately report different snapshot identifiers.
 Release preflight rejects either a repeated \code{noise_domain_id} or a

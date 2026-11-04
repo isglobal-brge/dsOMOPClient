@@ -40,10 +40,8 @@ test_that("DP status validates and prints exclusivity with legacy compatibility"
   }
 })
 
-test_that("memory execution adapts factor discovery to every server's DP status", {
+test_that("memory execution never requests DP status and keeps factors", {
   conns <- list(a = "A", b = "B")
-  statuses <- list(a = .exclusive_status(exclusive = NULL),
-                   b = .exclusive_status())
   session <- list(res_symbol = "resource", conns = conns)
   prepared <- NULL
   harmonized <- FALSE
@@ -60,8 +58,7 @@ test_that("memory execution adapts factor discovery to every server's DP status"
   )
   testthat::local_mocked_bindings(
     datashield.aggregate = function(conns, expr, ...) {
-      expect_identical(as.character(expr[[1L]]), "omopDpStatusDS")
-      statuses[names(conns)]
+      stop("loading tables must not call ", as.character(expr[[1L]]))
     },
     datashield.symbols = function(conns, ...) {
       stats::setNames(rep(list(assigned), length(conns)), names(conns))
@@ -78,106 +75,62 @@ test_that("memory execution adapts factor discovery to every server's DP status"
     .package = "DSI"
   )
   plan <- ds.omop.plan.baseline(ds.omop.plan())
-  plan$harmonization <- list(old_contract = TRUE)
-  expect_message(out <- ds.omop.plan.execute(plan, out = "D"),
-                 "Exclusive DP is active on b.*factor-level discovery is disabled")
+  expect_message(out <- ds.omop.plan.execute(plan, out = "D"), NA)
   expect_identical(unname(out), "D")
-  expect_false(prepared$options$factor_concepts)
-  expect_null(prepared$harmonization)
-  expect_false(harmonized)
-  expect_true(plan$options$factor_concepts)
-  expect_true(plan$harmonization$old_contract)
+  expect_true(prepared$options$factor_concepts)
+  expect_true(harmonized)
+})
 
-  for (status in list(.exclusive_status(exclusive = NULL),
-                       .exclusive_status(exclusive = FALSE),
-                       .exclusive_status(enabled = FALSE))) {
-    statuses$b <- status
-    assigned <- character(0)
-    harmonized <- FALSE
-    expect_message(ds.omop.plan.execute(plan, out = "D"), NA)
-    expect_true(prepared$options$factor_concepts)
-    expect_true(harmonized)
+test_that("shared aggregates keep successful sites and the original errors", {
+  conns <- list(a = "A", b = "B")
+  for (message in c("DP-exclusive mode blocks standard statistical releases.",
+                    "table not present")) {
+    for (throw_generic in c(TRUE, FALSE)) {
+      testthat::local_mocked_bindings(
+        datashield.aggregate = function(conns, expr, error, ...) {
+          if (identical(names(conns), "b")) {
+            error("b", message)
+            if (throw_generic) stop("There are some DataSHIELD errors")
+            return(list(b = NULL))
+          }
+          list(a = data.frame(statistic = "rows", value = 100L))
+        },
+        .package = "DSI"
+      )
+      result <- .ds_safe_aggregate(conns, quote(omopTableStatsDS("omop")))
+      expect_identical(names(result), "a")
+      expect_identical(attr(result, "ds_errors")$b, message)
+    }
   }
 })
 
-test_that("factor preflight fails before execution when status is unavailable", {
+test_that("disabled community tools are reported with their reason", {
   testthat::local_mocked_bindings(
-    .get_session = function(...) list(res_symbol = "resource",
-                                      conns = list(a = "A"))
-  )
-  testthat::local_mocked_bindings(
-    datashield.aggregate = function(...) stop("offline"),
-    datashield.assign.expr = function(...) stop("must not assign"),
-    .package = "DSI"
-  )
-  expect_error(ds.omop.plan.execute(ds.omop.plan.baseline(ds.omop.plan())),
-               "DP status preflight.*no partial result.*offline")
-})
-
-test_that("standard helpers surface an exclusive refusal instead of partial data", {
-  testthat::local_mocked_bindings(
-    .get_session = function(...) list(res_symbol = "resource",
-                                      conns = list(a = "A", b = "B"))
-  )
-  testthat::local_mocked_bindings(
-    datashield.aggregate = function(conns, expr, ...) {
-      if (identical(names(conns), "b")) {
-        stop("DP-exclusive mode blocks standard statistical releases. ",
-             "Use the typed DP channel omopDpReleaseDS ",
-             "(ds.omop.dp.release on the client).", call. = FALSE)
-      }
-      list(a = data.frame(statistic = "rows", value = 100L))
+    datashield.aggregate = function(conns, expr, error, ...) {
+      error("a", paste("The OHDSI community tools (Achilles, OHDSI results,",
+                       "the analysis catalog and the query library) are",
+                       "disabled on this server."))
+      stop("There are some DataSHIELD errors")
     },
     .package = "DSI"
   )
-  for (type in c("split", "combine", "both")) {
-    expect_error(ds.omop.table.stats("person", type = type,
-                                     pooling_policy = "pooled_only_ok"),
-                 "Exclusive DP.*b.*ds.omop.dp.release.*No partial result")
-  }
-  expect_error(ds.omop.plan.preview(ds.omop.plan.baseline(ds.omop.plan()),
-                                    conns = list(b = "B")),
-               "Exclusive DP.*ds.omop.dp.release")
-})
-
-
-test_that("DSI error callbacks preserve exclusive refusals through generic failures", {
-  conns <- list(a = "A", b = "B")
-  testthat::local_mocked_bindings(
-    .get_session = function(...) list(res_symbol = "resource", conns = conns)
+  expect_error(
+    .ds_safe_aggregate(list(a = "A"), quote(omopAchillesStatusDS("omop"))),
+    "community tools .* are disabled on: a.*dsomop.tools.enabled"
   )
-  refusal <- paste("DP-exclusive mode blocks standard statistical releases.",
-                    "Use the typed DP channel omopDpReleaseDS",
-                    "(ds.omop.dp.release on the client).")
-  for (throw_generic in c(TRUE, FALSE)) {
-    testthat::local_mocked_bindings(
-      datashield.aggregate = function(conns, expr, error, ...) {
-        if (identical(names(conns), "b")) {
-          error("b", refusal)
-          if (throw_generic) stop("There are some DataSHIELD errors")
-          return(list(b = NULL))
-        }
-        list(a = data.frame(statistic = "rows", value = 100L))
-      },
-      .package = "DSI"
-    )
-    expect_error(ds.omop.table.stats("person", type = "both",
-                                     pooling_policy = "pooled_only_ok"),
-                 "Exclusive DP.*b.*ds.omop.dp.release.*No partial result")
-  }
 })
 
-
-test_that("factor discovery preserves a policy refusal arriving after preflight", {
+test_that("factor discovery failures keep the server's reason", {
   testthat::local_mocked_bindings(
     datashield.aggregate = function(conns, expr, error, ...) {
-      error("a", paste("DP-exclusive mode blocks standard statistical releases.",
-                         "Use ds.omop.dp.release on the client."))
+      error("a", "level discovery refused by the server")
       stop("There are some DataSHIELD errors")
     },
     datashield.assign.expr = function(...) stop("must not recode"),
     .package = "DSI"
   )
-  expect_error(.harmonizeOneSymbol("D", list(a = "A")),
-               "level collection failed.*DP-exclusive.*ds.omop.dp.release")
+  expect_error(
+    .harmonizeOneSymbol("D", list(a = "A")),
+    "level collection failed.*level discovery refused by the server"
+  )
 })
