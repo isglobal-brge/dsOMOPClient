@@ -1418,3 +1418,66 @@ test_that("all seven primitives keep pooling unchanged during mixed transition",
       })
   }
 })
+
+.dp_stateless_status <- function(...) {
+  value <- .dp_status(...)
+  value$privacy_contract <- .DP_STATELESS_PRIVACY_CONTRACT
+  value$history_dependent <- FALSE
+  value$persistent_state <- "noise_root_only"
+  value$release_binding <- .DP_STATELESS_BINDING
+  value$service_capacity <- "none"
+  value
+}
+
+test_that("seed-only servers (dsOMOP 2.10.0) are accepted and pooled", {
+  statuses <- list(a = .dp_stateless_status(), b = .dp_stateless_status())
+  releases <- list(
+    a = .dp_release("count", noisy_count = 10),
+    b = .dp_release("count", noisy_count = 15)
+  )
+  for (server in names(releases)) {
+    releases[[server]]$privacy_contract <- .DP_STATELESS_PRIVACY_CONTRACT
+  }
+  .with_dp_backend(statuses, releases, function(datasources, sent) {
+    status <- ds.omop.dp.status(datasources)
+    expect_identical(status$a$release_binding, .DP_STATELESS_BINDING)
+    printed <- paste(capture.output(print(status)), collapse = "\n")
+    expect_match(printed, "binding=seed_data_versioned_v1")
+    value <- ds.omop.dp.release(
+      "analysis_table", omop_privacy("count"), datasources
+    )
+    expect_identical(value$pooled$noisy_count, 25)
+    expect_false(value$meta$privacy$history_dependent)
+    expect_identical(value$meta$privacy$persistent_state, "noise_root_only")
+    expect_identical(value$meta$privacy$release_binding,
+                     .DP_STATELESS_BINDING)
+  })
+})
+
+test_that("a federation may mix seed-only and first-answer servers", {
+  statuses <- list(a = .dp_stateless_status(), b = .dp_status())
+  releases <- list(
+    a = .dp_release("count", noisy_count = 10),
+    b = .dp_release("count", noisy_count = 15)
+  )
+  releases$a$privacy_contract <- .DP_STATELESS_PRIVACY_CONTRACT
+  .with_dp_backend(statuses, releases, function(datasources, sent) {
+    value <- ds.omop.dp.release(
+      "analysis_table", omop_privacy("count"), datasources
+    )
+    expect_identical(value$pooled$noisy_count, 25)
+    # A mixed federation never inherits the stronger first-answer claim.
+    expect_null(value$meta$privacy$release_binding)
+    expect_true(value$meta$privacy$mixed_contracts)
+  })
+})
+
+test_that("an incoherent seed-only contract is refused", {
+  status <- .dp_stateless_status()
+  status$history_dependent <- TRUE
+  .with_dp_backend(list(a = status), list(a = .dp_release("count",
+                                                          noisy_count = 1)),
+                   function(datasources, sent) {
+    expect_error(ds.omop.dp.status(datasources), "incoherent")
+  })
+})

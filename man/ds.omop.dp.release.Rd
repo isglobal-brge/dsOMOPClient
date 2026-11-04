@@ -45,7 +45,8 @@ A \code{dsomop_result}. The \code{meta$privacy} record reports the
   \code{meta$privacy$per_site_contract} records each server's protocol and
   state contract, including for \code{type = "combine"}.
   \code{legacy_servers} names all v2 sites and \code{mixed_contracts} reports
-  whether v2 and v3 were combined. Shared contract fields that differ across
+  whether servers with different DP contracts were combined (v2 and v3, or
+  the seed-only and first-answer bindings). Shared contract fields that differ across
   sites are \code{NULL}; consult \code{per_site_contract} for their values.
   Legacy warnings are also retained in \code{meta$warnings}.
 }

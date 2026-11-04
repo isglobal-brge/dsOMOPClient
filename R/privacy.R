@@ -11,6 +11,11 @@
 .DP_LEGACY_PRIVACY_CONTRACT <- "fixed_per_release_semantic_prf_v1"
 .DP_RELEASE_BINDING <- "snapshot_first_answer_v1"
 .DP_SERVICE_CAPACITY <- "public_identity_reservations_v1"
+# Seed-only binding (server 2.10.0 default): answers are a deterministic
+# function of the server's secret root, the question and the data; nothing but
+# the root is stored.
+.DP_STATELESS_PRIVACY_CONTRACT <- "fixed_per_release_seed_data_versioned_v1"
+.DP_STATELESS_BINDING <- "seed_data_versioned_v1"
 .DP_VERSIONED_CONTRACT_FIELDS <- c(
   "protocol", "privacy_contract", "history_dependent", "persistent_state",
   "release_binding", "service_capacity"
@@ -431,13 +436,24 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 }
 
 .dp_first_answer_contract <- function(status, server) {
-  expected <- list(
-    history_dependent = TRUE,
-    privacy_call_quota = "none",
-    persistent_state = "noise_root_and_release_bindings",
-    release_binding = .DP_RELEASE_BINDING,
-    service_capacity = .DP_SERVICE_CAPACITY
-  )
+  expected <- if (identical(status$release_binding, .DP_STATELESS_BINDING)) {
+    list(
+      history_dependent = FALSE,
+      privacy_call_quota = "none",
+      persistent_state = "noise_root_only",
+      release_binding = .DP_STATELESS_BINDING,
+      service_capacity = "none",
+      privacy_contract = .DP_STATELESS_PRIVACY_CONTRACT
+    )
+  } else {
+    list(
+      history_dependent = TRUE,
+      privacy_call_quota = "none",
+      persistent_state = "noise_root_and_release_bindings",
+      release_binding = .DP_RELEASE_BINDING,
+      service_capacity = .DP_SERVICE_CAPACITY
+    )
+  }
   missing <- setdiff(names(expected), names(status))
   if (length(missing) > 0L) {
     stop("Server '", server, "' omitted DP contract field(s): ",
@@ -509,8 +525,17 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' helpers, this function never returns a partial federation: each requested
 #' node must provide a well-formed status.
 #'
-#' Since dsOMOP 2.7.1, the v3 service reports history-dependent first-answer
-#' binding: \code{persistent_state = "noise_root_and_release_bindings"},
+#' Since dsOMOP 2.10.0 the default v3 binding is seed-only:
+#' \code{release_binding = "seed_data_versioned_v1"},
+#' \code{persistent_state = "noise_root_only"},
+#' \code{service_capacity = "none"} and \code{history_dependent = FALSE}. Every
+#' answer is a deterministic function of the server's secret root, the
+#' question, the protected statistic and a private automatic database version,
+#' so it is identical after restarts and on every R server sharing the root,
+#' and a database reload re-draws every answer at once. Custodians can select
+#' the first-answer binding (dsOMOP 2.7.1 to 2.9.x default), which reports
+#' history-dependent first-answer binding:
+#' \code{persistent_state = "noise_root_and_release_bindings"},
 #' \code{release_binding = "snapshot_first_answer_v1"}, and
 #' \code{service_capacity = "public_identity_reservations_v1"}.
 #' It retains one complete answer per public request, snapshot and privacy
@@ -674,7 +699,8 @@ print.omop_dp_status <- function(x, ...) {
            call. = FALSE)
     }
     first_answer <- identical(statuses[[server]]$protocol, .DP_PROTOCOL) &&
-      identical(statuses[[server]]$privacy_contract, .DP_PRIVACY_CONTRACT)
+      statuses[[server]]$privacy_contract %in%
+        c(.DP_PRIVACY_CONTRACT, .DP_STATELESS_PRIVACY_CONTRACT)
     if (!(first_answer || legacy[[server]]) ||
         !identical(statuses[[server]]$privacy_guarantee,
                    .DP_PRIVACY_GUARANTEE) ||
@@ -1239,7 +1265,8 @@ print.omop_dp_status <- function(x, ...) {
 #'   \code{meta$privacy$per_site_contract} records each server's protocol and
 #'   state contract, including for \code{type = "combine"}.
 #'   \code{legacy_servers} names all v2 sites and \code{mixed_contracts} reports
-#'   whether v2 and v3 were combined. Shared contract fields that differ across
+#'   whether servers with different DP contracts were combined (v2 and v3, or
+#'   the seed-only and first-answer bindings). Shared contract fields that differ across
 #'   sites are \code{NULL}; consult \code{per_site_contract} for their values.
 #'   Legacy warnings are also retained in \code{meta$warnings}.
 #' @examples
@@ -1381,9 +1408,9 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
       fields <- c(.DP_VERSIONED_CONTRACT_FIELDS, "privacy_call_quota")
       stats::setNames(lapply(fields, function(field) status[[field]]), fields)
     }),
-    mixed_contracts = length(unique(vapply(
-      statuses, `[[`, character(1L), "protocol"
-    ))) > 1L,
+    mixed_contracts = length(unique(vapply(statuses, function(status) {
+      paste(status$protocol, status$privacy_contract, sep = "/")
+    }, character(1L)))) > 1L,
     legacy_servers = legacy_servers,
     privacy_epoch = vapply(
       statuses, `[[`, numeric(1L), "privacy_epoch"
