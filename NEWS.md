@@ -7,6 +7,8 @@
   releases, alone or mixed with first-answer servers (dsOMOP 2.7.1 to 2.9.x).
   `mixed_contracts` now also reports such a mix. The seed stays entirely
   server-side; the client only learns the new contract label.
+- Help pages, README and vignettes describe both server generations; an
+  incoherent v3 status is now reported as "incoherent v3 DP contract".
 
 # dsOMOPClient 2.9.1
 
