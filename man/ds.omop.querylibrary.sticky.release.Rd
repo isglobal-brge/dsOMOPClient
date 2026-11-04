@@ -5,16 +5,22 @@
 \title{Release a pinned QueryLibrary sticky redesign}
 \usage{
 ds.omop.querylibrary.sticky.release(
-  x,
+  x = NULL,
   redesign,
   datasources = NULL,
   pool = TRUE,
   format = c("long", "wide", "vector", "raw"),
-  type = NULL
+  type = NULL,
+  symbol = "omop"
 )
 }
 \arguments{
-\item{x}{Bare DataSHIELD symbol naming the prepared person-local table.}
+\item{x}{Bare DataSHIELD symbol naming a prepared person-local table, or
+\code{NULL} (the default) to prepare the input automatically from the
+recipe or plan stored in \code{redesign$preparation}: the release then
+runs \code{\link{ds.omop.dp.prepare}} into a temporary server symbol and
+removes it afterwards. A redesign may also be passed as the first
+argument.}
 
 \item{redesign}{An object created by
 \code{\link{omop_querylibrary_sticky}}.}
@@ -30,16 +36,20 @@ not a cross-site set union; use \code{FALSE} for site-specific estimates.}
 
 \item{type}{Optional result view: \code{"split"}, \code{"combine"}, or
 \code{"both"}. When omitted, the legacy \code{pool} argument is preserved.}
+
+\item{symbol}{Session symbol of the OMOP connection, used only when the
+input is prepared automatically (default \code{"omop"}).}
 }
 \value{
 A \code{dsomop_result} from \code{\link{ds.omop.dp.release}}.
 }
 \description{
 Verifies that every selected server advertises the same pinned semantic
-redesign, then delegates to \code{\link{ds.omop.dp.release}}. \code{x} must be
-a person-local table assigned by a community-tool loader (an assign-mode
-analysis-catalog entry); plan and recipe outputs are refused by the server
-because the core never uses DP. The
+redesign, then delegates to \code{\link{ds.omop.dp.release}}. Without
+\code{x}, the input is prepared automatically from the redesign's
+\code{preparation} with \code{\link{ds.omop.dp.prepare}} and removed after
+the release. Tables loaded with \code{\link{ds.omop.plan.execute}} are
+refused by the server because the core never uses DP. The
 upstream QueryLibrary SQL is never submitted to a server. No client argument
 can control epsilon, seed, nonce, epoch, or rerolls.
 }

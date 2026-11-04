@@ -14,9 +14,16 @@ library(dsOMOPClient)
 
 The QueryLibrary integration distinguishes an upstream clinical question from
 its published SQL. The SQL is training/reference material and is never executed
-by the sticky redesign path. Instead, a community-tool loader prepares a
-server-side person-local `omop.table`, and a pinned mapping fixes one of the
-seven sticky primitives and its longitudinal reducer.
+by the sticky redesign path. Instead, a typed recipe or plan defines the
+population and variables, the server prepares a person-local `omop.table`
+sealed for DP, and a pinned mapping fixes one of the seven sticky primitives
+and its longitudinal reducer.
+
+The roles are those of DataSHIELD: the analyst chooses the question (the
+population, the derived variables such as an age at a public reference year,
+and the public bins or levels); the data custodian owns every privacy setting
+(whether DP is available, epsilon, caps and the community tools' protection
+mode). No client argument changes those.
 
 ## Automatic questions (dsOMOP 2.9.0)
 
@@ -38,14 +45,17 @@ res$pooled             # persons per duration bin, summed across servers
 res$meta$protection    # per server: "dp" (epsilon, noise SD) or a fallback
 ```
 
+Questions with an automatic equivalent list it in
+`omop_querylibrary_sticky_catalog()$automatic_equivalent` and when printed.
+
 ## Sticky redesigns
 
-Since dsOMOP 2.8.0 the core never uses differential privacy: tables loaded
-through plans, recipes or manipulation carry no DP provenance, and the server
-refuses them as DP inputs. A sticky redesign is therefore released on a
-person-local table assigned by a community-tool loader (an assign-mode
-analysis-catalog entry such as `dsomop:condition_occurrence.load`), whose
-columns must contain the mapping's variable and ordering columns.
+The core never uses differential privacy (dsOMOP 2.8.0 and later): tables
+loaded with `ds.omop.plan.execute()` or `recipe_execute()` carry no DP
+provenance, and the server refuses them as DP inputs. A sticky redesign is
+released on a table prepared for DP from a typed recipe or plan
+(`ds.omop.dp.prepare()`, dsOMOP 2.9.1 or later). The release prepares it for
+you when the redesign carries its recipe.
 
 This is deliberately not a QueryLibrary SQL runner or an arbitrary join/query
 gateway. An upstream ID selects only a reviewed semantic mapping; it neither
@@ -97,21 +107,35 @@ age_at_2025 <- omop_querylibrary_sticky(
 age_at_2025
 ```
 
-Prepare the input with a community-tool loader and then release a mapping
-whose columns it provides, for example the number of persons with a condition
-record (CO11):
+Give the redesign its recipe and release it in one call; the input is
+prepared on every server, released, and removed:
 
 ```{r execute, eval=FALSE}
-loaded <- ds.omop.analysis.run("dsomop:condition_occurrence.load")
-persons_with_conditions <- omop_querylibrary_sticky("CO11")
-result <- ds.omop.querylibrary.sticky.release(
-  loaded$meta$assign_symbol, persons_with_conditions, datasources = conns
+recipe <- omop_recipe(
+  variables = omop_variable_age(name = "age_at_2025", year = 2025),
+  outputs = omop_output(name = "ages", type = "wide")
 )
+age_at_2025 <- omop_querylibrary_sticky(
+  "PE12", variable = "age_at_2025", breaks = seq(0, 120, by = 10),
+  preparation = recipe
+)
+result <- ds.omop.querylibrary.sticky.release(age_at_2025, datasources = conns)
 ```
 
-Mappings over derived columns (such as `age_at_2025` above or a month number)
-have no community-tool loader yet; the automatic questions cover the common
-cases.
+The same step can be explicit, for example to release several statistics on
+one prepared table:
+
+```{r prepare, eval=FALSE}
+ds.omop.dp.prepare(recipe, out = c(ages = "DP_ages"))
+result <- ds.omop.querylibrary.sticky.release("DP_ages", age_at_2025,
+                                              datasources = conns)
+```
+
+The whole release population must be defined in the recipe or plan: filtering,
+merging or otherwise manipulating a prepared table drops its DP provenance.
+Variables whose protection depends on other persons cannot be prepared; for
+example a baseline `age_at_index` (protected with cross-person age banding) is
+refused in favour of an age at a public reference year.
 
 Longitudinal numeric and categorical record histograms use a deterministic
 declared order and a finite per-person record cap:

@@ -1,3 +1,21 @@
+# dsOMOPClient 2.9.1
+
+- New `ds.omop.dp.prepare()`: prepares a person-local table for sticky DP
+  releases from an `omop_recipe` or `omop_plan` (server method
+  `omopDpPlanExecuteDS`, dsOMOP 2.9.1). Loading tables with
+  `ds.omop.plan.execute()` and `recipe_execute()` is unchanged and never uses
+  DP. Prepared tables skip concept-factor harmonization, which would drop the
+  DP seal.
+- `ds.omop.querylibrary.sticky.release()` works in one call: without `x` it
+  prepares the input from the redesign's `preparation` recipe or plan into a
+  temporary server symbol, releases, and removes it. The redesign can be the
+  first argument.
+- `omop_querylibrary_sticky_catalog()` gains `automatic_equivalent`: the
+  analysis-catalog entry that answers the question with no preparation
+  (dsOMOP 2.9.0), also shown when a redesign is printed and suggested when a
+  release has no input.
+- Plan execution errors now include each server's own reason.
+
 # dsOMOPClient 2.9.0
 
 - Support dsOMOP 2.9.0's automatic protection of the OHDSI community tools.

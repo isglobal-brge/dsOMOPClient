@@ -7712,7 +7712,15 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
   }
 
   plan <- recipe_to_plan(recipe)
+  out <- .recipe_out_symbols(recipe, plan, out)
+  ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns,
+                       output_mode = output_mode)
+}
 
+# Default server symbols for the plan outputs of a recipe (an output's
+# result_symbol, else D_<name>; split outputs get the parent's symbol plus the
+# split suffix). An explicit out mapping is returned unchanged.
+.recipe_out_symbols <- function(recipe, plan, out = NULL) {
   # Detect split outputs: plan output names that don't match recipe output names
   # e.g., recipe output "my_data" → plan outputs "my_data_condition", "my_data_measurement"
   recipe_out_names <- names(recipe$outputs)
@@ -7740,7 +7748,5 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
     }, character(1))
     out <- stats::setNames(symbols, plan_out_names)
   }
-
-  ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns,
-                       output_mode = output_mode)
+  out
 }

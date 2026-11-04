@@ -115,7 +115,11 @@ and demographic distributions are answered as histograms of one value per
 person (or complete public partitions) with sticky DP noise, or under the
 standard controls when a server's DP service is unavailable.
 `ds.omop.analysis.run()` reports each server's protection in
-`meta$protection` and prints it. A custodian can choose `"standard"` (no DP)
+`meta$protection` and prints it. Other questions use the typed sticky
+channel: `ds.omop.dp.prepare()` prepares a DP-sealed person-local table from a
+recipe or plan (the analyst picks the population and variables, such as an
+age at a public reference year), and `ds.omop.querylibrary.sticky.release()`
+does that preparation itself when the redesign carries its recipe. A custodian can choose `"standard"` (no DP)
 or `"dp"` (DP only; `dsomop.dp.exclusive = TRUE` selects it), in which case
 the tools refuse every standard statistic; no client option bypasses the
 policy or noise. `ds.omop.dp.status()` prints each server's exclusivity and

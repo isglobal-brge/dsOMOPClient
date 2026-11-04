@@ -13,14 +13,18 @@ redesigns.}
 }
 \value{
 A data frame with mapping status, primitive family, statistic,
-  reducer, contribution contract and pinned source commit.
+  reducer, contribution contract, pinned source commit and
+  \code{automatic_equivalent}: the dsOMOP analysis-catalog entry (server
+  2.9.0 or later) that answers the question with no preparation, or
+  \code{NA}.
 }
 \description{
 Lists semantic redesigns of questions in the pinned OHDSI QueryLibrary
 snapshot. These are not ports of the upstream SQL. An executable mapping
 fixes one of the seven person-bounded sticky primitives and a longitudinal
-reducer for a protected table prepared through \code{\link{omop_recipe}} or
-\code{\link{ds.omop.plan}}.
+reducer for a protected table prepared from an \code{\link{omop_recipe}} or
+\code{\link{ds.omop.plan}} with \code{\link{ds.omop.dp.prepare}} (or
+automatically by \code{\link{ds.omop.querylibrary.sticky.release}}).
 With \code{include_unavailable = TRUE}, the returned 201-ID partition also
 records vocabulary/reference questions and blocked result shapes. Those rows
 are not sticky-DP mappings and never authorize literal upstream SQL.
