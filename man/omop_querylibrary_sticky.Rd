@@ -44,10 +44,10 @@ it is omitted.}
 \item{population_id}{Optional public compatibility label passed to
 \code{\link{omop_privacy}}.}
 
-\item{preparation}{Optional \code{omop_recipe} or \code{omop_plan} documenting
-the intended population. It must compile to exactly one output. It is kept
-as documentation only: plan and recipe outputs carry no DP provenance since
-dsOMOP 2.8.0, so the releasable input comes from a community-tool loader.}
+\item{preparation}{Optional \code{omop_recipe} or \code{omop_plan} that
+defines the release population and its variables. It must compile to
+exactly one output. \code{\link{ds.omop.querylibrary.sticky.release}}
+prepares the input from it automatically when no \code{x} is given.}
 }
 \value{
 An \code{omop_querylibrary_sticky} specification. Pass it to
@@ -56,16 +56,20 @@ An \code{omop_querylibrary_sticky} specification. Pass it to
 \description{
 Creates a validated workflow specification containing an
 \code{\link{omop_privacy}} object. The input table is not created by this
-function: it must be a server-created, person-local \code{omop.table}
-assigned by a community-tool loader (an assign-mode analysis-catalog entry,
-for example \code{dsomop:condition_occurrence.load}), with the requested value
-and ordering columns. Since dsOMOP 2.8.0 tables loaded through plans, recipes
-or manipulation carry no DP provenance (the core never uses DP) and the server
-refuses them. The common per-person durations, counts and demographic
-distributions need no preparation: dsOMOP 2.9.0 answers them automatically in
-the analysis catalog (\code{dsomop.tools.mode = "auto"}). All levels, breaks,
-bounds, positive values and record caps are public analysis choices fixed
-before data access.
+function: it is a server-created, person-local \code{omop.table} prepared
+for DP from a typed recipe or plan, with the requested value and ordering
+columns. Give that recipe or plan as \code{preparation} and
+\code{\link{ds.omop.querylibrary.sticky.release}} prepares the input
+automatically (dsOMOP 2.9.1 or later), or prepare it yourself with
+\code{\link{ds.omop.dp.prepare}}. Tables loaded with
+\code{\link{ds.omop.plan.execute}} or \code{\link{recipe_execute}} carry
+no DP provenance (the core never uses DP), and a person-local table from a
+community-tool loader (an assign-mode analysis-catalog entry) also works.
+Questions with an \code{automatic_equivalent} in
+\code{\link{omop_querylibrary_sticky_catalog}} are answered by the analysis
+catalog with no preparation at all. All levels, breaks, bounds, positive
+values, reference dates and record caps are public analysis choices fixed
+before data access; the data custodian owns every privacy setting.
 }
 \details{
 The literal upstream SQL is never returned or executed. Exact ZIP,

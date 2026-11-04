@@ -73,7 +73,7 @@ test_that("each mapped primitive builds a canonical privacy specification", {
   }, logical(1L))))
   expect_identical(
     names(formals(ds.omop.querylibrary.sticky.release)),
-    c("x", "redesign", "datasources", "pool", "format", "type")
+    c("x", "redesign", "datasources", "pool", "format", "type", "symbol")
   )
   expect_identical(count$privacy$statistic, "count")
   expect_identical(categorical$privacy$reducer, "presence")

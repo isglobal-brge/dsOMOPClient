@@ -1402,3 +1402,54 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     "No complete disclosure-safe pooled DP release was available."
   )
 }
+
+#' Prepare a person-local table for sticky DP releases
+#'
+#' Runs a typed \code{omop_recipe} or \code{omop_plan} on every server through
+#' the community-tool method \code{omopDpPlanExecuteDS} (dsOMOP 2.9.1 or later),
+#' which builds the tables with the same plan engine as
+#' \code{\link{ds.omop.plan.execute}} and seals them with the authenticated DP
+#' provenance that \code{\link{ds.omop.dp.release}} requires. Ordinary table
+#' loading never involves DP; use this function only to define the population
+#' and the derived variables of a DP release (for example an age at a public
+#' reference year). The analyst chooses that population; the data custodian
+#' owns every privacy setting (epsilon, caps, whether DP is available).
+#'
+#' Prepared tables keep their concept identifiers as stored (no concept-factor
+#' harmonization), and filtering, merging or otherwise manipulating them drops
+#' the DP provenance: define the whole release population in the recipe.
+#'
+#' @param x An \code{omop_recipe} or \code{omop_plan}.
+#' @param out Output symbols, as in \code{\link{recipe_execute}} and
+#'   \code{\link{ds.omop.plan.execute}}.
+#' @param symbol Character; the session symbol used when the OMOP connection was
+#'   initialised (default \code{"omop"}).
+#' @param conns DSI connection object(s). If \code{NULL} (the default), the
+#'   connections stored in the active session are used.
+#' @return The named output-to-symbol mapping, invisibly.
+#' @examples
+#' \dontrun{
+#' recipe <- omop_recipe(
+#'   variables = omop_variable_age(name = "age_at_2025", year = 2025),
+#'   outputs = omop_output(name = "ages", type = "wide")
+#' )
+#' ds.omop.dp.prepare(recipe, out = c(ages = "DP_ages"))
+#' ds.omop.dp.release("DP_ages", omop_privacy(
+#'   "numeric_histogram", variable = "age_at_2025",
+#'   breaks = seq(0, 120, by = 10), reducer = "mean"))
+#' }
+#' @export
+ds.omop.dp.prepare <- function(x, out = NULL, symbol = "omop", conns = NULL) {
+  if (inherits(x, "omop_recipe")) {
+    plan <- recipe_to_plan(x)
+    out <- .recipe_out_symbols(x, plan, out)
+  } else if (inherits(x, "omop_plan")) {
+    plan <- x
+  } else {
+    stop("x must be an omop_recipe or omop_plan.", call. = FALSE)
+  }
+  .plan_execute_impl(plan, out = out, symbol = symbol, conns = conns,
+                     output_mode = "memory",
+                     server_method = "omopDpPlanExecuteDS",
+                     harmonize_factors = FALSE)
+}

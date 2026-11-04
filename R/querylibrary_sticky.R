@@ -168,6 +168,27 @@
   )
 }
 
+# Upstream questions that the dsOMOP analysis catalog (server 2.9.0 or later)
+# answers automatically, without preparation: per-person durations, counts and
+# demographic distributions get sticky DP or the standard gate according to
+# the server's dsomop.tools.mode; values and costs get standard summaries.
+.querylibrary_sticky_automatic <- function() {
+  c(
+    PE06 = "dsomop:person.year_of_birth_distribution",
+    PE12 = "dsomop:person.year_of_birth_distribution",
+    PE11 = "dsomop:person.birth_month_distribution",
+    CO01 = "dsomop:condition.duration_stats",
+    CE01 = "dsomop:condition_era.length_stats",
+    DEX23 = "dsomop:drug.days_supply_stats",
+    DEX24 = "dsomop:drug.days_supply_stats",
+    DEX34 = "dsomop:drug.quantity_stats",
+    DEX35 = "dsomop:drug.quantity_stats",
+    OP20 = "dsomop:observation_period.length_by_gender",
+    DRC01 = "dsomop:drug_cost.cost_per_unit_stats",
+    DRC03 = "dsomop:drug_cost.out_of_pocket_stats"
+  )
+}
+
 .querylibrary_sticky_catalog_data <- function(include_unavailable = FALSE) {
   groups <- .querylibrary_sticky_groups()
   rows <- lapply(groups, function(group) {
@@ -210,6 +231,8 @@
     .QUERYLIBRARY_STICKY_REPOSITORY, "/tree/",
     .QUERYLIBRARY_STICKY_COMMIT
   )
+  automatic <- .querylibrary_sticky_automatic()
+  result$automatic_equivalent <- unname(automatic[result$upstream_id])
   result <- result[order(result$upstream_id, method = "radix"), , drop = FALSE]
   rownames(result) <- NULL
   result
@@ -220,8 +243,9 @@
 #' Lists semantic redesigns of questions in the pinned OHDSI QueryLibrary
 #' snapshot. These are not ports of the upstream SQL. An executable mapping
 #' fixes one of the seven person-bounded sticky primitives and a longitudinal
-#' reducer for a protected table prepared through \code{\link{omop_recipe}} or
-#' \code{\link{ds.omop.plan}}.
+#' reducer for a protected table prepared from an \code{\link{omop_recipe}} or
+#' \code{\link{ds.omop.plan}} with \code{\link{ds.omop.dp.prepare}} (or
+#' automatically by \code{\link{ds.omop.querylibrary.sticky.release}}).
 #' With \code{include_unavailable = TRUE}, the returned 201-ID partition also
 #' records vocabulary/reference questions and blocked result shapes. Those rows
 #' are not sticky-DP mappings and never authorize literal upstream SQL.
@@ -234,7 +258,10 @@
 #'   explicitly held-back, and blocked upstream IDs as well as executable
 #'   redesigns.
 #' @return A data frame with mapping status, primitive family, statistic,
-#'   reducer, contribution contract and pinned source commit.
+#'   reducer, contribution contract, pinned source commit and
+#'   \code{automatic_equivalent}: the dsOMOP analysis-catalog entry (server
+#'   2.9.0 or later) that answers the question with no preparation, or
+#'   \code{NA}.
 #' @export
 omop_querylibrary_sticky_catalog <- function(include_unavailable = FALSE) {
   if (!is.logical(include_unavailable) || length(include_unavailable) != 1L ||
@@ -258,16 +285,20 @@ omop_querylibrary_sticky_catalog <- function(include_unavailable = FALSE) {
 #'
 #' Creates a validated workflow specification containing an
 #' \code{\link{omop_privacy}} object. The input table is not created by this
-#' function: it must be a server-created, person-local \code{omop.table}
-#' assigned by a community-tool loader (an assign-mode analysis-catalog entry,
-#' for example \code{dsomop:condition_occurrence.load}), with the requested value
-#' and ordering columns. Since dsOMOP 2.8.0 tables loaded through plans, recipes
-#' or manipulation carry no DP provenance (the core never uses DP) and the server
-#' refuses them. The common per-person durations, counts and demographic
-#' distributions need no preparation: dsOMOP 2.9.0 answers them automatically in
-#' the analysis catalog (\code{dsomop.tools.mode = "auto"}). All levels, breaks,
-#' bounds, positive values and record caps are public analysis choices fixed
-#' before data access.
+#' function: it is a server-created, person-local \code{omop.table} prepared
+#' for DP from a typed recipe or plan, with the requested value and ordering
+#' columns. Give that recipe or plan as \code{preparation} and
+#' \code{\link{ds.omop.querylibrary.sticky.release}} prepares the input
+#' automatically (dsOMOP 2.9.1 or later), or prepare it yourself with
+#' \code{\link{ds.omop.dp.prepare}}. Tables loaded with
+#' \code{\link{ds.omop.plan.execute}} or \code{\link{recipe_execute}} carry
+#' no DP provenance (the core never uses DP), and a person-local table from a
+#' community-tool loader (an assign-mode analysis-catalog entry) also works.
+#' Questions with an \code{automatic_equivalent} in
+#' \code{\link{omop_querylibrary_sticky_catalog}} are answered by the analysis
+#' catalog with no preparation at all. All levels, breaks, bounds, positive
+#' values, reference dates and record caps are public analysis choices fixed
+#' before data access; the data custodian owns every privacy setting.
 #'
 #' The literal upstream SQL is never returned or executed. Exact ZIP,
 #' source/free-text labels, and patient/event rows fail closed. Record counts
@@ -293,10 +324,10 @@ omop_querylibrary_sticky_catalog <- function(include_unavailable = FALSE) {
 #'   it is omitted.
 #' @param population_id Optional public compatibility label passed to
 #'   \code{\link{omop_privacy}}.
-#' @param preparation Optional \code{omop_recipe} or \code{omop_plan} documenting
-#'   the intended population. It must compile to exactly one output. It is kept
-#'   as documentation only: plan and recipe outputs carry no DP provenance since
-#'   dsOMOP 2.8.0, so the releasable input comes from a community-tool loader.
+#' @param preparation Optional \code{omop_recipe} or \code{omop_plan} that
+#'   defines the release population and its variables. It must compile to
+#'   exactly one output. \code{\link{ds.omop.querylibrary.sticky.release}}
+#'   prepares the input from it automatically when no \code{x} is given.
 #' @return An \code{omop_querylibrary_sticky} specification. Pass it to
 #'   \code{\link{ds.omop.querylibrary.sticky.release}} after preparing its input.
 #' @export
@@ -514,6 +545,14 @@ print.omop_querylibrary_sticky <- function(x, ...) {
   cat("OHDSI QueryLibrary sticky redesign:", x$upstream_id, "\n")
   cat("  Primitive:", x$mapping$statistic, "\n")
   cat("  Reducer:", x$mapping$reducer, "\n")
+  cat("  Input:", if (is.null(x$preparation)) {
+    "a table prepared with ds.omop.dp.prepare()"
+  } else "prepared automatically from the stored recipe", "\n")
+  automatic <- .querylibrary_sticky_automatic()[x$upstream_id]
+  if (!is.na(automatic)) {
+    cat("  Automatic equivalent: ds.omop.analysis.run(\"", automatic,
+        "\") (no preparation)\n", sep = "")
+  }
   cat("  Upstream SQL authorized: no\n")
   invisible(x)
 }
@@ -611,14 +650,20 @@ print.omop_querylibrary_sticky <- function(x, ...) {
 #' Release a pinned QueryLibrary sticky redesign
 #'
 #' Verifies that every selected server advertises the same pinned semantic
-#' redesign, then delegates to \code{\link{ds.omop.dp.release}}. \code{x} must be
-#' a person-local table assigned by a community-tool loader (an assign-mode
-#' analysis-catalog entry); plan and recipe outputs are refused by the server
-#' because the core never uses DP. The
+#' redesign, then delegates to \code{\link{ds.omop.dp.release}}. Without
+#' \code{x}, the input is prepared automatically from the redesign's
+#' \code{preparation} with \code{\link{ds.omop.dp.prepare}} and removed after
+#' the release. Tables loaded with \code{\link{ds.omop.plan.execute}} are
+#' refused by the server because the core never uses DP. The
 #' upstream QueryLibrary SQL is never submitted to a server. No client argument
 #' can control epsilon, seed, nonce, epoch, or rerolls.
 #'
-#' @param x Bare DataSHIELD symbol naming the prepared person-local table.
+#' @param x Bare DataSHIELD symbol naming a prepared person-local table, or
+#'   \code{NULL} (the default) to prepare the input automatically from the
+#'   recipe or plan stored in \code{redesign$preparation}: the release then
+#'   runs \code{\link{ds.omop.dp.prepare}} into a temporary server symbol and
+#'   removes it afterwards. A redesign may also be passed as the first
+#'   argument.
 #' @param redesign An object created by
 #'   \code{\link{omop_querylibrary_sticky}}.
 #' @param datasources Named DataSHIELD connection list. \code{NULL} uses active
@@ -629,11 +674,18 @@ print.omop_querylibrary_sticky <- function(x, ...) {
 #' @param format Output format passed to \code{\link{ds.omop.dp.release}}.
 #' @param type Optional result view: \code{"split"}, \code{"combine"}, or
 #'   \code{"both"}. When omitted, the legacy \code{pool} argument is preserved.
+#' @param symbol Session symbol of the OMOP connection, used only when the
+#'   input is prepared automatically (default \code{"omop"}).
 #' @return A \code{dsomop_result} from \code{\link{ds.omop.dp.release}}.
 #' @export
 ds.omop.querylibrary.sticky.release <- function(
-    x, redesign, datasources = NULL, pool = TRUE,
-    format = c("long", "wide", "vector", "raw"), type = NULL) {
+    x = NULL, redesign, datasources = NULL, pool = TRUE,
+    format = c("long", "wide", "vector", "raw"), type = NULL,
+    symbol = "omop") {
+  if (missing(redesign) && inherits(x, "omop_querylibrary_sticky")) {
+    redesign <- x
+    x <- NULL
+  }
   pool_missing <- missing(pool)
   if (!is.logical(pool) || length(pool) != 1L || is.na(pool)) {
     stop("pool must be TRUE or FALSE.", call. = FALSE)
@@ -644,6 +696,10 @@ ds.omop.querylibrary.sticky.release <- function(
   .querylibrary_sticky_validate_redesign(redesign)
   datasources <- .dp_datasources(datasources)
   .querylibrary_sticky_server_preflight(redesign, datasources)
+  if (is.null(x)) {
+    x <- .querylibrary_sticky_prepare(redesign, datasources, symbol)
+    on.exit(.querylibrary_sticky_remove(datasources, x), add = TRUE)
+  }
   if (is.null(type)) {
     ds.omop.dp.release(
       x = x, privacy = redesign$privacy, datasources = datasources,
@@ -656,4 +712,40 @@ ds.omop.querylibrary.sticky.release <- function(
       type = result_type
     )
   }
+}
+
+# Prepare the input of a sticky redesign from its stored recipe or plan into a
+# fresh temporary server symbol (community-tool DP preparation).
+.querylibrary_sticky_prepare <- function(redesign, datasources, symbol) {
+  preparation <- redesign$preparation
+  if (is.null(preparation)) {
+    automatic <- .querylibrary_sticky_automatic()[redesign$upstream_id]
+    stop("Pass x (a table prepared with ds.omop.dp.prepare()) or create the ",
+         "redesign with omop_querylibrary_sticky(..., preparation = <recipe>) ",
+         "so the release can prepare its input.",
+         if (!is.na(automatic)) paste0(
+           " QueryLibrary ", redesign$upstream_id, " is also answered ",
+           "automatically, with no preparation, by ds.omop.analysis.run(\"",
+           automatic, "\")."), call. = FALSE)
+  }
+  plan <- if (inherits(preparation, "omop_recipe")) {
+    recipe_to_plan(preparation)
+  } else preparation
+  if (!is.list(plan$outputs) || length(plan$outputs) != 1L) {
+    stop("The redesign preparation must have exactly one output.",
+         call. = FALSE)
+  }
+  temporary <- .generate_symbol("dsOdp")
+  ds.omop.dp.prepare(
+    preparation, out = stats::setNames(temporary, names(plan$outputs)),
+    symbol = symbol, conns = datasources
+  )
+  temporary
+}
+
+.querylibrary_sticky_remove <- function(datasources, symbol) {
+  .plan_remove_output_symbols(
+    datasources, .plan_output_symbol_families(c(prepared = symbol))
+  )
+  invisible(NULL)
 }

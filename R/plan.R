@@ -1845,6 +1845,18 @@ ds.omop.plan.execute <- function(plan, out = NULL,
                                  symbol = "omop",
                                  conns = NULL,
                                  output_mode = "memory") {
+  .plan_execute_impl(plan, out = out, symbol = symbol, conns = conns,
+                     output_mode = output_mode)
+}
+
+# Shared plan executor. Loading tables uses the core method
+# omopPlanExecuteDS; ds.omop.dp.prepare() uses the community-tool method
+# omopDpPlanExecuteDS, which seals the outputs for DP releases and must not be
+# followed by concept-factor harmonization (a core recode drops the seal).
+.plan_execute_impl <- function(plan, out = NULL, symbol = "omop", conns = NULL,
+                               output_mode = "memory",
+                               server_method = "omopPlanExecuteDS",
+                               harmonize_factors = TRUE) {
   output_mode <- match.arg(output_mode, c("memory", "staged"))
   if (identical(output_mode, "staged")) {
     # Standard concept identifiers are the stable OHDSI interchange encoding
@@ -1935,7 +1947,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   }
 
   exec_args <- list(
-    as.name("omopPlanExecuteDS"),
+    as.name(server_method),
     session$res_symbol, .ds_encode(plan), .ds_encode(out),
     output_mode)
   if (!is.null(scope_args)) {
@@ -1972,8 +1984,17 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     names(assign_errors), setdiff(expected_servers, assign_success)
   ))
   if (!is.null(assign_condition) || length(failed_servers) > 0L) {
+    # Report each server's own reason (DSI keeps them after a failed call).
+    reasons <- if (length(assign_errors) > 0L) as.list(assign_errors) else
+      tryCatch(DSI::datashield.errors(), error = function(e) NULL)
+    reasons <- reasons[vapply(reasons, function(x) {
+      is.character(x) && length(x) >= 1L && nzchar(x[[1L]])
+    }, logical(1))]
     .plan_remove_output_symbols(conns, cleanup_family, verify = TRUE)
-    detail <- if (!is.null(assign_condition)) {
+    detail <- if (length(reasons) > 0L) {
+      paste(names(reasons), vapply(reasons, `[[`, "", 1L), sep = ": ",
+            collapse = "; ")
+    } else if (!is.null(assign_condition)) {
       conditionMessage(assign_condition)
     } else {
       paste(failed_servers, collapse = ", ")
@@ -1993,7 +2014,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # Coordination layer: harmonize concept-id columns into factors with one
   # shared level ordering across the federation. Only meaningful in memory
   # mode (staged outputs are Parquet descriptors, not in-R data frames).
-  if (identical(output_mode, "memory") &&
+  if (isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
         isTRUE(plan$options$factor_concepts %||% TRUE)) {
     .harmonizeConceptFactors(owned, conns)
   }
