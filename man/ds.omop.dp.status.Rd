@@ -42,7 +42,9 @@ filters, factors and dsOMOP's own exploration never use it. Since server
 2.8.0, \code{exclusive} is \code{FALSE} by default and, when a custodian
 sets it, applies only to the community tools (servers 2.7.x applied it to
 standard statistics). A missing \code{exclusive} field on older servers is
-treated as \code{FALSE}.
+treated as \code{FALSE}. Servers 2.9.0 and later also report
+\code{tools_mode}, the community tools' protection mode (\code{"auto"} by
+default, \code{"standard"} or \code{"dp"}).
 Each status contains the custodian's public \code{snapshot_id}. Federated
 sites may legitimately report different snapshot identifiers.
 Release preflight rejects either a repeated \code{noise_domain_id} or a

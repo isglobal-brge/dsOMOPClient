@@ -213,12 +213,33 @@ utils::globalVariables(".data")
   different <- expected_servers[!vapply(raw[expected_servers], identical,
                                         logical(1), reference)]
   if (length(different) > 0L) {
+    modes <- vapply(raw[expected_servers], function(x) {
+      mode <- if (is.list(x) && is.list(x$tools)) x$tools$mode
+      if (is.character(mode) && length(mode) == 1L) mode else NA_character_
+    }, character(1))
+    hint <- if (length(unique(modes[!is.na(modes)])) > 1L) {
+      paste0(" The servers protect this question differently ",
+             "(dsomop.tools.mode: ",
+             paste(names(modes), modes, sep = " = ", collapse = ", "),
+             "); the data custodians should align dsomop.tools.mode.")
+    } else {
+      " Align dsOMOP and analysis-pack versions before execution."
+    }
     stop("Federated ", context, " differs across servers: ",
-         paste(different, collapse = ", "),
-         ". Align dsOMOP and analysis-pack versions before execution.",
+         paste(different, collapse = ", "), ".", hint,
          call. = FALSE)
   }
   reference
+}
+
+# Public protection labels of per-server analysis results (attribute
+# dsomop_protection set by dsOMOP >= 2.9.0; absent from older servers).
+.analysis_protection_labels <- function(raw) {
+  labels <- lapply(raw, function(x) {
+    label <- if (is.data.frame(x)) attr(x, "dsomop_protection", exact = TRUE)
+    if (is.list(label) && is.character(label$protection)) label else NULL
+  })
+  labels[!vapply(labels, is.null, logical(1))]
 }
 
 .analysis_complete_results <- function(raw, expected_servers, context) {
@@ -591,6 +612,12 @@ ds.omop.analysis.get <- function(name, symbol = "omop", conns = NULL,
 #'   server-side symbol name is recorded in the result metadata. When
 #'   \code{plot = TRUE} and the entry ships a plot recipe, the built \code{ggplot}
 #'   is attached as the \code{"plot"} attribute (and \code{meta$plot}).
+#'   \code{meta$protection} holds each server's protection label (dsOMOP 2.9.0
+#'   or later): \code{"standard"} (DataSHIELD disclosure controls), \code{"dp"}
+#'   (differential privacy, with epsilon, sensitivity and the noise standard
+#'   deviation) or \code{"standard_fallback"} (standard controls because the
+#'   server's DP service is unavailable), plus the estimand. The server's
+#'   \code{dsomop.tools.mode} (default \code{"auto"}) decides it per question.
 #'
 #' @section Safety (client-side plotting): The server may advertise only an
 #'   allowlisted plot type and declarative column mappings. The client dispatches
@@ -774,6 +801,9 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   raw <- .analysis_complete_results(
     raw, names(conns), paste0("analysis '", name, "'")
   )
+  # Each server labels how its result is protected (standard controls, DP,
+  # or the standard fallback when its DP service is unavailable).
+  protection <- .analysis_protection_labels(raw)
 
   pool_out <- if (.result_type_wants_combine(type)) {
     .pool_analysis_contract(
@@ -812,6 +842,7 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   result$meta$plot <- gg
   result$meta$pooling_contract <- entry_meta$pooling_contract
   result$meta$harmonization <- pool_out$harmonization
+  result$meta$protection <- protection
   .result_type_view(
     result, type,
     combine_reason = if (identical(entry_meta$pooling_contract$strategy,

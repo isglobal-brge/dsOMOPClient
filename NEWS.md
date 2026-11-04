@@ -1,3 +1,22 @@
+# dsOMOPClient 2.9.0
+
+- Support dsOMOP 2.9.0's automatic protection of the OHDSI community tools.
+  `ds.omop.analysis.run()` keeps each server's protection label in
+  `meta$protection` (`"standard"`, `"dp"` with epsilon, sensitivity and the
+  noise standard deviation, or `"standard_fallback"`), and the result prints
+  it with the estimand. `ds.omop.query.exec()` keeps the labels in the
+  `dsomop.protection` attribute.
+- The reopened query-library questions (per-person durations and counts,
+  demographic distributions, values, quantities and costs) pool through their
+  server-owned contracts like every other analysis.
+- When federated analysis metadata differ because servers use different
+  `dsomop.tools.mode` settings, the error names each server's mode.
+- `ds.omop.dp.status()` prints each server's tools mode.
+- Documentation: sticky QueryLibrary redesigns take their input from a
+  community-tool loader (an assign-mode analysis-catalog entry), because plan
+  and recipe outputs carry no DP provenance since dsOMOP 2.8.0; the common
+  per-person questions need no preparation in 2.9.0.
+
 # dsOMOPClient 2.8.0
 
 - Loading tables never depends on differential privacy (DP).

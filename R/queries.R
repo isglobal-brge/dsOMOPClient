@@ -123,6 +123,7 @@ ds.omop.query.exec <- function(query_id, inputs = list(),
   attr(out, "dsomop.harmonization") <- res$meta$harmonization
   attr(out, "dsomop.analysis_name") <- .query_id_to_name(query_id)
   attr(out, "dsomop.expected_servers") <- res$meta$servers
+  attr(out, "dsomop.protection") <- res$meta$protection
   out
 }
 

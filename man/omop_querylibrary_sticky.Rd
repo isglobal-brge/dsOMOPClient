@@ -45,9 +45,9 @@ it is omitted.}
 \code{\link{omop_privacy}}.}
 
 \item{preparation}{Optional \code{omop_recipe} or \code{omop_plan} documenting
-how the protected input will be prepared. It must compile to exactly one
-output. Execution remains explicit so the assigned symbol is visible to
-the analyst and custodian.}
+the intended population. It must compile to exactly one output. It is kept
+as documentation only: plan and recipe outputs carry no DP provenance since
+dsOMOP 2.8.0, so the releasable input comes from a community-tool loader.}
 }
 \value{
 An \code{omop_querylibrary_sticky} specification. Pass it to
@@ -57,9 +57,15 @@ An \code{omop_querylibrary_sticky} specification. Pass it to
 Creates a validated workflow specification containing an
 \code{\link{omop_privacy}} object. The input table is not created by this
 function: it must be a server-created, person-local \code{omop.table}
-produced by the typed Recipe/Plan path, with the requested value and ordering
-columns. All levels, breaks, bounds, positive values and record caps are
-public analysis choices fixed before data access.
+assigned by a community-tool loader (an assign-mode analysis-catalog entry,
+for example \code{dsomop:condition_occurrence.load}), with the requested value
+and ordering columns. Since dsOMOP 2.8.0 tables loaded through plans, recipes
+or manipulation carry no DP provenance (the core never uses DP) and the server
+refuses them. The common per-person durations, counts and demographic
+distributions need no preparation: dsOMOP 2.9.0 answers them automatically in
+the analysis catalog (\code{dsomop.tools.mode = "auto"}). All levels, breaks,
+bounds, positive values and record caps are public analysis choices fixed
+before data access.
 }
 \details{
 The literal upstream SQL is never returned or executed. Exact ZIP,

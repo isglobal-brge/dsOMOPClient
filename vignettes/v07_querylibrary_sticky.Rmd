@@ -14,9 +14,38 @@ library(dsOMOPClient)
 
 The QueryLibrary integration distinguishes an upstream clinical question from
 its published SQL. The SQL is training/reference material and is never executed
-by the sticky redesign path. Instead, a typed Recipe or Plan prepares a
-server-side person-local `omop.table`, and a pinned mapping fixes one of the seven
-sticky primitives and its longitudinal reducer.
+by the sticky redesign path. Instead, a community-tool loader prepares a
+server-side person-local `omop.table`, and a pinned mapping fixes one of the
+seven sticky primitives and its longitudinal reducer.
+
+## Automatic questions (dsOMOP 2.9.0)
+
+The common person-level questions need no preparation at all. With the
+server's default `dsomop.tools.mode = "auto"`, the analysis catalog answers the
+per-person durations and counts (for example `condition.duration_stats`,
+`drug.days_supply_stats`, `condition_era.eras_per_person_stats`) with a
+histogram of one value per person over fixed public bins, and the demographic
+distributions (`person.year_of_birth_distribution`,
+`person.gender_by_age_decade`) with a complete public partition, both with
+sticky DP noise of sensitivity one person. A server whose DP service is not
+available answers the same table under the standard DataSHIELD controls.
+Every result says how it was protected:
+
+```{r automatic, eval=FALSE}
+res <- ds.omop.analysis.run("dsomop:condition.duration_stats",
+                            params = list(concept_id = 201820))
+res$pooled             # persons per duration bin, summed across servers
+res$meta$protection    # per server: "dp" (epsilon, noise SD) or a fallback
+```
+
+## Sticky redesigns
+
+Since dsOMOP 2.8.0 the core never uses differential privacy: tables loaded
+through plans, recipes or manipulation carry no DP provenance, and the server
+refuses them as DP inputs. A sticky redesign is therefore released on a
+person-local table assigned by a community-tool loader (an assign-mode
+analysis-catalog entry such as `dsomop:condition_occurrence.load`), whose
+columns must contain the mapping's variable and ordering columns.
 
 This is deliberately not a QueryLibrary SQL runner or an arbitrary join/query
 gateway. An upstream ID selects only a reviewed semantic mapping; it neither
@@ -68,19 +97,21 @@ age_at_2025 <- omop_querylibrary_sticky(
 age_at_2025
 ```
 
-Prepare one protected output explicitly and then release the mapping:
+Prepare the input with a community-tool loader and then release a mapping
+whose columns it provides, for example the number of persons with a condition
+record (CO11):
 
 ```{r execute, eval=FALSE}
-recipe <- omop_recipe(
-  variables = omop_variable_age(name = "age_at_2025", year = 2025),
-  outputs = omop_output(name = "ages", type = "wide")
-)
-recipe_execute(recipe, out = c(ages = "D_ages"))
-
+loaded <- ds.omop.analysis.run("dsomop:condition_occurrence.load")
+persons_with_conditions <- omop_querylibrary_sticky("CO11")
 result <- ds.omop.querylibrary.sticky.release(
-  "D_ages", age_at_2025, datasources = conns
+  loaded$meta$assign_symbol, persons_with_conditions, datasources = conns
 )
 ```
+
+Mappings over derived columns (such as `age_at_2025` above or a month number)
+have no community-tool loader yet; the automatic questions cover the common
+cases.
 
 Longitudinal numeric and categorical record histograms use a deterministic
 declared order and a finite per-person record cap:
