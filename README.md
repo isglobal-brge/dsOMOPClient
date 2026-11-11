@@ -73,6 +73,23 @@ Once the package is installed, you can load it into your R environment using the
 library(dsOMOPClient)
 ```
 
+### Checking versions
+
+After `DSI::datashield.login()`, and before connecting to an OMOP resource,
+you can check what each server offers:
+```R
+ds.omop.client.version()          # this client
+ds.omop.server.version(conns)     # dsOMOP on every server
+```
+`ds.omop.server.version()` reports, per server, the dsOMOP version whose
+DataSHIELD methods the profile publishes, the version installed (the one that
+answers), the methods this client calls that the profile lacks, and what to
+change when a server is not ready. On Opal, upgrading dsOMOP does not publish
+the new version's methods: an administrator publishes its settings again
+(Administration > DataSHIELD > Packages > dsOMOP > Publish).
+`ds.omop.connect()` stops with the same explanation when a server cannot be
+used, and reports each server's own error instead of DSI's generic notice.
+
 ## Federated result views
 
 Aggregate APIs use the same result vocabulary as dsBaseClient:
