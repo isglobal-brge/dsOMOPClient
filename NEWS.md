@@ -1,3 +1,22 @@
+# dsOMOPClient 2.10.1
+
+- `ds.omop.connect()` reports each server's own error instead of DSI's
+  generic "There are some DataSHIELD errors, list them with
+  datashield.errors()", followed by what to do when that is known. A server
+  whose DataSHIELD profile does not publish dsOMOP's methods (dsOMOP missing,
+  or upgraded on Opal without publishing its settings again) now stops the
+  connection before anything is assigned, naming the missing method and the
+  Opal page where an administrator publishes it.
+- New `ds.omop.client.version()`: the installed dsOMOPClient version.
+- New `ds.omop.server.version(conns)`: works on plain DataSHIELD connections,
+  before `ds.omop.connect()`. Per server it reports the dsOMOP version whose
+  methods the profile publishes, the version that answers (the installed
+  one), the methods this client calls that the profile lacks, whether the
+  server is ready, and what to change when it is not.
+- Pairs with dsOMOP 2.10.1, which never requires TLS on a database
+  connection, reads dsOMOP 1.x resources and finds the CDM schema of a
+  resource that names none.
+
 # dsOMOPClient 2.10.0
 
 - Support dsOMOP 2.10.0's seed-only DP: servers reporting

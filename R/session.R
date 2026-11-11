@@ -920,11 +920,17 @@ ds.omop.connect <- function(resource,
   # Load dsOMOP server-side before assigning the resource. Opal invokes methods
   # as `dsOMOP::fn`, so the namespace (and the resource resolver it registers in
   # .onLoad) is not loaded until the first dsOMOP call. Without this ping, the
-  # assign below runs first and fails with "No resolver could be found".
-  tryCatch(
-    DSI::datashield.aggregate(conns, call("omopPingDS")),
-    error = function(e) NULL
-  )
+  # assign below runs first and fails with "No resolver could be found". A
+  # server that cannot answer it (dsOMOP missing, or its methods not published
+  # in the profile) stops the connection here, with that server's reason and
+  # what to do, before anything is assigned.
+  ping <- .ds_safe_aggregate(conns, call("omopPingDS"))
+  ping_errors <- attr(ping, "ds_errors") %||% list()
+  not_ready <- unique(c(names(ping_errors), setdiff(server_names, names(ping))))
+  if (length(not_ready) > 0L) {
+    stop("dsOMOP is not ready on ", paste(not_ready, collapse = ", "), ":\n",
+         .ds_failure_detail(ping_errors, servers = not_ready), call. = FALSE)
+  }
 
   remove_symbol <- function(servers, target) {
     failures <- character(0)
@@ -999,11 +1005,9 @@ ds.omop.connect <- function(resource,
   failed_resources <- unique(c(names(errors),
                                setdiff(server_names, resource_success)))
   if (!is.null(resource_condition) || length(failed_resources) > 0L) {
-    detail <- if (!is.null(resource_condition)) {
-      conditionMessage(resource_condition)
-    } else paste(failed_resources, collapse = ", ")
     fail_transaction(
-      paste0("Failed to assign every OMOP resource: ", detail, "."),
+      paste0("Failed to assign every OMOP resource:\n",
+             .ds_failure_detail(errors, resource_condition, failed_resources)),
       initialized = character(0), resources = resource_success
     )
   }
@@ -1033,11 +1037,9 @@ ds.omop.connect <- function(resource,
   failed_init <- unique(c(names(init_errors),
                           setdiff(server_names, init_success)))
   if (!is.null(init_condition) || length(failed_init) > 0L) {
-    detail <- if (!is.null(init_condition)) {
-      conditionMessage(init_condition)
-    } else paste(failed_init, collapse = ", ")
     fail_transaction(
-      paste0("Failed to initialize every OMOP handle: ", detail, "."),
+      paste0("Failed to initialize every OMOP handle:\n",
+             .ds_failure_detail(init_errors, init_condition, failed_init)),
       initialized = init_success, resources = resource_success
     )
   }
@@ -1049,9 +1051,10 @@ ds.omop.connect <- function(resource,
   missing_caps <- setdiff(server_names, names(caps))
   if (length(cap_errors) > 0L || length(missing_caps) > 0L) {
     fail_transaction(
-      paste0("Failed to retrieve complete OMOP capabilities from: ",
-             paste(unique(c(names(cap_errors), missing_caps)), collapse = ", "),
-             "."),
+      paste0("Failed to retrieve complete OMOP capabilities:\n",
+             .ds_failure_detail(
+               cap_errors, servers = unique(c(names(cap_errors), missing_caps))
+             )),
       initialized = init_success, resources = resource_success
     )
   }
