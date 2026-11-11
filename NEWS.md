@@ -1,3 +1,27 @@
+# dsOMOPClient 2.10.3 (in development)
+
+Recipe language 2.0 (design-2.10.3). This section is the WS-0 skeleton; each
+workstream fills its entries.
+
+## Corrected
+- (B-8) `parent_id` now restricts membership (see dsOMOP 2.10.3).
+- (F-3) The client blocklist is identical to the server's class-1 patterns;
+  birth components are not blocked on assignment paths.
+
+## Newly permitted
+- No client-side mirrors of removed server gates (`narrow_filter`,
+  `unbound_numeric_filter`, mandatory bins); defaults are surfaced by
+  `print()`, `recipe_explain()` and `recipe_lint()` instead.
+
+## Newly refused
+- Plans that do not validate against the vendored `plan-v2.json` are never
+  sent; a v2 recipe whose operations an older server lacks is refused with
+  the operation named.
+
+## Contracts shipped by WS-0
+- Vendored `inst/schema/` (byte-identical to dsOMOP's), `R/json_schema.R`,
+  `R/semantic_digest.R`; `openssl` added to Imports for the semantic digest.
+
 # dsOMOPClient 2.10.2
 
 - Version aligned with dsOMOP 2.10.2 (which reads every OMOP CDM version
