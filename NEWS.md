@@ -1,3 +1,8 @@
+# dsOMOPClient 2.10.2
+
+- Version aligned with dsOMOP 2.10.2 (which reads every OMOP CDM version
+  label); no client change.
+
 # dsOMOPClient 2.10.1
 
 - `ds.omop.connect()` reports each server's own error instead of DSI's
