@@ -141,7 +141,8 @@
 # identities, never from the production compiler's roster. All non-matching
 # corpus populations have one episode per (person, start), except recipe 05's
 # two same-day MI records whose ends are equal and whose source keys break the
-# tie. Union the outputs so survival omissions cannot renumber the baseline.
+# tie. Matched memberships use the oracle set and role as their typed keys.
+# Union the outputs so survival omissions cannot renumber the baseline.
 .ws7e_episode_catalog <- function(ctx, recipe, frozen, expected, component) {
   root <- strsplit(component, ".", fixed = TRUE)[[1L]][[1L]]
   pop <- frozen$outputs[[root]]$rows
@@ -156,10 +157,23 @@
                                   simplifyVector = FALSE)
     rows <- list(.ws7e_expected(complete$outputs$table1))
   }
-  keys <- c("person_id", "index_date", intersect("index_key", names(rows[[1L]])))
+  matched <- identical(frozen$populations[[pop]]$kind, "match")
+  keys <- c("person_id", "index_date", if (matched) c("set_id", "is_case") else {
+    intersect("index_key", names(rows[[1L]]))
+  })
   catalog <- unique(do.call(rbind, lapply(rows, function(x) x[keys])))
   ordering <- list(as.numeric(catalog$person_id), catalog$index_date)
-  if ("index_key" %in% keys) ordering <- c(ordering, list(as.character(catalog$index_key)))
+  if (matched) {
+    # WS-6's matched start/end are both the case date, source is constant,
+    # and its typed keys are set_id and role (case = 0, control = 1).
+    ordering <- c(ordering, list(as.numeric(catalog$set_id), 1 - as.numeric(catalog$is_case)))
+  } else if ("index_key" %in% keys) {
+    key <- as.character(catalog$index_key)
+    # Frozen decimal event keys are small exact integers. Preserve numeric
+    # ordering rather than lexical ordering of their lossless JSON text.
+    if (all(grepl("^[0-9]+$", key))) key <- as.numeric(key)
+    ordering <- c(ordering, list(key))
+  }
   catalog <- catalog[do.call(order, c(ordering, list(method = "radix"))), , drop = FALSE]
   catalog$cohort_row_id <- seq_len(nrow(catalog))
   catalog
@@ -169,18 +183,12 @@
   do.call(paste, c(lapply(rows[keys], as.character), sep = "|"))
 }
 
-.ws7e_compare <- function(frame, expected, handle, info, episodes = NULL) {
+.ws7e_compare <- function(frame, expected, handle, info, episodes) {
   want <- .ws7e_expected(expected)
-  if (!is.null(episodes)) {
-    keys <- setdiff(names(episodes), "cohort_row_id")
-    at <- match(.ws7e_episode_key(want, keys), .ws7e_episode_key(episodes, keys))
-    expect_false(anyNA(at), info = info)
-    want$cohort_row_id <- episodes$cohort_row_id[at]
-  } else {
-    # Matching publishes set_id/is_case, which bind each person's values to
-    # the oracle case time directly. Each membership must have its own key.
-    expect_identical(anyDuplicated(as.character(frame$cohort_row_id)), 0L, info = info)
-  }
+  keys <- setdiff(names(episodes), "cohort_row_id")
+  at <- match(.ws7e_episode_key(want, keys), .ws7e_episode_key(episodes, keys))
+  expect_false(anyNA(at), info = info)
+  want$cohort_row_id <- episodes$cohort_row_id[at]
   expect_identical(as.character(frame$row_id), as.character(frame$cohort_row_id), info = info)
   released <- as.character(unlist(expected$released_columns))
   expect_setequal(names(frame), released)
@@ -255,9 +263,7 @@
       raw <- ctx$server$getSessionData(ctx$sid, published)
       expect_identical(inherits(raw, "FlowerDatasetDescriptor"), identical(mode, "staged"))
       frame <- .ws7e_frame(ctx, published)
-      episodes <- if (!identical(recipe, "10-matching")) {
-        .ws7e_episode_catalog(ctx, recipe, frozen, expected, component)
-      }
+      episodes <- .ws7e_episode_catalog(ctx, recipe, frozen, expected, component)
       .ws7e_compare(frame, expected[[component]], ctx$handle, paste(recipe, mode, component), episodes)
       if (identical(mode, "memory")) frames[[component]] <- frame else {
         expect_identical(.ws7e_canonical(frame, frames[[component]]), .ws7e_canonical(frames[[component]]),
