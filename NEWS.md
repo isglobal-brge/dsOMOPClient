@@ -2,6 +2,8 @@
 
 Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
 
+- Protected histogram pooling retains its cells when a distribution gate
+  withholds moments; unavailable means and standard deviations stay NA.
 - New protected-release contract: dsOMOP 2.10.3 servers advertise
   `privacy_contract = "protected_release_fixed_basis_or_realised_v1"`.
   `ds.omop.dp.release()` validates their `dsomop-protected-release-v1`
