@@ -20,4 +20,3 @@ Removes an output specification by name from the recipe.
 \seealso{
 \code{\link{omop_recipe}}
 }
-\keyword{internal}

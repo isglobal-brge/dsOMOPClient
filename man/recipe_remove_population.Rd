@@ -21,4 +21,3 @@ population cannot be removed.
 \seealso{
 \code{\link{omop_recipe}}
 }
-\keyword{internal}

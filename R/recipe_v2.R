@@ -36,16 +36,31 @@
 #'
 #' \code{recipe_add_concept_set()}, \code{recipe_add_event()} and
 #' \code{recipe_add_interval()} declare named nodes that other objects
-#' reference by name; \code{recipe_set_publish()} sets the publication roots.
-#' (The parameter layer exports the complete set of editing functions.)
+#' reference by name; the \code{recipe_remove_*()} functions remove one by
+#' name; \code{recipe_set_publish()} sets the publication roots (design
+#' section 2.10). They belong to the complete set of exported editing
+#' functions with \code{\link{recipe_add_population}},
+#' \code{\link{recipe_add_block}}, \code{\link{recipe_add_variable}},
+#' \code{\link{recipe_add_filter}}, \code{\link{recipe_add_output}}, their
+#' \code{recipe_remove_*()} counterparts, \code{\link{recipe_set_scope}} and
+#' \code{\link{recipe_set_options}}; \code{omop_recipe(...)} is the same
+#' recipe built in one call.
 #'
 #' @param recipe An \code{omop_recipe}.
-#' @param concept_set,event,interval The object to declare (it must be named,
-#'   except events and intervals, which get a deterministic name when compiled).
+#' @param concept_set,event,interval The object to declare (a registry concept
+#'   set must be named; events and intervals without a name get a
+#'   deterministic one when compiled). Declaring an existing name again with
+#'   a different definition is an error.
 #' @param name Name of the node to remove.
 #' @param publish Character vector of output names, or \code{NULL} for all.
 #' @return The modified recipe.
-#' @keywords internal
+#' @examples
+#' rec <- omop_recipe()
+#' rec <- recipe_add_concept_set(rec, omop_concept_set(201826, descendants = TRUE,
+#'                                                     name = "t2dm"))
+#' rec <- recipe_add_event(rec, omop_event("condition_occurrence", "t2dm", name = "t2dm_dx"))
+#' rec <- recipe_remove_event(rec, "t2dm_dx")
+#' @export
 recipe_add_concept_set <- function(recipe, concept_set) {
   .v2_recipe_check(recipe)
   if (!inherits(concept_set, "omop_concept_set")) {
@@ -67,7 +82,7 @@ recipe_add_concept_set <- function(recipe, concept_set) {
 }
 
 #' @rdname recipe_add_concept_set
-#' @keywords internal
+#' @export
 recipe_add_event <- function(recipe, event) {
   .v2_recipe_check(recipe)
   if (!inherits(event, "omop_event")) stop("event must be an omop_event object.", call. = FALSE)
@@ -89,7 +104,7 @@ recipe_add_event <- function(recipe, event) {
 }
 
 #' @rdname recipe_add_concept_set
-#' @keywords internal
+#' @export
 recipe_add_interval <- function(recipe, interval) {
   .v2_recipe_check(recipe)
   if (!inherits(interval, "omop_interval")) {
@@ -108,7 +123,7 @@ recipe_add_interval <- function(recipe, interval) {
 }
 
 #' @rdname recipe_add_concept_set
-#' @keywords internal
+#' @export
 recipe_remove_concept_set <- function(recipe, name) {
   .v2_recipe_check(recipe)
   recipe$concept_sets[[name]] <- NULL
@@ -117,7 +132,7 @@ recipe_remove_concept_set <- function(recipe, name) {
 }
 
 #' @rdname recipe_add_concept_set
-#' @keywords internal
+#' @export
 recipe_remove_event <- function(recipe, name) {
   .v2_recipe_check(recipe)
   keep <- !vapply(recipe$events %||% list(), function(e) identical(e$name, name), logical(1))
@@ -127,7 +142,7 @@ recipe_remove_event <- function(recipe, name) {
 }
 
 #' @rdname recipe_add_concept_set
-#' @keywords internal
+#' @export
 recipe_remove_interval <- function(recipe, name) {
   .v2_recipe_check(recipe)
   keep <- !vapply(recipe$intervals %||% list(), function(e) identical(e$name, name), logical(1))
@@ -137,7 +152,7 @@ recipe_remove_interval <- function(recipe, name) {
 }
 
 #' @rdname recipe_add_concept_set
-#' @keywords internal
+#' @export
 recipe_set_publish <- function(recipe, publish) {
   .v2_recipe_check(recipe)
   if (is.null(publish)) {

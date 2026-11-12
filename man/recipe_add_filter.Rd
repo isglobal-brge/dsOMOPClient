@@ -27,4 +27,3 @@ not provided.
 \seealso{
 \code{\link{omop_filter}}, \code{\link{omop_recipe}}
 }
-\keyword{internal}

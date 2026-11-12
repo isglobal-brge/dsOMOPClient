@@ -11,7 +11,7 @@
                         "omop_criterion", "omop_window", "omop_bound", "omop_anchor",
                         "omop_index", "omop_any_of", "omop_end", "omop_coverage",
                         "omop_interval", "omop_censor", "omop_reducer", "omop_match",
-                        "omop_match_item")
+                        "omop_match_item", "omop_param")
 
 .V2_CTOR_TAG <- "omop_ctor"
 
@@ -53,6 +53,10 @@
   }
   cls <- class(x)[[1L]]
   switch(cls,
+    omop_param = list(ctor = "omop_param", args = list(
+      name = x$name, type = x$type, default = x$default, description = x$description)),
+    omop_param_op = list(ctor = ".v2_param_op", args = list(
+      op = x$op, e1 = x$args[[1L]], e2 = if (length(x$args) > 1L) x$args[[2L]])),
     omop_concept_set = list(ctor = "omop_concept_set", args = list(
       concepts = x$concepts, descendants = x$descendants, mapped = x$mapped,
       exclude = x$exclude, name = x$name)),
@@ -177,7 +181,7 @@
                "omop_any", "omop_person", "omop_age_is", "omop_observed", "omop_in_cohort",
                "omop_window", "omop_bound", "omop_anchor", "omop_index", "omop_any_of",
                "omop_end", "omop_coverage", "omop_era", "omop_censor", "omop_reduce",
-               "omop_match", "omop_age_band", "omop_strata")
+               "omop_match", "omop_age_band", "omop_strata", "omop_param", ".v2_param_op")
   if (!ctor %in% allowed) stop("Unknown language-2 object '", ctor, "' in the recipe.", call. = FALSE)
   variable_name <- x$variable_name
   x[[.V2_CTOR_TAG]] <- NULL
@@ -213,18 +217,20 @@
 
 # R code that rebuilds a language-2 object.
 .v2_codegen <- function(x) {
+  if (inherits(x, "omop_param_op")) {
+    # A parameter expression is written as R arithmetic on its placeholders.
+    operand <- function(a) {
+      if (inherits(a, "omop_param_op")) return(paste0("(", .v2_codegen(a), ")"))
+      if (.v2_is_param(a)) return(.v2_codegen(a))
+      .codegen_value(a)
+    }
+    if (length(x$args) == 1L) return(paste0("-", operand(x$args[[1L]])))
+    return(paste(operand(x$args[[1L]]), x$op, operand(x$args[[2L]])))
+  }
   spec <- .v2_ctor_spec(x)
   arg_code <- function(v) {
     if (.v2_is_tagged(v)) return(.codegen_raw(.v2_codegen(v)))
-    if (is.list(v) && !is.data.frame(v) && any(vapply(v, .v2_is_tagged, logical(1)))) {
-      parts <- vapply(seq_along(v), function(i) {
-        el <- v[[i]]
-        code <- if (.v2_is_tagged(el)) .v2_codegen(el) else .codegen_value(el)
-        nm <- names(v)[i]
-        if (!is.null(nm) && nzchar(nm)) paste0(.codegen_name(nm), " = ", code) else code
-      }, "")
-      return(.codegen_raw(paste0("list(", paste(parts, collapse = ", "), ")")))
-    }
+    if (.v2_has_tagged(v)) return(.codegen_raw(.v2_codegen_list(v)))
     v
   }
   args <- lapply(spec$args, arg_code)
@@ -249,14 +255,19 @@
   x
 }
 
+# Does x hold a language-2 object at any depth?
+.v2_has_tagged <- function(x) {
+  if (.v2_is_tagged(x)) return(TRUE)
+  is.list(x) && !is.data.frame(x) && any(vapply(x, .v2_has_tagged, logical(1)))
+}
+
 # R code of a (possibly named) list mixing language-2 objects and plain values.
 .v2_codegen_list <- function(x) {
   nms <- names(x)
   parts <- vapply(seq_along(x), function(i) {
     el <- x[[i]]
     code <- if (.v2_is_tagged(el)) .v2_codegen(el) else
-      if (is.list(el) && !is.data.frame(el) && any(vapply(el, .v2_is_tagged, logical(1))))
-        .v2_codegen_list(el) else .codegen_value(el)
+      if (.v2_has_tagged(el)) .v2_codegen_list(el) else .codegen_value(el)
     if (!is.null(nms) && nzchar(nms[[i]])) paste0(.codegen_name(nms[[i]]), " = ", code) else code
   }, "")
   paste0("list(", paste(parts, collapse = ", "), ")")

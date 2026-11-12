@@ -23,4 +23,3 @@ from concept names or IDs with uniqueness enforcement.
 \seealso{
 \code{\link{omop_variable_block}}, \code{\link{omop_recipe}}
 }
-\keyword{internal}

@@ -11,7 +11,8 @@ ds.omop.filter(
   value = NULL,
   newobj = NULL,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  expr = NULL
 )
 }
 \arguments{
@@ -22,8 +23,7 @@ symbol is used.}
 \item{var}{Character; the (non-protected) column to filter on.}
 
 \item{op}{Character; one of \code{"=="}, \code{"!="}, \code{"in"}, or
-\code{"not_in"}. Numeric/date thresholds belong in recipe filters with
-disclosure-safe bins/ranges.}
+\code{"not_in"} (other comparisons: \code{expr}).}
 
 \item{value}{Category value(s).}
 
@@ -35,23 +35,33 @@ initialised (default: \code{"omop"}).}
 
 \item{conns}{DSI connection object(s). If \code{NULL} (the default), the
 connections stored in the active session are used.}
+
+\item{expr}{(2.10.3) A predicate from \code{\link{omop_where}} (instead of
+\code{var}/\code{op}/\code{value}).}
 }
 \value{
 Invisibly, the name of the created server-side symbol (\code{newobj}).
 }
 \description{
-Applies a categorical equality/membership filter to a server-side,
-token-keyed data frame.
+Keeps the rows of a server-side, token-keyed data frame that satisfy an
+equality/membership condition (\code{var}, \code{op}, \code{value}) or,
+from 2.10.3, a language-2 predicate (\code{expr = omop_where(...)}): the
+closed grammar \code{== != < <= > >= \%in\% is.na() ! & |} over the frame's
+columns, three-valued (a row whose condition is unknown is dropped), sent
+as data and validated and type-checked by the server before any row is
+read (servers advertise it as \code{verb.filter_expr}, dsOMOP 2.10.3).
 Filtering on a protected/identifier column (the person token or any
-\code{dsomop_protected} column) is rejected server-side. The server re-gates
-the filtered result on its distinct-person count and fails closed if the
-filter narrows the population below the disclosure threshold.
+\code{dsomop_protected} column) is rejected server-side. The filtered
+result is a released object: its distinct persons must reach the server's
+\code{nfilter.subset}; the excluded rows stay private.
 }
 \examples{
 \dontrun{
 women <- ds.omop.filter("features", var = "sex", op = "==", value = "F")
+adults <- ds.omop.filter("features", expr = omop_where(age >= 18, !is.na(bmi)))
 }
 }
 \seealso{
-\code{\link{ds.omop.select}}, \code{\link{ds.omop.merge}}
+\code{\link{ds.omop.select}}, \code{\link{ds.omop.merge}},
+  \code{\link{ds.omop.mutate}}
 }

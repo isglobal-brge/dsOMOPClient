@@ -27,8 +27,10 @@ recipe_set_publish(recipe, publish)
 \arguments{
 \item{recipe}{An \code{omop_recipe}.}
 
-\item{concept_set, event, interval}{The object to declare (it must be named,
-except events and intervals, which get a deterministic name when compiled).}
+\item{concept_set, event, interval}{The object to declare (a registry concept
+set must be named; events and intervals without a name get a
+deterministic one when compiled). Declaring an existing name again with
+a different definition is an error.}
 
 \item{name}{Name of the node to remove.}
 
@@ -40,7 +42,20 @@ The modified recipe.
 \description{
 \code{recipe_add_concept_set()}, \code{recipe_add_event()} and
 \code{recipe_add_interval()} declare named nodes that other objects
-reference by name; \code{recipe_set_publish()} sets the publication roots.
-(The parameter layer exports the complete set of editing functions.)
+reference by name; the \code{recipe_remove_*()} functions remove one by
+name; \code{recipe_set_publish()} sets the publication roots (design
+section 2.10). They belong to the complete set of exported editing
+functions with \code{\link{recipe_add_population}},
+\code{\link{recipe_add_block}}, \code{\link{recipe_add_variable}},
+\code{\link{recipe_add_filter}}, \code{\link{recipe_add_output}}, their
+\code{recipe_remove_*()} counterparts, \code{\link{recipe_set_scope}} and
+\code{\link{recipe_set_options}}; \code{omop_recipe(...)} is the same
+recipe built in one call.
 }
-\keyword{internal}
+\examples{
+rec <- omop_recipe()
+rec <- recipe_add_concept_set(rec, omop_concept_set(201826, descendants = TRUE,
+                                                    name = "t2dm"))
+rec <- recipe_add_event(rec, omop_event("condition_occurrence", "t2dm", name = "t2dm_dx"))
+rec <- recipe_remove_event(rec, "t2dm_dx")
+}
