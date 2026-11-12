@@ -1206,6 +1206,14 @@
   if (legacy) {
     grain <- grain %||% out$options$grain
     if (identical(out$type, "baseline")) grain <- grain %||% "episode"
+    if (identical(out$type, "features")) {
+      # Design 2.9: the features preset is wide with grain = "episode" when
+      # any of its variables is windowed.
+      vars <- (ctx$recipe$variables %||% list())[out$variables %||% names(ctx$recipe$variables)]
+      if (any(vapply(vars, function(v) !is.null(v$time_window), logical(1)))) {
+        grain <- grain %||% "episode"
+      }
+    }
   }
   wire$grain <- grain %||% "<default>"
   wire$result_symbol <- out$result_symbol %||% paste0("D_", name)

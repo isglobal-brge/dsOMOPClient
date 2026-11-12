@@ -417,3 +417,16 @@ test_that("each language-2 object has its section 4 JSON form", {
                    list(fn = "count", distinct = "visit"))
   expect_error(dsOMOPClient:::.v2_wire_of(omop_output("o")), "compiled with their recipe")
 })
+
+test_that("the features preset takes episode grain when windowed (design 2.9)", {
+  vars <- list(omop_variable(name = "a", table = "measurement", concept_id = 1, format = "count",
+                             time_window = list(start = -90, end = 0)))
+  r <- omop_recipe(variables = vars, outputs = omop_output(name = "f", type = "features"))
+  expect_identical(recipe_to_plan(r)$outputs$f$grain, "episode")
+  # its v1 rendering still needs the explicit grain (corpus: unchanged)
+  expect_error(recipe_to_plan(r, version = 1), "grain")
+  flat <- omop_recipe(variables = list(omop_variable(name = "b", table = "measurement",
+                                                     concept_id = 2, format = "count")),
+                      outputs = omop_output(name = "f", type = "features"))
+  expect_identical(recipe_to_plan(flat)$outputs$f$grain, "person")
+})
