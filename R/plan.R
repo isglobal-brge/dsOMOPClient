@@ -1925,6 +1925,11 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # 2.10.3 servers report what they published (dynamic inventory, A-E13); the
   # static component-suffix prediction is kept only for older servers.
   status_protocol <- .plan_status_capable(session, names(conns))
+  if (identical(on_small_site, "skip") && !status_protocol) {
+    stop("on_small_site = \"skip\" needs every server to report its publication ",
+         "status (dsOMOP 2.10.3); at least one connected server does not.",
+         call. = FALSE)
+  }
   owned <- .plan_expected_output_symbols(plan, out)
   cleanup_family <- .plan_output_symbol_families(out)
   reserved_targets <- if (status_protocol) unname(out) else

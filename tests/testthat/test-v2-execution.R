@@ -254,3 +254,10 @@ test_that("malformed status objects are refused", {
   expect_error(dsOMOPClient:::.plan_validate_status(
     .ok_status(list(x = list(x = list(grain = "person")))), "s"), "malformed publication inventory")
 })
+
+test_that("on_small_site = 'skip' is refused when a server has no status transport", {
+  .with_servers(list(srv1 = list()))
+  .mock_federation(list(srv1 = NULL))
+  expect_error(recipe_execute(.legacy_recipe(), on_small_site = "skip"),
+               "needs every server to report its publication status")
+})
