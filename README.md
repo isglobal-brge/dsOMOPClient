@@ -226,11 +226,12 @@ possible relational or longitudinal estimand. In particular:
   `personRef`; absent covariate rows represent zero for roster members with no
   qualifying event;
 - the local Query Library is curated and incomplete. The dedicated privacy path
-  currently supports seven person-bounded sticky-noise primitives. Its public
-  guarantee is `sticky_person_bounded_discrete_laplace_per_release_v1`, under
-  the `fixed_per_release_snapshot_first_answer_v1` contract. Eligible inputs carry
-  authenticated semantic lineage and deterministic person-level contribution
-  bounds. The
+  supports seven person-bounded sticky-noise primitives under the current
+  `protected_release_fixed_basis_or_realised_v1` contract. Guarantees are
+  route-qualified: a calibrated fixed vector on unchanged source data before
+  exact-support admission, or realised-sticky protection without a finite joint
+  epsilon claim. Eligible inputs carry authenticated semantic lineage and
+  deterministic person-level contribution bounds. The
   pinned upstream snapshot is exhaustively classified as 129 executable bounded
   redesigns, 54 vocabulary/reference metadata questions and 18 blocked shapes;
   none authorizes literal upstream SQL.
