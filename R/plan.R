@@ -2026,7 +2026,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     session$res_symbol,
     # v2 plans keep every digit, explicit nulls and empty objects, so the
     # server parses exactly the plan whose semantic digest was computed.
-    if (v2) .ds_encode_lossless(plan) else .ds_encode(plan), .ds_encode(out),
+    if (v2) .ds_encode_lossless(plan) else .ds_encode(plan),
+    # zero publication roots (publish = []): an empty JSON object, never a
+    # bare character(0) that a DataSHIELD expression parser would refuse
+    if (length(out)) .ds_encode(out) else .ds_encode(stats::setNames(list(), character(0))),
     output_mode, commit_policy = if (on_small_site == "skip") {
       "all_or_none"
     } else "server")

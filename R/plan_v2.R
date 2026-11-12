@@ -1349,15 +1349,20 @@
     if (is.null(cs$name)) cs$name <- nm
     .v2c_concept_set(ctx, cs, paste0("concept set '", cs$name, "'"))
   }
+  # A named declaration enters the cycle check itself (so a cycle is reported
+  # from the declaration that starts it); compiling it again registers the
+  # same wire, and a second, different definition of the name is refused.
   for (ev in recipe$events %||% list()) {
-    nm <- if (is.list(ev) && is.character(ev$name)) ev$name else NULL
-    ctx$declared_events <- c(ctx$declared_events,
-      if (!is.null(nm) && !is.null(ctx$events[[nm]])) nm else .v2c_event(ctx, ev, "recipe events"))
+    if (is.list(ev) && is.character(ev$name) && length(ev$name) == 1L) {
+      .v2c_resolve_declared(ctx, ev$name, "recipe events")
+    }
+    ctx$declared_events <- c(ctx$declared_events, .v2c_event(ctx, ev, "recipe events"))
   }
   for (iv in recipe$intervals %||% list()) {
-    nm <- if (is.list(iv) && is.character(iv$name)) iv$name else NULL
-    ctx$declared_intervals <- c(ctx$declared_intervals,
-      if (!is.null(nm) && !is.null(ctx$intervals[[nm]])) nm else .v2c_interval(ctx, iv, "recipe intervals"))
+    if (is.list(iv) && is.character(iv$name) && length(iv$name) == 1L) {
+      .v2c_resolve_declared(ctx, iv$name, "recipe intervals")
+    }
+    ctx$declared_intervals <- c(ctx$declared_intervals, .v2c_interval(ctx, iv, "recipe intervals"))
   }
   # 2. v2 variables (every one is emitted; legacy ones when an output uses them).
   for (vn in names(recipe$variables %||% list())) {

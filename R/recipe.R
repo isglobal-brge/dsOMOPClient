@@ -5653,11 +5653,13 @@ recipe_to_code <- function(recipe) {
   # recipe_add_block and preserved across the JSON/YAML round-trip), so
   # block-derived variables are identified by that marker alone.
   var_code <- character(0)
+  named_vars <- FALSE
   for (nm in names(recipe$variables)) {
     v <- recipe$variables[[nm]]
     if (!is.null(v$block_id)) next
     if (.v2_is_v2_variable(v)) {
       var_code <- c(var_code, paste0(.codegen_name(nm), " = ", .v2_codegen(v)))
+      named_vars <- TRUE
       next
     }
 
@@ -5741,8 +5743,13 @@ recipe_to_code <- function(recipe) {
     }
     var_code <- c(var_code, code)
   }
-  if (length(var_code) > 0)
-    slot_args$variables <- .codegen_list_arg(var_code)
+  if (length(var_code) > 0) {
+    # A language-2 variable is named by its list element, so the list stays
+    # even when it has one element.
+    slot_args$variables <- if (named_vars) {
+      .codegen_raw(paste0("list(", paste(var_code, collapse = ", "), ")"))
+    } else .codegen_list_arg(var_code)
+  }
 
   # Filters (preserve their IDs as the list element names).
   filt_code <- character(0)

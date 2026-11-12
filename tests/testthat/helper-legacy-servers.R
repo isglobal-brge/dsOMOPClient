@@ -68,7 +68,8 @@
 # A federation with dsOMOP 2.10.2 sites `old` and current sites `new`.
 # `unpublished` lists methods a current site's profile does not publish.
 .legacy_federation <- function(old = character(0), new = character(0),
-                               unpublished = character(0), env = parent.frame()) {
+                               unpublished = character(0), ops = .V2_ALL_OPS,
+                               env = parent.frame()) {
   sites <- c(old, new)
   m2102 <- .methods_2102()
   contract <- .contract_2102()
@@ -80,7 +81,7 @@
   state$status <- list()
   state$symbols <- stats::setNames(rep(list(character(0)), length(sites)), sites)
   conns <- stats::setNames(as.list(sites), sites)
-  caps <- stats::setNames(lapply(sites, function(s) if (s %in% old) list() else .caps()), sites)
+  caps <- stats::setNames(lapply(sites, function(s) if (s %in% old) list() else .caps(ops)), sites)
   method_rows <- function(s, type) {
     nm <- if (s %in% old) m2102[[type]] else {
       setdiff(c(current[[type]], if (identical(type, "aggregate")) current$optional), unpublished)
