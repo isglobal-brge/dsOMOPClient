@@ -8121,6 +8121,9 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'     \code{missing_measurement} are not complements.}
 #'   \item{parent_inheritance (INFO)}{a \code{parent_id} now restricts the
 #'     child population.}
+#'   \item{language_2_only (INFO)}{a recipe of 2.10.1 constructors whose
+#'     shape 2.10.3 newly permits (e.g. a NOT group) has no v1 plan and runs
+#'     as its language-2 plan on dsOMOP 2.10.3 servers only.}
 #' }
 #' The lint has no mirror of server disclosure gates (no width floors, no
 #' mandatory bins): from 2.10.3 the server's final publication rule is the
@@ -8152,15 +8155,29 @@ recipe_lint <- function(recipe) {
     rows[[length(rows) + 1L]] <<- .lint_row(severity, code, message, locus)
   }
 
-  # ERROR no_compile: the compile error IS the first lint.
+  # ERROR no_compile: the compile error IS the first lint. The recipe compiles
+  # as it executes: a 2.10.1-style recipe as its v1 plan, or as v2 when the v1
+  # compiler refuses a newly permitted shape (INFO language_2_only).
+  v1_refusal <- NULL
   compile_err <- tryCatch({
-    recipe_to_plan(recipe,
-                   version = if (length(.recipe_needs_v2(recipe))) 2L else 1L)
+    if (length(.recipe_needs_v2(recipe)) == 0L) {
+      v1 <- .recipe_v1_or_null(recipe)
+      if (inherits(v1, "dsomop_no_v1")) {
+        v1_refusal <- attr(v1, "v1_refusal")
+        recipe_to_plan(recipe, version = 2L)
+      }
+    } else {
+      recipe_to_plan(recipe, version = 2L)
+    }
     NULL
   }, error = function(e) conditionMessage(e))
   if (!is.null(compile_err)) {
     add("ERROR", "no_compile",
         paste0("recipe_to_plan() failed: ", compile_err), "recipe")
+  } else if (!is.null(v1_refusal)) {
+    add("INFO", "language_2_only",
+        paste0("No v1 plan (", v1_refusal, ") The recipe runs as its language-2 ",
+               "plan on dsOMOP 2.10.3 servers only."), "recipe")
   }
 
   outputs <- recipe$outputs %||% list()

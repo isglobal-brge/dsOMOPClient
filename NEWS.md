@@ -116,7 +116,8 @@ workstream fills its entries.
   ranges (`gte` for `min_value`, `lt` for `max_value`; the dsOMOP range is
   `[min_value, max_value)`), and `recipe_import_circe()` reads them back; a
   two-sided range has no exact Circe form and is refused.
-- These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers.
+- These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers;
+  `recipe_lint()` reports them as INFO `language_2_only`.
 
 ## Newly refused
 - Plans that do not validate against the vendored `plan-v2.json` are never

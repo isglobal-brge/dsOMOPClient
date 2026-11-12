@@ -88,3 +88,15 @@ test_that("a 2.10.1 recipe without a v2 lowering is explained from its v1 shape"
   ex <- recipe_explain(r)
   expect_match(ex$text[[1]], "unchanged v1 plan")
 })
+
+test_that("lint compiles as execution does: newly permitted 2.10.1 shapes are language_2_only", {
+  r <- omop_recipe(variables = omop_variable_age(),
+                   filters = omop_filter_group(omop_filter_sex("F"), operator = "NOT"),
+                   outputs = omop_output(name = "age", type = "wide"))
+  L <- recipe_lint(r)
+  expect_false("no_compile" %in% L$code)
+  expect_identical(L$severity[L$code == "language_2_only"], "INFO")
+  expect_match(L$message[L$code == "language_2_only"], "2.10.3 servers only")
+  plain <- omop_recipe(variables = omop_variable_age(), outputs = omop_output(name = "age", type = "wide"))
+  expect_false("language_2_only" %in% recipe_lint(plain)$code)
+})
