@@ -434,7 +434,7 @@ test_that("the features preset takes episode grain when windowed (design 2.9, A-
   expect_length(dsOMOP:::.irSemanticErrors(dsOMOP:::.planNormalizeV2(dsOMOPClient:::.v2_plain(plan))), 0L)
 })
 
-test_that("only an omitted grain is newly permitted; an explicit one keeps the v1 refusal (B5)", {
+test_that("only omitted features grain is newly permitted; explicit incompatible grain stays refused (B5)", {
   person <- .windowed_features(grain = "person")
   e <- tryCatch(recipe_to_plan(person, version = 1), error = function(e) e)
   expect_s3_class(e, "error")
