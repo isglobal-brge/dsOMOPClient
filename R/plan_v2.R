@@ -868,6 +868,9 @@
                                   list(var = p$var, op = "<", value = p$value$upper))),
       custom = {
         op <- tolower(p$op)
+        # Legacy spellings of the comparison operators (omop_filter()).
+        aliases <- c(eq = "==", ne = "!=", gte = ">=", lte = "<=", gt = ">", lt = "<")
+        if (op %in% names(aliases)) op <- aliases[[op]]
         if (op %in% c("is_null", "not_null")) list(var = p$var, op = op)
         else if (op %in% c("in", "not_in")) list(var = p$var, op = op,
                                                  value = .v2_array(unlist(p$value)))

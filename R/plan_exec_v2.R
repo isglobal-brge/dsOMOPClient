@@ -1,13 +1,8 @@
-# Module: Recipe language 2.0 -- execution: capability negotiation, lossless
-# plan transport, federation contract, publication status and the
-# on_small_site matrix (design-2.10.3 sections 4.4, 5 and 7.3).
-
-.V2_REJECTION_CODES <- c("insufficient_support", "coverage_ambiguous", "join_cardinality",
-                         "match_candidates_exceeded", "dialect_unsupported",
-                         "unavailable_table", "validation_error")
-.V2_INSUFFICIENT_MESSAGE <- paste0(
-  "Disclosive: operation blocked - insufficient individuals to meet disclosure ",
-  "threshold. No further details available.")
+# Module: Recipe language 2.0 -- execution preparation: capability
+# negotiation, v1/v2 routing, lossless plan transport and the federation
+# contract (design-2.10.3 sections 4.4 and 5). Publication status, the
+# on_small_site matrix and rollback are the shared executor's
+# (.plan_execute_impl() in R/plan.R, section 7.3).
 
 .v2_is_plan_v2 <- function(plan) {
   inherits(plan, "omop_plan_v2") ||
@@ -72,7 +67,8 @@
 #'
 #' Language-2 objects, and \code{parent_id} (whose v1 rendering silently ignored
 #' inheritance, defect B-8). A recipe without them is v1-expressible: it
-#' executes as its unchanged 2.10.1 plan on every server.
+#' executes as its unchanged 2.10.1 plan (plan execution itself needs dsOMOP
+#' 2.10.3 servers: the publication status methods).
 #' @keywords internal
 .recipe_needs_v2 <- function(recipe) {
   parents <- unlist(lapply(names(recipe$populations %||% list()), function(id) {
@@ -163,7 +159,7 @@
 #' The plan a recipe executes as on the connected servers
 #'
 #' A recipe built only from 2.10.1 constructors executes as its unchanged v1
-#' plan on every server (the server's legacy adapters keep its results),
+#' plan (the server's legacy adapters keep its results),
 #' unless the v1 compiler refuses one of the shapes 2.10.3 newly permits
 #' (\code{.v1_newly_permitted()}). Such a recipe, and any recipe that needs a
 #' language-2 construct, executes as its v2 plan where every server speaks it
@@ -299,277 +295,6 @@
                                       manifest = manifest, schema = schema,
                                       plan_signature = signature)
   plan
-}
-
-# --- publication status (section 7.3) -------------------------------------------------------
-
-#' Do all servers expose the publication status transport?
-#' @keywords internal
-.plan_status_capable <- function(session, servers) {
-  lang <- .v2_server_language(session, servers)
-  length(servers) > 0L && all(vapply(lang, function(rl) {
-    !is.null(rl) && "status.accessor" %in% rl$operations
-  }, logical(1)))
-}
-
-.plan_validate_status <- function(st, server) {
-  ok <- is.list(st) && all(c("status", "published", "rejected") %in% names(st)) &&
-    is.character(st$status) && length(st$status) == 1L &&
-    st$status %in% c("ok", "partial", "refused") && is.list(st$published %||% list()) &&
-    is.list(st$rejected %||% list())
-  if (!ok) stop("Server '", server, "' returned a malformed publication status.", call. = FALSE)
-  for (root in names(st$published)) {
-    for (comp in names(st$published[[root]])) {
-      e <- st$published[[root]][[comp]]
-      sym <- e$symbol %||% e$path
-      if (!is.character(sym) || length(sym) != 1L || !nzchar(sym)) {
-        stop("Server '", server, "' returned a malformed publication inventory.", call. = FALSE)
-      }
-    }
-  }
-  for (root in names(st$rejected)) {
-    code <- st$rejected[[root]]$code
-    if (!is.character(code) || length(code) != 1L || !code %in% .V2_REJECTION_CODES) {
-      stop("Server '", server, "' returned an unknown rejection code.", call. = FALSE)
-    }
-  }
-  st
-}
-
-#' Revoke one execution on every given server (federation rollback)
-#' @keywords internal
-.plan_revoke_execution <- function(conns, exec_symbol, servers) {
-  failures <- character(0)
-  for (server in servers) {
-    res <- tryCatch({
-      DSI::datashield.aggregate(conns[server], call("omopStagedRevokeDS", exec_symbol))
-      TRUE
-    }, error = function(e) FALSE)
-    if (!isTRUE(res)) failures <- c(failures, server)
-  }
-  for (server in servers) {
-    tryCatch(DSI::datashield.rm(conns[server], exec_symbol), error = function(e) NULL)
-  }
-  if (length(failures)) {
-    stop("Federation rollback could not be confirmed on: ", paste(failures, collapse = ", "),
-         ". Remove this execution's outputs before continuing.", call. = FALSE)
-  }
-  invisible(TRUE)
-}
-
-#' Run one execution under the publication status protocol
-#'
-#' Sends the execution with \code{commit_policy} derived from
-#' \code{on_small_site} (\code{"skip"} asks every server to commit all or none,
-#' so a refused site never commits anything and nothing is cleaned after a
-#' commit), reads each server's bounded status through
-#' \code{omopPlanStatusDS()} before the status symbol is deleted, and applies
-#' the frozen strict/non-strict x error/skip matrix of section 7.3: a final
-#' support rejection is an error (federation rollback) under
-#' \code{"error"} on a strict server, a warning naming the rejected families
-#' on a non-strict server, and a skipped (NULL) site under \code{"skip"}.
-#' Every other rejection code, a transport failure, an execution failure or an
-#' inventory that differs between servers rolls the federation back and is an
-#' error under both settings.
-#' @keywords internal
-.plan_execute_with_status <- function(conns, exec_args, exec_symbol, on_small_site,
-                                      context = "Plan execution") {
-  servers <- names(conns)
-  commit_policy <- if (identical(on_small_site, "skip")) "all_or_none" else "server"
-  exec_args <- c(exec_args, list(commit_policy = commit_policy))
-  success <- character(0)
-  errors <- character(0)
-  condition <- tryCatch({
-    DSI::datashield.assign.expr(
-      conns, symbol = exec_symbol, expr = as.call(exec_args),
-      success = function(server) success <<- c(success, server),
-      error = function(server, message) errors[[server]] <<- message)
-    NULL
-  }, error = identity)
-  failed <- unique(c(names(errors), setdiff(servers, success)))
-  if (!is.null(condition) || length(failed)) {
-    reasons <- if (length(errors)) as.list(errors) else
-      tryCatch(DSI::datashield.errors(), error = function(e) NULL)
-    .plan_revoke_execution(conns, exec_symbol, servers)
-    detail <- if (length(reasons)) {
-      paste(names(reasons), vapply(reasons, function(x) as.character(x)[[1L]], ""),
-            sep = ": ", collapse = "; ")
-    } else if (!is.null(condition)) conditionMessage(condition) else paste(failed, collapse = ", ")
-    stop(context, " failed; every server's execution was rolled back. Affected server(s): ",
-         detail, ".", call. = FALSE)
-  }
-  statuses <- list()
-  for (server in servers) {
-    st <- tryCatch({
-      res <- DSI::datashield.aggregate(conns[server], call("omopPlanStatusDS", exec_symbol))
-      .plan_validate_status(res[[server]] %||% res[[1L]], server)
-    }, error = function(e) e)
-    if (inherits(st, "error")) {
-      .plan_revoke_execution(conns, exec_symbol, servers)
-      stop(context, ": the publication status of server '", server, "' could not be read (",
-           conditionMessage(st), "); every server's execution was rolled back.", call. = FALSE)
-    }
-    statuses[[server]] <- st
-  }
-  technical <- unlist(lapply(servers, function(server) {
-    rej <- statuses[[server]]$rejected %||% list()
-    bad <- names(rej)[vapply(rej, function(r) !identical(r$code, "insufficient_support"), logical(1))]
-    if (length(bad)) paste0(server, ": ", bad, " (", vapply(rej[bad], `[[`, "", "code"), ")")
-  }))
-  if (length(technical)) {
-    .plan_revoke_execution(conns, exec_symbol, servers)
-    stop(context, " was refused for reasons other than the minimum number of persons; ",
-         "every server's execution was rolled back: ", paste(technical, collapse = "; "), ".",
-         call. = FALSE)
-  }
-  refused <- servers[vapply(statuses, function(s) identical(s$status, "refused"), logical(1))]
-  partial <- servers[vapply(statuses, function(s) identical(s$status, "partial"), logical(1))]
-  skipped <- character(0)
-  if (length(refused)) {
-    if (identical(on_small_site, "skip")) {
-      skipped <- refused
-    } else {
-      .plan_revoke_execution(conns, exec_symbol, servers)
-      stop(.V2_INSUFFICIENT_MESSAGE, " (server", if (length(refused) > 1L) "s", ": ",
-           paste(refused, collapse = ", "), "; every server's execution was rolled back. ",
-           "Use on_small_site = \"skip\" to keep the other servers.)", call. = FALSE)
-    }
-  }
-  retained <- setdiff(servers, skipped)
-  # Inventory: the same root/component must carry the same symbol everywhere.
-  roots <- unique(unlist(lapply(statuses[retained], function(s) names(s$published))))
-  mapping <- character(0)
-  missing_somewhere <- character(0)
-  for (root in roots) {
-    comps <- unique(unlist(lapply(statuses[retained], function(s) names(s$published[[root]]))))
-    for (comp in comps) {
-      syms <- vapply(statuses[retained], function(s) {
-        e <- s$published[[root]][[comp]]
-        if (is.null(e)) NA_character_ else as.character(e$symbol %||% e$path)
-      }, "")
-      present <- syms[!is.na(syms)]
-      if (length(unique(present)) > 1L) {
-        .plan_revoke_execution(conns, exec_symbol, servers)
-        stop(context, ": servers published '", root, "' under different names (",
-             paste(names(present), present, sep = " = ", collapse = ", "),
-             "); every server's execution was rolled back. Choose fresh output names.",
-             call. = FALSE)
-      }
-      key <- if (length(comps) == 1L && comp %in% c(root, "", "result")) root else
-        paste0(root, ".", comp)
-      if (length(present) < length(retained)) {
-        missing_somewhere <- c(missing_somewhere, key)
-      } else {
-        mapping[[key]] <- unname(present[[1L]])
-      }
-    }
-  }
-  for (server in servers) {
-    tryCatch(DSI::datashield.rm(conns[server], exec_symbol), error = function(e) NULL)
-  }
-  if (length(partial) && !identical(on_small_site, "skip")) {
-    detail <- paste(vapply(partial, function(server) {
-      rej <- statuses[[server]]$rejected
-      paste0(server, ": ", paste0(names(rej), " (", vapply(rej, `[[`, "", "code"), ")",
-                                  collapse = ", "))
-    }, ""), collapse = "; ")
-    warning("Partial publication on a non-strict server; rejected families: ", detail,
-            ". The other families were published.", call. = FALSE)
-  }
-  if (length(missing_somewhere)) {
-    warning("Not published on every server: ", paste(missing_somewhere, collapse = ", "),
-            ".", call. = FALSE)
-  }
-  if (length(skipped)) {
-    if (length(retained) == 0L) {
-      warning("Every server was skipped under on_small_site = \"skip\" (",
-              .V2_INSUFFICIENT_MESSAGE, ")", call. = FALSE)
-    } else {
-      message("Skipped server(s) under on_small_site = \"skip\": ",
-              paste(skipped, collapse = ", "), ".")
-    }
-  }
-  inventory <- stats::setNames(lapply(servers, function(s) {
-    if (s %in% skipped) NULL else statuses[[s]]$published
-  }), servers)
-  list(mapping = mapping, inventory = inventory, retained = retained, skipped = skipped,
-       statuses = statuses)
-}
-
-#' Finish an execution under the status protocol (shared by v1 and v2 plans)
-#' @keywords internal
-.plan_finish_with_status <- function(plan, conns, exec_args, exec_symbol, on_small_site,
-                                     output_mode, harmonize_factors, symbol) {
-  res <- .plan_execute_with_status(conns, exec_args, exec_symbol, on_small_site)
-  if (isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
-      !isFALSE(plan$options$factor_concepts) && length(res$retained) > 0L &&
-      length(res$mapping) > 0L) {
-    .harmonizeConceptFactors(as.list(res$mapping), conns[res$retained])
-  }
-  if (length(res$mapping)) .record_session_outputs(symbol, as.list(res$mapping))
-  invisible(structure(res$mapping, inventory = res$inventory, skipped = res$skipped))
-}
-
-#' Execute a v2 plan
-#' @keywords internal
-.plan_execute_v2 <- function(plan, out = NULL, symbol = "omop", conns = NULL,
-                             output_mode = "memory", server_method = "omopPlanExecuteDS",
-                             harmonize_factors = TRUE, on_small_site = "error") {
-  session <- .get_session(symbol)
-  conns <- conns %||% session$conns
-  .v2_assert_supported(plan, session, names(conns), extra = "status.accessor")
-  if (identical(output_mode, "staged") && !isFALSE(plan$options$translate_concepts)) {
-    # Staged outputs keep numeric OMOP concept IDs (see ds.omop.plan.execute).
-    if (is.null(plan$options)) plan$options <- list()
-    plan$options$translate_concepts <- FALSE
-    attr(plan, "harmonization") <- NULL
-    .v2_assert_schema(plan)
-  }
-  plan <- .plan_v2_federation(plan, symbol, conns)
-  roots <- as.character(unlist(plan$publish)) %||% names(plan$outputs)
-  if (length(roots) == 0L) roots <- names(plan$outputs)
-  out <- .resolve_plan_out(list(outputs = plan$outputs[roots]), out,
-                           reserved_symbols = c(symbol, session$res_symbol))
-  scope_args <- NULL
-  combine <- "union"
-  scope_tables <- as.character(unlist(plan$scope$tables %||% list()))
-  if (!is.null(plan$scope$cohort) || length(scope_tables) > 0L) {
-    scope_args <- .analysis_scope_expr(cohort = plan$scope$cohort,
-                                       tables = if (length(scope_tables)) scope_tables)
-    combine <- plan$scope$combine %||% "union"
-  }
-  collisions <- intersect(unname(out), scope_tables)
-  if (length(collisions) > 0L) {
-    stop("Output symbols collide with execution-scope input symbol(s): ",
-         paste(collisions, collapse = ", "), ". Choose different outputs.", call. = FALSE)
-  }
-  inventory <- .plan_symbol_inventory(conns, "plan output reservation")
-  occupied <- unlist(lapply(names(inventory), function(server) {
-    found <- intersect(unname(out), inventory[[server]])
-    if (length(found) == 0L) character(0) else paste0(server, ":", found)
-  }), use.names = FALSE)
-  if (length(occupied) > 0L) {
-    stop("Plan output destinations must be fresh on every server; occupied: ",
-         paste(occupied, collapse = ", "),
-         ". Choose different out names or explicitly remove obsolete objects.", call. = FALSE)
-  }
-  exec_symbol <- NULL
-  for (attempt in seq_len(10L)) {
-    candidate <- .generate_symbol("dsOexec")
-    if (!candidate %in% out &&
-        all(!vapply(inventory, function(x) candidate %in% x, logical(1)))) {
-      exec_symbol <- candidate
-      break
-    }
-  }
-  if (is.null(exec_symbol)) {
-    stop("Could not reserve a fresh plan execution status symbol.", call. = FALSE)
-  }
-  exec_args <- list(as.name(server_method), session$res_symbol, .ds_encode_lossless(plan),
-                    .ds_encode(out), output_mode)
-  if (!is.null(scope_args)) exec_args <- c(exec_args, scope_args, list(combine = combine))
-  .plan_finish_with_status(plan, conns, exec_args, exec_symbol, on_small_site,
-                           output_mode, harmonize_factors, symbol)
 }
 
 #' Server-side dry run of a v2 plan (validate / preview)

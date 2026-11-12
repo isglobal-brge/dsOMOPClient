@@ -329,24 +329,30 @@ print.omop_recipe_explain <- function(x, ...) {
     loc <- sub("^(output|population|variable) '(.*)'$", "\\1s$\\2", defaults$locus[[i]])
     add("INFO", defaults$code[[i]], defaults$statement[[i]], loc)
   }
+  # INFO quasi_identifier (section 7.6): one row per variable that requests
+  # class-2 columns (the shared corpus classes, .is_quasi_identifier_column()).
+  # Assignment permits them; this is not a refusal and changes no aggregate
+  # endpoint's admission policy.
   for (vn in names(recipe$variables %||% list())) {
     v <- recipe$variables[[vn]]
     cols <- character(0)
     if (.v2_is_v2_variable(v)) {
-      if (identical(v$kind, "derived") && identical(v$derived$kind, "age") && !isTRUE(v$derived$bands)) {
-        cols <- "age"
+      if (identical(v$kind, "derived") && identical(v$derived$kind, "age")) {
+        cols <- if (isTRUE(v$derived$bands)) "age_group" else "age"
       }
       if (identical(v$kind, "derived") && identical(v$derived$kind, "birth_year_band")) {
         cols <- "birth_year_band"
       }
     } else {
-      cols <- c(v$column, v$value_source)
+      cols <- c(v$column, v$value_source, (v$derived %||% list())$column)
       if (identical(v$format, "age")) cols <- c(cols, "age")
     }
-    for (col in cols[vapply(cols, .is_quasi_identifier_column, logical(1))]) {
+    cols <- unique(cols[vapply(cols, .is_quasi_identifier_column, logical(1))])
+    if (length(cols)) {
       add("INFO", "quasi_identifier",
-          paste0("Variable '", vn, "' projects '", col, "', a class-2 quasi-identifier: it is ",
-                 "released only through the final minimum-persons rule."),
+          paste0("Variable '", vn, "' requests a permitted quasi-identifier (",
+                 paste(cols, collapse = ", "), "); publication support and the ",
+                 "absolute-date policy apply. Aggregate admission is unchanged."),
           paste0("variables$", vn))
     }
   }

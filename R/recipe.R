@@ -1027,22 +1027,29 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
       stop("Custom row predicates require one valid column name in params$var.",
            call. = FALSE)
     }
+    comparison_ops <- c("==", "eq", "!=", "ne", ">=", "gte", "<=", "lte",
+                        ">", "gt", "<", "lt")
     allowed_ops <- c("in", "not_in", "is_null", "not_null", "between",
-                     "==", "!=", "<", "<=", ">", ">=")
+                     comparison_ops)
     if (!op %in% allowed_ops) {
       stop("Custom row predicate op must be one of: ",
-           paste(allowed_ops, collapse = ", "), ".", call. = FALSE)
-    }
-    if (op %in% c("==", "!=", "<", "<=", ">", ">=") &&
-        (length(params$value) != 1L || is.list(params$value) ||
-         (!is.numeric(params$value) && !is.character(params$value)) ||
-         anyNA(params$value))) {
-      stop("Custom comparison op '", op, "' requires one numeric or text value.",
+           paste(allowed_ops, collapse = ", "),
+           ".",
            call. = FALSE)
     }
     if (!op %in% c("is_null", "not_null") && is.null(params$value)) {
       stop("Custom row predicate op '", op, "' requires params$value.",
            call. = FALSE)
+    }
+    if (op %in% comparison_ops) {
+      value <- params$value
+      if (length(value) != 1L || anyNA(value) ||
+          !(is.numeric(value) && is.finite(value) ||
+            is.character(value) &&
+              grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", value))) {
+        stop("Comparison predicates require one finite numeric or ISO date value.",
+             call. = FALSE)
+      }
     }
     if (op %in% c("in", "not_in")) {
       values <- unlist(params$value, use.names = FALSE)
@@ -1301,8 +1308,9 @@ omop_filter_has_concept <- function(concept_id, table, concept_name = NULL,
 #'   \code{YYYY-MM-DD} form. A one-sided range (only \code{start} or only
 #'   \code{end}) compiles to a single \code{>=} / \code{<=} comparison.
 #' @param end Character or \code{NULL}; inclusive end date in ISO
-#'   \code{YYYY-MM-DD} form and not before \code{start}. No client width floor
-#'   applies (publication is the only disclosure gate on 2.10.3 servers).
+#'   \code{YYYY-MM-DD} form and not before \code{start}. No minimum calendar
+#'   width is imposed on private assignment filters; publication applies final
+#'   support.
 #' @param date_column Character or \code{NULL}; explicit OMOP date column. When
 #'   \code{NULL}, \code{\link{recipe_to_plan}} infers the standard date column
 #'   from the output's OMOP table.
@@ -1323,9 +1331,7 @@ omop_filter_date_range <- function(start = NULL, end = NULL,
   )
 }
 
-# Validate syntax and ordering client-side. The server remains authoritative
-# for the minimum disclosure-safe width (derived from its DataSHIELD options),
-# so the client must not hard-code a second policy value.
+# Validate syntax and ordering only; publication enforces final support.
 .validate_recipe_date_range <- function(start, end) {
   normalize <- function(x, name) {
     if (inherits(x, "Date")) x <- format(x, "%Y-%m-%d")
@@ -1357,31 +1363,32 @@ omop_filter_date_range <- function(start = NULL, end = NULL,
 #' @param column Character; column to compare
 #' @param threshold Numeric; threshold value
 #' @param direction Character; "above" or "below"
-#' @param safe_bins Optional per-site list with \code{$breaks} and the
-#'   server-issued \code{$contract} returned by \code{ds.omop.safe.cutpoints()}:
-#'   the threshold then snaps to the issued bin edges (the 2.10.1 behaviour).
-#'   Without it the filter is the plain comparison \code{column >= threshold}
-#'   (\code{"above"}) or \code{column <= threshold} (\code{"below"}); a
-#'   2.10.3 server applies only its final publication rule to the result.
+#' @param safe_bins Per-site list with \code{$breaks} and the server-issued
+#'   \code{$contract} returned by \code{ds.omop.safe.cutpoints()}. Optional:
+#'   when absent, compile an exact comparison (above: >=; below: <). When
+#'   supplied, preserve the issued binning and its authenticated scope.
 #' @export
 omop_filter_value <- function(column = "value_as_number", threshold,
                                direction = c("above", "below"),
                                safe_bins = NULL) {
   direction <- match.arg(direction)
-  if (is.null(safe_bins)) {
-    if (missing(threshold) || !is.numeric(threshold) || length(threshold) != 1L ||
-        !is.finite(threshold)) {
-      stop("omop_filter_value(): threshold must be one finite number.", call. = FALSE)
-    }
-    op <- if (identical(direction, "above")) ">=" else "<="
-    return(omop_filter(
-      type = "custom", level = "row",
-      params = list(var = column, op = op, value = threshold),
-      label = paste0(column, " ", op, " ", threshold)))
+  if (!is.numeric(threshold) || length(threshold) != 1L ||
+      is.na(threshold) || !is.finite(threshold)) {
+    stop("threshold must be one finite numeric value.", call. = FALSE)
   }
-  if (is.null(safe_bins$breaks) || !is.list(safe_bins$contract)) {
-    stop("omop_filter_value(): safe_bins must be one per-site result (including ",
-         "$contract) from ds.omop.safe.cutpoints(table, column).", call. = FALSE)
+  if (is.null(safe_bins)) {
+    op <- if (identical(direction, "above")) ">=" else "<"
+    return(omop_filter(type = "custom", level = "row",
+      params = list(var = column, op = op, value = threshold),
+      label = paste(column, op, threshold)))
+  }
+  if (is.null(safe_bins$breaks) ||
+      !is.list(safe_bins$contract)) {
+    stop("omop_filter_value() needs server-issued disclosure-safe bin edges. ",
+         "Either call ",
+         "ds.omop.safe.filter.value(table, column, threshold, direction) which ",
+         "fetches them, or pass one per-site result (including $contract) from ",
+         "ds.omop.safe.cutpoints(table, column).", call. = FALSE)
   }
   if (length(safe_bins$breaks) < 2) {
     stop("omop_filter_value() needs at least 2 bin edges, but the server ",
@@ -1557,16 +1564,11 @@ omop_filter_visit_count <- function(min_count = 1L,
 #' @rdname omop_filter
 #' @param concept_id Integer scalar or vector; measurement concept ID(s)
 #'   (a vector matches if any measurement is present)
-#' @param min_value Numeric or NULL; inclusive lower limit
-#'   (\code{value_as_number >= min_value}).
-#' @param max_value Numeric or NULL; exclusive upper limit
-#'   (\code{value_as_number < max_value}); the range is
-#'   \code{[min_value, max_value)}, as the server applies it.
-#' @param safe_bins Optional server-issued result for the same measurement
-#'   concept from \code{ds.omop.safe.cutpoints()}; when given, both limits must
-#'   be issued edges. Without it the numeric range (one or both limits) is
-#'   applied as given and a 2.10.3 server applies only its final publication
-#'   rule.
+#' @param min_value Numeric or NULL; inclusive minimum value
+#' @param max_value Numeric or NULL; exclusive maximum value
+#' @param safe_bins Server-issued result for the same measurement concept from
+#'   \code{ds.omop.safe.cutpoints()}. Optional for numeric criteria. If
+#'   supplied, both bounds must be issued edges and the scope must match.
 #' @export
 omop_filter_has_measurement <- function(concept_id,
                                          min_value = NULL,
@@ -1576,58 +1578,42 @@ omop_filter_has_measurement <- function(concept_id,
                                          reference_date = NULL) {
   concept_id <- as.integer(concept_id)
   has_range <- !is.null(min_value) || !is.null(max_value)
-  if (has_range && is.null(safe_bins)) {
-    for (bound in c("min_value", "max_value")) {
-      value <- get(bound)
-      if (!is.null(value) && (!is.numeric(value) || length(value) != 1L ||
-                              !is.finite(value))) {
-        stop(bound, " must be one finite number.", call. = FALSE)
-      }
-    }
-    if (!is.null(min_value) && !is.null(max_value) && min_value >= max_value) {
-      stop("min_value must be less than max_value: the range is ",
-           "[min_value, max_value).", call. = FALSE)
-    }
-    min_value <- if (is.null(min_value)) NULL else as.numeric(min_value)
-    max_value <- if (is.null(max_value)) NULL else as.numeric(max_value)
-  } else if (has_range) {
-    if (is.null(min_value) || is.null(max_value)) {
-      stop("A numeric range snapped to issued safe_bins needs both min_value ",
-           "and max_value.", call. = FALSE)
-    }
+  if (has_range) {
     if (length(concept_id) != 1L || is.na(concept_id)) {
       stop("Numeric measurement filters require exactly one concept_id.",
            call. = FALSE)
     }
-    if (!is.list(safe_bins$contract) || length(safe_bins$breaks) < 2L) {
-      stop("safe_bins must be one result of ds.omop.safe.cutpoints() for the ",
-           "same concept.", call. = FALSE)
+    valid_bound <- function(x) is.null(x) ||
+      is.numeric(x) && length(x) == 1L && !is.na(x) && is.finite(x)
+    if (!valid_bound(min_value) || !valid_bound(max_value) ||
+        !is.null(min_value) && !is.null(max_value) && min_value >= max_value) {
+      stop("min_value and max_value must be finite numeric bounds with ",
+           "min_value < max_value when both are supplied.", call. = FALSE)
     }
-    min_value <- suppressWarnings(as.numeric(min_value))
-    max_value <- suppressWarnings(as.numeric(max_value))
-    edges <- suppressWarnings(as.numeric(safe_bins$breaks))
-    if (length(min_value) != 1L || length(max_value) != 1L ||
-        !is.finite(min_value) || !is.finite(max_value) ||
-        min_value >= max_value || any(!is.finite(edges))) {
-      stop("min_value and max_value must be finite safe-bin edges with ",
-           "min_value < max_value.", call. = FALSE)
-    }
-    near <- function(edge) {
-      any(abs(edges - edge) <= 1e-10 * pmax(1, abs(edge)))
-    }
-    scope <- safe_bins$contract
-    scope_concept <- suppressWarnings(as.integer(scope$concept_id))
-    scope_concept_col <- tolower(scope$concept_col %||%
-                                   "measurement_concept_id")
-    if (!near(min_value) || !near(max_value) ||
-        !identical(tolower(scope$table %||% ""), "measurement") ||
-        !identical(tolower(scope$column %||% ""), "value_as_number") ||
-        length(scope_concept) != 1L || is.na(scope_concept) ||
-        scope_concept != concept_id ||
-        !identical(scope_concept_col, "measurement_concept_id")) {
-      stop("safe_bins must match measurement.value_as_number and the requested ",
-           "measurement concept, and both range limits must be issued edges.",
-           call. = FALSE)
+    if (!is.null(safe_bins)) {
+      if (is.null(min_value) || is.null(max_value)) {
+        stop("A supplied safe_bins contract requires both min_value and max_value.",
+             call. = FALSE)
+      }
+      if (!is.list(safe_bins$contract) || length(safe_bins$breaks) < 2L) {
+        stop("Supplied safe_bins must contain server-issued bin edges and a contract.",
+             call. = FALSE)
+      }
+      edges <- suppressWarnings(as.numeric(safe_bins$breaks))
+      near <- function(edge) any(abs(edges - edge) <= 1e-10 * pmax(1, abs(edge)))
+      scope <- safe_bins$contract
+      scope_concept <- suppressWarnings(as.integer(scope$concept_id))
+      scope_concept_col <- tolower(scope$concept_col %||% "measurement_concept_id")
+      if (any(!is.finite(edges)) || !near(min_value) || !near(max_value) ||
+          !identical(tolower(scope$table %||% ""), "measurement") ||
+          !identical(tolower(scope$column %||% ""), "value_as_number") ||
+          length(scope_concept) != 1L || is.na(scope_concept) ||
+          scope_concept != concept_id ||
+          !identical(scope_concept_col, "measurement_concept_id")) {
+        stop("safe_bins must match measurement.value_as_number and the requested ",
+             "measurement concept, and both range limits must be issued edges.",
+             call. = FALSE)
+      }
     }
   } else if (!is.null(safe_bins)) {
     stop("safe_bins is only used with a numeric min_value/max_value range.",
@@ -1652,7 +1638,7 @@ omop_filter_has_measurement <- function(concept_id,
       concept_id = concept_id,
       min_value = min_value,
       max_value = max_value,
-      safe_scope = if (has_range && !is.null(safe_bins)) safe_bins$contract else NULL,
+      safe_scope = if (has_range) safe_bins$contract else NULL,
       window = window,
       reference_date = reference_date
     ),
@@ -3665,7 +3651,7 @@ print.omop_recipe <- function(x, ...) {
 #'
 #' \code{\link{recipe_execute}} chooses the version per execution: a recipe
 #' built only from 2.10.1 constructors (and without \code{parent_id}) runs as
-#' a v1 plan on every server, so its results stay identical; any other recipe
+#' its v1 plan, so its results stay identical; any other recipe
 #' runs as a v2 plan on servers advertising \code{recipe_language} 2 and every
 #' operation it needs, and is refused (naming the operation) otherwise.
 #'
@@ -4980,68 +4966,6 @@ recipe_set_options <- function(recipe,
   ids
 }
 
-#' Is a column name a class-1 (never released) column?
-#'
-#' Mirrors, pattern for pattern, the server's assignment-policy class 1
-#' (design-2.10.3 section 7.6): the sensitive-column patterns of
-#' \code{.detectSensitiveColumns()} minus the birth components, which are
-#' class 2 (quasi-identifiers released on assign paths through the final
-#' minimum-persons rule only). Direct identifiers, narrative and source values,
-#' source concept IDs, note/NLP text, address/geo, provider and care-site
-#' identifying fields are refused at compile time. A birth-named column that is
-#' also, e.g., a source value (\code{birth_date_source_value}) stays class 1.
-#' Untyped extension identifiers are recognised from the server's column
-#' metadata only and are refused there.
-#'
-#' @param col Character; a column name (case-insensitive).
-#' @return Logical scalar.
-#' @keywords internal
-.is_blocked_column <- function(col) {
-  if (is.null(col) || length(col) != 1L || is.na(col) || !nzchar(col)) return(FALSE)
-  col <- tolower(trimws(col))
-  birth <- paste0("(^|_)(dob|date_of_birth|birth_date|birth_datetime)($|_)|",
-                  "^(year|month|day)_of_birth$")
-  if (grepl(birth, col)) {
-    col <- gsub("^(year|month|day)_of_birth$", "birth_component", col)
-    col <- gsub("dob|date_of_birth|birth_datetime|birth_date", "birth_component", col)
-  }
-  any(vapply(.CLASS1_COLUMN_PATTERNS, function(p) grepl(p, col), logical(1)))
-}
-
-# Class-1 name patterns (section 7.6), identical to the server's sensitive
-# patterns without the two birth-component patterns.
-.CLASS1_COLUMN_PATTERNS <- c(
-  "(^|_)patient_(id|identifier|key)($|_)",
-  "(^|_)(mrn|medical_record_number|medical_record_id)($|_)",
-  "(^|_)(ssn|social_security_number)($|_)",
-  "(^|_)(email|email_address|e_mail)($|_)",
-  "(^|_)(phone|phone_number|telephone|mobile|mobile_phone)($|_)",
-  "(^|_)(comment|comments|free_text|freetext|narrative|remark|remarks)($|_)",
-  "_source_value$", "_source_concept_id$", "^value_as_string$",
-  "^value_source_value$", "^sig$", "^stop_reason$", "^lot_number$",
-  "^unique_device_id$", "^note_text$", "^note_title$", "^note_source_value$",
-  "^note_nlp_source_concept_id$", "^snippet$", "^lexical_variant$",
-  "^note_nlp_concept_id$", "(^|_)term_modifiers$", "^address_1$", "^address_2$",
-  "^city$", "^state$", "^zip$", "^county$", "^latitude$", "^longitude$",
-  "^provider_name$", "^npi$", "^dea$", "^care_site_name$")
-
-#' Is a column a class-2 quasi-identifier (released on assign paths)?
-#'
-#' Exact birth components and birth-date extension names, exact age and
-#' birth-year bands. Reported by \code{recipe_lint()} and
-#' \code{recipe_explain()} as INFO \code{quasi_identifier}; reporting changes
-#' nothing about eligibility.
-#' @param col Character; a column name.
-#' @return Logical scalar.
-#' @keywords internal
-.is_quasi_identifier_column <- function(col) {
-  if (is.null(col) || length(col) != 1L || is.na(col) || !nzchar(col)) return(FALSE)
-  col <- tolower(trimws(col))
-  !.is_blocked_column(col) &&
-    grepl(paste0("(^|_)(dob|date_of_birth|birth_date|birth_datetime)($|_)|",
-                 "^(year|month|day)_of_birth$|^age$|^age_group$|^birth_year_band$"), col)
-}
-
 #' Reject variables whose value_source / raw column is a blocked column
 #'
 #' @param variables Named list of \code{omop_variable} objects.
@@ -5053,7 +4977,7 @@ recipe_set_options <- function(recipe,
     for (col in c(v$value_source, v$column)) {
       if (.is_blocked_column(col)) {
         stop("Disclosive: variable '", nm %||% v$name %||% "?",
-             "' requests blocked free-text/source column '", col,
+             "' requests blocked class-1 column '", col,
              "', which the server cannot release.", call. = FALSE)
       }
     }
@@ -5935,9 +5859,8 @@ recipe_to_code <- function(recipe) {
     has_numeric <- !is.null(f$params$min_value) ||
       !is.null(f$params$max_value)
     if (has_numeric && is.null(f$params$safe_scope)) {
-      # A range without issued bins (newly permitted in 2.10.3, e.g. from a
-      # Circe ValueAsNumber import) is regenerated through the generic
-      # constructor so its params round-trip exactly.
+      # Preserve unbound numeric criteria and their exact supplied bounds.
+      # Publication, not a private-predicate gate, enforces support.
       .codegen_call("omop_filter", type = "has_measurement",
         level = "population", params = f$params, label = f$label)
     } else {
@@ -6628,26 +6551,25 @@ recipe_import_yaml <- function(yaml) {
 #' @keywords internal
 .circe_measurement_from_filter <- function(f, sets) {
   p <- f$params
+  if (!is.null(p$safe_scope)) {
+    stop("Circe export cannot preserve an authenticated safe-bin contract.",
+         call. = FALSE)
+  }
+  if (!is.null(p$min_value) && !is.null(p$max_value)) {
+    stop("Circe export cannot represent dsOMOP's half-open numeric range ",
+         "with one ValueAsNumber predicate (Circe BETWEEN includes both ends).",
+         call. = FALSE)
+  }
   if (!is.null(p$reference_date)) {
     stop("Circe export: a fixed-reference measurement filter cannot be ",
          "represented as an index-relative Circe criterion.", call. = FALSE)
   }
-  # 2.10.3 (design 7.4): numeric bounds export as plain Circe ranges; no bin
-  # contract. dsOMOP's range is [min_value, max_value), so a lower limit is
-  # 'gte' and an upper limit 'lt'; a two-sided range has no exact Circe form
-  # (Circe 'bt' is inclusive at both ends).
-  if (!is.null(p$min_value) && !is.null(p$max_value)) {
-    stop("Circe export: a two-sided measurement range is [min_value, max_value) ",
-         "in dsOMOP but inclusive ('bt') in Circe, so it cannot be exported ",
-         "exactly; export one-sided limits.", call. = FALSE)
-  }
   cs <- .circe_codeset(sets, p$concept_id)
   meas <- list(CodesetId = cs$id)
   if (!is.null(p$min_value)) {
-    meas$ValueAsNumber <- list(Value = as.numeric(p$min_value), Op = "gte")
-  }
-  if (!is.null(p$max_value)) {
-    meas$ValueAsNumber <- list(Value = as.numeric(p$max_value), Op = "lt")
+    meas$ValueAsNumber <- list(Value = p$min_value, Op = "gte")
+  } else if (!is.null(p$max_value)) {
+    meas$ValueAsNumber <- list(Value = p$max_value, Op = "lt")
   }
   criteria <- list(
     Criteria = list(Measurement = meas),
@@ -6818,11 +6740,10 @@ recipe_import_yaml <- function(yaml) {
 #'     "exactly 0" criteria.
 #'   \item \code{omop_filter_concept_count} -> InclusionRule occurrence "at
 #'     least N" criteria.
-#'   \item \code{omop_filter_has_measurement} -> Measurement criteria; a
-#'     lower limit exports as \code{ValueAsNumber} \code{gte} and an upper
-#'     limit as \code{lt} (the dsOMOP range is \code{[min_value,
-#'     max_value)}). A two-sided range has no exact Circe form and is
-#'     refused.
+#'   \item \code{omop_filter_has_measurement} -> Measurement criteria,
+#'     including one-sided numeric bounds (inclusive minimum or exclusive
+#'     maximum). Two-sided half-open ranges and authenticated safe-bin
+#'     contracts cannot be represented equivalently and are rejected.
 #'   \item \code{omop_filter_sex} / \code{omop_filter_age} -> DemographicCriteria
 #'     Gender / Age.
 #'   \item Filter \code{window = list(start, end)} day offsets -> criteria
@@ -7069,7 +6990,6 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
     stop("Circe import: unsupported ", domain, " field(s): ",
          paste(unknown_spec, collapse = ", "), ".", call. = FALSE)
   }
-  value_range <- .circe_value_range_to_recipe(spec$ValueAsNumber)
   table <- .circe_table_from_domain(domain)
   ids <- .circe_ids_for_codeset(spec$CodesetId, concept_sets)
   window <- .circe_window_to_recipe(crit$StartWindow)
@@ -7094,11 +7014,12 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
     stop("Circe import: Occurrence Type/Count must be non-negative integers.",
          call. = FALSE)
   }
+  if (!is.null(spec$ValueAsNumber) &&
+      (!identical(occurrence_type, 2L) || count != 1L)) {
+    stop("Circe import: numeric measurement criteria require occurrence at least one.",
+         call. = FALSE)
+  }
   if (identical(occurrence_type, 0L) && identical(count, 0L)) {
-    if (length(value_range)) {
-      stop("Circe import: 'exactly 0' measurements with a ValueAsNumber range ",
-           "have no executable recipe filter.", call. = FALSE)
-    }
     return(omop_filter_not_has_concept(concept_id = ids, table = table,
                                        window = window))
   }
@@ -7111,10 +7032,24 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
       stop("Circe import: measurement occurrence counts above one are not ",
            "supported by the executable subset.", call. = FALSE)
     }
-    return(omop_filter_has_measurement(concept_id = ids,
-                                       min_value = value_range$min_value,
-                                       max_value = value_range$max_value,
-                                       window = window))
+    bounds <- spec$ValueAsNumber
+    lower <- upper <- NULL
+    if (!is.null(bounds)) {
+      if (!is.list(bounds) || is.null(names(bounds)) ||
+          anyDuplicated(names(bounds)) ||
+          length(setdiff(names(bounds), c("Value", "Op"))) > 0L ||
+          !is.numeric(bounds$Value) || length(bounds$Value) != 1L ||
+          is.na(bounds$Value) || !is.finite(bounds$Value) ||
+          !is.character(bounds$Op) || length(bounds$Op) != 1L ||
+          is.na(bounds$Op) || !bounds$Op %in% c("gte", "lt")) {
+        stop("Circe import: ValueAsNumber supports only finite one-sided ",
+             "'gte' or 'lt' bounds; other endpoint semantics cannot be ",
+             "represented equivalently.", call. = FALSE)
+      }
+      if (identical(bounds$Op, "gte")) lower <- bounds$Value else upper <- bounds$Value
+    }
+    return(omop_filter_has_measurement(concept_id = ids, min_value = lower,
+                                       max_value = upper, window = window))
   }
   if (count > 1L) {
     return(omop_filter_concept_count(concept_id = ids, table = table,
@@ -7122,29 +7057,6 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   }
   omop_filter_has_concept(concept_id = ids, table = table, window = window,
                           min_count = count)
-}
-
-#' Convert a Circe ValueAsNumber range into has_measurement limits
-#'
-#' Only the exact forms of the dsOMOP range \code{[min_value, max_value)} are
-#' accepted: \code{gte} (lower limit) and \code{lt} (upper limit).
-#' @keywords internal
-.circe_value_range_to_recipe <- function(r) {
-  if (is.null(r)) return(list())
-  if (!is.list(r) || length(setdiff(names(r) %||% "", c("Value", "Op", "Extent")))) {
-    stop("Circe import: ValueAsNumber must be an object with Value and Op.", call. = FALSE)
-  }
-  value <- suppressWarnings(as.numeric(r$Value))
-  op <- tolower(as.character(r$Op %||% ""))
-  if (length(value) != 1L || !is.finite(value)) {
-    stop("Circe import: ValueAsNumber Value must be one finite number.", call. = FALSE)
-  }
-  if (!is.null(r$Extent) || !op %in% c("gte", "lt")) {
-    stop("Circe import: ValueAsNumber Op '", op, "' has no exact dsOMOP form (the ",
-         "measurement range is [min_value, max_value): 'gte' for a lower limit, ",
-         "'lt' for an upper limit).", call. = FALSE)
-  }
-  if (identical(op, "gte")) list(min_value = value) else list(max_value = value)
 }
 
 #' Convert Circe demographic criteria back into recipe filters
@@ -8004,7 +7916,7 @@ recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
 }
 
 # The plan version a recipe compiles to without a session: v1 for recipes built
-# only from 2.10.1 constructors (their results stay identical on every server),
+# only from 2.10.1 constructors (their results stay identical),
 # v2 for recipes with language-2 constructs or a newly permitted shape the v1
 # compiler refuses (support is negotiated when it executes).
 .recipe_plan_auto <- function(recipe) {
@@ -8114,9 +8026,10 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'   \item{tar_default, censoring_default, age_group_default, coverage,
 #'     collapse, representation, missing_skip (INFO)}{a default the recipe
 #'     relies on, stated (e.g. "follow-up ends 730 days after index").}
-#'   \item{quasi_identifier (INFO)}{a class-2 column (exact birth components,
-#'     exact age, birth-year bands) released only through the final
-#'     minimum-persons rule.}
+#'   \item{quasi_identifier (INFO)}{a permitted birth component, age, age band,
+#'     birth-year band or date column, one row per variable; final publication
+#'     support and the absolute-date policy still apply. Aggregate admission
+#'     is unchanged.}
 #'   \item{measurement_pair (INFO)}{\code{has_measurement} /
 #'     \code{missing_measurement} are not complements.}
 #'   \item{parent_inheritance (INFO)}{a \code{parent_id} now restricts the
@@ -8422,23 +8335,16 @@ recipe_preview_stats <- function(recipe,
 #'   with \code{cohort}.
 #' @param combine Character; how to fold the scope sources together:
 #'   \code{"union"} (the default) or \code{"intersect"}.
-#' @param on_small_site (2.10.3) \code{"error"} (default) or \code{"skip"}:
-#'   what happens when a server refuses to publish an output because it would
-#'   describe fewer persons than its \code{nfilter.subset}. With
-#'   \code{"error"}, a strict server's refusal rolls the whole federation back
-#'   and raises the server's constant disclosure message, and a non-strict
-#'   server's partial publication is kept with a warning naming the rejected
-#'   outputs. With \code{"skip"}, that server commits nothing (it is asked to
-#'   publish all or none) and is returned as \code{NULL} (attribute
-#'   \code{"inventory"}) while the other servers are kept. Only the
-#'   minimum-persons refusal is skippable: validation, resource, dialect,
-#'   transport and execution failures are errors under both settings.
-#' @return Invisibly, the output symbol mapping (a named character vector).
-#'   With 2.10.3 servers the names are read from the servers' publication
-#'   inventory (fresh names on collision, one symbol per survival TAR, e.g.
-#'   \code{D_tte.itt}); attribute \code{"inventory"} holds each server's
-#'   published components (\code{NULL} for a skipped server).
-#'   As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
+#' @param on_small_site Character; \code{"error"} (default) or \code{"skip"},
+#'   passed to \code{\link{ds.omop.plan.execute}}. Only insufficient final
+#'   person support is skippable: skip keeps successful sites and returns
+#'   \code{NULL} for sites whose publication fails final person support.
+#' @return Invisibly, the output symbol mapping (a named character vector)
+#'   for a complete ordinary execution. When sites publish different outputs
+#'   or fresh names (the server allocates fresh names for occupied
+#'   destinations; a survival output publishes one symbol per TAR), a named
+#'   per-site list of the actual publication inventories; skipped sites have
+#'   \code{NULL} entries. As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
 #'   recorded on the session so the manipulation wrappers can default to the
 #'   last one.
 #' @examples
@@ -8470,12 +8376,12 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
                                combine = combine)
   }
 
+  # 2.10.1-style recipes run as their v1 plan, others as their negotiated v2
+  # plan (design 5, CR-14); both go through the same publication protocol.
   plan <- .recipe_plan_for_session(recipe, symbol, conns)
   if (!.v2_is_plan_v2(plan)) out <- .recipe_out_symbols(recipe, plan, out)
-  args <- list(plan, out = out, symbol = symbol, conns = conns,
-               output_mode = output_mode)
-  if (!identical(on_small_site, "error")) args$on_small_site <- on_small_site
-  do.call(ds.omop.plan.execute, args)
+  ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns,
+                       output_mode = output_mode, on_small_site = on_small_site)
 }
 
 # Default server symbols for the plan outputs of a recipe (an output's

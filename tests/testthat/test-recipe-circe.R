@@ -217,7 +217,7 @@ test_that("multi-concept codesets round-trip and dedup shared concept sets", {
                c(201820L, 201826L))
 })
 
-test_that("numeric measurement bounds export to Circe as plain ranges", {
+test_that("one-sided numeric measurement bounds round-trip without private gates", {
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
       index_event = omop_index_event(201820, "condition_occurrence"),
@@ -229,29 +229,34 @@ test_that("numeric measurement bounds export to Circe as plain ranges", {
           params = list(concept_id = 3013682L, min_value = NULL,
                         max_value = 140, safe_scope = NULL)))),  # lte
     outputs = omop_output(type = "wide", population_id = "p"))
-  # 2.10.3 (design 7.4): no bin contract; the dsOMOP range is
-  # [min_value, max_value), so a lower limit is Circe 'gte' and an upper
-  # limit 'lt', and both import back unchanged.
   expect_false("unbound_numeric_filter" %in% recipe_lint(r)$code)
-  f <- tempfile(fileext = ".json")
-  recipe_export_circe(r, "p", file = f)
-  js <- jsonlite::fromJSON(f, simplifyVector = FALSE)
+  exported <- recipe_export_circe(r, "p")
+  imported <- recipe_import_circe(exported)
+  measurements <- Filter(function(f) identical(f$type, "has_measurement"), imported$filters)
+  expect_length(measurements, 2L)
+  expect_identical(measurements[[1]]$params$min_value, 6.5)
+  expect_null(measurements[[1]]$params$max_value)
+  expect_null(measurements[[2]]$params$min_value)
+  expect_equal(measurements[[2]]$params$max_value, 140)
+  expect_null(measurements[[1]]$params$safe_scope)
+  expect_null(measurements[[2]]$params$safe_scope)
+  # The dsOMOP range is [min_value, max_value): a lower limit is Circe 'gte',
+  # an upper limit 'lt'; a two-sided range and other operators have no exact
+  # Circe form.
+  js <- jsonlite::fromJSON(exported, simplifyVector = FALSE)
   ranges <- lapply(js$InclusionRules, function(rule) {
     rule$expression$CriteriaList[[1]]$Criteria$Measurement$ValueAsNumber
   })
   expect_identical(ranges, list(list(Value = 6.5, Op = "gte"), list(Value = 140L, Op = "lt")))
-  back <- recipe_import_circe(f, id = "p")
-  expect_identical(lapply(back$filters, function(x) x$params$min_value), list(6.5, NULL))
-  expect_identical(lapply(back$filters, function(x) x$params$max_value), list(NULL, 140))
   two <- r
   two$populations$p$filters <- list(omop_filter_has_measurement(3004410, min_value = 4,
                                                                 max_value = 6))
-  expect_error(recipe_export_circe(two, "p"), "two-sided")
+  expect_error(recipe_export_circe(two, "p"), "half-open")
   bad <- js
   bad$InclusionRules[[1]]$expression$CriteriaList[[1]]$Criteria$Measurement$ValueAsNumber$Op <- "gt"
-  g <- tempfile(fileext = ".json")
-  writeLines(jsonlite::toJSON(bad, auto_unbox = TRUE, null = "null", digits = NA), g)
-  expect_error(recipe_import_circe(g, id = "p"), "no exact dsOMOP form")
+  expect_error(recipe_import_circe(as.character(jsonlite::toJSON(bad, auto_unbox = TRUE,
+                                                                 null = "null", digits = NA))),
+               "one-sided")
 })
 
 test_that("non-anchor not_has_concept windows round-trip", {

@@ -88,15 +88,22 @@ test_that("generic custom filters are typed, row-only and fail closed", {
   # 2.10.3 (F-23): ordered comparisons are newly permitted (the server's
   # final publication rule is the only release criterion); malformed operands
   # still fail closed.
-  ordered <- omop_filter(
-    type = "custom",
+  exact <- omop_filter(type = "custom",
     params = list(var = "value_as_number", op = ">", value = 5))
-  expect_equal(.filter_to_leaf(ordered),
-               list(var = "value_as_number", op = ">", value = 5))
-  expect_error(omop_filter(
-    type = "custom",
-    params = list(var = "value_as_number", op = ">", value = c(5, 6))),
-    "requires one numeric or text value")
+  expect_identical(.filter_to_leaf(exact),
+                   list(var = "value_as_number", op = ">", value = 5))
+  expect_error(omop_filter(type = "custom",
+    params = list(var = "value_as_number", op = ">", value = c(1, 5))),
+    "one finite numeric")
+  # legacy operator spellings lower to the language-2 operators
+  gte <- omop_recipe(variables = list(n = omop_variable(
+    name = "n", table = "measurement", concept_id = 3004410, format = "count",
+    filters = list(omop_filter(type = "custom", level = "row",
+                               params = list(var = "value_as_number", op = "gte",
+                                             value = 5))))),
+    outputs = omop_output(name = "w", type = "wide"))
+  ev <- recipe_to_plan(gte)$events[[1]]
+  expect_identical(ev$where, list(var = "value_as_number", op = ">=", value = 5))
 })
 
 test_that("non-executable output labels and options never degrade silently", {
@@ -599,7 +606,8 @@ test_that("split output symbols resolve against the longest recipe parent", {
   seen <- NULL
   testthat::local_mocked_bindings(
     ds.omop.plan.execute = function(plan, out, symbol = "omop", conns = NULL,
-                                    output_mode = "memory") {
+                                    output_mode = "memory",
+                                    on_small_site = c("error", "skip")) {
       seen <<- out
       invisible(out)
     },

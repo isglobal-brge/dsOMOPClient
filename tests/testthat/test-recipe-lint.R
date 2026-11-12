@@ -101,7 +101,7 @@ test_that("age_no_index: suppressed when base has a cohort", {
   expect_false(has_code(L, "age_no_index"))
 })
 
-test_that("narrow age ranges are newly permitted: no narrow_filter mirror", {
+test_that("narrow private age ranges do not report a removed publication gate", {
   # 2.10.3 (F-23, F-26): the server's age-width floor is removed for private
   # criteria, so the client lint no longer mirrors it.
   r <- omop_recipe()
@@ -112,6 +112,7 @@ test_that("narrow age ranges are newly permitted: no narrow_filter mirror", {
   expect_false(has_code(L, "narrow_filter"))
   expect_false(any(L$severity %in% c("ERROR", "WARNING") &
                      grepl("width", L$message)))
+  expect_false(has_code(L, "no_compile"))
 })
 
 test_that("date_range width is not hard-coded by client lint", {

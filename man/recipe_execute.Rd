@@ -45,25 +45,18 @@ with \code{cohort}.}
 \item{combine}{Character; how to fold the scope sources together:
 \code{"union"} (the default) or \code{"intersect"}.}
 
-\item{on_small_site}{(2.10.3) \code{"error"} (default) or \code{"skip"}:
-what happens when a server refuses to publish an output because it would
-describe fewer persons than its \code{nfilter.subset}. With
-\code{"error"}, a strict server's refusal rolls the whole federation back
-and raises the server's constant disclosure message, and a non-strict
-server's partial publication is kept with a warning naming the rejected
-outputs. With \code{"skip"}, that server commits nothing (it is asked to
-publish all or none) and is returned as \code{NULL} (attribute
-\code{"inventory"}) while the other servers are kept. Only the
-minimum-persons refusal is skippable: validation, resource, dialect,
-transport and execution failures are errors under both settings.}
+\item{on_small_site}{Character; \code{"error"} (default) or \code{"skip"},
+passed to \code{\link{ds.omop.plan.execute}}. Only insufficient final
+person support is skippable: skip keeps successful sites and returns
+\code{NULL} for sites whose publication fails final person support.}
 }
 \value{
-Invisibly, the output symbol mapping (a named character vector).
-  With 2.10.3 servers the names are read from the servers' publication
-  inventory (fresh names on collision, one symbol per survival TAR, e.g.
-  \code{D_tte.itt}); attribute \code{"inventory"} holds each server's
-  published components (\code{NULL} for a skipped server).
-  As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
+Invisibly, the output symbol mapping (a named character vector)
+  for a complete ordinary execution. When sites publish different outputs
+  or fresh names (the server allocates fresh names for occupied
+  destinations; a survival output publishes one symbol per TAR), a named
+  per-site list of the actual publication inventories; skipped sites have
+  \code{NULL} entries. As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
   recorded on the session so the manipulation wrappers can default to the
   last one.
 }

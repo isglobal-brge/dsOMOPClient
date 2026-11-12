@@ -57,6 +57,7 @@
 # Run an execute/manipulate call with DSI mocked; capture every assign.expr.
 .ergo_capture <- function(fn) {
   calls <- list()
+  publication <- NULL
   symbols <- c("D_other", "D_base", "D_y")
   testthat::local_mocked_bindings(
     datashield.assign.expr = function(conns, symbol, expr, success = NULL,
@@ -66,12 +67,14 @@
       if (is.call(expr) && identical(as.character(expr[[1L]]),
                                      "omopPlanExecuteDS")) {
         mapping <- .ergo_b64_decode(expr[[4L]])
+        publication <<- .publication_status(mapping)
         symbols <<- union(symbols, as.character(unlist(mapping,
                                                         use.names = FALSE)))
       }
       if (is.function(success)) success("srv")
       invisible(NULL)
     },
+    datashield.aggregate = function(conns, expr, ...) list(srv = publication),
     datashield.rm = function(conns, symbol, ...) {
       symbols <<- setdiff(symbols, symbol)
       invisible(NULL)
@@ -301,6 +304,13 @@ test_that("execute keeps unrelated objects and cleans a partial fresh output", {
     .package = "dsOMOPClient"
   )
   testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      expect_identical(as.character(expr[[1L]]), "omopStagedRevokeDS")
+      server <- names(conns)[[1L]]
+      state[[server]] <<- setdiff(state[[server]], "D")
+      removed[[server]] <<- c(removed[[server]], "D")
+      stats::setNames(list(TRUE), server)
+    },
     datashield.symbols = function(conns, ...) state[names(conns)],
     datashield.rm = function(conns, target, ...) {
       server <- names(conns)[[1L]]
@@ -336,42 +346,18 @@ test_that("execute keeps unrelated objects and cleans a partial fresh output", {
   expect_identical(dsOMOPClient:::.get_session(symbol)$outputs, "D.model")
 })
 
-test_that("execute refuses to overwrite any pre-existing output family", {
-  symbol <- "fresh_execute"
-  conns <- list(a = "A", b = "B")
-  assign(symbol, list(res_symbol = "dsO_res", conns = conns),
-         envir = dsOMOPClient:::.dsomop_client_env)
-  on.exit(rm(list = symbol, envir = dsOMOPClient:::.dsomop_client_env),
-          add = TRUE)
-  assigned <- FALSE
-  testthat::local_mocked_bindings(
-    .session_harmonization_for_connections = function(...) NULL,
-    ds.omop.plan.harmonize = function(plan, ...) .ergo_bind_plan(plan),
-    .package = "dsOMOPClient"
+test_that("execute uses fresh server names when requested destinations are occupied", {
+  state <- .publication_backend(
+    list(a = .publication_status(c(events = "D.1")),
+         b = .publication_status(c(events = "D.1"))),
+    initial = list(a = c("D", "other_session"), b = c("D", "other_session"))
   )
-  testthat::local_mocked_bindings(
-    datashield.symbols = function(conns, ...) {
-      stats::setNames(rep(list(c("D", "other_session")), length(conns)),
-                      names(conns))
-    },
-    datashield.assign.expr = function(...) {
-      assigned <<- TRUE
-      invisible(NULL)
-    },
-    .package = "DSI"
-  )
-  p <- ds.omop.plan.events(
-    ds.omop.plan(), "events", "condition_occurrence",
-    concept_set = 201820L
-  )
-  p <- ds.omop.plan.options(p, factor_concepts = FALSE,
-                            translate_concepts = FALSE)
-
-  expect_error(
-    ds.omop.plan.execute(p, out = c(events = "D"), symbol = symbol),
-    "must be fresh"
-  )
-  expect_false(assigned)
+  p <- ds.omop.plan.events(ds.omop.plan(), "events", "condition_occurrence",
+                           concept_set = 201820L)
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE)
+  result <- ds.omop.plan.execute(p, out = c(events = "D"))
+  expect_identical(result$a$events$data$symbol, "D.1")
+  expect_setequal(state$symbols$a, c("D", "other_session", "D.1"))
 })
 
 test_that("execute rejects a missing composite component after server success", {
@@ -389,6 +375,17 @@ test_that("execute rejects a missing composite component after server success", 
     .package = "dsOMOPClient"
   )
   testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      if (as.character(expr[[1L]]) == "omopStagedRevokeDS") {
+        for (server in names(conns)) state[[server]] <<- character()
+        return(stats::setNames(rep(list(TRUE), length(conns)), names(conns)))
+      }
+      status <- .publication_status()
+      status$published <- list(events = stats::setNames(lapply(expected, function(x) {
+        list(symbol = x, grain = "person", n_columns = 2L)
+      }), c("covariates", "covariateRef", "personRef")))
+      stats::setNames(rep(list(status), length(conns)), names(conns))
+    },
     datashield.symbols = function(conns, ...) state[names(conns)],
     datashield.rm = function(conns, target, ...) {
       server <- names(conns)[[1L]]
@@ -412,7 +409,7 @@ test_that("execute rejects a missing composite component after server success", 
                             translate_concepts = FALSE)
   expect_error(
     ds.omop.plan.execute(p, out = c(events = "D"), symbol = symbol),
-    "did not materialize every requested output component"
+    "did not materialize every published output component"
   )
   expect_length(state$a, 0L)
   expect_length(state$b, 0L)
@@ -438,6 +435,10 @@ test_that("multi-server execute strictly harmonizes an unbound plan", {
     .package = "dsOMOPClient"
   )
   testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      stats::setNames(rep(list(.publication_status(c(events = "D"))), length(conns)),
+                      names(conns))
+    },
     datashield.symbols = function(conns, ...) state[names(conns)],
     datashield.rm = function(conns, target, ...) {
       server <- names(conns)[[1L]]

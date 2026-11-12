@@ -36,7 +36,7 @@ workstream fills its entries.
   vendored `plan-v2.json`); `recipe_to_plan(version = 1)` returns the
   unchanged 2.10.1 plan of a recipe built from 2.10.1 constructors. A recipe
   built only from 2.10.1 constructors (and without `parent_id`) executes as
-  that v1 plan on every server, so its results are unchanged, unless the v1
+  that v1 plan, so its results are unchanged, unless the v1
   compiler refuses one of the shapes 2.10.3 newly permits (below); such a
   recipe, and any recipe using language-2 constructs, executes as a v2 plan
   on servers advertising `recipe_language` 2 and every operation it needs.
@@ -47,13 +47,11 @@ workstream fills its entries.
   multi-state survival output keeps its v1 plan.
 - `omop_where()` admits an inline `omop_param()` placeholder (the only call
   it evaluates, with literal arguments; CR-13).
-- With dsOMOP 2.10.3 servers the client reads each execution's publication
-  status (`omopPlanStatusDS`) and takes symbol names from the published
-  inventory (one symbol per survival TAR, fresh names on collision) instead
-  of predicting them (A-E13); `on_small_site = "skip"` returns `NULL` for a
-  site that refuses a release below its minimum number of persons and keeps
-  the others (strict and non-strict servers, design section 7.3). Federated
-  v2 executions bind the plan's semantic digest.
+- Language-2 plans execute through the same publication protocol as v1
+  plans (status, inventory, `on_small_site`, rollback; see Corrected and
+  Newly permitted), sent losslessly after every server's recipe-language
+  capabilities are checked; federated v2 executions bind the plan's semantic
+  digest.
 - `print()`, `recipe_explain()` and `recipe_lint()` state the defaults a
   recipe relies on: "follow-up ends 730 days after index" for a survival
   output without `tar` (F-4, the default is kept), the banded `age_group` of
@@ -68,15 +66,21 @@ workstream fills its entries.
   `time_since` keeps its fixed-date meaning.
 
 ## Corrected
+- Plan execution reads authenticated publication status before cleanup and uses
+  the server inventory, including freshly allocated component symbols. Technical
+  and transport failures revoke staged files as well as assigned outputs.
+- A partial `out` mapping without an explicit `publish` requests only the
+  mapped outputs. For example, `out = c(conditions = "cond_df")` publishes
+  only `cond_df`; the server leaves other computed outputs private and the
+  client accepts the matching publication status.
 - (B-8) `parent_id` now restricts membership (see dsOMOP 2.10.3): a child
   population is a subset of its parent, as `print()` has always shown. A
   recipe with `parent_id` is compiled to a v2 plan and refused, naming
   `population.parent`, by servers that cannot apply it.
-- (F-3) The client blocklist is identical to the server's class-1 patterns
-  (it gains `_source_concept_id`, `stop_reason`, `lot_number`,
-  `unique_device_id`, note/NLP fields, address/geo, provider, care-site and
-  direct-identifier patterns); birth components are not blocked on
-  assignment paths.
+- (F-3) The client blocklist is identical to the server's class-1 patterns;
+  birth components are not blocked on assignment paths. Informational
+  `quasi_identifier` lint identifies birth, age and date variables without
+  changing compilation or aggregate admission.
 - Circe imports carry their language-2 form: the first primary event that
   satisfies the observation window (`select = "first_eligible"` over
   `omop_observed(before = PriorDays, after = PostDays)`, unique coverage),
@@ -87,13 +91,15 @@ workstream fills its entries.
   longer round to 4 / 7 digits on export.
 
 ## Newly permitted
-- No client-side mirrors of removed server gates (F-23): `recipe_lint()` has
-  no `narrow_filter` / `unbound_numeric_filter`, `.classifyFilterClient` is
-  removed, `omop_filter_value()` without `safe_bins` is the plain comparison
-  `>=` / `<=` and `omop_filter_has_measurement()` takes a one- or two-sided
-  numeric range without issued bins; custom row predicates accept ordered
-  comparisons. Defaults are surfaced by `print()`, `recipe_explain()` and
-  `recipe_lint()` instead.
+- `on_small_site = "skip"` on plan and recipe execution keeps successful sites
+  while asking each server to commit all output families or none. Non-strict
+  partial results warn with rejected family names and codes.
+- Numeric row thresholds and one-sided measurement criteria compile without
+  safe bins; supplied bin contracts retain their scope checks. Removed the
+  `narrow_filter` / `unbound_numeric_filter` lints and filter safety categories.
+- Circe round-trips one-sided measurement bounds with identical endpoint
+  semantics; half-open two-sided ranges and authenticated bin contracts still
+  refuse export because Circe cannot preserve them.
 - (F-17) `omop_filter_date_range()` accepts one-sided ranges (`>=` / `<=`).
 - (A-E5) `-Inf` is accepted as an unbounded window start and `Inf` as an
   unbounded end (also for a survival `tar$end_offset`); reversed infinities
@@ -112,24 +118,31 @@ workstream fills its entries.
   may mix concept-scoped and unscoped variables of one table (one source per
   scope); a temporal-covariates output may declare different analyses per
   concept (covariate identities come from the server's registry).
-- `recipe_export_circe()` exports numeric measurement limits as plain Circe
-  ranges (`gte` for `min_value`, `lt` for `max_value`; the dsOMOP range is
-  `[min_value, max_value)`), and `recipe_import_circe()` reads them back; a
-  two-sided range has no exact Circe form and is refused.
 - These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers;
   `recipe_lint()` reports them as INFO `language_2_only`.
 
 ## Newly refused
+- Invalid or incomplete publication status fails closed; only
+  `insufficient_support` can skip a site.
 - Plans that do not validate against the vendored `plan-v2.json` are never
   sent; a v2 recipe whose operations an older server lacks is refused with
   the operation named (parent inheritance, coverage policies, event
   censoring and matching are never dropped to fit an older server).
 - `recipe_to_plan(version = 1)` refuses language-2 constructs, naming them.
-- `omop_filter_has_measurement()` requires `min_value < max_value` when both
-  are given (the server's rule for the range `[min_value, max_value)`).
 - A language-2 survival output needs an explicit `censor` list; class-1
   columns are refused at compile time in projections, value columns and
   predicates of v2 plans.
+
+## Upgrading clients and servers
+- Plan execution with dsOMOPClient 2.10.3 requires the server's published
+  `omopPlanStatusDS` and `omopStagedRevokeDS` methods; dsOMOP 2.10.1 does not
+  provide them. Upgrade the server to 2.10.3 and check
+  `ds.omop.server.version()`. On Opal, publish dsOMOP's settings again after
+  upgrading so the profile exposes the new methods.
+- With a 2.10.1 client and a 2.10.3 server, a strict publication refusal
+  still publishes nothing. The assign call returns status `refused`, and the
+  old client then reports that requested outputs did not materialize instead
+  of receiving the previous constant `Disclosive` error.
 
 ## Contracts shipped by WS-0
 - Vendored `inst/schema/` (byte-identical to dsOMOP's), `R/json_schema.R`,

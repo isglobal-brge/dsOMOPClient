@@ -39,11 +39,10 @@ accidentally broadening the cohort.
     "exactly 0" criteria.
   \item \code{omop_filter_concept_count} -> InclusionRule occurrence "at
     least N" criteria.
-  \item \code{omop_filter_has_measurement} -> Measurement criteria; a
-    lower limit exports as \code{ValueAsNumber} \code{gte} and an upper
-    limit as \code{lt} (the dsOMOP range is \code{[min_value,
-    max_value)}). A two-sided range has no exact Circe form and is
-    refused.
+  \item \code{omop_filter_has_measurement} -> Measurement criteria,
+    including one-sided numeric bounds (inclusive minimum or exclusive
+    maximum). Two-sided half-open ranges and authenticated safe-bin
+    contracts cannot be represented equivalently and are rejected.
   \item \code{omop_filter_sex} / \code{omop_filter_age} -> DemographicCriteria
     Gender / Age.
   \item Filter \code{window = list(start, end)} day offsets -> criteria

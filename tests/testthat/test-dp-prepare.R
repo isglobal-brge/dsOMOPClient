@@ -6,7 +6,8 @@ test_that("DP preparation and table loading use separate server methods", {
     .plan_execute_impl = function(plan, out = NULL, symbol = "omop",
                                   conns = NULL, output_mode = "memory",
                                   server_method = "omopPlanExecuteDS",
-                                  harmonize_factors = TRUE) {
+                                  harmonize_factors = TRUE,
+                                  on_small_site = c("error", "skip")) {
       calls[[length(calls) + 1L]] <<- list(
         out = out, output_mode = output_mode, server_method = server_method,
         harmonize_factors = harmonize_factors
@@ -73,7 +74,7 @@ test_that("a sticky release prepares, releases and removes its input", {
   expect_identical(released$x, symbol)
   expect_identical(released$privacy, redesign$privacy)
   expect_true(symbol %in% removed)
-  expect_true(paste0(symbol, ".events") %in% removed)
+  expect_false(paste0(symbol, ".events") %in% removed)
 })
 
 test_that("a sticky release without input explains both routes", {
@@ -113,4 +114,31 @@ test_that("sticky questions point to their automatic catalog answers", {
     "PE12", variable = "age_at_2025", breaks = seq(0, 120, by = 10))))
   expect_true(any(grepl("Automatic equivalent: ds.omop.analysis.run",
                         printed, fixed = TRUE)))
+})
+
+
+test_that("sticky cleanup removes only its actual prepared symbol", {
+  removed <- NULL
+  testthat::local_mocked_bindings(
+    .plan_remove_output_symbols = function(conns, owned, verify = FALSE) {
+      removed <<- unlist(owned, use.names = FALSE)
+    }, .package = "dsOMOPClient"
+  )
+  dsOMOPClient:::.querylibrary_sticky_remove(list(a = "A"), "prepared.1")
+  expect_identical(removed, "prepared.1")
+})
+
+test_that("sticky preparation follows a common fresh symbol from the inventory", {
+  plan <- ds.omop.plan.baseline(ds.omop.plan())
+  redesign <- omop_querylibrary_sticky("PE12", variable = "age_at_2025",
+                                      breaks = seq(0, 120, 10), preparation = plan)
+  testthat::local_mocked_bindings(
+    ds.omop.dp.prepare = function(...) {
+      list(a = .publication_status(c(baseline = "fresh.1"))$published,
+           b = .publication_status(c(baseline = "fresh.1"))$published)
+    }, .package = "dsOMOPClient"
+  )
+  expect_identical(dsOMOPClient:::.querylibrary_sticky_prepare(
+    redesign, list(a = "A", b = "B"), "omop"
+  ), "fresh.1")
 })

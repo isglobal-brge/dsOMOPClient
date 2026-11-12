@@ -3,10 +3,11 @@
 # publishes, and readable reasons when a server is not ready for dsOMOP.
 
 # The dsOMOP server methods this client calls, by DataSHIELD type. A test keeps
-# this list equal to the methods named in the client's code. Methods under
-# `optional` are dsOMOP 2.10.3 methods called only on servers that advertise
-# them (recipe language 2: publication status, revocation, explain); a server
-# without them is still ready for the methods above.
+# this list equal to the methods named in the client's code. Plan execution
+# requires the publication status and revocation methods (dsOMOP 2.10.3).
+# Methods under `optional` are called only on servers that advertise them
+# (omopPlanExplainDS, for a language-2 plan's server explain); a server without
+# them is still ready for the methods above.
 .DSOMOP_SERVER_METHODS <- list(
   aggregate = c(
     "omopPingDS", "omopGetCapabilitiesDS", "omopDisclosureSettingsDS",
@@ -18,7 +19,8 @@
     "omopConceptSynonymsDS", "omopConceptRelationshipsDS",
     "omopListConceptsDS", "omopVocabulariesDS", "omopDomainsDS",
     "omopConceptClassesDS", "omopCdmSourceDS", "omopCdmVersionDS",
-    "omopPlanPreviewDS", "omopCohortListDS",
+    "omopPlanPreviewDS", "omopPlanStatusDS", "omopStagedRevokeDS",
+    "omopCohortListDS",
     "omopCohortGetDefinitionDS", "omopConceptPrevalenceDS",
     "omopCrossTabDS", "omopNumericRangeDS", "omopNumericHistogramDS",
     "omopNumericQuantilesDS", "omopDateCountsDS",
@@ -39,9 +41,7 @@
     "omopSelectDS", "omopBindRowsDS", "omopAnalysisRunAssignDS",
     "omopDpPlanExecuteDS"
   ),
-  optional = c(
-    "omopPlanStatusDS", "omopStagedRevokeDS", "omopPlanExplainDS"
-  )
+  optional = c("omopPlanExplainDS")
 )
 
 # What an administrator does when the profile lacks dsOMOP's methods.

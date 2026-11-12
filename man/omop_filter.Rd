@@ -160,8 +160,9 @@ restricts absence to that window (e.g. "no HbA1c in the prior year")}
 \code{end}) compiles to a single \code{>=} / \code{<=} comparison.}
 
 \item{end}{Character or \code{NULL}; inclusive end date in ISO
-\code{YYYY-MM-DD} form and not before \code{start}. No client width floor
-applies (publication is the only disclosure gate on 2.10.3 servers).}
+\code{YYYY-MM-DD} form and not before \code{start}. No minimum calendar
+width is imposed on private assignment filters; publication applies final
+support.}
 
 \item{date_column}{Character or \code{NULL}; explicit OMOP date column. When
 \code{NULL}, \code{\link{recipe_to_plan}} infers the standard date column
@@ -174,11 +175,9 @@ from the output's OMOP table.}
 
 \item{direction}{Character; "above" or "below"}
 
-\item{safe_bins}{Optional server-issued result for the same measurement
-concept from \code{ds.omop.safe.cutpoints()}; when given, both limits must
-be issued edges. Without it the numeric range (one or both limits) is
-applied as given and a 2.10.3 server applies only its final publication
-rule.}
+\item{safe_bins}{Server-issued result for the same measurement concept from
+\code{ds.omop.safe.cutpoints()}. Optional for numeric criteria. If
+supplied, both bounds must be issued edges and the scope must match.}
 
 \item{concept_ids}{Integer scalar or vector; the value concept(s) to keep
 (a record matches if its value concept is any of them)}
@@ -188,12 +187,9 @@ rule.}
 \item{visit_concept_id}{Integer scalar or vector, or NULL; visit type
 filter (a vector counts visits of any of the given types)}
 
-\item{min_value}{Numeric or NULL; inclusive lower limit
-(\code{value_as_number >= min_value}).}
+\item{min_value}{Numeric or NULL; inclusive minimum value}
 
-\item{max_value}{Numeric or NULL; exclusive upper limit
-(\code{value_as_number < max_value}); the range is
-\code{[min_value, max_value)}, as the server applies it.}
+\item{max_value}{Numeric or NULL; exclusive maximum value}
 }
 \value{
 An \code{omop_filter} object (a named list with class

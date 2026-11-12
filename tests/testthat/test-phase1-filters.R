@@ -69,11 +69,11 @@ test_that("omop_filter_value_concept honours a custom column and is allow-listed
   expect_equal(f$params$var, "qualifier_concept_id")
   expect_equal(f$params$value, 45877994L)
   # 2.10.3 (F-23): the client no longer classifies filters by disclosure
-  # policy (publication on the server is the only release criterion); the
-  # filter is an ordinary executable row filter.
+  # policy; the structural contract accepts value_concept as a row filter.
   expect_false(exists(".classifyFilterClient", envir = asNamespace("dsOMOPClient"),
                       inherits = FALSE))
   expect_identical(f$level, "row")
+  expect_true("value_concept" %in% .recipeFilterContract()$row)
 })
 
 test_that("a value_concept row filter flows into a compiled recipe plan", {

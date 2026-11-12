@@ -48,9 +48,10 @@ or wrong), and \code{"INFO"} (advisory). Rules:
   \item{tar_default, censoring_default, age_group_default, coverage,
     collapse, representation, missing_skip (INFO)}{a default the recipe
     relies on, stated (e.g. "follow-up ends 730 days after index").}
-  \item{quasi_identifier (INFO)}{a class-2 column (exact birth components,
-    exact age, birth-year bands) released only through the final
-    minimum-persons rule.}
+  \item{quasi_identifier (INFO)}{a permitted birth component, age, age band,
+    birth-year band or date column, one row per variable; final publication
+    support and the absolute-date policy still apply. Aggregate admission
+    is unchanged.}
   \item{measurement_pair (INFO)}{\code{has_measurement} /
     \code{missing_measurement} are not complements.}
   \item{parent_inheritance (INFO)}{a \code{parent_id} now restricts the

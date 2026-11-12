@@ -1,26 +1,13 @@
-# WS-8 (design-2.10.3 section 7.6, F-3): the client's assignment classes match
-# the shared column corpus (inst/column_classes.csv, byte-identical to the
-# server's): class 1 is refused at compile time, class 2 (exact birth
-# components, birth-date extension names, exact age, bands) is permitted and
-# reported, class 3 is ordinary.
+# WS-8 (design-2.10.3 section 7.6, F-3): class 1 is refused at compile time in
+# v1 and language-2 plans, class 2 is permitted and reported. The column
+# classes are R/assignment_policy.R's, checked against the shared corpus
+# (inst/column_classes.csv) row by row in test-column-classes.R.
 
 .column_corpus <- function() {
   cc <- system.file("column_classes.csv", package = "dsOMOPClient")
   if (!nzchar(cc)) cc <- testthat::test_path("..", "..", "inst", "column_classes.csv")
   utils::read.csv(cc, stringsAsFactors = FALSE)
 }
-
-test_that("client class-1 patterns agree with the shared corpus", {
-  rows <- .column_corpus()
-  # Untyped extension identifiers are recognised from server column metadata
-  # only (the corpus says a short-name regex cannot certify them).
-  metadata_only <- grepl("untyped extension identifier", rows$basis)
-  for (i in which(!metadata_only)) {
-    col <- rows$column[[i]]
-    expect_identical(dsOMOPClient:::.is_blocked_column(col), rows$assignment_class[[i]] == 1L,
-                     info = col)
-  }
-})
 
 test_that("class-2 columns are quasi-identifiers, never blocked on assignment paths", {
   rows <- .column_corpus()

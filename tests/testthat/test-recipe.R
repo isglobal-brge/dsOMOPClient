@@ -186,15 +186,20 @@ test_that("omop_filter_value constructor with safe_bins", {
   expect_equal(f$params$value$upper, 20)
 })
 
-test_that("omop_filter_value without safe_bins is a plain comparison", {
-  # 2.10.3 (F-23): mandatory bins were a client mirror of a removed gate.
-  f <- omop_filter_value(threshold = 5, direction = "above", safe_bins = NULL)
-  expect_identical(f$type, "custom")
-  expect_equal(.filter_to_leaf(f), list(var = "value_as_number", op = ">=", value = 5))
+test_that("omop_filter_value compiles exact comparisons without safe_bins", {
+  # 2.10.3 (F-23): mandatory bins were a client mirror of a removed gate;
+  # above and below are complements (>= and <).
+  above <- omop_filter_value(threshold = 5, direction = "above")
+  below <- omop_filter_value(threshold = 5, direction = "below")
+  expect_identical(above$type, "custom")
+  expect_identical(.filter_to_leaf(above), list(var = "value_as_number", op = ">=", value = 5))
+  expect_identical(.filter_to_leaf(below), list(var = "value_as_number", op = "<", value = 5))
   g <- omop_filter_value(column = "quantity", threshold = 2, direction = "below")
-  expect_equal(.filter_to_leaf(g), list(var = "quantity", op = "<=", value = 2))
+  expect_equal(.filter_to_leaf(g), list(var = "quantity", op = "<", value = 2))
+  expect_error(omop_filter_value(threshold = Inf), "finite numeric")
+  expect_error(omop_filter_value(threshold = c(1, 2)), "finite numeric")
   expect_error(omop_filter_value(threshold = NA_real_, direction = "above"),
-               "finite number")
+               "finite numeric")
 })
 
 test_that("omop_filter_value rejects degenerate bins", {
@@ -1780,7 +1785,8 @@ test_that("recipe_execute forwards output_mode to plan execution", {
   seen <- NULL
   testthat::local_mocked_bindings(
     ds.omop.plan.execute = function(plan, out, symbol = "omop", conns = NULL,
-                                    output_mode = "memory") {
+                                    output_mode = "memory",
+                                    on_small_site = c("error", "skip")) {
       seen <<- list(plan = plan, out = out, symbol = symbol,
                     output_mode = output_mode)
       invisible(out)
@@ -2241,23 +2247,24 @@ test_that("omop_filter_has_measurement creates correct filter", {
   expect_equal(f$params$max_value, 6.0)
 })
 
-test_that("omop_filter_has_measurement ranges: plain or snapped to issued bins", {
+test_that("omop_filter_has_measurement authenticates supplied bin ranges", {
   # 2.10.3 (F-23): a range without issued bins is newly permitted, one- or
-  # two-sided; issued bins, when given, must still match.
+  # two-sided ([min_value, max_value)); issued bins, when given, must match.
+  expect_no_error(omop_filter_has_measurement(3004410, min_value = 4, max_value = 6))
   f <- omop_filter_has_measurement(3004410, min_value = 4, max_value = 6)
   expect_equal(f$params$min_value, 4)
   expect_equal(f$params$max_value, 6)
   expect_null(f$params$safe_scope)
   expect_null(omop_filter_has_measurement(3004410, min_value = 4)$params$max_value)
   expect_error(omop_filter_has_measurement(3004410, min_value = 7, max_value = 6),
-               "must be less than")
+               "min_value < max_value")
   expect_error(omop_filter_has_measurement(3004410, min_value = 6, max_value = 6),
-               "\\[min_value, max_value\\)")
+               "min_value < max_value")
   expect_error(
     omop_filter_has_measurement(
       3004410, min_value = 4,
       safe_bins = .test_safe_bins(c(0, 4, 6, 10))),
-    "needs both"
+    "requires both"
   )
   expect_error(
     omop_filter_has_measurement(
