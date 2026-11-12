@@ -82,3 +82,86 @@ test_that("nested histogram pooling retains the root histogram margins", {
   expect_equal(tapply(cells$count, cells$stratum, sum), c(a = 50, b = 50),
                tolerance = 1e-9, ignore_attr = TRUE)
 })
+
+.hc_tte_payload <- function(kind = "first", mass = 10) {
+  node <- function(key, parent) data.frame(key = key, parent = parent)
+  nodes <- list(A = node(paste0("A", 1:3), NA_integer_),
+                B = node(paste0("B", 1:2), c(2L, 2L)),
+                C = node(paste0("C", 1:4), c(1L, 1L, 2L, 2L)))
+  signed <- list(A = c(-4, mass + 10, -6), B = c(-5, mass + 15),
+                   C = c(-7, 2, mass / 2 + 7, mass / 2 + 8))
+  levels <- lapply(names(nodes), function(l) list(keys = nodes[[l]]$key,
+                                                  signed = signed[[l]]))
+  names(levels) <- names(nodes)
+  owner <- list(owner = paste0("TTE/", kind), population = "test", family = "TTE",
+    basis = "tte-signed-day-basis-v1", estimand_kind = kind, cap = 10L,
+    allocation = c(N = .2, R = .2, A = .2, B = .2, C = .2),
+    levels = names(nodes), hierarchy_nodes = nodes,
+    display_projection = "tte-hierarchy-simplex-v1",
+    view = list(day_offset = c(-Inf, -2:1, 2), upper = c(-2:2, Inf),
+                level = c("A", rep("C", 4), "A"),
+                nodes = as.list(c(1L, 1:4, 3L))),
+    components = list(list(stratum = "root", n = if (kind == "first") mass else 5,
+                            r = mass, levels = levels)))
+  list(protocol = .DP_PROTECTED_RELEASE_PROTOCOL, entry = "char.time_to_event",
+       protection = "realised_sticky", owners = list(owner))
+}
+
+test_that("event-time pooling projects the full first or recurrent hierarchy", {
+  for (kind in c("first", "recurrent")) {
+    mass <- if (kind == "first") 10 else 30
+    p <- .hc_tte_payload(kind, mass)
+    out <- .pool_protected_tte(list(site = p))$result
+    expect_equal(out$num_events, c(0, 0, 0, mass / 2 - .5, mass / 2 + .5, 0))
+    expect_equal(sum(out$num_events), mass)
+    if (kind == "first") expect_equal(out$persons, out$num_events) else
+      expect_true(all(is.na(out$persons)))
+    both <- .pool_protected_tte(list(a = p, b = p))$result
+    expect_equal(both$num_events, 2 * out$num_events)
+    coarse <- p
+    coarse$owners[[1]]$view <- list(day_offset = c(-Inf, -2, 2),
+      upper = c(-2, 2, Inf), level = rep("A", 3), nodes = as.list(1:3))
+    c <- .pool_protected_tte(list(a = coarse, b = coarse))$result
+    expect_equal(c$num_events, c(both$num_events[1], sum(both$num_events[2:5]),
+                                  both$num_events[6]))
+    frame <- data.frame(day_offset = numeric(), num_events = numeric(),
+                          persons = numeric())
+    attr(frame, "dsomop_release") <- p
+    pooled <- .pool_protected_release_frames(list(site = frame),
+      columns = list(day_offset = "double", num_events = "double", persons = "double"))
+    expect_equal(pooled$result, out)
+  }
+})
+
+test_that("event-time pooling sums signed nodes before any projection", {
+  a <- .hc_tte_payload()
+  b <- a
+  b$owners[[1]]$components[[1]]$levels$A$signed <- c(12, 2, -4)
+  b$owners[[1]]$components[[1]]$levels$B$signed <- c(3, -1)
+  b$owners[[1]]$components[[1]]$levels$C$signed <- c(1, 2, -2, 1)
+  out <- .pool_protected_tte(list(a = a, b = b))$result
+  expect_equal(out$num_events, c(3, 0, 0, 6.5, 10.5, 0))
+  separately <- .pool_protected_tte(list(a = a))$result$num_events +
+    .pool_protected_tte(list(b = b))$result$num_events
+  expect_false(isTRUE(all.equal(out$num_events, separately)))
+})
+
+test_that("event-time pooling refuses incompatible and malformed public hierarchies", {
+  p <- .hc_tte_payload()
+  bad <- p; bad$owners[[1]]$display_projection <- NULL
+  expect_error(.pool_protected_tte(list(site = bad)), "incompatible basis/view")
+  bad <- p; bad$owners[[1]]$estimand_kind <- "recurrent"
+  expect_error(.pool_protected_tte(list(a = p, b = bad)), "incompatible basis/view")
+  bad <- p; bad$owners[[1]]$view$nodes[[3]] <- 1L
+  expect_error(.pool_protected_tte(list(site = bad)), "repeats protected nodes")
+  bad <- p; bad$owners[[1]]$view$nodes[[2]] <- 1.5
+  expect_error(.pool_protected_tte(list(site = bad)), "view mapping")
+  bad <- p; bad$owners[[1]]$view$nodes <- bad$owners[[1]]$view$nodes[-3]
+  bad$owners[[1]]$view$level <- bad$owners[[1]]$view$level[-3]
+  bad$owners[[1]]$view$day_offset <- bad$owners[[1]]$view$day_offset[-3]
+  expect_error(.pool_protected_tte(list(site = bad)), "omits hierarchy children")
+  bad <- p; bad$owners[[1]]$hierarchy_nodes$B$parent[1] <- 4L
+  expect_error(.pool_protected_tte(list(site = bad)), "parent indices")
+  bad <- p; bad$owners[[1]]$components[[1]]$levels$C$signed[1] <- NA_real_
+  expect_error(.pool_protected_tte(list(site = bad)), "signed time-to-event")
+})

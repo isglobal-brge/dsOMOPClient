@@ -55,9 +55,10 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
 - Person-time pooling reconstructs the complete gender, age and year
   hierarchy before selecting views, preserving parent event, time and capped
   recurrent totals and both margins of crossed views. Nested Achilles
-  histograms retain their root's histogram margins. Hierarchical event-time
-  releases remain available per site; their unsupported pooled view is
-  explicitly unavailable.
+  histograms retain their root's histogram margins. First-event and capped
+  recurrent event-time histograms pool their complete signed day hierarchy,
+  project it onto the person or recurrent event total, then select the
+  requested day, month or year bins.
 - Record-weighted protected releases (the eight QueryLibrary record
   summaries) are pooled by summing the signed persons, records and lattice
   sums per stratum and deriving the record-weighted mean and SD once (never

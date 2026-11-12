@@ -568,8 +568,9 @@
 #' Complete person-time hierarchies are summed and projected from the root
 #' down; public view masks select sums of those projected nodes. Nested
 #' Achilles histograms use the parent's protected cells as their second
-#' margin. Hierarchical event-time releases whose day/atom pooling is not
-#' implemented remain per-site with an explicit warning.
+#' margin. First-event and capped recurrent event-time hierarchies project
+#' their signed A/B/C nodes from the person or event total down before
+#' selecting day, month or year views.
 #'
 #' Record-weighted releases (family \code{RM}) are pooled per stratum by
 #' \code{.pool_protected_record_moments}. Exit-time x status cells of a
@@ -612,10 +613,11 @@
                                           columns = columns))
   }
   if ("TTE" %in% families) {
-    return(list(result = NULL, warnings = paste0(
-      "Hierarchical first/recurrent event-time releases are available per ",
-      "site; this client does not yet pool their day/atom hierarchy. ",
-      "No person-total histogram approximation was substituted.")))
+    if (!identical(families, "TTE")) {
+      stop("Time-to-event hierarchies cannot pool with other protected families.",
+           call. = FALSE)
+    }
+    return(.pool_protected_tte(payloads, columns = columns))
   }
   signature <- function(p) {
     lapply(p$owners, function(o) {

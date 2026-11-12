@@ -204,3 +204,135 @@
                         frame$events / frame$person_time, NA_real_)
   frame
 }
+
+# Pool the complete first-event or capped-recurrent day hierarchy. The
+# weighted recurrent root is R; N is never substituted for event mass.
+.pool_protected_tte <- function(payloads, columns = NULL) {
+  os <- lapply(payloads, function(p) {
+    if (length(p$owners) != 1L) {
+      stop("A time-to-event release must carry one complete hierarchy.", call. = FALSE)
+    }
+    p$owners[[1L]]
+  })
+  o <- os[[1L]]
+  signature <- function(x) list(x$owner, x$population, x$family, x$basis,
+    x$estimand_kind, x$cap, x$allocation, x$levels, x$hierarchy_nodes,
+    x$view, x$display_projection)
+  if (!identical(o$display_projection, "tte-hierarchy-simplex-v1") ||
+      !identical(o$basis, "tte-signed-day-basis-v1") ||
+      !identical(o$family, "TTE") ||
+      !is.character(o$estimand_kind) || length(o$estimand_kind) != 1L ||
+      is.na(o$estimand_kind) || !o$estimand_kind %in% c("first", "recurrent") ||
+      !is.character(o$levels) || !length(o$levels) ||
+      !identical(o$levels, c("A", "B", "C")[seq_along(o$levels)]) ||
+      any(!vapply(os, function(x) identical(signature(x), signature(o)), logical(1L))) ||
+      any(!vapply(payloads, function(p) identical(p$entry, payloads[[1L]]$entry),
+                   logical(1L)))) {
+    stop("Protected time-to-event hierarchies have an unknown or incompatible basis/view.",
+         call. = FALSE)
+  }
+  expected_columns <- c("day_offset", "num_events", "persons")
+  if (!is.null(columns) && !identical(names(columns), expected_columns)) {
+    stop("Protected time-to-event output does not match its contracted columns.",
+         call. = FALSE)
+  }
+  comps <- lapply(os, function(x) {
+    if (length(x$components) != 1L ||
+        !identical(x$components[[1L]]$stratum, "root")) {
+      stop("Malformed time-to-event root component.", call. = FALSE)
+    }
+    x$components[[1L]]
+  })
+  field <- if (o$estimand_kind == "recurrent") "r" else "n"
+  total <- max(0, sum(vapply(seq_along(comps), function(i) {
+    .dp_protected_number(comps[[i]][[field]],
+                         if (is.null(names(payloads))) as.character(i) else
+                           names(payloads)[[i]], field)
+  }, numeric(1L))))
+  nodes <- o$hierarchy_nodes
+  displays <- list()
+  for (level in o$levels) {
+    node <- nodes[[level]]
+    if (!is.data.frame(node) || !all(c("key", "parent") %in% names(node)) ||
+        !nrow(node) || !is.character(node$key) || anyNA(node$key) ||
+        any(!nzchar(node$key)) || anyDuplicated(node$key)) {
+      stop("Malformed time-to-event hierarchy nodes.", call. = FALSE)
+    }
+    signed <- lapply(comps, function(c) {
+      x <- c$levels[[level]]
+      if (!identical(x$keys, node$key) || !is.numeric(x$signed) ||
+          length(x$signed) != nrow(node) || any(!is.finite(x$signed))) {
+        stop("Malformed signed time-to-event components.", call. = FALSE)
+      }
+      x$signed
+    })
+    pooled <- Reduce(`+`, signed)
+    if (level == "A") {
+      displays[[level]] <- .dp_simplex(pooled, total)
+    } else {
+      parent <- displays[[if (level == "B") "A" else "B"]]
+      if (!is.numeric(node$parent) || anyNA(node$parent) ||
+          any(node$parent != floor(node$parent)) ||
+          any(node$parent < 1 | node$parent > length(parent))) {
+        stop("Malformed time-to-event parent indices.", call. = FALSE)
+      }
+      shown <- numeric(length(pooled))
+      for (p in unique(node$parent)) {
+        kids <- which(node$parent == p)
+        shown[kids] <- .dp_simplex(pooled[kids], parent[[p]])
+      }
+      displays[[level]] <- shown
+    }
+  }
+  view <- o$view
+  if (!is.list(view) || !is.numeric(view$day_offset) || anyNA(view$day_offset) ||
+      !is.character(view$level) || anyNA(view$level) ||
+      !all(view$level %in% o$levels) || !is.list(view$nodes) ||
+      length(view$nodes) != length(view$level) ||
+      length(view$nodes) != length(view$day_offset) ||
+      !all(vapply(seq_along(view$nodes), function(i) {
+        idx <- view$nodes[[i]]
+        is.numeric(idx) && length(idx) > 0L && !anyNA(idx) &&
+          !anyDuplicated(idx) && all(idx == floor(idx)) &&
+          all(idx >= 1L & idx <= length(displays[[view$level[[i]]]]))
+      }, logical(1L)))) {
+    stop("Malformed public time-to-event view mapping.", call. = FALSE)
+  }
+  # The mixed-level bins must partition the whole hierarchy exactly once.
+  covered <- lapply(o$levels, function(l) {
+    unlist(view$nodes[view$level == l], use.names = FALSE)
+  })
+  names(covered) <- o$levels
+  for (level in rev(o$levels)) {
+    if (anyDuplicated(covered[[level]])) {
+      stop("A time-to-event view repeats protected nodes.", call. = FALSE)
+    }
+    if (level == "A") next
+    parent_level <- if (level == "B") "A" else "B"
+    for (p in unique(nodes[[level]]$parent)) {
+      kids <- which(nodes[[level]]$parent == p)
+      hit <- kids %in% covered[[level]]
+      if (any(hit)) {
+        if (!all(hit) || p %in% covered[[parent_level]]) {
+          stop("A time-to-event view overlaps or omits hierarchy children.", call. = FALSE)
+        }
+        covered[[parent_level]] <- c(covered[[parent_level]], p)
+      }
+    }
+  }
+  if (!identical(sort(as.integer(covered$A)), seq_len(nrow(nodes$A)))) {
+    stop("A time-to-event view does not cover its complete basis.", call. = FALSE)
+  }
+  events <- vapply(seq_along(view$nodes), function(i) {
+    sum(displays[[view$level[[i]]]][view$nodes[[i]]])
+  }, numeric(1L))
+  result <- data.frame(day_offset = view$day_offset,
+                        num_events = signif(events, 12),
+                        persons = if (o$estimand_kind == "first") signif(events, 12) else
+                          NA_real_)
+  list(result = result, warnings = paste0(
+    "Pooled protected ", o$estimand_kind, " event-time hierarchy: signed ",
+    "nodes were summed, projected from their ", if (field == "r") "capped event" else
+      "person", " total down through A/B/C, then coarsened to the requested bins.",
+    if (field == "r") " Persons per recurrent bin remain unavailable." else ""))
+}
