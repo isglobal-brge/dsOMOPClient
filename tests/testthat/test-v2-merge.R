@@ -36,8 +36,12 @@
       omop_output("joined", rows = "users", format = "joined",
                   options = list(from = list("base_tab", list(output = "base_tab2")))),
       omop_output("base_tab2", rows = "users", format = "wide", grain = "episode",
-                  columns = "after_mi")),
-    publish = c("tte", "joined"))
+                  columns = "after_mi"),
+      omop_output("panel", rows = "users", format = "person_period", options = list(
+        sources = list("mi"), carry_forward = list(mi = list(lookback = 30L)))),
+      omop_output("dict", rows = "users", format = "dictionary",
+                  options = list(source_outputs = "base_tab"))),
+    publish = c("tte", "joined", "panel", "dict"))
 }
 
 test_that("a prefixed merge renames every node of the second recipe and rewrites every reference", {
@@ -72,7 +76,11 @@ test_that("a prefixed merge renames every node of the second recipe and rewrites
   expect_identical(unlist(cz$when_index_source), "b_acei")
   expect_identical(vapply(o$b_joined$options$from, function(f) f$output, ""),
                    c("b_base_tab", "b_base_tab2"))
-  expect_identical(unlist(plan$publish), c("tte", "joined", "b_tte", "b_joined"))
+  expect_identical(o$b_panel$options$sources, list(list(event = "b_mi")))
+  expect_identical(names(o$b_panel$options$carry_forward), "b_mi")
+  expect_identical(unlist(o$b_dict$options$source_outputs), "b_base_tab")
+  expect_identical(unlist(plan$publish), c("tte", "joined", "panel", "dict",
+                                           "b_tte", "b_joined", "b_panel", "b_dict"))
   # the first recipe is untouched
   expect_identical(plan$populations$users, recipe_to_plan(a)$populations$users)
 })
