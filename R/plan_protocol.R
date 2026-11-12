@@ -177,7 +177,8 @@
 
   exec_args <- list(
     as.name(server_method),
-    session$res_symbol, .ds_encode(plan), .ds_encode(out),
+    # Encode singleton mappings too, keeping nested c() out of the wire call.
+    session$res_symbol, .ds_encode(plan), .ds_encode(as.list(out)),
     output_mode)
   if (!is.null(scope_args)) {
     exec_args <- c(exec_args, scope_args, list(combine = combine))

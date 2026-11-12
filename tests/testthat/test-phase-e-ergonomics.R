@@ -200,11 +200,16 @@ test_that("execute with out=NULL sends the auto-derived mapping and returns it",
   res <- .ergo_capture(function() ds.omop.plan.execute(p))
   expect_equal(res$ret, c(baseline = "D_baseline"))
   # the executeDS assign carries the resolved out mapping as its 3rd DS arg.
-  # A single-element named vector is under .ds_encode's multi-element threshold,
-  # so it travels bare (still carrying its name) rather than B64-wrapped.
+  # A singleton mapping must survive expression deparsing as a scalar token,
+  # retaining its output name without a nested c() call.
   exec <- res$calls[[1]]$expr
   expect_equal(as.character(exec[[1]]), "omopPlanExecuteDS")
-  expect_equal(exec[[4]], c(baseline = "D_baseline"))
+  transported <- parse(text = paste(deparse(exec), collapse = "\n"))[[1L]]
+  expect_false(any(vapply(as.list(transported)[-1L], is.call, logical(1))))
+  expect_equal(.ergo_b64_decode(transported[[4L]]),
+               list(baseline = "D_baseline"))
+  expect_identical(transported[[2L]], exec[[2L]])
+  expect_identical(transported[[5L]], "memory")
 })
 
 test_that("execute B64-encodes a multi-output mapping over the transport", {
@@ -215,6 +220,8 @@ test_that("execute B64-encodes a multi-output mapping over the transport", {
   res <- .ergo_capture(function() ds.omop.plan.execute(p))
   expect_equal(res$ret, c(demo = "D_demo", conds = "D_conds"))
   exec <- res$calls[[1]]$expr
+  expect_identical(exec[[4L]], dsOMOPClient:::.ds_encode(
+    c(demo = "D_demo", conds = "D_conds")))
   expect_equal(.ergo_b64_decode(exec[[4]]),
                list(demo = "D_demo", conds = "D_conds"))
 })

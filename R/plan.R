@@ -2030,7 +2030,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     if (v2) .ds_encode_lossless(plan) else .ds_encode(plan),
     # zero publication roots (publish = []): an empty JSON object, never a
     # bare character(0) that a DataSHIELD expression parser would refuse
-    if (length(out)) .ds_encode(out) else .ds_encode(stats::setNames(list(), character(0))),
+    # A named singleton must also be encoded: deparse() would introduce c().
+    if (length(out)) .ds_encode(as.list(out)) else .ds_encode(stats::setNames(list(), character(0))),
     output_mode, commit_policy = if (on_small_site == "skip") {
       "all_or_none"
     } else "server")

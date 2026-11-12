@@ -181,6 +181,10 @@ workstream fills its entries.
   `ds.omop.server.version()`.
 
 ## Corrected
+- Single-output plan mappings now use the existing encoded transport, retaining
+  their names when DataSHIELD parses the call. Calls such as
+  `recipe_execute(recipe, out = c(study = "D"))` no longer fail because a
+  nested `c()` is refused. Existing calls need no changes.
 - (A-24) The exact frozen windowed-features corpus fixture `#1` has an
   unindexed `base` and is `unchanged_invalid`. Its explicit v1 omitted-grain
   refusal permits an attempted native rendering, but does not certify that

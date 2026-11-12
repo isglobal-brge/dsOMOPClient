@@ -33,6 +33,11 @@ test_that("a single 2.10.2 site runs a v1 plan as the 2.10.2 legacy call", {
   expect_null(as.list(sent)$commit_policy)
   # the same v1 payload, byte for byte
   expect_identical(sent[[3L]], dsOMOPClient:::.ds_encode(recipe_to_plan(r, version = 1)))
+  transported <- parse(text = paste(deparse(sent), collapse = "\n"))[[1L]]
+  expect_false(any(vapply(as.list(transported)[-1L], is.call, logical(1))))
+  expect_identical(.decode_ds(transported[[4L]]), list(ages = "D_ages"))
+  expect_identical(transported[[2L]], sent[[2L]])
+  expect_identical(transported[[5L]], "memory")
   expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
   expect_true("D_ages" %in% state$symbols$old)
 })
