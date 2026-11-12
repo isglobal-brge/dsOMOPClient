@@ -54,7 +54,7 @@
                            family = families[[length(families)]],
                            coordinates = coordinates, families = families,
                            reconciliation =
-                             "none_views_project_onto_the_person_total",
+                             "declared_cells_sum_to_person_total",
                            signed = signed))), list(...))
 }
 
@@ -132,10 +132,10 @@ test_that("protected histograms project pooled signed cells onto the pooled tota
   statuses <- list(a = .pc_status(), b = .pc_status())
   coords <- c("stratum=root", "stratum=root|cell=F", "stratum=root|cell=M")
   releases <- list(
-    a = .pc_payload("categorical_histogram", c(20, 12, -3), coords,
+    a = .pc_payload("categorical_histogram", c(20, 17.5, 2.5), coords,
                     c("N", "H", "H"),
                     list(levels = c("F", "M"), counts = c(16, 4))),
-    b = .pc_payload("categorical_histogram", c(30, 10, 25), coords,
+    b = .pc_payload("categorical_histogram", c(30, 7.5, 22.5), coords,
                     c("N", "H", "H"),
                     list(levels = c("F", "M"), counts = c(7.5, 22.5))))
   .pc_backend(statuses, releases, function(datasources, sent) {
@@ -143,7 +143,8 @@ test_that("protected histograms project pooled signed cells onto the pooled tota
       "analysis_table",
       omop_privacy("categorical_histogram", "sex", levels = c("F", "M")),
       datasources)
-    # Pooled N = 50; summed cells (22, 22) project onto it as (25, 25).
+    # Reconciled cells sum to each site's N; pooled N = 50 and the summed
+    # cells (25, 25) project onto it unchanged.
     expect_equal(value$pooled$counts, c(25, 25))
     expect_identical(value$pooled$levels, c("F", "M"))
   })
