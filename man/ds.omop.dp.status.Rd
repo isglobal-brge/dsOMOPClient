@@ -60,13 +60,15 @@ standard statistics). A missing \code{exclusive} field on older servers is
 treated as \code{FALSE}. Servers 2.9.0 and later also report
 \code{tools_mode}, the community tools' protection mode (\code{"auto"} by
 default, \code{"standard"} or \code{"dp"}).
-Each status contains a public \code{snapshot_id} label. Federated sites may
-legitimately report different labels. On 2.10.3 servers it is a display
-value only: fixed synopses are keyed on an automatic data generation the
-server derives within each fixed-synopsis request's database snapshot and
-never releases (\code{data_generation},
-\code{data_generation_basis} and \code{data_generation_residual} describe
-it).
+Status may contain a public \code{snapshot_id} label. Federated sites may
+report different labels. On 2.10.3 servers it is optional display metadata
+with no effect on admission or noise. Fixed synopses are keyed on a private
+person-membership generation recomputed within each request's database
+snapshot, without a per-session cache. Clinical-value updates that leave
+person membership unchanged do not change that generation; cross-version
+inference remains a residual. The public \code{data_generation},
+\code{data_generation_basis} and \code{data_generation_residual} fields
+describe the policy without revealing the private generation.
 Release preflight rejects either a repeated \code{noise_domain_id} or a
 repeated server-owned logical \code{domain}. The second check also prevents
 one logical privacy node from being pooled twice when its connections expose

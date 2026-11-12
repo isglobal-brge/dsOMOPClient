@@ -17,7 +17,8 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
   `realised_sticky` releases report `mechanism_epsilon = NA`, a warning, and no
   pooled epsilon; `meta$privacy$protection` names each site's route. For
   fixed-synopsis releases the pooled epsilon is reported for disjoint sites
-  (maximum) and overlapping sites (sum).
+  (maximum) and overlapping sites (sum), applying to the declared fixed
+  vectors before exact support gates. It is not an API-transcript guarantee.
 - Standalone typed counts on 2.10.3 servers use the shared person-total
   allocation (0.2 of the reference calibration) and are noisier than before;
   typed bounded means need a registered public scale; typed histogram breaks

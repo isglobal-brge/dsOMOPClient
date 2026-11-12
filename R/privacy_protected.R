@@ -2,7 +2,7 @@
 #
 # dsOMOP 2.10.3 replaces per-release sticky DP with protected components:
 # answers are deterministic in a fixed public basis ("fixed_synopsis": a
-# declared bounded vector of an immutable data generation) or in secret
+# declared bounded vector before exact support gates) or in secret
 # fingerprints of the realised bounded contributions ("realised_sticky": a
 # heuristic disclosure control, not a joint differential-privacy guarantee).
 # Each payload carries its displayed values and its signed components; pooling
