@@ -1651,6 +1651,15 @@ omop_filter_has_measurement <- function(concept_id,
 #'   check absence of (a vector requires all of them to be absent)
 #' @param window Named list with start/end index-relative day offsets, or NULL;
 #'   restricts absence to that window (e.g. "no HbA1c in the prior year")
+#' @section has_measurement and missing_measurement are not complements:
+#'   \code{omop_filter_has_measurement()} keeps persons with at least one
+#'   measurement row of the concept (in the value range when one is given);
+#'   \code{omop_filter_missing_measurement()} keeps persons with \emph{no row
+#'   with a non-null value}, so a person whose only rows have a NULL value
+#'   satisfies both. Both keep this 2.10.1 meaning. In language 2 the two
+#'   absences are explicit: \code{omop_has_not(event)} (no row) and
+#'   \code{omop_has_not(event, nonmissing = "value_as_number")} (no non-null
+#'   value); \code{recipe_lint()} reports the legacy pair (INFO).
 #' @export
 omop_filter_missing_measurement <- function(concept_id, window = NULL,
                                              reference_date = NULL) {
@@ -2227,7 +2236,13 @@ print.omop_variable_block <- function(x, ...) {
 #' @param sources (2.10.3) Event/era sources of a \code{long} output.
 #' @param collapse (2.10.3) \code{"first_episode"}, \code{"last_episode"} or
 #'   \code{"any"}: person grain over an indexed population.
-#' @details Survival outputs keep the legacy 730-day time-at-risk default when
+#' @details The \code{baseline} preset reports age as the banded legacy
+#'   \code{age_group} (the server's default grid), while a \code{wide} output
+#'   with \code{omop_age()} reports exact annual age; \code{omop_age(bands =
+#'   TRUE/FALSE, age_breaks =)} chooses explicitly in every format, and
+#'   \code{recipe_explain()} states the choice.
+#'
+#'   Survival outputs keep the legacy 730-day time-at-risk default when
 #'   no \code{tar}/\code{tars} is given (\code{print()},
 #'   \code{recipe_explain()} and \code{recipe_lint()} state it); give
 #'   \code{tar = omop_window(1, NULL)} for unbounded follow-up. A language-2

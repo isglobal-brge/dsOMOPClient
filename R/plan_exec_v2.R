@@ -46,8 +46,9 @@
     if (is.null(rl) || suppressWarnings(as.integer(rl$version %||% 0L)) < 2L) {
       return("recipe_language 2")
     }
+    missing_reducers <- if (length(rl$reducers)) setdiff(reducers, rl$reducers) else character(0)
     c(setdiff(c(ops, extra), rl$operations),
-      if (length(rl$reducers)) paste0("reducer ", setdiff(reducers, rl$reducers)))
+      if (length(missing_reducers)) paste0("reducer ", missing_reducers))
   }), servers)
 }
 

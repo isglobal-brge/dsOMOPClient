@@ -1316,8 +1316,49 @@
                                    combine = if (!identical(sc$combine %||% "union", "union")) sc$combine))
   }
   .v2_validate_plan_semantics(plan)
+  .v2_assert_no_class1(plan)
   .v2_assert_schema(plan)
   structure(plan, class = c("omop_plan_v2", "list"))
+}
+
+# Class-1 columns (section 7.6) are never projected, used as value columns or
+# referenced by predicates (no free-text predicates, decision 5).
+.v2_assert_no_class1 <- function(plan) {
+  bad <- character(0)
+  check <- function(col, where) {
+    if (is.character(col) && length(col) == 1L && .is_blocked_column(col)) {
+      bad <<- c(bad, paste0(col, " (", where, ")"))
+    }
+  }
+  pred_vars <- function(node, where) {
+    if (!is.list(node)) return(invisible())
+    if (!is.null(node$var)) check(node$var, where)
+    for (k in intersect(names(node), c("and", "or"))) for (ch in node[[k]]) pred_vars(ch, where)
+    if (!is.null(node$not)) pred_vars(node$not, where)
+  }
+  for (nm in names(plan$events)) {
+    ev <- plan$events[[nm]]
+    check(ev$value$column, paste0("event '", nm, "' value"))
+    check(ev$concept_col, paste0("event '", nm, "' concept_col"))
+    pred_vars(ev$where %||% ev$episode_members$where %||% ev$cost$where,
+              paste0("event '", nm, "' where"))
+  }
+  for (nm in names(plan$variables)) {
+    v <- plan$variables[[nm]]
+    check(v$raw$column, paste0("variable '", nm, "'"))
+    check(v$reducer$value, paste0("variable '", nm, "' reducer value"))
+    pred_vars(v$reducer$predicate, paste0("variable '", nm, "' predicate"))
+  }
+  for (id in names(plan$populations)) {
+    .v2_walk(plan$populations[[id]]$where, function(node) {
+      if (is.list(node) && !is.null(node$person)) pred_vars(node$person, paste0("population '", id, "'"))
+    })
+  }
+  if (length(bad)) {
+    stop("Disclosive: the plan requests blocked (class-1) column(s) that the server can ",
+         "never release or filter on: ", paste(unique(bad), collapse = ", "), ".", call. = FALSE)
+  }
+  invisible(TRUE)
 }
 
 #' Validate an emitted v2 plan against the vendored wire schema

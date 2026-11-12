@@ -1,0 +1,252 @@
+# WS-8 (design-2.10.3 sections 2, 4.1, 4.4, 5): compiling recipes to v2 plans.
+
+.wire <- function(plan) dsOMOPClient:::.v2_plain(plan)
+.valid <- function(plan) {
+  dsOMOPClient:::.jsonSchemaValidate(dsOMOPClient:::.v2_plan_schema(), .wire(plan))$valid
+}
+
+test_that("inline objects are interned under deterministic names; equal ones share a node", {
+  dm <- omop_concept_set(201820, descendants = TRUE, name = "dm")
+  r <- omop_recipe(
+    populations = omop_population("p", index = omop_index(omop_event("condition_occurrence", dm)),
+                                  filters = list(omop_has(omop_event("condition_occurrence", dm),
+                                                          window = omop_window(-30, 0)))),
+    variables = list(n = omop_variable(event = omop_event("condition_occurrence", dm),
+                                       reducer = omop_reduce("count")),
+                     lab = omop_variable(event = omop_event("measurement", 3004410),
+                                         reducer = omop_reduce("mean"))),
+    outputs = omop_output("o", rows = "p", format = "wide"))
+  plan <- recipe_to_plan(r)
+  expect_true(.valid(plan))
+  expect_setequal(names(plan$events), c("dm_dx", "lab_3004410"))
+  expect_identical(plan$events$dm_dx$concept_set, "dm")
+  expect_identical(plan$concept_sets$dm$include_descendants, TRUE)
+  expect_identical(plan$populations$p$index$source, list(event = "dm_dx"))
+  # measurement events carry their role value column (value_as_number)
+  expect_identical(plan$events$lab_3004410$value, list(column = "value_as_number"))
+})
+
+test_that("a name reused for a different definition is refused", {
+  r <- omop_recipe(
+    events = list(omop_event("condition_occurrence", 1, name = "x")),
+    variables = list(v = omop_variable(event = omop_event("condition_occurrence", 2, name = "x"),
+                                       reducer = omop_reduce("binary"))),
+    outputs = omop_output("o", format = "wide"))
+  expect_error(recipe_to_plan(r), "name 'x' is used for two different definitions")
+  same <- omop_recipe(
+    events = list(omop_event("condition_occurrence", 1, name = "x")),
+    variables = list(v = omop_variable(event = omop_event("condition_occurrence", 1, name = "x"),
+                                       reducer = omop_reduce("binary"))),
+    outputs = omop_output("o", format = "wide"))
+  expect_named(recipe_to_plan(same)$events, "x")
+})
+
+test_that("legacy population filters lower to native criteria; parent compiles (B-8)", {
+  r <- omop_recipe(
+    populations = list(
+      omop_population("all_f", filters = list(omop_filter_sex("F"), omop_filter_age(18, 18))),
+      omop_population("dm", parent_id = "all_f",
+                      filters = list(omop_filter_has_concept(201820, "condition_occurrence",
+                                                             min_count = 2),
+                                     omop_filter_missing_measurement(3004410)))),
+    variables = list(sex = omop_sex()),
+    outputs = omop_output("o", rows = "dm", format = "wide"))
+  plan <- recipe_to_plan(r)
+  expect_true(.valid(plan))
+  w <- plan$populations$all_f$where$and
+  expect_identical(w[[1]], list(person = list(var = "gender_concept_id", op = "==", value = 8532L)))
+  expect_identical(w[[2]], list(age = list(min = 18L, max = 18L)))  # one-year band (F-26)
+  dm <- plan$populations$dm
+  expect_identical(dm$parent, "all_f")
+  expect_identical(dm$where$and[[1]]$has$n, 2L)
+  # missing_measurement keeps its v1 meaning: no row with a non-null value (B-7)
+  expect_identical(dm$where$and[[2]]$has$nonmissing, "value_as_number")
+  expect_identical(dm$where$and[[2]]$has$op, "==")
+  # the implicit base is not emitted when nothing uses it
+  expect_false("base" %in% names(plan$populations))
+  # the v1 rendering of the same 2.10.1-only recipe keeps the 2.10.1 plan
+  # (parent was never compiled there; execution refuses it on old servers)
+  legacy <- omop_recipe(populations = r$populations[c("all_f", "dm")],
+                        variables = omop_variable_sex(),
+                        outputs = omop_output("o", type = "wide", population_id = "dm"))
+  v1 <- recipe_to_plan(legacy, version = 1)
+  expect_s3_class(v1, "omop_plan")
+  expect_null(v1$populations$dm$parent)
+  expect_true(any(grepl("parent_id", dsOMOPClient:::.recipe_needs_v2(legacy))))
+})
+
+test_that("legacy index events and variables lower to their native forms", {
+  r <- omop_recipe(
+    populations = omop_population("t2d", index_event = omop_index_event(
+      201820, "condition_occurrence", primary_limit = "first",
+      end_strategy = list(DateOffset = list(DateField = "StartDate", Offset = 30)))),
+    variables = list(omop_variable(name = "hba1c", table = "measurement", concept_id = 3004410,
+                                   format = "last_value", time_window = list(start = -365, end = 0),
+                                   value_source = "value_as_number"),
+                     omop_variable_age(reference = "index")),
+    outputs = omop_output("w", type = "features", population_id = "t2d", grain = "episode"))
+  plan <- recipe_to_plan(r)
+  expect_true(.valid(plan))
+  ix <- plan$populations$t2d$index
+  expect_identical(ix$select, "first")   # select-before-eligibility keeps its meaning
+  expect_identical(ix$end, list(strategy = "fixed", days = 30L))
+  expect_identical(plan$variables$hba1c$reducer$fn, "last_value")
+  expect_identical(plan$variables$hba1c$reducer$window,
+                   list(start = -365L, end = 0L, anchor = "index"))
+  expect_identical(plan$variables$age$derived$kind, "age")
+  expect_identical(plan$outputs$w$grain, "episode")
+})
+
+test_that("legacy constructs without a faithful native form are refused, naming them", {
+  long <- omop_recipe(variables = omop_variable(table = "measurement", concept_id = 1),
+                      outputs = omop_output("l", type = "long"))
+  expect_error(recipe_to_plan(long), "legacy type 'long' has no v2 lowering")
+  expect_s3_class(recipe_to_plan(long, version = 1), "omop_plan")
+  score <- omop_recipe(variables = omop_variable_charlson(), outputs = omop_output("w"))
+  expect_error(recipe_to_plan(score), "omop_score\\(\"charlson\"\\)")
+  rowf <- omop_recipe(variables = omop_variable_sex(), filters = omop_filter_date_range("2020-01-01"),
+                      outputs = omop_output("w"))
+  expect_error(recipe_to_plan(rowf), "Recipe-level row filters")
+})
+
+test_that("version = 1 refuses language-2 constructs, naming them", {
+  r <- omop_recipe(variables = list(age = omop_age()), outputs = omop_output("w", format = "wide"))
+  expect_error(recipe_to_plan(r, version = 1), "language-2 construct.*variable 'age'.*format = \"wide\"")
+  expect_error(recipe_to_plan(r, version = 3), "version must be 1 or 2")
+})
+
+test_that("grain defaults, collapse and population references are validated", {
+  ev <- omop_event("condition_occurrence", 1, name = "dx")
+  r <- omop_recipe(populations = omop_population("p", index = omop_index(ev)),
+                   variables = list(sex = omop_sex()),
+                   outputs = list(omop_output("e", rows = "p", format = "wide"),
+                                  omop_output("c", rows = "p", format = "wide", grain = "person",
+                                              collapse = "first_episode")))
+  plan <- recipe_to_plan(r)
+  expect_identical(plan$outputs$e$grain, "episode")
+  expect_identical(plan$outputs$c$collapse, "first_episode")
+  bad <- omop_recipe(populations = omop_population("p", index = omop_index(ev)),
+                     variables = list(sex = omop_sex()),
+                     outputs = omop_output("c", rows = "p", format = "wide", grain = "person"))
+  expect_error(recipe_to_plan(bad), "needs collapse")
+  ghost <- omop_recipe(variables = list(sex = omop_sex()),
+                       outputs = omop_output("g", rows = "ghost", format = "wide"))
+  expect_error(recipe_to_plan(ghost), "undeclared population")
+  unknown_var <- omop_recipe(variables = list(sex = omop_sex()),
+                             outputs = omop_output("g", format = "wide", columns = "age"))
+  expect_error(recipe_to_plan(unknown_var), "unknown variable")
+})
+
+test_that("survival outputs: explicit censoring, A-7 tags, TAR default and the matrix", {
+  a <- omop_era(omop_event("drug_era", 1, name = "a_rows"), name = "a")
+  b <- omop_era(omop_event("drug_era", 2, name = "b_rows"), name = "b")
+  mi <- omop_event("condition_occurrence", 4329847, name = "mi")
+  pop <- omop_population("nu", index = omop_index(omop_any_of(a, b), "first_eligible"))
+  surv <- function(...) omop_recipe(populations = pop,
+                                    outputs = omop_output("t", rows = "nu", format = "survival",
+                                                          options = list(...)))
+  plan <- recipe_to_plan(surv(outcomes = list(mi = mi),
+                              censor = list("observation_end",
+                                            omop_censor(b, "first_start_after_entry",
+                                                        when_index_source = "a"))))
+  expect_true(.valid(plan))
+  expect_identical(plan$outputs$t$options$tar, list(start = 0L, end = 730L, anchor = "index"))
+  expect_identical(plan$outputs$t$options$censor[[2]]$censor$when_index_source, list("a"))
+  expect_error(recipe_to_plan(surv(outcomes = list(mi = mi), censor = list(
+    omop_censor(b, when_index_source = "c")))), "not index sources")
+  expect_error(recipe_to_plan(surv(outcomes = list(mi = mi))), "explicit censor list")
+  expect_error(recipe_to_plan(surv(outcomes = list(mi = mi), censor = "death",
+                                   format = "competing_risk", event_order = "last")),
+               "competing_risk requires")
+  expect_error(recipe_to_plan(surv(outcomes = list(mi = mi), censor = "death", tie_policy = "error")),
+               "disclosure oracle")
+  expect_error(recipe_to_plan(surv(outcomes = list(mi = mi), censor = "death",
+                                   tar = omop_window(1, NULL), tars = list(x = omop_window(1, 2)))),
+               "tar or tars")
+  expect_error(recipe_to_plan(surv(outcomes = list(mi = mi), censor = "death", bogus = 1)),
+               "unsupported option")
+})
+
+test_that("person_period, effective supply and joined inputs are checked", {
+  rx <- omop_event("drug_exposure", 1503297, end = list(fallback = "days_supply"), name = "rx")
+  era <- omop_era(rx, name = "era")
+  stock <- omop_era(rx, stockpile = TRUE, name = "stock")
+  pop <- omop_population("c", index = omop_index(list(cohort_definition_id = 1), "all",
+                                                end = omop_end("event_end")))
+  ok <- omop_recipe(populations = pop,
+                    variables = list(eff = omop_variable(event = stock, reducer = omop_reduce(
+                      "covered_days", window = omop_window(1, 90), coverage = "effective_supply"))),
+                    outputs = omop_output("w", rows = "c", format = "wide"))
+  expect_true(.valid(recipe_to_plan(ok)))
+  bad <- omop_recipe(populations = pop,
+                     variables = list(eff = omop_variable(event = era, reducer = omop_reduce(
+                       "covered_days", coverage = "effective_supply"))),
+                     outputs = omop_output("w", rows = "c", format = "wide"))
+  expect_error(recipe_to_plan(bad), "stockpiled")
+  pp <- omop_recipe(populations = pop, outputs = omop_output("pp", rows = "c",
+    format = "person_period", options = list(sources = list(rx), carry_forward = list(
+      nope = list(lookback = 30)))))
+  expect_error(recipe_to_plan(pp), "carry_forward key")
+  j <- omop_recipe(populations = pop, variables = list(sex = omop_sex()),
+                   outputs = list(omop_output("a", rows = "c", format = "wide"),
+                                  omop_output("j", rows = "c", format = "joined",
+                                              options = list(from = list("a", "zz")))))
+  expect_error(recipe_to_plan(j), "joined input")
+})
+
+test_that("publication roots, scope and plan options are emitted", {
+  ev <- omop_event("condition_occurrence", 1, name = "dx")
+  r <- omop_recipe(populations = omop_population("p", index = omop_index(ev)),
+                   variables = list(sex = omop_sex()),
+                   outputs = list(omop_output("a", rows = "p", format = "wide"),
+                                  omop_output("b", rows = "p", format = "wide")),
+                   publish = "b", coverage = omop_coverage("earliest"),
+                   options = list(translate_concepts = FALSE), cohort = 7)
+  plan <- recipe_to_plan(r)
+  expect_true(.valid(plan))
+  expect_identical(plan$publish, list("b"))
+  expect_identical(plan$options$coverage$policy, "earliest")
+  expect_identical(plan$options$translate_concepts, FALSE)
+  expect_identical(plan$scope$cohort, 7L)
+  bad <- omop_recipe(variables = list(sex = omop_sex()), outputs = omop_output("a", format = "wide"),
+                     publish = "zz")
+  expect_error(recipe_to_plan(bad), "publish names unknown")
+})
+
+test_that("the operation inventory names what a plan needs (section 4.4)", {
+  a <- omop_era(omop_event("drug_era", 1, name = "a_rows"), by = "ingredient", name = "a")
+  b <- omop_era(omop_event("drug_era", 2, name = "b_rows"), name = "b")
+  mi <- omop_event("condition_occurrence", 4329847, name = "mi")
+  r <- omop_recipe(
+    populations = list(
+      omop_population("nu", index = omop_index(omop_any_of(a, b), "first_eligible"),
+                      coverage = omop_coverage("union")),
+      omop_population("child", parent_id = "nu", filters = list(omop_not(omop_has(mi))))),
+    variables = list(arm = omop_population_column("index_source")),
+    outputs = list(omop_output("w", rows = "child", format = "wide"),
+                   omop_output("t", rows = "nu", format = "survival", options = list(
+                     outcomes = list(mi = mi), censor = list(omop_censor(b, when_index_source = "a"))))),
+    publish = c("w", "t"))
+  ops <- dsOMOPClient:::.plan_v2_operations(recipe_to_plan(r))
+  expect_true(all(c("population.index", "population.first_eligible", "population.any_of",
+                    "population.coverage.union", "population.parent", "population.criteria",
+                    "criteria.not", "interval", "interval.ingredient",
+                    "variable.population_column", "output.wide", "output.survival",
+                    "output.survival.censor_source", "publish.roots", "event") %in% ops))
+  expect_false("population.match" %in% ops)
+})
+
+test_that("plans are sent losslessly (no 4-digit rounding)", {
+  w <- omop_event("measurement", 3025315,
+                  unit = omop_unit(9529, list("8739" = c(factor = 0.45359237))), name = "w")
+  r <- omop_recipe(variables = list(x = omop_variable(event = w, reducer = omop_reduce("mean"))),
+                   outputs = omop_output("o", format = "wide"))
+  plan <- recipe_to_plan(r)
+  enc <- dsOMOPClient:::.ds_encode_lossless(plan)
+  b64 <- chartr("-_", "+/", sub("^B64:", "", enc))
+  b64 <- paste0(b64, strrep("=", (4 - nchar(b64) %% 4) %% 4))
+  back <- jsonlite::fromJSON(rawToChar(jsonlite::base64_dec(b64)), simplifyVector = FALSE)
+  expect_identical(back$events$w$unit$convert[["8739"]]$factor, 0.45359237)
+  expect_identical(dsOMOPClient:::.plan_v2_digest(back)$sha256,
+                   dsOMOPClient:::.plan_v2_digest(plan)$sha256)
+})
