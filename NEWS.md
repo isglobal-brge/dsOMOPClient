@@ -17,9 +17,12 @@ workstream fills its entries.
 - `on_small_site = "skip"` on plan and recipe execution keeps successful sites
   while asking each server to commit all output families or none. Non-strict
   partial results warn with rejected family names and codes.
-- No client-side mirrors of removed server gates (`narrow_filter`,
-  `unbound_numeric_filter`, mandatory bins); defaults are surfaced by
-  `print()`, `recipe_explain()` and `recipe_lint()` instead.
+- Numeric row thresholds and one-sided measurement criteria compile without
+  safe bins; supplied bin contracts retain their scope checks. Removed the
+  `narrow_filter` / `unbound_numeric_filter` lints and filter safety categories.
+- Circe round-trips one-sided measurement bounds with identical endpoint
+  semantics; half-open two-sided ranges and authenticated bin contracts still
+  refuse export because Circe cannot preserve them.
 
 ## Newly refused
 - Invalid or incomplete publication status fails closed; only

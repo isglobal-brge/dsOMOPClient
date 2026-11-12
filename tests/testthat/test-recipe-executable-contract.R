@@ -64,10 +64,13 @@ test_that("generic custom filters are typed, row-only and fail closed", {
     params = list(var = "condition_type_concept_id", op = "in",
                   value = 32020L)),
     "executable only at level 'row'")
-  expect_error(omop_filter(
-    type = "custom",
-    params = list(var = "value_as_number", op = ">", value = 5)),
-    "ordered client-authored thresholds are not executable")
+  exact <- omop_filter(type = "custom",
+    params = list(var = "value_as_number", op = ">", value = 5))
+  expect_identical(.filter_to_leaf(exact),
+                   list(var = "value_as_number", op = ">", value = 5))
+  expect_error(omop_filter(type = "custom",
+    params = list(var = "value_as_number", op = ">", value = c(1, 5))),
+    "one finite numeric")
 })
 
 test_that("non-executable output labels and options never degrade silently", {

@@ -37,9 +37,6 @@ or wrong), and \code{"INFO"} (advisory). Rules:
     fixed ISO \code{derived$reference_date} or \code{derived$unit}.}
   \item{age_no_index (WARNING)}{\code{format = "age"} with index reference
     but the base population has neither a cohort nor a date filter.}
-  \item{narrow_filter (WARNING)}{population \code{age_range} width < 5 years
-    (server rejects). Calendar-window width is server policy and is therefore
-    not hard-coded by this client lint.}
   \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column with
     \code{factor_concepts = TRUE}, or a categorical format on a
     high-cardinality domain.}
@@ -48,6 +45,9 @@ or wrong), and \code{"INFO"} (advisory). Rules:
   \item{long_split (INFO)}{a \code{"long"} output spanning > 1 table.}
   \item{no_value_source (INFO)}{an aggregate format with no
     \code{value_source}.}
+  \item{quasi_identifier (INFO)}{a permitted birth component, age, age band,
+    or date column; final publication support and the absolute-date policy
+    still apply. Aggregate admission is unchanged.}
 }
 Edge cases: a \code{NULL} recipe returns a single \code{empty_recipe} info
 row; a recipe with no outputs adds a \code{no_output} warning.

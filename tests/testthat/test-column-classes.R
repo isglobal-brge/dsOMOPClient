@@ -15,7 +15,7 @@ test_that("client assignment classification matches the shared frozen column cor
     if (blocked) {
       expect_error(recipe_to_plan(recipe), "blocked class-1 column", info = column)
     } else {
-      expect_no_error(recipe_to_plan(recipe), info = column)
+      expect_no_error(recipe_to_plan(recipe))
     }
     report <- recipe_lint(recipe)
     info <- report[report$code == "quasi_identifier", , drop = FALSE]
