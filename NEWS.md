@@ -90,6 +90,60 @@ workstream fills its entries.
   `last_date` reducers with an explicit `reference` anchor (F-18);
   `time_since` keeps its fixed-date meaning.
 
+## Simple layer, parameters and verbs (WS-9)
+- Simple layer (design section 3): `omop_study()` returns an ordinary
+  `omop_recipe` -- one indexed population and the requested `"baseline"`
+  (wide), `"survival"` (`competing_risk` with two or more outcomes),
+  `"long"` (the outcome events) and `"panel"` (dense 30-day person periods)
+  outputs, all with episode grain, priority ties and relative dates;
+  `require` entries (`prior_observation`, `followup`, `age`, `sex`, `has`,
+  `no_history_of`, `in_cohort`, criterion objects) expand one criterion each.
+  `print()` lists every default the study chose, `recipe_explain()` states
+  them (INFO `simple_layer` in `recipe_lint()`), `recipe_to_code()` prints the
+  advanced expansion. `omop_new_users()` is the era-indexed population of
+  first-eligible users after an observed washout. The shortcuts
+  `omop_ever()`, `omop_count()`, `omop_first_value()`, `omop_last_value()`,
+  `omop_mean_value()`, `omop_min_value()`, `omop_max_value()`,
+  `omop_value_at_index()`, `omop_days_since()`, `omop_days_until()`,
+  `omop_first_date()`, `omop_last_date()` and `omop_history()` return
+  ordinary reducer variables; `before`, `after` and `window` are mutually
+  exclusive and default to any time up to the index date; a numeric `unit`
+  restricts the unit, `omop_unit()` converts.
+- Parameters (design section 2.10): `omop_param(name, type, default,
+  description)` placeholders stand for any language-2 value (integer and
+  number placeholders admit `+ - * /` and unary minus); `recipe_params()`
+  lists them and refuses two definitions of one name; `recipe_bind()` checks
+  each value against its type, substitutes it and rebuilds every object that
+  held a placeholder through its constructor (a recipe may be bound in
+  stages); `recipe_to_plan()` binds defaults and refuses an unbound
+  parameter. Parametrised recipes round-trip through JSON, YAML and
+  `recipe_to_code()`. Acceptance recipe 13 and its twelve variants bind to
+  their frozen plans.
+- `recipe_merge(a, b, prefix = NULL)`: one shared namespace (a name used by
+  both needs one definition), or every node of `b` renamed `<prefix>_<name>`
+  with every reference rewritten (anchors, censoring and its index-source
+  tags, index arms, parents, set operations, match inputs, output rows,
+  columns and dependencies, publication roots); outputs with implicit
+  columns keep exactly their own variables, `b`'s base population keeps its
+  meaning, block metadata is preserved and parameters are shared by name.
+- The complete set of editing functions is exported: `recipe_add_population()`,
+  `recipe_add_event()`, `recipe_add_concept_set()`, `recipe_add_interval()`,
+  `recipe_add_block()`, `recipe_add_variable()`, `recipe_add_filter()`,
+  `recipe_add_output()`, their `recipe_remove_*()` counterparts,
+  `recipe_set_scope()`, `recipe_set_options()` and `recipe_set_publish()`
+  (2.10.1 formals unchanged).
+- `ds.omop.mutate(x, ..., newobj)` (design 2.11, 4.6) derives columns from R
+  expressions translated into the closed mutation AST of the vendored
+  `mutate-v1.json` -- columns, literals, `+ - * /`, conditions,
+  `ifelse()`, `case_when()`, `coalesce()`, `cut()` (R's `right = TRUE`
+  default), date arithmetic -- validated before it is sent and never
+  evaluated; `newobj = x` replaces the target on every server or on none
+  (a rollback copy is kept until all succeed). `ds.omop.filter(x, expr =
+  omop_where(...))` filters with the closed predicate grammar. Both need
+  the servers to advertise `verb.mutate` / `verb.filter_expr` (dsOMOP
+  2.10.3); `omopMutateDS` is a listed server method of
+  `ds.omop.server.version()`.
+
 ## Corrected
 - Plan execution reads authenticated publication status before cleanup and uses
   the server inventory, including freshly allocated component symbols. Technical
@@ -114,6 +168,12 @@ workstream fills its entries.
 - Recipe JSON export and plan JSON save keep every digit (`digits = NA`) and
   YAML 15 significant digits: numbers such as unit conversion factors no
   longer round to 4 / 7 digits on export.
+- `recipe_to_code()` of a recipe with exactly one language-2 variable emitted
+  `variables = name = ...`, which does not parse; it is `list(name = ...)`.
+- A refused manipulation verb (`ds.omop.merge()`, `ds.omop.filter()`,
+  `ds.omop.select()`, `ds.omop.bind_rows()`, `ds.omop.mutate()`) reports each
+  server's own reason -- for a publication refusal its constant message --
+  instead of the server names or DSI's "There are some DataSHIELD errors".
 
 ## Newly permitted
 - (B-20) `omop_index_event()` accepts every event table of the server's role
@@ -152,6 +212,10 @@ workstream fills its entries.
   concept (per-source analyses, A-14).
 - These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers;
   `recipe_lint()` reports them as INFO `language_2_only`.
+- `ds.omop.filter(expr = omop_where(...))` filters a server-side table with
+  every comparison of the predicate grammar (`< <= > >=`, `between`,
+  `is.na()`, `!`, `&`, `|`), three-valued; the legacy `var`/`op`/`value`
+  form keeps `==`, `!=`, `in`, `not_in`.
 
 - (F-1) New `omop_filter_concept_set(concept_ids, concept_col = NULL)`: a
   row concept-set filter matching the output table's domain concept column
