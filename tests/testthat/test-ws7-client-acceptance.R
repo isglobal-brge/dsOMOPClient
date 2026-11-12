@@ -217,20 +217,76 @@
   expect_false(any(c("subject_id", "index_key", "index_visit_id", "op_component_id") %in% names(frame)), info = info)
 }
 
-.ws7e_canonical <- function(frame, prototype = frame) {
-  frame <- as.data.frame(frame, stringsAsFactors = FALSE)
-  attributes(frame)[setdiff(names(attributes(frame)), c("names", "row.names", "class"))] <- NULL
-  class(frame) <- "data.frame"
-  for (col in names(frame)) {
-    value <- frame[[col]]
-    frame[[col]] <- if (is.numeric(prototype[[col]])) {
-      format(as.numeric(value), digits = 17, trim = TRUE, scientific = FALSE)
-    } else as.character(value)
-    frame[[col]][is.na(value)] <- NA_character_
+.ws7e_expect_parity <- function(staged, memory, info) {
+  expect_identical(names(staged), names(memory), info = info)
+  expect_identical(nrow(staged), nrow(memory), info = info)
+  if (!identical(names(staged), names(memory)) || nrow(staged) != nrow(memory)) {
+    return(invisible(NULL))
   }
-  rownames(frame) <- NULL
-  frame
+  for (col in names(memory)) {
+    label <- paste(info, col)
+    got <- staged[[col]]
+    want <- memory[[col]]
+    # Check missingness before numeric parsing: neither empty strings nor the
+    # literal text "NA" may become a missing value and pass the comparison.
+    expect_identical(is.na(got), is.na(want), info = label)
+    if (!identical(is.na(got), is.na(want))) next
+    present <- !is.na(want)
+    got <- got[present]
+    want <- want[present]
+    if (!is.numeric(want) || inherits(want, "integer64") ||
+        grepl("(^|_)(id|key)$", col)) {
+      # Identifiers never pass through a double, including large analytic keys.
+      expect_identical(as.character(got), as.character(want), info = label)
+      next
+    }
+    got <- suppressWarnings(as.numeric(got))
+    want <- as.numeric(want)
+    expect_identical(is.finite(got), is.finite(want), info = label)
+    if (!identical(is.finite(got), is.finite(want))) next
+    finite <- is.finite(want)
+    expect_identical(as.character(got[!finite]), as.character(want[!finite]), info = label)
+    whole <- finite & want == trunc(want)
+    expect_identical(got[whole], want[whole], info = label)
+    # The unchanged CSV writer uses utils::write.table/write.csv, whose
+    # documented internal precision is 15 significant digits. Permit only
+    # its decimal-rounding scale (relative 1e-14) for fractional values;
+    # integer values, zero, identifiers, text, NA positions and row order
+    # remain exact. The independent oracle comparison is still required.
+    fractional <- finite & !whole
+    expect_true(all(abs(got[fractional] - want[fractional]) <=
+                      1e-14 * abs(want[fractional])), info = label)
+  }
+  invisible(NULL)
 }
+
+test_that("staged recipe parity permits only fractional CSV rounding", {
+  memory <- data.frame(row_id = c("9007199254740992", "9007199254740993"),
+                       cohort_row_id = c(1L, 2L), count = c(1, 2),
+                       value = c(52 * 0.0915 + 2.15, 79.832257120000008),
+                       text = c("", "NA"), missing = c(NA_character_, "x"),
+                       stringsAsFactors = FALSE)
+  staged <- as.data.frame(lapply(memory, as.character), stringsAsFactors = FALSE)
+  staged$value <- c("6.908", "79.83225712")
+  expect_silent(.ws7e_expect_parity(staged, memory, "CSV rounding"))
+  bad <- staged
+  bad$row_id[1L] <- "9007199254740993"
+  expect_failure(.ws7e_expect_parity(bad, memory, "adjacent analytic key"))
+  bad <- staged
+  bad$count[1L] <- "2"
+  expect_failure(.ws7e_expect_parity(bad, memory, "integer value"))
+  for (row in 1:2) {
+    bad <- staged
+    bad$text[row] <- NA_character_
+    expect_failure(.ws7e_expect_parity(bad, memory, "text to missing"))
+  }
+  bad <- staged
+  bad$missing[1L] <- ""
+  expect_failure(.ws7e_expect_parity(bad, memory, "missing to empty"))
+  bad <- staged
+  bad$value[1L] <- "6.90800000001"
+  expect_failure(.ws7e_expect_parity(bad, memory, "beyond CSV precision"))
+})
 
 .ws7e_run <- function(ctx, recipe) {
   path <- file.path(ctx$paths$recipes, recipe)
@@ -266,8 +322,7 @@
       episodes <- .ws7e_episode_catalog(ctx, recipe, frozen, expected, component)
       .ws7e_compare(frame, expected[[component]], ctx$handle, paste(recipe, mode, component), episodes)
       if (identical(mode, "memory")) frames[[component]] <- frame else {
-        expect_identical(.ws7e_canonical(frame, frames[[component]]), .ws7e_canonical(frames[[component]]),
-                         info = paste(recipe, component))
+        .ws7e_expect_parity(frame, frames[[component]], paste(recipe, component))
       }
     }
     expect_setequal(added, seen)
