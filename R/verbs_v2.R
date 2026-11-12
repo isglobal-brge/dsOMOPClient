@@ -307,7 +307,10 @@
 #' its constant message) and it carries no differential-privacy provenance.
 #' With \code{newobj = x} the target is replaced in place on every server; a
 #' rollback copy is kept until every server has succeeded, so a failure on
-#' one server leaves the target unchanged everywhere.
+#' one server restores the original everywhere. If restoration cannot be
+#' confirmed, the error names the unresolved sites and the retained recovery
+#' symbol. A cleanup error after confirmed commit states that the mutation
+#' committed and identifies the remaining backup cleanup.
 #' Every participating server must publish the dsOMOP 2.10.4 publication
 #' protocol and \code{omopMutateDS}, and advertise \code{verb.mutate}.
 #' The client checks this before any assignment, including a rollback copy;
@@ -348,10 +351,9 @@ ds.omop.mutate <- function(x = NULL, ..., newobj = NULL, symbol = "omop", conns 
   invisible(newobj)
 }
 
-# Replace `target` on every server with the value of `expr` (an authorised
-# in-place verb, design 7.3): a rollback copy of the target is made first;
-# when any server fails, the servers that succeeded get the copy back; the
-# copies are removed in both cases. A plain symbol copy releases nothing new.
+# Replace an authorised target while retaining its verified original until
+# federation commit. Every contacted site might have written, even when its
+# acknowledgement was lost. Restore each independently before deleting its copy.
 .assign_in_place <- function(conns, target, expr, context) {
   inventory <- .plan_symbol_inventory(conns, paste0(context, " preflight"))
   backup <- .fresh_symbol_from_inventory(inventory, "omop.rollback", context)
@@ -363,27 +365,70 @@ ds.omop.mutate <- function(x = NULL, ..., newobj = NULL, symbol = "omop", conns 
     DSI::datashield.assign.expr(conns, symbol = target, expr = expr,
                                 success = function(server) succeeded <<- c(succeeded, server),
                                 error = function(server, message) failures[[server]] <<- message)
+    incomplete <- unique(c(names(failures), setdiff(names(conns), succeeded)))
+    if (length(incomplete)) {
+      stop(.ds_failure_detail(failures, servers = incomplete), call. = FALSE)
+    }
+    committed <- .plan_symbol_inventory(conns, paste0(context, " commit"))
+    missing <- names(committed)[!vapply(committed, function(x) target %in% x, logical(1))]
+    if (length(missing)) {
+      stop("Could not prove ", context, " commit on: ", paste(missing, collapse = ", "),
+           ".", call. = FALSE)
+    }
     NULL
-  }, error = identity)
-  incomplete <- unique(c(names(failures), setdiff(names(conns), succeeded)))
-  if (!is.null(condition) || length(incomplete)) {
-    restored <- intersect(succeeded, names(conns))
-    restore_error <- NULL
-    if (length(restored)) {
-      restore_error <- tryCatch({
-        DSI::datashield.assign.expr(conns[restored], symbol = target, expr = as.name(backup))
+  }, error = identity, interrupt = identity)
+  if (!is.null(condition)) {
+    detail <- .assignment_error_detail(failures, condition, setdiff(names(conns), succeeded))
+    unresolved <- list()
+    cleanup <- list()
+    for (server in names(conns)) {
+      acknowledged <- FALSE
+      errors <- list()
+      restoration <- tryCatch({
+        DSI::datashield.assign.expr(
+          conns[server], symbol = target, expr = as.name(backup),
+          success = function(site) {
+            if (identical(site, server)) acknowledged <<- TRUE
+          },
+          error = function(site, message) errors[[site]] <<- message
+        )
+        if (!acknowledged || length(errors)) {
+          stop(.ds_failure_detail(errors, servers = server), call. = FALSE)
+        }
+        restored <- .plan_symbol_inventory(conns[server], paste0(context, " restoration"))
+        if (!all(c(target, backup) %in% restored[[server]])) {
+          stop("The target and its recovery copy could not both be verified.", call. = FALSE)
+        }
         NULL
-      }, error = function(e) conditionMessage(e))
+      }, error = identity, interrupt = identity)
+      if (!is.null(restoration)) {
+        unresolved[[server]] <- .assignment_error_detail(
+          errors, restoration, if (!acknowledged) server else character(0))
+      } else {
+        cleanup <- c(cleanup, .assignment_cleanup(conns[server], backup))
+      }
     }
-    .plan_remove_output_symbols(conns, list(backup), verify = is.null(restore_error))
-    if (!is.null(restore_error)) {
-      stop(context, " failed on ", paste(incomplete, collapse = ", "), " and the target could not ",
-           "be restored on ", paste(restored, collapse = ", "), ": ", restore_error, call. = FALSE)
+    cleanup_detail <- if (length(cleanup)) {
+      paste0(" Backup cleanup failed for '", backup, "' on ",
+             .assignment_site_errors(cleanup), ".")
+    } else ""
+    if (length(unresolved)) {
+      stop(context, " failed: ", detail, ". The target '", target,
+           "' could not be restored with confirmation on ",
+           .assignment_site_errors(unresolved), ". Recovery copy '", backup,
+           "' has been retained on these sites for retry; their target state is unresolved.",
+           cleanup_detail, call. = FALSE)
     }
-    detail <- .ds_failure_detail(failures, condition, servers = incomplete)
-    stop(context, " failed and '", target, "' was left unchanged: ", detail, call. = FALSE)
+    stop(context, " failed and '", target, "' was left unchanged: ", detail,
+         cleanup_detail, call. = FALSE)
   }
-  .plan_remove_output_symbols(conns, list(backup), verify = TRUE)
+  # Federation commit is now confirmed. Disposal failures cannot trigger a
+  # rollback after another site's original has already been discarded.
+  cleanup <- .assignment_cleanup(conns, backup)
+  if (length(cleanup)) {
+    stop(context, " committed '", target, "' on every site, but backup cleanup failed for '",
+         backup, "' on ", .assignment_site_errors(cleanup), ".", call. = FALSE)
+  }
   invisible(target)
 }
 

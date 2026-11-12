@@ -149,42 +149,78 @@
   }
 
   succeeded <- character(0)
-  failures <- character(0)
+  failures <- list()
   condition <- tryCatch({
     DSI::datashield.assign.expr(
       conns, symbol = newobj, expr = expr,
-      success = function(server) {
-        succeeded <<- c(succeeded, server)
-      },
-      error = function(server, message) {
-        failures[[server]] <<- message
-      }
+      success = function(server) succeeded <<- c(succeeded, server),
+      error = function(server, message) failures[[server]] <<- message
     )
+    incomplete <- unique(c(names(failures), setdiff(names(conns), succeeded)))
+    if (length(incomplete)) {
+      stop(.ds_failure_detail(failures, servers = incomplete), call. = FALSE)
+    }
+    # An assignment acknowledgement is not the end of the transaction. A
+    # missing output or a failed inventory request must clean the fresh name
+    # everywhere it might have been assigned, just like assignment failure.
+    committed <- .plan_symbol_inventory(conns, paste0(context, " commit"))
+    missing_output <- names(committed)[!vapply(
+      committed, function(x) newobj %in% x, logical(1)
+    )]
+    if (length(missing_output)) {
+      stop("Could not prove ", context, " commit on: ",
+           paste(missing_output, collapse = ", "), ".", call. = FALSE)
+    }
     NULL
-  }, error = identity)
-  incomplete <- unique(c(names(failures), setdiff(names(conns), succeeded)))
-  if (!is.null(condition) || length(incomplete) > 0L) {
-    .plan_remove_output_symbols(conns, list(newobj), verify = TRUE)
-    # Each server's own reason (e.g. the constant publication refusal), never
-    # data: the same detail the plan executor reports.
-    detail <- .ds_failure_detail(failures, condition, servers = incomplete)
+  }, error = identity, interrupt = identity)
+  if (!is.null(condition)) {
+    detail <- .assignment_error_detail(failures, condition, setdiff(names(conns), succeeded))
+    cleanup <- .assignment_cleanup(conns, newobj)
+    if (length(cleanup)) {
+      stop(context, " failed: ", detail, "; cleanup could not be proven for '",
+           newobj, "' on ", .assignment_site_errors(cleanup),
+           ". The output may remain on these sites.", call. = FALSE)
+    }
     stop(context, " failed and was rolled back: ", detail,
          if (!grepl("[.]$", detail)) ".", call. = FALSE)
   }
 
-  committed <- .plan_symbol_inventory(conns, paste0(context, " commit"))
-  missing_output <- names(committed)[!vapply(
-    committed, function(x) newobj %in% x, logical(1)
-  )]
-  if (length(missing_output) > 0L) {
-    .plan_remove_output_symbols(conns, list(newobj), verify = TRUE)
-    stop("Could not prove ", context, " commit on: ",
-         paste(missing_output, collapse = ", "), ".", call. = FALSE)
-  }
   if (!is.null(session_symbol)) {
     .record_session_owned_symbol(session_symbol, newobj)
   }
   invisible(newobj)
+}
+
+# Attempt every site's cleanup independently; a transport failure at one site
+# must not prevent verified disposal elsewhere. Only call for symbols whose
+# ownership was established before writing them.
+.assignment_cleanup <- function(conns, symbol) {
+  failures <- list()
+  for (server in names(conns)) {
+    condition <- tryCatch({
+      .plan_remove_output_symbols(conns[server], list(symbol), verify = TRUE)
+      NULL
+    }, error = identity, interrupt = identity)
+    if (!is.null(condition)) failures[[server]] <- conditionMessage(condition)
+  }
+  failures
+}
+
+# DSI can throw a generic aggregate exception after delivering site callbacks.
+# Keep those site reasons as well as the original transport/verification error.
+.assignment_error_detail <- function(errors, condition, incomplete = character(0)) {
+  original <- conditionMessage(condition)
+  detail <- tryCatch(.ds_failure_detail(errors, condition, servers = incomplete),
+                     error = function(e) original, interrupt = function(e) original)
+  if (nzchar(original) && !grepl(original, detail, fixed = TRUE)) {
+    paste0(detail, "; ", original)
+  } else detail
+}
+
+.assignment_site_errors <- function(errors) {
+  paste(vapply(names(errors), function(server) {
+    paste0(server, ": ", errors[[server]])
+  }, character(1)), collapse = "; ")
 }
 
 #' Record an owned server symbol without changing the default manipulation input
