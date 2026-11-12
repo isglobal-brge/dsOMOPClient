@@ -95,6 +95,105 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
   synopses on an automatic data generation they never release). Empty,
   absent or arbitrary display labels never affect protected-client admission.
 
+## Recipe language integration
+
+Recipe language 2.0 (design-2.10.3). This section is the WS-0 skeleton; each
+workstream fills its entries.
+
+## Corrected
+- Plan execution reads authenticated publication status before cleanup and uses
+  the server inventory, including freshly allocated component symbols. Technical
+  and transport failures revoke staged files as well as assigned outputs.
+- A partial `out` mapping without an explicit `publish` requests only the
+  mapped outputs. For example, `out = c(conditions = "cond_df")` publishes
+  only `cond_df`; the server leaves other computed outputs private and the
+  client accepts the matching publication status.
+- (B-8) `parent_id` now restricts membership (see dsOMOP 2.10.3).
+- (F-3) The client blocklist is identical to the server's class-1 patterns;
+  birth components are not blocked on assignment paths. Informational
+  `quasi_identifier` lint identifies birth, age and date variables without
+  changing compilation or aggregate admission.
+
+## Newly permitted
+- (B-20) `omop_index_event()` accepts every event table of the server's role
+  registry (vendored `inst/ohdsi/roles-5.3.csv`, `roles-5.4.csv`): besides the
+  seven tables of 2.10.2, `visit_detail`, `observation_period`, `death`,
+  `specimen`, `note`, `payer_plan_period`, the era tables and `episode`; the
+  server checks the table against its own CDM version.
+- `on_small_site = "skip"` on plan and recipe execution keeps successful sites
+  while asking each server to commit all output families or none. Non-strict
+  partial results warn with rejected family names and codes.
+- Numeric row thresholds and one-sided measurement criteria compile without
+  safe bins; supplied bin contracts retain their scope checks. Removed the
+  `narrow_filter` / `unbound_numeric_filter` lints and filter safety categories.
+- Circe round-trips one-sided measurement bounds with identical endpoint
+  semantics; half-open two-sided ranges and authenticated bin contracts still
+  refuse export because Circe cannot preserve them.
+
+- (F-1) New `omop_filter_concept_set(concept_ids, concept_col = NULL)`: a
+  row concept-set filter matching the output table's domain concept column
+  from the role registry (`condition_concept_id` for `condition_occurrence`,
+  ...), or `concept_col`. Row concept-set filters compiled to the column
+  `concept_id`, which the server refused.
+
+- (A-18) The section 11 adapter refusals reach the analyst as the error
+  `Plan publication refused: <site>:<output> [validation_error] (<reason>)`
+  with `adapter_person_mismatch` or `cost_currency_mixed`, under both
+  `on_small_site` settings (they are never skippable), and nothing is
+  published; tested end to end through DSLite against a PostgreSQL CDM.
+
+## Newly refused
+- (F-2) A recipe-level row filter is attached only to outputs whose event
+  table has every column it references; otherwise `recipe_to_plan()` stops
+  naming the output and the missing column (the filter was attached to every
+  output and failed at the server). Table-agnostic date and concept-set
+  filters still apply to every output, and columns no CDM table defines are
+  left to the server. Put the predicate on an `omop_event(where = ...)` of
+  the right table instead.
+- Invalid or incomplete publication status fails closed; only
+  `insufficient_support` can skip a site.
+- Plans that do not validate against the vendored `plan-v2.json` are never
+  sent; a v2 recipe whose operations an older server lacks is refused with
+  the operation named.
+
+## Shared with dsOMOP 2.10.3 (WS-2)
+- The language 2.0 normal form is the frozen, byte-identically vendored
+  `R/plan_normalize_v2.R` (`.planNormalizeV2()`, amendment A-11); the
+  server's `.irNormalize()` calls the same function, so normalised forms and
+  semantic digests agree on both sides. WS-2's interim `R/ir_defaults.R`
+  (`.irNormalizeWire()`) is removed.
+- The role-registry tables (`inst/ohdsi/roles-5.3.csv`, `roles-5.4.csv`) are
+  vendored byte-identically from dsOMOP.
+
+## Upgrading clients and servers
+- Plan execution with dsOMOPClient 2.10.3 requires the server's published
+  `omopPlanStatusDS` and `omopStagedRevokeDS` methods; dsOMOP 2.10.1 does not
+  provide them. Upgrade the server to 2.10.3 and check
+  `ds.omop.server.version()`. On Opal, publish dsOMOP's settings again after
+  upgrading so the profile exposes the new methods.
+- With a 2.10.1 client and a 2.10.3 server, a strict publication refusal
+  still publishes nothing. The assign call returns status `refused`, and the
+  old client then reports that requested outputs did not materialize instead
+  of receiving the previous constant `Disclosive` error.
+
+## Contracts shipped by WS-0
+- Vendored `inst/schema/` (byte-identical to dsOMOP's), `R/json_schema.R`,
+  `R/semantic_digest.R`; `openssl` added to Imports for the semantic digest.
+  The digest's number serialisation finds the ECMAScript shortest round-trip
+  decimal for every finite double (power-of-two regression `2^-24` ->
+  `5.960464477539063e-8`; digest vector `power_of_two_factor`).
+- Vendored `R/plan_normalize_v2.R` (amendment A-11): `.planNormalizeV2()` is
+  the one normal form the semantic digest hashes on client and server; the
+  normalised fixtures of `inst/schema/normalized/` are pinned. `plan-v2.json`
+  gains `source_analyses` on temporal and person-period outputs (A-14).
+  The vendored probe corpus carries the A-15/A-16 IR-only variants, refused
+  on the wire (P64-P66).
+- A-18 `.plan_validate_status()` admits the optional closed `reason` of a
+  rejected entry (only with `validation_error`); the refusal diagnostic names
+  it with the output and code (`site:output [validation_error] (reason)`).
+  Amendment A-20 (j) adds `stockpile_row_cap` and `reducer_row_cap` (the
+  server's bounded interval realisations) to the vocabulary.
+
 # dsOMOPClient 2.10.2
 
 - Version aligned with dsOMOP 2.10.2 (which reads every OMOP CDM version

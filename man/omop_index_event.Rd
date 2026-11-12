@@ -18,9 +18,12 @@ omop_index_event(
 \item{concept_id}{Integer concept ID(s), or \code{NULL} for any event in the
 selected table.}
 
-\item{table}{Character OMOP event table.  The currently executable portable
-subset is condition_occurrence, drug_exposure, measurement, observation,
-procedure_occurrence, device_exposure, and visit_occurrence.}
+\item{table}{Character OMOP event table: any table with an event role
+record in the role registry (condition_occurrence, drug_exposure,
+procedure_occurrence, device_exposure, measurement, observation,
+visit_occurrence, visit_detail, observation_period, death, specimen, note,
+payer_plan_period, the era tables and, in CDM 5.4, episode). The server
+checks it against its own CDM version.}
 
 \item{concept_name}{Optional human-readable concept-set name.}
 

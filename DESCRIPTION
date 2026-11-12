@@ -26,7 +26,8 @@ Imports:
     stats,
     utils,
     jsonlite,
-    yaml
+    yaml,
+    openssl
 Suggests:
     DSLite,
     DSOpal,
