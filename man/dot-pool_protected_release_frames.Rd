@@ -32,6 +32,12 @@ every site must be a distinct logical source: two connections to one
 logical node are refused instead of being counted twice.
 }
 \details{
+Complete person-time hierarchies are summed and projected from the root
+down; public view masks select sums of those projected nodes. Nested
+Achilles histograms use the parent's protected cells as their second
+margin. Hierarchical event-time releases whose day/atom pooling is not
+implemented remain per-site with an explicit warning.
+
 Record-weighted releases (family \code{RM}) are pooled per stratum by
 \code{.pool_protected_record_moments}. Exit-time x status cells of a
 grouped-time Cox release (family \code{C8}) are summed and projected like

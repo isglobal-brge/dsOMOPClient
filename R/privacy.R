@@ -154,9 +154,12 @@
 #' Constructs the public semantic specification for a dedicated dsOMOP
 #' sticky-noise release. Noise parameters and state are deliberately
 #' absent: epsilon, seeds, nonces, and privacy epochs are owned by each data
-#' custodian and cannot be supplied by the analyst. Every accepted semantic
-#' release uses the server's fixed per-release epsilon and deterministic sticky
-#' noise. Since dsOMOP 2.10.0, each answer is a deterministic function of the
+#' custodian and cannot be supplied by the analyst. On dsOMOP 2.10.3,
+#' supported views share canonical protected components. A fixed synopsis
+#' declares its bounded-vector epsilon before exact support gates; a realised
+#' contribution release is heuristic and claims no mechanism epsilon or delta.
+#' Neither route claims differential privacy for the whole API transcript.
+#' Servers 2.10.0 to 2.10.2 instead derive each answer from the
 #' server's secret root, the question, the protected statistic and a private
 #' automatic database version: valid repeats return the same answer, and a
 #' database reload that adds rows re-draws every answer. Servers 2.7.1 to 2.9.x
@@ -175,7 +178,8 @@
 #'   \code{"binary_rate"}.
 #' @param variable Bare column name except for \code{"count"} and
 #'   \code{"bounded_record_count"}.
-#' @param levels Public, fixed character domain for a categorical histogram.
+#' @param levels Public character labels for a categorical histogram. On
+#'   2.10.3 these must be a view of the server's complete registered domain.
 #'   The server returns every requested level, including zero-count levels.
 #' @param breaks Public, fixed, strictly increasing finite numbers, canonical
 #'   \code{YYYY-MM-DD} dates, or \code{YYYY-MM-DDTHH:MM:SSZ} UTC datetimes.
@@ -524,14 +528,18 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
     }
     return(status)
   }
-  if (!"snapshot_id" %in% names(status) ||
+  # A patched server's snapshot_id is optional presentation metadata. It
+  # cannot determine admission, even when empty or an arbitrary label.
+  protected <- identical(status$privacy_contract,
+                          .DP_PROTECTED_PRIVACY_CONTRACT)
+  if (!protected && (!"snapshot_id" %in% names(status) ||
       !is.character(status$snapshot_id) || length(status$snapshot_id) != 1L ||
-      is.na(status$snapshot_id) || !nzchar(status$snapshot_id)) {
+      is.na(status$snapshot_id) || !nzchar(status$snapshot_id))) {
     stop("Server '", server, "' returned a malformed DP status.",
          call. = FALSE)
   }
-  if (nchar(status$snapshot_id, type = "bytes") > 256L ||
-      !grepl("^[A-Za-z0-9][A-Za-z0-9._:@+-]*$", status$snapshot_id)) {
+  if (!protected && (nchar(status$snapshot_id, type = "bytes") > 256L ||
+      !grepl("^[A-Za-z0-9][A-Za-z0-9._:@+-]*$", status$snapshot_id))) {
     stop("Server '", server, "' returned an invalid public snapshot_id.",
          call. = FALSE)
   }
@@ -547,7 +555,15 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' helpers, this function never returns a partial federation: each requested
 #' node must provide a well-formed status.
 #'
-#' Since dsOMOP 2.10.0 the v3 service is seed-only:
+#' dsOMOP 2.10.3 uses the protected-release contract: canonical fixed-basis
+#' or realised-contribution components, without history-based admission or
+#' stored answers. This client declares that contract in its status request;
+#' the new server refuses clients 2.10.2 and earlier with an upgrade message.
+#' Every older server is explicitly warned as unpatched. Installing the new
+#' client cannot repair server-side disclosure defects. Mixed old/new
+#' protected pooling is refused; per-site results remain labelled by contract.
+#'
+#' On servers 2.10.0 to 2.10.2 the v3 service is seed-only:
 #' \code{release_binding = "seed_data_versioned_v1"},
 #' \code{persistent_state = "noise_root_only"},
 #' \code{service_capacity = "none"} and \code{history_dependent = FALSE}. Every
@@ -583,7 +599,8 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' Each status contains a public \code{snapshot_id} label. Federated sites may
 #' legitimately report different labels. On 2.10.3 servers it is a display
 #' value only: fixed synopses are keyed on an automatic data generation the
-#' server derives per session and never releases (\code{data_generation},
+#' server derives within each fixed-synopsis request's database snapshot and
+#' never releases (\code{data_generation},
 #' \code{data_generation_basis} and \code{data_generation_residual} describe
 #' it).
 #' Release preflight rejects either a repeated \code{noise_domain_id} or a
@@ -1306,8 +1323,22 @@ print.omop_dp_status <- function(x, ...) {
 #' from every node, verifies the returned mechanism contract, and optionally
 #' pools only the noisy sufficient statistics. A failure at any site stops the
 #' call without publishing another site's value. Retrying the identical
-#' request returns the same complete answer. The default v3 contract requires
-#' dsOMOP 2.7.1 or later.
+#' request returns the same complete answer when its bounded contributions
+#' and applicable fixed-synopsis generation are unchanged.
+#'
+#' On dsOMOP 2.10.3, typed binary rates carry numerator/denominator masks of
+#' the complete registered domain; numeric histograms use one versioned
+#' projection of their complete atom basis before coarsening. Pooling sums
+#' compatible signed bases and derives the view once. Fixed synopses declare
+#' their bounded-vector epsilon and delta zero before exact support gates;
+#' realised-contribution releases are heuristic and declare neither. No
+#' finite epsilon describes the whole service transcript. The public
+#' \code{snapshot_id} is optional display metadata and never controls
+#' admission or noise. All older servers receive an explicit upgrade warning.
+#' A mixed old/new federation supports \code{type = "split"} only.
+#'
+#' The remaining legacy semantics apply only to servers before 2.10.3.
+#' Their default v3 contract requires dsOMOP 2.7.1 or later.
 #' For a staged upgrade only, the client option
 #' \code{dsomop.dp.allow_legacy_servers} (default \code{FALSE}) can be set to
 #' \code{TRUE} to permit legacy v2 servers, including mixed federations. Every
@@ -1335,7 +1366,8 @@ print.omop_dp_status <- function(x, ...) {
 #' Every input must have been produced by an audited person-local server path
 #' and carry its authenticated content-bound provenance capsule.
 #'
-#' Every answer uses the fixed epsilon reported by its server and delta zero.
+#' Legacy per-release answers report their server's fixed epsilon and delta
+#' zero under that older contract.
 #' There is no lifetime privacy budget or privacy call quota. Composition
 #' metadata describes only the participating sites in the current federated
 #' release. Repeating a question adds no observation; no full temporal
@@ -1356,7 +1388,12 @@ print.omop_dp_status <- function(x, ...) {
 #' @param type Optional result view: \code{"split"}, \code{"combine"}, or
 #'   \code{"both"}. When omitted, the legacy \code{pool} argument is preserved:
 #'   \code{TRUE} means both views and \code{FALSE} means split only.
-#' @return A \code{dsomop_result}. The \code{meta$privacy} record reports the
+#' @return A \code{dsomop_result}. On 2.10.3, \code{meta$privacy} reports
+#'   each site's protection route and guarantee scope. Only all-fixed
+#'   federations report vector epsilon composition (maximum for disjoint
+#'   sites, sum for overlapping sites), never an API-transcript epsilon.
+#'   Heuristic and legacy warnings remain in \code{meta$warnings}.
+#'   For older servers, \code{meta$privacy} reports the
 #'   effective population label, a named public snapshot map, fixed per-site
 #'   epsilon and parallel cross-site composition for this release. Federated
 #'   nodes are modeled as separate populations, so the combined epsilon and

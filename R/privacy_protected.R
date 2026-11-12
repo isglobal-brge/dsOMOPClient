@@ -225,7 +225,8 @@
   }
   if (!identical(value$protocol, .DP_PROTECTED_RELEASE_PROTOCOL) ||
       !identical(value$statistic, privacy$statistic) ||
-      !is.character(value$protection) ||
+      !is.character(value$protection) || length(value$protection) != 1L ||
+      is.na(value$protection) ||
       !value$protection %in% .DP_PROTECTED_ROUTES) {
     stop("Server '", server, "' returned a protected release that does not ",
          "match the request.", call. = FALSE)
@@ -255,21 +256,40 @@
   } else NA_integer_
   valid_view <- is.null(comps$view_of_basis) ||
     (is.list(comps$view_of_basis) && all(vapply(comps$view_of_basis,
-      function(i) is.numeric(i) && length(i) >= 0L && !anyNA(i) &&
-        all(i == floor(i)) && all(i >= 1) &&
+      function(i) is.numeric(i) && !anyNA(i) && all(is.finite(i)) &&
+        !anyDuplicated(i) && all(i == floor(i)) && all(i >= 1) &&
         (is.na(ncells) || all(i <= ncells)), logical(1L))))
   if (!is.list(basis) || !is.character(basis$id) || length(basis$id) != 1L ||
+      is.na(basis$id) || !nzchar(basis$id) ||
       !is.character(basis$coordinates) || !is.numeric(basis$signed) ||
+      !length(basis$signed) || anyNA(basis$coordinates) ||
+      !is.character(basis$families) || anyNA(basis$families) ||
+      length(basis$families) != length(basis$signed) ||
       length(basis$signed) != length(basis$coordinates) ||
+      anyDuplicated(data.frame(family = basis$families,
+                               coordinate = basis$coordinates)) ||
       any(!is.finite(basis$signed)) ||
       !is.character(comps$projection) || length(comps$projection) != 1L ||
+      is.na(comps$projection) ||
       !comps$projection %in% .DP_TYPED_PROJECTIONS || !valid_view) {
     stop("Server '", server, "' returned protected components without a ",
          "complete basis, a known projection or a valid view.", call. = FALSE)
   }
+  expected_lead <- switch(comps$projection,
+    "typed-partition-simplex-v1" = "N",
+    "typed-weighted-total-simplex-v1" = "T", NULL)
+  if ((!is.null(expected_lead) &&
+       (!identical(basis$families[[1L]], expected_lead) || ncells < 1L)) ||
+      (identical(comps$projection, "typed-weighted-atomwise-clip-v1") &&
+       any(basis$families %in% c("N", "T")))) {
+    stop("Server '", server, "' returned a projection incompatible with its ",
+         "complete basis total.", call. = FALSE)
+  }
   if (identical(privacy$statistic, "binary_rate") &&
       (!identical(comps$view_kind, "binary_rate_numerator_denominator") ||
-       length(comps$view_of_basis) != 2L)) {
+       length(comps$view_of_basis) != 2L ||
+       !identical(comps$projection, "typed-partition-simplex-v1") ||
+       !all(comps$view_of_basis[[1L]] %in% comps$view_of_basis[[2L]]))) {
     stop("Server '", server, "' returned a binary rate without its ",
          "numerator and denominator masks.", call. = FALSE)
   }
@@ -521,7 +541,12 @@
       id <- if (is.list(p$source)) p$source$logical_source_id
       if (is.character(id) && length(id) == 1L) id else NA_character_
     }, character(1L)),
-    snapshot_id = vapply(statuses, `[[`, character(1L), "snapshot_id"))
+    snapshot_id = vapply(statuses, function(s) {
+      label <- s$snapshot_id
+      if (is.character(label) && length(label) == 1L && !is.na(label)) {
+        label
+      } else NA_character_
+    }, character(1L)))
   .result_type_view(
     result, result_type,
     "No compatible pooled protected release was available.")
@@ -539,6 +564,12 @@
 #' frames are never mixed, nothing is pooled across incompatible grids, and
 #' every site must be a distinct logical source: two connections to one
 #' logical node are refused instead of being counted twice.
+#'
+#' Complete person-time hierarchies are summed and projected from the root
+#' down; public view masks select sums of those projected nodes. Nested
+#' Achilles histograms use the parent's protected cells as their second
+#' margin. Hierarchical event-time releases whose day/atom pooling is not
+#' implemented remain per-site with an explicit warning.
 #'
 #' Record-weighted releases (family \code{RM}) are pooled per stratum by
 #' \code{.pool_protected_record_moments}. Exit-time x status cells of a
@@ -580,10 +611,19 @@
     return(.pool_protected_record_moments(payloads, policy = policy,
                                           columns = columns))
   }
+  if ("TTE" %in% families) {
+    return(list(result = NULL, warnings = paste0(
+      "Hierarchical first/recurrent event-time releases are available per ",
+      "site; this client does not yet pool their day/atom hierarchy. ",
+      "No person-total histogram approximation was substituted.")))
+  }
   signature <- function(p) {
     lapply(p$owners, function(o) {
       list(o$owner, o$family, o$grid, o$bounds, o$cap, o$allocation,
            o$strata_kind, o$cell_keys,
+           o$horizon_days, o$recurrent_cap,
+           .dp_c6_hierarchy_signature(o),
+           if (!is.null(o$parent_basis)) signature(list(owners = list(o$parent_basis))),
            vapply(o$components, `[[`, character(1L), "stratum"))
     })
   }
@@ -602,6 +642,10 @@
   for (i in seq_along(payloads[[1L]]$owners)) {
     owners <- lapply(payloads, function(p) p$owners[[i]])
     o <- owners[[1L]]
+    if (identical(o$family, "C6") && !is.null(o$hierarchy)) {
+      rows[[length(rows) + 1L]] <- .dp_pool_c6_hierarchy(owners)
+      next
+    }
     sum_field <- function(field, j) {
       Reduce(`+`, lapply(owners, function(x) x$components[[j]][[field]]))
     }
@@ -637,8 +681,27 @@
         }
       }
       if (!is.null(o$components[[1L]]$h)) {
+        parent_cells <- NULL
+        if (!is.null(o$parent_basis)) {
+          parents <- lapply(owners, `[[`, "parent_basis")
+          if (any(vapply(parents, function(p) length(p$components) != 1L ||
+                          is.null(p$components[[1L]]$h), logical(1L)))) {
+            stop("A nested histogram lacks its root's protected basis.",
+                 call. = FALSE)
+          }
+          pn <- sum(vapply(parents, function(p) p$components[[1L]]$n,
+                            numeric(1L)))
+          ph <- Reduce(`+`, lapply(parents, function(p) p$components[[1L]]$h))
+          target <- .dp_simplex(ph, max(0, pn))
+          X <- do.call(rbind, lapply(seq_along(strata), function(j) sum_field("h", j)))
+          if (ncol(X) != length(target)) {
+            stop("A nested histogram has an incompatible parent basis.", call. = FALSE)
+          }
+          parent_cells <- .dp_transport(X, shown, target)
+        }
         for (j in seq_along(strata)) {
-          h <- .dp_simplex(sum_field("h", j), shown[[j]])
+          h <- if (is.null(parent_cells)) .dp_simplex(sum_field("h", j), shown[[j]]) else
+            parent_cells[j, ]
           cells[[length(cells) + 1L]] <- data.frame(
             owner = o$owner, stratum = strata[[j]],
             cell = o$cell_keys %||% seq_along(h), count = h,
@@ -649,11 +712,11 @@
     rows[[length(rows) + 1L]] <- frame
   }
   result <- do.call(rbind, lapply(rows, function(r) {
-    for (col in c("mean", "sd", "events", "person_time", "rate")) {
+    for (col in c("mean", "sd", "events", "person_time", "rate", "recurrent")) {
       if (!col %in% names(r)) r[[col]] <- NA_real_
     }
     r[, c("owner", "stratum", "persons", "mean", "sd", "events",
-          "person_time", "rate")]
+          "person_time", "rate", "recurrent")]
   }))
   attr(result, "cells") <- if (length(cells)) do.call(rbind, cells) else NULL
   routes <- vapply(payloads, `[[`, character(1L), "protection")
@@ -679,6 +742,45 @@
   list(result = result, warnings = warnings)
 }
 
+# Interval views of a pooled record-value histogram. The public grid has an
+# explicit open first/last bin, and tail quantiles report the finite edge
+# plus censoring flags, exactly like the server.
+.dp_record_histogram_views <- function(h, breaks, quantiles = TRUE) {
+  upper <- c(breaks[-1L], NA_real_)
+  lower <- c(-Inf, breaks[-1L])
+  fmt <- function(x) format(x, scientific = FALSE, trim = TRUE)
+  labels <- ifelse(is.na(upper), paste0("[", fmt(breaks), ", Inf)"),
+                   paste0("[", fmt(breaks), ", ", fmt(upper), ")"))
+  labels[[1L]] <- paste0("(-Inf, ", fmt(upper[[1L]]), ")")
+  bins <- data.frame(bin = seq_along(h), bin_label = labels,
+                     bin_lower = lower, bin_upper = upper,
+                     records = signif(h, 12), stringsAsFactors = FALSE)
+  q <- NULL
+  if (quantiles && sum(h) > 0) {
+    probs <- c(.1, .25, .5, .75, .9)
+    cdf <- cumsum(h) / sum(h)
+    index <- vapply(probs, function(p) which(cdf >= p - 1e-12)[[1L]],
+                    integer(1L))
+    values <- vapply(seq_along(probs), function(i) {
+      b <- index[[i]]
+      if (b == 1L) return(upper[[1L]])
+      if (is.na(upper[[b]])) return(breaks[[b]])
+      before <- if (b > 1L) cdf[[b - 1L]] else 0
+      width <- cdf[[b]] - before
+      fraction <- if (width > 0) (probs[[i]] - before) / width else 0
+      breaks[[b]] + fraction * (upper[[b]] - breaks[[b]])
+    }, numeric(1L))
+    open_lower <- is.infinite(lower[index])
+    open_upper <- is.na(upper[index])
+    q <- data.frame(prob = probs, value = signif(values, 12),
+                    bin_lower = lower[index],
+                    bin_upper = ifelse(open_upper, Inf, upper[index]),
+                    open_lower = open_lower, open_upper = open_upper,
+                    censored = open_lower | open_upper)
+  }
+  list(bins = bins, quantiles = q)
+}
+
 #' Pool record-weighted protected releases (capped record moments)
 #'
 #' dsOMOP 2.10.3 releases the record-weighted QueryLibrary summaries as one
@@ -693,6 +795,14 @@
 #' the same public scale. Under \code{"strict"} only strata released by every
 #' server are pooled; \code{"pooled_only_ok"} also pools strata released by
 #' some servers (sums over those servers).
+#'
+#' The versioned \code{record-display-v1} projection holds displayed R in
+#' [N, K N] before deriving moments. Compatible signed value histograms are
+#' summed, then projected onto that displayed R. The result attributes
+#' \code{value_histograms} and \code{value_quantiles} contain their cells and
+#' interval quantiles, including open-tail censoring flags. A stratum's
+#' histogram is available only if every contributing site released it on the
+#' same public grid; missing moments never cause an exact-value fallback.
 #'
 #' @param payloads Named list of \code{dsomop_release} payloads.
 #' @param policy \code{"strict"} or \code{"pooled_only_ok"}.
@@ -720,7 +830,41 @@
   signature <- function(x) {
     list(x$owner, x$population, x$family, x$weighting, x$cap, x$cap_scope,
          x$record_order, x$lattice, x$normalization, x$allocation,
-         x$strata_kind, x$display)
+         x$strata_kind, x$display, x$display_projection, x$distribution_floor)
+  }
+  projection <- o$display_projection
+  if (!is.null(projection) && !identical(projection, "record-display-v1")) {
+    stop("Unknown protected record display projection; upgrade dsOMOPClient.",
+         call. = FALSE)
+  }
+  cap <- .dp_protected_number(o$cap, sites[[1L]], "cap", TRUE)
+  if (cap < 1 || cap != floor(cap)) stop("Invalid protected record cap.",
+                                       call. = FALSE)
+  floor <- .dp_protected_number(o$distribution_floor %||% 2,
+                                 sites[[1L]], "distribution_floor", TRUE)
+  floor <- max(2, floor)
+  histogram_owners <- Filter(function(x) !is.null(x$value_histogram), os)
+  histogram <- NULL
+  if (length(histogram_owners)) {
+    h_signature <- function(x) list(x$value_histogram, x$value_grid,
+      x$value_breaks, x$value_cell_keys, x$value_reconciliation)
+    histogram <- histogram_owners[[1L]]
+    breaks <- histogram$value_breaks
+    if (!identical(histogram$value_histogram, "record-value-histogram-v1") ||
+        !is.numeric(breaks) || length(breaks) < 2L ||
+        any(!is.finite(breaks)) || any(diff(breaks) <= 0) ||
+        !is.character(histogram$value_cell_keys) ||
+        length(histogram$value_cell_keys) != length(breaks) ||
+        anyNA(histogram$value_cell_keys) ||
+        anyDuplicated(histogram$value_cell_keys) ||
+        !identical(histogram$value_reconciliation,
+                    "cells_sum_to_signed_record_total_R") ||
+        any(!vapply(histogram_owners, function(x) {
+          identical(h_signature(x), h_signature(histogram))
+        }, logical(1L)))) {
+      stop("Protected record value histograms have an unknown or incompatible ",
+           "public basis.", call. = FALSE)
+    }
   }
   for (site in sites) {
     if (!identical(signature(os[[site]]), signature(o)) ||
@@ -752,6 +896,7 @@
   } else unique(unlist(keys, use.names = FALSE))
   partial <- FALSE
   no_moments <- character(0)
+  no_histograms <- character(0)
   conflicts <- character(0)
   rows <- lapply(strata, function(key) {
     present <- sites[vapply(by_site, function(b) key %in% names(b),
@@ -776,11 +921,13 @@
       moments <- length(scales) == 1L
     }
     shown_n <- max(0, N)
-    shown_r <- max(0, R)
+    shown_r <- if (identical(projection, "record-display-v1")) {
+      min(cap * shown_n, max(shown_n, R))
+    } else max(0, R)
     mean <- sd <- NA_real_
     if (!moments) {
       no_moments <<- c(no_moments, key)
-    } else if (shown_n >= 2 && shown_r >= 2) {
+    } else if (shown_n >= floor && shown_r >= 2) {
       bounds <- as.numeric(comps[[1L]]$bounds)
       L <- bounds[[1L]]; U <- bounds[[2L]]
       Su0 <- total("s") / J
@@ -794,6 +941,29 @@
       } else {
         mean <- L + (U - L) * min(shown_r, max(0, Su0)) / shown_r
       }
+    }
+    hist <- NULL
+    has_h <- vapply(comps, function(c) !is.null(c$h), logical(1L))
+    if (any(has_h)) {
+      if (is.null(histogram)) {
+        stop("Protected record cells lack their public histogram basis.",
+             call. = FALSE)
+      }
+      for (site in present[has_h]) {
+        h <- comps[[site]]$h
+        if (is.null(os[[site]]$value_histogram) || !is.numeric(h) ||
+            length(h) != length(histogram$value_breaks) ||
+            any(!is.finite(h))) {
+          stop("Server '", site, "' returned malformed protected record cells.",
+               call. = FALSE)
+        }
+      }
+      if (all(has_h)) {
+        h <- Reduce(`+`, lapply(comps, `[[`, "h"))
+        hist <- .dp_record_histogram_views(
+          .dp_simplex(h, shown_r), histogram$value_breaks,
+          quantiles = shown_n >= floor)
+      } else no_histograms <<- c(no_histograms, key)
     }
     values <- comps[[1L]]$display %||% list()
     for (site in present[-1L]) {
@@ -819,7 +989,7 @@
            comps[[1L]]$order_value %||% NA_real_)),
          order_unit = suppressWarnings(as.numeric(
            comps[[1L]]$order_unit %||% 0)),
-         key = key)
+         key = key, hist = hist)
   })
   if (length(rows) == 0L) {
     return(list(result = NULL, warnings = paste0(
@@ -840,6 +1010,21 @@
   }
   result <- result[ord, , drop = FALSE]
   rownames(result) <- NULL
+  key_columns <- setdiff(display$columns,
+                         c(display$persons, display$records,
+                           display$mean, display$sd))
+  attach_views <- function(field) {
+    frames <- lapply(ord, function(i) {
+      view <- rows[[i]]$hist[[field]]
+      if (is.null(view)) return(NULL)
+      labels <- rows[[i]]$row[, key_columns, drop = FALSE]
+      cbind(labels[rep(1L, nrow(view)), , drop = FALSE], view, row.names = NULL)
+    })
+    frames <- Filter(Negate(is.null), frames)
+    if (length(frames)) do.call(rbind, frames) else NULL
+  }
+  attr(result, "value_histograms") <- attach_views("bins")
+  attr(result, "value_quantiles") <- attach_views("quantiles")
   routes <- vapply(payloads, `[[`, character(1L), "protection")
   warnings <- paste0(
     "Pooled capped record-weighted moments: per stratum the signed person ",
@@ -855,6 +1040,17 @@
     warnings <- c(warnings, paste0(
       "Moments were not pooled for ", length(no_moments), " strata: a ",
       "server released none or used another public scale."))
+  }
+  if (length(histogram_owners)) {
+    warnings <- c(warnings, paste0(
+      "Compatible signed record-value cells were summed and projected onto ",
+      "the displayed capped record totals; value_histograms and ",
+      "value_quantiles attributes contain the pooled cells and intervals."))
+  }
+  if (length(no_histograms)) {
+    warnings <- c(warnings, paste0(
+      "Value histograms were not pooled for ", length(no_histograms),
+      " strata because a contributing server released none."))
   }
   if (length(conflicts)) {
     warnings <- c(warnings, paste0(

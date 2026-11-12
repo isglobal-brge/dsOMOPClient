@@ -1380,3 +1380,101 @@ test_that("catalogue results of pre-2.10.3 servers carry a plain warning (R08)",
     expect_false(any(grepl("Server 'b' runs", res$meta$warnings)))
   })
 })
+
+test_that("protected snapshot labels never control client admission", {
+  payload <- .pc_payload("count", 50, "stratum=root", "N",
+                          list(noisy_count = 50))
+  for (label in list(NULL, "", "an arbitrary display label", NA_character_)) {
+    status <- .pc_status()
+    status$snapshot_id <- label
+    .pc_backend(list(a = status), list(a = payload), function(datasources, sent) {
+      result <- ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                                   datasources)
+      expect_equal(result$pooled$noisy_count, 50)
+    })
+  }
+})
+
+test_that("binary basis validation rejects malformed and non-subset masks", {
+  privacy <- omop_privacy("binary_rate", "label", positive = "b",
+                          reducer = "first", order_by = "day")
+  p <- .pc_binary(c(100, 40, 35, 15, 10))
+  cases <- list(
+    duplicate = function(x) {x$components$view_of_basis[[1L]] <- c(2L, 2L); x},
+    outside = function(x) {x$components$view_of_basis[[1L]] <- 5L; x},
+    non_subset = function(x) {x$components$view_of_basis[[2L]] <- 1L; x},
+    no_families = function(x) {x$components$basis$families <- NULL; x},
+    wrong_total = function(x) {x$components$basis$families[[1L]] <- "T"; x},
+    missing_id = function(x) {x$components$basis$id <- NA_character_; x})
+  for (name in names(cases)) {
+    expect_error(.dp_validate_protected_payload(cases[[name]](p), "site", privacy),
+                 "basis|masks", info = name)
+  }
+})
+
+.pc_rm_histogram <- function(n, r, h, source = 1L, floor = 2) {
+  comp <- .pc_rm_comp(1, n, numeric(0), moments = FALSE)
+  comp$r <- r
+  comp$h <- h
+  frame <- .pc_rm_frame(list(comp), source, protection = "realised_sticky")
+  p <- attr(frame, "dsomop_release")
+  o <- p$owners[[1L]]
+  o$display_projection <- "record-display-v1"
+  o$distribution_floor <- floor
+  o$value_histogram <- "record-value-histogram-v1"
+  o$value_grid <- "signed-test-v1"
+  o$value_breaks <- c(-2, -1, 0, 1, 2)
+  o$value_cell_keys <- paste0("signed-test-v1:", 1:5)
+  o$value_reconciliation <- "cells_sum_to_signed_record_total_R"
+  p$owners[[1L]] <- o
+  attr(frame, "dsomop_release") <- p
+  frame
+}
+
+test_that("record histograms pool signed atoms onto feasible record totals", {
+  a <- .pc_rm_histogram(10, 150, c(-20, 0, 50, 60, 60))
+  b <- .pc_rm_histogram(15, 80, c(30, -20, 30, 20, 20), source = 2L)
+  one <- .pool_protected_release_frames(list(a = a))$result
+  expect_equal(one$n_persons, 10)
+  expect_equal(one$n_records, 100) # K N, not 150 or the person total 10.
+  cells <- attr(one, "value_histograms")
+  expect_equal(cells$records, .dp_simplex(c(-20, 0, 50, 60, 60), 100))
+  out <- .pool_protected_release_frames(list(a = a, b = b))$result
+  expect_equal(out$n_records, 230)
+  expect_equal(sum(attr(out, "value_histograms")$records), 230)
+  expect_equal(attr(out, "value_histograms")$records,
+               .dp_simplex(c(10, -20, 80, 80, 80), 230))
+  expect_true(is.na(out$avg_days))
+  q <- attr(out, "value_quantiles")
+  expect_equal(q$prob, c(.1, .25, .5, .75, .9))
+  expect_true(all(q$value >= q$bin_lower & q$value <= q$bin_upper))
+  expect_identical(q$censored, q$open_lower | q$open_upper)
+  # Negative signed R is projected to N; signed inputs remain unchanged.
+  negative <- .pc_rm_histogram(10, -5, c(-5, 0, 0, 0, 0))
+  result <- .pool_protected_release_frames(list(a = negative))$result
+  expect_equal(result$n_records, 10)
+  expect_equal(sum(attr(result, "value_histograms")$records), 10)
+  expect_equal(attr(negative, "dsomop_release")$owners[[1L]]$components[[1L]]$r, -5)
+})
+
+test_that("record histogram intervals show tails and respect the public display floor", {
+  for (tail in c(1L, 5L)) {
+    h <- rep(0, 5); h[[tail]] <- 30
+    a <- .pc_rm_histogram(20, 30, h, floor = 10)
+    out <- .pool_protected_release_frames(list(a = a))$result
+    q <- attr(out, "value_quantiles")
+    expect_true(all(q$censored))
+    expect_true(all(if (tail == 1L) q$open_lower else q$open_upper))
+    expect_equal(q$value, rep(if (tail == 1L) -1 else 2, 5))
+  }
+  a <- .pc_rm_histogram(5, 30, c(0, 0, 30, 0, 0), floor = 10)
+  out <- .pool_protected_release_frames(list(a = a))$result
+  expect_null(attr(out, "value_quantiles"))
+  expect_equal(sum(attr(out, "value_histograms")$records), 30)
+  b <- .pc_rm_histogram(10, 30, c(0, 0, 30, 0, 0), source = 2L, floor = 10)
+  p <- attr(b, "dsomop_release")
+  p$owners[[1L]]$value_breaks[[3L]] <- -.5
+  attr(b, "dsomop_release") <- p
+  expect_error(.pool_protected_release_frames(list(a = a, b = b)),
+               "incompatible public basis")
+})

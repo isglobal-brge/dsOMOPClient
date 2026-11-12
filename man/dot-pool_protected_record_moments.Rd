@@ -31,4 +31,13 @@ the same public scale. Under \code{"strict"} only strata released by every
 server are pooled; \code{"pooled_only_ok"} also pools strata released by
 some servers (sums over those servers).
 }
+\details{
+The versioned \code{record-display-v1} projection holds displayed R in
+[N, K N] before deriving moments. Compatible signed value histograms are
+summed, then projected onto that displayed R. The result attributes
+\code{value_histograms} and \code{value_quantiles} contain their cells and
+interval quantiles, including open-tail censoring flags. A stratum's
+histogram is available only if every contributing site released it on the
+same public grid; missing moments never cause an exact-value fallback.
+}
 \keyword{internal}

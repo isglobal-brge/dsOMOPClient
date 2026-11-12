@@ -19,7 +19,15 @@ helpers, this function never returns a partial federation: each requested
 node must provide a well-formed status.
 }
 \details{
-Since dsOMOP 2.10.0 the v3 service is seed-only:
+dsOMOP 2.10.3 uses the protected-release contract: canonical fixed-basis
+or realised-contribution components, without history-based admission or
+stored answers. This client declares that contract in its status request;
+the new server refuses clients 2.10.2 and earlier with an upgrade message.
+Every older server is explicitly warned as unpatched. Installing the new
+client cannot repair server-side disclosure defects. Mixed old/new
+protected pooling is refused; per-site results remain labelled by contract.
+
+On servers 2.10.0 to 2.10.2 the v3 service is seed-only:
 \code{release_binding = "seed_data_versioned_v1"},
 \code{persistent_state = "noise_root_only"},
 \code{service_capacity = "none"} and \code{history_dependent = FALSE}. Every
@@ -55,7 +63,8 @@ default, \code{"standard"} or \code{"dp"}).
 Each status contains a public \code{snapshot_id} label. Federated sites may
 legitimately report different labels. On 2.10.3 servers it is a display
 value only: fixed synopses are keyed on an automatic data generation the
-server derives per session and never releases (\code{data_generation},
+server derives within each fixed-synopsis request's database snapshot and
+never releases (\code{data_generation},
 \code{data_generation_basis} and \code{data_generation_residual} describe
 it).
 Release preflight rejects either a repeated \code{noise_domain_id} or a

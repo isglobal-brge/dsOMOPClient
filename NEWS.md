@@ -7,9 +7,12 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
   `ds.omop.dp.release()` validates their `dsomop-protected-release-v1`
   payloads (route, guarantee scope, signed components, no private material,
   no history-dependent fields) and pools them by summing the signed components
-  of compatible sites and deriving each view once. A federation mixing 2.10.3
-  servers with per-release servers (2.7.1-2.10.2) is refused; per-release
-  federations keep the previous behavior.
+  of compatible sites and deriving each view once. Pooling a federation
+  mixing 2.10.3 servers with per-release servers (2.7.1-2.10.2) is refused;
+  `type = "split"` retains labelled per-site results. Every pre-2.10.3 server
+  gets a plain upgrade warning: installing this client does not repair its
+  server-side inference defects. The new server explicitly refuses typed
+  status/release preflight from clients 2.10.2 and earlier.
 - Heuristic payloads are never presented as differential privacy:
   `realised_sticky` releases report `mechanism_epsilon = NA`, a warning, and no
   pooled epsilon; `meta$privacy$protection` names each site's route. For
@@ -39,14 +42,30 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
 - Guarantee claims are checked: a heuristic realised-contribution or mixed
   release (typed payload or catalogue protection label) carrying a finite
   mechanism or API-transcript epsilon, or a delta, is refused, as is a fixed
-  synopsis without a finite mechanism epsilon and delta 0. Only fixed
-  synopses are printed with a delta.
+  synopsis without a finite mechanism epsilon and delta 0. Typed payloads
+  and catalogue labels also require a guarantee scope coherent with their
+  protection route, including the protected block of mixed frames. Only
+  fixed synopses are printed with a delta.
 - Typed pooling sums the signed components of the complete registered basis
-  and derives each requested view once.
+  and derives each requested view once. Binary rates carry explicit numerator
+  and denominator masks, including the nonmissing denominator; equal-width
+  domains with different labels cannot pool. Weighted numeric records use
+  one versioned complete-atom projection onto their protected weighted total,
+  so one-site pooling and every displayed rebinning agree with the server.
+- Person-time pooling reconstructs the complete gender, age and year
+  hierarchy before selecting views, preserving parent event, time and capped
+  recurrent totals and both margins of crossed views. Nested Achilles
+  histograms retain their root's histogram margins. Hierarchical event-time
+  releases remain available per site; their unsupported pooled view is
+  explicitly unavailable.
 - Record-weighted protected releases (the eight QueryLibrary record
   summaries) are pooled by summing the signed persons, records and lattice
   sums per stratum and deriving the record-weighted mean and SD once (never
   weighted by persons); sites must share the entry, scale, bounds and cap.
+  Versioned record displays constrain records to [N, K N]. Unscaled value
+  histograms pool their signed cells onto that record total; pooled frames
+  carry `value_histograms` and `value_quantiles` attributes with interval and
+  tail-censoring information. A missing per-site histogram remains unavailable.
 - Protected effect estimates (CohortMethod Poisson and grouped-time Cox,
   interaction estimates, the SCCS incidence rate ratio) are pooled, as in
   2.10.2, by inverse-variance meta-analysis of the per-site protected
@@ -58,7 +77,8 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
   standard-mode frames with protected person-time say that those fields are
   sums of protected values. The moment projection matches the server's.
 - DP status: `snapshot_id` is a display label (servers 2.10.3 key fixed
-  synopses on an automatic data generation they never release).
+  synopses on an automatic data generation they never release). Empty,
+  absent or arbitrary display labels never affect protected-client admission.
 
 # dsOMOPClient 2.10.2
 

@@ -17,10 +17,16 @@
 \code{value}, invisibly.
 }
 \description{
-A fixed synopsis declares the finite epsilon of its bounded vector and
-delta 0 (before the exact support gates). A heuristic realised-contribution
-or mixed release claims neither: no finite mechanism epsilon, no delta.
-No route claims a finite epsilon for the whole API transcript. Anything
-else is an inconsistent claim and is refused.
+One coherence check for typed payloads and catalogue protection labels
+(B14). A fixed synopsis declares its guarantee scope
+(\code{fixed_vector_before_exact_support_gate}), the finite epsilon of its
+bounded vector and delta 0 (before the exact support gates). A heuristic
+realised-contribution release declares the heuristic scope and claims no
+finite mechanism epsilon and no delta. A mixed frame names the protection
+of each block: exactly one protected route among its blocks, whose scope
+the frame declares, and no frame-level epsilon or delta. Standard,
+standard-fallback and unavailable labels claim no protected scope, epsilon
+or delta. No route claims a finite epsilon for the whole API transcript. A
+missing or contradictory descriptor is refused rather than displayed.
 }
 \keyword{internal}
