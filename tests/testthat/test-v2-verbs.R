@@ -27,9 +27,12 @@
   state$calls <- list()
   conns <- list(s1 = "s1", s2 = "s2")
   state$methods <- .current_published_methods(conns)
-  caps <- lapply(conns, function(x) list(recipe_language = list(version = 2L, operations = as.list(ops))))
+  state$capabilities <- lapply(conns, function(x) {
+    list(recipe_language = list(version = 2L, operations = as.list(ops)))
+  })
   testthat::local_mocked_bindings(
-    .get_session = function(...) list(conns = conns, capabilities = caps, last_output = "D"),
+    .get_session = function(...) list(conns = conns, capabilities = state$capabilities,
+                                      last_output = "D"),
     .dsomop_published_methods = function(conns, ...) state$methods[names(conns)],
     .record_session_owned_symbol = function(...) invisible(NULL),
     .package = "dsOMOPClient", .env = env)
@@ -238,6 +241,22 @@ test_that("verb preflight checks only participating sites and the methods it nee
     expect_true(length(state$calls) > 0L)
     expect_true(all(vapply(state$calls, function(x) identical(x$sites, "s1"), logical(1))))
     expect_identical(state$values$s2, list(D = "orig"))
+  }
+})
+
+test_that("a final site's missing verb capability refuses even the rollback copy", {
+  requests <- .vb_requests()
+  for (verb in names(requests)) {
+    op <- if (verb == "filter") "verb.filter_expr" else "verb.mutate"
+    for (missing_block in c(FALSE, TRUE)) {
+      state <- .vb_backend()
+      if (missing_block) state$capabilities$s2 <- list()
+      else state$capabilities$s2$recipe_language$operations <- list()
+      expect_error(requests[[verb]](), paste0("needs the '", op, "' operation, which s2 does not"),
+                   fixed = TRUE)
+      expect_length(state$calls, 0L)
+      expect_identical(state$values, list(s1 = list(D = "orig"), s2 = list(D = "orig")))
+    }
   }
 })
 
