@@ -146,7 +146,10 @@
     as.list(get(as.character(e), envir = env))
   } else {
     lit <- .mutate_literal(e)
-    if (is.null(lit)) .mutate_stop("cut() ", what, " must be a literal vector c(...).")
+    if (is.null(lit) || identical(what, "breaks")) {
+      .mutate_stop("cut() ", what, " must be a literal vector c(...)",
+                   if (identical(what, "breaks")) " of at least two public breaks", ".")
+    }
     list(lit$lit)
   }
   ok <- if (identical(type, "number")) {

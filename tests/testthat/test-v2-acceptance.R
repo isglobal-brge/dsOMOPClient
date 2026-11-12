@@ -68,12 +68,13 @@ test_that("the Circe importer names recipe 12's concept set and event by the A-9
 test_that("recipe 13 and its 12 variants bind to the frozen plans (with the parameter layer)", {
   acc <- .acceptance_dir()
   skip_if(!nzchar(acc) || !dir.exists(acc), "dsOMOP acceptance corpus not installed")
-  skip_if_not(exists("omop_param", envir = asNamespace("dsOMOPClient")) &&
-                exists("recipe_bind", envir = asNamespace("dsOMOPClient")),
-              "omop_param()/recipe_bind() (WS-9) not available")
   d13 <- file.path(acc, "13-parametrised")
   env <- .run_acceptance_recipe(d13)
+  expect_setequal(names(recipe_params(env$rec)), c("dx", "cohort", "min_days"))
   expect_identical(.digest(env$plan), .digest(.frozen_plan(d13)))
+  # the bound recipe has no parameter left; the unbound one is refused
+  expect_length(recipe_params(env$bound), 0L)
+  expect_error(recipe_to_plan(env$rec), "Unbound parameter 'dx'")
   manifest <- jsonlite::fromJSON(file.path(d13, "variants", "variants.json"),
                                  simplifyVector = FALSE)
   for (i in sprintf("%02d", 1:12)) {
