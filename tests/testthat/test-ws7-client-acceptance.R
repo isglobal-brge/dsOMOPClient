@@ -203,14 +203,15 @@
   expect_false(any(c("subject_id", "index_key", "index_visit_id", "op_component_id") %in% names(frame)), info = info)
 }
 
-.ws7e_canonical <- function(frame) {
+.ws7e_canonical <- function(frame, prototype = frame) {
   frame <- as.data.frame(frame, stringsAsFactors = FALSE)
   attributes(frame)[setdiff(names(attributes(frame)), c("names", "row.names", "class"))] <- NULL
   class(frame) <- "data.frame"
   for (col in names(frame)) {
     value <- frame[[col]]
-    frame[[col]] <- if (is.numeric(value)) format(value, digits = 17, trim = TRUE,
-                                                 scientific = FALSE) else as.character(value)
+    frame[[col]] <- if (is.numeric(prototype[[col]])) {
+      format(as.numeric(value), digits = 17, trim = TRUE, scientific = FALSE)
+    } else as.character(value)
     frame[[col]][is.na(value)] <- NA_character_
   }
   rownames(frame) <- NULL
@@ -252,8 +253,9 @@
         .ws7e_episode_catalog(ctx, recipe, frozen, expected, component)
       }
       .ws7e_compare(frame, expected[[component]], ctx$handle, paste(recipe, mode, component), episodes)
-      if (identical(mode, "memory")) frames[[component]] <- .ws7e_canonical(frame) else {
-        expect_identical(.ws7e_canonical(frame), frames[[component]], info = paste(recipe, component))
+      if (identical(mode, "memory")) frames[[component]] <- frame else {
+        expect_identical(.ws7e_canonical(frame, frames[[component]]), .ws7e_canonical(frames[[component]]),
+                         info = paste(recipe, component))
       }
     }
     expect_setequal(added, seen)
