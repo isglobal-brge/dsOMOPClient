@@ -284,6 +284,11 @@ print.omop_param <- function(x, ...) {
     rn <- .merge_renamer(maps, prefix = step$prefix, deferred = TRUE)
     value <- switch(step$role %||% p$type,
       event = rn$src(value),
+      population = rn$pop(value),
+      output = rn$out(value),
+      variable = rn$var(value),
+      tag = rn$tag(value),
+      censor = rn$censor(value),
       concept_set = if (is.character(value)) {
         hit <- maps$concept_set[value]
         if (length(hit) && !is.na(hit)) unname(hit) else
@@ -332,6 +337,14 @@ print.omop_param <- function(x, ...) {
     }
   }
   if (changed && .v2_is_tagged(out)) out <- .v2_rebuild(out)
+  if (inherits(out, "omop_recipe") && !is.null(out$publish)) {
+    roots <- out$publish
+    if (is.list(roots) && !.v2_is_param(roots) &&
+        !any(vapply(roots, .v2_is_param, logical(1)))) {
+      roots <- unique(unlist(roots, use.names = FALSE))
+    }
+    out <- recipe_set_publish(out, roots)
+  }
   list(value = out, changed = changed)
 }
 

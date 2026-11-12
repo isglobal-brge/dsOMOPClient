@@ -5851,7 +5851,8 @@ recipe_to_code <- function(recipe) {
       result_symbol = o$result_symbol,
       grain = o$grain,
       format = o$format,
-      sources = if (!is.null(o$sources)) .codegen_raw(.v2_codegen_list(o$sources)),
+      sources = if (!is.null(o$sources)) .codegen_raw(
+        if (.v2_is_tagged(o$sources)) .v2_codegen(o$sources) else .v2_codegen_list(o$sources)),
       collapse = o$collapse))
   }
   if (length(out_code) > 0)
@@ -5895,7 +5896,11 @@ recipe_to_code <- function(recipe) {
     slot_args$intervals <- .codegen_raw(.v2_codegen_list(unname(recipe$intervals)))
   }
   if (!is.null(recipe$coverage)) slot_args$coverage <- .codegen_raw(.v2_codegen(recipe$coverage))
-  if (!is.null(recipe$publish)) slot_args$publish <- recipe$publish
+  if (!is.null(recipe$publish)) slot_args$publish <- if (.v2_is_tagged(recipe$publish)) {
+    .codegen_raw(.v2_codegen(recipe$publish))
+  } else if (.v2_has_tagged(recipe$publish)) {
+    .codegen_raw(.v2_codegen_list(recipe$publish))
+  } else recipe$publish
 
   lines <- paste0("recipe <- ",
                   do.call(.codegen_call, c("omop_recipe", slot_args)))
@@ -6070,7 +6075,9 @@ recipe_to_code <- function(recipe) {
     if (length(recipe[[slot]] %||% list())) out[[slot]] <- .recipe_strip_classes(recipe[[slot]])
   }
   if (!is.null(recipe$coverage)) out$coverage <- .v2_plain_value(recipe$coverage)
-  if (!is.null(recipe$publish)) out$publish <- as.list(recipe$publish)
+  if (!is.null(recipe$publish)) out$publish <- if (.v2_is_tagged(recipe$publish)) {
+    .recipe_strip_classes(recipe$publish)
+  } else .recipe_strip_classes(as.list(recipe$publish))
   out
 }
 
@@ -6239,7 +6246,7 @@ recipe_to_code <- function(recipe) {
         setop_args <- stats::setNames(list(members), p$setop$op)
         recipe$populations[[pid]] <- do.call(omop_population, c(
           list(id = p$id %||% pid, label = p$label %||% pid,
-               parent_id = p$parent_id,
+               parent_id = .v2_restore(p$parent_id),
                episode_policy = p$episode_policy),
           setop_args))
       } else {
@@ -6259,7 +6266,7 @@ recipe_to_code <- function(recipe) {
         recipe$populations[[pid]] <- omop_population(
           id = p$id %||% pid,
           label = p$label %||% pid,
-          parent_id = p$parent_id,
+          parent_id = .v2_restore(p$parent_id),
           filters = .recipe_restore_filter_list(p$filters),
           cohort_definition_id = p$cohort_definition_id,
           episode_policy = p$episode_policy,
@@ -6369,8 +6376,8 @@ recipe_to_code <- function(recipe) {
       recipe$outputs[[nm]] <- omop_output(
         name = o$name %||% nm,
         type = if (is.null(o$format)) o$type %||% "wide" else NULL,
-        variables = o$variables,
-        population_id = o$population_id %||% "base",
+        variables = .v2_restore(o$variables),
+        population_id = .v2_restore(o$population_id) %||% "base",
         options = output_options,
         result_symbol = o$result_symbol,
         grain = o$grain,
@@ -6397,7 +6404,7 @@ recipe_to_code <- function(recipe) {
   for (iv in .v2_restore(data$intervals %||% list())) recipe <- recipe_add_interval(recipe, iv)
   if (!is.null(data$coverage)) recipe$coverage <- .v2_restore(data$coverage)
   if (!is.null(data$publish)) {
-    recipe <- recipe_set_publish(recipe, as.character(unlist(data$publish)))
+    recipe <- recipe_set_publish(recipe, .v2_restore(data$publish))
   }
 
   if (!is.null(data$scope)) {

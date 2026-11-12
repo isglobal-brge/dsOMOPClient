@@ -166,6 +166,15 @@ recipe_set_publish <- function(recipe, publish) {
     recipe$publish <- character(0)
     return(recipe)
   }
+  if (.v2_is_param(publish)) {
+    recipe$publish <- publish
+    return(recipe)
+  }
+  if (is.list(publish) && any(vapply(publish, .v2_is_param, logical(1)))) {
+    for (p in publish) .v2_name(p, "publish", allow_null = FALSE)
+    recipe$publish <- unique(unname(publish))
+    return(recipe)
+  }
   publish <- .v2_chr_vector(publish, "publish")
   for (p in publish) .v2_name(p, "publish")
   recipe$publish <- publish

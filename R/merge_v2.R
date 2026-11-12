@@ -213,7 +213,10 @@ recipe_merge <- function(a, b, prefix = NULL) {
     out$intervals <- lapply(r$intervals, rn$any)
     names(out$intervals) <- vapply(out$intervals, function(e) e$name %||% "", "")
   }
-  if (!is.null(r$publish)) out$publish <- unname(vapply(r$publish, rn$out, ""))
+  if (!is.null(r$publish)) {
+    out$publish <- if (.v2_is_param(r$publish)) rn$out(r$publish) else lapply(r$publish, rn$out)
+    out <- recipe_set_publish(out, out$publish)
+  }
   out
 }
 
@@ -236,23 +239,43 @@ recipe_merge <- function(a, b, prefix = NULL) {
                                    list(list(prefix = prefix, maps = maps, role = role)))
     x
   }
-  self$pop <- function(x) look("population", x)
-  self$out <- function(x) look("output", x)
-  self$var <- function(x) look("variable", x)
+  self$pop <- function(x) if (.v2_is_param(x)) self$defer(x, "population") else look("population", x)
+  self$out <- function(x) if (.v2_is_param(x)) self$defer(x, "output") else look("output", x)
+  self$var <- function(x) if (.v2_is_param(x)) self$defer(x, "variable") else look("variable", x)
+  # A whole placeholder is one value, even though its storage is a list.
+  refs <- function(x, fn) {
+    if (.v2_is_param(x)) return(fn(x))
+    if (is.list(x)) return(lapply(x, fn))
+    unname(vapply(x, fn, ""))
+  }
+  sources <- function(x) {
+    if (.v2_is_param(x) || .v2_is_event(x) || .v2_is_interval(x)) return(self$src(x))
+    refs(x, self$src)
+  }
   # A reference by name to an event or an interval (sources accept both).
   self$src <- function(x) {
     if (.v2_is_param(x)) return(self$defer(x, "event"))
     if (is.character(x) && length(x) == 1L) {
-      if (!is.na(maps$event[x])) return(unname(maps$event[x]))
-      if (!is.na(maps$interval[x])) return(unname(maps$interval[x]))
+      ev <- maps$event[x]
+      iv <- maps$interval[x]
+      if (length(ev) && !is.na(ev)) return(unname(ev))
+      if (length(iv) && !is.na(iv)) return(unname(iv))
       return(if (deferred) look("event", x) else x)
     }
     self$any(x)
   }
   self$tag <- function(t) {
+    if (.v2_is_param(t)) return(self$defer(t, "tag"))
     if (startsWith(t, "cohort:")) return(t)
     if (startsWith(t, "match:")) return(paste0("match:", self$pop(sub("^match:", "", t))))
     self$src(t)
+  }
+  self$censor <- function(x) {
+    if (.v2_is_param(x)) return(self$defer(x, "censor"))
+    if (is.character(x) && length(x) == 1L &&
+        x %in% c("observation_end", "death", "index_end")) return(x)
+    if (is.list(x) && identical(names(x), "admin_date")) return(x)
+    self$src(x)
   }
   # Apply fn to field k of x when it is set (never turning a NULL into a
   # removed field or vice versa).
@@ -316,9 +339,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
     if (inherits(x, "omop_censor")) {
       x <- upd(x, "source", self$src)
       x <- upd(x, "search", self$any)
-      if (!is.null(x$when_index_source) && !.v2_is_param(x$when_index_source)) {
-        x$when_index_source <- unname(vapply(x$when_index_source, self$tag, ""))
-      }
+      if (!is.null(x$when_index_source)) x$when_index_source <- refs(x$when_index_source, self$tag)
       return(x)
     }
     if (inherits(x, "omop_match")) {
@@ -355,7 +376,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
   self$population <- function(p) {
     p$id <- self$pop(p$id)
     if (!is.null(p$parent_id)) p$parent_id <- self$pop(p$parent_id)
-    if (!is.null(p$setop)) p$setop$members <- unname(vapply(p$setop$members, self$pop, ""))
+    if (!is.null(p$setop)) p$setop$members <- refs(p$setop$members, self$pop)
     p$filters <- lapply(p$filters %||% list(), self$any)
     if (!is.null(p[["index"]])) p[["index"]] <- self$any(p[["index"]])
     if (!is.null(p$match)) p$match <- self$any(p$match)
@@ -371,14 +392,12 @@ recipe_merge <- function(a, b, prefix = NULL) {
     o$name <- self$out(old)
     if (identical(o$result_symbol, paste0("D_", old))) o$result_symbol <- paste0("D_", o$name)
     o$population_id <- self$pop(o$population_id %||% "base")
-    if (!is.null(o$variables)) o$variables <- unname(vapply(o$variables, self$var, ""))
-    if (!is.null(o$sources)) {
-      o$sources <- if (is.list(o$sources) && !inherits(o$sources, c("omop_event", "omop_interval")))
-        lapply(o$sources, self$src) else self$src(o$sources)
-    }
+    if (!is.null(o$variables)) o$variables <- refs(o$variables, self$var)
+    if (!is.null(o$sources)) o$sources <- sources(o$sources)
     opts <- o$options %||% list()
     named_refs <- function(x) {
       if (is.null(x)) return(x)
+      if (.v2_is_param(x)) return(self$src(x))
       nms <- names(x)
       out <- lapply(x, self$src)
       names(out) <- nms
@@ -386,22 +405,16 @@ recipe_merge <- function(a, b, prefix = NULL) {
     }
     if (!is.null(opts$outcomes)) opts$outcomes <- named_refs(opts$outcomes)
     if (!is.null(opts$exposures)) opts$exposures <- named_refs(opts$exposures)
-    if (!is.null(opts$sources)) opts$sources <- if (is.list(opts$sources) &&
-                                                    !inherits(opts$sources, c("omop_event", "omop_interval")))
-      lapply(opts$sources, self$src) else self$src(opts$sources)
+    if (!is.null(opts$sources)) opts$sources <- sources(opts$sources)
     for (k in c("tar", "entry", "window", "time_window", "anchor")) opts <- upd(opts, k, self$any)
     if (!is.null(opts$tars)) opts$tars <- lapply(opts$tars, self$any)
     if (!is.null(opts$anchors)) opts$anchors <- lapply(opts$anchors, self$any)
     if (!is.null(opts$censor)) {
       cz <- opts$censor
-      if (is.character(cz)) cz <- as.list(cz)
-      if (inherits(cz, c("omop_censor", "omop_event", "omop_interval"))) cz <- list(cz)
-      opts$censor <- lapply(cz, function(z) {
-        if (is.character(z) && length(z) == 1L &&
-            z %in% c("observation_end", "death", "index_end")) return(z)
-        if (is.list(z) && identical(names(z), "admin_date")) return(z)
-        self$src(z)
-      })
+      opts$censor <- if (.v2_is_param(cz) ||
+                        inherits(cz, c("omop_censor", "omop_event", "omop_interval"))) {
+        self$censor(cz)
+      } else lapply(if (is.character(cz)) as.list(cz) else cz, self$censor)
     }
     if (!is.null(opts$relations)) {
       opts$relations <- lapply(opts$relations, function(rel) {
@@ -411,23 +424,21 @@ recipe_merge <- function(a, b, prefix = NULL) {
       })
     }
     if (!is.null(opts$partition$boundaries)) {
-      b <- opts$partition$boundaries
-      opts$partition$boundaries <- if (is.list(b) && !inherits(b, c("omop_event", "omop_interval")))
-        lapply(b, self$src) else self$src(b)
+      opts$partition$boundaries <- sources(opts$partition$boundaries)
     }
     for (k in intersect(names(opts), c("carry_forward", "source_analyses"))) {
       if (length(opts[[k]])) names(opts[[k]]) <- unname(vapply(names(opts[[k]]), self$src, ""))
     }
     if (!is.null(opts$from)) {
-      opts$from <- lapply(opts$from, function(fr) {
-        if (is.character(fr)) return(self$out(fr))
+      from <- function(fr) {
+        if (.v2_is_param(fr) || is.character(fr)) return(self$out(fr))
         fr$output <- self$out(fr$output)
         fr
-      })
+      }
+      opts$from <- if (.v2_is_param(opts$from)) from(opts$from) else lapply(opts$from, from)
     }
     if (!is.null(opts$source_outputs)) {
-      opts$source_outputs <- unname(vapply(as.character(unlist(opts$source_outputs)),
-                                           self$out, ""))
+      opts$source_outputs <- refs(opts$source_outputs, self$out)
     }
     o$options <- opts
     o
@@ -500,8 +511,11 @@ recipe_merge <- function(a, b, prefix = NULL) {
          ". Rename (prefix = ) or align them first.", call. = FALSE)
   }
   if (!is.null(a$publish) || !is.null(b$publish)) {
-    out$publish <- unique(c(a$publish %||% names(a$outputs %||% list()),
-                            b$publish %||% names(b$outputs %||% list())))
+    roots <- function(r) {
+      x <- r$publish %||% names(r$outputs %||% list())
+      if (.v2_is_param(x)) list(x) else as.list(x)
+    }
+    out <- recipe_set_publish(out, unique(c(roots(a), roots(b))))
   }
   out$meta <- list(created = Sys.time(), modified = Sys.time())
   # Parameters are shared by name: two definitions of one name are refused.

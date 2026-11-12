@@ -210,3 +210,99 @@ test_that("resolved helper observability does not change shared base composition
               recipe_merge(advanced, advanced, prefix = "b"))
   }
 })
+
+.cmp_reference_recipe <- function(id) {
+  rows <- omop_param("rows", type = "string", default = "p")
+  output <- omop_param("output", type = "string", default = "w")
+  source <- omop_param("source", type = "event", default = "ev")
+  omop_recipe(events = list(omop_event("measurement", id, name = "ev")),
+    populations = list(omop_population("p", index = omop_index(list(cohort_definition_id = 1)))),
+    variables = list(age = omop_age()), outputs = list(
+      omop_output("w", rows = rows, format = "wide"),
+      omop_output("w2", rows = rows, format = "wide"),
+      omop_output("joined", rows = rows, format = "joined",
+        options = list(from = list(output, list(output = "w2")))),
+      omop_output("dictionary", rows = rows, format = "dictionary",
+        options = list(source_outputs = output)),
+      omop_output("long", rows = rows, format = "long", sources = source),
+      omop_output("panel", rows = rows, format = "person_period",
+        options = list(sources = source, partition = list(boundaries = source)))))
+}
+
+test_that("population output and whole source placeholders retain their reference roles", {
+  a <- .cmp_reference_recipe(2)
+  b <- .cmp_reference_recipe(1)
+  bind <- function(r) recipe_bind(r, rows = "p", output = "w", source = "ev")
+  target <- recipe_merge(bind(a), bind(b), prefix = "b")
+  merged <- recipe_merge(a, b, prefix = "b")
+  nested <- recipe_merge(omop_recipe(), merged, prefix = "outer")
+  nested_target <- recipe_merge(omop_recipe(), target, prefix = "outer")
+  for (r in .cmp_roundtrips(nested)) .cmp_same(bind(r), nested_target)
+  for (r in .cmp_roundtrips(merged)) {
+    .cmp_same(r, target)
+    .cmp_same(bind(r), target)
+    for (partial in .cmp_roundtrips(recipe_bind(r, rows = "p"))) {
+      .cmp_same(recipe_bind(partial, output = "w", source = "ev"), target)
+    }
+  }
+})
+
+.cmp_censor_recipe <- function(id, tag, builtin) {
+  ev <- omop_event("measurement", id, name = "ev")
+  p <- omop_population("p", index = omop_index(if (identical(tag, "ev")) "ev" else
+                                               list(cohort_definition_id = 1)))
+  pops <- list(p)
+  rows <- "p"
+  if (identical(tag, "match:cc")) {
+    pops <- c(pops, list(omop_population("cc", match = omop_match(
+      cases = "p", controls = "base", outcome = "ev"))))
+    rows <- "cc"
+  }
+  omop_recipe(events = list(ev), populations = pops,
+    outputs = omop_output("tte", rows = rows, format = "survival", options = list(
+      outcomes = list(outcome = "ev"), tar = omop_window(1, 30),
+      censor = list(omop_param("builtin", type = "string", default = builtin),
+        omop_censor("ev", which = "first_start_after_entry",
+          when_index_source = omop_param("tag", type = "string", default = tag))))))
+}
+
+test_that("deferred censor roles preserve builtin sources and rewrite source tags", {
+  for (tag in c("ev", "cohort:1", "match:cc")) {
+    for (builtin in c("death", "observation_end", "index_end", "ev")) {
+      a <- .cmp_censor_recipe(2, tag, builtin)
+      b <- .cmp_censor_recipe(1, tag, builtin)
+      bind <- function(r) recipe_bind(r, tag = tag, builtin = builtin)
+      expected <- recipe_merge(bind(a), bind(b), prefix = "b")
+      for (r in .cmp_roundtrips(recipe_merge(a, b, prefix = "b"))) {
+        .cmp_same(r, expected)
+        .cmp_same(bind(r), expected)
+        for (half in .cmp_roundtrips(recipe_bind(r, builtin = builtin))) {
+          .cmp_same(recipe_bind(half, tag = tag), expected)
+        }
+      }
+    }
+  }
+})
+
+test_that("publication-root placeholders commute with merging and serialization", {
+  mk <- function(p) omop_recipe(variables = list(age = omop_age()),
+    outputs = list(omop_output("w", format = "wide"), omop_output("other", format = "wide")),
+    publish = p)
+  p <- omop_param("root", type = "string", default = "w")
+  a <- mk(p)
+  target <- recipe_merge(recipe_bind(a, root = "w"), recipe_bind(a, root = "w"), prefix = "b")
+  for (r in .cmp_roundtrips(recipe_merge(a, a, prefix = "b"))) {
+    .cmp_same(r, target)
+    .cmp_same(recipe_bind(r, root = "w"), target)
+  }
+  # Distinct placeholders can resolve to the same shared publication root.
+  b <- mk(omop_param("second", type = "string", default = "w"))
+  shared <- recipe_merge(a, b)
+  for (r in .cmp_roundtrips(recipe_bind(shared, root = "w"))) {
+    .cmp_same(r, mk("w"))
+    .cmp_same(recipe_bind(r, second = "w"), mk("w"))
+  }
+  for (r in .cmp_roundtrips(recipe_merge(mk(character()), a, prefix = "b"))) {
+    .cmp_same(r, recipe_merge(mk(character()), mk("w"), prefix = "b"))
+  }
+})
