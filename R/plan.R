@@ -1918,7 +1918,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # assigned. The publication protocol needs it on every site; otherwise a v2
   # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
   harmonizes <- isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
-    isTRUE(plan$options$factor_concepts %||% TRUE)
+    isTRUE(plan$options$factor_concepts %||% TRUE) &&
+    !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
   route <- .plan_protocol_route(conns, server_method, harmonizes)
   if (!route$protocol) {
     if (v2) {

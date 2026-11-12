@@ -174,3 +174,15 @@ test_that("legacy fallback names every old site exactly once", {
   expect_identical(state$assigns, c(old_a = 1L, old_b = 1L, new = 1L))
   expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
 })
+
+test_that("empty publication roots need no unused factor methods", {
+  state <- .legacy_federation(new = "a",
+                              unpublished = c("omopFactorLevelsDS", "omopAsFactorColumnsDS"))
+  plan <- recipe_to_plan(.v2_recipe_b1())
+  plan$publish <- list()
+  expect_silent(out <- ds.omop.plan.execute(plan))
+  expect_identical(out, stats::setNames(character(0), character(0)))
+  expect_identical(state$assigns, c(a = 1L))
+  expect_false("omopFactorLevelsDS" %in% .called(state))
+  expect_true("omopPlanStatusDS" %in% .called(state))
+})
