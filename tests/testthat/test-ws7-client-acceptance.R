@@ -89,8 +89,11 @@
                    "?cdm_schema=", schema, "&vocabulary_schema=", schema, "&results_schema=", schema),
       identity = pg$user, secret = pg$password, format = "omop.dbi.db")
   }
-  server <- DSLite::newDSLiteServer(resources = stats::setNames(list(resource), symbol),
-                                    config = DSLite::defaultDSConfiguration(include = "dsOMOP"))
+  config <- DSLite::defaultDSConfiguration(include = "dsOMOP")
+  # DSLite applies its configured options on every server call, overriding
+  # ambient R options. Pin and then query the effective threshold publicly.
+  config$Options[["nfilter.subset"]] <- "5"
+  server <- DSLite::newDSLiteServer(resources = stats::setNames(list(resource), symbol), config = config)
   server_name <- paste0("ws7_acceptance_", backend, "_", Sys.getpid())
   assign(server_name, server, envir = globalenv())
   withr::defer(rm(list = server_name, envir = globalenv()), envir = .local_envir)
@@ -104,6 +107,9 @@
   }, envir = .local_envir)
   ds.omop.connect(resource = symbol, symbol = symbol, conns = conns)
   connected <- TRUE
+  settings <- ds.omop.disclosure.settings(symbol = symbol, conns = conns)
+  expect_identical(names(settings), "site1")
+  expect_equal(settings$site1$nfilter_subset, 5L)
   sid <- server$getSessionIds()
   stopifnot(length(sid) == 1L)
   session <- .get_session(symbol)
