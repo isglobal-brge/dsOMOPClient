@@ -67,3 +67,14 @@ test_that("inherited new-user choices survive code JSON YAML and parameter bindi
     }
   }
 })
+
+test_that("zero-washout studies named base retain their explicit index in advanced code", {
+  study <- omop_study(omop_new_users(1503297, washout_days = 0L),
+                      baseline = list(age = omop_age()), outputs = "baseline", name = "base")
+  env <- new.env(parent = asNamespace("dsOMOPClient"))
+  eval(parse(text = recipe_to_code(study)), envir = env)
+  expect_identical(env$recipe$populations$base, study$populations$base)
+  expect_identical(recipe_to_plan(env$recipe), recipe_to_plan(study))
+  text <- .printing_same_semantics(env$recipe)
+  expect_match(text, "washout 0 days", fixed = TRUE)
+})

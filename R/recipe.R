@@ -5620,6 +5620,10 @@ recipe_to_code <- function(recipe) {
         is.null(recipe$populations$base$cohort_definition_id) &&
         is.null(recipe$populations$base$episode_policy) &&
         is.null(recipe$populations$base$index_event) &&
+        is.null(recipe$populations$base[["index"]]) &&
+        is.null(recipe$populations$base$match) &&
+        is.null(recipe$populations$base$coverage) &&
+        is.null(recipe$populations$base$simple) &&
         length(recipe$populations$base$filters %||% list()) == 0L) next
     p <- recipe$populations[[pid]]
     if (!is.null(p$setop)) {
