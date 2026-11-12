@@ -3064,9 +3064,29 @@ print.omop_recipe <- function(x, ...) {
     }
   }
 
+  for (slot in c("concept_sets", "events", "intervals")) {
+    reg <- x[[slot]] %||% list()
+    if (length(reg)) {
+      labels <- vapply(seq_along(reg), function(i) {
+        names(reg)[[i]] %||% reg[[i]]$name %||% "<unnamed>"
+      }, "")
+      cat(sub("_", " ", tools::toTitleCase(slot)), " (", length(reg), "): ",
+          paste(labels, collapse = ", "), "\n", sep = "")
+    }
+  }
   cat("Variables (", length(x$variables), "):\n")
   for (nm in names(x$variables)) {
     v <- x$variables[[nm]]
+    if (.v2_is_v2_variable(v)) {
+      desc <- switch(v$kind,
+        reducer = paste0(v$reducer$fn, " of ", .v2_source_label(v$event)),
+        derived = paste0("derived ", v$derived$kind,
+                         if (identical(v$derived$kind, "age"))
+                           if (isTRUE(v$derived$bands)) " (age_group bands)" else " (exact annual age)"),
+        population_column = paste0("population column ", v$population_column))
+      cat("  ", nm, ": ", desc, "\n")
+      next
+    }
     concept_info <- if (!is.null(v$concept_id))
       paste0(" [", v$concept_id,
              if (!is.null(v$concept_name)) paste0(": ", v$concept_name) else "",
@@ -3087,8 +3107,13 @@ print.omop_recipe <- function(x, ...) {
   cat("Outputs (", length(x$outputs), "):\n")
   for (nm in names(x$outputs)) {
     o <- x$outputs[[nm]]
-    cat("  ", nm, " [", o$type, "] pop:", o$population_id, "\n")
+    cat("  ", nm, " [", o$format %||% o$type, "] pop:", o$population_id, "\n")
+    if ((identical(o$type, "survival") || identical(o$format, "survival")) &&
+        is.null(o$options[["tar"]]) && is.null(o$options[["tars"]])) {
+      cat("     follow-up ends 730 days after index (default TAR)\n")
+    }
   }
+  if (!is.null(x$publish)) cat("Published:", paste(x$publish, collapse = ", "), "\n")
   invisible(x)
 }
 

@@ -333,3 +333,48 @@ test_that("language-2 recipes round-trip through JSON, YAML and generated code",
   eval(parse(text = recipe_to_code(r)), envir = env)
   expect_identical(dsOMOPClient:::.plan_v2_digest(recipe_to_plan(env$recipe))$sha256, d0)
 })
+
+test_that("concept-set registries exchange OHDSI concept-set JSON", {
+  r <- omop_recipe(concept_sets = list(
+    t2dm = omop_concept_set(201826, descendants = TRUE,
+                            exclude = omop_concept_set(195771, descendants = TRUE)),
+    statins = omop_concept_set(c(1539403, 1545958))))
+  expect_named(recipe_concept_sets(r), c("t2dm", "statins"))
+  json <- recipe_export_concept_sets(r)
+  back <- recipe_import_concept_sets(omop_recipe(), json)
+  expect_identical(recipe_concept_sets(back)$t2dm$exclude$concepts, 195771L)
+  expect_true(recipe_concept_sets(back)$t2dm$exclude$descendants)
+  expect_identical(recipe_concept_sets(back)$statins$concepts, c(1539403L, 1545958L))
+  expect_error(omop_recipe(concept_sets = list(a = omop_concept_set(1, name = "b"))),
+               "use one name")
+  mixed <- '{"items": [{"concept": {"CONCEPT_ID": 1}, "includeDescendants": true},
+                       {"concept": {"CONCEPT_ID": 2}, "includeDescendants": false}]}'
+  expect_error(recipe_import_concept_sets(omop_recipe(), mixed), "same for every")
+  expect_output(print(r), "Concept sets \\(2\\): t2dm, statins")
+})
+
+test_that("DP preparation of a language-2 recipe sends the negotiated v2 plan", {
+  caps <- list(recipe_language = list(version = 2L, operations = as.list(c(
+    "concept_set", "event", "variable.reducer", "variable.derived", "output.wide", "population.criteria",
+    "status.accessor")), reducers = list("binary")))
+  assign("omop", structure(list(conns = list(srv1 = "FAKE"), res_symbol = "dsO_fake",
+                                capabilities = list(srv1 = caps)), class = "omop_session"),
+         envir = dsOMOPClient:::.dsomop_client_env)
+  withr::defer(rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env))
+  seen <- NULL
+  testthat::local_mocked_bindings(
+    .plan_execute_with_status = function(conns, exec_args, exec_symbol, on_small_site, ...) {
+      seen <<- exec_args
+      list(mapping = c(w = "DP_w"), inventory = list(srv1 = list()), retained = "srv1",
+           skipped = character(0), statuses = list())
+    },
+    .package = "dsOMOPClient")
+  testthat::local_mocked_bindings(datashield.symbols = function(conns, ...) list(srv1 = character(0)),
+                                  .package = "DSI")
+  r <- omop_recipe(variables = list(x = omop_variable(event = omop_event("drug_exposure", 1),
+                                                      reducer = omop_reduce("binary"))),
+                   outputs = omop_output("w", format = "wide"))
+  out <- ds.omop.dp.prepare(r)
+  expect_identical(as.character(seen[[1L]]), "omopDpPlanExecuteDS")
+  expect_identical(unclass(out)[["w"]], "DP_w")
+})
