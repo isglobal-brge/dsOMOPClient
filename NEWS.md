@@ -59,7 +59,12 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
   histograms retain their root's histogram margins. First-event and capped
   recurrent event-time histograms pool their complete signed day hierarchy,
   project it onto the person or recurrent event total, then select the
-  requested day, month or year bins.
+  requested day, month or year bins. Recurrent `persons` counts distinct
+  contributors among the same K-capped occurrences using a complete canonical
+  interval-presence vector (sensitivity 3K; fractions N/R .2 each, A/B/C .1
+  each and P .3); coarse persons are never sums of daily persons.
+  Its versioned feasible radial projection enforces event/person bounds and
+  interval constraints, but retreat toward the event-mass anchor can add bias.
 - Record-weighted protected releases (the eight QueryLibrary record
   summaries) are pooled by summing the signed persons, records and lattice
   sums per stratum and deriving the record-weighted mean and SD once (never

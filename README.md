@@ -172,6 +172,12 @@ components once and applies the same complete-basis projection as the server.
 Weighted record histograms reconcile to a protected record total, never a
 person total. Unregistered record scales expose coarse histograms and interval
 quantiles with explicit tail-censoring flags instead of invented bounded means.
+Recurrent event-time `persons` counts distinct contributors among the same
+K-capped occurrences using a complete interval-presence vector (sensitivity 3K).
+Its static fractions are N/R .2 each, A/B/C .1 each and P .3. Pooling sums signed
+presence coordinates and applies the server's radial feasibility projection;
+coarse persons are never sums of finer person counts. Retreat toward the
+projection's event-mass anchor can add bias.
 
 Every server older than 2.10.3 receives a plain upgrade warning. Installing
 this client does not repair an old server's inference defects. Legacy per-site

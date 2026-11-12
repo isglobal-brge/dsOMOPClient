@@ -103,6 +103,23 @@ test_that("nested histogram pooling retains the root histogram margins", {
                 nodes = as.list(c(1L, 1:4, 3L))),
     components = list(list(stratum = "root", n = if (kind == "first") mass else 5,
                             r = mass, levels = levels)))
+  if (kind == "recurrent") {
+    owner$display_projection <- "tte-hierarchy-presence-v1"
+    # One complete scale plus its coarsening; the same person may occupy
+    # several children, so these are presence coordinates, not histogram cells.
+    owner$presence_basis <- list(version = "tte-interval-presence-v1",
+      projection = "tte-presence-radial-v1",
+      intervals = data.frame(key = paste0("P", 1:7),
+        lower = c(-Inf, -2:1, 2, -2), upper = c(-2:2, Inf, 2),
+        level = c("A", rep("C", 4), "A", "A")),
+      nodes = as.list(c(1L, 1:4, 3L, 2L)), views = list(),
+      contains = cbind(child = 2:5, parent = rep(7L, 4)),
+      partitions = list(list(parent = 0L, children = 1:6),
+        list(parent = 0L, children = c(1L, 7L, 6L)),
+        list(parent = 7L, children = 2:5)))
+    owner$presence_view <- 1:6
+    owner$components[[1]]$p <- c(-5, -2, 10, -3, 9, 4, 10)
+  }
   list(protocol = .DP_PROTECTED_RELEASE_PROTOCOL, entry = "char.time_to_event",
        protection = "realised_sticky", owners = list(owner))
 }
@@ -115,12 +132,17 @@ test_that("event-time pooling projects the full first or recurrent hierarchy", {
     expect_equal(out$num_events, c(0, 0, 0, mass / 2 - .5, mass / 2 + .5, 0))
     expect_equal(sum(out$num_events), mass)
     if (kind == "first") expect_equal(out$persons, out$num_events) else
-      expect_true(all(is.na(out$persons)))
+      {
+        expect_true(all(out$persons >= out$num_events / 10 - 1e-8))
+        expect_true(all(out$persons <= pmin(5, out$num_events) + 1e-8))
+      }
     both <- .pool_protected_tte(list(a = p, b = p))$result
     expect_equal(both$num_events, 2 * out$num_events)
+    expect_equal(both$persons, 2 * out$persons)
     coarse <- p
     coarse$owners[[1]]$view <- list(day_offset = c(-Inf, -2, 2),
       upper = c(-2, 2, Inf), level = rep("A", 3), nodes = as.list(1:3))
+    if (kind == "recurrent") coarse$owners[[1]]$presence_view <- c(1L, 7L, 6L)
     c <- .pool_protected_tte(list(a = coarse, b = coarse))$result
     expect_equal(c$num_events, c(both$num_events[1], sum(both$num_events[2:5]),
                                   both$num_events[6]))
@@ -164,4 +186,36 @@ test_that("event-time pooling refuses incompatible and malformed public hierarch
   expect_error(.pool_protected_tte(list(site = bad)), "parent indices")
   bad <- p; bad$owners[[1]]$components[[1]]$levels$C$signed[1] <- NA_real_
   expect_error(.pool_protected_tte(list(site = bad)), "signed time-to-event")
+})
+
+test_that("recurrent presence pooling uses the complete signed vector before view selection", {
+  a <- .hc_tte_payload("recurrent", 30)
+  b <- a
+  b$owners[[1]]$components[[1]]$n <- 6
+  b$owners[[1]]$components[[1]]$r <- 35
+  b$owners[[1]]$components[[1]]$levels$A$signed <- c(-1, 40, -4)
+  b$owners[[1]]$components[[1]]$levels$B$signed <- c(0, 40)
+  b$owners[[1]]$components[[1]]$levels$C$signed <- c(0, 0, 20, 20)
+  b$owners[[1]]$components[[1]]$p <- c(3, 2, 1, 0, 4, -5, 2)
+  out <- .pool_protected_tte(list(a = a, b = b))$result
+  expect_equal(out$num_events, c(0, 0, 0, 32, 33, 0))
+  # Combined signed P gives a feasible target: lower event/K bound for the
+  # fourth coordinate, N upper bound for the fifth and the common parent.
+  expect_equal(out$persons, c(0, 0, 0, 3.2, 11, 0))
+  separate <- .pool_protected_tte(list(a = a))$result$persons +
+    .pool_protected_tte(list(b = b))$result$persons
+  expect_false(isTRUE(all.equal(out$persons, separate)))
+  coarse <- function(p) {
+    p$owners[[1]]$view <- list(day_offset = c(-Inf, -2, 2),
+      upper = c(-2, 2, Inf), level = rep("A", 3), nodes = as.list(1:3))
+    p$owners[[1]]$presence_view <- c(1L, 7L, 6L)
+    p
+  }
+  c <- .pool_protected_tte(list(a = coarse(a), b = coarse(b)))$result
+  expect_equal(c$persons, c(0, 11, 0))
+  expect_lt(c$persons[[2]], sum(out$persons))
+  bad <- b; bad$owners[[1]]$presence_basis$intervals$key[[1]] <- "other-basis"
+  expect_error(.pool_protected_tte(list(a = a, b = bad)), "incompatible basis/view")
+  bad <- b; bad$owners[[1]]$components[[1]]$p <- NULL
+  expect_error(.pool_protected_tte(list(a = a, b = bad)), "signed recurrent presence")
 })

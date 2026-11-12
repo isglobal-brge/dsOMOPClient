@@ -570,7 +570,11 @@
 #' Achilles histograms use the parent's protected cells as their second
 #' margin. First-event and capped recurrent event-time hierarchies project
 #' their signed A/B/C nodes from the person or event total down before
-#' selecting day, month or year views.
+#' selecting day, month or year views. Recurrent persons use a separate complete
+#' interval-presence vector for distinct contributors among the same K-capped
+#' occurrences. Its versioned radial projection enforces public feasibility;
+#' retreat toward the event-mass anchor can add bias. Coarse person counts are
+#' selected directly, never summed from fine bins.
 #'
 #' Record-weighted releases (family \code{RM}) are pooled per stratum by
 #' \code{.pool_protected_record_moments}. Exit-time x status cells of a

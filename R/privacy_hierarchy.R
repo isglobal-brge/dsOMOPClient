@@ -217,8 +217,9 @@
   o <- os[[1L]]
   signature <- function(x) list(x$owner, x$population, x$family, x$basis,
     x$estimand_kind, x$cap, x$allocation, x$levels, x$hierarchy_nodes,
-    x$view, x$display_projection)
-  if (!identical(o$display_projection, "tte-hierarchy-simplex-v1") ||
+    x$view, x$display_projection, x$presence_basis, x$presence_view)
+  if (!identical(o$display_projection, if (identical(o$estimand_kind, "recurrent"))
+      "tte-hierarchy-presence-v1" else "tte-hierarchy-simplex-v1") ||
       !identical(o$basis, "tte-signed-day-basis-v1") ||
       !identical(o$family, "TTE") ||
       !is.character(o$estimand_kind) || length(o$estimand_kind) != 1L ||
@@ -249,6 +250,12 @@
                          if (is.null(names(payloads))) as.character(i) else
                            names(payloads)[[i]], field)
   }, numeric(1L))))
+  N <- max(0, sum(vapply(comps, function(c) {
+    .dp_protected_number(c$n, "pooled", "n")
+  }, numeric(1L))))
+  K <- .dp_protected_number(o$cap, "pooled", "cap", TRUE)
+  if (K < 1 || K != floor(K)) stop("Invalid event-time cap.", call. = FALSE)
+  if (field == "r") total <- min(K * N, max(N, total))
   nodes <- o$hierarchy_nodes
   displays <- list()
   for (level in o$levels) {
@@ -326,13 +333,48 @@
   events <- vapply(seq_along(view$nodes), function(i) {
     sum(displays[[view$level[[i]]]][view$nodes[[i]]])
   }, numeric(1L))
+  persons <- events
+  if (field == "r") {
+    basis <- o$presence_basis
+    intervals <- basis$intervals
+    idx <- o$presence_view
+    if (!is.data.frame(intervals) ||
+        !all(c("key", "lower", "upper", "level") %in% names(intervals)) ||
+        anyNA(intervals$key) || anyDuplicated(intervals$key) ||
+        !all(intervals$level %in% o$levels) ||
+        !is.list(basis$nodes) || length(basis$nodes) != nrow(intervals) ||
+        !is.numeric(idx) || length(idx) != length(events) || anyNA(idx) ||
+        any(idx != floor(idx) | idx < 1 | idx > nrow(intervals)) || anyDuplicated(idx) ||
+        !identical(intervals$lower[idx], view$day_offset) ||
+        !identical(intervals$upper[idx], view$upper)) {
+      stop("Malformed public event-time presence mapping.", call. = FALSE)
+    }
+    ep <- vapply(seq_len(nrow(intervals)), function(i) {
+      j <- basis$nodes[[i]]
+      d <- displays[[intervals$level[[i]]]]
+      if (!is.numeric(j) || !length(j) || anyNA(j) || anyDuplicated(j) ||
+          any(j != floor(j) | j < 1 | j > length(d))) {
+        stop("Malformed event-time presence event mask.", call. = FALSE)
+      }
+      sum(d[j])
+    }, numeric(1L))
+    signed <- lapply(comps, function(c) {
+      if (!is.numeric(c$p) || length(c$p) != nrow(intervals) ||
+          any(!is.finite(c$p))) {
+        stop("Missing or malformed signed recurrent presence vector.", call. = FALSE)
+      }
+      c$p
+    })
+    persons <- .dp_tte_presence_project(Reduce(`+`, signed), ep, N, total, K, basis)[idx]
+  }
   result <- data.frame(day_offset = view$day_offset,
-                        num_events = signif(events, 12),
-                        persons = if (o$estimand_kind == "first") signif(events, 12) else
-                          NA_real_)
+                        num_events = signif(events, 12), persons = signif(persons, 12))
   list(result = result, warnings = paste0(
     "Pooled protected ", o$estimand_kind, " event-time hierarchy: signed ",
     "nodes were summed, projected from their ", if (field == "r") "capped event" else
       "person", " total down through A/B/C, then coarsened to the requested bins.",
-    if (field == "r") " Persons per recurrent bin remain unavailable." else ""))
+    if (field == "r") paste0(" Distinct contributors among the same K-capped occurrences ",
+      "use the complete interval-presence vector and versioned feasible radial projection; ",
+      "coarse persons are never sums of fine-bin persons. Projection toward its event-mass ",
+      "anchor can add bias.") else ""))
 }
