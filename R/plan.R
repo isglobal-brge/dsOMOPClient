@@ -1827,6 +1827,10 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #'   \code{NULL}. With the default, a non-strict server may publish complete
 #'   passing output families and warn about rejected families. A strict refusal
 #'   rolls back the federation. Other failures always roll back and error.
+#'   These policies require the publication protocol on every site. If any
+#'   site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere with one
+#'   warning, and \code{on_small_site} does not change that call; a language-2
+#'   plan is refused before assignment.
 #' @details Loading tables never depends on differential privacy. After a
 #'   memory execution, concept columns are converted to factors harmonized
 #'   across servers (see \code{ds.omop.plan.options}).
@@ -1910,6 +1914,22 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+  # B1: which protocol every participating site supports, before anything is
+  # assigned. The publication protocol needs it on every site; otherwise a v2
+  # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
+  harmonizes <- isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
+    isTRUE(plan$options$factor_concepts %||% TRUE) &&
+    !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
+  route <- .plan_protocol_route(conns, server_method, harmonizes)
+  if (!route$protocol) {
+    if (v2) {
+      v1_refusal <- attr(plan, "v1_refusal")
+      stop(.plan_protocol_refusal(route, v1_refusal = v1_refusal), call. = FALSE)
+    }
+    warning(.plan_legacy_warning(route), call. = FALSE)
+    return(.plan_execute_legacy(plan, out, symbol, session, conns, output_mode,
+                                server_method, harmonize_factors))
+  }
   if (v2) {
     # Every server must speak the recipe language and every operation the
     # plan needs: a construct is never dropped to fit an older server
@@ -1918,10 +1938,20 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     # contract travels as a plan attribute, never on the wire.
     roots <- if (is.null(plan$publish)) names(plan$outputs) else
       as.character(unlist(plan$publish))
-    out <- .resolve_plan_out(
-      list(outputs = plan$outputs[roots]), out,
-      reserved_symbols = c(symbol, session$res_symbol)
-    )
+    if (length(roots) == 0L) {
+      # An explicitly empty publish list releases nothing: the execution
+      # still runs (capabilities, digest, status), with zero roots.
+      if (length(out)) {
+        stop("The plan publishes no outputs (publish = []); out must be empty.",
+             call. = FALSE)
+      }
+      out <- stats::setNames(character(0), character(0))
+    } else {
+      out <- .resolve_plan_out(
+        list(outputs = plan$outputs[roots]), out,
+        reserved_symbols = c(symbol, session$res_symbol)
+      )
+    }
     # The roots sent are exactly the requested ones: a partial out mapping
     # leaves the other outputs private (B1), so publish names the mapped roots
     # before the capability check and the federation contract bind the plan.
@@ -1997,7 +2027,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     session$res_symbol,
     # v2 plans keep every digit, explicit nulls and empty objects, so the
     # server parses exactly the plan whose semantic digest was computed.
-    if (v2) .ds_encode_lossless(plan) else .ds_encode(plan), .ds_encode(out),
+    if (v2) .ds_encode_lossless(plan) else .ds_encode(plan),
+    # zero publication roots (publish = []): an empty JSON object, never a
+    # bare character(0) that a DataSHIELD expression parser would refuse
+    if (length(out)) .ds_encode(out) else .ds_encode(stats::setNames(list(), character(0))),
     output_mode, commit_policy = if (on_small_site == "skip") {
       "all_or_none"
     } else "server")
@@ -2078,7 +2111,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     # Preserve the v1 return for an ordinary successful run. When publication
     # differs by site, expose the actual inventory and retain NULL skip entries.
     standard <- !any(refused | partial) && all(vapply(inventories, function(x) {
-      identical(names(x), names(out)) && all(vapply(names(x), function(root) {
+      identical(as.character(names(x)), as.character(names(out))) &&
+        all(vapply(names(x), function(root) {
         symbols <- .plan_inventory_symbols(x[root])[[root]]
         components <- names(x[[root]])
         aliases <- c(risk_sets = "riskSets", transition_ref = "transitionRef")

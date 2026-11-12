@@ -124,6 +124,49 @@ test_that("ds.omop.server.version lists methods the profile lacks", {
   expect_match(v$advice, "lacks 2 dsOMOP method")
 })
 
+test_that("protocol advice distinguishes a current partial profile from an old installation", {
+  .mock_server("2.10.4", drop = dsOMOPClient:::.DSOMOP_PROTOCOL_METHODS)
+  current <- ds.omop.server.version(list(site = "FAKE"))
+  expect_false(current$ready)
+  expect_match(current$advice, "dsOMOP 2.10.4 is installed but the profile lacks publication protocol")
+  expect_match(current$advice, "publishes dsOMOP's settings again")
+  expect_false(grepl("predates|installs dsOMOP", current$advice))
+
+  .mock_server("2.10.1", ping_version = "2.10.2",
+               drop = dsOMOPClient:::.DSOMOP_PROTOCOL_METHODS)
+  old <- ds.omop.server.version(list(site = "FAKE"))
+  expect_match(old$advice, "dsOMOP 2.10.2 is installed but predates")
+  expect_match(old$advice, "installs dsOMOP 2.10.4 or later.*publishes its settings")
+
+  .mock_server("2.10.2", ping_version = NA_character_,
+               drop = dsOMOPClient:::.DSOMOP_PROTOCOL_METHODS)
+  unknown <- ds.omop.server.version(list(site = "FAKE"))
+  expect_match(unknown$advice, "installed dsOMOP version could not be verified")
+  expect_match(unknown$advice, "checks that dsOMOP 2.10.4 or later is installed")
+  expect_false(grepl("predates", unknown$advice))
+})
+
+test_that("recipe-language diagnostics report advertised capabilities independently of readiness", {
+  conns <- list(stale = "S", empty = "E", disconnected = "D")
+  inv <- .current_published_methods(conns)
+  inv$stale$aggregate <- setdiff(inv$stale$aggregate, dsOMOPClient:::.DSOMOP_PROTOCOL_METHODS)
+  caps <- list(stale = .caps(), empty = .caps(ops = character(0)))
+  testthat::local_mocked_bindings(
+    .dsomop_published_methods = function(...) inv,
+    .ds_safe_aggregate = function(...) stats::setNames(rep(list(list(version = "2.10.4")), 3L),
+                                                       names(conns)),
+    ds.omop.client.version = function() "2.10.4",
+    .get_session = function(...) list(conns = conns[c("stale", "empty")], capabilities = caps),
+    .package = "dsOMOPClient")
+  got <- ds.omop.server.version(conns)
+  expect_identical(got$ready, c(FALSE, TRUE, TRUE))
+  expect_identical(got$recipe_language[[1L]], caps$stale$recipe_language)
+  expect_identical(got$recipe_language[[2L]], caps$empty$recipe_language)
+  expect_identical(got$recipe_language[[3L]], "not connected")
+  expect_length(got$recipe_language[[2L]]$operations, 0L)
+  expect_identical(got$recipe_language[[1L]]$dialect, list(family = "sqlite"))
+})
+
 test_that("ds.omop.connect stops before assigning anything when dsOMOP is not published", {
   assigned <- FALSE
   testthat::local_mocked_bindings(

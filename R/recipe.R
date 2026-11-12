@@ -1091,7 +1091,7 @@ print.omop_filter <- function(x, ...) {
 #' @param operator Character; \code{"AND"}, \code{"OR"} or (2.10.3)
 #'   \code{"NOT"}, which negates the conjunction of its children: the legacy
 #'   spelling of \code{\link{omop_not}()}. A NOT group has no v1 rendering; it
-#'   runs as a language-2 plan on dsOMOP 2.10.3 servers.
+#'   runs as a language-2 plan on dsOMOP 2.10.4 servers.
 #' @param label Character or \code{NULL}; human-readable description
 #'   (auto-generated from children if \code{NULL}).
 #' @return An \code{omop_filter_group} object.
@@ -2269,7 +2269,7 @@ print.omop_variable_block <- function(x, ...) {
 #'   faithful executable mapping; use split \code{"long"} outputs. The
 #'   \code{"covariates_sparse"} label (2.10.3, B-22) is the language-2
 #'   \code{format = "sparse"} over the output's variables as sources; it has
-#'   no v1 rendering and runs on dsOMOP 2.10.3 servers.
+#'   no v1 rendering and runs on dsOMOP 2.10.4 servers.
 #' @param variables Character vector or \code{NULL}; variable names to include
 #'   (\code{NULL} means all variables in the recipe).
 #' @param population_id Character; which population to use (default
@@ -3283,7 +3283,7 @@ print.omop_recipe <- function(x, ...) {
     stop(.v1_newly_permitted(
       "A NOT filter group in ", context, " has no v1 rendering (a pre-2.10.3 ",
       "server cannot negate a group); it is omop_not() of the language-2 plan ",
-      "and runs on dsOMOP 2.10.3 servers (recipe_to_plan(version = 2))."))
+      "and runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers (recipe_to_plan(version = 2))."))
   }
   if (!op %in% c("AND", "OR")) {
     stop("Filter operator '", op %||% "?",
@@ -3899,7 +3899,7 @@ recipe_to_plan <- function(recipe, version = 2L) {
     if (identical(out$type, "covariates_sparse")) {
       stop(.v1_newly_permitted(
         "Recipe output '", out_name, "' (covariates_sparse) has no v1 rendering; ",
-        "it is the language-2 format = \"sparse\" and runs on dsOMOP 2.10.3 ",
+        "it is the language-2 format = \"sparse\" and runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " ",
         "servers (recipe_to_plan(version = 2))."))
     }
     if (identical(out$type, "joined_long")) {
@@ -4242,15 +4242,16 @@ recipe_to_plan <- function(recipe, version = 2L) {
               is.null(feature_temporal$index_window)) {
             feature_temporal$index_window <- feature_window
           }
-          if (!is.null(feature_temporal$index_window) &&
-              !identical(out$options$grain %||% "person", "episode")) {
-            # A-14: a windowed features output takes grain = "episode" in
-            # language 2; its v1 refusal is a newly permitted shape.
+          if (!is.null(feature_temporal$index_window) && is.null(out$options$grain)) {
+            # A-14: a windowed features output WITHOUT an explicit grain takes
+            # grain = "episode" in language 2; only that v1 refusal is a newly
+            # permitted shape (an explicit incompatible grain keeps the v1
+            # builder's ordinary refusal).
             stop(.v1_newly_permitted(
               "Index-relative wide/features/sparse require ",
               "representation$grain='episode'. Language 2 takes grain = \"episode\" ",
               "for a windowed features output (recipe_to_plan(version = 2)), which ",
-              "runs on dsOMOP 2.10.3 servers."))
+              "runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers."))
           }
           plan <- ds.omop.plan.features(
             plan, name = nm, table = tbl, specs = specs,
@@ -4311,7 +4312,7 @@ recipe_to_plan <- function(recipe, version = 2L) {
           stop(.v1_newly_permitted(
             "Temporal-covariates output '", out_name, "' has variables with ",
             "visit/concept-column overrides, which a v1 temporal source cannot ",
-            "carry; its language-2 sources carry them on dsOMOP 2.10.3 servers ",
+            "carry; its language-2 sources carry them on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers ",
             "(recipe_to_plan(version = 2))."))
         }
 
@@ -4340,7 +4341,7 @@ recipe_to_plan <- function(recipe, version = 2L) {
               "' mixes analyses by concept in a way a v1 server would expand ",
               "to an undeclared concept-by-analysis Cartesian product; the ",
               "language-2 plan names every (source, concept, analysis) covariate ",
-              "identity on dsOMOP 2.10.3 servers (recipe_to_plan(version = 2))."))
+              "identity on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers (recipe_to_plan(version = 2))."))
           }
         }
 
@@ -4425,7 +4426,7 @@ recipe_to_plan <- function(recipe, version = 2L) {
           "Survival output '", out_name, "' has outcome variables with ",
           "visit/concept-column overrides, which a v1 survival endpoint cannot ",
           "carry; its outcome events carry them in the language-2 plan, which ",
-          "runs on dsOMOP 2.10.3 servers (recipe_to_plan(version = 2))."))
+          "runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers (recipe_to_plan(version = 2))."))
       }
       if (any(vapply(vars, function(v) {
         length(v$concept_id %||% integer(0)) == 0L
@@ -4535,7 +4536,7 @@ recipe_to_plan <- function(recipe, version = 2L) {
         stop(.v1_newly_permitted(
           "Intervals output '", out_name, "' has variables with ",
           "visit/concept-column overrides, which v1 interval sources cannot ",
-          "carry; its language-2 sources carry them on dsOMOP 2.10.3 servers ",
+          "carry; its language-2 sources carry them on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers ",
           "(recipe_to_plan(version = 2))."))
       }
       mixed_scope <- vapply(by_table, function(vs) {
@@ -4550,7 +4551,7 @@ recipe_to_plan <- function(recipe, version = 2L) {
           "' mixes concept-scoped and unscoped variables in table(s): ",
           paste(names(mixed_scope)[mixed_scope], collapse = ", "),
           ", which one v1 source per table cannot carry; the language-2 plan ",
-          "keeps one source per scope on dsOMOP 2.10.3 servers ",
+          "keeps one source per scope on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers ",
           "(recipe_to_plan(version = 2))."))
       }
       concept_filter <- lapply(by_table, function(vs) {
@@ -4770,7 +4771,7 @@ recipe_to_plan <- function(recipe, version = 2L) {
       "Recipe feature output '", output_name,
       "' mixes variables with and without an index-relative time_window, which ",
       "a v1 feature output cannot scope per variable; it runs as one language-2 ",
-      "roster (one reducer window per variable) on dsOMOP 2.10.3 servers ",
+      "roster (one reducer window per variable) on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers ",
       "(recipe_to_plan(version = 2))."))
   }
   normalized <- lapply(seq_along(windows), function(i) {
@@ -4888,10 +4889,10 @@ recipe_to_plan <- function(recipe, version = 2L) {
                       "preserve recurrent cohort entries.")
         # A-14: the windowed features preset takes episode grain in language 2,
         # so its v1 refusal is a newly permitted shape (it runs as v2).
-        if (identical(recipe_output$type, "features")) {
+        if (identical(recipe_output$type, "features") && is.null(recipe_output$options$grain)) {
           stop(.v1_newly_permitted(msg, " Language 2 takes grain = \"episode\" for a ",
                                    "windowed features output (recipe_to_plan(version = 2)), ",
-                                   "which runs on dsOMOP 2.10.3 servers."))
+                                   "which runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers."))
         }
         stop(msg, call. = FALSE)
       }
@@ -5677,13 +5678,13 @@ recipe_to_code <- function(recipe) {
   # recipe_add_block and preserved across the JSON/YAML round-trip), so
   # block-derived variables are identified by that marker alone.
   var_code <- character(0)
-  var_named <- FALSE
+  named_vars <- FALSE
   for (nm in names(recipe$variables)) {
     v <- recipe$variables[[nm]]
     if (!is.null(v$block_id)) next
     if (.v2_is_v2_variable(v)) {
       var_code <- c(var_code, paste0(.codegen_name(nm), " = ", .v2_codegen(v)))
-      var_named <- TRUE
+      named_vars <- TRUE
       next
     }
 
@@ -5768,8 +5769,9 @@ recipe_to_code <- function(recipe) {
     var_code <- c(var_code, code)
   }
   if (length(var_code) > 0) {
-    # A named element (a language-2 variable) always needs list(...).
-    slot_args$variables <- if (var_named) {
+    # A language-2 variable is named by its list element, so the list stays
+    # even when it has one element.
+    slot_args$variables <- if (named_vars) {
       .codegen_raw(paste0("list(", paste(var_code, collapse = ", "), ")"))
     } else .codegen_list_arg(var_code)
   }
@@ -8131,7 +8133,7 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'     child population.}
 #'   \item{language_2_only (INFO)}{a recipe of 2.10.1 constructors whose
 #'     shape 2.10.3 newly permits (e.g. a NOT group) has no v1 plan and runs
-#'     as its language-2 plan on dsOMOP 2.10.3 servers only.}
+#'     as its language-2 plan on dsOMOP 2.10.4 servers only.}
 #' }
 #' The lint has no mirror of server disclosure gates (no width floors, no
 #' mandatory bins): from 2.10.3 the server's final publication rule is the
@@ -8177,7 +8179,7 @@ recipe_lint <- function(recipe) {
   } else if (!is.null(v1_refusal)) {
     add("INFO", "language_2_only",
         paste0("No v1 plan (", v1_refusal, ") The recipe runs as its language-2 ",
-               "plan on dsOMOP 2.10.3 servers only."), "recipe")
+               "plan on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers only."), "recipe")
   }
 
   outputs <- recipe$outputs %||% list()

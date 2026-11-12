@@ -52,9 +52,14 @@ workstream fills its entries.
   `recipe_lint()`. `recipe_explain()` of a recipe that executes as its v1
   plan explains that v1 payload and its legacy rules (with `conns`, the
   server's lowered IR and digest) and never presents the native rendering as
-  the executed plan; a server without explain is reported. A recipe with
-  neither a v1 plan nor a native rendering is refused naming both causes;
-  native-rendering limitations direct to `recipe_to_plan(version = 1)`.
+  the executed plan. With `conns`, only the sites whose profile publishes
+  `omopPlanExplainDS` are asked; the others and every failed call are
+  reported by site, a v1 explanation marks its lowered IR and digest
+  unavailable when no site explained it or the sites disagree, and the
+  execution route (protocol, legacy call or refusal) is stated (review B7).
+  A recipe with neither a v1 plan nor a native rendering is refused naming
+  both causes; native-rendering limitations direct to
+  `recipe_to_plan(version = 1)`.
 - Language-2 plans always carry an explicit `publish` list: the recipe's
   roots, else every declared output; an execution with a partial `out`
   publishes exactly the mapped roots.
@@ -89,6 +94,36 @@ workstream fills its entries.
 - Index-relative recency uses `days_since` / `days_until` / `first_date` /
   `last_date` reducers with an explicit `reference` anchor (F-18);
   `time_since` keeps its fixed-date meaning.
+- Named events and intervals are declarative (review N1): a declaration may
+  reference one declared after it; a dependency cycle is refused, naming it
+  (`a -> b -> a`).
+- Population rules are the server's (`S/R/ir_validate.R`; review B3). The
+  cases of a match may be any indexed population: an index population, a
+  criteria child of one, or a set operation that A-11 counts as indexed (a
+  union when any member is, intersect and setdiff after their left member).
+  A population used only as a matching controls template may carry an
+  index-referenced `omop_age_is()`, evaluated at case time; one that is also
+  an output's rows, a parent, a set-op member or match cases still needs an
+  index. Episode grain over a population without an index is refused by
+  `recipe_to_plan()`.
+- `omop_observed(gap = )` with any non-NULL gap, 0 included, needs the
+  server operation `population.coverage.union`; the client checks it before
+  any assignment (review B2).
+- `publish = character(0)` (also `recipe_set_publish(recipe, character(0))`)
+  publishes nothing: the plan carries `publish = []` through JSON, YAML,
+  `recipe_to_code()` and plan files, the servers validate it and report an
+  empty inventory, and execution returns an empty mapping; `NULL` still means
+  every output (review B6).
+- `recipe_export_concept_sets()` refuses a nested exclusion (an exclusion
+  with its own exclusion), which an OHDSI concept-set expression cannot
+  carry, instead of flattening it (review B4).
+- `ds.omop.server.version()` tells an old installation (dsOMOP before 2.10.4,
+  where publishing again cannot add the protocol methods: install 2.10.4 and
+  publish its methods) from an upgraded server whose profile still publishes
+  the old methods (publish again), and adds the list column
+  `recipe_language`: each site's capability block (`version`, `operations`,
+  `dialect`), `"unavailable"` for a site that predates it and `"not
+  connected"` without an OMOP session (review N2).
 
 ## Simple layer, parameters and verbs (WS-9)
 - Simple layer (design section 3): `omop_study()` returns an ordinary
@@ -204,13 +239,15 @@ workstream fills its entries.
 - (B-19) A feature output may mix variables with and without an
   index-relative window: one roster with one reducer window per variable;
   a windowed features output without an explicit grain takes episode grain
-  (A-14).
+  (A-14) and needs an indexed population; with an explicit grain (such as
+  `options = list(grain = "person")`) it keeps the 2.10.2 refusal (review
+  B5).
 - (design 2.2, 6.12) Survival outcomes and interval or temporal-covariate
   sources may be narrowed by visit or concept column; an intervals output
   may mix concept-scoped and unscoped variables of one table (one source per
   scope); a temporal-covariates output may declare different analyses per
   concept (per-source analyses, A-14).
-- These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers;
+- These shapes have no v1 rendering: they run on dsOMOP 2.10.4 servers;
   `recipe_lint()` reports them as INFO `language_2_only`.
 - `ds.omop.filter(expr = omop_where(...))` filters a server-side table with
   every comparison of the predicate grammar (`< <= > >=`, `between`,
@@ -258,12 +295,24 @@ workstream fills its entries.
   vendored byte-identically from dsOMOP.
 
 ## Upgrading clients and servers
-- Plan execution with dsOMOPClient 2.10.3 requires the server's published
-  `omopPlanStatusDS` and `omopStagedRevokeDS` methods; dsOMOP 2.10.1 does not
-  provide them. Upgrade the server to 2.10.3 and check
-  `ds.omop.server.version()`. On Opal, publish dsOMOP's settings again after
-  upgrading so the profile exposes the new methods.
-- With a 2.10.1 client and a 2.10.3 server, a strict publication refusal
+- Before anything is assigned, every execution checks the methods each
+  site's profile publishes (review B1). With every site on dsOMOP 2.10.4 the
+  publication protocol runs (`omopPlanStatusDS`, `omopStagedRevokeDS`,
+  `commit_policy`). While any site lacks it, a language-2 plan is
+  refused before any assignment, naming the
+  sites, the missing methods and the upgrade (install dsOMOP 2.10.4 and
+  publish its methods). A v1-selected recipe or plan then runs on every site
+  as the legacy call of dsOMOPClient 2.10.2 (the same v1 payload, no
+  `commit_policy`, no status or revocation calls) with one warning naming the
+  old sites: `on_small_site` does not change that legacy call; cross-site
+  rollback and the section 7.3 publication guarantees
+  do not apply until they upgrade, and each server applies its own
+  disclosure rules. DP preparation and the sticky query library follow the
+  same rule. A site whose profile cannot be listed, or that lacks a method
+  the call needs on either route, stops the execution before anything is
+  sent. Check with `ds.omop.server.version()`; on Opal, publish dsOMOP's
+  methods again after upgrading.
+- With a 2.10.1 or 2.10.2 client and a 2.10.4 server, a strict publication refusal
   still publishes nothing. The assign call returns status `refused`, and the
   old client then reports that requested outputs did not materialize instead
   of receiving the previous constant `Disclosive` error.

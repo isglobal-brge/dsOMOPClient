@@ -8,6 +8,9 @@
 # any server call (negotiation, routing).
 .with_servers <- function(caps, symbol = "omop") {
   conns <- stats::setNames(as.list(rep("FAKE", length(caps))), names(caps))
+  # Every site publishes the current methods (the publication protocol);
+  # test-v2-protocol.R covers dsOMOP 2.10.2 sites.
+  .mock_current_methods(env = parent.frame())
   assign(symbol, structure(list(conns = conns, res_symbol = "dsO_fake", capabilities = caps,
                                 server_names = names(caps)),
                            class = "omop_session"),
@@ -154,20 +157,26 @@ test_that("a 2.10.1-style recipe the v1 compiler refuses as newly permitted runs
   plain <- omop_recipe(variables = omop_variable_age(), filters = omop_filter_sex("F"),
                        outputs = omop_output(name = "age", type = "wide"))
   expect_s3_class(dsOMOPClient:::.recipe_plan_for_session(plain, "omop", conns), "omop_plan")
-  common <- omop_recipe(
+  windowed <- function(population_id = "base", pops = NULL) omop_recipe(
+    populations = pops,
     variables = list(omop_variable(name = "a", table = "measurement", concept_id = 1,
                                    format = "count", time_window = list(start = -90, end = 0))),
-    outputs = omop_output(name = "f", type = "features"))
+    outputs = omop_output(name = "f", type = "features", population_id = population_id))
   # A-14: a windowed features output without an explicit grain is newly
-  # permitted too (episode grain in language 2)
-  expect_s3_class(dsOMOPClient:::.recipe_plan_for_session(common, "omop", conns), "omop_plan_v2")
+  # permitted (episode grain in language 2) over an indexed population...
+  indexed <- windowed("p", omop_population("p", index_event = omop_index_event(
+    201820, "condition_occurrence")))
+  expect_s3_class(dsOMOPClient:::.recipe_plan_for_session(indexed, "omop", conns), "omop_plan_v2")
+  # ...and refused plainly over an unindexed one (episode grain needs an index)
+  expect_error(dsOMOPClient:::.recipe_plan_for_session(windowed(), "omop", conns),
+               "episode grain needs an indexed population.*cannot execute as a v1 plan either")
   # every other v1 refusal stands
   unknown <- omop_recipe(variables = omop_variable_sex(),
                          outputs = omop_output(name = "w", type = "wide", population_id = "nope"))
   expect_error(dsOMOPClient:::.recipe_plan_for_session(unknown, "omop", conns), "nope")
   conns <- .with_servers(list(a = .caps(), old = list()))
   expect_error(dsOMOPClient:::.recipe_plan_for_session(r, "omop", conns),
-               "no v1 rendering.*older than dsOMOP 2.10.3")
+               "no v1 rendering.*older than dsOMOP 2.10.4")
 })
 
 test_that("a recipe with neither a v1 plan nor a native rendering names both (A-14)", {

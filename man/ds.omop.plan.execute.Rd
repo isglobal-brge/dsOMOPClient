@@ -52,7 +52,11 @@ Only insufficient final person support is skippable. Skip requests an
 all-or-none server commit: a rejected site publishes nothing and returns
 \code{NULL}. With the default, a non-strict server may publish complete
 passing output families and warn about rejected families. A strict refusal
-rolls back the federation. Other failures always roll back and error.}
+rolls back the federation. Other failures always roll back and error.
+These policies require the publication protocol on every site. If any
+site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere with one
+warning, and \code{on_small_site} does not change that call; a language-2
+plan is refused before assignment.}
 }
 \value{
 Invisibly, the resolved \code{out} symbol mapping for a complete
