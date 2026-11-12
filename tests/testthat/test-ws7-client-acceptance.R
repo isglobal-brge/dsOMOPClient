@@ -55,7 +55,8 @@
   on.exit(DBI::dbDisconnect(fixture$conn), add = TRUE)
   base <- withr::local_tempdir(.local_envir = .local_envir)
   Sys.chmod(base, "0700")
-  withr::local_envvar(c(DSOMOP_STATE_DIR = base, DSOMOP_PSEUDONYM_ROOT = "", DSOMOP_PSEUDONYM_PROVIDER = "file",
+  withr::local_envvar(c(DSOMOP_STATE_DIR = base, DSOMOP_TEST_ALLOW_EPHEMERAL_STATE = "1",
+                        DSOMOP_PSEUDONYM_ROOT = "", DSOMOP_PSEUDONYM_PROVIDER = "file",
                         DSOMOP_PSEUDONYM_REQUIRE_EXISTING = "false", DSOMOP_PSEUDONYM_KEY = ""),
                      .local_envir = .local_envir)
   withr::local_options(list(dsstaging.base_dir = base, dsomop.staged_chunk_size = 7L,
@@ -96,11 +97,13 @@
   login <- DSI::newDSLoginBuilder()
   login$append(server = "site1", url = server_name, driver = "DSLiteDriver")
   conns <- DSI::datashield.login(login$build())
+  connected <- FALSE
   withr::defer({
-    ds.omop.disconnect(symbol = symbol, conns = conns)
+    if (connected) ds.omop.disconnect(symbol = symbol, conns = conns)
     DSI::datashield.logout(conns)
   }, envir = .local_envir)
   ds.omop.connect(resource = symbol, symbol = symbol, conns = conns)
+  connected <- TRUE
   sid <- server$getSessionIds()
   stopifnot(length(sid) == 1L)
   session <- .get_session(symbol)
