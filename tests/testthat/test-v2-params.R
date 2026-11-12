@@ -33,6 +33,9 @@ test_that("omop_param() declares a typed placeholder; defaults are type-checked"
   expect_error(omop_param("x", type = "bogus"), "type must be one of")
   expect_error(omop_param("x", type = "integer", default = 1.5), "exact integer")
   expect_error(omop_param("x", type = "window", default = 3), "omop_window")
+  expect_error(omop_param("w", type = "window",
+                          default = omop_window(-omop_param("n", type = "integer"), 0)),
+               "cannot hold a parameter \\('n'\\)")
   expect_error(omop_param("x", type = "date", default = "2020-02-30"), "valid calendar date")
   expect_identical(omop_param("d", type = "date", default = as.Date("2020-01-31"))$default,
                    "2020-01-31")

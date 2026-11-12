@@ -99,6 +99,10 @@ omop_param <- function(name, type = c("concept_set", "event", "integer", "number
   if (.v2_is_param(value)) {
     stop(field, ": a parameter's value cannot be another parameter.", call. = FALSE)
   }
+  .v2_walk_params(value, function(p) {
+    stop(field, ": a parameter's value cannot hold a parameter ('", p$name %||% "?", "').",
+         call. = FALSE)
+  })
   switch(type,
     integer = .v2_int(value, field),
     number = .v2_number(value, field),
