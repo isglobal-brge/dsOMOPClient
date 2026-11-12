@@ -2170,8 +2170,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
              "match_candidates_exceeded", "dialect_unsupported",
              "unavailable_table", "validation_error")
   # A-18: a rejected entry may carry a third closed field `reason`, only with
-  # code validation_error and one constant of the section 11 vocabulary
-  reasons <- c("adapter_person_mismatch", "cost_currency_mixed")
+  # code validation_error and one constant of the closed vocabulary (the
+  # section 11 adapter refusals; A-20 (j): the interval helpers' row caps)
+  reasons <- c("adapter_person_mismatch", "cost_currency_mixed",
+               "stockpile_row_cap", "reducer_row_cap")
   for (rejection in x$rejected) {
     if (!is.list(rejection) || !length(rejection) %in% 2:3 ||
         !setequal(names(rejection), c("code", "message", "reason")[seq_along(rejection)]) ||
