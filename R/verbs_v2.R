@@ -370,8 +370,7 @@ ds.omop.mutate <- function(x = NULL, ..., newobj = NULL, symbol = "omop", conns 
       stop(context, " failed on ", paste(incomplete, collapse = ", "), " and the target could not ",
            "be restored on ", paste(restored, collapse = ", "), ": ", restore_error, call. = FALSE)
     }
-    detail <- if (!is.null(condition)) conditionMessage(condition) else
-      .ds_failure_detail(failures, servers = incomplete)
+    detail <- .ds_failure_detail(failures, condition, servers = incomplete)
     stop(context, " failed and '", target, "' was left unchanged: ", detail, call. = FALSE)
   }
   .plan_remove_output_symbols(conns, list(backup), verify = TRUE)

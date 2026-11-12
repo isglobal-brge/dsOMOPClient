@@ -165,10 +165,11 @@
   incomplete <- unique(c(names(failures), setdiff(names(conns), succeeded)))
   if (!is.null(condition) || length(incomplete) > 0L) {
     .plan_remove_output_symbols(conns, list(newobj), verify = TRUE)
-    detail <- if (!is.null(condition)) conditionMessage(condition) else
-      paste(incomplete, collapse = ", ")
-    stop(context, " failed and was rolled back: ", detail, ".",
-         call. = FALSE)
+    # Each server's own reason (e.g. the constant publication refusal), never
+    # data: the same detail the plan executor reports.
+    detail <- .ds_failure_detail(failures, condition, servers = incomplete)
+    stop(context, " failed and was rolled back: ", detail,
+         if (!grepl("[.]$", detail)) ".", call. = FALSE)
   }
 
   committed <- .plan_symbol_inventory(conns, paste0(context, " commit"))
