@@ -34,7 +34,7 @@
 #' default.
 #'
 #' Integer and number parameters admit the arithmetic operators \code{+},
-#' \code{-}, \code{*} and \code{/} (also unary minus) with numeric literals and
+#' \code{-}, \code{*} and \code{/} (also unary minus and unary plus) with numeric literals and
 #' other numeric parameters, e.g. \code{omop_window(-omop_param("washout",
 #' type = "integer"), -1)}; the expression is evaluated when its parameters are
 #' bound and its value is then validated where it is used.
@@ -196,7 +196,7 @@ Ops.omop_param <- function(e1, e2) {
     }
     # A whole-number literal keeps an integer expression integer (-1 and -1L
     # alike, so the type survives a JSON round trip).
-    if (a == trunc(a) && abs(a) <= .Machine$integer.max) "integer" else "number"
+    if (a == trunc(a)) "integer" else "number"
   }, character(1))
   if (!any(vapply(operands, .v2_is_param, logical(1)))) {
     stop("omop_param(): a parameter expression needs a parameter.", call. = FALSE)
@@ -270,7 +270,30 @@ print.omop_param <- function(x, ...) {
     return(.v2_param_arith(p$op, args, p$type, context))
   }
   value <- lookup(p)
-  if (is.null(value)) p else value
+  if (is.null(value)) p else .v2_param_remap(p, value)
+}
+
+# Each occurrence retains its original reference namespace independently of
+# the shared parameter definition. Compose merge steps in their original order;
+# inline objects supplied only at bind time are renamed by the same rules.
+.v2_param_remap <- function(p, value) {
+  for (step in attr(p, "omop_namespace", exact = TRUE) %||% list()) {
+    maps <- lapply(step$maps, function(m) {
+      if (length(m)) unlist(m, use.names = TRUE) else stats::setNames(character(), character())
+    })
+    rn <- .merge_renamer(maps, prefix = step$prefix, deferred = TRUE)
+    value <- switch(step$role %||% p$type,
+      event = rn$src(value),
+      concept_set = if (is.character(value)) {
+        hit <- maps$concept_set[value]
+        if (length(hit) && !is.na(hit)) unname(hit) else
+          .v2_name(paste0(step$prefix, "_", value), "recipe_merge(): deferred concept set",
+                   allow_null = FALSE)
+      } else rn$any(value),
+      window = rn$any(value),
+      value)
+  }
+  value
 }
 
 # Substitute placeholders throughout `x`; every language-2 object that held
@@ -283,6 +306,21 @@ print.omop_param <- function(x, ...) {
   }
   if (!is.list(x) || is.data.frame(x)) return(list(value = x, changed = FALSE))
   changed <- FALSE
+  # A helper's conditional expansion must be decided before its windows are
+  # rebuilt: zero washout has no generated criteria, never a reversed window.
+  if (inherits(x, "omop_population") && isTRUE(x$simple$new_users$pending)) {
+    spec <- x$simple$new_users
+    washout <- .v2_bind_walk(spec$washout_days, lookup, context)$value
+    changed <- !identical(washout, spec$washout_days)
+    spec$washout_days <- .v2_int(washout, "omop_new_users(): washout_days", min = 0L)
+    if (!.v2_is_param(washout)) {
+      generated <- .simple_washout_filters(spec$event, spec$washout_days)
+      x$filters <- c(generated, x$filters %||% list())
+      spec$pending <- FALSE
+      changed <- TRUE
+    }
+    x$simple$new_users <- spec
+  }
   out <- x
   for (i in seq_along(x)) {
     el <- x[[i]]

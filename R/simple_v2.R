@@ -335,6 +335,8 @@ omop_history <- function(condition = NULL, drug = NULL, procedure = NULL, days_b
 #' (\code{omop_observed(before = washout_days)}) and no exposure in the
 #' \code{washout_days} days before the index (\code{omop_has_not(rx, window =
 #' omop_window(-washout_days, -1))}). \code{washout_days = 0} adds no criteria.
+#' A parameterized washout is expanded after binding or default resolution;
+#' zero keeps independently supplied population and study requirements.
 #'
 #' @param drug Concept IDs, an \code{\link{omop_concept_set}}, the name of a
 #'   registry concept set, or an \code{omop_event()} over
@@ -370,11 +372,39 @@ omop_new_users <- function(drug, washout_days = 365L, select = "first_eligible",
   by <- .v2_choice(by, c("event", "concept", "ingredient"), paste0(ctx, ": by"))
   era <- omop_era(rx, by = by)
   index <- omop_index(era, select = select, end = omop_end("interval_end"))
-  filters <- if (.v2_is_param(washout_days) || washout_days > 0L) {
-    list(omop_observed(before = washout_days),
-         omop_has_not(rx, window = omop_window(-washout_days, -1L)))
-  } else list()
-  omop_population("new_users", label = "New users", index = index, filters = filters)
+  filters <- .simple_washout_filters(rx, washout_days)
+  pop <- omop_population("new_users", label = "New users", index = index, filters = filters)
+  pop$simple <- list(new_users = list(washout_days = washout_days, event = rx,
+                                     by = era$by, gap = era$gap, select = index$select,
+                                     pending = .v2_is_param(washout_days)))
+  pop
+}
+
+.simple_washout_filters <- function(rx, washout_days) {
+  if (.v2_is_param(washout_days) || washout_days == 0L) return(list())
+  list(omop_observed(before = washout_days),
+       omop_has_not(rx, window = omop_window(-washout_days, -1L)))
+}
+
+# Retained expansion choices are client-side observability metadata, never
+# emitted into the plan. Printing does not bind or change the population.
+.simple_new_users_text <- function(pop) {
+  spec <- pop$simple$new_users
+  if (is.null(spec)) return(character())
+  value <- function(x) if (.v2_is_param(x)) .v2_param_label(x) else as.character(x)
+  w <- spec$washout_days
+  chosen <- paste0("New users: washout ", value(w), " days; era grouping ", value(spec$by),
+                   "; era gap ", value(spec$gap), " days; selection ", value(spec$select))
+  if (.v2_is_param(w)) {
+    detail <- paste0("Washout criteria deferred: observed before ", value(w),
+                     "; exclusion window [-", value(w), ", -1]; zero adds neither")
+  } else if (w == 0L) {
+    detail <- "Washout criteria: none (zero washout)"
+  } else {
+    detail <- paste0("Washout criteria: observation window [-", w,
+                     ", 0]; exclusion window [-", w, ", -1]")
+  }
+  c(chosen, detail)
 }
 
 # --- studies ---------------------------------------------------------------------------------

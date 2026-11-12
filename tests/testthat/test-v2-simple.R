@@ -170,12 +170,16 @@ test_that("a population index keeps its own index and criteria and refuses a sec
 test_that("omop_new_users() is the era-indexed population with an observed washout", {
   cs <- .smp_cs()
   rx <- omop_event("drug_exposure", cs$metf)
-  expect_identical(omop_new_users(cs$metf, washout_days = 365),
+  without_choices <- function(pop) {
+    pop$simple <- NULL
+    pop
+  }
+  expect_identical(without_choices(omop_new_users(cs$metf, washout_days = 365)),
     omop_population("new_users", label = "New users",
       index = omop_index(omop_era(rx, by = "ingredient"), select = "first_eligible",
                          end = omop_end("interval_end")),
       filters = list(omop_observed(before = 365), omop_has_not(rx, window = omop_window(-365, -1)))))
-  expect_identical(omop_new_users(1503297, washout_days = 0, select = "all", by = "event"),
+  expect_identical(without_choices(omop_new_users(1503297, washout_days = 0, select = "all", by = "event")),
     omop_population("new_users", label = "New users",
       index = omop_index(omop_era(omop_event("drug_exposure", 1503297), by = "event"),
                          select = "all", end = omop_end("interval_end"))))

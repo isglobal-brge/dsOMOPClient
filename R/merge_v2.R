@@ -87,11 +87,22 @@ recipe_merge <- function(a, b, prefix = NULL) {
   r
 }
 
-# Every named event / interval object anywhere in x: name -> list of objects.
+# Every named event / interval / concept set, including parameter defaults.
 .merge_named_nodes <- function(x, out = list()) {
-  if (.v2_is_param(x)) return(out)
-  if ((.v2_is_event(x) || .v2_is_interval(x)) && is.character(x$name)) {
-    key <- paste0(if (.v2_is_event(x)) "event:" else "interval:", x$name)
+  if (.v2_is_param(x)) {
+    if (inherits(x, "omop_param_op")) {
+      for (a in x$args) out <- .merge_named_nodes(a, out)
+      return(out)
+    }
+    if (!is.null(x$default)) {
+      out <- .merge_named_nodes(.v2_param_remap(x, x$default), out)
+    }
+    return(out)
+  }
+  if ((.v2_is_event(x) || .v2_is_interval(x) || inherits(x, "omop_concept_set")) &&
+      is.character(x$name)) {
+    kind <- if (.v2_is_event(x)) "event" else if (.v2_is_interval(x)) "interval" else "concept_set"
+    key <- paste0(kind, ":", x$name)
     out[[key]] <- c(out[[key]], list(x))
   }
   if (is.list(x) && !is.data.frame(x)) for (el in x) out <- .merge_named_nodes(el, out)
@@ -129,7 +140,10 @@ recipe_merge <- function(a, b, prefix = NULL) {
   iv <- iv[nzchar(iv)]
   maps$event <- stats::setNames(vapply(ev, f, ""), ev)
   maps$interval <- stats::setNames(vapply(iv, f, ""), iv)
-  rn <- .merge_renamer(maps)
+  cs <- unique(c(sub("^concept_set:", "", grep("^concept_set:", nodes, value = TRUE)),
+                 names(r$concept_sets %||% list())))
+  maps$concept_set <- stats::setNames(vapply(cs, f, ""), cs)
+  rn <- .merge_renamer(maps, prefix = prefix)
 
   # b's recipe-level filters keep constraining b's base: they move onto it.
   if (!share_base) {
@@ -178,7 +192,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
   if (length(r$concept_sets %||% list())) {
     out$concept_sets <- list()
     for (cn in names(r$concept_sets)) {
-      cs <- r$concept_sets[[cn]]
+      cs <- rn$any(r$concept_sets[[cn]])
       cs$name <- maps$concept_set[[cn]]
       out$concept_sets[[cs$name]] <- cs
     }
@@ -197,22 +211,33 @@ recipe_merge <- function(a, b, prefix = NULL) {
 
 # Reference rewriting for one renaming. Each function handles one kind of
 # object; plain strings are renamed only where the field is a reference.
-.merge_renamer <- function(maps) {
+.merge_renamer <- function(maps, prefix = NULL, deferred = FALSE) {
   look <- function(kind, x) {
     if (!is.character(x) || length(x) != 1L || is.na(x)) return(x)
     hit <- maps[[kind]][x]
-    if (is.na(hit)) x else unname(hit)
+    if (length(hit) && !is.na(hit)) return(unname(hit))
+    if (deferred && kind %in% c("event", "interval", "concept_set")) {
+      return(.v2_name(paste0(prefix, "_", x), "recipe_merge(): deferred reference",
+                      allow_null = FALSE))
+    }
+    x
   }
   self <- new.env(parent = emptyenv())
+  self$defer <- function(x, role = x$type) {
+    attr(x, "omop_namespace") <- c(attr(x, "omop_namespace", exact = TRUE) %||% list(),
+                                   list(list(prefix = prefix, maps = maps, role = role)))
+    x
+  }
   self$pop <- function(x) look("population", x)
   self$out <- function(x) look("output", x)
   self$var <- function(x) look("variable", x)
   # A reference by name to an event or an interval (sources accept both).
   self$src <- function(x) {
+    if (.v2_is_param(x)) return(self$defer(x, "event"))
     if (is.character(x) && length(x) == 1L) {
       if (!is.na(maps$event[x])) return(unname(maps$event[x]))
       if (!is.na(maps$interval[x])) return(unname(maps$interval[x]))
-      return(x)
+      return(if (deferred) look("event", x) else x)
     }
     self$any(x)
   }
@@ -228,12 +253,25 @@ recipe_merge <- function(a, b, prefix = NULL) {
     x
   }
   self$any <- function(x) {
-    if (is.null(x) || .v2_is_param(x)) return(x)
+    if (is.null(x)) return(x)
+    if (.v2_is_param(x)) {
+      if (x$type %in% c("event", "concept_set", "window")) {
+        x <- self$defer(x)
+      }
+      return(x)
+    }
+    if (inherits(x, "omop_concept_set")) {
+      if (is.character(x$name)) x$name <- look("concept_set", x$name)
+      return(upd(x, "exclude", self$any))
+    }
     if (.v2_is_event(x)) {
       if (is.character(x$name)) x$name <- look("event", x$name)
       kind <- x$kind %||% "table"
       if (identical(kind, "table")) {
-        x <- upd(x, "concepts", function(cs) if (is.character(cs)) look("concept_set", cs) else self$any(cs))
+        x <- upd(x, "concepts", function(cs) {
+          if (.v2_is_param(cs)) return(self$defer(cs, "concept_set"))
+          if (is.character(cs)) look("concept_set", cs) else self$any(cs)
+        })
       }
       if (identical(kind, "episode_members")) x <- upd(x, "episode", self$src)
       if (identical(kind, "cost")) x <- upd(x, "event", self$src)
@@ -313,6 +351,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
     p$filters <- lapply(p$filters %||% list(), self$any)
     if (!is.null(p[["index"]])) p[["index"]] <- self$any(p[["index"]])
     if (!is.null(p$match)) p$match <- self$any(p$match)
+    if (!is.null(p$simple)) p$simple <- self$any(p$simple)
     if (!is.null(p$circe_v2)) {
       p$circe_v2$index <- self$any(p$circe_v2$index)
       p$circe_v2$filters <- lapply(p$circe_v2$filters %||% list(), self$any)
@@ -420,7 +459,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
     joined <- join(slot, sub("s$", "", sub("_", " ", slot)))
     out[[slot]] <- if (length(joined)) joined else NULL
   }
-  # Named inline events / intervals of both recipes are one namespace.
+  # Named inline events / intervals / concept sets share their kind namespace.
   na <- .merge_named_nodes(a)
   nb <- .merge_named_nodes(b)
   for (key in intersect(names(na), names(nb))) {

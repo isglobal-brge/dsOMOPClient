@@ -49,6 +49,7 @@ test_that("numeric placeholders admit + - * / and unary minus; nothing else appl
   expect_s3_class(neg, "omop_param_op")
   expect_identical(neg$type, "integer")
   expect_identical((lb * -1L)$type, "integer")
+  expect_identical((lb + 1e10)$type, "integer")
   expect_identical((lb / 2L)$type, "number")
   expect_identical((omop_param("n", type = "number") + 1L)$type, "number")
   expect_identical(+lb, lb)

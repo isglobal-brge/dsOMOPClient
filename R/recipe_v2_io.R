@@ -146,6 +146,9 @@
       out <- c(out, args)
     }
     if (!is.null(spec$name)) out$variable_name <- spec$name
+    if (!is.null(attr(x, "omop_namespace", exact = TRUE))) {
+      out$omop_namespace <- .v2_plain_value(attr(x, "omop_namespace", exact = TRUE))
+    }
     return(out)
   }
   if (is.list(x) && !is.data.frame(x)) {
@@ -184,6 +187,8 @@
                "omop_match", "omop_age_band", "omop_strata", "omop_param", ".v2_param_op")
   if (!ctor %in% allowed) stop("Unknown language-2 object '", ctor, "' in the recipe.", call. = FALSE)
   variable_name <- x$variable_name
+  namespace <- x$omop_namespace
+  x$omop_namespace <- NULL
   x[[.V2_CTOR_TAG]] <- NULL
   x$variable_name <- NULL
   if (!is.null(x$items)) {
@@ -212,6 +217,16 @@
   if (!is.null(names(args))) args <- args[!vapply(args, is.null, logical(1))]
   obj <- do.call(ctor, args)
   if (!is.null(variable_name)) obj$name <- variable_name
+  if (!is.null(namespace)) {
+    if (!inherits(obj, "omop_param") || !is.list(namespace) ||
+        !all(vapply(namespace, function(step) {
+          is.list(step) && is.character(step$prefix) && length(step$prefix) == 1L &&
+            !is.na(step$prefix) && is.list(step$maps)
+        }, logical(1)))) {
+      stop("Invalid parameter reference namespace in the recipe.", call. = FALSE)
+    }
+    attr(obj, "omop_namespace") <- namespace
+  }
   obj
 }
 
@@ -245,7 +260,12 @@
   }
   # Built by hand: do.call(.codegen_call, ...) would partially match an
   # argument called `fn` to its `fn_name` formal.
-  paste0(spec$ctor, "(", paste(parts, collapse = ", "), ")")
+  code <- paste0(spec$ctor, "(", paste(parts, collapse = ", "), ")")
+  namespace <- attr(x, "omop_namespace", exact = TRUE)
+  if (!is.null(namespace)) {
+    code <- paste0("structure(", code, ", omop_namespace = ", .codegen_value(namespace), ")")
+  }
+  code
 }
 
 # A serialised visit restriction: "index" or list(type = <ids>).
