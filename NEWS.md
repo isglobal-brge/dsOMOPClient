@@ -180,6 +180,12 @@ workstream fills its entries.
   `ds.omop.server.version()`.
 
 ## Corrected
+- `ds.omop.mutate()` and `ds.omop.filter(expr = )` check every participating
+  site's published protocol and verb method before any assignment, including
+  an in-place mutation's rollback copy. Old, incomplete or unavailable
+  profiles refuse the whole call with the missing methods and upgrade advice;
+  advertised verb capabilities alone do not bypass this check. The legacy
+  `var`/`op`/`value` filter keeps its existing route.
 - Plan execution reads authenticated publication status before cleanup and uses
   the server inventory, including freshly allocated component symbols. Technical
   and transport failures revoke staged files as well as assigned outputs.

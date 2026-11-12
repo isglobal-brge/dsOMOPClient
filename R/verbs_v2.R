@@ -15,8 +15,14 @@
 
 .mutate_stop <- function(...) stop("ds.omop.mutate(): ", ..., call. = FALSE)
 
-# Every server must advertise the verb's operation (dsOMOP 2.10.4).
-.verb_assert_supported <- function(session, servers, op, what) {
+# Every server must publish the protocol and the verb's assign method, then
+# advertise its operation (dsOMOP 2.10.4). Check before even a rollback copy.
+.verb_assert_supported <- function(session, conns, op, what, server_method) {
+  route <- .plan_protocol_route(conns, server_method)
+  if (!route$protocol) {
+    stop(.plan_protocol_refusal(route, what = what), call. = FALSE)
+  }
+  servers <- names(conns)
   lang <- .v2_server_language(session, servers)
   ok <- vapply(lang, function(rl) !is.null(rl) && op %in% rl$operations, logical(1))
   if (!all(ok)) {
@@ -302,6 +308,10 @@
 #' With \code{newobj = x} the target is replaced in place on every server; a
 #' rollback copy is kept until every server has succeeded, so a failure on
 #' one server leaves the target unchanged everywhere.
+#' Every participating server must publish the dsOMOP 2.10.4 publication
+#' protocol and \code{omopMutateDS}, and advertise \code{verb.mutate}.
+#' The client checks this before any assignment, including a rollback copy;
+#' an old server or an incomplete published profile refuses the whole call.
 #'
 #' @param x Name of the server-side \code{omop.table} symbol (default: the
 #'   session's most recent output).
@@ -324,7 +334,8 @@ ds.omop.mutate <- function(x = NULL, ..., newobj = NULL, symbol = "omop", conns 
   req <- .mutate_request(exprs, parent.frame())
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
-  .verb_assert_supported(session, names(conns), "verb.mutate", "ds.omop.mutate()")
+  .verb_assert_supported(session, conns, "verb.mutate", "ds.omop.mutate()",
+                         "omopMutateDS")
   x <- .resolve_target_symbol(x, session, "x")
   expr <- call("omopMutateDS", as.name(x), .ds_encode_lossless(req))
   if (!is.null(newobj) && identical(newobj, x)) {

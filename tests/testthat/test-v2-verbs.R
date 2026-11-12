@@ -26,9 +26,11 @@
   state$values <- list(s1 = list(D = "orig"), s2 = list(D = "orig"))
   state$calls <- list()
   conns <- list(s1 = "s1", s2 = "s2")
+  state$methods <- .current_published_methods(conns)
   caps <- lapply(conns, function(x) list(recipe_language = list(version = 2L, operations = as.list(ops))))
   testthat::local_mocked_bindings(
     .get_session = function(...) list(conns = conns, capabilities = caps, last_output = "D"),
+    .dsomop_published_methods = function(conns, ...) state$methods[names(conns)],
     .record_session_owned_symbol = function(...) invisible(NULL),
     .package = "dsOMOPClient", .env = env)
   testthat::local_mocked_bindings(
@@ -174,4 +176,75 @@ test_that("ds.omop.filter(expr) sends the predicate tree; the legacy form is unc
   expect_null(names(legacy))
   .vb_backend(ops = "verb.mutate")
   expect_error(ds.omop.filter("D", expr = omop_where(age >= 18)), "verb.filter_expr")
+})
+
+# These requests all need the current protocol, including before mutate's
+# in-place rollback copy. The older inventory is pinned to the 2.10.2 tag.
+.vb_requests <- function() list(
+  mutate = function(...) ds.omop.mutate("D", y = 1L, newobj = "M", ...),
+  in_place = function(...) ds.omop.mutate("D", y = 1L, newobj = "D", ...),
+  filter = function(...) ds.omop.filter("D", expr = omop_where(age >= 18), newobj = "F", ...)
+)
+
+test_that("verbs refuse tagged old and mixed profiles before any assignment or copy", {
+  for (old in list(c("s1", "s2"), "s1", "s2")) {
+    for (request in .vb_requests()) {
+      state <- .vb_backend()
+      state$methods[old] <- rep(list(.methods_2102()), length(old))
+      # Keep advertised operations to catch stale capabilities: the published
+      # inventory, independently of the session's block, must be checked.
+      err <- tryCatch(request(), error = conditionMessage)
+      expect_type(err, "character")
+      expect_match(err, "dsOMOP 2.10.4", fixed = TRUE)
+      expect_match(err, "[Nn]othing was sent to any site")
+      for (s in old) expect_match(err, paste0(s, " lacks omop"))
+      expect_length(state$calls, 0L)
+      expect_identical(state$symbols, list(s1 = c("D", "E"), s2 = c("D", "E")))
+      expect_identical(state$values, list(s1 = list(D = "orig"), s2 = list(D = "orig")))
+    }
+  }
+})
+
+test_that("every verb checks protocol and its assign method on the final site", {
+  requests <- .vb_requests()
+  for (verb in names(requests)) {
+    method <- if (verb == "filter") "omopFilterDS" else "omopMutateDS"
+    for (missing in c("omopPlanStatusDS", "omopStagedRevokeDS", method)) {
+      state <- .vb_backend()
+      state$methods$s2$assign <- setdiff(state$methods$s2$assign, missing)
+      state$methods$s2$aggregate <- setdiff(state$methods$s2$aggregate, missing)
+      # Publishing the method under the wrong type must not satisfy preflight.
+      if (missing == method) state$methods$s2$aggregate <- c(state$methods$s2$aggregate, method)
+      else state$methods$s2$assign <- c(state$methods$s2$assign, missing)
+      expect_error(requests[[verb]](), paste0("s2 lacks ", missing))
+      expect_length(state$calls, 0L)
+    }
+    state <- .vb_backend()
+    state$methods$s2$error <- "profile unavailable"
+    expect_error(requests[[verb]](), "Cannot check.*s2.*profile unavailable.*nothing was sent")
+    expect_length(state$calls, 0L)
+  }
+})
+
+test_that("verb preflight checks only participating sites and the methods it needs", {
+  for (verb in names(.vb_requests())) {
+    state <- .vb_backend()
+    method <- if (verb == "filter") "omopFilterDS" else "omopMutateDS"
+    # Plan compilers and factor methods are unnecessary for a standalone verb.
+    state$methods$s1$assign <- method
+    state$methods$s1$aggregate <- c("omopPlanStatusDS", "omopStagedRevokeDS")
+    state$methods$s2 <- .methods_2102()
+    expect_silent(.vb_requests()[[verb]](conns = list(s1 = "s1")))
+    expect_true(length(state$calls) > 0L)
+    expect_true(all(vapply(state$calls, function(x) identical(x$sites, "s1"), logical(1))))
+    expect_identical(state$values$s2, list(D = "orig"))
+  }
+})
+
+test_that("the legacy filter form remains usable with an old published profile", {
+  state <- .vb_backend(ops = character(0))
+  state$methods <- lapply(state$methods, function(x) .methods_2102())
+  expect_identical(ds.omop.filter("D", var = "sex", op = "==", value = "F", newobj = "F"), "F")
+  expect_length(state$calls, 1L)
+  expect_identical(length(state$calls[[1L]]$expr), 5L)
 })
