@@ -233,13 +233,23 @@ utils::globalVariables(".data")
 }
 
 # Public protection labels of per-server analysis results (attribute
-# dsomop_protection set by dsOMOP >= 2.9.0; absent from older servers).
+# dsomop_protection set by dsOMOP >= 2.9.0; absent from older servers). The
+# labels of dsOMOP 2.10.3 protected routes must make consistent claims: a
+# fixed synopsis declares its finite vector epsilon and delta 0; heuristic
+# realised-contribution and mixed releases claim no epsilon and no delta.
 .analysis_protection_labels <- function(raw) {
   labels <- lapply(raw, function(x) {
     label <- if (is.data.frame(x)) attr(x, "dsomop_protection", exact = TRUE)
     if (is.list(label) && is.character(label$protection)) label else NULL
   })
-  labels[!vapply(labels, is.null, logical(1))]
+  labels <- labels[!vapply(labels, is.null, logical(1))]
+  for (server in names(labels)) {
+    if (labels[[server]]$protection[[1L]] %in%
+        c(.DP_PROTECTED_ROUTES, "mixed")) {
+      .dp_check_protected_claims(labels[[server]], server, "protection label")
+    }
+  }
+  labels
 }
 
 .analysis_complete_results <- function(raw, expected_servers, context) {

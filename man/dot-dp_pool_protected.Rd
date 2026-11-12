@@ -10,7 +10,8 @@
 Sums the signed components of every site (same owner, families and
 coordinates) and derives the pooled view once: person totals are clipped at
 zero, partition cells projected onto the pooled total, weighted cells
-clipped, bounded moments projected. A distinct-label cardinality is not
+clipped, bounded moments projected. Every site must be a distinct logical
+source (\code{.dp_protected_sources}). A distinct-label cardinality is not
 additive across sites and is not pooled.
 }
 \keyword{internal}

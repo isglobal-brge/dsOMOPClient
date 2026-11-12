@@ -22,6 +22,8 @@ status and time. Compatible sites (same entry, owners, strata, cells, grids,
 bounds, caps and allocations) are pooled by summing the signed components;
 every pooled view is derived once (person totals projected top-down, cells
 onto their stratum, moments onto their feasible set). Standard and protected
-frames are never mixed, and nothing is pooled across incompatible grids.
+frames are never mixed, nothing is pooled across incompatible grids, and
+every site must be a distinct logical source: two connections to one
+logical node are refused instead of being counted twice.
 }
 \keyword{internal}

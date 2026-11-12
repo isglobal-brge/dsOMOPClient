@@ -230,10 +230,15 @@ print.dsomop_result <- function(x, ...) {
     kind <- switch(p$protection,
       dp = paste0("differential privacy (epsilon ", format(p$epsilon),
                   ", sensitivity ", format(p$sensitivity), " person)"),
+      # Only a fixed synopsis declares a delta (0, before the exact support
+      # gates); heuristic releases are never described with one.
       fixed_synopsis = paste0(
         "fixed-synopsis protection (declared vector epsilon ",
-        format(p$mechanism_epsilon), "; reference calibration ",
-        format(p$noise_reference_epsilon), ")"),
+        format(p$mechanism_epsilon),
+        if (identical(suppressWarnings(as.numeric(p$delta)), 0)) {
+          ", delta 0"
+        } else "",
+        "; reference calibration ", format(p$noise_reference_epsilon), ")"),
       realised_sticky = paste0(
         "heuristic realised-contribution protection (reference calibration ",
         format(p$noise_reference_epsilon), "; no joint DP guarantee)"),

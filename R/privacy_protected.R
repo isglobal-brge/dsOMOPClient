@@ -59,6 +59,100 @@
   as.numeric(value)
 }
 
+# Public opaque identifier of one logical release source (dsOMOP >= 2.10.3):
+# two connections to one logical node carry the same identifier.
+.DP_PROTECTED_SOURCE_PATTERN <- "^dsl_[0-9a-f]{40}$"
+
+#' Check the guarantee claims of a protected release or protection label
+#'
+#' A fixed synopsis declares the finite epsilon of its bounded vector and
+#' delta 0 (before the exact support gates). A heuristic realised-contribution
+#' or mixed release claims neither: no finite mechanism epsilon, no delta.
+#' No route claims a finite epsilon for the whole API transcript. Anything
+#' else is an inconsistent claim and is refused.
+#'
+#' @param value Payload or \code{dsomop_protection} label.
+#' @param server Server name (for messages).
+#' @param what Description of \code{value} (for messages).
+#' @return \code{value}, invisibly.
+#' @keywords internal
+.dp_check_protected_claims <- function(value, server, what = "release") {
+  present <- function(x) !is.null(x) && !(length(x) == 1L && is.atomic(x) &&
+                                            is.na(x))
+  finite_number <- function(x) {
+    is.numeric(x) && length(x) == 1L && !is.na(x) && is.finite(x)
+  }
+  fail <- function(...) {
+    stop("Server '", server, "' returned a protected ", what, " ", ...,
+         call. = FALSE)
+  }
+  if (present(value$api_transcript_epsilon)) {
+    fail("that claims an epsilon for the whole API transcript.")
+  }
+  route <- value$protection
+  if (identical(route, "fixed_synopsis")) {
+    if (!finite_number(value$mechanism_epsilon) ||
+        value$mechanism_epsilon <= 0) {
+      fail("that declares a fixed synopsis without a finite positive ",
+           "mechanism epsilon.")
+    }
+    if (!finite_number(value$delta) || !identical(as.numeric(value$delta), 0)) {
+      fail("that declares a fixed synopsis without delta 0.")
+    }
+  } else if (is.character(route) && length(route) == 1L &&
+             route %in% c("realised_sticky", "mixed")) {
+    if (present(value$mechanism_epsilon)) {
+      fail("that claims a mechanism epsilon for a heuristic ", route,
+           " release.")
+    }
+    if (present(value$delta)) {
+      fail("that claims a delta for a heuristic ", route, " release.")
+    }
+  }
+  invisible(value)
+}
+
+#' Require one distinct logical source per site before pooling
+#'
+#' Pooling sums the signed components of every site, so a site counted twice
+#' (two connections to one logical node) would double its contribution. Every
+#' site must report its public logical source identifier and all identifiers
+#' must differ; otherwise pooling is refused (the per-site results remain
+#' available without pooling). Equal numeric answers never establish or refute
+#' source identity. One site has nothing to pool against.
+#'
+#' @param payloads Named list of payloads (typed releases or catalogue
+#'   \code{dsomop_release} attributes).
+#' @param what Description for messages.
+#' @return The identifiers, invisibly.
+#' @keywords internal
+.dp_protected_sources <- function(payloads, what = "protected releases") {
+  if (length(payloads) < 2L) return(invisible(NULL))
+  ids <- vapply(payloads, function(p) {
+    id <- if (is.list(p) && is.list(p$source)) p$source$logical_source_id
+    if (is.character(id) && length(id) == 1L && !is.na(id) &&
+        grepl(.DP_PROTECTED_SOURCE_PATTERN, id)) id else NA_character_
+  }, character(1L))
+  if (anyNA(ids)) {
+    stop("The ", what, " cannot be pooled: server(s) ",
+         paste(names(payloads)[is.na(ids)], collapse = ", "),
+         " report no logical source identifier, so the independence of the ",
+         "sites cannot be established. Use the per-site results.",
+         call. = FALSE)
+  }
+  repeated <- duplicated(ids) | duplicated(ids, fromLast = TRUE)
+  if (any(repeated)) {
+    groups <- split(names(payloads)[repeated], ids[repeated])
+    stop("Duplicate logical source: servers ",
+         paste(vapply(groups, paste, character(1L), collapse = " and "),
+               collapse = "; "),
+         " are connections to the same logical node. Pooling their ", what,
+         " would count that node more than once; use the per-site results.",
+         call. = FALSE)
+  }
+  invisible(ids)
+}
+
 #' Validate one protected typed payload
 #'
 #' Checks the protected-release protocol, the route and its guarantee scope,
@@ -92,11 +186,7 @@
     stop("Server '", server, "' returned an incoherent guarantee scope.",
          call. = FALSE)
   }
-  if (identical(value$protection, "realised_sticky") &&
-      !(is.null(value$mechanism_epsilon) || is.na(value$mechanism_epsilon))) {
-    stop("Server '", server, "' claimed a mechanism epsilon for a heuristic ",
-         "realised-contribution release.", call. = FALSE)
-  }
+  .dp_check_protected_claims(value, server)
   if (!identical(value$privacy_call_quota, "none") ||
       !identical(value$history_based_admission, FALSE)) {
     stop("Server '", server, "' returned a history-dependent release.",
@@ -146,11 +236,13 @@
 #' Sums the signed components of every site (same owner, families and
 #' coordinates) and derives the pooled view once: person totals are clipped at
 #' zero, partition cells projected onto the pooled total, weighted cells
-#' clipped, bounded moments projected. A distinct-label cardinality is not
+#' clipped, bounded moments projected. Every site must be a distinct logical
+#' source (\code{.dp_protected_sources}). A distinct-label cardinality is not
 #' additive across sites and is not pooled.
 #'
 #' @keywords internal
 .dp_pool_protected <- function(per_site, privacy) {
+  .dp_protected_sources(per_site, "protected releases")
   first <- per_site[[1L]]$components
   for (site in names(per_site)) {
     comps <- per_site[[site]]$components
@@ -291,6 +383,10 @@
     api_transcript_epsilon = NA_real_,
     privacy_call_quota = "none",
     history_based_admission = FALSE,
+    logical_source_id = vapply(raw, function(p) {
+      id <- if (is.list(p$source)) p$source$logical_source_id
+      if (is.character(id) && length(id) == 1L) id else NA_character_
+    }, character(1L)),
     snapshot_id = vapply(statuses, `[[`, character(1L), "snapshot_id"))
   .result_type_view(
     result, result_type,
@@ -306,7 +402,9 @@
 #' bounds, caps and allocations) are pooled by summing the signed components;
 #' every pooled view is derived once (person totals projected top-down, cells
 #' onto their stratum, moments onto their feasible set). Standard and protected
-#' frames are never mixed, and nothing is pooled across incompatible grids.
+#' frames are never mixed, nothing is pooled across incompatible grids, and
+#' every site must be a distinct logical source: two connections to one
+#' logical node are refused instead of being counted twice.
 #'
 #' @param per_site Named list of released frames.
 #' @return List: \code{result} (one row per owner and stratum with the pooled
@@ -325,6 +423,7 @@
          paste(names(per_site)[!ok], collapse = ", "),
          " returned no protected components.", call. = FALSE)
   }
+  .dp_protected_sources(payloads, "protected catalogue releases")
   signature <- function(p) {
     lapply(p$owners, function(o) {
       list(o$owner, o$family, o$grid, o$bounds, o$cap, o$allocation,

@@ -29,6 +29,18 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
 - Printed protection labels describe fixed-synopsis, heuristic
   realised-contribution and mixed protection and list the fields a server
   withheld and why.
+- One logical node is never pooled twice: protected typed and catalogue
+  pooling require every site's public logical source identifier
+  (`source$logical_source_id`) and refuse a federation in which two
+  connections name the same node, or in which a site's independence cannot be
+  established (missing identifier). Per-site results stay available with
+  `pool = FALSE` / `type = "split"`. Equal answers from independent sites
+  still pool; source identity is never inferred from values.
+- Guarantee claims are checked: a heuristic realised-contribution or mixed
+  release (typed payload or catalogue protection label) carrying a finite
+  mechanism or API-transcript epsilon, or a delta, is refused, as is a fixed
+  synopsis without a finite mechanism epsilon and delta 0. Only fixed
+  synopses are printed with a delta.
 
 # dsOMOPClient 2.10.2
 
