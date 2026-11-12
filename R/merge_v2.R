@@ -69,8 +69,16 @@ recipe_merge <- function(a, b, prefix = NULL) {
   base
 }
 
+# Resolved helper choices explain a population but do not change its
+# definition. A pending expansion still carries criteria that must be bound.
+.merge_population_definition <- function(p) {
+  if (!isTRUE(p$simple$new_users$pending)) p$simple <- NULL
+  unclass(p)
+}
+
 .merge_same_base <- function(a, b) {
-  identical(unclass(.merge_effective_base(a)), unclass(.merge_effective_base(b))) &&
+  identical(.merge_population_definition(.merge_effective_base(a)),
+            .merge_population_definition(.merge_effective_base(b))) &&
     identical(unname(.merge_recipe_row_filters(a)), unname(.merge_recipe_row_filters(b)))
 }
 
@@ -444,8 +452,14 @@ recipe_merge <- function(a, b, prefix = NULL) {
       }
       if (is.null(x[[nm]])) {
         x[[nm]] <- y[[nm]]
-      } else if (!identical(unclass(x[[nm]]), unclass(y[[nm]]))) {
-        conflicts <<- c(conflicts, paste0(what, " '", nm, "'"))
+      } else {
+        definition <- if (identical(slot, "populations")) .merge_population_definition else unclass
+        if (!identical(definition(x[[nm]]), definition(y[[nm]]))) {
+          conflicts <<- c(conflicts, paste0(what, " '", nm, "'"))
+        } else if (identical(slot, "populations") && is.null(x[[nm]]$simple) &&
+                   !is.null(y[[nm]]$simple)) {
+          x[[nm]]$simple <- y[[nm]]$simple
+        }
       }
     }
     x

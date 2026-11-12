@@ -194,3 +194,19 @@ test_that("nested unnamed concept exclusions retain deferred composition semanti
   }
   expect_error(omop_concept_set(1, exclude = omop_concept_set(2, name = "nested")), "give it no name")
 })
+
+test_that("resolved helper observability does not change shared base composition", {
+  for (days in c(0L, 30L)) {
+    simple <- omop_study(omop_new_users(1503297, washout_days = days), name = "base",
+      baseline = list(age = omop_age()), outputs = "baseline")
+    # The stored advanced population has exactly the same execution fields.
+    advanced <- simple
+    advanced$populations$base$simple <- NULL
+    merged <- recipe_merge(advanced, simple, prefix = "b")
+    .cmp_same(merged, recipe_merge(advanced, advanced, prefix = "b"))
+    expect_identical(merged$populations$base$simple, simple$populations$base$simple)
+    expect_output(print(merged), paste0("washout ", days, " days"))
+    .cmp_same(recipe_merge(simple, advanced, prefix = "b"),
+              recipe_merge(advanced, advanced, prefix = "b"))
+  }
+})
