@@ -121,6 +121,8 @@
     plan, out,
     reserved_symbols = c(symbol, session$res_symbol)
   )
+  # 2.10.2's .resolve_plan_out() ended with this composite-family check
+  .plan_output_symbol_families(out)
   owned <- .plan_expected_output_symbols(plan, out)
   cleanup_family <- .plan_output_symbol_families(out)
   reserved_targets <- unique(unlist(cleanup_family, use.names = FALSE))

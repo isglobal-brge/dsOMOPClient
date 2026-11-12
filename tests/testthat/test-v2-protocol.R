@@ -52,6 +52,17 @@ test_that("a mixed federation sends the legacy call to every site, with one warn
   expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
 })
 
+test_that("the legacy route checks the out mapping as 2.10.2 did, before any assignment", {
+  state <- .legacy_federation(old = "old", new = "new")
+  r <- omop_recipe(variables = omop_variable_age(name = "age_at_2025", year = 2025),
+                   outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")))
+  expect_error(suppressWarnings(recipe_execute(r, out = c(a = "X", b = "X.covariates"))),
+               "overlapping reserved component families")
+  expect_error(suppressWarnings(recipe_execute(r, out = c(a = "X", c = "Y"))),
+               "out names not among plan outputs")
+  expect_identical(state$assigns, c(old = 0L, new = 0L))
+})
+
 test_that("a language-2 plan is refused before any assignment on any site", {
   for (sites in list(list(old = "old"), list(old = "old", new = "new"))) {
     state <- do.call(.legacy_federation, sites)
