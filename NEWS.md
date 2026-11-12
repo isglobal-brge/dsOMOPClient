@@ -41,6 +41,24 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
   mechanism or API-transcript epsilon, or a delta, is refused, as is a fixed
   synopsis without a finite mechanism epsilon and delta 0. Only fixed
   synopses are printed with a delta.
+- Typed pooling sums the signed components of the complete registered basis
+  and derives each requested view once.
+- Record-weighted protected releases (the eight QueryLibrary record
+  summaries) are pooled by summing the signed persons, records and lattice
+  sums per stratum and deriving the record-weighted mean and SD once (never
+  weighted by persons); sites must share the entry, scale, bounds and cap.
+- Protected effect estimates (CohortMethod Poisson and grouped-time Cox,
+  interaction estimates, the SCCS incidence rate ratio) are pooled, as in
+  2.10.2, by inverse-variance meta-analysis of the per-site protected
+  estimates; the signed-component pooling stays in the `protected_components`
+  attribute. Cox exit-time cells are summed but never refitted, and SCCS
+  cells are never pooled.
+- Servers without the DP service pool their standard outputs by the
+  established contract; protected and standard frames are never mixed. Pooled
+  standard-mode frames with protected person-time say that those fields are
+  sums of protected values. The moment projection matches the server's.
+- DP status: `snapshot_id` is a display label (servers 2.10.3 key fixed
+  synopses on an automatic data generation they never release).
 
 # dsOMOPClient 2.10.2
 
