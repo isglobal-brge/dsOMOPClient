@@ -281,7 +281,7 @@ print.omop_param <- function(x, ...) {
     maps <- lapply(step$maps, function(m) {
       if (length(m)) unlist(m, use.names = TRUE) else stats::setNames(character(), character())
     })
-    rn <- .merge_renamer(maps, prefix = step$prefix, deferred = TRUE)
+    rn <- .merge_renamer(maps, prefix = step$prefix, deferred = !is.null(step$prefix))
     value <- switch(step$role %||% p$type,
       event = rn$src(value),
       population = rn$pop(value),
@@ -291,7 +291,7 @@ print.omop_param <- function(x, ...) {
       censor = rn$censor(value),
       concept_set = if (is.character(value)) {
         hit <- maps$concept_set[value]
-        if (length(hit) && !is.na(hit)) unname(hit) else
+        if (length(hit) && !is.na(hit)) unname(hit) else if (is.null(step$prefix)) value else
           .v2_name(paste0(step$prefix, "_", value), "recipe_merge(): deferred concept set",
                    allow_null = FALSE)
       } else rn$any(value),
@@ -337,6 +337,9 @@ print.omop_param <- function(x, ...) {
     }
   }
   if (changed && .v2_is_tagged(out)) out <- .v2_rebuild(out)
+  if (changed && inherits(out, c("omop_population", "omop_output"))) {
+    out <- .v2_rebuild_recipe_node(out)
+  }
   if (inherits(out, "omop_recipe") && !is.null(out$publish)) {
     roots <- out$publish
     if (is.list(roots) && !.v2_is_param(roots) &&
@@ -345,6 +348,7 @@ print.omop_param <- function(x, ...) {
     }
     out <- recipe_set_publish(out, roots)
   }
+  if (inherits(out, "omop_recipe")) out <- .merge_deferred_reconcile(out)
   list(value = out, changed = changed)
 }
 
@@ -357,6 +361,20 @@ print.omop_param <- function(x, ...) {
   obj <- do.call(spec$ctor, args)
   if (!is.null(spec$name)) obj$name <- spec$name
   obj
+}
+
+# The recipe containers predate the tagged language objects. Revalidate their
+# constructor fields after binding, retaining editor/helper metadata and field
+# order that is not part of the constructor (for example simple and circe_v2).
+.v2_rebuild_recipe_node <- function(x) {
+  is_population <- inherits(x, "omop_population")
+  ctor <- if (is_population) omop_population else omop_output
+  args <- x[intersect(names(x), names(formals(ctor)))]
+  if (is_population && !is.null(x$setop)) args[x$setop$op] <- list(x$setop$members)
+  args <- args[!vapply(args, is.null, logical(1))]
+  canonical <- do.call(ctor, args)
+  for (nm in intersect(names(x), names(canonical))) x[nm] <- canonical[nm]
+  x
 }
 
 # Bind every placeholder to its default; refuse a parameter without one.

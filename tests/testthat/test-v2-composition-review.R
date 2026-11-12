@@ -306,3 +306,73 @@ test_that("publication-root placeholders commute with merging and serialization"
     .cmp_same(r, recipe_merge(mk(character()), mk("w"), prefix = "b"))
   }
 })
+
+test_that("deferred column parent and match references keep their own namespaces", {
+  mk <- function(id) {
+    parent <- omop_param("parent", type = "string", default = "p")
+    cases <- omop_param("cases", type = "string", default = "p")
+    controls <- omop_param("controls", type = "string", default = "base")
+    column <- omop_param("column", type = "string", default = "age")
+    omop_recipe(events = list(omop_event("measurement", id, name = "ev")),
+      populations = list(
+        omop_population("p", index = omop_index("ev")),
+        omop_population("child", parent_id = parent),
+        omop_population("cc", match = omop_match(cases, controls, "ev"))),
+      variables = list(age = omop_age(), sex = omop_sex()),
+      outputs = list(omop_output("w", rows = "child", format = "wide", columns = column),
+        omop_output("wm", rows = "cc", format = "wide", columns = list(column, "sex"))))
+  }
+  bind <- function(r) recipe_bind(r, parent = "p", cases = "p", controls = "base", column = "age")
+  a <- mk(2)
+  b <- mk(1)
+  target <- recipe_merge(bind(a), bind(b), prefix = "b")
+  merged <- recipe_merge(a, b, prefix = "b")
+  for (r in .cmp_roundtrips(merged)) {
+    .cmp_same(r, target)
+    .cmp_same(bind(r), target)
+    for (half in .cmp_roundtrips(recipe_bind(r, column = "age", parent = "p"))) {
+      .cmp_same(recipe_bind(half, cases = "p", controls = "base"), target)
+    }
+  }
+  nested <- recipe_merge(omop_recipe(), merged, prefix = "outer")
+  for (r in .cmp_roundtrips(nested)) {
+    .cmp_same(bind(r), recipe_merge(omop_recipe(), target, prefix = "outer"))
+  }
+})
+
+test_that("deferred set-operation members are validated after binding", {
+  mk <- function(member) omop_recipe(populations = list(
+    omop_population("p", filters = list(omop_person(omop_where(gender_concept_id == 8507)))),
+    omop_population("q", filters = list(omop_person(omop_where(gender_concept_id == 8532)))),
+    omop_population("both", union = list("p", member))),
+    variables = list(age = omop_age()),
+    outputs = omop_output("w", rows = "both", format = "wide"))
+  p <- omop_param("member", type = "string", default = "q")
+  a <- mk(p)
+  target <- recipe_merge(mk("q"), mk("q"), prefix = "b")
+  for (r in .cmp_roundtrips(recipe_merge(a, a, prefix = "b"))) {
+    .cmp_same(r, target)
+    .cmp_same(recipe_bind(r, member = "q"), target)
+    expect_error(recipe_bind(r, member = "p"), "duplicate")
+  }
+})
+
+test_that("deferred inline intervals rename every nested named declaration", {
+  source <- function(id) omop_era(omop_event("drug_exposure",
+    omop_concept_set(id, name = "cs"), name = "ev"), name = "iv")
+  mk <- function(s) omop_recipe(variables = list(n = omop_variable(event = s,
+    reducer = omop_reduce("count"))), outputs = omop_output("w", format = "wide"))
+  a <- mk(source(2))
+  target <- recipe_merge(a, mk(source(1)), prefix = "b")
+  for (default in list(NULL, source(1))) {
+    b <- mk(omop_param("source", type = "event", default = default))
+    for (r in .cmp_roundtrips(recipe_merge(a, b, prefix = "b"))) {
+      .cmp_same(recipe_bind(r, source = source(1)), target)
+      if (!is.null(default)) .cmp_same(r, target)
+    }
+  }
+  p <- recipe_to_plan(target)
+  expect_identical(p$variables$b_n$source, list(interval = "b_iv"))
+  expect_identical(p$intervals$b_iv$source, list(event = "b_ev"))
+  expect_identical(p$events$b_ev$concept_set, "b_cs")
+})

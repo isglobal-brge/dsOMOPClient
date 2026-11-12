@@ -29,7 +29,10 @@
 #'   set-operation members, match inputs, output rows and columns, output
 #'   dependencies and publication roots; \code{b}'s base population keeps its
 #'   meaning (its recipe-level filters move onto it) and is shared only when it
-#'   equals \code{a}'s. Outputs whose columns were implicit (every variable)
+#'   equals \code{a}'s. When equality depends on parameters, it is reconsidered
+#'   after binding or default resolution against the current population and
+#'   source definitions, preserving edits made after merging. Outputs whose
+#'   columns were implicit (every variable)
 #'   are made explicit first, so each output keeps exactly its own variables.
 #'   Block metadata (\code{block_id}, \code{block_version}) is preserved.
 #'   Parameters are shared by name.
@@ -42,7 +45,13 @@ recipe_merge <- function(a, b, prefix = NULL) {
   if (!is.null(prefix)) {
     prefix <- .v2_name(prefix, "recipe_merge(): prefix", allow_null = FALSE)
     if (nchar(prefix) > 62L) stop("recipe_merge(): prefix is too long.", call. = FALSE)
-    b <- .merge_prefix(b, prefix, share_base = .merge_same_base(a, b))
+    share_base <- .merge_same_base(a, b)
+    defer_base <- !share_base && .merge_deferred_needed(a, b)
+    if (share_base && is.null(a$populations$base$simple)) {
+      a$populations$base$simple <- b$populations$base$simple
+    }
+    b <- .merge_prefix(b, prefix, share_base = share_base, defer_base = defer_base)
+    if (share_base) b$filters <- a$filters
   }
   .merge_into(a, b)
 }
@@ -77,8 +86,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
 }
 
 .merge_same_base <- function(a, b) {
-  identical(.merge_population_definition(.merge_effective_base(a)),
-            .merge_population_definition(.merge_effective_base(b))) &&
+  .merge_base_semantics_equal(a, b) &&
     identical(unname(.merge_recipe_row_filters(a)), unname(.merge_recipe_row_filters(b)))
 }
 
@@ -119,7 +127,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
 
 # --- renaming -------------------------------------------------------------------------------
 
-.merge_prefix <- function(r, prefix, share_base) {
+.merge_prefix <- function(r, prefix, share_base, defer_base = FALSE) {
   f <- function(nm) {
     out <- paste0(prefix, "_", nm)
     if (nchar(out) > 64L) {
@@ -169,6 +177,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
   out <- r
   out$populations <- list()
   for (id in names(r$populations)) {
+    if (share_base && identical(id, "base")) next
     p <- rn$population(r$populations[[id]])
     out$populations[[p$id]] <- p
   }
@@ -217,6 +226,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
     out$publish <- if (.v2_is_param(r$publish)) rn$out(r$publish) else lapply(r$publish, rn$out)
     out <- recipe_set_publish(out, out$publish)
   }
+  if (defer_base) out <- .merge_deferred_mark(out, maps, prefix)
   out
 }
 
@@ -227,7 +237,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
     if (!is.character(x) || length(x) != 1L || is.na(x)) return(x)
     hit <- maps[[kind]][x]
     if (length(hit) && !is.na(hit)) return(unname(hit))
-    if (deferred && kind %in% c("event", "interval", "concept_set")) {
+    if (deferred && !is.null(prefix) && kind %in% c("event", "interval", "concept_set")) {
       return(.v2_name(paste0(prefix, "_", x), "recipe_merge(): deferred reference",
                       allow_null = FALSE))
     }
@@ -235,6 +245,12 @@ recipe_merge <- function(a, b, prefix = NULL) {
   }
   self <- new.env(parent = emptyenv())
   self$defer <- function(x, role = x$type) {
+    # A reconciliation rewrites known aliases without introducing a namespace.
+    # Do not decorate unrelated placeholders with an empty transformation.
+    kinds <- switch(role, population = "population", output = "output",
+      variable = "variable", tag = c("population", "event", "interval"),
+      c("event", "interval", "concept_set"))
+    if (is.null(prefix) && !any(vapply(maps[kinds], length, integer(1)) > 0L)) return(x)
     attr(x, "omop_namespace") <- c(attr(x, "omop_namespace", exact = TRUE) %||% list(),
                                    list(list(prefix = prefix, maps = maps, role = role)))
     x
@@ -380,7 +396,12 @@ recipe_merge <- function(a, b, prefix = NULL) {
     p$filters <- lapply(p$filters %||% list(), self$any)
     if (!is.null(p[["index"]])) p[["index"]] <- self$any(p[["index"]])
     if (!is.null(p$match)) p$match <- self$any(p$match)
-    if (!is.null(p$simple)) p$simple <- self$any(p$simple)
+    if (!is.null(p$simple)) {
+      p$simple <- self$any(p$simple)
+      if (!is.null(p$simple$merge_base)) {
+        p$simple$merge_base <- .merge_deferred_remap(p$simple$merge_base, maps, prefix)
+      }
+    }
     if (!is.null(p$circe_v2)) {
       p$circe_v2$index <- self$any(p$circe_v2$index)
       p$circe_v2$filters <- lapply(p$circe_v2$filters %||% list(), self$any)

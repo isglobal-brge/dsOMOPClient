@@ -220,8 +220,9 @@
   if (!is.null(namespace)) {
     if (!inherits(obj, "omop_param") || !is.list(namespace) ||
         !all(vapply(namespace, function(step) {
-          is.list(step) && is.character(step$prefix) && length(step$prefix) == 1L &&
-            !is.na(step$prefix) && is.list(step$maps)
+          is.list(step) && (is.null(step$prefix) ||
+            (is.character(step$prefix) && length(step$prefix) == 1L && !is.na(step$prefix))) &&
+            is.list(step$maps)
         }, logical(1)))) {
       stop("Invalid parameter reference namespace in the recipe.", call. = FALSE)
     }
