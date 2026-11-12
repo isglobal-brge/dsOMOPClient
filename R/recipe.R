@@ -2080,6 +2080,7 @@ print.omop_population <- function(x, ...) {
   }
   if (length(x$filters) > 0)
     cat("  Filters:", length(x$filters), "\n")
+  for (line in .simple_new_users_text(x)) cat("  ", line, "\n", sep = "")
   invisible(x)
 }
 
@@ -2872,7 +2873,9 @@ recipe_remove_population <- function(recipe, id) {
 #' Registers the block and expands its \code{concept_ids} into individual
 #' \code{\link{omop_variable}} objects using the block's default settings
 #' (table, format, time window, filters). Variable names are auto-generated
-#' from concept names or IDs with uniqueness enforcement.
+#' from concept names or IDs with uniqueness enforcement. Adding an identical
+#' block again leaves the recipe unchanged; a conflicting definition with an
+#' existing block ID is refused.
 #'
 #' @param recipe An \code{omop_recipe} object.
 #' @param block An \code{\link{omop_variable_block}} object.
@@ -2885,6 +2888,14 @@ recipe_add_block <- function(recipe, block) {
   if (!inherits(block, "omop_variable_block"))
     stop("block must be an omop_variable_block object", call. = FALSE)
 
+  existing_block <- recipe$blocks[[block$id]]
+  if (!is.null(existing_block)) {
+    if (!identical(existing_block, block)) {
+      stop("Block ID '", block$id, "' already has a conflicting definition.",
+           call. = FALSE)
+    }
+    return(recipe)
+  }
   recipe$blocks[[block$id]] <- block
 
   # Expand concepts into variables
@@ -2913,8 +2924,8 @@ recipe_add_block <- function(recipe, block) {
       where = block$where,
       visit = block$visit
     )
-    # Provenance marker so recipe_to_code() can skip block-derived variables
-    # without guessing by name.
+    # Provenance is retained even when an exported editor changes this member;
+    # code generation separately checks whether the block still reproduces it.
     v$block_id <- block$id
     if (!is.null(block$block_version)) v$block_version <- block$block_version
     if (isTRUE(block$expand)) v$expand <- TRUE
@@ -3111,6 +3122,7 @@ print.omop_recipe <- function(x, ...) {
     p <- x$populations[[pid]]
     parent_txt <- if (!is.null(p$parent_id)) paste("->", p$parent_id) else ""
     cat("  ", pid, parent_txt, ": ", p$label, "\n")
+    for (line in .simple_new_users_text(p)) cat("    ", line, "\n", sep = "")
   }
 
   if (length(x$blocks) > 0) {
@@ -5558,14 +5570,27 @@ recipe_set_options <- function(recipe,
   .codegen_raw(paste0("list(", paste(code, collapse = ", "), ")"))
 }
 
+# Block provenance has no constructor arguments. Restore it after constructing
+# an edited variable, keeping the stored field order as well as its values.
+.codegen_variable_provenance <- function(code, variable) {
+  fields <- intersect(c("block_id", "block_version", "name_prefix"), names(variable))
+  if (!length(fields)) return(code)
+  fix <- vapply(fields, function(field) paste0(
+    "v$", field, " <- ", .codegen_value(variable[[field]])), "")
+  paste0("(function(v) { ", paste(fix, collapse = "; "),
+         "; structure(v[", .codegen_value(names(variable)),
+         "], class = class(v)) })(", code, ")")
+}
+
 #' Generate reproducible R code from a recipe
 #'
 #' Produces a minimal R script that, when executed, recreates the recipe from
-#' scratch. The output is a single declarative \code{\link{omop_recipe}(...)}
+#' scratch. The output starts with a declarative \code{\link{omop_recipe}(...)}
 #' expression whose arguments are nested calls to the leaf constructors
 #' (\code{omop_variable*}, \code{omop_filter*}, \code{omop_output},
-#' \code{omop_population}, \code{omop_variable_block}). Does not include
-#' \code{library()} calls or header comments.
+#' \code{omop_population}, \code{omop_variable_block}). When block members have
+#' been edited, explicit corrections preserve their names, order, definitions
+#' and provenance. Does not include \code{library()} calls or header comments.
 #'
 #' @param recipe An \code{omop_recipe} object.
 #' @return Character string containing executable R code.
@@ -5636,6 +5661,11 @@ recipe_to_code <- function(recipe) {
           pop_code[[length(pop_code)]], ")")
       }
     }
+    if (!is.null(p$simple)) {
+      pop_code[[length(pop_code)]] <- paste0(
+        "(function(p) { p$simple <- ", .v2_codegen_list(p$simple),
+        "; p })(", pop_code[[length(pop_code)]], ")")
+    }
   }
   if (length(pop_code) > 0)
     slot_args$populations <- .codegen_list_arg(pop_code)
@@ -5667,24 +5697,33 @@ recipe_to_code <- function(recipe) {
       fix <- c(if (!is.null(b$name_prefix)) paste0("b$name_prefix <- ", .codegen_value(b$name_prefix)),
                if (!is.null(b$block_version)) paste0("b$block_version <- ", .codegen_value(b$block_version)))
       block_code[[length(block_code)]] <- paste0("(function(b) { ", paste(fix, collapse = "; "),
-                                                 "; b })(", block_code[[length(block_code)]], ")")
+        "; structure(b[", .codegen_value(names(b)), "], class = class(b)) })(",
+        block_code[[length(block_code)]], ")")
     }
   }
   if (length(block_code) > 0)
     slot_args$blocks <- .codegen_list_arg(block_code)
 
-  # Standalone variables (those not produced by a block). Every block-expanded
-  # variable carries a `block_id` provenance marker (stamped by
-  # recipe_add_block and preserved across the JSON/YAML round-trip), so
-  # block-derived variables are identified by that marker alone.
+  # Reproduce the current blocks before deciding which stored variables they
+  # actually reconstruct. A provenance marker alone cannot prove equality:
+  # exported editors can remove a member, replace it, or change insertion order.
+  expanded <- omop_recipe(blocks = unname(recipe$blocks))$variables
   var_code <- character(0)
+  variable_fixes <- character(0)
   named_vars <- FALSE
   for (nm in names(recipe$variables)) {
     v <- recipe$variables[[nm]]
-    if (!is.null(v$block_id)) next
+    if (identical(expanded[[nm]], v)) next
+    needs_fix <- !is.null(v$block_id) || nm %in% names(expanded)
     if (.v2_is_v2_variable(v)) {
-      var_code <- c(var_code, paste0(.codegen_name(nm), " = ", .v2_codegen(v)))
-      named_vars <- TRUE
+      if (needs_fix) {
+        variable_fixes <- c(variable_fixes, paste0(
+          "recipe$variables[[", .codegen_value(nm), "]] <- ",
+          .codegen_variable_provenance(.v2_codegen(v), v)))
+      } else {
+        var_code <- c(var_code, paste0(.codegen_name(nm), " = ", .v2_codegen(v)))
+        named_vars <- TRUE
+      }
       next
     }
 
@@ -5766,7 +5805,11 @@ recipe_to_code <- function(recipe) {
         visit = v[["visit"]],
         broadcast = if (isTRUE(v[["broadcast"]])) TRUE)
     }
-    var_code <- c(var_code, code)
+    code <- .codegen_variable_provenance(code, v)
+    if (needs_fix) {
+      variable_fixes <- c(variable_fixes, paste0(
+        "recipe$variables[[", .codegen_value(nm), "]] <- ", code))
+    } else var_code <- c(var_code, code)
   }
   if (length(var_code) > 0) {
     # A language-2 variable is named by its list element, so the list stays
@@ -5852,27 +5895,17 @@ recipe_to_code <- function(recipe) {
   lines <- paste0("recipe <- ",
                   do.call(.codegen_call, c("omop_recipe", slot_args)))
 
-  # The block re-expansion order (blocks first, then standalone variables)
-  # may differ from the recipe's insertion order; restore it so column
-  # ordering in outputs is preserved. This is the one piece the declarative
-  # call cannot express, so it trails as a fixup.
-  is_block_var <- vapply(recipe$variables,
-                         function(v) !is.null(v$block_id), logical(1))
-  if (any(is_block_var) && length(recipe$variables) > 0) {
-    rebuilt_order <- c(
-      unlist(lapply(names(recipe$blocks), function(bid) {
-        names(recipe$variables)[vapply(recipe$variables, function(v)
-          identical(v$block_id, bid), logical(1))]
-      })),
-      names(recipe$variables)[!is_block_var]
-    )
-    if (!identical(unname(rebuilt_order), names(recipe$variables)) &&
-        setequal(rebuilt_order, names(recipe$variables))) {
-      lines <- c(lines, paste0(
-        "recipe$variables <- recipe$variables[",
-        .codegen_value(names(recipe$variables)), "]"
-      ))
-    }
+  # Corrections happen after expansion, so names cannot be deduplicated against
+  # stale generated members. Removing extras also covers a fully emptied block.
+  for (nm in setdiff(names(expanded), names(recipe$variables))) {
+    lines <- c(lines, paste0("recipe <- recipe_remove_variable(recipe, ",
+                             .codegen_value(nm), ")"))
+  }
+  lines <- c(lines, variable_fixes)
+  if (length(recipe$blocks) || length(variable_fixes)) {
+    lines <- c(lines, paste0(
+      "recipe$variables <- recipe$variables[",
+      .codegen_value(names(recipe$variables)), "]"))
   }
 
   paste(lines, collapse = "\n")
@@ -6234,6 +6267,9 @@ recipe_to_code <- function(recipe) {
           recipe$populations[[pid]]$circe_v2 <- .v2_restore(p$circe_v2)
         }
       }
+      if (!is.null(p$simple)) {
+        recipe$populations[[pid]]$simple <- .v2_restore(p$simple)
+      }
     }
   }
 
@@ -6252,13 +6288,13 @@ recipe_to_code <- function(recipe) {
         suffix_mode = b$suffix_mode %||% "index",
         filters = .recipe_restore_filter_list(b$filters),
         population_id = b$population_id %||% "base",
+        expand = isTRUE(b$expand),
         reference_date = b$reference_date,
         unit = b$unit,
         where = .v2_restore(b$where),
         visit = .v2_restore_visit(b$visit),
         concept_col = b$concept_col
       )
-      if (isTRUE(b$expand)) blk$expand <- TRUE
       if (!is.null(b$name_prefix)) blk$name_prefix <- as.character(b$name_prefix)
       if (!is.null(b$block_version)) blk$block_version <- b$block_version
       recipe$blocks[[bid]] <- blk
@@ -6297,6 +6333,7 @@ recipe_to_code <- function(recipe) {
       if (!is.null(v$derived)) var$derived <- v$derived
       if (!is.null(v$block_id)) var$block_id <- v$block_id
       if (!is.null(v$block_version)) var$block_version <- v$block_version
+      if (!is.null(v$name_prefix)) var$name_prefix <- as.character(v$name_prefix)
       if (isTRUE(v$expand)) var$expand <- TRUE
       if (!is.null(v[["where"]])) var$where <- .v2_restore(v[["where"]])
       if (!is.null(v[["visit"]])) var$visit <- .v2_restore_visit(v[["visit"]])
