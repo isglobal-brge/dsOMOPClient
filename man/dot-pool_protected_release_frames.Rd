@@ -45,8 +45,12 @@ selected directly, never summed from fine bins.
 
 Record-weighted releases (family \code{RM}) are pooled per stratum by
 \code{.pool_protected_record_moments}. Exit-time x status cells of a
-grouped-time Cox release (family \code{C8}) are summed and projected like
-any partition and never refitted; the event-weighted q x exposure cells of
+grouped-time Cox release (family \code{C8}) are summed and projected onto
+their pooled C6 event/non-event parents. Interaction C6/C8 exports retain
+the complete signed atomic family, projected before view coarsening;
+supplemental rows and cells retain family and view identifiers. C8 uses
+finite IPF with a feasible margin repair, not an exact KL/L2 claim. Cox
+cells are never refitted; the event-weighted q x exposure cells of
 an SCCS release (\code{w}) are not pooled (only its case total).
 }
 \keyword{internal}
