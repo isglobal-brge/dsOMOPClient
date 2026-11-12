@@ -29,7 +29,7 @@ refuses language-2 constructs, which have no v1 equivalent.
 \details{
 \code{\link{recipe_execute}} chooses the version per execution: a recipe
 built only from 2.10.1 constructors (and without \code{parent_id}) runs as
-a v1 plan on every server, so its results stay identical; any other recipe
+its v1 plan, so its results stay identical; any other recipe
 runs as a v2 plan on servers advertising \code{recipe_language} 2 and every
 operation it needs, and is refused (naming the operation) otherwise.
 

@@ -9,6 +9,7 @@
 \description{
 Language-2 objects, and \code{parent_id} (whose v1 rendering silently ignored
 inheritance, defect B-8). A recipe without them is v1-expressible: it
-executes as its unchanged 2.10.1 plan on every server.
+executes as its unchanged 2.10.1 plan (plan execution itself needs dsOMOP
+2.10.3 servers: the publication status methods).
 }
 \keyword{internal}
