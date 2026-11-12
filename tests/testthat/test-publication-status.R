@@ -287,6 +287,11 @@ test_that("status validation admits the closed reason only with validation_error
   expect_invisible(dsOMOPClient:::.plan_validate_status(good, "data"))
   good$rejected$data$reason <- "cost_currency_mixed"
   expect_invisible(dsOMOPClient:::.plan_validate_status(good, "data"))
+  # A-20 (j): the interval helpers' bounded realisations
+  for (reason in c("stockpile_row_cap", "reducer_row_cap")) {
+    ok <- good; ok$rejected$data$reason <- reason
+    expect_invisible(dsOMOPClient:::.plan_validate_status(ok, "data"))
+  }
   bad <- good; bad$rejected$data$reason <- "unit_unknown"
   expect_error(dsOMOPClient:::.plan_validate_status(bad, "data"), "Invalid")
   bad <- good; bad$rejected$data$reason <- 1L
@@ -300,7 +305,8 @@ test_that("status validation admits the closed reason only with validation_error
 })
 
 test_that("the refusal diagnostic names the validated reason with the output and code (A-18)", {
-  for (reason in c("adapter_person_mismatch", "cost_currency_mixed")) {
+  for (reason in c("adapter_person_mismatch", "cost_currency_mixed", "stockpile_row_cap",
+                   "reducer_row_cap")) {
     for (policy in c("error", "skip")) {
       statuses <- list(a = .publication_status(),
                        b = .publication_status(character(), "refused", list(data = list(
