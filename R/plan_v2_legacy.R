@@ -254,8 +254,8 @@
 #' the requested ones (\code{count} for count variables, \code{binary}
 #' otherwise) unless \code{options$analyses} names them. Every
 #' \code{(source, concept, analysis)} pair is a covariate identity of the
-#' server's registry (design 6.12), so declaring binary for one concept and
-#' count for another no longer needs a Cartesian-product refusal.
+#' server's registry (design 6.12); different analyses per concept need
+#' per-source analyses (A-14) and are refused until the client emits them.
 #' @keywords internal
 .v2_legacy_temporal_options <- function(ctx, out, vars, context, format) {
   o <- out$options %||% list()
@@ -278,9 +278,27 @@
   if (!is.null(vw$end) && !is.null(o$window_end) && as.integer(o$window_end) != vw$end) {
     .v2_stop(context, ": conflicting variable and output window_end.")
   }
-  analyses <- o$analyses %||% unique(vapply(vars, function(v) {
+  per_var <- vapply(vars, function(v) {
     if (identical(v$format, "count")) "count" else "binary"
-  }, character(1)))
+  }, character(1))
+  analyses <- o$analyses %||% unique(per_var)
+  # A-14: different analyses per concept need per-source analyses
+  # (source_analyses); until the client emits them such a recipe is refused,
+  # never run as the expanded concept-by-analysis product.
+  scoped <- vapply(vars, function(v) length(v$concept_id %||% integer(0)) > 0L, logical(1))
+  if (any(scoped)) {
+    requested <- unique(unlist(lapply(which(scoped), function(i) {
+      paste(as.integer(unlist(vars[[i]]$concept_id)), per_var[[i]], sep = "/")
+    })))
+    concepts <- unique(as.integer(unlist(lapply(vars[scoped], function(v) v$concept_id))))
+    product <- as.vector(outer(concepts, analyses, paste, sep = "/"))
+    if (!setequal(requested, product)) {
+      .v2_stop(context, ": the variables declare different analyses per concept (",
+               paste(requested, collapse = ", "), "); per-source analyses are not emitted ",
+               "yet, so the output would compute the undeclared pairs as well. Split the ",
+               "variables into outputs with one analysis set each.")
+    }
+  }
   o2 <- list(sources = .v2_legacy_grouped_events(vars, context),
              window = .v2_legacy_window(ws, we), analyses = analyses)
   if (identical(format, "person_period")) {

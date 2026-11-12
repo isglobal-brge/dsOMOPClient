@@ -116,8 +116,8 @@ workstream fills its entries.
 - (design 2.2, 6.12) Survival outcomes and interval or temporal-covariate
   sources may be narrowed by visit or concept column; an intervals output
   may mix concept-scoped and unscoped variables of one table (one source per
-  scope); a temporal-covariates output may declare different analyses per
-  concept (covariate identities come from the server's registry).
+  scope). A temporal-covariates output declaring different analyses per
+  concept stays refused until per-source analyses are emitted (A-14).
 - These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers;
   `recipe_lint()` reports them as INFO `language_2_only`.
 

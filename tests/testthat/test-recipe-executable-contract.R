@@ -498,12 +498,13 @@ test_that("temporal covariates reject undeclared Cartesian products", {
     variables = list(binary, count),
     outputs = omop_output(name = "tc", type = "temporal_covariates"))
   expect_error(recipe_to_plan(mixed, version = 1), "Cartesian product")
-  # 2.10.3 (design 6.12): covariate identities come from the server's registry
+  # A-14: the v1 refusal is a newly permitted shape, but until per-source
+  # analyses (source_analyses) are emitted the v2 rendering refuses too, never
+  # computing the undeclared 1/count and 2/binary pairs.
   e <- tryCatch(recipe_to_plan(mixed, version = 1), error = function(e) e)
   expect_s3_class(e, "dsomop_v1_newly_permitted")
-  tp <- recipe_to_plan(mixed)$outputs$tc
-  expect_identical(tp$format, "temporal_covariates")
-  expect_identical(unlist(tp$options$analyses), c("binary", "count"))
+  expect_error(recipe_to_plan(mixed), "different analyses per concept.*1/binary, 2/count")
+  expect_error(dsOMOPClient:::.recipe_plan_auto(mixed), "different analyses per concept")
 
   unscoped <- binary
   unscoped$concept_id <- NULL

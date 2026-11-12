@@ -11,7 +11,7 @@ One source per group of variables reading the same rows; the analyses are
 the requested ones (\code{count} for count variables, \code{binary}
 otherwise) unless \code{options$analyses} names them. Every
 \code{(source, concept, analysis)} pair is a covariate identity of the
-server's registry (design 6.12), so declaring binary for one concept and
-count for another no longer needs a Cartesian-product refusal.
+server's registry (design 6.12); different analyses per concept need
+per-source analyses (A-14) and are refused until the client emits them.
 }
 \keyword{internal}
