@@ -53,13 +53,17 @@ digest. A recipe that executes as its v1 plan is explained from that v1
 payload and the legacy rules it relies on; offline its lowered IR and
 digest are not available (the server lowers it), and its native rendering
 (\code{recipe_to_plan(version = 2)}) is never presented as the executed
-plan. With \code{conns}, each server that explains plans (dsOMOP 2.10.3)
-receives the selected wire plan through \code{omopPlanExplainDS} and
-reports its normalised IR, compatibility variants and semantic digest
-(attached as \code{$server}; for a v1 plan the digest and IR are taken
-from it); a server without explain is reported and changes nothing, and a
-recipe these servers could not execute is still explained, with the
-refusal reported.
+plan. With \code{conns}, each server whose profile publishes
+\code{omopPlanExplainDS} (dsOMOP 2.10.4) receives the selected wire plan
+and reports its normalised IR, compatibility variants and semantic digest
+(attached as \code{$server}). A server whose profile does not publish it,
+and a call that fails, is reported by site and changes nothing else. For a
+v1 plan the IR and digest are taken from the servers that explained it
+when they agree; otherwise they are reported unavailable (\code{$digest}
+is then \code{NULL}). The execution route on these servers (the
+publication protocol, the legacy call of a federation with an older
+server, or a refusal) is stated, and a recipe they could not execute is
+still explained, with the refusal reported.
 }
 \examples{
 \dontrun{

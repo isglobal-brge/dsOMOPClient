@@ -32,7 +32,8 @@ except events and intervals, which get a deterministic name when compiled).}
 
 \item{name}{Name of the node to remove.}
 
-\item{publish}{Character vector of output names, or \code{NULL} for all.}
+\item{publish}{Character vector of output names, \code{character(0)} for none
+(every output is then a private computed input), or \code{NULL} for all.}
 }
 \value{
 The modified recipe.

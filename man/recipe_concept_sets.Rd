@@ -32,5 +32,7 @@ A named list of \code{omop_concept_set} objects, a JSON string, or
 concept-set expressions; \code{recipe_import_concept_sets()} reads such
 expressions into the registry. Items must share their descendant/mapped
 flags; excluded items become the set's \code{exclude} (exact IDs, or a set
-with descendants when the excluded items include descendants).
+with descendants when the excluded items include descendants). A nested
+exclusion (an excluded set with its own exclusion) has no OHDSI form and is
+refused on export rather than flattened.
 }
