@@ -10,6 +10,7 @@
 \alias{omop_filter_date_range}
 \alias{omop_filter_value}
 \alias{omop_filter_value_concept}
+\alias{omop_filter_concept_set}
 \alias{omop_filter_not_has_concept}
 \alias{omop_filter_concept_count}
 \alias{omop_filter_prior_observation}
@@ -60,6 +61,8 @@ omop_filter_value_concept(
   column = "value_as_concept_id",
   concept_name = NULL
 )
+
+omop_filter_concept_set(concept_ids, concept_col = NULL)
 
 omop_filter_not_has_concept(
   concept_id,
@@ -176,8 +179,16 @@ from the output's OMOP table.}
 \code{ds.omop.safe.cutpoints()}. Optional for numeric criteria. If
 supplied, both bounds must be issued edges and the scope must match.}
 
-\item{concept_ids}{Integer scalar or vector; the value concept(s) to keep
-(a record matches if its value concept is any of them)}
+\item{concept_ids}{Integer scalar or vector; the concept(s) to keep (a
+record matches if its concept is any of them: the value concept for
+\code{omop_filter_value_concept()}; the table's domain concept, or
+\code{concept_col}, for \code{omop_filter_concept_set()})}
+
+\item{concept_col}{Character or \code{NULL}; the concept column the set is
+matched on. \code{NULL} (default) uses the output table's domain concept
+column from the role registry (\code{condition_concept_id} for
+\code{condition_occurrence}, \code{drug_concept_id} for
+\code{drug_exposure}, ...).}
 
 \item{min_days}{Integer; minimum days of followup}
 

@@ -1323,8 +1323,10 @@ omop_filter_value <- function(column = "value_as_number", threshold,
 }
 
 #' @rdname omop_filter
-#' @param concept_ids Integer scalar or vector; the value concept(s) to keep
-#'   (a record matches if its value concept is any of them)
+#' @param concept_ids Integer scalar or vector; the concept(s) to keep (a
+#'   record matches if its concept is any of them: the value concept for
+#'   \code{omop_filter_value_concept()}; the table's domain concept, or
+#'   \code{concept_col}, for \code{omop_filter_concept_set()})
 #' @param column Character; the value-concept column (default
 #'   \code{"value_as_concept_id"})
 #' @param concept_name Character or NULL; human-readable name(s)
@@ -1339,6 +1341,36 @@ omop_filter_value_concept <- function(concept_ids,
     params = list(var = column, op = "in", value = ids,
                   concept_name = concept_name),
     label = label
+  )
+}
+
+#' @rdname omop_filter
+#' @param concept_col Character or \code{NULL}; the concept column the set is
+#'   matched on. \code{NULL} (default) uses the output table's domain concept
+#'   column from the role registry (\code{condition_concept_id} for
+#'   \code{condition_occurrence}, \code{drug_concept_id} for
+#'   \code{drug_exposure}, ...).
+#' @export
+omop_filter_concept_set <- function(concept_ids, concept_col = NULL) {
+  ids <- unlist(concept_ids, use.names = FALSE)
+  numeric_ids <- suppressWarnings(as.numeric(ids))
+  if (length(ids) == 0L || anyNA(numeric_ids) || any(!is.finite(numeric_ids)) ||
+      any(numeric_ids != round(numeric_ids)) || any(numeric_ids < 0)) {
+    stop("omop_filter_concept_set() needs one or more non-negative integer ",
+         "concept ids.", call. = FALSE)
+  }
+  if (!is.null(concept_col) &&
+      (!is.character(concept_col) || length(concept_col) != 1L ||
+       is.na(concept_col) || !grepl("^[a-z][a-z0-9_]{0,63}$", concept_col))) {
+    stop("concept_col must be NULL or one lower-case column name.",
+         call. = FALSE)
+  }
+  ids <- unique(as.integer(numeric_ids))
+  omop_filter(
+    type = "concept_set", level = "row",
+    params = list(concept_ids = ids, concept_col = concept_col),
+    label = paste0(length(ids), " concepts",
+                   if (!is.null(concept_col)) paste0(" in ", concept_col))
   )
 }
 
@@ -4107,6 +4139,7 @@ recipe_to_plan <- function(recipe) {
             filter_tree <- .compile_filter_tree(
               row_filter_items, level = "row", table = endpoint$table
             )
+            .assert_row_filter_columns(filter_tree, endpoint$table, out_name)
             endpoint$filters <- .combine_filter_trees(
               endpoint$filters, filter_tree
             )
@@ -4123,6 +4156,7 @@ recipe_to_plan <- function(recipe) {
           filter_tree <- .compile_filter_tree(
             row_filter_items, level = "row", table = table
           )
+          .assert_row_filter_columns(filter_tree, table, out_name)
           index <- match(tolower(table), source_names)
           current <- if (is.na(index)) NULL else source_filters[[index]]
           source_filters[[tolower(table)]] <- .combine_filter_trees(
@@ -4135,6 +4169,8 @@ recipe_to_plan <- function(recipe) {
       table <- .plan_output_filter_table(plan$outputs[[out_name]], out_name)
       filter_tree <- .compile_filter_tree(row_filter_items, level = "row",
                                           table = table)
+      # Defect F-2: never attach a filter to a table lacking its columns.
+      .assert_row_filter_columns(filter_tree, table, out_name)
       plan$outputs[[out_name]]$filters <-
         plan$outputs[[out_name]]$filters %||% list()
       plan$outputs[[out_name]]$filters$custom <- .combine_filter_trees(
@@ -4832,8 +4868,12 @@ recipe_set_options <- function(recipe,
       list(var = date_column, op = "between",
            value = c(bounds$start, bounds$end))
     },
+    # Defect F-1: the set matches the table's domain concept column from the
+    # role registry; the table-agnostic sentinel "concept_id" remains only when
+    # the table is unknown here (the server resolves it the same way).
     "has_concept" =, "concept_set" = list(
-      var = f$params$concept_col %||% "concept_id",
+      var = f$params$concept_col %||% .role_domain_concept(table) %||%
+        "concept_id",
       op = "in", value = f$params$concept_id %||% f$params$concept_ids),
     "value_bin" = list(var = f$params$var, op = "value_bin",
                        value = f$params$value,
