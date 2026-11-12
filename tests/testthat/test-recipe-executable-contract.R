@@ -5,7 +5,7 @@ test_that("date ranges compile once as a safe table-aware BETWEEN leaf", {
     filters = omop_filter_date_range("2020-01-01", "2020-01-31"),
     outputs = omop_output(name = "events", type = "long"))
 
-  out <- recipe_to_plan(r)$outputs$events
+  out <- recipe_to_plan(r, version = 1)$outputs$events
   expect_null(out[["filter"]])
   expect_equal(out$filters$custom, list(
     var = "condition_start_date", op = "between",
@@ -22,7 +22,7 @@ test_that("mixed-level OR and unsupported NOT groups fail closed", {
     variables = omop_variable(name = "event", table = "measurement"),
     filters = mixed,
     outputs = omop_output(name = "event", type = "long"))
-  expect_error(recipe_to_plan(r), "OR group.*mixes filter levels")
+  expect_error(recipe_to_plan(r, version = 1), "OR group.*mixes filter levels")
 
   negated <- omop_filter_group(omop_filter_sex("F"), operator = "AND")
   negated$operator <- "NOT"
@@ -30,7 +30,7 @@ test_that("mixed-level OR and unsupported NOT groups fail closed", {
     variables = omop_variable_age(),
     filters = negated,
     outputs = omop_output(name = "age", type = "wide"))
-  expect_error(recipe_to_plan(r2), "NOT groups are rejected")
+  expect_error(recipe_to_plan(r2, version = 1), "NOT groups are rejected")
 })
 
 test_that("tampered or imported filters are revalidated recursively", {
@@ -41,13 +41,13 @@ test_that("tampered or imported filters are revalidated recursively", {
     variables = omop_variable_age(),
     filters = nested,
     outputs = omop_output(name = "age", type = "wide"))
-  expect_error(recipe_to_plan(recipe),
+  expect_error(recipe_to_plan(recipe, version = 1),
                "Filter in recipe filters is not executable.*no executable")
 
   wrong_level <- omop_filter_date_range("2020-01-01", "2020-03-01")
   wrong_level$level <- "population"
   recipe$filters <- list(wrong_level)
-  expect_error(recipe_to_plan(recipe), "executable only at level 'row'")
+  expect_error(recipe_to_plan(recipe, version = 1), "executable only at level 'row'")
 })
 
 test_that("generic custom filters are typed, row-only and fail closed", {
@@ -83,7 +83,7 @@ test_that("non-executable output labels and options never degrade silently", {
     outputs = omop_output(
       name = "features", type = "features",
       options = list(sparse = TRUE)))
-  expect_error(recipe_to_plan(r), "unsupported option.*sparse")
+  expect_error(recipe_to_plan(r, version = 1), "unsupported option.*sparse")
 })
 
 test_that("long output preserves population, temporal, calendar and row filters", {
@@ -103,7 +103,7 @@ test_that("long output preserves population, temporal, calendar and row filters"
         time_window = list(start_date = "2020-01-01"),
         date_handling = "relative")))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   out <- plan$outputs$labs
   expect_equal(out$population_id, "adults")
   expect_equal(out$options, r$outputs$labs$options)
@@ -120,7 +120,7 @@ test_that("wide event rows require explicit reduction while person aliases work"
       name = "dx", table = "condition_occurrence",
       column = "condition_concept_id"),
     outputs = omop_output(name = "wide", type = "wide"))
-  expect_error(recipe_to_plan(raw_event),
+  expect_error(recipe_to_plan(raw_event, version = 1),
                "requires an explicit per-variable reduction")
 
   reduced <- omop_recipe(
@@ -129,7 +129,7 @@ test_that("wide event rows require explicit reduction while person aliases work"
       concept_id = 201820, format = "count"),
     outputs = omop_output(name = "wide", type = "wide"))
   expect_equal(
-    recipe_to_plan(reduced)$outputs$wide$representation$features$dx_count$type,
+    recipe_to_plan(reduced, version = 1)$outputs$wide$representation$features$dx_count$type,
     "count")
 
   person <- omop_recipe(
@@ -137,7 +137,7 @@ test_that("wide event rows require explicit reduction while person aliases work"
       name = "birth_year", table = "person", column = "year_of_birth"),
     outputs = omop_output(name = "wide", type = "wide"))
   expect_equal(
-    recipe_to_plan(person)$outputs$wide$tables$person$birth_year,
+    recipe_to_plan(person, version = 1)$outputs$wide$tables$person$birth_year,
     "year_of_birth")
 })
 
@@ -152,7 +152,7 @@ test_that("multi-table long splits and never creates a joined event frame", {
         concept_id = 201820, column = "condition_concept_id")),
     outputs = omop_output(name = "events", type = "long"))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   expect_setequal(names(plan$outputs),
                   c("events_measurement", "events_condition_occurrence"))
   expect_equal(plan$outputs$events_measurement$columns, "value_as_number")
@@ -187,7 +187,7 @@ test_that("compiled multi-table output names cannot overwrite explicit outputs",
     )
   )
 
-  expect_error(recipe_to_plan(recipe), "compiled output name collision")
+  expect_error(recipe_to_plan(recipe, version = 1), "compiled output name collision")
 })
 
 test_that("same-table long variables with different scopes split by variable", {
@@ -201,7 +201,7 @@ test_that("same-table long variables with different scopes split by variable", {
     filters = omop_filter_date_range("2021-01-01", "2021-03-01"))
   plan <- recipe_to_plan(omop_recipe(
     variables = list(a, b),
-    outputs = omop_output(name = "events", type = "long")))
+    outputs = omop_output(name = "events", type = "long")), version = 1)
 
   expect_setequal(names(plan$outputs),
                   c("events_measurement_early", "events_measurement_late"))
@@ -221,11 +221,11 @@ test_that("feature windows compile at episode grain with per-spec scopes", {
       omop_variable(name = "b", table = "measurement", concept_id = 2,
                     format = "binary", time_window = list(start = -90, end = 0))),
     outputs = omop_output(name = "features", type = "features"))
-  expect_error(recipe_to_plan(common),
+  expect_error(recipe_to_plan(common, version = 1),
                "grain='episode'")
 
   common$outputs$features$options <- list(grain = "episode")
-  plan <- recipe_to_plan(common)
+  plan <- recipe_to_plan(common, version = 1)
   output <- plan$outputs$features
   expect_equal(output$representation$grain, "episode")
   expect_equal(output$temporal$index_window,
@@ -238,7 +238,7 @@ test_that("feature windows compile at episode grain with per-spec scopes", {
   different <- common
   different$variables$a$time_window <- list(start = -365L, end = -31L)
   different$variables$b$time_window <- list(start = -30L, end = 0L)
-  different_plan <- recipe_to_plan(different)$outputs$features
+  different_plan <- recipe_to_plan(different, version = 1)$outputs$features
   expect_equal(different_plan$temporal$index_window,
                list(start = -365L, end = 0L))
   expect_equal(different_plan$representation$features$a$time_window,
@@ -248,7 +248,7 @@ test_that("feature windows compile at episode grain with per-spec scopes", {
 
   mixed <- common
   mixed$variables$b$time_window <- NULL
-  expect_error(recipe_to_plan(mixed), "mixes variables with and without")
+  expect_error(recipe_to_plan(mixed, version = 1), "mixes variables with and without")
 })
 
 test_that("temporal_covariates maps to the executable plan helper per table", {
@@ -263,7 +263,7 @@ test_that("temporal_covariates maps to the executable plan helper per table", {
       options = list(bin_width = 14L, window_start = -180L,
                      window_end = 0L)))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   expect_setequal(names(plan$outputs),
                   c("tc_condition_occurrence", "tc_drug_exposure"))
   expect_true(all(vapply(plan$outputs, function(x) {
@@ -324,7 +324,7 @@ test_that("features outputs route person-derived variables through derived colum
     outputs = omop_output("derived_features", type = "features")
   )
 
-  plan <- recipe_to_plan(recipe)
+  plan <- recipe_to_plan(recipe, version = 1)
   output <- plan$outputs$derived_features
 
   expect_equal(output$type, "person_level")
@@ -349,7 +349,7 @@ test_that("feature specs keep independent concept scopes without a global filter
     format = "binary")
   plan <- recipe_to_plan(omop_recipe(
     variables = list(all_concepts, unit_scoped, expanded, exact),
-    outputs = omop_output(name = "features", type = "features")))
+    outputs = omop_output(name = "features", type = "features")), version = 1)
 
   out <- plan$outputs$features
   expect_null(out$concept_set)
@@ -370,7 +370,7 @@ test_that("time_since propagates fixed-reference semantics and schema", {
   r <- omop_recipe(
     variables = recency,
     outputs = omop_output(name = "features", type = "features"))
-  spec <- recipe_to_plan(r)$outputs$features$representation$features$mi_recency
+  spec <- recipe_to_plan(r, version = 1)$outputs$features$representation$features$mi_recency
   expect_equal(spec$reference_date, "2024-01-31")
   expect_equal(spec$unit, "month")
 
@@ -386,7 +386,7 @@ test_that("time_since propagates fixed-reference semantics and schema", {
       table = "condition_occurrence", concept_ids = c(1L, 2L),
       format = "time_since", reference_date = "2024-01-31", unit = "month"),
     outputs = omop_output(name = "block_features", type = "features"))
-  block_out <- recipe_to_plan(block_recipe)$outputs$block_features
+  block_out <- recipe_to_plan(block_recipe, version = 1)$outputs$block_features
   block_specs <- block_out$representation$features
   expect_true(all(vapply(block_specs, function(x) {
     identical(x$reference_date, "2024-01-31") && identical(x$unit, "month")
@@ -399,7 +399,7 @@ test_that("long splits scoped/unscoped and mixed expansion semantics", {
                             concept_id = 3004410, expand = TRUE)
   plan <- recipe_to_plan(omop_recipe(
     variables = list(all_rows, expanded),
-    outputs = omop_output(name = "events", type = "long")))
+    outputs = omop_output(name = "events", type = "long")), version = 1)
 
   expect_setequal(names(plan$outputs),
                   c("events_measurement_all_rows",
@@ -416,7 +416,7 @@ test_that("survival and intervals reject variable semantics they cannot carry", 
   survival <- omop_recipe(
     variables = visit_scoped,
     outputs = omop_output(name = "tte", type = "survival"))
-  expect_error(recipe_to_plan(survival), "visit/concept-column overrides")
+  expect_error(recipe_to_plan(survival, version = 1), "visit/concept-column overrides")
 
   unscoped <- omop_variable(name = "all", table = "drug_exposure")
   scoped <- omop_variable(name = "drug", table = "drug_exposure",
@@ -424,7 +424,7 @@ test_that("survival and intervals reject variable semantics they cannot carry", 
   intervals <- omop_recipe(
     variables = list(unscoped, scoped),
     outputs = omop_output(name = "iv", type = "intervals"))
-  expect_error(recipe_to_plan(intervals),
+  expect_error(recipe_to_plan(intervals, version = 1),
                "mixes concept-scoped and unscoped")
 })
 
@@ -436,13 +436,13 @@ test_that("temporal covariates reject undeclared Cartesian products", {
   mixed <- omop_recipe(
     variables = list(binary, count),
     outputs = omop_output(name = "tc", type = "temporal_covariates"))
-  expect_error(recipe_to_plan(mixed), "Cartesian product")
+  expect_error(recipe_to_plan(mixed, version = 1), "Cartesian product")
 
   unscoped <- binary
   unscoped$concept_id <- NULL
   dynamic <- recipe_to_plan(omop_recipe(
     variables = unscoped,
-    outputs = omop_output(name = "tc", type = "temporal_covariates")))
+    outputs = omop_output(name = "tc", type = "temporal_covariates")), version = 1)
   expect_null(dynamic$outputs$tc$concept_set)
   expect_identical(dynamic$outputs$tc$analyses, "binary")
 
@@ -455,7 +455,7 @@ test_that("temporal covariates reject undeclared Cartesian products", {
                     concept_id = 2, format = "binary"),
       count),
     outputs = omop_output(name = "tc", type = "temporal_covariates"))
-  expect_equal(recipe_to_plan(complete)$outputs$tc$analyses,
+  expect_equal(recipe_to_plan(complete, version = 1)$outputs$tc$analyses,
                c("binary", "count"))
 })
 
@@ -480,7 +480,7 @@ test_that("temporal analyses survive a JSON recipe round-trip", {
   restored <- recipe_import_json(recipe_export_json(recipe))
   expect_identical(restored$outputs$tc$options$analyses,
                    c("binary", "count"))
-  expect_identical(recipe_to_plan(restored)$outputs$tc$analyses,
+  expect_identical(recipe_to_plan(restored, version = 1)$outputs$tc$analyses,
                    c("binary", "count"))
 })
 
@@ -493,7 +493,7 @@ test_that("longitudinal recipes preserve descendant concept scope", {
   intervals <- recipe_to_plan(omop_recipe(
     variables = expanded,
     outputs = omop_output(name = "iv", type = "intervals")
-  ))
+  ), version = 1)
   expect_true(
     intervals$outputs$iv$concept_filter$condition_occurrence$
       include_descendants
@@ -502,7 +502,7 @@ test_that("longitudinal recipes preserve descendant concept scope", {
   survival <- recipe_to_plan(omop_recipe(
     variables = expanded,
     outputs = omop_output(name = "tte", type = "survival")
-  ))
+  ), version = 1)
   expect_true(
     survival$outputs$tte$outcome$concept_set$include_descendants
   )
@@ -512,7 +512,7 @@ test_that("longitudinal recipes preserve descendant concept scope", {
   temporal <- recipe_to_plan(omop_recipe(
     variables = temporal_variable,
     outputs = omop_output(name = "tc", type = "temporal_covariates")
-  ))
+  ), version = 1)
   expect_true(temporal$outputs$tc$concept_set$include_descendants)
 })
 

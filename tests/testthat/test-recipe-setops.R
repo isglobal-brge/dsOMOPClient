@@ -20,7 +20,7 @@
 #   - JSON/YAML and code round-trip set-op populations and scope;
 #   - single-population (base-only) recipes are byte-for-byte unchanged.
 #
-# recipe_to_plan() is connection-free; the transport test mocks DSI so the
+# recipe_to_plan(, version = 1) is connection-free; the transport test mocks DSI so the
 # generated assign expression can be captured and asserted.
 # ==============================================================================
 
@@ -80,7 +80,7 @@ test_that("maintainer headline query builds and compiles to the server contract"
   expect_null(recipe$populations$A$setop)
 
   # COMPILES (no "Multiple populations are not yet executable" stop).
-  plan <- recipe_to_plan(recipe)
+  plan <- recipe_to_plan(recipe, version = 1)
   expect_s3_class(plan, "omop_plan")
 
   # Every population serialized, with the right kind.
@@ -137,7 +137,7 @@ test_that("declarative populations=list(...) matches the step-by-step build", {
     name = "study", type = "wide", population_id = "final"))
 
   expect_identical(strip_meta(decl), strip_meta(step))
-  expect_identical(recipe_to_plan(decl), recipe_to_plan(step))
+  expect_identical(recipe_to_plan(decl, version = 1), recipe_to_plan(step, version = 1))
 })
 
 # ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ test_that("recipe_to_plan fails closed on an output targeting an undeclared pop"
     recipe_to_plan(omop_recipe(
       variables = omop_variable_age(),
       outputs = omop_output(name = "w", type = "wide",
-                            population_id = "ghost"))),
+                            population_id = "ghost")), version = 1),
     "undeclared population")
 })
 
@@ -204,7 +204,7 @@ test_that("recipe-level scope (cohort + tables) serializes into plan$scope", {
   expect_identical(recipe$scope$combine, "intersect")
   expect_null(recipe$populations$base$cohort_definition_id)
 
-  plan <- recipe_to_plan(recipe)
+  plan <- recipe_to_plan(recipe, version = 1)
   expect_identical(plan$scope$cohort, "scope_tbl")
   # tables stay a character vector: the symbols are spliced at execute time.
   expect_identical(plan$scope$tables, c("inc_a", "inc_b"))
@@ -280,7 +280,7 @@ test_that("ds.omop.plan.execute splices scope symbols into the server call", {
     outputs = omop_output(name = "study", type = "wide",
                           population_id = "either"),
     cohort = "scope_tbl", tables = c("inc_a", "inc_b"), combine = "intersect")
-  plan <- recipe_to_plan(recipe)
+  plan <- recipe_to_plan(recipe, version = 1)
   # factor_concepts off so no harmonization aggregate is attempted.
   plan$options$factor_concepts <- FALSE
 
@@ -315,7 +315,7 @@ test_that("ds.omop.plan.execute omits scope args when the recipe has none", {
   recipe <- omop_recipe(
     variables = omop_variable_age(),
     outputs = omop_output(name = "study", type = "wide"))
-  plan <- recipe_to_plan(recipe)
+  plan <- recipe_to_plan(recipe, version = 1)
   plan$options$factor_concepts <- FALSE
 
   call_expr <- .capture_exec_call(plan, out = c(study = "D_study"))
@@ -333,7 +333,7 @@ test_that("execute rejects output and scope collisions before cleanup", {
     outputs = omop_output(name = "study", type = "wide"),
     tables = "scope_tbl"
   )
-  plan <- recipe_to_plan(recipe)
+  plan <- recipe_to_plan(recipe, version = 1)
   touched <- FALSE
   testthat::local_mocked_bindings(
     datashield.rm = function(...) {
@@ -462,7 +462,7 @@ test_that("base-only recipe carries no populations/scope cruft", {
   expect_identical(names(recipe$populations), "base")
   expect_null(recipe$scope)
 
-  plan <- recipe_to_plan(recipe)
+  plan <- recipe_to_plan(recipe, version = 1)
   # plan$populations carries just the base; the output targets base; no scope.
   expect_identical(names(plan$populations), "base")
   expect_identical(plan$populations$base$kind, "criteria")

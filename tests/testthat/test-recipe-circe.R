@@ -195,7 +195,7 @@ test_that("the supported Circe subset round-trips to an equivalent recipe popula
   r2 <- omop_recipe(populations = pop,
                     variables = omop_variable_age(),
                     outputs = omop_output(type = "wide", population_id = "t2d"))
-  expect_silent(plan <- dsOMOPClient:::recipe_to_plan(r2))
+  expect_silent(plan <- dsOMOPClient:::recipe_to_plan(r2, version = 1))
 })
 
 test_that("multi-concept codesets round-trip and dedup shared concept sets", {
@@ -420,7 +420,7 @@ test_that("an externally-authored minimal Circe JSON imports to a runnable recip
   r <- omop_recipe(populations = pop,
                    variables = omop_variable_age(),
                    outputs = omop_output(type = "wide", population_id = "ext"))
-  expect_silent(dsOMOPClient:::recipe_to_plan(r))
+  expect_silent(dsOMOPClient:::recipe_to_plan(r, version = 1))
 })
 
 test_that("recipe_export_circe errors for an unknown population_id", {
@@ -472,7 +472,7 @@ test_that("typed index events compile and survive recipe round-trips", {
                    variables = omop_variable_age(),
                    outputs = omop_output(type = "wide",
                                         population_id = "study"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   expect_equal(plan$populations$study$index_event,
                list(table = "condition_occurrence", concept_set = 201820L,
                     primary_limit = "last", end_strategy = physical_end))

@@ -3,7 +3,10 @@
 # publishes, and readable reasons when a server is not ready for dsOMOP.
 
 # The dsOMOP server methods this client calls, by DataSHIELD type. A test keeps
-# this list equal to the methods named in the client's code.
+# this list equal to the methods named in the client's code. Methods under
+# `optional` are dsOMOP 2.10.3 methods called only on servers that advertise
+# them (recipe language 2: publication status, revocation, explain); a server
+# without them is still ready for the methods above.
 .DSOMOP_SERVER_METHODS <- list(
   aggregate = c(
     "omopPingDS", "omopGetCapabilitiesDS", "omopDisclosureSettingsDS",
@@ -35,6 +38,9 @@
     "omopAsFactorColumnsDS", "omopMergeDS", "omopFilterDS",
     "omopSelectDS", "omopBindRowsDS", "omopAnalysisRunAssignDS",
     "omopDpPlanExecuteDS"
+  ),
+  optional = c(
+    "omopPlanStatusDS", "omopStagedRevokeDS", "omopPlanExplainDS"
   )
 )
 

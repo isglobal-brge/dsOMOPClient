@@ -81,7 +81,7 @@ test_that("a value_concept row filter flows into a compiled recipe plan", {
   r <- dsOMOPClient:::recipe_add_variable(r, v)
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "obs", type = "long"))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   ft <- plan$outputs[[1]]$filters$custom
   expect_false(is.null(ft))
   leaf <- if ("and" %in% names(ft)) ft$and[[1]] else ft

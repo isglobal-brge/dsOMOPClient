@@ -20,7 +20,7 @@ test_that("DP preparation and table loading use separate server methods", {
     outputs = omop_output(name = "ages", type = "wide")
   )
   ds.omop.dp.prepare(recipe)
-  ds.omop.plan.execute(recipe_to_plan(recipe), out = c(ages = "D_ages"))
+  ds.omop.plan.execute(recipe_to_plan(recipe, version = 1), out = c(ages = "D_ages"))
   expect_identical(calls[[1L]]$server_method, "omopDpPlanExecuteDS")
   expect_false(calls[[1L]]$harmonize_factors)
   expect_identical(calls[[1L]]$output_mode, "memory")

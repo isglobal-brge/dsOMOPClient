@@ -20,7 +20,7 @@ test_that("recipe_to_plan forwards a per-variable row filter to filters$custom",
   r <- dsOMOPClient:::recipe_add_variable(r, v)
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   out <- plan$outputs[[1]]
 
   ft <- out$filters$custom
@@ -39,7 +39,7 @@ test_that("recipe_to_plan no longer writes to the dead output$filter slot", {
   r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_date_range("2020-01-01", "2023-12-31"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "ev", type = "long"))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   out <- plan$outputs$ev
 
   # Exact-name indexing (not $ partial matching): the executable slot is
@@ -82,7 +82,7 @@ test_that("features output carries per-variable row filter on its feature spec",
   r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "features"))
 
-  out <- recipe_to_plan(r)$outputs[[1]]
+  out <- recipe_to_plan(r, version = 1)$outputs[[1]]
   expect_equal(out$type, "event_level")   # features compiles to event_level
   expect_null(out$filters$custom)         # not in the shared slot anymore
   .expect_value_bin_leaf(out$representation$features[["hba1c"]]$filter)
@@ -98,7 +98,7 @@ test_that("survival output forwards per-variable row filter to filters$custom", 
   r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "raw"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "surv", type = "survival"))
 
-  out <- recipe_to_plan(r)$outputs[["surv"]]
+  out <- recipe_to_plan(r, version = 1)$outputs[["surv"]]
   expect_equal(out$type, "survival")
   # Survival has no feature specs; its single outcome filter rides the custom
   # slot as before (the per-spec change is feature/wide/sparse only).
@@ -110,7 +110,7 @@ test_that("single-table wide features output carries per-variable row filter", {
   r <- dsOMOPClient:::recipe_add_variable(r, .value_bin_var(format = "mean"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "wide", type = "wide"))
 
-  out <- recipe_to_plan(r)$outputs[["wide"]]
+  out <- recipe_to_plan(r, version = 1)$outputs[["wide"]]
   expect_equal(out$type, "event_level")
   expect_null(out$filters$custom)
   .expect_value_bin_leaf(out$representation$features[["hba1c"]]$filter)
@@ -123,7 +123,7 @@ test_that("multi-table wide carries row filter on the per-table feature spec", {
     name = "sbp", table = "observation", concept_id = 3004249, format = "mean"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "wide", type = "wide"))
 
-  out <- recipe_to_plan(r)$outputs[["wide"]]
+  out <- recipe_to_plan(r, version = 1)$outputs[["wide"]]
   expect_equal(out$type, "person_level")
   # The measurement spec carries the value_bin; observation's spec does not, and
   # neither table's shared $filters slot is used.
@@ -142,7 +142,7 @@ test_that("recipe_to_plan forwards a per-variable time_window as index_window", 
   r <- dsOMOPClient:::recipe_add_variable(r, v)
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   out <- plan$outputs[[1]]
 
   expect_false(is.null(out$temporal$index_window))
@@ -162,7 +162,7 @@ test_that("recipe_to_plan carries row filter AND time_window from one variable",
   r <- dsOMOPClient:::recipe_add_variable(r, v)
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   out <- plan$outputs[[1]]
 
   expect_false(is.null(out$filters$custom))
@@ -185,7 +185,7 @@ test_that("recipe-level and per-variable row filters AND-merge (neither lost)", 
   r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_date_range("2020-01-01", "2023-12-31"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   ft <- plan$outputs[[1]]$filters$custom
 
   # Top level is an AND with both contributions present.
@@ -220,7 +220,7 @@ test_that("interval recipes apply global filters to every source with AND", {
     r, omop_output(name = "iv", type = "intervals")
   )
 
-  filters <- recipe_to_plan(r)$outputs$iv$source_filters
+  filters <- recipe_to_plan(r, version = 1)$outputs$iv$source_filters
   expect_setequal(names(filters), c("condition_occurrence", "drug_exposure"))
   expect_true("and" %in% names(filters$condition_occurrence))
   expect_equal(length(filters$condition_occurrence$and), 2L)
@@ -254,7 +254,7 @@ test_that("recipe_to_plan forwards per-variable visit_filter and concept_col", {
   r <- dsOMOPClient:::recipe_add_variable(r, v)
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "labs", type = "long"))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   out <- plan$outputs[[1]]
   vf <- out$filters$visit %||% out$visit_filter
   cc <- out$filters$concept_col %||% out$concept_col
@@ -290,7 +290,7 @@ test_that("a recipe round-trips per-variable filter, window, visit, concept_col"
   expect_true(length(v2$filters) >= 1L)
 
   # And the restored recipe still compiles the filter into the executable slot.
-  plan2 <- recipe_to_plan(r2)
+  plan2 <- recipe_to_plan(r2, version = 1)
   out2 <- plan2$outputs[[1]]
   expect_false(is.null(out2$filters$custom))
   expect_equal(out2$temporal$index_window$start, -365)

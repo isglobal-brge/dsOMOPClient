@@ -1652,6 +1652,7 @@ omop.date_handling <- function(mode = "remove", reference = "index",
 #' @export
 ds.omop.plan.validate <- function(plan, symbol = "omop",
                                   conns = NULL) {
+  if (.v2_is_plan_v2(plan)) return(.plan_v2_preview(plan, symbol, conns))
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   plan <- .prepare_plan_for_federation(plan, symbol, conns)
@@ -1716,6 +1717,7 @@ ds.omop.plan.validate <- function(plan, symbol = "omop",
 #' @export
 ds.omop.plan.preview <- function(plan, symbol = "omop",
                                  conns = NULL) {
+  if (.v2_is_plan_v2(plan)) return(.plan_v2_preview(plan, symbol, conns))
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   plan <- .prepare_plan_for_federation(plan, symbol, conns)
@@ -1805,6 +1807,9 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' @param output_mode Character; \code{"memory"} (default, backwards
 #'   compatible) or \code{"staged"} (writes server-local files and returns
 #'   descriptors). Arrow provides Parquet; without it the server uses CSV.
+#' @param on_small_site (2.10.3) \code{"error"} or \code{"skip"}; see
+#'   \code{\link{recipe_execute}}. Used with servers that report their
+#'   publication status (dsOMOP 2.10.3).
 #' @details Loading tables never depends on differential privacy. After a
 #'   memory execution, concept columns are converted to factors harmonized
 #'   across servers (see \code{ds.omop.plan.options}).
@@ -1844,9 +1849,13 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 ds.omop.plan.execute <- function(plan, out = NULL,
                                  symbol = "omop",
                                  conns = NULL,
-                                 output_mode = "memory") {
-  .plan_execute_impl(plan, out = out, symbol = symbol, conns = conns,
-                     output_mode = output_mode)
+                                 output_mode = "memory",
+                                 on_small_site = c("error", "skip")) {
+  on_small_site <- match.arg(on_small_site)
+  args <- list(plan, out = out, symbol = symbol, conns = conns,
+               output_mode = output_mode)
+  if (!identical(on_small_site, "error")) args$on_small_site <- on_small_site
+  do.call(.plan_execute_impl, args)
 }
 
 # Shared plan executor. Loading tables uses the core method
@@ -1856,8 +1865,16 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 .plan_execute_impl <- function(plan, out = NULL, symbol = "omop", conns = NULL,
                                output_mode = "memory",
                                server_method = "omopPlanExecuteDS",
-                               harmonize_factors = TRUE) {
+                               harmonize_factors = TRUE,
+                               on_small_site = "error") {
   output_mode <- match.arg(output_mode, c("memory", "staged"))
+  on_small_site <- match.arg(on_small_site, c("error", "skip"))
+  if (.v2_is_plan_v2(plan)) {
+    return(.plan_execute_v2(plan, out = out, symbol = symbol, conns = conns,
+                            output_mode = output_mode, server_method = server_method,
+                            harmonize_factors = harmonize_factors,
+                            on_small_site = on_small_site))
+  }
   if (identical(output_mode, "staged")) {
     # Standard concept identifiers are the stable OHDSI interchange encoding
     # and allow the server to stream fact tables without per-chunk vocabulary
@@ -1886,9 +1903,13 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     plan, out,
     reserved_symbols = c(symbol, session$res_symbol)
   )
+  # 2.10.3 servers report what they published (dynamic inventory, A-E13); the
+  # static component-suffix prediction is kept only for older servers.
+  status_protocol <- .plan_status_capable(session, names(conns))
   owned <- .plan_expected_output_symbols(plan, out)
   cleanup_family <- .plan_output_symbol_families(out)
-  reserved_targets <- unique(unlist(cleanup_family, use.names = FALSE))
+  reserved_targets <- if (status_protocol) unname(out) else
+    unique(unlist(cleanup_family, use.names = FALSE))
 
   # Recipe-level scope: a cohort reference and/or omop.table symbol(s) the server
   # folds into ONE cohort and intersects into every population. Validate symbol
@@ -1954,6 +1975,11 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     # Splice the closed named scope arguments. Cohorts remain literal `scope`;
     # tables are bare `scope_table_<n>` symbols, never nested list()/c() calls.
     exec_args <- c(exec_args, scope_args, list(combine = combine))
+  }
+  if (status_protocol) {
+    return(.plan_finish_with_status(plan, conns, exec_args, exec_symbol,
+                                    on_small_site, output_mode, harmonize_factors,
+                                    symbol))
   }
 
   expected_servers <- names(conns)

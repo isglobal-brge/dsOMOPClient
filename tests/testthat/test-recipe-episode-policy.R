@@ -34,7 +34,7 @@ test_that("recipe_to_plan transports population and base episode policies", {
     filters = omop_filter_age_group("30-39"),
     episode_policy = "all_episodes"
   )
-  plan <- recipe_to_plan(omop_recipe(populations = eligible))
+  plan <- recipe_to_plan(omop_recipe(populations = eligible), version = 1)
   expect_identical(
     plan$populations$eligible$episode_policy,
     "all_episodes"
@@ -46,7 +46,7 @@ test_that("recipe_to_plan transports population and base episode policies", {
     cohort_definition_id = 42L,
     episode_policy = "first_episode"
   )
-  base_plan <- recipe_to_plan(omop_recipe(populations = base))
+  base_plan <- recipe_to_plan(omop_recipe(populations = base), version = 1)
   expect_identical(
     base_plan$populations$base$episode_policy,
     "first_episode"
@@ -75,7 +75,7 @@ test_that("episode_policy survives JSON, YAML, and generated-code round trips", 
   rebuilt <- eval(parse(text = paste(code, collapse = "\n")))
   expect_identical(rebuilt$populations$base$episode_policy, "last_episode")
   expect_identical(
-    recipe_to_plan(rebuilt)$populations$base$episode_policy,
+    recipe_to_plan(rebuilt, version = 1)$populations$base$episode_policy,
     "last_episode"
   )
 })
@@ -84,6 +84,6 @@ test_that("default populations do not gain episode-policy transport fields", {
   p <- omop_population()
   expect_null(p$episode_policy)
   expect_null(
-    recipe_to_plan(omop_recipe())$populations$base$episode_policy
+    recipe_to_plan(omop_recipe(), version = 1)$populations$base$episode_policy
   )
 })

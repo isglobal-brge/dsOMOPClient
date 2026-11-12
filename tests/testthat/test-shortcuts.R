@@ -217,7 +217,7 @@ test_that("a single bare row filter on a block normalizes to a list", {
 test_that("variables-without-output compiles to one default wide output", {
   r <- omop_recipe(variables = omop_variable_age())
   expect_length(r$outputs, 0L)                 # author declared none
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   expect_length(plan$outputs, 1L)              # but the plan gets one
   out <- plan$outputs[[1]]
   expect_true(identical(out$type, "wide") ||
@@ -225,7 +225,7 @@ test_that("variables-without-output compiles to one default wide output", {
 })
 
 test_that("an empty recipe (no variables, no outputs) stays empty", {
-  plan <- recipe_to_plan(omop_recipe())
+  plan <- recipe_to_plan(omop_recipe(), version = 1)
   expect_length(plan$outputs, 0L)
 })
 

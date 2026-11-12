@@ -133,6 +133,17 @@
 #' @param unit Character or \code{NULL}; \code{"day"} (default for
 #'   \code{time_since}) or \code{"month"}. Months are complete calendar months,
 #'   not fixed 30-day intervals.
+#' @param event (2.10.3) An \code{\link{omop_event}} or \code{\link{omop_era}}
+#'   (or a registry name): the language-2 spelling of the source. Give either
+#'   \code{table}/\code{format} or \code{event}/\code{reducer}, never both.
+#' @param reducer (2.10.3) An \code{\link{omop_reduce}} reducer.
+#' @param where (2.10.3) A row predicate from \code{\link{omop_where}} that
+#'   narrows this variable's rows.
+#' @param visit (2.10.3) \code{NULL}, \code{list(type = <visit_concept_ids>)} or
+#'   \code{"index"}; \code{visit_filter} is kept as its legacy alias (giving
+#'   both is an error).
+#' @param broadcast (2.10.3) Logical; allow this reducer column in a
+#'   \code{long} output (broadcast per episode).
 #' @return An \code{omop_variable} object (a named list with class
 #'   \code{"omop_variable"}).
 #' @examples
@@ -146,11 +157,16 @@
 #'   ),
 #'   outputs = omop_output(type = "wide")
 #' )
+#' # Language 2: an event and a reducer
+#' hba1c <- omop_event("measurement", 3004410, name = "hba1c")
+#' omop_variable(name = "hba1c_last", event = hba1c,
+#'               reducer = omop_reduce("last_value", window = omop_window(-365, 0)))
 #' }
-#' @seealso \code{\link{omop_recipe}}, \code{\link{omop_variable_block}}
+#' @seealso \code{\link{omop_recipe}}, \code{\link{omop_variable_block}},
+#'   \code{\link{omop_reduce}}
 #' @export
 omop_variable <- function(name = NULL,
-                          table,
+                          table = NULL,
                           column = NULL,
                           concept_id = NULL,
                           concept_name = NULL,
@@ -179,7 +195,59 @@ omop_variable <- function(name = NULL,
                           concept_col = NULL,
                           expand = FALSE,
                           reference_date = NULL,
-                          unit = NULL) {
+                          unit = NULL,
+                          event = NULL,
+                          reducer = NULL,
+                          where = NULL,
+                          visit = NULL,
+                          broadcast = FALSE) {
+  if (!is.null(event) || !is.null(reducer)) {
+    legacy_given <- c(
+      table = !is.null(table), column = !is.null(column),
+      concept_id = !is.null(concept_id), concept_name = !is.null(concept_name),
+      type = !missing(type), format = !missing(format),
+      value_source = !is.null(value_source), time_window = !is.null(time_window),
+      suffix_mode = !missing(suffix_mode), filters = length(filters) > 0L,
+      visit_filter = !is.null(visit_filter), concept_col = !is.null(concept_col),
+      expand = !isFALSE(expand), reference_date = !is.null(reference_date),
+      unit = !is.null(unit))
+    if (any(legacy_given)) {
+      stop("omop_variable(): table/format and event/reducer are two spellings; ",
+           "do not combine event/reducer with ",
+           paste(names(legacy_given)[legacy_given], collapse = ", "), ".",
+           call. = FALSE)
+    }
+    if (is.null(event) || is.null(reducer)) {
+      stop("omop_variable(): the event/reducer spelling needs both event and ",
+           "reducer.", call. = FALSE)
+    }
+    event <- .v2_source(event, "omop_variable(): event")
+    if (!inherits(reducer, "omop_reducer") && !.v2_is_param(reducer)) {
+      stop("omop_variable(): reducer must be created with omop_reduce().",
+           call. = FALSE)
+    }
+    return(.v2_variable("reducer", event = event, reducer = reducer,
+                        where = .v2_predicate_arg(where, "omop_variable(): where"),
+                        visit = .v2_visit(visit, "omop_variable(): visit"),
+                        broadcast = .v2_flag(broadcast, "omop_variable(): broadcast"),
+                        name = .v2_name(name, "omop_variable(): name")))
+  }
+  if (is.null(table)) {
+    stop("omop_variable(): table is required (or give event = and reducer =).",
+         call. = FALSE)
+  }
+  if (!is.null(visit) && !is.null(visit_filter)) {
+    stop("omop_variable(): visit_filter is the legacy alias of visit; give one.",
+         call. = FALSE)
+  }
+  if (!is.null(visit)) {
+    visit <- .v2_visit(visit, "omop_variable(): visit")
+    if (is.list(visit)) {
+      # visit = list(type = ids) is exactly the legacy visit_filter.
+      visit_filter <- list(concept_ids = visit$type)
+      visit <- NULL
+    }
+  }
   type <- match.arg(type)
   format <- match.arg(format)
   if (identical(format, "binned")) {
@@ -244,6 +312,10 @@ omop_variable <- function(name = NULL,
   if (!is.null(concept_col)) obj$concept_col <- concept_col
   if (!is.null(time_since_derived)) obj$derived <- time_since_derived
   if (isTRUE(expand)) obj$expand <- TRUE
+  # Language-2 narrowing of a legacy-spelled variable (v2 plans only).
+  if (!is.null(where)) obj$where <- .v2_predicate_arg(where, "omop_variable(): where")
+  if (!is.null(visit)) obj$visit <- visit
+  if (isTRUE(broadcast)) obj$broadcast <- TRUE
   class(obj) <- c("omop_variable", "list")
   obj
 }
@@ -256,6 +328,19 @@ omop_variable <- function(name = NULL,
 #' @export
 #' @method print omop_variable
 print.omop_variable <- function(x, ...) {
+  if (.v2_is_v2_variable(x)) {
+    cat("omop_variable:", x$name %||% "<unnamed>", "\n")
+    switch(x$kind,
+      reducer = cat("  ", x$reducer$fn, "of", .v2_source_label(x$event),
+                    if (!is.null(x$reducer$window))
+                      paste("over", .v2_window_text(x$reducer$window)), "\n"),
+      derived = cat("  derived:", x$derived$kind,
+                    if (identical(x$derived$kind, "age"))
+                      if (isTRUE(x$derived$bands)) "(age_group bands)" else "(exact annual age)",
+                    "\n"),
+      population_column = cat("  population column:", x$population_column, "\n"))
+    return(invisible(x))
+  }
   cat("omop_variable:", x$name, "\n")
   cat("  Table:   ", x$table, "\n")
   if (!is.null(x$concept_id))
@@ -1760,6 +1845,20 @@ omop_index_event <- function(concept_id = NULL,
 #'   to derive this population from by the named set operation on the person key.
 #'   Exactly one may be supplied, and only for a set-op population (mutually
 #'   exclusive with \code{filters} / \code{cohort_definition_id}).
+#' @param index (2.10.3) An \code{\link{omop_index}}: an indexed population
+#'   whose episodes are the selected index events; \code{filters} may then
+#'   hold language-2 criteria (\code{\link{omop_has}}, ...), evaluated per
+#'   episode.
+#' @param match (2.10.3) An \code{\link{omop_match}}: a matched / nested
+#'   case-control population.
+#' @param coverage (2.10.3) An \code{\link{omop_coverage}} observation policy
+#'   (default for indexed populations: unique/drop/drop).
+#'
+#' @details \code{parent_id} restricts membership from 2.10.3: a child without
+#'   its own index inherits the parent's episodes before its criteria are
+#'   evaluated; a child with its own index keeps its episodes for the parent's
+#'   persons. Before 2.10.3 it was recorded but not compiled. A recipe with a
+#'   \code{parent_id} is refused on servers that cannot apply it.
 #' @return An \code{omop_population} object. A set-op population carries a
 #'   \code{$setop = list(op, members)} field; a criteria population carries
 #'   \code{$filters} (and optionally \code{$cohort_definition_id} and
@@ -1786,7 +1885,40 @@ omop_population <- function(id = "base",
                             union = NULL,
                             intersect = NULL,
                             setdiff = NULL,
-                            index_event = NULL) {
+                            index_event = NULL,
+                            index = NULL,
+                            match = NULL,
+                            coverage = NULL) {
+  if (!is.null(index) && !inherits(index, "omop_index") && !.v2_is_param(index)) {
+    stop("omop_population(): index must be created with omop_index().", call. = FALSE)
+  }
+  if (!is.null(match) && !inherits(match, "omop_match")) {
+    stop("omop_population(): match must be created with omop_match().", call. = FALSE)
+  }
+  if (!is.null(coverage) && !inherits(coverage, "omop_coverage")) {
+    stop("omop_population(): coverage must be created with omop_coverage().",
+         call. = FALSE)
+  }
+  if (!is.null(index) && !is.null(index_event)) {
+    stop("omop_population(): give index (language 2) or index_event (legacy), ",
+         "not both.", call. = FALSE)
+  }
+  if (!is.null(index) && !is.null(cohort_definition_id)) {
+    stop("omop_population(): an indexed population takes its cohort through ",
+         "omop_index(list(cohort_definition_id = ...)).", call. = FALSE)
+  }
+  if (!is.null(index) && !is.null(episode_policy)) {
+    stop("omop_population(): episode_policy applies to criteria populations; ",
+         "an index population selects with omop_index(select =).", call. = FALSE)
+  }
+  if (!is.null(match) &&
+      (length(.recipe_arg_list(filters)) > 0L || !is.null(cohort_definition_id) ||
+       !is.null(episode_policy) || !is.null(index_event) || !is.null(index) ||
+       !is.null(union) || !is.null(intersect) || !is.null(setdiff) ||
+       !is.null(coverage) || !is.null(parent_id))) {
+    stop("omop_population(): a match population is defined by omop_match() alone.",
+         call. = FALSE)
+  }
   allowed_episode_policies <- c(
     "any_episode", "all_episodes", "first_episode", "last_episode"
   )
@@ -1821,10 +1953,12 @@ omop_population <- function(id = "base",
            call. = FALSE)
     }
     if (length(filters) > 0 || !is.null(cohort_definition_id) ||
-        !is.null(episode_policy) || !is.null(index_event)) {
+        !is.null(episode_policy) || !is.null(index_event) || !is.null(index) ||
+        !is.null(coverage)) {
       stop("omop_population(): a set-op population (union / intersect / ",
            "setdiff) cannot also take filters or cohort_definition_id; ",
-           "episode_policy and index_event are also criteria-only.",
+           "episode_policy, index_event, index and coverage are also ",
+           "criteria/index-only.",
            call. = FALSE)
     }
     op <- names(setops)[1]
@@ -1861,6 +1995,9 @@ omop_population <- function(id = "base",
   # Only set when supplied so the plain (exported) form of a criteria
   # population stays byte-stable for the JSON/YAML round-trip.
   if (!is.null(setop)) obj$setop <- setop
+  if (!is.null(index)) obj$index <- index
+  if (!is.null(match)) obj$match <- match
+  if (!is.null(coverage)) obj$coverage <- coverage
   class(obj) <- c("omop_population", "list")
   obj
 }
@@ -1882,6 +2019,18 @@ print.omop_population <- function(x, ...) {
     cat("  Cohort ID:", x$cohort_definition_id, "\n")
   if (!is.null(x$episode_policy))
     cat("  Episode policy:", x$episode_policy, "\n")
+  if (!is.null(x[["index"]])) {
+    cat("  Index:", .v2_source_label_any(x[["index"]]$source), "- select", x[["index"]]$select,
+        "- end", x[["index"]]$end$strategy, "\n")
+  }
+  if (!is.null(x$match)) {
+    cat("  Matched:", x$match$controls_per_case, "controls per case of",
+        x$match$cases, "from", x$match$controls, "\n")
+  }
+  if (!is.null(x$coverage)) {
+    cat("  Coverage:", x$coverage$policy, "/", x$coverage$on_ambiguous, "/",
+        x$coverage$on_missing, "\n")
+  }
   if (length(x$filters) > 0)
     cat("  Filters:", length(x$filters), "\n")
   invisible(x)
@@ -1922,6 +2071,11 @@ print.omop_population <- function(x, ...) {
 #'   required for a \code{"time_since"} block.
 #' @param unit Character or \code{NULL}; \code{"day"} (default for
 #'   \code{time_since}) or complete calendar \code{"month"} units.
+#' @param where (2.10.3) A row predicate from \code{\link{omop_where}} applied
+#'   to every variable of the block.
+#' @param visit (2.10.3) \code{NULL}, \code{list(type = <visit_concept_ids>)}
+#'   or \code{"index"}, for every variable of the block.
+#' @param concept_col (2.10.3) Concept column the block's concepts scope.
 #' @return An \code{omop_variable_block} object.
 #' @examples
 #' \dontrun{
@@ -1949,9 +2103,15 @@ omop_variable_block <- function(id = NULL,
                                 population_id = "base",
                                 expand = FALSE,
                                 reference_date = NULL,
-                                unit = NULL) {
+                                unit = NULL,
+                                where = NULL,
+                                visit = NULL,
+                                concept_col = NULL) {
   concept_ids <- .plan_integer_vector(
     concept_ids, "concept_ids", allow_empty = TRUE)
+  where <- .v2_predicate_arg(where, "omop_variable_block(): where")
+  visit <- .v2_visit(visit, "omop_variable_block(): visit")
+  concept_col <- .v2_column(concept_col, "omop_variable_block(): concept_col")
   time_since <- identical(format, "time_since")
   if (time_since) {
     if (is.null(reference_date)) {
@@ -1994,6 +2154,9 @@ omop_variable_block <- function(id = NULL,
     obj$reference_date <- reference_date
     obj$unit <- unit
   }
+  if (!is.null(where)) obj$where <- where
+  if (!is.null(visit)) obj$visit <- visit
+  if (!is.null(concept_col)) obj$concept_col <- concept_col
   class(obj) <- c("omop_variable_block", "list")
   obj
 }
@@ -2047,6 +2210,26 @@ print.omop_variable_block <- function(x, ...) {
 #'   survival outputs).
 #' @param result_symbol Character or \code{NULL}; R symbol name for the result
 #'   on the server (auto-generated as \code{D_<name>} if \code{NULL}).
+#' @param rows (2.10.3) Alias of \code{population_id} (give one).
+#' @param grain (2.10.3) \code{"episode"} or \code{"person"}; default episode
+#'   over an indexed population, person otherwise. Person grain over an indexed
+#'   population needs \code{collapse}.
+#' @param columns (2.10.3) Alias of \code{variables} (give one).
+#' @param format (2.10.3) Language-2 format: \code{"wide"}, \code{"long"},
+#'   \code{"survival"}, \code{"intervals"}, \code{"temporal_covariates"},
+#'   \code{"person_period"}, \code{"sparse"}, \code{"membership"},
+#'   \code{"dictionary"} or \code{"joined"}. \code{type} (the legacy presets)
+#'   and \code{format} are alternatives; giving neither keeps the legacy
+#'   \code{type = "wide"}.
+#' @param sources (2.10.3) Event/era sources of a \code{long} output.
+#' @param collapse (2.10.3) \code{"first_episode"}, \code{"last_episode"} or
+#'   \code{"any"}: person grain over an indexed population.
+#' @details Survival outputs keep the legacy 730-day time-at-risk default when
+#'   no \code{tar}/\code{tars} is given (\code{print()},
+#'   \code{recipe_explain()} and \code{recipe_lint()} state it); give
+#'   \code{tar = omop_window(1, NULL)} for unbounded follow-up. A language-2
+#'   survival output needs an explicit \code{censor} list: only listed sources
+#'   cap follow-up.
 #' @return An \code{omop_output} object.
 #' @examples
 #' \dontrun{
@@ -2059,22 +2242,70 @@ print.omop_variable_block <- function(x, ...) {
 #' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_to_plan}}
 #' @export
 omop_output <- function(name = "output_1",
-                        type = c("wide", "long", "features",
-                                 "survival", "intervals",
-                                 "baseline", "temporal_covariates",
-                                 "person_period"),
+                        type = NULL,
                         variables = NULL,
                         population_id = "base",
                         options = list(),
-                        result_symbol = NULL) {
-  if (length(type) == 1L &&
-      type %in% c("joined_long", "covariates_sparse")) {
-    stop("Recipe output type '", type,
-         "' has no faithful executable mapping. Use split 'long'/'features' ",
-         "outputs, or ds.omop.plan.temporal_covariates() for sparse temporal ",
-         "covariates.", call. = FALSE)
+                        result_symbol = NULL,
+                        rows = NULL,
+                        grain = NULL,
+                        columns = NULL,
+                        format = NULL,
+                        sources = NULL,
+                        collapse = NULL) {
+  if (!is.null(type) && !is.null(format)) {
+    stop("omop_output(): type (legacy preset) and format are alternatives; ",
+         "give one.", call. = FALSE)
   }
-  type <- match.arg(type)
+  if (!is.null(rows)) {
+    if (!missing(population_id) && !identical(rows, population_id)) {
+      stop("omop_output(): rows is an alias of population_id; give one.",
+           call. = FALSE)
+    }
+    population_id <- .v2_name(rows, "omop_output(): rows")
+  }
+  if (!is.null(columns)) {
+    if (!is.null(variables)) {
+      stop("omop_output(): columns is an alias of variables; give one.",
+           call. = FALSE)
+    }
+    variables <- columns
+  }
+  if (!is.null(format)) {
+    format <- .v2_choice(format, c("wide", "long", "survival", "intervals",
+                                   "temporal_covariates", "person_period", "sparse",
+                                   "membership", "dictionary", "joined"),
+                         "omop_output(): format")
+  }
+  if (!is.null(grain)) grain <- .v2_choice(grain, c("episode", "person"), "omop_output(): grain")
+  if (!is.null(collapse)) {
+    collapse <- .v2_choice(collapse, c("first_episode", "last_episode", "any"),
+                           "omop_output(): collapse")
+  }
+  if (!is.null(sources) && is.null(format)) {
+    stop("omop_output(): sources need a language-2 format (e.g. format = \"long\").",
+         call. = FALSE)
+  }
+  if (is.null(type) && is.null(format)) type <- "wide"
+  if (!is.null(type) && !is.null(grain) && type %in% c("wide", "features")) {
+    # The legacy presets carry grain as an option; keep one representation.
+    if (!is.null(options$grain) && !identical(options$grain, grain)) {
+      stop("omop_output(): grain conflicts with options$grain.", call. = FALSE)
+    }
+    options$grain <- grain
+    grain <- NULL
+  }
+  if (!is.null(type)) {
+    if (length(type) == 1L &&
+        type %in% c("joined_long", "covariates_sparse")) {
+      stop("Recipe output type '", type,
+           "' has no faithful executable mapping. Use split 'long'/'features' ",
+           "outputs, or ds.omop.plan.temporal_covariates() for sparse temporal ",
+           "covariates.", call. = FALSE)
+    }
+    type <- match.arg(type, c("wide", "long", "features", "survival", "intervals",
+                              "baseline", "temporal_covariates", "person_period"))
+  }
   if (is.null(result_symbol)) {
     result_symbol <- paste0("D_", name)
   }
@@ -2115,6 +2346,11 @@ omop_output <- function(name = "output_1",
     options       = options,
     result_symbol = result_symbol
   )
+  # Language-2 fields only when used, so legacy outputs keep their plain form.
+  if (!is.null(format)) obj$format <- format
+  if (!is.null(grain)) obj$grain <- grain
+  if (!is.null(collapse)) obj$collapse <- collapse
+  if (!is.null(sources)) obj$sources <- sources
   class(obj) <- c("omop_output", "list")
   obj
 }
@@ -2127,11 +2363,19 @@ omop_output <- function(name = "output_1",
 #' @export
 #' @method print omop_output
 print.omop_output <- function(x, ...) {
-  cat("omop_output:", x$name, "[", x$type, "]",
+  cat("omop_output:", x$name, "[", x$format %||% x$type, "]",
       "pop:", x$population_id,
       "-> ", x$result_symbol %||% paste0("D_", x$name), "\n")
+  if (!is.null(x$grain)) cat("  Grain:", x$grain,
+                             if (!is.null(x$collapse)) paste0("(collapse ", x$collapse, ")"), "\n")
   if (!is.null(x$variables))
     cat("  Variables:", paste(x$variables, collapse = ", "), "\n")
+  if (identical(x$type, "survival") || identical(x$format, "survival")) {
+    if (is.null(x$options[["tar"]]) && is.null(x$options[["tars"]])) {
+      cat("  Follow-up: ends 730 days after index (default TAR; give tar = ",
+          "omop_window(1, NULL) for unbounded follow-up)\n", sep = "")
+    }
+  }
   invisible(x)
 }
 
@@ -2184,7 +2428,9 @@ print.omop_output <- function(x, ...) {
 .recipe_arg_list <- function(x) {
   if (is.null(x)) return(list())
   leaf_classes <- c("omop_population", "omop_variable_block", "omop_variable",
-                    "omop_filter", "omop_filter_group", "omop_output")
+                    "omop_filter", "omop_filter_group", "omop_output",
+                    "omop_criterion", "omop_concept_set", "omop_event",
+                    "omop_interval", "omop_coverage")
   if (inherits(x, leaf_classes)) return(list(x))
   if (is.list(x)) return(x)
   list(x)
@@ -2239,6 +2485,16 @@ print.omop_output <- function(x, ...) {
 #' @param options Named list of plan-wide options (\code{translate_concepts},
 #'   \code{block_sensitive}, \code{factor_concepts}); only supplied keys
 #'   override the defaults.
+#' @param concept_sets (2.10.3) Named concept sets
+#'   (\code{\link{omop_concept_set}}) referenced by name from events.
+#' @param events (2.10.3) Declared \code{\link{omop_event}}s (events used
+#'   inline elsewhere are declared automatically).
+#' @param intervals (2.10.3) Declared \code{\link{omop_era}}s.
+#' @param coverage (2.10.3) Default \code{\link{omop_coverage}} for the
+#'   recipe's populations.
+#' @param publish (2.10.3) \code{NULL} (every output is published) or the
+#'   names of the outputs to publish; other outputs are computed privately
+#'   when another output depends on them and are never released.
 #' @return An \code{omop_recipe} object.
 #' @examples
 #' \dontrun{
@@ -2311,8 +2567,29 @@ omop_recipe <- function(variables = NULL,
                         tables = NULL,
                         combine = "union",
                         options = NULL,
-                        output = NULL) {
+                        output = NULL,
+                        concept_sets = NULL,
+                        events = NULL,
+                        intervals = NULL,
+                        coverage = NULL,
+                        publish = NULL) {
   recipe <- .omop_recipe_empty()
+
+  # Language-2 registries (stored only when used, so legacy recipes keep their
+  # exact plain form).
+  for (cs_item in .v2_named_items(concept_sets, "omop_concept_set", "concept_sets")) {
+    recipe <- recipe_add_concept_set(recipe, cs_item)
+  }
+  for (ev in .recipe_arg_list(events)) recipe <- recipe_add_event(recipe, ev)
+  for (iv in .recipe_arg_list(intervals)) recipe <- recipe_add_interval(recipe, iv)
+  if (!is.null(coverage)) {
+    if (!inherits(coverage, "omop_coverage")) {
+      stop("omop_recipe(): coverage must be created with omop_coverage().",
+           call. = FALSE)
+    }
+    recipe$coverage <- coverage
+  }
+  if (!is.null(publish)) recipe <- recipe_set_publish(recipe, publish)
 
   # Delegate to the internal slot-filling setters in dependency order so the
   # declarative form is identical by construction to step-by-step building.
@@ -2322,7 +2599,19 @@ omop_recipe <- function(variables = NULL,
   for (b in .recipe_arg_list(blocks)) {
     recipe <- recipe_add_block(recipe, b)
   }
-  for (v in .recipe_arg_list(variables)) {
+  var_items <- .recipe_arg_list(variables)
+  var_names <- names(var_items)
+  for (i in seq_along(var_items)) {
+    v <- var_items[[i]]
+    list_name <- if (!is.null(var_names) && nzchar(var_names[[i]])) var_names[[i]] else NULL
+    if (.v2_is_v2_variable(v) && !is.null(list_name)) {
+      if (is.null(v$name)) {
+        v$name <- .v2_name(list_name, "omop_recipe(): variable name")
+      } else if (!identical(v$name, list_name)) {
+        stop("omop_recipe(): variable '", list_name, "' is named '", v$name,
+             "' by its constructor; use one name.", call. = FALSE)
+      }
+    }
     recipe <- recipe_add_variable(recipe, v)
   }
   filter_items <- .recipe_arg_list(filters)
@@ -2388,6 +2677,15 @@ recipe_add_population <- function(recipe, population) {
            paste(missing, collapse = "', '"),
            "'; declare member populations before the set-op that combines them.",
            call. = FALSE)
+    }
+  }
+  if (!is.null(population$match)) {
+    missing <- setdiff(c(population$match$cases, population$match$controls),
+                       names(recipe$populations))
+    if (length(missing) > 0) {
+      stop("Match population '", population$id, "' references undeclared ",
+           "population(s) '", paste(missing, collapse = "', '"),
+           "'; declare cases and controls first.", call. = FALSE)
     }
   }
   recipe$populations[[population$id]] <- population
@@ -2535,7 +2833,10 @@ recipe_add_block <- function(recipe, block) {
       suffix_mode = block$suffix_mode,
       filters = block$filters,
       reference_date = block$reference_date,
-      unit = block$unit
+      unit = block$unit,
+      concept_col = block$concept_col,
+      where = block$where,
+      visit = block$visit
     )
     # Provenance marker so recipe_to_code() can skip block-derived variables
     # without guessing by name.
@@ -2572,6 +2873,21 @@ recipe_add_variable <- function(recipe, variable = NULL, ...) {
     variable <- omop_variable(...)
   } else if (!inherits(variable, "omop_variable")) {
     stop("variable must be an omop_variable object", call. = FALSE)
+  }
+
+  if (.v2_is_v2_variable(variable)) {
+    # Language-2 variables are referenced by name from outputs: an explicit
+    # name is never silently changed.
+    if (is.null(variable$name)) {
+      variable$name <- .ensure_unique_name(.v2_variable_default_name(variable),
+                                           names(recipe$variables))
+    } else if (variable$name %in% names(recipe$variables)) {
+      stop("Variable name '", variable$name, "' is already used in the recipe.",
+           call. = FALSE)
+    }
+    recipe$variables[[variable$name]] <- variable
+    recipe$meta$modified <- Sys.time()
+    return(recipe)
   }
 
   # Ensure unique name
@@ -2617,12 +2933,14 @@ recipe_remove_variable <- function(recipe, name) {
 recipe_add_filter <- function(recipe, filter, id = NULL) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
-  if (!inherits(filter, "omop_filter") && !inherits(filter, "omop_filter_group"))
-    stop("filter must be an omop_filter or omop_filter_group object",
+  if (!inherits(filter, "omop_filter") && !inherits(filter, "omop_filter_group") &&
+      !inherits(filter, "omop_criterion"))
+    stop("filter must be an omop_filter, omop_filter_group or criterion object",
          call. = FALSE)
 
   if (is.null(id)) {
     ftype <- if (inherits(filter, "omop_filter_group")) filter$operator
+             else if (inherits(filter, "omop_criterion")) filter$kind
              else filter$type
     id <- paste0("f", length(recipe$filters) + 1L, "_", ftype)
   }
@@ -3254,6 +3572,24 @@ print.omop_recipe <- function(x, ...) {
 
 #' Convert a recipe to an extraction plan
 #'
+#' Compiles the recipe into the plan sent to the server. \code{version = 2}
+#' (the default) emits a recipe-language 2.0 plan (\code{omop_plan_v2}),
+#' validated against the vendored \code{plan-v2.json} schema: named concept
+#' sets, events, intervals, populations, variables and outputs with typed
+#' references, inline objects interned under deterministic names, legacy
+#' constructors lowered to their native equivalents (or refused, naming the
+#' construct, when no faithful equivalent exists). \code{version = 1} emits
+#' the 2.10.1 plan unchanged for recipes built from 2.10.1 constructors; it
+#' refuses language-2 constructs, which have no v1 equivalent.
+#'
+#' \code{\link{recipe_execute}} chooses the version per execution: a recipe
+#' built only from 2.10.1 constructors (and without \code{parent_id}) runs as
+#' a v1 plan on every server, so its results stay identical; any other recipe
+#' runs as a v2 plan on servers advertising \code{recipe_language} 2 and every
+#' operation it needs, and is refused (naming the operation) otherwise.
+#'
+#' The legacy (version 1) compilation:
+#'
 #' Compiles the recipe into an \code{omop_plan} suitable for server-side
 #' execution via \code{\link{ds.omop.plan.execute}}. The conversion maps
 #' population-level filters to cohort specifications, groups variables by
@@ -3284,7 +3620,9 @@ print.omop_recipe <- function(x, ...) {
 #' the server can inspect the exact payload before it is executed.
 #'
 #' @param recipe An \code{omop_recipe} object.
-#' @return An \code{omop_plan} object ready for execution.
+#' @param version Plan version: \code{2} (default) or \code{1}.
+#' @return An \code{omop_plan_v2} (version 2) or \code{omop_plan} (version 1)
+#'   object ready for execution.
 #' @examples
 #' \dontrun{
 #' recipe <- omop_recipe(
@@ -3298,7 +3636,28 @@ print.omop_recipe <- function(x, ...) {
 #' @seealso \code{\link{recipe_execute}}, \code{\link{omop_recipe}},
 #'   \code{\link{ds.omop.plan}}
 #' @export
-recipe_to_plan <- function(recipe) {
+recipe_to_plan <- function(recipe, version = 2L) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  version <- .v2_int(version, "recipe_to_plan(): version")
+  if (identical(version, 1L)) {
+    constructs <- .recipe_v2_constructs(recipe)
+    if (length(constructs) > 0L) {
+      stop("recipe_to_plan(version = 1): the recipe uses language-2 construct(s) ",
+           "with no v1 equivalent: ", paste(constructs, collapse = "; "), ".",
+           call. = FALSE)
+    }
+    return(.recipe_to_plan_v1(recipe))
+  }
+  if (!identical(version, 2L)) {
+    stop("recipe_to_plan(): version must be 1 or 2.", call. = FALSE)
+  }
+  .recipe_to_plan_v2(recipe)
+}
+
+#' Legacy (2.10.1) recipe compiler: the version 1 plan
+#' @keywords internal
+.recipe_to_plan_v1 <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
 
@@ -6769,11 +7128,58 @@ recipe_import_circe <- function(file_or_json, id = NULL, label = NULL) {
   }
 
   hint <- expr$.dsomop %||% list()
-  omop_population(
+  pop <- omop_population(
     id = id %||% hint$population_id %||% "imported",
     label = label %||% hint$label %||% "Imported from Circe",
     filters = filters,
     index_event = index_event)
+  # Language-2 form (used by recipe_to_plan(version = 2)): Circe qualifies
+  # primary events by the observation window and then keeps the FIRST
+  # qualifying event per person, i.e. select = "first_eligible" over
+  # omop_observed(before = PriorDays, after = PostDays) on the unique
+  # covering observation period. Inclusion rules are applied after that limit
+  # in Circe, which a single first_eligible population cannot express, so an
+  # expression with inclusion rules keeps the legacy (select-then-filter) form.
+  if (identical(primary_type, "first") &&
+      length(expr$InclusionRules %||% list()) == 0L) {
+    pop$circe_v2 <- .circe_v2_population(primary[[1L]], concept_sets,
+                                         end_strategy, prior_days, post_days)
+  }
+  pop
+}
+
+# The language-2 index population of a Circe expression without inclusion
+# rules (see recipe_import_circe()).
+.circe_v2_population <- function(primary, concept_sets, end_strategy,
+                                  prior_days, post_days) {
+  domain <- intersect(names(primary), unlist(.circe_domain_map))[[1L]]
+  spec <- primary[[domain]]
+  cs <- NULL
+  if (!is.null(spec$CodesetId)) {
+    d <- .circe_codeset_details(spec$CodesetId, concept_sets)
+    cs_name <- if (!is.null(d$name) && nzchar(d$name)) {
+      .v2_truncate_name(.sanitize_name(d$name))
+    } else {
+      paste0("concept_set_", as.integer(spec$CodesetId))
+    }
+    cs <- omop_concept_set(d$ids, descendants = isTRUE(d$include_descendants),
+                           mapped = isTRUE(d$include_mapped), name = cs_name)
+  }
+  end <- omop_end("observation_end")
+  if (!is.null(end_strategy)) {
+    off <- end_strategy$DateOffset
+    end <- if (identical(off$DateField, "StartDate")) {
+      omop_end("fixed", days = as.integer(off$Offset))
+    } else if (off$Offset >= 0L) {
+      omop_end("event_end", pad = as.integer(off$Offset))
+    } else {
+      return(NULL)
+    }
+  }
+  list(index = omop_index(omop_event(.circe_table_from_domain(domain), cs),
+                          select = "first_eligible", end = end),
+       filters = list(omop_observed(before = prior_days, after = post_days)),
+       coverage = omop_coverage("unique"))
 }
 
 #' Save a recipe to JSON or YAML
@@ -6935,8 +7341,9 @@ recipe_preview_schema <- function(recipe) {
 
   # Preview only contracts that actually compile. This prevents the schema
   # helper from advertising aliases, joins, or output types the plan will not
-  # materialize.
-  plan <- recipe_to_plan(recipe)
+  # materialize. The preview describes the 2.10.1 (version 1) output shapes;
+  # recipe_explain() describes language-2 recipes.
+  plan <- recipe_to_plan(recipe, version = 1L)
 
   empty_schema <- function() data.frame(
     output = character(0), column = character(0), source = character(0),
@@ -7286,7 +7693,23 @@ recipe_preview_schema <- function(recipe) {
 recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
-  ds.omop.plan.preview(recipe_to_plan(recipe), symbol = symbol, conns = conns)
+  plan <- .recipe_plan_for_session(recipe, symbol, conns)
+  ds.omop.plan.preview(plan, symbol = symbol, conns = conns)
+}
+
+# The plan version a recipe compiles to without a session: v1 for recipes built
+# only from 2.10.1 constructors (their results stay identical on every server),
+# v2 otherwise (support is negotiated when it executes).
+.recipe_plan_auto <- function(recipe) {
+  recipe_to_plan(recipe, version = if (length(.recipe_needs_v2(recipe))) 2L else 1L)
+}
+
+# The plan a recipe executes as: v1 for 2.10.1-only recipes, v2 (negotiated)
+# otherwise. A v1-expressible recipe needs no session to compile.
+.recipe_plan_for_session <- function(recipe, symbol, conns) {
+  if (length(.recipe_needs_v2(recipe)) == 0L) return(recipe_to_plan(recipe, version = 1L))
+  session <- .get_session(symbol)
+  .recipe_plan_for_execution(recipe, session, conns %||% session$conns)
 }
 
 #' Validate a recipe on the server
@@ -7308,7 +7731,8 @@ recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
 recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
-  ds.omop.plan.validate(recipe_to_plan(recipe), symbol = symbol, conns = conns)
+  plan <- .recipe_plan_for_session(recipe, symbol, conns)
+  ds.omop.plan.validate(plan, symbol = symbol, conns = conns)
 }
 
 # Formats that are computed from the person table (no concept extraction), so
@@ -7406,7 +7830,8 @@ recipe_lint <- function(recipe) {
 
   # ERROR no_compile: the compile error IS the first lint.
   compile_err <- tryCatch({
-    recipe_to_plan(recipe)
+    recipe_to_plan(recipe,
+                   version = if (length(.recipe_needs_v2(recipe))) 2L else 1L)
     NULL
   }, error = function(e) conditionMessage(e))
   if (!is.null(compile_err)) {
@@ -7680,7 +8105,22 @@ recipe_preview_stats <- function(recipe,
 #'   with \code{cohort}.
 #' @param combine Character; how to fold the scope sources together:
 #'   \code{"union"} (the default) or \code{"intersect"}.
+#' @param on_small_site (2.10.3) \code{"error"} (default) or \code{"skip"}:
+#'   what happens when a server refuses to publish an output because it would
+#'   describe fewer persons than its \code{nfilter.subset}. With
+#'   \code{"error"}, a strict server's refusal rolls the whole federation back
+#'   and raises the server's constant disclosure message, and a non-strict
+#'   server's partial publication is kept with a warning naming the rejected
+#'   outputs. With \code{"skip"}, that server commits nothing (it is asked to
+#'   publish all or none) and is returned as \code{NULL} (attribute
+#'   \code{"inventory"}) while the other servers are kept. Only the
+#'   minimum-persons refusal is skippable: validation, resource, dialect,
+#'   transport and execution failures are errors under both settings.
 #' @return Invisibly, the output symbol mapping (a named character vector).
+#'   With 2.10.3 servers the names are read from the servers' publication
+#'   inventory (fresh names on collision, one symbol per survival TAR, e.g.
+#'   \code{D_tte.itt}); attribute \code{"inventory"} holds each server's
+#'   published components (\code{NULL} for a skipped server).
 #'   As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
 #'   recorded on the session so the manipulation wrappers can default to the
 #'   last one.
@@ -7698,9 +8138,11 @@ recipe_preview_stats <- function(recipe,
 #' @export
 recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
                            output_mode = "memory", cohort = NULL,
-                           tables = NULL, combine = "union") {
+                           tables = NULL, combine = "union",
+                           on_small_site = c("error", "skip")) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
+  on_small_site <- match.arg(on_small_site)
 
   # Execution-time scope overrides the recipe's stored scope when given. A scalar
   # cohort_definition_id here is a SCOPE (unlike omop_recipe(cohort=), where a
@@ -7711,10 +8153,12 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
                                combine = combine)
   }
 
-  plan <- recipe_to_plan(recipe)
-  out <- .recipe_out_symbols(recipe, plan, out)
-  ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns,
-                       output_mode = output_mode)
+  plan <- .recipe_plan_for_session(recipe, symbol, conns)
+  if (!.v2_is_plan_v2(plan)) out <- .recipe_out_symbols(recipe, plan, out)
+  args <- list(plan, out = out, symbol = symbol, conns = conns,
+               output_mode = output_mode)
+  if (!identical(on_small_site, "error")) args$on_small_site <- on_small_site
+  do.call(ds.omop.plan.execute, args)
 }
 
 # Default server symbols for the plan outputs of a recipe (an output's
