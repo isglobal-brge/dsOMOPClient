@@ -1590,9 +1590,12 @@ omop_filter_missing_measurement <- function(concept_id, window = NULL,
 #'
 #' @param concept_id Integer concept ID(s), or \code{NULL} for any event in the
 #'   selected table.
-#' @param table Character OMOP event table.  The currently executable portable
-#'   subset is condition_occurrence, drug_exposure, measurement, observation,
-#'   procedure_occurrence, device_exposure, and visit_occurrence.
+#' @param table Character OMOP event table: any table with an event role
+#'   record in the role registry (condition_occurrence, drug_exposure,
+#'   procedure_occurrence, device_exposure, measurement, observation,
+#'   visit_occurrence, visit_detail, observation_period, death, specimen, note,
+#'   payer_plan_period, the era tables and, in CDM 5.4, episode). The server
+#'   checks it against its own CDM version.
 #' @param concept_name Optional human-readable concept-set name.
 #' @param primary_limit Character; \code{"first"}, \code{"last"}, or
 #'   \code{"all"} candidate events per person.
@@ -1612,10 +1615,10 @@ omop_index_event <- function(concept_id = NULL,
                              include_descendants = FALSE,
                              include_mapped = FALSE,
                              end_strategy = NULL) {
-  allowed_tables <- c(
-    "condition_occurrence", "drug_exposure", "measurement", "observation",
-    "procedure_occurrence", "device_exposure", "visit_occurrence"
-  )
+  # Defect B-20: the event tables of the server's role registry (design-2.10.3
+  # section 6.2, vendored inst/ohdsi/roles-*.csv), not a fixed allowlist. The
+  # server checks the table against its own CDM version.
+  allowed_tables <- .role_event_tables()
   if (!is.character(table) || length(table) != 1L || is.na(table) ||
       !nzchar(table)) {
     stop("omop_index_event(): table must be one non-empty string.",

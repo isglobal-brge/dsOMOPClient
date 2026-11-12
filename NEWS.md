@@ -9,6 +9,11 @@ workstream fills its entries.
   birth components are not blocked on assignment paths.
 
 ## Newly permitted
+- (B-20) `omop_index_event()` accepts every event table of the server's role
+  registry (vendored `inst/ohdsi/roles-5.3.csv`, `roles-5.4.csv`): besides the
+  seven tables of 2.10.2, `visit_detail`, `observation_period`, `death`,
+  `specimen`, `note`, `payer_plan_period`, the era tables and `episode`; the
+  server checks the table against its own CDM version.
 - No client-side mirrors of removed server gates (`narrow_filter`,
   `unbound_numeric_filter`, mandatory bins); defaults are surfaced by
   `print()`, `recipe_explain()` and `recipe_lint()` instead.
@@ -17,6 +22,11 @@ workstream fills its entries.
 - Plans that do not validate against the vendored `plan-v2.json` are never
   sent; a v2 recipe whose operations an older server lacks is refused with
   the operation named.
+
+## Shared with dsOMOP 2.10.3 (WS-2)
+- `R/ir_defaults.R` (`.irNormalizeWire()`), the language 2.0 normaliser shared
+  byte-identically with the server: normalised forms and their semantic
+  digests agree on both sides.
 
 ## Contracts shipped by WS-0
 - Vendored `inst/schema/` (byte-identical to dsOMOP's), `R/json_schema.R`,
