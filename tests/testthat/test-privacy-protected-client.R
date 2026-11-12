@@ -112,7 +112,7 @@ test_that("protected counts pool their signed person totals", {
     # Pooling sums the signed components (not the clipped per-site 0).
     expect_equal(value$pooled$noisy_count, 100.9)
     expect_identical(value$pooled$pooling,
-                     "sum_of_signed_components_then_derived_once")
+                     "sum_of_signed_basis_components_then_derived_once")
     expect_identical(value$pooled$protection, "realised_sticky")
     privacy <- value$meta$privacy
     expect_identical(privacy$contract, .DP_PROTECTED_PRIVACY_CONTRACT)
@@ -617,4 +617,46 @@ test_that("only a fixed synopsis is printed with a delta", {
                  blocks = list(binary = "standard",
                                distribution = "realised_sticky"))
   expect_false(grepl("delta", mixed))
+})
+
+test_that("typed views pool from their complete basis (dsOMOP 2.10.3 B05)", {
+  statuses <- list(a = .pc_status(), b = .pc_status())
+  basis_coords <- c("root", "cell=F", "cell=M", "cell=Other", "cell=Unknown")
+  basis_families <- c("N", "H", "H", "H", "H")
+  site <- function(basis_signed) {
+    view <- list(1L, 2L)
+    shown_cells <- vapply(view, function(i) sum(basis_signed[-1L][i]),
+                          numeric(1L))
+    p <- .pc_payload("categorical_histogram",
+                     c(basis_signed[[1L]], shown_cells),
+                     c("root", "cell=F", "cell=M"), c("N", "H", "H"),
+                     list(levels = c("F", "M"), counts = pmax(0, shown_cells)))
+    p$components$basis <- list(coordinates = basis_coords,
+                               families = basis_families,
+                               signed = basis_signed)
+    p$components$view_of_basis <- view
+    p
+  }
+  # Site totals 20 and 30; Other/Unknown cells carry protected mass too.
+  releases <- list(a = site(c(20, 9, 8, 2, 1)), b = site(c(30, 12, 14, 3, 1)))
+  .pc_backend(statuses, releases, function(datasources, sent) {
+    value <- ds.omop.dp.release(
+      "analysis_table",
+      omop_privacy("categorical_histogram", "sex", levels = c("F", "M")),
+      datasources)
+    # Pooled basis (50; 21, 22, 5, 2) already sums to 50: the views are its
+    # F and M cells, not a re-projection of the displayed view alone.
+    expect_equal(value$pooled$counts, c(21, 22))
+    expect_identical(value$pooled$pooling,
+                     "sum_of_signed_basis_components_then_derived_once")
+  })
+  # A different basis (e.g. another registered domain) is refused.
+  other <- releases
+  other$b$components$basis$coordinates[[4L]] <- "cell=X"
+  .pc_backend(statuses, other, function(datasources, sent) {
+    expect_error(ds.omop.dp.release(
+      "analysis_table",
+      omop_privacy("categorical_histogram", "sex", levels = c("F", "M")),
+      datasources), "not compatible")
+  })
 })

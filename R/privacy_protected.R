@@ -243,14 +243,30 @@
 #' @keywords internal
 .dp_pool_protected <- function(per_site, privacy) {
   .dp_protected_sources(per_site, "protected releases")
-  first <- per_site[[1L]]$components
+  # dsOMOP 2.10.3 typed releases are views of one complete public basis: pool
+  # the signed basis components and derive every view once from the pooled,
+  # projected basis (older payloads without a basis pool their view cells).
+  basis_of <- function(p) {
+    p$components$basis %||% list(coordinates = p$components$coordinates,
+                                 families = p$components$families,
+                                 signed = p$components$signed)
+  }
+  first <- per_site[[1L]]
+  fc <- first$components
+  fb <- basis_of(first)
   for (site in names(per_site)) {
-    comps <- per_site[[site]]$components
-    if (!identical(comps$owner, first$owner) ||
-        !identical(comps$coordinates, first$coordinates) ||
-        !identical(comps$families, first$families)) {
+    p <- per_site[[site]]
+    comps <- p$components
+    b <- basis_of(p)
+    if (!identical(comps$owner, fc$owner) ||
+        !identical(comps$coordinates, fc$coordinates) ||
+        !identical(comps$families, fc$families) ||
+        !identical(b$coordinates, fb$coordinates) ||
+        !identical(b$families, fb$families) ||
+        !identical(comps$view_of_basis, fc$view_of_basis) ||
+        !identical(p$basis_id, first$basis_id)) {
       stop("Protected releases of server '", site, "' are not compatible ",
-           "with the other sites (different owner, grid or domain).",
+           "with the other sites (different owner, basis, grid or domain).",
            call. = FALSE)
     }
   }
@@ -259,37 +275,45 @@
     stop("A distinct-label cardinality is not additive across sites; use ",
          "the per-site results.", call. = FALSE)
   }
-  signed <- Reduce(`+`, lapply(per_site, function(p) p$components$signed))
-  families <- first$families
+  pooled <- Reduce(`+`, lapply(per_site, function(p) basis_of(p)$signed))
+  families <- fb$families
   routes <- vapply(per_site, `[[`, character(1L), "protection")
   out <- list(statistic = statistic,
               protection = if (all(routes == "fixed_synopsis"))
                 "fixed_synopsis" else "realised_sticky",
-              pooling = "sum_of_signed_components_then_derived_once")
-  n <- if (identical(families[[1L]], "N")) max(0, signed[[1L]]) else NA_real_
+              pooling = "sum_of_signed_basis_components_then_derived_once")
+  has_n <- length(families) > 0L && identical(families[[1L]], "N")
+  n <- if (has_n) max(0, pooled[[1L]]) else NA_real_
+  cells <- if (has_n) pooled[-1L] else pooled
+  view <- fc$view_of_basis
+  projected <- function() {
+    if (length(cells) == 0L) return(numeric(0))
+    if (has_n) .dp_simplex(cells, n) else pmax(0, cells)
+  }
+  view_counts <- function(h) {
+    if (is.null(view)) h else vapply(view, function(i) sum(h[i]), numeric(1L))
+  }
   if (statistic == "count") {
     out$noisy_count <- n
   } else if (statistic == "bounded_record_count") {
-    h <- .dp_simplex(signed[-1L], n)
+    h <- projected()
     k <- privacy$max_contributions
     out$noisy_count <- sum(pmin(seq_along(h), k) * h)
   } else if (statistic %in% c("categorical_histogram", "numeric_histogram")) {
-    out$counts <- if (identical(families[[1L]], "N")) {
-      .dp_simplex(signed[-1L], n)
-    } else pmax(0, signed)
+    out$counts <- view_counts(projected())
     if (identical(statistic, "categorical_histogram")) {
-      out$levels <- privacy$levels
+      out$levels <- first$levels %||% privacy$levels
     } else {
-      out$breaks <- per_site[[1L]]$breaks
+      out$breaks <- first$breaks
     }
   } else if (statistic == "bounded_mean") {
     J <- 65535
-    lower <- per_site[[1L]]$lower; upper <- per_site[[1L]]$upper
+    lower <- first$lower; upper <- first$upper
     out$noisy_count <- n
     out$estimate <- NA_real_
     out$sd <- NA_real_
     if (n >= 1) {
-      p <- .dp_project_moments(signed[[2L]] / J, signed[[3L]] / J, n)
+      p <- .dp_project_moments(pooled[[2L]] / J, pooled[[3L]] / J, n)
       out$estimate <- (lower + upper) / 2 + (upper - lower) / 2 * p[["S"]] / n
       if (n >= 2) {
         out$sd <- sqrt(max(0, (p[["Q"]] - p[["S"]]^2 / n) / (n - 1))) *
@@ -298,10 +322,10 @@
     }
     out$lower <- lower; out$upper <- upper
   } else {
-    h <- .dp_simplex(signed[-1L], n)
-    out$noisy_numerator <- h[[1L]]
+    v <- view_counts(projected())
+    out$noisy_numerator <- v[[1L]]
     out$noisy_denominator <- n
-    out$estimate <- if (n > 0) h[[1L]] / n else NA_real_
+    out$estimate <- if (n > 0) v[[1L]] / n else NA_real_
   }
   out
 }
