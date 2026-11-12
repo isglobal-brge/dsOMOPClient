@@ -90,7 +90,7 @@ test_that("typed empty ID reconstruction preserves NULL and rejects malformed ID
   }
   pending <- .empty_concepts_study(omop_param("ids", "concept_set", default = NULL))
   for (roundtrip in .empty_concepts_forms(pending)) {
-    expect_error(recipe_to_plan(roundtrip), "unbound")
+    expect_error(recipe_to_plan(roundtrip), "[Uu]nbound")
     .empty_concepts_same(recipe_bind(roundtrip, ids = integer()), empty)
   }
 })
