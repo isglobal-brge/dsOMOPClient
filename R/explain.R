@@ -260,6 +260,15 @@ print.omop_recipe_explain <- function(x, ...) {
       }
     }
   }
+  # omop_study() (simple layer, design section 3): the defaults the study chose,
+  # including the episode grain, priority ties and relative dates it never
+  # exposes.
+  study <- recipe$meta$study
+  if (!is.null(study)) {
+    for (d in unlist(study$defaults)) {
+      add(paste0("study '", study$name %||% "study", "'"), "simple_layer", d)
+    }
+  }
   if (length(rows) == 0L) return(.explain_row(character(0), character(0), character(0)))
   do.call(rbind, rows)
 }

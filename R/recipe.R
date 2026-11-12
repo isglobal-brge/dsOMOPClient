@@ -2727,7 +2727,7 @@ omop_recipe <- function(variables = NULL,
 #' @param population An \code{\link{omop_population}} object to add.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_population}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_population <- function(recipe, population) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2813,7 +2813,7 @@ recipe_set_cohort <- function(recipe, cohort_definition_id) {
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_execute}},
 #'   \code{\link{recipe_to_plan}}, \code{\link{.cohort_scope_arg}}
-#' @keywords internal
+#' @export
 recipe_set_scope <- function(recipe, cohort = NULL, tables = NULL,
                              combine = "union") {
   if (!inherits(recipe, "omop_recipe"))
@@ -2857,7 +2857,7 @@ recipe_set_scope <- function(recipe, cohort = NULL, tables = NULL,
 #' @param id Character; population ID to remove (must not be \code{"base"}).
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_remove_population <- function(recipe, id) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2878,7 +2878,7 @@ recipe_remove_population <- function(recipe, id) {
 #' @param block An \code{\link{omop_variable_block}} object.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_variable_block}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_block <- function(recipe, block) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2896,6 +2896,8 @@ recipe_add_block <- function(recipe, block) {
 
     base_name <- if (!is.null(cname)) .sanitize_name(cname)
                  else paste0(block$table, "_c", cid)
+    # A block renamed by recipe_merge(prefix =) expands to the prefixed names.
+    if (!is.null(block$name_prefix)) base_name <- paste0(block$name_prefix, "_", base_name)
     var_name <- .ensure_unique_name(base_name, existing_names)
 
     v <- omop_variable(
@@ -2914,6 +2916,7 @@ recipe_add_block <- function(recipe, block) {
     # Provenance marker so recipe_to_code() can skip block-derived variables
     # without guessing by name.
     v$block_id <- block$id
+    if (!is.null(block$block_version)) v$block_version <- block$block_version
     if (isTRUE(block$expand)) v$expand <- TRUE
     recipe$variables[[var_name]] <- v
     existing_names <- c(existing_names, var_name)
@@ -2937,7 +2940,7 @@ recipe_add_block <- function(recipe, block) {
 #'   \code{\link{omop_variable}()}.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_variable}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_variable <- function(recipe, variable = NULL, ...) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2979,7 +2982,7 @@ recipe_add_variable <- function(recipe, variable = NULL, ...) {
 #' @param name Character; variable name to remove.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_remove_variable <- function(recipe, name) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -3002,7 +3005,7 @@ recipe_remove_variable <- function(recipe, name) {
 #'   sequence number if \code{NULL}).
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_filter}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_filter <- function(recipe, filter, id = NULL) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -3030,7 +3033,7 @@ recipe_add_filter <- function(recipe, filter, id = NULL) {
 #' @param id Character; filter ID to remove.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_remove_filter <- function(recipe, id) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -3049,7 +3052,7 @@ recipe_remove_filter <- function(recipe, id) {
 #' @param output An \code{\link{omop_output}} object.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_output}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_output <- function(recipe, output) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -3069,7 +3072,7 @@ recipe_add_output <- function(recipe, output) {
 #' @param name Character; output name to remove.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_remove_output <- function(recipe, name) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -3169,6 +3172,20 @@ print.omop_recipe <- function(x, ...) {
     }
   }
   if (!is.null(x$publish)) cat("Published:", paste(x$publish, collapse = ", "), "\n")
+  params <- tryCatch(recipe_params(x), error = function(e) NULL)
+  if (length(params)) {
+    cat("Parameters (", length(params), "): ",
+        paste(vapply(params, function(p) {
+          paste0(p$name, " <", p$type, ">",
+                 if (!is.null(p$default)) paste0(" = ", .v2_param_value_text(p$default)) else
+                   " (unbound)")
+        }, ""), collapse = ", "), "\n", sep = "")
+  }
+  study <- x$meta$study
+  if (!is.null(study)) {
+    cat("Study '", study$name, "' (omop_study()) defaults chosen:\n", sep = "")
+    for (d in unlist(study$defaults)) cat("  - ", d, "\n", sep = "")
+  }
   invisible(x)
 }
 
@@ -4986,7 +5003,7 @@ recipe_to_plan <- function(recipe, version = 2L) {
 #' @return The modified \code{omop_recipe} with updated options.
 #' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_to_plan}},
 #'   \code{\link{ds.omop.plan.options}}
-#' @keywords internal
+#' @export
 recipe_set_options <- function(recipe,
                                translate_concepts = NULL,
                                block_sensitive = NULL,
@@ -5644,6 +5661,14 @@ recipe_to_code <- function(recipe) {
       where = if (!is.null(b$where)) .codegen_raw(.v2_codegen(b$where)),
       visit = b$visit,
       concept_col = b$concept_col))
+    if (!is.null(b$name_prefix) || !is.null(b$block_version)) {
+      # Block metadata without a constructor argument (recipe_merge(prefix =)
+      # records the variable prefix; library blocks carry a version).
+      fix <- c(if (!is.null(b$name_prefix)) paste0("b$name_prefix <- ", .codegen_value(b$name_prefix)),
+               if (!is.null(b$block_version)) paste0("b$block_version <- ", .codegen_value(b$block_version)))
+      block_code[[length(block_code)]] <- paste0("(function(b) { ", paste(fix, collapse = "; "),
+                                                 "; b })(", block_code[[length(block_code)]], ")")
+    }
   }
   if (length(block_code) > 0)
     slot_args$blocks <- .codegen_list_arg(block_code)
@@ -5773,9 +5798,8 @@ recipe_to_code <- function(recipe) {
       name = o$name, type = o$type,
       variables = o$variables,
       population_id = o$population_id,
-      options = if (!is.null(opts) && any(vapply(opts, function(x)
-        .v2_is_tagged(x) || (is.list(x) && any(vapply(x, .v2_is_tagged, logical(1)))),
-        logical(1)))) .codegen_raw(.v2_codegen_list(opts)) else opts,
+      options = if (!is.null(opts) && .v2_has_tagged(opts))
+        .codegen_raw(.v2_codegen_list(opts)) else opts,
       result_symbol = o$result_symbol,
       grain = o$grain,
       format = o$format,
@@ -6235,6 +6259,8 @@ recipe_to_code <- function(recipe) {
         concept_col = b$concept_col
       )
       if (isTRUE(b$expand)) blk$expand <- TRUE
+      if (!is.null(b$name_prefix)) blk$name_prefix <- as.character(b$name_prefix)
+      if (!is.null(b$block_version)) blk$block_version <- b$block_version
       recipe$blocks[[bid]] <- blk
     }
   }
@@ -6270,6 +6296,7 @@ recipe_to_code <- function(recipe) {
       )
       if (!is.null(v$derived)) var$derived <- v$derived
       if (!is.null(v$block_id)) var$block_id <- v$block_id
+      if (!is.null(v$block_version)) var$block_version <- v$block_version
       if (isTRUE(v$expand)) var$expand <- TRUE
       if (!is.null(v[["where"]])) var$where <- .v2_restore(v[["where"]])
       if (!is.null(v[["visit"]])) var$visit <- .v2_restore_visit(v[["visit"]])

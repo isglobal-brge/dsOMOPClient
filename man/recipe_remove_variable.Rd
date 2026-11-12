@@ -20,4 +20,3 @@ Removes a variable by name from the recipe's variable list.
 \seealso{
 \code{\link{omop_recipe}}
 }
-\keyword{internal}

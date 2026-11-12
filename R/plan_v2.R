@@ -100,28 +100,10 @@
 
 .v2_stop <- function(...) stop(..., call. = FALSE)
 
-.v2_param_value <- function(x, context) {
-  # Parameter placeholders must be bound (recipe_bind()) before emission. A
-  # placeholder that still carries a default is bound to that default.
-  if (!is.null(x$default)) return(x$default)
-  .v2_stop("Unbound parameter '", x$name %||% "?", "' in ", context,
-           "; bind it with recipe_bind() before recipe_to_plan().")
-}
-
-# Replace every parameter placeholder by its value (default or error).
-.v2_resolve_params <- function(x, context = "the recipe") {
-  if (.v2_is_param(x)) return(.v2_resolve_params(.v2_param_value(x, context), context))
-  if (is.list(x) && !is.data.frame(x)) {
-    cls <- class(x)
-    nms <- names(x)
-    out <- lapply(x, .v2_resolve_params, context = context)
-    # lapply drops explicit NULL members only when assigning; keep structure.
-    names(out) <- nms
-    class(out) <- cls
-    return(out)
-  }
-  x
-}
+# Parameter placeholders are bound before emission (R/params_v2.R): the recipe
+# is bound to its defaults by .v2_resolve_params(), every object that held a
+# placeholder is rebuilt through its constructor, and an unbound parameter
+# without a default is refused (.v2_param_value() binds one placeholder).
 
 # --- concept sets -----------------------------------------------------------------
 

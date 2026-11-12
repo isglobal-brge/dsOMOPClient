@@ -22,4 +22,3 @@ population is created automatically by \code{\link{omop_recipe}}.
 \seealso{
 \code{\link{omop_population}}, \code{\link{omop_recipe}}
 }
-\keyword{internal}

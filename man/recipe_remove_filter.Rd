@@ -20,4 +20,3 @@ Removes a filter by its ID from the recipe's filter list.
 \seealso{
 \code{\link{omop_recipe}}
 }
-\keyword{internal}

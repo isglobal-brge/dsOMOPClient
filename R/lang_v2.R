@@ -673,7 +673,7 @@ print.omop_predicate <- function(x, ...) {
     if (!is.null(n$or)) return(paste0("(", paste(vapply(n$or, node, ""), collapse = " | "), ")"))
     if (!is.null(n$not)) return(paste0("!", node(n$not)))
     lit <- function(v) {
-      if (.v2_is_param(v)) return(paste0("<param ", v$name %||% "?", ">"))
+      if (.v2_is_param(v)) return(.v2_param_label(v))
       if (is.character(v)) paste0("\"", v, "\"") else format(v)
     }
     switch(n$op,
@@ -1020,7 +1020,7 @@ print.omop_criterion <- function(x, ...) {
 }
 
 .v2_source_label <- function(s) {
-  if (.v2_is_param(s)) return("<parameter>")
+  if (.v2_is_param(s)) return(.v2_param_label(s))
   if (is.character(s)) return(s)
   s$name %||% (if (.v2_is_interval(s)) "<era>" else s$table %||% s$kind %||% "<event>")
 }
@@ -1172,6 +1172,7 @@ print.omop_window <- function(x, ...) {
 .v2_window_text <- function(w) {
   ep <- function(x, inf) {
     if (is.null(x)) return(inf)
+    if (.v2_is_param(x)) return(.v2_param_label(x))
     if (inherits(x, "omop_bound")) {
       return(paste0(.v2_anchor_text(x$anchor), if (x$offset >= 0) "+", x$offset))
     }

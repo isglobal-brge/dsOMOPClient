@@ -4,7 +4,8 @@
 
 # The dsOMOP server methods this client calls, by DataSHIELD type. A test keeps
 # this list equal to the methods named in the client's code. Plan execution
-# requires the publication status and revocation methods (dsOMOP 2.10.4).
+# requires the publication status and revocation methods; ds.omop.mutate()
+# also requires omopMutateDS (dsOMOP 2.10.4).
 # Methods under `optional` are called only on servers that advertise them
 # (omopPlanExplainDS, for a language-2 plan's server explain); a server without
 # them is still ready for the methods above.
@@ -38,7 +39,7 @@
     "omopInitDS", "omopPlanExecuteDS", "omopCohortCreateDS",
     "omopCohortCombineDS", "omopCohortFromTableDS", "omopCleanupDS",
     "omopAsFactorColumnsDS", "omopMergeDS", "omopFilterDS",
-    "omopSelectDS", "omopBindRowsDS", "omopAnalysisRunAssignDS",
+    "omopSelectDS", "omopBindRowsDS", "omopMutateDS", "omopAnalysisRunAssignDS",
     "omopDpPlanExecuteDS"
   ),
   optional = c("omopPlanExplainDS")

@@ -272,3 +272,39 @@ test_that("positional 2.10.1 calls keep their meaning", {
   expect_identical(omop_filter_has_concept(201820, "condition_occurrence")$params$table,
                    "condition_occurrence")
 })
+
+test_that("the complete set of recipe editing functions is exported (design 2.10)", {
+  exports <- getNamespaceExports("dsOMOPClient")
+  editing <- list(
+    recipe_add_population = c("recipe", "population"), recipe_add_event = c("recipe", "event"),
+    recipe_add_concept_set = c("recipe", "concept_set"), recipe_add_interval = c("recipe", "interval"),
+    recipe_add_block = c("recipe", "block"), recipe_add_variable = c("recipe", "variable", "..."),
+    recipe_add_filter = c("recipe", "filter", "id"), recipe_add_output = c("recipe", "output"),
+    recipe_remove_population = c("recipe", "id"), recipe_remove_event = c("recipe", "name"),
+    recipe_remove_concept_set = c("recipe", "name"), recipe_remove_interval = c("recipe", "name"),
+    recipe_remove_variable = c("recipe", "name"), recipe_remove_filter = c("recipe", "id"),
+    recipe_remove_output = c("recipe", "name"),
+    recipe_set_scope = c("recipe", "cohort", "tables", "combine"),
+    recipe_set_options = c("recipe", "translate_concepts", "block_sensitive", "factor_concepts"),
+    recipe_set_publish = c("recipe", "publish"))
+  for (nm in names(editing)) {
+    expect_true(nm %in% exports, info = nm)
+    expect_identical(names(formals(get(nm, envir = asNamespace("dsOMOPClient")))), editing[[nm]],
+                     info = nm)
+  }
+  # the parameter layer and the simple layer (design 2.10, 3)
+  expect_identical(names(formals(omop_param)), c("name", "type", "default", "description"))
+  expect_identical(names(formals(recipe_bind)), c("recipe", "..."))
+  expect_identical(names(formals(recipe_merge)), c("a", "b", "prefix"))
+  expect_identical(names(formals(omop_study)),
+                   c("index", "select", "require", "baseline", "outcomes", "follow_up", "outputs",
+                     "name", "coverage"))
+  expect_identical(names(formals(omop_new_users)), c("drug", "washout_days", "select", "by"))
+  expect_identical(names(formals(ds.omop.mutate)), c("x", "...", "newobj", "symbol", "conns"))
+  expect_identical(names(formals(ds.omop.filter)),
+                   c("x", "var", "op", "value", "newobj", "symbol", "conns", "expr"))
+  expect_identical(names(formals(omop_ever)),
+                   c("table", "concepts", "before", "after", "window", "..."))
+  expect_identical(names(formals(omop_value_at_index)), c("table", "concepts", "tolerance", "unit"))
+  expect_identical(names(formals(omop_history)), c("condition", "drug", "procedure", "days_before"))
+})
