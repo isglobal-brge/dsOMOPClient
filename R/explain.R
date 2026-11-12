@@ -22,7 +22,7 @@
 #' payload and the legacy rules it relies on; offline its lowered IR and
 #' digest are not available (the server lowers it), and its native rendering
 #' (\code{recipe_to_plan(version = 2)}) is never presented as the executed
-#' plan. With \code{conns}, each server that explains plans (dsOMOP 2.10.3)
+#' plan. With \code{conns}, each server that explains plans (dsOMOP 2.10.4)
 #' receives the selected wire plan through \code{omopPlanExplainDS} and
 #' reports its normalised IR, compatibility variants and semantic digest
 #' (attached as \code{$server}; for a v1 plan the digest and IR are taken
@@ -82,34 +82,55 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
   if (!is.null(conns)) {
     session <- .get_session(symbol)
     conns <- conns %||% session$conns
-    lang <- .v2_server_language(session, names(conns))
-    explains <- vapply(lang, function(rl) {
-      !is.null(rl) && isTRUE(suppressWarnings(as.integer(rl$version %||% 0L)) >= 2L)
+    # B7: server explain needs the method actually published on the site.
+    published <- .dsomop_published_methods(conns)
+    explains <- vapply(names(conns), function(s) {
+      is.null(published[[s]]$error) && "omopPlanExplainDS" %in% published[[s]]$aggregate
     }, logical(1))
     if (!all(explains)) {
       text <- c(text, paste0("Server explain is unavailable on ",
                              paste(names(conns)[!explains], collapse = ", "),
-                             " (dsOMOP 2.10.3 explains plans); the plan selection is unchanged."))
+                             " (the profile does not publish omopPlanExplainDS); the plan ",
+                             "selection is unchanged."))
     }
     if (any(explains)) {
       # The selected wire plan, sent as execution would send it.
       server <- .ds_safe_aggregate(conns[explains], expr = call(
         "omopPlanExplainDS", session$res_symbol,
         if (v2) .ds_encode_lossless(plan) else .ds_encode(plan)))
-      if (!v2) {
-        # The server lowers a v1 plan: its normalised IR and digest are the
-        # executed plan's.
-        digests <- unique(vapply(server, function(x) {
-          as.character(x$semantic_digest %||% NA_character_)
-        }, ""))
-        if (length(digests) == 1L && !is.na(digests)) {
-          digest <- digests
-          norm <- server[[1L]]$plan
-          variants <- unique(grep("^legacy_", .explain_names(norm), value = TRUE))
-          text <- c(text, paste0("Server-lowered IR: semantic digest ", digest,
-                                 if (length(variants)) paste0("; compatibility variants: ",
-                                                              paste(sort(variants), collapse = ", "))))
-        }
+      failed <- attr(server, "ds_errors") %||% list()
+      if (length(failed)) {
+        text <- c(text, paste0("Server explain failed on ", names(failed), ": ",
+                               vapply(failed, function(m) .ds_error_core(m), ""),
+                               " (the plan selection is unchanged)."))
+      }
+    }
+    if (!v2) {
+      # The server lowers a v1 plan: its normalised IR and digest are the
+      # executed plan's, when every site that explained agrees on them.
+      answered <- Filter(function(x) is.list(x) && !is.null(x$semantic_digest), server %||% list())
+      digests <- unique(vapply(answered, function(x) as.character(x$semantic_digest), ""))
+      if (length(digests) == 1L) {
+        digest <- digests
+        norm <- answered[[1L]]$plan
+        variants <- unique(grep("^legacy_", .explain_names(norm), value = TRUE))
+        text <- c(text, paste0("Server-lowered IR: semantic digest ", digest,
+                               if (length(variants)) paste0("; compatibility variants: ",
+                                                            paste(sort(variants), collapse = ", "))))
+      } else {
+        text <- c(text, paste0("The lowered IR and semantic digest of this v1 plan are ",
+                               "unavailable: ", if (length(digests) > 1L) {
+                                 "the sites that explained it disagree"
+                               } else "no site explained it", "."))
+      }
+    }
+    # B1: the execution route these sites would take.
+    if (is.null(refusal)) {
+      route <- tryCatch(.plan_protocol_route(conns), error = function(e) e)
+      if (inherits(route, "error")) {
+        refusal <- conditionMessage(route)
+      } else if (!route$protocol) {
+        text <- c(text, paste0("Execution would run the legacy call: ", .plan_legacy_warning(route)))
       }
     }
   }

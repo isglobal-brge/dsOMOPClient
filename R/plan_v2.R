@@ -94,6 +94,7 @@
   ctx$declared_intervals <- character(0)
   ctx$referenced_pops <- character(0)
   ctx$reserved_names <- character(0)
+  ctx$resolving <- character(0)   # declarations being compiled (cycle check)
   ctx
 }
 
@@ -266,10 +267,32 @@
   abbrev
 }
 
+# Compile a declared (registry) event or interval on its first reference by
+# name, whatever its declaration order; a reference back to a declaration that
+# is still being compiled is a dependency cycle.
+.v2c_resolve_declared <- function(ctx, name, context) {
+  if (!is.character(name) || length(name) != 1L || is.null(ctx$pending)) return(invisible(NULL))
+  if (!is.null(ctx$events[[name]]) || !is.null(ctx$intervals[[name]])) return(invisible(NULL))
+  slot <- if (!is.null(ctx$pending$events[[name]])) "events" else
+    if (!is.null(ctx$pending$intervals[[name]])) "intervals" else return(invisible(NULL))
+  if (name %in% ctx$resolving) {
+    .v2_stop("Recipe declarations depend on each other in a cycle: ",
+             paste(c(ctx$resolving[seq(match(name, ctx$resolving), length(ctx$resolving))], name),
+                   collapse = " -> "), ".")
+  }
+  ctx$resolving <- c(ctx$resolving, name)
+  on.exit(ctx$resolving <- setdiff(ctx$resolving, name), add = TRUE)
+  obj <- ctx$pending[[slot]][[name]]
+  if (identical(slot, "events")) .v2c_event(ctx, obj, "recipe events")
+  else .v2c_interval(ctx, obj, "recipe intervals")
+  invisible(NULL)
+}
+
 # Intern an event (object or name); returns its registry name.
 .v2c_event <- function(ctx, ev, context) {
   if (.v2_is_param(ev)) ev <- .v2_param_value(ev, context)
   if (is.character(ev)) {
+    .v2c_resolve_declared(ctx, ev, context)
     if (!is.null(ctx$events[[ev]])) return(ev)
     if (!is.null(ctx$intervals[[ev]])) {
       .v2_stop(context, ": '", ev, "' is an interval, not an event.")
@@ -311,6 +334,7 @@
 .v2c_interval <- function(ctx, iv, context) {
   if (.v2_is_param(iv)) iv <- .v2_param_value(iv, context)
   if (is.character(iv)) {
+    .v2c_resolve_declared(ctx, iv, context)
     if (!is.null(ctx$intervals[[iv]])) return(iv)
     .v2_stop(context, " references interval '", iv, "', which the recipe does not declare.")
   }
@@ -327,6 +351,7 @@
 .v2c_source <- function(ctx, x, context, intervals = TRUE) {
   if (.v2_is_param(x)) x <- .v2_param_value(x, context)
   if (is.character(x) && length(x) == 1L) {
+    .v2c_resolve_declared(ctx, x, context)
     in_ev <- !is.null(ctx$events[[x]])
     in_iv <- !is.null(ctx$intervals[[x]])
     if (in_ev && in_iv) {
@@ -1189,26 +1214,6 @@
 # Which populations yield episodes (grain defaults, grain/collapse validation)
 # is the vendored A-11 rule, .pnv2PopulationIndexed() (R/plan_normalize_v2.R).
 
-# Populations whose rows have an index date, for index-relative criteria:
-# indexed or matched populations, criteria populations seeded from a results
-# cohort, and their descendants. A union needs every member to carry one; an
-# intersect or setdiff keeps its left member's rows (design 6.9).
-.v2_population_has_index <- function(pops, id, seen = character(0)) {
-  p <- pops[[id]]
-  if (is.null(p) || id %in% seen) return(FALSE)
-  if (p$kind %in% c("index", "match") || !is.null(p$cohort_definition_id)) return(TRUE)
-  seen <- c(seen, id)
-  if (identical(p$kind, "setop")) {
-    members <- as.character(unlist(p$setop$members))
-    if (!length(members)) return(FALSE)
-    if (!identical(p$setop$op, "union")) return(.v2_population_has_index(pops, members[[1L]], seen))
-    return(all(vapply(members, function(m)
-      .v2_population_has_index(pops, m, seen), logical(1))))
-  }
-  if (!is.null(p$parent)) return(.v2_population_has_index(pops, p$parent, seen))
-  FALSE
-}
-
 .v2_register_variable <- function(ctx, name, wire) {
   .v2c_register(ctx, "variables", name, wire, "variable")
 }
@@ -1325,6 +1330,17 @@
       ctx$reserved_names <- union(ctx$reserved_names, node$name)
     }
   })
+  # Named declarations are collected first and resolved on first reference
+  # (N1: the registries are declarative, so a declaration may refer to one
+  # that follows it); a dependency cycle is refused.
+  ctx$pending <- list(events = list(), intervals = list())
+  for (slot in c("events", "intervals")) {
+    for (x in recipe[[slot]] %||% list()) {
+      if (is.list(x) && is.character(x$name) && length(x$name) == 1L) {
+        ctx$pending[[slot]][[x$name]] <- x
+      }
+    }
+  }
   # 1. Declared registries, in declaration order.
   for (i in seq_along(recipe$concept_sets %||% list())) {
     cs <- recipe$concept_sets[[i]]
@@ -1334,10 +1350,14 @@
     .v2c_concept_set(ctx, cs, paste0("concept set '", cs$name, "'"))
   }
   for (ev in recipe$events %||% list()) {
-    ctx$declared_events <- c(ctx$declared_events, .v2c_event(ctx, ev, "recipe events"))
+    nm <- if (is.list(ev) && is.character(ev$name)) ev$name else NULL
+    ctx$declared_events <- c(ctx$declared_events,
+      if (!is.null(nm) && !is.null(ctx$events[[nm]])) nm else .v2c_event(ctx, ev, "recipe events"))
   }
   for (iv in recipe$intervals %||% list()) {
-    ctx$declared_intervals <- c(ctx$declared_intervals, .v2c_interval(ctx, iv, "recipe intervals"))
+    nm <- if (is.list(iv) && is.character(iv$name)) iv$name else NULL
+    ctx$declared_intervals <- c(ctx$declared_intervals,
+      if (!is.null(nm) && !is.null(ctx$intervals[[nm]])) nm else .v2c_interval(ctx, iv, "recipe intervals"))
   }
   # 2. v2 variables (every one is emitted; legacy ones when an output uses them).
   for (vn in names(recipe$variables %||% list())) {
@@ -1515,7 +1535,7 @@
       }
     }
     if (identical(p$kind, "match")) {
-      if (!identical(pops[[p$match$cases]]$kind, "index")) {
+      if (!.pnv2PopulationIndexed(pops, p$match$cases)) {
         .v2_stop("population '", id, "': match cases must be an indexed population.")
       }
       if (!identical(pops[[p$match$controls]]$kind, "criteria")) {
@@ -1533,19 +1553,34 @@
     state[[id]] <<- 2L
   }
   for (id in names(pops)) visit(id, character(0))
-  # An index-relative age criterion needs an index (episodes) to refer to.
+  # Populations consumers evaluate as ordinary rosters (output rows, parents,
+  # set-op members, match cases) and those used only as a matching controls
+  # template, which design 6.10 evaluates per case with index := case time
+  # (the server's split, .irSemanticErrors()).
+  ordinary <- unique(c(
+    vapply(outs, function(o) as.character(o$rows %||% ""), ""),
+    unlist(lapply(pops, function(q) {
+      c(if (is.character(q$parent)) q$parent,
+        as.character(unlist(q$setop$members %||% list(), use.names = FALSE)),
+        if (is.list(q$match)) as.character(q$match$cases))
+    }), use.names = FALSE)))
+  controls_only <- setdiff(unlist(lapply(pops, function(q) {
+    if (is.list(q$match)) as.character(q$match$controls)
+  }), use.names = FALSE), ordinary)
+  # An index-referenced age criterion needs an indexed population (the
+  # vendored A-11 rule), unless the population is only a controls template.
   for (id in names(pops)) {
     p <- pops[[id]]
-    if (!p$kind %in% c("index", "criteria") || .v2_population_has_index(pops, id)) next
+    if (.pnv2PopulationIndexed(pops, id) || id %in% controls_only) next
     uses_index_age <- FALSE
     .v2_walk(p$where, function(node) {
-      if (is.list(node) && !is.null(node$age) && length(node) == 1L &&
+      if (is.list(node) && identical(names(node), "age") &&
           !is.list(node$age$reference)) uses_index_age <<- TRUE
     })
     if (uses_index_age) {
-      .v2_stop("population '", id, "': an age criterion at the index needs an indexed ",
-               "population (or a results cohort); give omop_age_is(year = ) for a fixed ",
-               "reference year.")
+      .v2_stop("population '", id, "': an index-referenced age criterion needs an indexed ",
+               "population (or a population used only as a matching controls template, ",
+               "evaluated at case time); give omop_age_is(year = ) for a fixed reference year.")
     }
   }
   for (nm in names(outs)) {
@@ -1553,9 +1588,14 @@
     context <- paste0("output '", nm, "'")
     if (is.null(pops[[o$rows]])) .v2_stop(context, " targets unknown population '", o$rows, "'.")
     indexed <- .pnv2PopulationIndexed(pops, o$rows)
-    if (identical(o$grain, "person") && indexed && is.null(o$collapse)) {
+    if (identical(o$grain, "person") && indexed && is.null(o$collapse) &&
+        !o$format %in% c("membership", "dictionary", "joined")) {
       .v2_stop(context, ": person grain over the indexed population '", o$rows,
                "' needs collapse = \"first_episode\", \"last_episode\" or \"any\".")
+    }
+    if (identical(o$grain, "episode") && !indexed) {
+      .v2_stop(context, ": episode grain needs an indexed population; '", o$rows,
+               "' has no index (give it omop_index(), or use grain = \"person\").")
     }
     if (!is.null(o$collapse) && !identical(o$grain, "person")) {
       .v2_stop(context, ": collapse applies only to person grain.")

@@ -1910,6 +1910,25 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
+  # B1: which protocol every participating site supports, before anything is
+  # assigned. The publication protocol needs it on every site; otherwise a v2
+  # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
+  harmonizes <- isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
+    isTRUE(plan$options$factor_concepts %||% TRUE)
+  route <- .plan_protocol_route(conns, server_method, harmonizes)
+  if (!route$protocol) {
+    if (v2) {
+      v1_refusal <- attr(plan, "v1_refusal")
+      stop(.plan_protocol_refusal(route, v1_refusal = v1_refusal), call. = FALSE)
+    }
+    if (identical(on_small_site, "skip")) {
+      stop(.plan_protocol_refusal(route, what = "on_small_site = \"skip\""),
+           " Use on_small_site = \"error\" until then.", call. = FALSE)
+    }
+    warning(.plan_legacy_warning(route), call. = FALSE)
+    return(.plan_execute_legacy(plan, out, symbol, session, conns, output_mode,
+                                server_method, harmonize_factors))
+  }
   if (v2) {
     # Every server must speak the recipe language and every operation the
     # plan needs: a construct is never dropped to fit an older server
@@ -1918,10 +1937,20 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     # contract travels as a plan attribute, never on the wire.
     roots <- if (is.null(plan$publish)) names(plan$outputs) else
       as.character(unlist(plan$publish))
-    out <- .resolve_plan_out(
-      list(outputs = plan$outputs[roots]), out,
-      reserved_symbols = c(symbol, session$res_symbol)
-    )
+    if (length(roots) == 0L) {
+      # An explicitly empty publish list releases nothing: the execution
+      # still runs (capabilities, digest, status), with zero roots.
+      if (length(out)) {
+        stop("The plan publishes no outputs (publish = []); out must be empty.",
+             call. = FALSE)
+      }
+      out <- stats::setNames(character(0), character(0))
+    } else {
+      out <- .resolve_plan_out(
+        list(outputs = plan$outputs[roots]), out,
+        reserved_symbols = c(symbol, session$res_symbol)
+      )
+    }
     # The roots sent are exactly the requested ones: a partial out mapping
     # leaves the other outputs private (B1), so publish names the mapped roots
     # before the capability check and the federation contract bind the plan.
@@ -2078,7 +2107,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     # Preserve the v1 return for an ordinary successful run. When publication
     # differs by site, expose the actual inventory and retain NULL skip entries.
     standard <- !any(refused | partial) && all(vapply(inventories, function(x) {
-      identical(names(x), names(out)) && all(vapply(names(x), function(root) {
+      identical(as.character(names(x)), as.character(names(out))) &&
+        all(vapply(names(x), function(root) {
         symbols <- .plan_inventory_symbols(x[root])[[root]]
         components <- names(x[[root]])
         aliases <- c(risk_sets = "riskSets", transition_ref = "transitionRef")

@@ -96,7 +96,7 @@ test_that("lint compiles as execution does: newly permitted 2.10.1 shapes are la
   L <- recipe_lint(r)
   expect_false("no_compile" %in% L$code)
   expect_identical(L$severity[L$code == "language_2_only"], "INFO")
-  expect_match(L$message[L$code == "language_2_only"], "2.10.3 servers only")
+  expect_match(L$message[L$code == "language_2_only"], "2.10.4 servers only")
   plain <- omop_recipe(variables = omop_variable_age(), outputs = omop_output(name = "age", type = "wide"))
   expect_false("language_2_only" %in% recipe_lint(plain)$code)
 })
@@ -121,10 +121,21 @@ test_that("explain selects the plan exactly as execution does (A-14)", {
   expect_identical(ex2$digest, dsOMOPClient:::.plan_v2_digest(recipe_to_plan(negated))$sha256)
 })
 
-test_that("server explain receives the selected wire plan; missing explain is reported", {
-  .with_caps(list(a = .caps(), b = list()))
+.explain_inventory <- function(explain_sites) {
+  function(conns, ...) {
+    inv <- .current_published_methods(conns)
+    for (s in setdiff(names(inv), explain_sites)) {
+      inv[[s]]$aggregate <- setdiff(inv[[s]]$aggregate, "omopPlanExplainDS")
+    }
+    inv
+  }
+}
+
+test_that("server explain receives the selected wire plan; missing explain is reported (B7)", {
+  .with_caps(list(a = .caps(), b = .caps()))
   sent <- NULL
   testthat::local_mocked_bindings(
+    .dsomop_published_methods = .explain_inventory("a"),
     .ds_safe_aggregate = function(conns, expr, ...) {
       sent <<- expr
       stats::setNames(lapply(names(conns), function(s) {
@@ -135,11 +146,38 @@ test_that("server explain receives the selected wire plan; missing explain is re
   legacy <- omop_recipe(variables = omop_variable_sex(), outputs = omop_output("w", type = "wide"))
   ex <- recipe_explain(legacy, conns = list(a = "A", b = "B"))
   expect_identical(ex$selected, "v1")
+  expect_s3_class(ex$payload, "omop_plan")             # the v1 payload is kept
   expect_identical(as.character(sent[[1L]]), "omopPlanExplainDS")
-  expect_null(.decode(sent[[3L]])$version)            # the v1 plan, as executed
+  expect_null(.decode(sent[[3L]])$version)             # the v1 plan, as executed
   expect_identical(ex$digest, "d1")
   txt <- paste(ex$text, collapse = "\n")
   expect_match(txt, "compatibility variants: legacy_spec")
-  expect_match(txt, "Server explain is unavailable on b")
+  expect_match(txt, "Server explain is unavailable on b \\(the profile does not publish omopPlanExplainDS\\)")
   expect_named(ex$server, "a")
+})
+
+test_that("an advertised explain that fails is reported; a v1 digest is then unavailable (B7)", {
+  .with_caps(list(a = .caps(), b = .caps()))
+  testthat::local_mocked_bindings(
+    .dsomop_published_methods = .current_published_methods,
+    .ds_safe_aggregate = function(conns, expr, ...) {
+      structure(list(a = list(semantic_digest = "d1", plan = list())),
+                ds_errors = list(b = "Error while evaluating -> Error : transport lost"))
+    }, .package = "dsOMOPClient")
+  legacy <- omop_recipe(variables = omop_variable_sex(), outputs = omop_output("w", type = "wide"))
+  ex <- recipe_explain(legacy, conns = list(a = "A", b = "B"))
+  txt <- paste(ex$text, collapse = "\n")
+  expect_match(txt, "Server explain failed on b: transport lost")
+  expect_identical(ex$digest, "d1")                    # the site that answered
+  # no site explains: the v1 payload stays, IR and digest are unavailable
+  testthat::local_mocked_bindings(.dsomop_published_methods = .explain_inventory(character(0)),
+                                  .package = "dsOMOPClient")
+  ex2 <- recipe_explain(legacy, conns = list(a = "A", b = "B"))
+  expect_identical(ex2$selected, "v1")
+  expect_s3_class(ex2$payload, "omop_plan")
+  expect_null(ex2$digest)
+  expect_null(ex2$plan)
+  txt2 <- paste(ex2$text, collapse = "\n")
+  expect_match(txt2, "Server explain is unavailable on a, b")
+  expect_match(txt2, "lowered IR and semantic digest of this v1 plan are unavailable: no site explained it")
 })

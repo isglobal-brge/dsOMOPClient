@@ -43,7 +43,8 @@
 #' @param concept_set,event,interval The object to declare (it must be named,
 #'   except events and intervals, which get a deterministic name when compiled).
 #' @param name Name of the node to remove.
-#' @param publish Character vector of output names, or \code{NULL} for all.
+#' @param publish Character vector of output names, \code{character(0)} for none
+#'   (every output is then a private computed input), or \code{NULL} for all.
 #' @return The modified recipe.
 #' @keywords internal
 recipe_add_concept_set <- function(recipe, concept_set) {
@@ -144,6 +145,12 @@ recipe_set_publish <- function(recipe, publish) {
     recipe$publish <- NULL
     return(recipe)
   }
+  # An explicitly empty root list publishes nothing (every output is a private
+  # computed input); NULL keeps the default, every declared output.
+  if (length(publish) == 0L && (is.character(publish) || is.list(publish))) {
+    recipe$publish <- character(0)
+    return(recipe)
+  }
   publish <- .v2_chr_vector(publish, "publish")
   for (p in publish) .v2_name(p, "publish")
   recipe$publish <- publish
@@ -159,7 +166,9 @@ recipe_set_publish <- function(recipe, publish) {
 #' concept-set expressions; \code{recipe_import_concept_sets()} reads such
 #' expressions into the registry. Items must share their descendant/mapped
 #' flags; excluded items become the set's \code{exclude} (exact IDs, or a set
-#' with descendants when the excluded items include descendants).
+#' with descendants when the excluded items include descendants). A nested
+#' exclusion (an excluded set with its own exclusion) has no OHDSI form and is
+#' refused on export rather than flattened.
 #'
 #' @param recipe An \code{omop_recipe}.
 #' @param file Optional path; \code{NULL} returns the JSON string.
@@ -187,6 +196,15 @@ recipe_export_concept_sets <- function(recipe, file = NULL) {
       includeDescendants = isTRUE(cs$descendants), includeMapped = isTRUE(cs$mapped)))
     if (!is.null(cs$exclude)) {
       ex <- cs$exclude
+      # An OHDSI expression has one level of exclusion: an exclusion with its
+      # own exclusion has no equivalent there and is never flattened.
+      if (inherits(ex, "omop_concept_set") && !is.null(ex$exclude)) {
+        stop("recipe_export_concept_sets(): concept set '", names(sets)[[i]], "' excludes ",
+             "a concept set that has its own exclusion (a nested exclusion); an OHDSI ",
+             "concept-set expression cannot carry it. Export would change the concept ",
+             "definition, so it is refused; spell the effective set with one exclusion.",
+             call. = FALSE)
+      }
       ex_ids <- if (inherits(ex, "omop_concept_set")) ex$concepts else ex
       ex_desc <- inherits(ex, "omop_concept_set") && isTRUE(ex$descendants)
       ex_map <- inherits(ex, "omop_concept_set") && isTRUE(ex$mapped)

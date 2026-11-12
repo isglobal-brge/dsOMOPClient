@@ -4,7 +4,7 @@
 
 # The dsOMOP server methods this client calls, by DataSHIELD type. A test keeps
 # this list equal to the methods named in the client's code. Plan execution
-# requires the publication status and revocation methods (dsOMOP 2.10.3).
+# requires the publication status and revocation methods (dsOMOP 2.10.4).
 # Methods under `optional` are called only on servers that advertise them
 # (omopPlanExplainDS, for a language-2 plan's server explain); a server without
 # them is still ready for the methods above.
@@ -44,12 +44,16 @@
   optional = c("omopPlanExplainDS")
 )
 
+# The dsOMOP release whose methods this client's execution protocol needs
+# (publication status, revocation and commit_policy, design section 7.3).
+.DSOMOP_PROTOCOL_RELEASE <- "2.10.4"
+
 # What an administrator does when the profile lacks dsOMOP's methods.
 .DSOMOP_PUBLISH_ADVICE <- paste0(
-  "An Opal administrator installs dsOMOP 2.x and publishes its settings in ",
-  "the profile the analysts use (Administration > DataSHIELD > Packages > ",
-  "dsOMOP > Publish); Opal does not publish the methods of an upgraded ",
-  "package by itself."
+  "An Opal administrator installs dsOMOP ", .DSOMOP_PROTOCOL_RELEASE,
+  " and publishes its settings in the profile the analysts use ",
+  "(Administration > DataSHIELD > Packages > dsOMOP > Publish); Opal does not ",
+  "publish the methods of an upgraded package by itself."
 )
 
 #' dsOMOPClient version
@@ -75,20 +79,35 @@ ds.omop.client.version <- function() {
 #' an installed package is upgraded: after an upgrade the profile keeps the old
 #' list until an administrator publishes the package's settings again.
 #'
+#' A server whose profile lacks the publication protocol
+#' (\code{omopPlanStatusDS}, \code{omopStagedRevokeDS}) runs v1 plans only
+#' through the legacy call and refuses language-2 plans; the advice says
+#' whether the installed dsOMOP predates the protocol (install the release
+#' that has it, then publish) or its upgraded methods are not published yet
+#' (publish again). \code{ready} concerns the published methods only: whether
+#' a server executes a language-2 plan is its \code{recipe_language} block.
+#'
 #' @param conns DSI connections (default: the DSI default connections).
+#' @param symbol OMOP session symbol whose capability blocks (read by
+#'   \code{\link{ds.omop.connect}}) are reported.
 #' @return A data frame with one row per server: \code{server},
 #'   \code{published} (version of the published dsOMOP methods, NA when none),
 #'   \code{running} (version answering \code{omopPingDS}, NA when it cannot be
 #'   called), \code{missing} (methods this client calls that the profile lacks),
-#'   \code{ready} and \code{advice}. The client version is in its
-#'   \code{"client"} attribute.
+#'   \code{ready}, \code{advice} and the list column \code{recipe_language}:
+#'   per server the recipe-language capability block of its OMOP session
+#'   (\code{version}, \code{operations}, \code{reducers}, \code{dialect}), the
+#'   string \code{"unavailable"} for a server without the publication protocol
+#'   (an older dsOMOP, which has no recipe language 2), or \code{"not
+#'   connected"} when no OMOP session \code{symbol} is connected to it. The
+#'   client version is in its \code{"client"} attribute.
 #' @examples
 #' \dontrun{
 #' ds.omop.client.version()
 #' ds.omop.server.version(conns)
 #' }
 #' @export
-ds.omop.server.version <- function(conns = NULL) {
+ds.omop.server.version <- function(conns = NULL, symbol = "omop") {
   conns <- conns %||% DSI::datashield.connections_default()
   if (is.null(conns) || length(conns) == 0L || is.null(names(conns))) {
     stop("No DataSHIELD connections available.", call. = FALSE)
@@ -98,6 +117,7 @@ ds.omop.server.version <- function(conns = NULL) {
   ping <- .ds_safe_aggregate(conns, call("omopPingDS"))
   ping_errors <- attr(ping, "ds_errors") %||% list()
   client <- ds.omop.client.version()
+  session <- tryCatch(.get_session(symbol), error = function(e) NULL)
 
   rows <- lapply(servers, function(server) {
     pub <- published[[server]]
@@ -124,6 +144,15 @@ ds.omop.server.version <- function(conns = NULL) {
              "the methods of ", version, ": an administrator publishes ",
              "dsOMOP's settings again (Administration > DataSHIELD > ",
              "Packages > dsOMOP > Publish).")
+    } else if (any(.DSOMOP_PROTOCOL_METHODS %in% missing)) {
+      paste0("dsOMOP ", if (is.na(running)) version else running, " is installed and ",
+             "published but predates the publication protocol (",
+             paste(intersect(.DSOMOP_PROTOCOL_METHODS, missing), collapse = ", "),
+             "): v1 plans run only through the legacy call and language-2 plans are ",
+             "refused. Publishing again cannot add these methods: an administrator ",
+             "installs dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " on the server and then ",
+             "publishes its settings (Administration > DataSHIELD > Packages > dsOMOP > ",
+             "Publish).")
     } else if (length(missing) > 0L) {
       paste0("The profile lacks ", length(missing), " dsOMOP method(s) this ",
              "client calls. ", .DSOMOP_PUBLISH_ADVICE)
@@ -136,12 +165,21 @@ ds.omop.server.version <- function(conns = NULL) {
     } else {
       ""
     }
-    data.frame(
+    row <- data.frame(
       server = server, published = version, running = running,
       missing = paste(missing, collapse = ", "),
       ready = !nzchar(advice), advice = advice,
       stringsAsFactors = FALSE
     )
+    old <- is.null(pub$error) && any(.DSOMOP_PROTOCOL_METHODS %in% missing)
+    block <- session$capabilities[[server]]$recipe_language
+    row$recipe_language <- I(list(
+      if (old) "unavailable"
+      else if (!is.null(block)) block[intersect(c("version", "semantic_version", "operations",
+                                                   "reducers", "dialect"), names(block))]
+      else if (!is.null(session) && server %in% names(session$conns)) "unavailable"
+      else "not connected"))
+    row
   })
   out <- do.call(rbind, rows)
   attr(out, "client") <- client

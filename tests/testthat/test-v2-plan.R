@@ -378,7 +378,7 @@ test_that("an index-relative age criterion needs an index; explicit names are re
   r <- omop_recipe(populations = omop_population("adults", filters = list(omop_age_is(18, NULL))),
                    variables = list(sex = omop_sex()),
                    outputs = omop_output("w", rows = "adults", format = "wide"))
-  expect_error(recipe_to_plan(r), "age criterion at the index needs an indexed")
+  expect_error(recipe_to_plan(r), "index-referenced age criterion needs an indexed population")
   ok <- omop_recipe(populations = omop_population("adults", filters = list(omop_age_is(18, year = 2024))),
                     variables = list(sex = omop_sex()),
                     outputs = omop_output("w", rows = "adults", format = "wide"))
@@ -411,13 +411,48 @@ test_that("each language-2 object has its section 4 JSON form", {
   expect_error(dsOMOPClient:::.v2_wire_of(omop_output("o")), "compiled with their recipe")
 })
 
-test_that("the features preset takes episode grain when windowed (design 2.9)", {
+.windowed_features <- function(grain = NULL, type = "features", indexed = TRUE) {
   vars <- list(omop_variable(name = "a", table = "measurement", concept_id = 1, format = "count",
                              time_window = list(start = -90, end = 0)))
-  r <- omop_recipe(variables = vars, outputs = omop_output(name = "f", type = "features"))
-  expect_identical(recipe_to_plan(r)$outputs$f$grain, "episode")
-  # its v1 rendering still needs the explicit grain (corpus: unchanged)
-  expect_error(recipe_to_plan(r, version = 1), "grain")
+  pops <- if (indexed) omop_population("p", index_event = omop_index_event(201820,
+                                                                           "condition_occurrence"))
+  omop_recipe(populations = pops, variables = vars,
+              outputs = omop_output(name = "f", type = type, population_id = if (indexed) "p" else "base",
+                                    options = if (!is.null(grain)) list(grain = grain) else list()))
+}
+
+test_that("the features preset takes episode grain when windowed (design 2.9, A-14, B5)", {
+  # omitted grain, indexed population: the newly permitted v2 rendering, which
+  # the server's semantic validation accepts
+  r <- .windowed_features()
+  plan <- recipe_to_plan(r)
+  expect_identical(plan$outputs$f$grain, "episode")
+  e <- tryCatch(recipe_to_plan(r, version = 1), error = function(e) e)
+  expect_s3_class(e, "dsomop_v1_newly_permitted")
+  expect_s3_class(dsOMOPClient:::.recipe_plan_auto(r), "omop_plan_v2")
+  skip_if_not_installed("dsOMOP")
+  expect_length(dsOMOP:::.irSemanticErrors(dsOMOP:::.planNormalizeV2(dsOMOPClient:::.v2_plain(plan))), 0L)
+})
+
+test_that("only an omitted grain is newly permitted; an explicit one keeps the v1 refusal (B5)", {
+  person <- .windowed_features(grain = "person")
+  e <- tryCatch(recipe_to_plan(person, version = 1), error = function(e) e)
+  expect_s3_class(e, "error")
+  expect_false(inherits(e, "dsomop_v1_newly_permitted"))
+  expect_error(dsOMOPClient:::.recipe_plan_auto(person), "grain")
+  episode <- .windowed_features(grain = "episode")
+  expect_s3_class(dsOMOPClient:::.recipe_plan_auto(episode), "omop_plan")   # v1 compiles
+  wide <- .windowed_features(type = "wide")
+  e <- tryCatch(recipe_to_plan(wide, version = 1), error = function(e) e)
+  expect_false(inherits(e, "dsomop_v1_newly_permitted"))
+  expect_error(dsOMOPClient:::.recipe_plan_auto(wide), "grain")
+})
+
+test_that("episode grain over an unindexed population is refused plainly (B5)", {
+  r <- .windowed_features(indexed = FALSE)
+  expect_error(recipe_to_plan(r), "episode grain needs an indexed population")
+  expect_error(dsOMOPClient:::.recipe_plan_auto(r),
+               "episode grain needs an indexed population.*cannot execute as a v1 plan either")
   flat <- omop_recipe(variables = list(omop_variable(name = "b", table = "measurement",
                                                      concept_id = 2, format = "count")),
                       outputs = omop_output(name = "f", type = "features"))

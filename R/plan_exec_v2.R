@@ -139,6 +139,13 @@
     if (identical(p$coverage$policy, "union")) add("population.coverage.union")
     .v2_walk(p$where, function(node) {
       if (is.list(node) && identical(names(node), "age")) add("criteria.age")
+      # A criterion-specific coverage union (design 1.3, 6.13): an observed
+      # criterion with an explicit gap, 0 included, coalesces observation
+      # periods (the server's rule).
+      if (is.list(node) && identical(names(node), "observed") && is.list(node$observed) &&
+          !is.null(node$observed$gap)) {
+        add("population.coverage.union")
+      }
     })
     if (.v2_has_not(p)) add("criteria.not")
   }
@@ -309,22 +316,29 @@
 
 #' The plan a recipe executes as on the connected servers
 #'
-#' \code{.recipe_select_plan()}, then, for a v2 plan, every server must
-#' advertise recipe language 2 and the operations the plan needs; a recipe
-#' selected for a newly permitted shape is refused naming its v1 refusal and
-#' the older server.
+#' \code{.recipe_select_plan()}, then, for a v2 plan, every site must publish
+#' the publication protocol (\code{.plan_protocol_route()}) and advertise
+#' recipe language 2 and the operations the plan needs; a recipe selected for
+#' a newly permitted shape is refused naming its v1 refusal and the older
+#' server. A v1 plan needs neither (the executor chooses its call).
 #' @keywords internal
 .recipe_plan_for_execution <- function(recipe, session, conns,
-                                       plan = .recipe_select_plan(recipe)) {
+                                       plan = .recipe_select_plan(recipe),
+                                       server_method = "omopPlanExecuteDS") {
   if (!.v2_is_plan_v2(plan)) return(plan)
   v1_refusal <- attr(plan, "v1_refusal")
   attr(plan, "v1_refusal") <- NULL
+  # B1: a language-2 plan needs the publication protocol on every site.
+  route <- .plan_protocol_route(conns, server_method)
+  if (!route$protocol) {
+    stop(.plan_protocol_refusal(route, v1_refusal = v1_refusal), call. = FALSE)
+  }
   supported <- tryCatch(.v2_assert_supported(plan, session, names(conns)),
                         error = function(e) e)
   if (inherits(supported, "error")) {
     if (is.null(v1_refusal)) stop(supported)
     stop(v1_refusal, " At least one connected server is older than ",
-         "dsOMOP 2.10.3 (", conditionMessage(supported), ")", call. = FALSE)
+         "dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " (", conditionMessage(supported), ")", call. = FALSE)
   }
   plan
 }

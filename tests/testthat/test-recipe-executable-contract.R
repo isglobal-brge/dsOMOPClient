@@ -261,11 +261,19 @@ test_that("feature windows compile at episode grain with per-spec scopes", {
   expect_error(recipe_to_plan(common, version = 1),
                "grain='episode'")
   # A-14: newly permitted -- the v1 refusal keeps its message and carries the
-  # class; the v2 rendering takes episode grain and execution selects it.
+  # class. Over this unindexed base the v2 rendering (episode grain) is refused
+  # plainly (review B5); over an indexed population it compiles and execution
+  # selects it.
   e <- tryCatch(recipe_to_plan(common, version = 1), error = function(e) e)
   expect_s3_class(e, "dsomop_v1_newly_permitted")
-  expect_identical(recipe_to_plan(common)$outputs$features$grain, "episode")
-  expect_s3_class(dsOMOPClient:::.recipe_plan_auto(common), "omop_plan_v2")
+  expect_error(recipe_to_plan(common), "episode grain needs an indexed population")
+  expect_error(dsOMOPClient:::.recipe_plan_auto(common), "cannot execute as a v1 plan either")
+  index_p <- omop_population("p", index_event = omop_index_event(201820, "condition_occurrence"))
+  indexed <- common
+  indexed$populations$p <- index_p
+  indexed$outputs$features$population_id <- "p"
+  expect_identical(recipe_to_plan(indexed)$outputs$features$grain, "episode")
+  expect_s3_class(dsOMOPClient:::.recipe_plan_auto(indexed), "omop_plan_v2")
 
   common$outputs$features$options <- list(grain = "episode")
   plan <- recipe_to_plan(common, version = 1)
@@ -292,9 +300,13 @@ test_that("feature windows compile at episode grain with per-spec scopes", {
   mixed <- common
   mixed$variables$b$time_window <- NULL
   expect_error(recipe_to_plan(mixed, version = 1), "mixes variables with and without")
-  # 2.10.3 (B-19): one roster, many sources and windows
+  # 2.10.3 (B-19): one roster, many sources and windows, over an indexed
+  # population (episode grain needs one, review B5)
   e <- tryCatch(recipe_to_plan(mixed, version = 1), error = function(e) e)
   expect_s3_class(e, "dsomop_v1_newly_permitted")
+  expect_error(recipe_to_plan(mixed), "episode grain needs an indexed population")
+  mixed$populations$p <- index_p
+  mixed$outputs$features$population_id <- "p"
   plan <- recipe_to_plan(mixed)
   expect_identical(plan$outputs$features$format, "wide")
   expect_identical(plan$outputs$features$grain, "episode")
