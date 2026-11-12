@@ -69,10 +69,11 @@ person membership unchanged do not change that generation; cross-version
 inference remains a residual. The public \code{data_generation},
 \code{data_generation_basis} and \code{data_generation_residual} fields
 describe the policy without revealing the private generation.
-Release preflight rejects either a repeated \code{noise_domain_id} or a
-repeated server-owned logical \code{domain}. The second check also prevents
-one logical privacy node from being pooled twice when its connections expose
-different noise material.
+Protected pooling across multiple sites requires distinct payload identifiers
+\code{source$logical_source_id}; missing or repeated identifiers are
+refused, while per-site results remain available. On legacy servers only,
+release preflight rejects repeated \code{noise_domain_id} or server-owned
+logical \code{domain} values.
 }
 \examples{
 \dontrun{ds.omop.dp.status()}
