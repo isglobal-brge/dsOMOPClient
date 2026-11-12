@@ -79,7 +79,7 @@ remaining parameters to their defaults and refuses a parameter without a
 default.
 
 Integer and number parameters admit the arithmetic operators \code{+},
-\code{-}, \code{*} and \code{/} (also unary minus) with numeric literals and
+\code{-}, \code{*} and \code{/} (also unary minus and unary plus) with numeric literals and
 other numeric parameters, e.g. \code{omop_window(-omop_param("washout",
 type = "integer"), -1)}; the expression is evaluated when its parameters are
 bound and its value is then validated where it is used.

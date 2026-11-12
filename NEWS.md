@@ -146,7 +146,7 @@ workstream fills its entries.
   restricts the unit, `omop_unit()` converts.
 - Parameters (design section 2.10): `omop_param(name, type, default,
   description)` placeholders stand for any language-2 value (integer and
-  number placeholders admit `+ - * /` and unary minus); `recipe_params()`
+  number placeholders admit `+ - * /`, unary minus and unary plus); `recipe_params()`
   lists them and refuses two definitions of one name; `recipe_bind()` checks
   each value against its type, substitutes it and rebuilds every object that
   held a placeholder through its constructor (a recipe may be bound in
@@ -172,14 +172,31 @@ workstream fills its entries.
   `mutate-v1.json` -- columns, literals, `+ - * /`, conditions,
   `ifelse()`, `case_when()`, `coalesce()`, `cut()` (R's `right = TRUE`
   default), date arithmetic -- validated before it is sent and never
-  evaluated; `newobj = x` replaces the target on every server or on none
-  (a rollback copy is kept until all succeed). `ds.omop.filter(x, expr =
+  evaluated; `newobj = x` coordinates replacement across sites with verified
+  rollback and retained recovery copies where restoration is uncertain.
+  `ds.omop.filter(x, expr =
   omop_where(...))` filters with the closed predicate grammar. Both need
   the servers to advertise `verb.mutate` / `verb.filter_expr` (dsOMOP
   2.10.4); `omopMutateDS` is a listed server method of
   `ds.omop.server.version()`.
 
 ## Corrected
+
+- (WS-9 review B1–B2; A-23) Standalone verb assignments include commit
+  verification in their transaction. Fresh outputs are removed on every site
+  after a verification failure. In-place mutations restore every possibly
+  written site, including a site with a lost acknowledgement; recovery copies
+  remain where restoration cannot be confirmed. Errors distinguish unresolved
+  recovery, failed cleanup and a mutation that has already committed.
+- (WS-9 review B6–B8; A-23) Prefixed recipe merges preserve the original
+  namespace at each deferred parameter occurrence, including defaults,
+  inline concept sets and window anchors, through binding and serialization.
+  Parameterized zero washout generates the same criteria as literal zero.
+  Generated advanced code preserves edited block members and provenance;
+  simple new-user and study printing states the chosen washout and era defaults.
+- Large numeric literals and public cut boundaries use round-tripping JSON
+  numbers in verb and plan transport, preserving distinct representable values
+  beyond the range of exact consecutive doubles.
 - `ds.omop.mutate()` and `ds.omop.filter(expr = )` check every participating
   site's published protocol and verb method before any assignment, including
   an in-place mutation's rollback copy. Old, incomplete or unavailable
@@ -273,6 +290,9 @@ workstream fills its entries.
   published; tested end to end through DSLite against a PostgreSQL CDM.
 
 ## Newly refused
+
+- Adding a conflicting definition for an existing variable-block ID is
+  refused; re-adding the identical definition leaves the recipe unchanged.
 - (F-2) A recipe-level row filter is attached only to outputs whose event
   table has every column it references; otherwise `recipe_to_plan()` stops
   naming the output and the missing column (the filter was attached to every

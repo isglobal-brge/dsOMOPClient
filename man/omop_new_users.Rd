@@ -38,6 +38,8 @@ and the criteria require \code{washout_days} days of prior observation
 (\code{omop_observed(before = washout_days)}) and no exposure in the
 \code{washout_days} days before the index (\code{omop_has_not(rx, window =
 omop_window(-washout_days, -1))}). \code{washout_days = 0} adds no criteria.
+A parameterized washout is expanded after binding or default resolution;
+zero keeps independently supplied population and study requirements.
 }
 \examples{
 metf <- omop_concept_set(1503297, descendants = TRUE, name = "metformin")

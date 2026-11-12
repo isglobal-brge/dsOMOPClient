@@ -37,16 +37,24 @@ comparing one column with one literal), \code{ifelse(test, yes, no)},
 gives \code{NA}), \code{coalesce(...)} and \code{cut(x, breaks, labels,
 right)} (R's \code{right = TRUE} default; text labels, \code{NA} outside
 the breaks; \code{breaks}/\code{labels} may name vectors of your session).
+Integer arithmetic uses exact signed 64-bit storage when needed; results
+beyond the ordinary R integer range are retained, and checked 64-bit
+overflow yields typed NA. Branches and coalescing preserve integer64 and
+datetime values. Repeated explicit cut labels group their intervals.
 Nothing is evaluated as R code, on the client or on the server.
 }
 \details{
 Person, episode and set keys and protected columns can be neither read nor
-written. The result is a released object: its distinct persons must reach
+written. Class-1 source and assignment names are also refused, even when
+the administrator permits their direct projection. The result is a released object: its distinct persons must reach
 the server's \code{nfilter.subset} (the server refuses it otherwise, with
 its constant message) and it carries no differential-privacy provenance.
 With \code{newobj = x} the target is replaced in place on every server; a
 rollback copy is kept until every server has succeeded, so a failure on
-one server leaves the target unchanged everywhere.
+one server restores the original everywhere. If restoration cannot be
+confirmed, the error names the unresolved sites and the retained recovery
+symbol. A cleanup error after confirmed commit states that the mutation
+committed and identifies the remaining backup cleanup.
 Every participating server must publish the dsOMOP 2.10.4 publication
 protocol and \code{omopMutateDS}, and advertise \code{verb.mutate}.
 The client checks this before any assignment, including a rollback copy;
