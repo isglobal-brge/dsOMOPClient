@@ -39,6 +39,12 @@ workstream fills its entries.
   ...), or `concept_col`. Row concept-set filters compiled to the column
   `concept_id`, which the server refused.
 
+- (A-18) The section 11 adapter refusals reach the analyst as the error
+  `Plan publication refused: <site>:<output> [validation_error] (<reason>)`
+  with `adapter_person_mismatch` or `cost_currency_mixed`, under both
+  `on_small_site` settings (they are never skippable), and nothing is
+  published; tested end to end through DSLite against a PostgreSQL CDM.
+
 ## Newly refused
 - (F-2) A recipe-level row filter is attached only to outputs whose event
   table has every column it references; otherwise `recipe_to_plan()` stops
@@ -81,6 +87,11 @@ workstream fills its entries.
   the one normal form the semantic digest hashes on client and server; the
   normalised fixtures of `inst/schema/normalized/` are pinned. `plan-v2.json`
   gains `source_analyses` on temporal and person-period outputs (A-14).
+  The vendored probe corpus carries the A-15/A-16 IR-only variants, refused
+  on the wire (P64-P66).
+- A-18 `.plan_validate_status()` admits the optional closed `reason` of a
+  rejected entry (only with `validation_error`); the refusal diagnostic names
+  it with the output and code (`site:output [validation_error] (reason)`).
 
 # dsOMOPClient 2.10.2
 
