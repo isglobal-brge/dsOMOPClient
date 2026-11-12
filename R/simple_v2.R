@@ -69,7 +69,7 @@
       # choice outside omop_event()'s conversion field.
       if (.v2_is_param(unit)) {
         event <- do.call(omop_event, args)
-        event$simple <- list(unit = unit, context = ctx, where = args$where)
+        event$simple <- list(unit = unit, context = ctx, where = event$where)
         return(event)
       }
       args$where <- .simple_unit_where(unit, args$where, ctx)

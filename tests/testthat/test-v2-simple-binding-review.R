@@ -72,14 +72,20 @@ test_that("numeric unit placeholders use the literal restriction after every res
   pending$variables$lab$event$where <- omop_where(value_as_number > 1)
   literal$variables$lab$event$where <- pending$variables$lab$event$where
   for (r in .sbr_roundtrips(pending)) .sbr_same(recipe_bind(r, unit = 8554L), literal)
-  event <- dsOMOPClient:::.simple_event("measurement", 3004410L,
-    list(where = omop_where(value_as_number > 1)), "simple helper",
-    unit = omop_param("unit", "integer", default = 8554L))
-  original_conflict <- omop_recipe(variables = list(lab = omop_variable(
-    event = event, reducer = omop_reduce("mean"))), outputs = omop_output("wide"))
-  for (r in .sbr_roundtrips(original_conflict)) {
-    expect_error(recipe_to_plan(r), "numeric unit or a where predicate")
-    expect_error(recipe_bind(r, unit = 8554L), "numeric unit or a where predicate")
+  # Constructor canonicalization of a raw predicate is not a user edit.
+  for (where in list(omop_where(value_as_number > 1),
+                     list(var = "value_as_number", op = ">", value = 1))) {
+    make_event <- function(unit) dsOMOPClient:::.simple_event("measurement", 3004410L,
+      list(where = where), "simple helper", unit = unit)
+    expect_error(make_event(8554L), "numeric unit or a where predicate")
+    event <- make_event(omop_param("unit", "integer", default = 8554L))
+    expect_identical(event$simple$where, event$where)
+    original_conflict <- omop_recipe(variables = list(lab = omop_variable(
+      event = event, reducer = omop_reduce("mean"))), outputs = omop_output("wide"))
+    for (r in .sbr_roundtrips(original_conflict)) {
+      expect_error(recipe_to_plan(r), "numeric unit or a where predicate")
+      expect_error(recipe_bind(r, unit = 8554L), "numeric unit or a where predicate")
+    }
   }
 })
 
