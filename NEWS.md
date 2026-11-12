@@ -206,6 +206,13 @@ workstream fills its entries.
   population and source definitions and preserving edits made after merging.
   Generated advanced code preserves edited block members and provenance;
   simple new-user and study printing states the chosen washout and era defaults.
+- (WS-9 re-review R3–R4; A-23) Simple helpers defer numeric unit restrictions,
+  new-user event selection and row-count expansion until parameter binding.
+  Defaults, staged binding, prefixed merges and JSON/YAML/generated-code forms
+  retain the literal helper's plan, source options and user edits. Predicate
+  serialization preserves numeric literal storage. Parameter arithmetic uses
+  numeric intermediates, avoiding integer-storage overflow while retaining
+  contextual integer validation and non-finite-expression refusals.
 - Large numeric literals and public cut boundaries use round-tripping JSON
   numbers in verb and plan transport, preserving distinct representable values
   beyond the range of exact consecutive doubles.

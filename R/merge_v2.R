@@ -322,6 +322,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
       }
       if (identical(kind, "episode_members")) x <- upd(x, "episode", self$src)
       if (identical(kind, "cost")) x <- upd(x, "event", self$src)
+      x <- upd(x, "simple", self$any)
       return(upd(x, "where", self$any))
     }
     if (.v2_is_interval(x)) {
@@ -369,7 +370,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
       return(upd(x, "window", self$any))
     }
     if (inherits(x, "omop_reducer")) {
-      for (k in c("window", "reference")) x <- upd(x, k, self$any)
+      for (k in c("window", "reference", "simple")) x <- upd(x, k, self$any)
       return(x)
     }
     if (inherits(x, "omop_variable") && .v2_is_v2_variable(x)) {

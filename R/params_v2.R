@@ -208,6 +208,9 @@ Ops.omop_param <- function(e1, e2) {
 
 # Evaluate a parameter expression over bound operand values.
 .v2_param_arith <- function(op, vals, type, context) {
+  # Storage mode is independent of the expression's semantic integer tag.
+  # Intermediate finite values may exceed R's 32-bit integer range.
+  vals <- lapply(vals, as.numeric)
   res <- suppressWarnings(if (length(vals) == 1L) -vals[[1L]] else
     switch(op, "+" = vals[[1L]] + vals[[2L]], "-" = vals[[1L]] - vals[[2L]],
            "*" = vals[[1L]] * vals[[2L]], "/" = vals[[1L]] / vals[[2L]]))
@@ -304,7 +307,10 @@ print.omop_param <- function(x, ...) {
 # Substitute placeholders throughout `x`; every language-2 object that held
 # one is rebuilt through its constructor (bottom up), so bound values are
 # validated where they are used.
-.v2_bind_walk <- function(x, lookup, context) {
+.v2_bind_walk <- function(x, lookup, context, sources = NULL) {
+  if (inherits(x, "omop_recipe")) {
+    sources <- list(events = x$events %||% list(), intervals = x$intervals %||% list())
+  }
   if (.v2_is_param(x)) {
     value <- .v2_param_resolve(x, lookup, context)
     return(list(value = value, changed = !identical(value, x)))
@@ -315,11 +321,35 @@ print.omop_param <- function(x, ...) {
   # rebuilt: zero washout has no generated criteria, never a reversed window.
   if (inherits(x, "omop_population") && isTRUE(x$simple$new_users$pending)) {
     spec <- x$simple$new_users
-    washout <- .v2_bind_walk(spec$washout_days, lookup, context)$value
-    changed <- !identical(washout, spec$washout_days)
+    washout <- .v2_bind_walk(spec$washout_days, lookup, context, sources)$value
+    event <- .v2_bind_walk(spec$event, lookup, context, sources)$value
+    changed <- !identical(washout, spec$washout_days) || !identical(event, spec$event)
+    if (.v2_is_param(spec$event) && !.v2_is_param(event)) {
+      if (is.character(event)) {
+        # An event-typed parameter's name refers to the event registry, not
+        # to a concept set that happens to have the same name.
+        declared <- sources$events[[event]] %||% sources$intervals[[event]]
+        if (is.null(declared)) {
+          stop("omop_new_users(): unknown drug event '", event, "'.", call. = FALSE)
+        }
+        event <- .v2_bind_walk(declared, lookup, context, sources)$value
+      }
+      event <- .simple_new_users_event(event)
+      # Replace the deferred exposure wherever it remains in the current
+      # population; a deliberately edited/replaced index is not replayed.
+      replace <- function(node) {
+        if (identical(node, spec$event)) return(event)
+        if (is.list(node) && !is.data.frame(node)) {
+          for (i in seq_along(node)) if (!is.null(node[[i]])) node[[i]] <- replace(node[[i]])
+        }
+        node
+      }
+      x <- replace(x)
+    }
+    spec$event <- event
     spec$washout_days <- .v2_int(washout, "omop_new_users(): washout_days", min = 0L)
-    if (!.v2_is_param(washout)) {
-      generated <- .simple_washout_filters(spec$event, spec$washout_days)
+    if (!.v2_is_param(washout) && !.v2_is_param(event)) {
+      generated <- .simple_washout_filters(event, spec$washout_days)
       x$filters <- c(generated, x$filters %||% list())
       spec$pending <- FALSE
       changed <- TRUE
@@ -330,13 +360,17 @@ print.omop_param <- function(x, ...) {
   for (i in seq_along(x)) {
     el <- x[[i]]
     if (is.null(el)) next
-    r <- .v2_bind_walk(el, lookup, context)
+    r <- .v2_bind_walk(el, lookup, context, sources)
     if (isTRUE(r$changed)) {
       changed <- TRUE
       out[[i]] <- r$value
     }
   }
-  if (changed && .v2_is_tagged(out)) out <- .v2_rebuild(out)
+  if (.v2_is_tagged(out)) {
+    expanded <- .simple_expand_tagged(out)
+    changed <- changed || !identical(expanded, out)
+    out <- if (changed) .v2_rebuild(expanded) else expanded
+  }
   if (changed && inherits(out, c("omop_population", "omop_output"))) {
     out <- .v2_rebuild_recipe_node(out)
   }
@@ -360,6 +394,7 @@ print.omop_param <- function(x, ...) {
   if (!is.null(names(args))) args <- args[!vapply(args, is.null, logical(1))]
   obj <- do.call(spec$ctor, args)
   if (!is.null(spec$name)) obj$name <- spec$name
+  if (!is.null(x$simple)) obj$simple <- x$simple
   obj
 }
 

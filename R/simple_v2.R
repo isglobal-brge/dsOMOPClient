@@ -62,26 +62,58 @@
   args <- c(list(table, concepts), dots)
   if (!is.null(value)) args$value <- value
   if (!is.null(unit)) {
-    if (inherits(unit, "omop_unit") || .v2_is_param(unit)) {
+    if (inherits(unit, "omop_unit")) {
       args$unit <- unit
     } else {
-      # A numeric unit is a unit-restricted event, never an implicit
-      # conversion (design section 3); conversions are given with omop_unit().
-      # The literal is the one omop_where(unit_concept_id == U) captures.
-      ids <- as.numeric(.v2_ids(unit, paste0(ctx, ": unit")))
-      restriction <- if (length(ids) == 1L) {
-        list(var = "unit_concept_id", op = "==", value = ids)
-      } else {
-        list(var = "unit_concept_id", op = "in", value = as.list(ids))
+      # The unit's role is chosen only after binding. Keep the pending
+      # choice outside omop_event()'s conversion field.
+      if (.v2_is_param(unit)) {
+        event <- do.call(omop_event, args)
+        event$simple <- list(unit = unit, context = ctx, where = args$where)
+        return(event)
       }
-      if (!is.null(args$where)) {
-        stop(ctx, ": give a numeric unit or a where predicate, not both (add the unit ",
-             "restriction to the predicate).", call. = FALSE)
-      }
-      args$where <- omop_where_tree(restriction)
+      args$where <- .simple_unit_where(unit, args$where, ctx)
     }
   }
   do.call(omop_event, args)
+}
+
+.simple_unit_where <- function(unit, where, ctx) {
+  ids <- as.numeric(.v2_ids(unit, paste0(ctx, ": unit")))
+  if (!is.null(where)) {
+    stop(ctx, ": give a numeric unit or a where predicate, not both (add the unit ",
+         "restriction to the predicate).", call. = FALSE)
+  }
+  restriction <- if (length(ids) == 1L) {
+    list(var = "unit_concept_id", op = "==", value = ids)
+  } else list(var = "unit_concept_id", op = "in", value = as.list(ids))
+  omop_where_tree(restriction)
+}
+
+# Resolve only the helper-owned choice on the current object, retaining edits
+# to all other event/reducer fields. Metadata is never emitted to the plan.
+.simple_expand_tagged <- function(x) {
+  if (.v2_is_event(x) && !is.null(x$simple$unit) &&
+      !.v2_is_param(x$simple$unit)) {
+    unit <- x$simple$unit
+    if (inherits(unit, "omop_unit")) x$unit <- unit else {
+      .v2_ids(unit, paste0(x$simple$context, ": unit"))
+      # The current predicate may have been deliberately replaced after the
+      # helper call. Validate the unit, then retain that edit just as a literal
+      # helper followed by the same replacement would.
+      if (identical(x$where, x$simple$where)) {
+        x$where <- .simple_unit_where(unit, x$where, x$simple$context)
+      }
+    }
+    x$simple <- NULL
+  }
+  if (inherits(x, "omop_reducer") && isTRUE(x$simple$row_count) &&
+      !.v2_is_param(x$distinct)) {
+    distinct <- .v2_distinct(x$distinct, "omop_count(): distinct")
+    x["distinct"] <- list(if (!identical(distinct, "row")) distinct)
+    x$simple <- NULL
+  }
+  x
 }
 
 .simple_variable <- function(event, reducer) {
@@ -162,6 +194,7 @@ omop_count <- function(table, concepts = NULL, before = NULL, after = NULL, wind
   w <- .simple_window(before, after, window, ctx)
   red <- if (identical(distinct, "row")) omop_reduce("count", window = w) else
     omop_reduce("count", window = w, distinct = distinct)
+  if (.v2_is_param(distinct)) red$simple <- list(row_count = TRUE)
   .simple_variable(ev, red)
 }
 
@@ -357,7 +390,24 @@ omop_new_users <- function(drug, washout_days = 365L, select = "first_eligible",
                            by = "ingredient") {
   ctx <- "omop_new_users()"
   if (missing(drug)) stop(ctx, ": drug is required.", call. = FALSE)
-  rx <- if (.v2_is_event(drug)) {
+  rx <- .simple_new_users_event(drug)
+  washout_days <- .v2_int(washout_days, paste0(ctx, ": washout_days"), min = 0L)
+  by <- .v2_choice(by, c("event", "concept", "ingredient"), paste0(ctx, ": by"))
+  era <- omop_era(rx, by = by)
+  index <- omop_index(era, select = select, end = omop_end("interval_end"))
+  filters <- .simple_washout_filters(rx, washout_days)
+  pop <- omop_population("new_users", label = "New users", index = index, filters = filters)
+  pop$simple <- list(new_users = list(washout_days = washout_days, event = rx,
+                                     by = era$by, gap = era$gap, select = index$select,
+                                     pending = .v2_is_param(washout_days) ||
+                                       .v2_is_param(rx)))
+  pop
+}
+
+.simple_new_users_event <- function(drug) {
+  ctx <- "omop_new_users()"
+  if (.v2_is_param(drug) && identical(drug$type, "event")) return(drug)
+  if (.v2_is_event(drug)) {
     if (!identical(drug$kind %||% "table", "table") || !identical(drug$table, "drug_exposure")) {
       stop(ctx, ": drug must be an event over drug_exposure.", call. = FALSE)
     }
@@ -368,20 +418,10 @@ omop_new_users <- function(drug, washout_days = 365L, select = "first_eligible",
   } else {
     omop_event("drug_exposure", drug)
   }
-  washout_days <- .v2_int(washout_days, paste0(ctx, ": washout_days"), min = 0L)
-  by <- .v2_choice(by, c("event", "concept", "ingredient"), paste0(ctx, ": by"))
-  era <- omop_era(rx, by = by)
-  index <- omop_index(era, select = select, end = omop_end("interval_end"))
-  filters <- .simple_washout_filters(rx, washout_days)
-  pop <- omop_population("new_users", label = "New users", index = index, filters = filters)
-  pop$simple <- list(new_users = list(washout_days = washout_days, event = rx,
-                                     by = era$by, gap = era$gap, select = index$select,
-                                     pending = .v2_is_param(washout_days)))
-  pop
 }
 
 .simple_washout_filters <- function(rx, washout_days) {
-  if (.v2_is_param(washout_days) || washout_days == 0L) return(list())
+  if (.v2_is_param(rx) || .v2_is_param(washout_days) || washout_days == 0L) return(list())
   list(omop_observed(before = washout_days),
        omop_has_not(rx, window = omop_window(-washout_days, -1L)))
 }
