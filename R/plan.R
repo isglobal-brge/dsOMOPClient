@@ -2017,9 +2017,13 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     standard <- !any(refused | partial) && all(vapply(inventories, function(x) {
       identical(names(x), names(out)) && all(vapply(names(x), function(root) {
         symbols <- .plan_inventory_symbols(x[root])[[root]]
+        components <- names(x[[root]])
+        aliases <- c(risk_sets = "riskSets", transition_ref = "transitionRef")
+        legacy <- components %in% names(aliases)
+        components[legacy] <- aliases[components[legacy]]
         expected <- if (length(symbols) == 1L && symbols[[1L]] == out[[root]]) {
           out[[root]]
-        } else paste0(out[[root]], ".", names(x[[root]]))
+        } else paste0(out[[root]], ".", components)
         length(symbols) > 0L && identical(unname(symbols), unname(expected))
       }, logical(1)))
     }, logical(1)))
@@ -2087,7 +2091,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
           !grepl("^[A-Za-z][A-Za-z0-9._]*$", component$symbol) ||
           !is.character(component$grain) || length(component$grain) != 1L ||
           is.na(component$grain) ||
-          !component$grain %in% c("row", "person", "episode", "none") ||
+          !component$grain %in% c("person", "episode", "none") ||
           !is.numeric(component$n_columns) || length(component$n_columns) != 1L ||
           is.na(component$n_columns) || !is.finite(component$n_columns) ||
           component$n_columns < 0 || component$n_columns %% 1 != 0) invalid()

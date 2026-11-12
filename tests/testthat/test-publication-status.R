@@ -232,3 +232,15 @@ test_that("renamed component factors share one level specification", {
   expect_identical(assigned$a$spec,
                    dsOMOPClient:::.ds_encode(list(gender_concept_id = c("8507", "8532"))))
 })
+
+
+test_that("legacy composite aliases preserve the successful return mapping", {
+  status <- .publication_status()
+  status$published$data <- list(
+    events = list(symbol = "D.events", grain = "episode", n_columns = 5L),
+    risk_sets = list(symbol = "D.riskSets", grain = "episode", n_columns = 3L)
+  )
+  .publication_backend(list(a = status, b = status))
+  expect_identical(ds.omop.plan.execute(.publication_plan(), out = "D"),
+                   c(data = "D"))
+})
