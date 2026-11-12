@@ -44,7 +44,8 @@ test_that("a name reused for a different definition is refused", {
 test_that("legacy population filters lower to native criteria; parent compiles (B-8)", {
   r <- omop_recipe(
     populations = list(
-      omop_population("all_f", filters = list(omop_filter_sex("F"), omop_filter_age(18, 18))),
+      omop_population("all_f", filters = list(omop_filter_sex("F"),
+                                              omop_filter_age(18, 18, year = 2020))),
       omop_population("dm", parent_id = "all_f",
                       filters = list(omop_filter_has_concept(201820, "condition_occurrence",
                                                              min_count = 2),
@@ -55,7 +56,8 @@ test_that("legacy population filters lower to native criteria; parent compiles (
   expect_true(.valid(plan))
   w <- plan$populations$all_f$where$and
   expect_identical(w[[1]], list(person = list(var = "gender_concept_id", op = "==", value = 8532L)))
-  expect_identical(w[[2]], list(age = list(min = 18L, max = 18L)))  # one-year band (F-26)
+  # a one-year band (F-26), annual age in the reference year
+  expect_identical(w[[2]], list(age = list(min = 18L, max = 18L, reference = list(year = 2020L))))
   dm <- plan$populations$dm
   expect_identical(dm$parent, "all_f")
   expect_identical(dm$where$and[[1]]$has$n, 2L)
@@ -377,4 +379,25 @@ test_that("DP preparation of a language-2 recipe sends the negotiated v2 plan", 
   out <- ds.omop.dp.prepare(r)
   expect_identical(as.character(seen[[1L]]), "omopDpPlanExecuteDS")
   expect_identical(unclass(out)[["w"]], "DP_w")
+})
+
+test_that("an index-relative age criterion needs an index; explicit names are reserved", {
+  r <- omop_recipe(populations = omop_population("adults", filters = list(omop_age_is(18, NULL))),
+                   variables = list(sex = omop_sex()),
+                   outputs = omop_output("w", rows = "adults", format = "wide"))
+  expect_error(recipe_to_plan(r), "age criterion at the index needs an indexed")
+  ok <- omop_recipe(populations = omop_population("adults", filters = list(omop_age_is(18, year = 2024))),
+                    variables = list(sex = omop_sex()),
+                    outputs = omop_output("w", rows = "adults", format = "wide"))
+  expect_s3_class(recipe_to_plan(ok), "omop_plan_v2")
+  # a generated name never takes a name the user gave elsewhere
+  dm <- omop_concept_set(1, name = "dm")
+  r2 <- omop_recipe(
+    populations = omop_population("p", index = omop_index(omop_event("condition_occurrence", dm))),
+    variables = list(v = omop_variable(event = omop_event("condition_occurrence", 2, name = "dm_dx"),
+                                       reducer = omop_reduce("binary"))),
+    outputs = omop_output("w", rows = "p", format = "wide"))
+  plan <- recipe_to_plan(r2)
+  expect_identical(plan$events$dm_dx$concept_set$concepts, list(2L))
+  expect_identical(plan$populations$p$index$source$event, "dm_dx_2")
 })

@@ -144,7 +144,7 @@ test_that("parent inheritance is never dropped to fit an older server (B-8)", {
   .with_servers(list(srv1 = list()))
   r <- omop_recipe(populations = list(omop_population("a", filters = list(omop_filter_sex("F"))),
                                       omop_population("b", parent_id = "a",
-                                                      filters = list(omop_filter_age(18, 40)))),
+                                                      filters = list(omop_filter_age(18, 40, year = 2020)))),
                    variables = omop_variable_sex(),
                    outputs = omop_output("w", type = "wide", population_id = "b"))
   expect_error(recipe_execute(r), "never dropped to fit an older server")

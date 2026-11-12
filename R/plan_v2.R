@@ -76,6 +76,7 @@
   ctx$declared_events <- character(0)
   ctx$declared_intervals <- character(0)
   ctx$referenced_pops <- character(0)
+  ctx$reserved_names <- character(0)
   ctx
 }
 
@@ -277,7 +278,7 @@
   base <- .v2_truncate_name(base)
   name <- base
   i <- 2L
-  taken <- c(names(ctx$events), names(ctx$intervals))
+  taken <- c(names(ctx$events), names(ctx$intervals), ctx$reserved_names)
   while (name %in% taken) {
     name <- .v2_truncate_name(paste0(substr(base, 1L, 60L), "_", i))
     i <- i + 1L
@@ -1138,6 +1139,22 @@
   FALSE
 }
 
+# Populations whose rows have an index date (episodes): indexed or matched
+# populations, criteria populations seeded from a results cohort, and their
+# descendants.
+.v2_population_has_index <- function(pops, id, seen = character(0)) {
+  p <- pops[[id]]
+  if (is.null(p) || id %in% seen) return(FALSE)
+  if (p$kind %in% c("index", "match") || !is.null(p$cohort_definition_id)) return(TRUE)
+  seen <- c(seen, id)
+  if (identical(p$kind, "setop")) {
+    return(all(vapply(unlist(p$setop$members), function(m)
+      .v2_population_has_index(pops, m, seen), logical(1))))
+  }
+  if (!is.null(p$parent)) return(.v2_population_has_index(pops, p$parent, seen))
+  FALSE
+}
+
 .v2_register_variable <- function(ctx, name, wire) {
   .v2c_register(ctx, "variables", name, wire, "variable")
 }
@@ -1225,7 +1242,16 @@
 #' Compile a recipe to a v2 wire plan
 #' @keywords internal
 .recipe_to_plan_v2 <- function(recipe) {
+  # Unbound parameter placeholders: bound to their default or refused.
+  recipe <- .v2_resolve_params(recipe)
   ctx <- .v2_new_context(recipe)
+  # Names given explicitly anywhere are reserved before inline objects are
+  # interned, so a generated name never collides with a user's name.
+  .v2_walk(recipe, function(node) {
+    if ((.v2_is_event(node) || .v2_is_interval(node)) && is.character(node$name)) {
+      ctx$reserved_names <- union(ctx$reserved_names, node$name)
+    }
+  })
   # 1. Declared registries, in declaration order.
   for (i in seq_along(recipe$concept_sets %||% list())) {
     cs <- recipe$concept_sets[[i]]
@@ -1259,7 +1285,7 @@
     extra <- if (identical(id, "base")) base_extra else list()
     if (identical(id, "base") && .v2_population_is_implicit_base(pop) && length(extra) == 0L) {
       ctx$implicit_base <- TRUE
-      ctx$populations[[id]] <- list(kind = "criteria", label = "All Persons")
+      ctx$populations[[id]] <- list(kind = "criteria")
       next
     }
     ctx$populations[[id]] <- .v2w_population(ctx, pop, extra)
@@ -1424,6 +1450,21 @@
     state[[id]] <<- 2L
   }
   for (id in names(pops)) visit(id, character(0))
+  # An index-relative age criterion needs an index (episodes) to refer to.
+  for (id in names(pops)) {
+    p <- pops[[id]]
+    if (!p$kind %in% c("index", "criteria") || .v2_population_has_index(pops, id)) next
+    uses_index_age <- FALSE
+    .v2_walk(p$where, function(node) {
+      if (is.list(node) && !is.null(node$age) && length(node) == 1L &&
+          !is.list(node$age$reference)) uses_index_age <<- TRUE
+    })
+    if (uses_index_age) {
+      .v2_stop("population '", id, "': an age criterion at the index needs an indexed ",
+               "population (or a results cohort); give omop_age_is(year = ) for a fixed ",
+               "reference year.")
+    }
+  }
   for (nm in names(outs)) {
     o <- outs[[nm]]
     context <- paste0("output '", nm, "'")
