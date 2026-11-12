@@ -4,6 +4,9 @@ Recipe language 2.0 (design-2.10.3). This section is the WS-0 skeleton; each
 workstream fills its entries.
 
 ## Corrected
+- (WS-2f review B2) Shared normalization preserves the unindexed status of
+  v1 observation-period populations when their person seed has an index.
+  Fresh observation-period episodes do not inherit that index's identity.
 - Plan execution reads authenticated publication status before cleanup and uses
   the server inventory, including freshly allocated component symbols. Technical
   and transport failures revoke staged files as well as assigned outputs.
