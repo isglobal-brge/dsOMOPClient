@@ -55,7 +55,7 @@
   on.exit(DBI::dbDisconnect(fixture$conn), add = TRUE)
   base <- withr::local_tempdir(.local_envir = .local_envir)
   Sys.chmod(base, "0700")
-  withr::local_envvar(c(DSOMOP_PSEUDONYM_ROOT = base, DSOMOP_PSEUDONYM_PROVIDER = "file",
+  withr::local_envvar(c(DSOMOP_STATE_DIR = base, DSOMOP_PSEUDONYM_ROOT = "", DSOMOP_PSEUDONYM_PROVIDER = "file",
                         DSOMOP_PSEUDONYM_REQUIRE_EXISTING = "false", DSOMOP_PSEUDONYM_KEY = ""),
                      .local_envir = .local_envir)
   withr::local_options(list(dsstaging.base_dir = base, dsomop.staged_chunk_size = 7L,
@@ -97,7 +97,7 @@
   login$append(server = "site1", url = server_name, driver = "DSLiteDriver")
   conns <- DSI::datashield.login(login$build())
   withr::defer({
-    try(ds.omop.disconnect(symbol = symbol, conns = conns), silent = TRUE)
+    ds.omop.disconnect(symbol = symbol, conns = conns)
     DSI::datashield.logout(conns)
   }, envir = .local_envir)
   ds.omop.connect(resource = symbol, symbol = symbol, conns = conns)
@@ -128,11 +128,51 @@
   as.data.frame(result, stringsAsFactors = FALSE)
 }
 
-# Oracle rows deliberately do not prescribe generated analytic keys. Compare
-# every released oracle value as a per-person multiset, retaining duplicate
-# rows, and compare the complete released frames between memory and staging.
-.ws7e_compare <- function(frame, expected, handle, info) {
+# Reconstruct the chronological roster key from independent oracle episode
+# identities, never from the production compiler's roster. All non-matching
+# corpus populations have one episode per (person, start), except recipe 05's
+# two same-day MI records whose ends are equal and whose source keys break the
+# tie. Union the outputs so survival omissions cannot renumber the baseline.
+.ws7e_episode_catalog <- function(ctx, recipe, frozen, expected, component) {
+  root <- strsplit(component, ".", fixed = TRUE)[[1L]][[1L]]
+  pop <- frozen$outputs[[root]]$rows
+  roots <- names(frozen$outputs)[vapply(frozen$outputs, function(x) identical(x$rows, pop), logical(1))]
+  components <- names(expected)[vapply(strsplit(names(expected), ".", fixed = TRUE),
+                                       function(x) x[[1L]] %in% roots, logical(1))]
+  rows <- lapply(expected[components], .ws7e_expected)
+  # Recipe 09 excludes the episode whose follow-up ends before TAR entry.
+  # Recipe 01 independently defines the same complete c1 population.
+  if (identical(recipe, "09-recurrent-events")) {
+    complete <- jsonlite::fromJSON(file.path(ctx$paths$recipes, "01-characterisation", "expected.json"),
+                                  simplifyVector = FALSE)
+    rows <- list(.ws7e_expected(complete$outputs$table1))
+  }
+  keys <- c("person_id", "index_date", intersect("index_key", names(rows[[1L]])))
+  catalog <- unique(do.call(rbind, lapply(rows, function(x) x[keys])))
+  ordering <- list(as.numeric(catalog$person_id), catalog$index_date)
+  if ("index_key" %in% keys) ordering <- c(ordering, list(as.character(catalog$index_key)))
+  catalog <- catalog[do.call(order, c(ordering, list(method = "radix"))), , drop = FALSE]
+  catalog$cohort_row_id <- seq_len(nrow(catalog))
+  catalog
+}
+
+.ws7e_episode_key <- function(rows, keys) {
+  do.call(paste, c(lapply(rows[keys], as.character), sep = "|"))
+}
+
+.ws7e_compare <- function(frame, expected, handle, info, episodes = NULL) {
   want <- .ws7e_expected(expected)
+  if (!is.null(episodes)) {
+    keys <- setdiff(names(episodes), "cohort_row_id")
+    at <- match(.ws7e_episode_key(want, keys), .ws7e_episode_key(episodes, keys))
+    expect_false(anyNA(at), info = info)
+    want$cohort_row_id <- episodes$cohort_row_id[at]
+  } else {
+    # Matching publishes set_id/is_case, which bind each person's values to
+    # the oracle case time directly. Each membership must have its own key.
+    expect_identical(anyDuplicated(as.character(frame$cohort_row_id)), 0L, info = info)
+  }
+  expect_identical(as.character(frame$row_id), as.character(frame$cohort_row_id), info = info)
   released <- as.character(unlist(expected$released_columns))
   expect_setequal(names(frame), released)
   expect_identical(nrow(frame), nrow(want), info = info)
@@ -205,7 +245,10 @@
       raw <- ctx$server$getSessionData(ctx$sid, published)
       expect_identical(inherits(raw, "FlowerDatasetDescriptor"), identical(mode, "staged"))
       frame <- .ws7e_frame(ctx, published)
-      .ws7e_compare(frame, expected[[component]], ctx$handle, paste(recipe, mode, component))
+      episodes <- if (!identical(recipe, "10-matching")) {
+        .ws7e_episode_catalog(ctx, recipe, frozen, expected, component)
+      }
+      .ws7e_compare(frame, expected[[component]], ctx$handle, paste(recipe, mode, component), episodes)
       if (identical(mode, "memory")) frames[[component]] <- .ws7e_canonical(frame) else {
         expect_identical(.ws7e_canonical(frame), frames[[component]], info = paste(recipe, component))
       }
@@ -224,6 +267,6 @@ for (.ws7e_backend in c("sqlite", "postgresql")) local({
     recipes <- sort(list.dirs(ctx$paths$recipes, recursive = FALSE, full.names = FALSE))
     recipes <- recipes[grepl("^[0-9][0-9]-", recipes)]
     expect_identical(length(recipes), 15L)
-    for (recipe in recipes) .ws7e_run(ctx, recipe)
+    for (recipe in recipes) expect_error(.ws7e_run(ctx, recipe), NA, info = recipe)
   })
 })
