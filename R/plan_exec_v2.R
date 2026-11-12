@@ -58,7 +58,7 @@
          "support (", detail, "). It has no equivalent v1 plan: parent inheritance, ",
          "coverage policies, event censoring, matching and the other language-2 ",
          "constructs are never dropped to fit an older server. Upgrade dsOMOP on ",
-         "those servers to 2.10.3.", call. = FALSE)
+         "those servers to ", .DSOMOP_PROTOCOL_RELEASE, ".", call. = FALSE)
   }
   invisible(TRUE)
 }

@@ -234,13 +234,14 @@ workstream fills its entries.
 - Before anything is assigned, every execution checks the methods each
   site's profile publishes (review B1). With every site on dsOMOP 2.10.4 the
   publication protocol runs (`omopPlanStatusDS`, `omopStagedRevokeDS`,
-  `commit_policy`). While any site lacks it, a language-2 plan and
-  `on_small_site = "skip"` are refused before any assignment, naming the
+  `commit_policy`). While any site lacks it, a language-2 plan is
+  refused before any assignment, naming the
   sites, the missing methods and the upgrade (install dsOMOP 2.10.4 and
   publish its methods). A v1-selected recipe or plan then runs on every site
   as the legacy call of dsOMOPClient 2.10.2 (the same v1 payload, no
   `commit_policy`, no status or revocation calls) with one warning naming the
-  old sites: cross-site rollback and the section 7.3 publication guarantees
+  old sites: `on_small_site` does not change that legacy call; cross-site
+  rollback and the section 7.3 publication guarantees
   do not apply until they upgrade, and each server applies its own
   disclosure rules. DP preparation and the sticky query library follow the
   same rule. A site whose profile cannot be listed, or that lacks a method

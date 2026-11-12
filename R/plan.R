@@ -1827,6 +1827,10 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #'   \code{NULL}. With the default, a non-strict server may publish complete
 #'   passing output families and warn about rejected families. A strict refusal
 #'   rolls back the federation. Other failures always roll back and error.
+#'   These policies require the publication protocol on every site. If any
+#'   site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere with one
+#'   warning, and \code{on_small_site} does not change that call; a language-2
+#'   plan is refused before assignment.
 #' @details Loading tables never depends on differential privacy. After a
 #'   memory execution, concept columns are converted to factors harmonized
 #'   across servers (see \code{ds.omop.plan.options}).
@@ -1920,10 +1924,6 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     if (v2) {
       v1_refusal <- attr(plan, "v1_refusal")
       stop(.plan_protocol_refusal(route, v1_refusal = v1_refusal), call. = FALSE)
-    }
-    if (identical(on_small_site, "skip")) {
-      stop(.plan_protocol_refusal(route, what = "on_small_site = \"skip\""),
-           " Use on_small_site = \"error\" until then.", call. = FALSE)
     }
     warning(.plan_legacy_warning(route), call. = FALSE)
     return(.plan_execute_legacy(plan, out, symbol, session, conns, output_mode,

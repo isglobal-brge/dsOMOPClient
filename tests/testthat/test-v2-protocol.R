@@ -78,11 +78,14 @@ test_that("a language-2 plan is refused before any assignment on any site", {
   }
 })
 
-test_that("on_small_site = 'skip' needs the protocol on every site", {
+test_that("a v1 skip request still uses the coordinator's legacy route everywhere", {
   state <- .legacy_federation(old = "old", new = "new")
-  expect_error(recipe_execute(.legacy_recipe_b1(), on_small_site = "skip"),
-               "on_small_site = \"skip\" needs the publication protocol")
-  expect_identical(sum(state$assigns), 0L)
+  expect_warning(out <- recipe_execute(.legacy_recipe_b1(), on_small_site = "skip"),
+                 "publication status, on_small_site.*do not apply")
+  expect_identical(out, c(ages = "D_ages"))
+  expect_identical(state$assigns, c(old = 1L, new = 1L))
+  for (s in c("old", "new")) expect_null(as.list(state$sent[[s]])$commit_policy)
+  expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
 })
 
 test_that("DP preparation follows the same rule", {
@@ -121,4 +124,53 @@ test_that("explain reports the same execution decision", {
   expect_null(ex1$refusal)
   expect_match(paste(ex1$text, collapse = "\n"), "Execution would run the legacy call")
   expect_identical(sum(state$assigns), 0L)
+})
+
+test_that("preflight checks methods on the final site before any assignment", {
+  for (method in c("omopPlanExecuteDS", "omopFactorLevelsDS", "omopAsFactorColumnsDS")) {
+    state <- .legacy_federation(new = c("first", "last"))
+    methods <- .current_published_methods(list(first = "first", last = "last"))
+    methods$last$assign <- setdiff(methods$last$assign, method)
+    methods$last$aggregate <- setdiff(methods$last$aggregate, method)
+    local_mocked_bindings(.dsomop_published_methods = function(...) methods,
+                          .package = "dsOMOPClient")
+    expect_error(recipe_execute(.legacy_recipe_b1()), paste0("last lacks ", method))
+    expect_identical(state$assigns, c(first = 0L, last = 0L))
+  }
+})
+
+test_that("an unlistable site's profile stops all assignments", {
+  state <- .legacy_federation(new = c("first", "last"))
+  methods <- .current_published_methods(list(first = "first", last = "last"))
+  methods$last$error <- "profile unavailable"
+  local_mocked_bindings(.dsomop_published_methods = function(...) methods,
+                        .package = "dsOMOPClient")
+  expect_error(recipe_execute(.legacy_recipe_b1()),
+               "Cannot check.*last.*profile unavailable.*nothing was sent")
+  expect_identical(state$assigns, c(first = 0L, last = 0L))
+})
+
+test_that("DP preflight needs its assign method but no factor recoding methods", {
+  state <- .legacy_federation(new = c("first", "last"),
+                              unpublished = "omopDpPlanExecuteDS")
+  expect_error(ds.omop.dp.prepare(.legacy_recipe_b1()), "lacks omopDpPlanExecuteDS")
+  expect_identical(state$assigns, c(first = 0L, last = 0L))
+  state <- .legacy_federation(new = c("first", "last"),
+                              unpublished = c("omopFactorLevelsDS", "omopAsFactorColumnsDS"))
+  expect_silent(out <- ds.omop.dp.prepare(.legacy_recipe_b1()))
+  expect_identical(out, c(ages = "D_ages"))
+  expect_identical(state$assigns, c(first = 1L, last = 1L))
+})
+
+test_that("legacy fallback names every old site exactly once", {
+  state <- .legacy_federation(old = c("old_a", "old_b"), new = "new")
+  warnings <- character(0)
+  withCallingHandlers(recipe_execute(.legacy_recipe_b1()), warning = function(w) {
+    warnings <<- c(warnings, conditionMessage(w))
+    invokeRestart("muffleWarning")
+  })
+  expect_length(warnings, 1L)
+  expect_match(warnings, "^dsOMOP on old_a, old_b predates")
+  expect_identical(state$assigns, c(old_a = 1L, old_b = 1L, new = 1L))
+  expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
 })
