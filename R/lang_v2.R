@@ -95,7 +95,9 @@
     stop(field, " is required.", call. = FALSE)
   }
   if (.v2_is_param(x)) return(x)
-  if (is.list(x)) x <- unlist(x, use.names = FALSE)
+  # Serialized [] is an explicitly empty ID set; NULL remains distinct above.
+  # Only a directly empty list qualifies, not a nonempty list of NULLs.
+  if (is.list(x)) x <- if (length(x) == 0L) integer(0) else unlist(x, use.names = FALSE)
   if (!is.numeric(x) || anyNA(x) || any(!is.finite(x)) || any(x != trunc(x)) ||
       any(x < 0) || any(x > .Machine$integer.max)) {
     stop(field, " must contain non-negative integer concept IDs.", call. = FALSE)

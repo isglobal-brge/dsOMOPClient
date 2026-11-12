@@ -112,3 +112,35 @@ test_that("public cut boundaries retain exact bigint groupings through DSLite tr
     expect_identical(frame$upper_band, rep("upper", nrow(frame)))
   }
 })
+
+test_that("half-open BETWEEN excludes a computed upper bound through public DSLite", {
+  skip_if_not_installed("DSLite")
+  skip_if_not_installed("dsOMOP")
+  skip_if_not_installed("resourcer")
+  skip_if_not_installed("RSQLite")
+  skip_if_not_installed("bit64")
+  ctx <- .v9e_setup()
+  expect_identical(ds.omop.mutate("D_w", big = 2147483647L * 2L,
+    newobj = "D_big", symbol = "omop_v9", conns = ctx$conns), "D_big")
+  for (x in .v9e_frames(ctx$server, "D_big")) {
+    expect_s3_class(x$big, "integer64")
+    expect_identical(as.character(x$big), rep("4294967294", nrow(x)))
+  }
+  pred <- omop_where_tree(list(var = "big", op = "between",
+    value = list(lower = 0, upper = 4294967294, upper_inclusive = FALSE)))
+  wire <- dsOMOPClient:::.verb_predicate_tree(pred)
+  expect_false(wire$value$upper_inclusive)
+  control <- tryCatch(suppressWarnings(ds.omop.filter("D_big",
+    expr = omop_where(big >= 0 & big < 4294967294), newobj = "D_control",
+    symbol = "omop_v9", conns = ctx$conns)), error = identity)
+  expect_s3_class(control, "error")
+  expect_match(conditionMessage(control), "insufficient individuals")
+  expect_false(any(vapply(DSI::datashield.symbols(ctx$conns),
+    function(x) "D_control" %in% x, logical(1))))
+  actual <- tryCatch(suppressWarnings(ds.omop.filter("D_big", expr = pred,
+    newobj = "D_halfopen", symbol = "omop_v9", conns = ctx$conns)), error = identity)
+  expect_s3_class(actual, "error")
+  expect_match(conditionMessage(actual), "insufficient individuals")
+  expect_false(any(vapply(DSI::datashield.symbols(ctx$conns),
+    function(x) "D_halfopen" %in% x, logical(1))))
+})
