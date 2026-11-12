@@ -660,3 +660,402 @@ test_that("typed views pool from their complete basis (dsOMOP 2.10.3 B05)", {
       datasources), "not compatible")
   })
 })
+
+# --- Record-weighted releases, protected effects, fallback and mixed frames ----
+
+# A mocked federated catalogue run with an explicit entry description.
+.pc_analysis_run_meta <- function(frames, meta, code) {
+  conns <- stats::setNames(as.list(rep("FAKE", length(frames))), names(frames))
+  disclosure <- list(
+    harmonization_contract_version = "dsomop-harmonization-v3",
+    age_breaks = seq(0, 85, 5),
+    age_semantics = "reference_year_minus_year_of_birth",
+    date_semantics = "ISO8601_Gregorian_closed_interval",
+    date_granularity = "calendar_day", datetime_timezone = "UTC",
+    week_start = "Monday", nfilter_age_range = 5, nfilter_date_range = 30,
+    nfilter_band = 5, max_feature_specs = 1000, max_pivot_concepts = 1000,
+    max_output_columns = 5000, max_temporal_bins = 10000,
+    max_events_per_group = 100, max_filter_depth = 32,
+    max_filter_nodes = 1024, max_filter_values = 10000,
+    max_plan_outputs = 100, max_analysis_scope_tables = 8)
+  assign("omop", list(
+    conns = conns, res_symbol = "dsO.fake", outputs = NULL,
+    capabilities = stats::setNames(
+      rep(list(list(disclosure = disclosure)), length(conns)), names(conns))),
+    envir = dsOMOPClient:::.dsomop_client_env)
+  withr::defer_parent(
+    if (exists("omop", envir = dsOMOPClient:::.dsomop_client_env)) {
+      rm(list = "omop", envir = dsOMOPClient:::.dsomop_client_env)
+    })
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      head <- if (is.call(expr)) as.character(expr[[1]]) else ""
+      if (identical(head, "omopAnalysisGetDS")) {
+        return(stats::setNames(rep(list(meta), length(conns)), names(conns)))
+      }
+      stats::setNames(frames[names(conns)], names(conns))
+    },
+    .package = "DSI", .env = parent.frame())
+  code()
+}
+
+.pc_rm_display <- list(
+  columns = c("condition_concept_id", "concept_name", "n_persons",
+              "n_records", "avg_days", "stddev_days"),
+  persons = "n_persons", records = "n_records", mean = "avg_days",
+  sd = "stddev_days", order = "n_persons")
+
+# One released stratum of a record-moment owner: lattice sums of the record
+# values u on [0, 10957] (without noise, so the pooled moments are exact).
+.pc_rm_comp <- function(concept, n, u, moments = TRUE,
+                        scale = "record-scale/duration-days-v2",
+                        name = paste("concept", concept)) {
+  J <- 65535
+  list(stratum = paste0("concept=", concept), n = n, r = length(u),
+       s = if (moments) sum(round(J * u)) else NULL,
+       q = if (moments) sum(round(J * u * u)) else NULL,
+       scale = if (moments) scale else NULL,
+       bounds = if (moments) c(0, 10957) else NULL,
+       display = list(condition_concept_id = concept, concept_name = name),
+       order_value = concept, order_unit = 0)
+}
+
+.pc_rm_frame <- function(comps, source, protection = "fixed_synopsis",
+                         cap = 10L) {
+  df <- data.frame(
+    condition_concept_id = vapply(comps, function(c) {
+      c$display$condition_concept_id
+    }, numeric(1L)),
+    concept_name = vapply(comps, function(c) c$display$concept_name,
+                          character(1L)),
+    n_persons = vapply(comps, function(c) max(0, c$n), numeric(1L)),
+    n_records = vapply(comps, function(c) max(0, c$r), numeric(1L)),
+    avg_days = NA_real_, stddev_days = NA_real_, stringsAsFactors = FALSE)
+  owner <- "querylibrary/condition_era.length_stats/record-moments/concept=none/v1"
+  attr(df, "dsomop_release") <- list(
+    protocol = .DP_PROTECTED_RELEASE_PROTOCOL,
+    contract = "dsomop-release-contract-v1",
+    entry = "dsomop:condition_era.length_stats", protection = protection,
+    reference_epsilon = 0.1, source = .pc_source(source),
+    owners = list(list(
+      protocol = .DP_PROTECTED_RELEASE_PROTOCOL, owner = owner,
+      population = owner, family = "RM", weighting = "record",
+      strata_kind = "data", cap = cap, cap_scope = "whole_person_records",
+      record_order = c("condition_era_start_date", "condition_era_id"),
+      lattice = 65535, normalization = "unit_interval",
+      allocation = list(N = 0.2, R = 0.3, S = 0.3, Q = 0.2),
+      display = .pc_rm_display, components = comps)))
+  df
+}
+
+# The record-weighted mean and SD of the pooled values (no projection needed:
+# noise-free sums are feasible).
+.pc_rm_expected <- function(u) {
+  J <- 65535
+  R <- length(u)
+  S <- sum(round(J * u)) / J
+  Q <- sum(round(J * u * u)) / J
+  c(mean = 10957 * S / R, sd = 10957 * sqrt((Q - S^2 / R) / (R - 1)))
+}
+
+test_that("record-weighted protected releases pool N, R, S and Q per stratum", {
+  ua <- (1:60) / 100
+  ub <- (11:60) / 80
+  u2 <- seq(0.2, 0.6, length.out = 20)
+  a <- .pc_rm_frame(list(.pc_rm_comp(1, 30, ua), .pc_rm_comp(2, 12, u2)), 1L)
+  b <- .pc_rm_frame(list(.pc_rm_comp(1, 20, ub),
+                         .pc_rm_comp(3, 15, rep(0.5, 15), moments = FALSE)),
+                    2L)
+  strict <- .pool_protected_release_frames(list(a = a, b = b))
+  expect_identical(names(strict$result), .pc_rm_display$columns)
+  expect_equal(strict$result$condition_concept_id, 1)
+  expect_equal(strict$result$n_persons, 50)
+  expect_equal(strict$result$n_records, 110)
+  want <- .pc_rm_expected(c(ua, ub))
+  expect_equal(strict$result$avg_days, unname(want[["mean"]]),
+               tolerance = 1e-9)
+  expect_equal(strict$result$stddev_days, unname(want[["sd"]]),
+               tolerance = 1e-9)
+  # The persons never weight the mean: changing N leaves the moments alone.
+  a2 <- .pc_rm_frame(list(.pc_rm_comp(1, 3, ua), .pc_rm_comp(2, 12, u2)), 1L)
+  other <- .pool_protected_release_frames(list(a = a2, b = b))
+  expect_equal(other$result$avg_days, strict$result$avg_days)
+  expect_match(paste(strict$warnings, collapse = " "),
+               "record-weighted mean and SD derived once")
+  # pooled_only_ok also pools strata released by some servers, ordered by
+  # pooled persons; a stratum released without moments keeps them NA.
+  partial <- .pool_protected_release_frames(list(a = a, b = b),
+                                            policy = "pooled_only_ok")
+  expect_equal(partial$result$condition_concept_id, c(1, 3, 2))
+  expect_equal(partial$result$n_persons, c(50, 15, 12))
+  expect_true(is.na(partial$result$avg_days[[2L]]))
+  want2 <- .pc_rm_expected(u2)
+  expect_equal(partial$result$avg_days[[3L]], unname(want2[["mean"]]),
+               tolerance = 1e-9)
+  expect_match(paste(partial$warnings, collapse = " "),
+               "released by only some servers")
+  expect_match(paste(partial$warnings, collapse = " "),
+               "Moments were not pooled for 1 strata")
+})
+
+test_that("record-weighted pooling refuses incompatible releases and scales", {
+  ua <- (1:60) / 100
+  ub <- (11:60) / 80
+  a <- .pc_rm_frame(list(.pc_rm_comp(1, 30, ua)), 1L)
+  b <- .pc_rm_frame(list(.pc_rm_comp(1, 20, ub)), 2L)
+  # Another cap is another owner contract.
+  capped <- .pc_rm_frame(list(.pc_rm_comp(1, 20, ub)), 2L, cap = 5L)
+  expect_error(.pool_protected_release_frames(list(a = a, b = capped)),
+               "not compatible")
+  # Another public scale: counts pool, moments do not.
+  rescaled <- .pc_rm_frame(list(.pc_rm_comp(1, 20, ub, scale = "other")), 2L)
+  out <- .pool_protected_release_frames(list(a = a, b = rescaled))
+  expect_equal(out$result$n_records, 110)
+  expect_true(is.na(out$result$avg_days))
+  # Differing labels are kept as NA, with a warning.
+  renamed <- .pc_rm_frame(list(.pc_rm_comp(1, 20, ub, name = "other")), 2L)
+  out <- .pool_protected_release_frames(list(a = a, b = renamed))
+  expect_true(is.na(out$result$concept_name))
+  expect_match(paste(out$warnings, collapse = " "), "concept_name")
+  # One logical node is never counted twice.
+  expect_error(.pool_protected_release_frames(list(a = a, a2 = a)),
+               "Duplicate logical source")
+  # A record-moment owner never pools with person-weighted components.
+  mixed <- a
+  rel <- attr(mixed, "dsomop_release")
+  rel$owners[[2L]] <- attr(.pc_frame(10, c(7, 3)), "dsomop_release")$owners[[1L]]
+  attr(mixed, "dsomop_release") <- rel
+  expect_error(.pool_protected_release_frames(list(a = mixed, b = b)),
+               "record-weighted protected release cannot be pooled")
+  # A server without the pooling fields (an older 2.10.3 build) is refused.
+  bare <- b
+  rel <- attr(bare, "dsomop_release")
+  rel$owners[[1L]]$display <- NULL
+  attr(bare, "dsomop_release") <- rel
+  expect_error(.pool_protected_release_frames(list(a = bare, b = a)),
+               "without its pooling fields")
+})
+
+test_that("ds.omop.analysis.run pools record-weighted summaries in their schema", {
+  ua <- (1:60) / 100
+  ub <- (11:60) / 80
+  columns <- stats::setNames(lapply(.pc_rm_display$columns, function(x) {
+    list(role = "key")
+  }), .pc_rm_display$columns)
+  meta <- list(
+    name = "dsomop:condition_era.length_stats", mode = "aggregate",
+    pooling_contract = list(version = 1L, strategy = "not_poolable",
+                            reason = "Protected release (C7)."),
+    release_pooling = list(version = 1L, strategy = "protected_components",
+                           protocol = .DP_PROTECTED_RELEASE_PROTOCOL,
+                           contract = "dsomop-release-contract-v1",
+                           release_contract = "dsomop:condition_era.length_stats",
+                           class = "C7", columns = columns))
+  frames <- list(alpha = .pc_label(.pc_rm_frame(list(.pc_rm_comp(1, 30, ua)),
+                                                1L), "fixed_synopsis"),
+                 beta = .pc_label(.pc_rm_frame(list(.pc_rm_comp(1, 20, ub)),
+                                               2L), "fixed_synopsis"))
+  .pc_analysis_run_meta(frames, meta, function() {
+    res <- ds.omop.analysis.run("dsomop:condition_era.length_stats")
+    expect_identical(names(res$pooled), .pc_rm_display$columns)
+    expect_equal(res$pooled$n_records, 110)
+    expect_equal(res$pooled$avg_days,
+                 unname(.pc_rm_expected(c(ua, ub))[["mean"]]),
+                 tolerance = 1e-9)
+  })
+})
+
+# One protected cm.effect_estimate frame: per-arm C6 components and the
+# protected estimate repeated on both arm rows.
+.pc_effect_frame <- function(le, se, source, persons = c(100, 90),
+                             events = c(20, 15), time = c(1000, 900)) {
+  df <- data.frame(
+    arm = c("target", "comparator"), model_type = "poisson",
+    persons = persons, person_days = time, outcomes = events,
+    estimate = exp(le), ci_lo = exp(le - 1.96 * se),
+    ci_hi = exp(le + 1.96 * se), log_estimate = le, se_log_estimate = se,
+    stringsAsFactors = FALSE)
+  comps <- lapply(1:2, function(i) {
+    list(stratum = c("arm=target", "arm=comparator")[[i]], n = persons[[i]],
+         status = c(events[[i]], persons[[i]] - events[[i]]), time = time[[i]])
+  })
+  attr(df, "dsomop_release") <- list(
+    protocol = .DP_PROTECTED_RELEASE_PROTOCOL,
+    contract = "dsomop-release-contract-v1",
+    entry = "dsomop:cm.effect_estimate", protection = "realised_sticky",
+    reference_epsilon = 0.1, source = .pc_source(source),
+    owners = list(list(
+      protocol = .DP_PROTECTED_RELEASE_PROTOCOL,
+      owner = "cohortmethod/first-outcome-person-time/v2",
+      population = "c6/persons-at-risk/v1", family = "C6",
+      strata_kind = "independent", cap = 1L, horizon_days = 3650,
+      allocation = list(N = 0.2, status = 0.3, time = 0.5),
+      components = comps)))
+  .pc_label(df)
+}
+
+.pc_effect_contract <- function() {
+  cols <- c("arm", "model_type", "persons", "person_days", "outcomes",
+            "estimate", "ci_lo", "ci_hi", "log_estimate", "se_log_estimate")
+  columns <- stats::setNames(lapply(cols, function(x) {
+    if (x %in% c("arm", "model_type")) list(role = "key")
+    else if (x %in% c("persons", "person_days", "outcomes")) list(role = "sum")
+    else list(role = "nonpoolable", reason = "Pooled by inverse variance.")
+  }), cols)
+  list(version = 1L, strategy = "effect_estimate", columns = columns,
+       strata = c("arm", "model_type"), log_estimate = "log_estimate",
+       standard_error = "se_log_estimate", transform = "exp")
+}
+
+.pc_effect_meta <- function(effect = TRUE) {
+  contract <- .pc_effect_contract()
+  list(
+    name = "dsomop:cm.effect_estimate", mode = "aggregate",
+    pooling_contract = list(version = 1L, strategy = "not_poolable",
+                            reason = "Protected release (C9)."),
+    release_pooling = c(list(
+      version = 1L, strategy = "protected_components",
+      protocol = .DP_PROTECTED_RELEASE_PROTOCOL,
+      contract = "dsomop-release-contract-v1",
+      release_contract = "dsomop:cm.effect_estimate", class = "C9",
+      columns = contract$columns, standard_contract = contract),
+      if (effect) list(effect_estimate = contract)))
+}
+
+test_that("protected effect estimates pool by meta-analysis of the site estimates", {
+  frames <- list(nairobi = .pc_effect_frame(log(1.5), 0.2, 1L),
+                 douala = .pc_effect_frame(log(2.0), 0.3, 2L,
+                                           persons = c(120, 110),
+                                           events = c(24, 18),
+                                           time = c(1200, 1100)))
+  .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
+    res <- ds.omop.meta.effect_estimate(
+      params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L))
+    w <- 1 / c(0.2, 0.3)^2
+    fixed <- exp(sum(w * log(c(1.5, 2))) / sum(w))
+    expect_true(all(res$pooled$n_databases == 2L))
+    expect_equal(res$pooled$estimate_fixed, rep(fixed, 2L), tolerance = 1e-9)
+    target <- res$pooled[res$pooled$arm == "target", , drop = FALSE]
+    expect_equal(target$persons, 220)
+    # The signed-component pooling stays available.
+    comps <- attr(res$pooled, "protected_components")
+    expect_equal(comps$persons, c(220, 200))
+    expect_equal(comps$events, c(44, 33))
+    expect_match(paste(res$meta$warnings, collapse = " "),
+                 "inverse-variance meta-analysis of the per-site protected")
+  })
+  # An unavailable site estimate fails a strict pool closed; pooled_only_ok
+  # meta-analyses the others.
+  frames$douala$log_estimate <- NA_real_
+  frames$douala$se_log_estimate <- NA_real_
+  .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
+    strict <- ds.omop.meta.effect_estimate(
+      params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L))
+    expect_null(strict$pooled)
+    loose <- ds.omop.meta.effect_estimate(
+      params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L),
+      pooling_policy = "pooled_only_ok")
+    expect_true(all(loose$pooled$n_databases == 1L))
+    expect_equal(loose$pooled$estimate_fixed, rep(1.5, 2L), tolerance = 1e-9)
+  })
+  # Without the effect descriptor the entry pools its components only.
+  frames <- list(nairobi = .pc_effect_frame(log(1.5), 0.2, 1L),
+                 douala = .pc_effect_frame(log(2.0), 0.3, 2L))
+  .pc_analysis_run_meta(frames, .pc_effect_meta(effect = FALSE), function() {
+    res <- ds.omop.analysis.run("dsomop:cm.effect_estimate",
+                                cohort = c(1L, 2L))
+    expect_equal(res$pooled$persons, c(200, 180))
+    expect_null(res$pooled$estimate_fixed)
+  })
+})
+
+test_that("standard outputs of servers without DP pool by the established contract", {
+  plain <- function(le, se) {
+    df <- .pc_effect_frame(le, se, 1L)
+    attr(df, "dsomop_release") <- NULL
+    attr(df, "dsomop_protection") <- list(protection = "standard_fallback",
+                                          reason = "dp_unavailable")
+    df
+  }
+  frames <- list(a = plain(log(1.5), 0.2), b = plain(log(2), 0.3))
+  .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
+    res <- ds.omop.meta.effect_estimate(
+      params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L))
+    expect_true(all(res$pooled$n_databases == 2L))
+    expect_match(paste(res$meta$warnings, collapse = " "),
+                 "No server returned protected components")
+  })
+  # One protected and one standard server are still never mixed.
+  frames$a <- .pc_effect_frame(log(1.5), 0.2, 1L)
+  .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
+    expect_error(ds.omop.meta.effect_estimate(
+      params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L)),
+      "cannot be pooled together")
+  })
+})
+
+test_that("pooled mixed frames say their protected fields are not exact", {
+  mixed <- function(days) {
+    df <- data.frame(arm = c("target", "comparator"), persons = c(100, 90),
+                     person_days = days, outcomes = c(20, 15),
+                     mdrr = c(1.8, 1.8), stringsAsFactors = FALSE)
+    attr(df, "dsomop_protection") <- list(
+      protection = "mixed",
+      blocks = list(standard = c("arm", "persons", "outcomes"),
+                    person_time = "realised_sticky"))
+    df
+  }
+  columns <- list(arm = list(role = "key"), persons = list(role = "sum"),
+                  person_days = list(role = "sum"),
+                  outcomes = list(role = "sum"),
+                  mdrr = list(role = "nonpoolable", reason = "Per site."))
+  meta <- list(name = "dsomop:cm.mdrr", mode = "aggregate",
+               pooling_contract = list(version = 1L, strategy = "tabular",
+                                       columns = columns))
+  frames <- list(a = mixed(c(1000, 900)), b = mixed(c(1100, 950)))
+  .pc_analysis_run_meta(frames, meta, function() {
+    res <- ds.omop.analysis.run("dsomop:cm.mdrr", cohort = c(1L, 2L))
+    expect_equal(res$pooled$person_days, c(2100, 1850))
+    expect_match(paste(res$meta$warnings, collapse = " "),
+                 "pooled person_days, mdrr are sums or derivations")
+  })
+})
+
+test_that("the client's moment projection is the server's, candidate order too", {
+  # dsOMOP 2.10.3 .dsomopReleaseProjectMoments, verbatim.
+  server <- function(S0, Q0, N) {
+    if (!is.finite(N) || N <= 0) return(c(S = 0, Q = 0))
+    feasible <- function(S, Q) {
+      Q >= 0 && Q <= N + 1e-12 * N && S * S <= N * Q + 1e-9 * N
+    }
+    if (feasible(S0, Q0)) return(c(S = S0, Q = Q0))
+    candidates <- list(c(-N, N), c(N, N))
+    if (abs(S0) <= N) candidates[[length(candidates) + 1L]] <- c(S0, N)
+    g <- function(S) (S - S0) + 2 * S * (S * S / N - Q0) / N
+    lo <- min(0, S0)
+    hi <- max(0, S0)
+    if (g(lo) * g(hi) <= 0) {
+      for (i in seq_len(200L)) {
+        mid <- (lo + hi) / 2
+        if (g(lo) * g(mid) <= 0) hi <- mid else lo <- mid
+      }
+      s <- max(-N, min(N, (lo + hi) / 2))
+      candidates[[length(candidates) + 1L]] <- c(s, s * s / N)
+    }
+    candidates[[length(candidates) + 1L]] <- c(0, 0)
+    distance <- vapply(candidates, function(p) (p[[1L]] - S0)^2 +
+                         (p[[2L]] - Q0)^2, numeric(1L))
+    ok <- vapply(candidates, function(p) feasible(p[[1L]], p[[2L]]),
+                 logical(1L))
+    best <- which(ok)[which.min(distance[ok])]
+    point <- candidates[[best]]
+    c(S = point[[1L]], Q = max(0, min(N, point[[2L]])))
+  }
+  grid <- expand.grid(S0 = seq(-30, 30, by = 2.5), Q0 = seq(-20, 40, by = 2.5),
+                      N = c(1, 7, 10, 25))
+  for (i in seq_len(nrow(grid))) {
+    g <- grid[i, ]
+    expect_identical(.dp_project_moments(g$S0, g$Q0, g$N),
+                     server(g$S0, g$Q0, g$N), info = paste(unlist(g)))
+  }
+})

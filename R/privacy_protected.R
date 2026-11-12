@@ -24,14 +24,16 @@
   pmax(y - (cumulative[[rho]] - total) / rho, 0)
 }
 
-# Projection of normalized moments onto |S| <= N, 0 <= Q <= N, S^2 <= N Q.
+# Projection of normalized moments onto |S| <= N, 0 <= Q <= N, S^2 <= N Q;
+# the server's algorithm, with its candidate order (equal distances resolve
+# to the same point on both sides).
 .dp_project_moments <- function(S0, Q0, N) {
   if (!is.finite(N) || N <= 0) return(c(S = 0, Q = 0))
   feasible <- function(S, Q) {
     Q >= 0 && Q <= N + 1e-12 * N && S * S <= N * Q + 1e-9 * N
   }
   if (feasible(S0, Q0)) return(c(S = S0, Q = Q0))
-  candidates <- list(c(-N, N), c(N, N), c(0, 0))
+  candidates <- list(c(-N, N), c(N, N))
   if (abs(S0) <= N) candidates[[length(candidates) + 1L]] <- c(S0, N)
   g <- function(S) (S - S0) + 2 * S * (S * S / N - Q0) / N
   lo <- min(0, S0); hi <- max(0, S0)
@@ -43,6 +45,7 @@
     sp <- max(-N, min(N, (lo + hi) / 2))
     candidates[[length(candidates) + 1L]] <- c(sp, sp * sp / N)
   }
+  candidates[[length(candidates) + 1L]] <- c(0, 0)
   ok <- vapply(candidates, function(p) feasible(p[[1L]], p[[2L]]), logical(1L))
   d <- vapply(candidates, function(p) (p[[1L]] - S0)^2 + (p[[2L]] - Q0)^2,
               numeric(1L))
@@ -430,12 +433,22 @@
 #' every site must be a distinct logical source: two connections to one
 #' logical node are refused instead of being counted twice.
 #'
+#' Record-weighted releases (family \code{RM}) are pooled per stratum by
+#' \code{.pool_protected_record_moments}. Exit-time x status cells of a
+#' grouped-time Cox release (family \code{C8}) are summed and projected like
+#' any partition and never refitted; the event-weighted q x exposure cells of
+#' an SCCS release (\code{w}) are not pooled (only its case total).
+#'
 #' @param per_site Named list of released frames.
+#' @param policy \code{"strict"} or \code{"pooled_only_ok"} (record-weighted
+#'   strata present on only some servers).
+#' @param columns The entry's contracted columns (record-weighted schema).
 #' @return List: \code{result} (one row per owner and stratum with the pooled
 #'   persons, mean, SD, quantiles, events and time where defined; the pooled
 #'   cells as attribute \code{cells}) and \code{warnings}.
 #' @keywords internal
-.pool_protected_release_frames <- function(per_site) {
+.pool_protected_release_frames <- function(per_site, policy = "strict",
+                                           columns = NULL) {
   payloads <- lapply(per_site, function(df) {
     attr(df, "dsomop_release", exact = TRUE)
   })
@@ -448,6 +461,18 @@
          " returned no protected components.", call. = FALSE)
   }
   .dp_protected_sources(payloads, "protected catalogue releases")
+  families <- unique(unlist(lapply(payloads, function(p) {
+    vapply(p$owners, function(o) as.character(o$family %||% NA_character_),
+           character(1L))
+  })))
+  if ("RM" %in% families) {
+    if (!identical(families, "RM")) {
+      stop("A record-weighted protected release cannot be pooled with other ",
+           "protected components.", call. = FALSE)
+    }
+    return(.pool_protected_record_moments(payloads, policy = policy,
+                                          columns = columns))
+  }
   signature <- function(p) {
     lapply(p$owners, function(o) {
       list(o$owner, o$family, o$grid, o$bounds, o$cap, o$allocation,
@@ -528,10 +553,301 @@
   warnings <- paste0(
     "Pooled protected components: per owner and stratum the signed noisy ",
     "components of every site were summed and the views derived once.")
+  if ("C8" %in% families) {
+    warnings <- c(warnings, paste0(
+      "Grouped-time Cox exit-time x status cells (C8) were summed across ",
+      "sites and projected onto the pooled arm totals; no hazard ratio is ",
+      "refitted on them."))
+  }
+  if ("SCCS" %in% families) {
+    warnings <- c(warnings, paste0(
+      "The event-weighted SCCS q x exposure cells are not pooled; only the ",
+      "case totals are."))
+  }
   if (any(routes != "fixed_synopsis")) {
     warnings <- c(warnings, paste0(
       "At least one site used heuristic realised-contribution protection; ",
       "no pooled epsilon is reported."))
   }
   list(result = result, warnings = warnings)
+}
+
+#' Pool record-weighted protected releases (capped record moments)
+#'
+#' dsOMOP 2.10.3 releases the record-weighted QueryLibrary summaries as one
+#' record-moment owner (family \code{RM}): per stratum the signed person
+#' total N, the capped record count R and, on a public scale, the lattice sums
+#' S and Q of the clipped, normalized record values. Compatible servers (same
+#' entry, owner, cap, record order, lattice, normalization and allocation,
+#' distinct logical sources) are pooled per stratum by summing N, R, S and Q;
+#' the record-weighted mean and SD are derived once from the pooled R, S and Q
+#' exactly as the server derives them (the persons never weight the mean).
+#' Moments are pooled only when every contributing server released them on
+#' the same public scale. Under \code{"strict"} only strata released by every
+#' server are pooled; \code{"pooled_only_ok"} also pools strata released by
+#' some servers (sums over those servers).
+#'
+#' @param payloads Named list of \code{dsomop_release} payloads.
+#' @param policy \code{"strict"} or \code{"pooled_only_ok"}.
+#' @param columns Optional contracted columns (their names are the schema).
+#' @return List: \code{result} (the summary's own columns) and
+#'   \code{warnings}.
+#' @keywords internal
+.pool_protected_record_moments <- function(payloads, policy = "strict",
+                                           columns = NULL) {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  sites <- names(payloads)
+  owners <- lapply(payloads, function(p) p$owners)
+  if (any(lengths(owners) != 1L)) {
+    stop("A record-weighted protected release must carry exactly one ",
+         "record-moment owner.", call. = FALSE)
+  }
+  os <- lapply(owners, `[[`, 1L)
+  o <- os[[1L]]
+  display <- o$display
+  if (!is.list(display) || !is.character(display$columns)) {
+    stop("Server '", sites[[1L]], "' returned a record-weighted release ",
+         "without its pooling fields; use the per-site results.",
+         call. = FALSE)
+  }
+  signature <- function(x) {
+    list(x$owner, x$population, x$family, x$weighting, x$cap, x$cap_scope,
+         x$record_order, x$lattice, x$normalization, x$allocation,
+         x$strata_kind, x$display)
+  }
+  for (site in sites) {
+    if (!identical(signature(os[[site]]), signature(o)) ||
+        !identical(payloads[[site]]$entry, payloads[[1L]]$entry)) {
+      stop("Protected record-weighted release of server '", site, "' is not ",
+           "compatible with the other sites (entry, owner, cap, record ",
+           "order, lattice, allocation or display differ).", call. = FALSE)
+    }
+  }
+  if (!is.null(columns) && !identical(names(columns), display$columns)) {
+    stop("The record-weighted release does not match its contracted ",
+         "columns.", call. = FALSE)
+  }
+  J <- as.numeric(o$lattice)
+  with_q <- !is.null(o$allocation$Q)
+  by_site <- lapply(sites, function(site) {
+    comps <- os[[site]]$components
+    keys <- vapply(comps, function(c) as.character(c$stratum), character(1L))
+    if (anyNA(keys) || anyDuplicated(keys)) {
+      stop("Server '", site, "' returned malformed record-weighted strata.",
+           call. = FALSE)
+    }
+    stats::setNames(comps, keys)
+  })
+  names(by_site) <- sites
+  keys <- lapply(by_site, names)
+  strata <- if (identical(policy, "strict")) {
+    Reduce(intersect, keys)
+  } else unique(unlist(keys, use.names = FALSE))
+  partial <- FALSE
+  no_moments <- character(0)
+  conflicts <- character(0)
+  rows <- lapply(strata, function(key) {
+    present <- sites[vapply(by_site, function(b) key %in% names(b),
+                            logical(1L))]
+    if (length(present) < length(sites)) partial <<- TRUE
+    comps <- lapply(present, function(site) by_site[[site]][[key]])
+    names(comps) <- present
+    total <- function(field, nonnegative = FALSE) {
+      sum(vapply(present, function(site) {
+        .dp_protected_number(comps[[site]][[field]], site, field)
+      }, numeric(1L)))
+    }
+    N <- total("n")
+    R <- total("r")
+    moments <- all(vapply(comps, function(c) {
+      !is.null(c$s) && (!with_q || !is.null(c$q)) && !is.null(c$scale)
+    }, logical(1L)))
+    if (moments) {
+      scales <- unique(lapply(comps, function(c) {
+        list(c$scale, as.numeric(c$bounds))
+      }))
+      moments <- length(scales) == 1L
+    }
+    shown_n <- max(0, N)
+    shown_r <- max(0, R)
+    mean <- sd <- NA_real_
+    if (!moments) {
+      no_moments <<- c(no_moments, key)
+    } else if (shown_n >= 2 && shown_r >= 2) {
+      bounds <- as.numeric(comps[[1L]]$bounds)
+      L <- bounds[[1L]]; U <- bounds[[2L]]
+      Su0 <- total("s") / J
+      if (with_q) {
+        Qu0 <- total("q") / J
+        p <- .dp_project_moments(2 * Su0 - shown_r, 4 * Qu0 - 4 * Su0 + shown_r,
+                                 shown_r)
+        mean <- (L + U) / 2 + (U - L) / 2 * p[["S"]] / shown_r
+        sd <- (U - L) / 2 *
+          sqrt(max(0, (p[["Q"]] - p[["S"]]^2 / shown_r) / (shown_r - 1)))
+      } else {
+        mean <- L + (U - L) * min(shown_r, max(0, Su0)) / shown_r
+      }
+    }
+    values <- comps[[1L]]$display %||% list()
+    for (site in present[-1L]) {
+      other <- comps[[site]]$display %||% list()
+      for (col in names(values)) {
+        if (!identical(values[[col]], other[[col]])) {
+          conflicts <<- c(conflicts, col)
+          values[col] <- list(NA)
+        }
+      }
+    }
+    row <- lapply(display$columns, function(col) {
+      if (identical(col, display$persons)) return(signif(shown_n, 12))
+      if (identical(col, display$records)) return(signif(shown_r, 12))
+      if (identical(col, display$mean)) return(signif(mean, 12))
+      if (identical(col, display$sd)) return(signif(sd, 12))
+      v <- values[[col]]
+      if (is.null(v)) NA else v
+    })
+    names(row) <- display$columns
+    list(row = as.data.frame(row, stringsAsFactors = FALSE, optional = TRUE),
+         order_value = suppressWarnings(as.numeric(
+           comps[[1L]]$order_value %||% NA_real_)),
+         order_unit = suppressWarnings(as.numeric(
+           comps[[1L]]$order_unit %||% 0)),
+         key = key)
+  })
+  if (length(rows) == 0L) {
+    return(list(result = NULL, warnings = paste0(
+      "No record-weighted stratum was released by every server; ",
+      "pooling_policy = \"pooled_only_ok\" also pools strata released by ",
+      "some servers.")))
+  }
+  result <- do.call(rbind, lapply(rows, `[[`, "row"))
+  names(result) <- display$columns
+  order_value <- vapply(rows, `[[`, numeric(1L), "order_value")
+  order_unit <- vapply(rows, `[[`, numeric(1L), "order_unit")
+  key <- vapply(rows, `[[`, character(1L), "key")
+  ord <- if (identical(display$order, "n_persons")) {
+    order(-result[[display$persons]], order_value, key, method = "radix",
+          na.last = TRUE)
+  } else {
+    order(order_value, order_unit, key, method = "radix", na.last = TRUE)
+  }
+  result <- result[ord, , drop = FALSE]
+  rownames(result) <- NULL
+  routes <- vapply(payloads, `[[`, character(1L), "protection")
+  warnings <- paste0(
+    "Pooled capped record-weighted moments: per stratum the signed person ",
+    "totals, capped record counts and lattice sums of every site were summed ",
+    "and the record-weighted mean and SD derived once (the persons never ",
+    "weight the mean).")
+  if (partial) {
+    warnings <- c(warnings, paste0(
+      "Some strata were released by only some servers and were pooled over ",
+      "those servers."))
+  }
+  if (length(no_moments)) {
+    warnings <- c(warnings, paste0(
+      "Moments were not pooled for ", length(no_moments), " strata: a ",
+      "server released none or used another public scale."))
+  }
+  if (length(conflicts)) {
+    warnings <- c(warnings, paste0(
+      "Conflicting presentation labels were retained as NA: ",
+      paste(unique(conflicts), collapse = ", "), "."))
+  }
+  if (any(routes != "fixed_synopsis")) {
+    warnings <- c(warnings, paste0(
+      "At least one site used heuristic realised-contribution protection; ",
+      "no pooled epsilon is reported."))
+  }
+  list(result = result, warnings = warnings)
+}
+
+#' Pool the frames of an entry with protected components
+#'
+#' Frames carrying protected components are pooled from their signed
+#' components (\code{.pool_protected_release_frames}). When no server
+#' returned protected components (each one's DP service is unavailable), the
+#' standard outputs, whose disclosive fields are unavailable, are pooled with
+#' each other by the entry's established contract (\code{standard_contract}).
+#' An effect estimate (\code{effect_estimate} descriptor) is pooled as in
+#' dsOMOP 2.10.2, by inverse-variance meta-analysis of the per-site protected
+#' estimates and SEs: post-processing of the protected releases, after the
+#' sites were checked to be compatible, distinct logical sources. The pooled
+#' components stay available as attribute \code{protected_components}.
+#'
+#' @param raw Named list of per-site frames.
+#' @param release_pooling The entry's \code{release_pooling} descriptor.
+#' @param policy Pooling policy.
+#' @param harmonization Harmonization contract.
+#' @return List: \code{result}, \code{warnings}, \code{harmonization}.
+#' @keywords internal
+.pool_protected_analysis <- function(raw, release_pooling, policy = "strict",
+                                     harmonization = NULL) {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  protected <- vapply(raw, function(df) {
+    p <- attr(df, "dsomop_release", exact = TRUE)
+    is.list(p) && identical(p$protocol, .DP_PROTECTED_RELEASE_PROTOCOL)
+  }, logical(1L))
+  standard <- release_pooling$standard_contract
+  if (!any(protected) && is.list(standard)) {
+    out <- .pool_analysis_contract(raw, standard, policy = policy,
+                                   harmonization = harmonization)
+    out$warnings <- unique(c(out$warnings, paste0(
+      "No server returned protected components (their DP services are ",
+      "unavailable): the standard outputs, with their protected fields ",
+      "unavailable, were pooled by the established contract.")))
+    return(out)
+  }
+  components <- .pool_protected_release_frames(
+    raw, policy = policy, columns = release_pooling$columns)
+  effect <- release_pooling$effect_estimate
+  if (!is.list(effect)) {
+    return(c(components, list(harmonization = harmonization)))
+  }
+  # The established effect contract sums its count columns too: here they
+  # are sums of per-site displayed protected values, never banded, so the
+  # count-band compatibility of standard pooling does not apply.
+  pooled <- .pool_analysis_contract(raw, effect, policy = policy,
+                                    harmonization = NULL)
+  result <- pooled$result
+  if (!is.null(result)) {
+    attr(result, "protected_components") <- components$result
+  }
+  warnings <- c(
+    components$warnings, pooled$warnings, paste0(
+      "Pooled effect: inverse-variance meta-analysis of the per-site ",
+      "protected estimates and SEs (post-processing of the protected ",
+      "releases); its count columns are sums of the per-site displayed ",
+      "protected values. The signed-component pooling is attribute ",
+      "'protected_components'."))
+  list(result = result, warnings = unique(warnings),
+       harmonization = harmonization)
+}
+
+#' Warnings for pooled frames that mix standard and protected blocks
+#'
+#' In standard mode a dsOMOP 2.10.3 server with a DP service fills the
+#' person-time block (person-days, rates, MDRR, effects) of the C6/C9 entries
+#' from protected components and labels the frame \code{mixed}. The
+#' established contract then sums or meta-analyses those fields like any
+#' other: the pooled values are post-processing of protected (noisy) values,
+#' not exact sums, and carry no pooled epsilon.
+#'
+#' @param raw Named list of per-site frames.
+#' @return Character vector of warnings (possibly empty).
+#' @keywords internal
+.analysis_mixed_pool_warnings <- function(raw) {
+  fields <- unique(unlist(lapply(raw, function(df) {
+    label <- attr(df, "dsomop_protection", exact = TRUE)
+    if (!is.list(label) || !identical(label$protection, "mixed") ||
+        !is.data.frame(df)) return(character(0))
+    standard <- label$blocks$standard
+    if (!is.character(standard)) return(character(0))
+    setdiff(names(df), standard)
+  }), use.names = FALSE))
+  if (length(fields) == 0L) return(character(0))
+  paste0(
+    "Mixed protected frames: the pooled ", paste(fields, collapse = ", "),
+    " are sums or derivations of per-site protected (noisy) values, not ",
+    "exact sums; no pooled epsilon is reported.")
 }

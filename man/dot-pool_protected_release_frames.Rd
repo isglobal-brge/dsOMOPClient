@@ -4,10 +4,15 @@
 \alias{.pool_protected_release_frames}
 \title{Pool protected analysis-catalog frames from their signed components}
 \usage{
-.pool_protected_release_frames(per_site)
+.pool_protected_release_frames(per_site, policy = "strict", columns = NULL)
 }
 \arguments{
 \item{per_site}{Named list of released frames.}
+
+\item{policy}{\code{"strict"} or \code{"pooled_only_ok"} (record-weighted
+strata present on only some servers).}
+
+\item{columns}{The entry's contracted columns (record-weighted schema).}
 }
 \value{
 List: \code{result} (one row per owner and stratum with the pooled
@@ -25,5 +30,12 @@ onto their stratum, moments onto their feasible set). Standard and protected
 frames are never mixed, nothing is pooled across incompatible grids, and
 every site must be a distinct logical source: two connections to one
 logical node are refused instead of being counted twice.
+}
+\details{
+Record-weighted releases (family \code{RM}) are pooled per stratum by
+\code{.pool_protected_record_moments}. Exit-time x status cells of a
+grouped-time Cox release (family \code{C8}) are summed and projected like
+any partition and never refitted; the event-weighted q x exposure cells of
+an SCCS release (\code{w}) are not pooled (only its case total).
 }
 \keyword{internal}

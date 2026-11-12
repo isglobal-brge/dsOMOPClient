@@ -819,14 +819,20 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
                   identical(entry_meta$release_pooling$strategy,
                             "protected_components")) {
     # dsOMOP 2.10.3 protected releases: pool the signed components of
-    # compatible sites, never the projected per-site values.
-    pooled <- .pool_protected_release_frames(raw)
-    c(pooled, list(harmonization = contract))
+    # compatible sites, never the projected per-site values (effects: the
+    # meta-analysis of the per-site protected estimates).
+    .pool_protected_analysis(raw, entry_meta$release_pooling,
+                             policy = pooling_policy, harmonization = contract)
   } else if (.result_type_wants_combine(type)) {
-    .pool_analysis_contract(
+    out <- .pool_analysis_contract(
       raw, entry_meta$pooling_contract, policy = pooling_policy,
       harmonization = contract
     )
+    if (!is.null(out$result)) {
+      out$warnings <- unique(c(out$warnings,
+                               .analysis_mixed_pool_warnings(raw)))
+    }
+    out
   } else {
     list(result = NULL, warnings = character(0), harmonization = contract)
   }
