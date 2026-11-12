@@ -736,16 +736,31 @@ ds.omop.querylibrary.sticky.release <- function(
          call. = FALSE)
   }
   temporary <- .generate_symbol("dsOdp")
-  ds.omop.dp.prepare(
+  published <- ds.omop.dp.prepare(
     preparation, out = stats::setNames(temporary, names(plan$outputs)),
     symbol = symbol, conns = datasources
   )
-  temporary
+  if (is.character(published) && length(published) == 1L) {
+    return(unname(published[[1L]]))
+  }
+  # Fresh destination allocation can differ across sites. A DP release accepts
+  # one shared input symbol, so inspect the returned inventory before releasing.
+  owned <- lapply(published, function(x) {
+    unlist(.plan_inventory_symbols(x), use.names = FALSE)
+  })
+  if (setequal(names(owned), names(datasources)) &&
+      all(lengths(owned) == 1L) && length(unique(unlist(owned))) == 1L) {
+    return(unname(owned[[1L]][[1L]]))
+  }
+  for (site in names(owned)) {
+    .plan_remove_output_symbols(datasources[site], list(prepared = owned[[site]]),
+                                verify = TRUE)
+  }
+  stop("Sticky preparation did not publish one common input symbol across sites.",
+       call. = FALSE)
 }
 
 .querylibrary_sticky_remove <- function(datasources, symbol) {
-  .plan_remove_output_symbols(
-    datasources, .plan_output_symbol_families(c(prepared = symbol))
-  )
+  .plan_remove_output_symbols(datasources, list(prepared = symbol))
   invisible(NULL)
 }

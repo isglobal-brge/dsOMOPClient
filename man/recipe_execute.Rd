@@ -12,7 +12,8 @@ recipe_execute(
   output_mode = "memory",
   cohort = NULL,
   tables = NULL,
-  combine = "union"
+  combine = "union",
+  on_small_site = c("error", "skip")
 )
 }
 \arguments{
@@ -43,6 +44,10 @@ with \code{cohort}.}
 
 \item{combine}{Character; how to fold the scope sources together:
 \code{"union"} (the default) or \code{"intersect"}.}
+
+\item{on_small_site}{Character; \code{"error"} or \code{"skip"}, passed to
+\code{\link{ds.omop.plan.execute}}. Skip keeps successful sites and returns
+\code{NULL} for sites whose publication fails final person support.}
 }
 \value{
 Invisibly, the output symbol mapping (a named character vector).

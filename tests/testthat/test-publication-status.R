@@ -140,3 +140,95 @@ test_that("factor harmonization uses only retained sites and published component
   expect_identical(calls[[1L]]$sites, c("a", "b"))
   expect_identical(calls[[2L]]$sites, "a")
 })
+
+
+test_that("status cleanup failure still revokes every execution", {
+  state <- .publication_backend(list(a = .publication_status(),
+                                     b = .publication_status()), remove_error = TRUE)
+  expect_error(ds.omop.plan.execute(.publication_plan(), out = "D"),
+               "Cleanup failed: status removal failed")
+  expect_setequal(state$revoked, c("a", "b"))
+  expect_false(any(vapply(state$symbols, function(x) "D" %in% x, logical(1))))
+})
+
+test_that("factor failures revoke published artifacts federation-wide", {
+  state <- .publication_backend(list(a = .publication_status(),
+                                     b = .publication_status()))
+  testthat::local_mocked_bindings(
+    .harmonizePublicationFactors = function(...) stop("factor transport failed"),
+    .package = "dsOMOPClient"
+  )
+  plan <- .publication_plan()
+  plan$options$factor_concepts <- TRUE
+  expect_error(ds.omop.plan.execute(plan, out = "D"), "factor transport failed")
+  expect_setequal(state$revoked, c("a", "b"))
+  expect_true(all(lengths(state$symbols) == 0L))
+})
+
+test_that("status validation checks closed fields and root accounting", {
+  good <- .publication_status()
+  expect_invisible(dsOMOPClient:::.plan_validate_status(good, "data"))
+  bad <- good
+  bad$published <- list()
+  expect_error(dsOMOPClient:::.plan_validate_status(bad, "data"), "Invalid")
+  bad <- good
+  bad$published$data$data$n_columns <- 2.5
+  expect_error(dsOMOPClient:::.plan_validate_status(bad, "data"), "Invalid")
+  bad <- good
+  bad$published$data$data$support <- 10L
+  expect_error(dsOMOPClient:::.plan_validate_status(bad, "data"), "Invalid")
+})
+
+test_that("recipe forwards its final-support policy", {
+  seen <- NULL
+  testthat::local_mocked_bindings(
+    ds.omop.plan.execute = function(..., on_small_site) {
+      seen <<- on_small_site
+      invisible(NULL)
+    }, .package = "dsOMOPClient"
+  )
+  recipe <- omop_recipe(variables = omop_variable_age(),
+                        outputs = omop_output(name = "data", type = "wide"))
+  recipe_execute(recipe, on_small_site = "skip")
+  expect_identical(seen, "skip")
+})
+
+
+test_that("a warning promoted to an error still rolls back before status deletion", {
+  state <- .publication_backend(list(
+    a = .publication_status(c(data = "D"), "partial",
+                            list(small = .publication_rejection()))
+  ))
+  withr::local_options(warn = 2)
+  expect_error(ds.omop.plan.execute(.publication_plan(c("data", "small")),
+                                    out = c(data = "D", small = "S")),
+               "Plan publication is partial")
+  expect_identical(state$revoked, "a")
+  expect_length(state$symbols$a, 0L)
+})
+
+test_that("renamed component factors share one level specification", {
+  assigned <- list()
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, success, ...) {
+      site <- names(conns)[[1L]]
+      expect_identical(as.character(expr[[2L]]), if (site == "a") "D" else "D.1")
+      report <- list(levels = list(gender_concept_id = if (site == "a") "8507" else "8532"),
+                     unsafe = character(), nfilter_levels_max = 40L)
+      success(site, report)
+      stats::setNames(list(report), site)
+    },
+    datashield.assign.expr = function(conns, symbol, expr, success, ...) {
+      site <- names(conns)[[1L]]
+      assigned[[site]] <<- list(symbol = symbol, spec = expr[[3L]])
+      success(site)
+      invisible(NULL)
+    }, .package = "DSI"
+  )
+  dsOMOPClient:::.harmonizeOneSymbol(c(a = "D", b = "D.1"), list(a = "A", b = "B"))
+  expect_identical(assigned$a$symbol, "D")
+  expect_identical(assigned$b$symbol, "D.1")
+  expect_identical(assigned$a$spec, assigned$b$spec)
+  expect_identical(assigned$a$spec,
+                   dsOMOPClient:::.ds_encode(list(gender_concept_id = c("8507", "8532"))))
+})

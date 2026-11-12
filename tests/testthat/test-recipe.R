@@ -1759,7 +1759,8 @@ test_that("recipe_execute forwards output_mode to plan execution", {
   seen <- NULL
   testthat::local_mocked_bindings(
     ds.omop.plan.execute = function(plan, out, symbol = "omop", conns = NULL,
-                                    output_mode = "memory") {
+                                    output_mode = "memory",
+                                    on_small_site = c("error", "skip")) {
       seen <<- list(plan = plan, out = out, symbol = symbol,
                     output_mode = output_mode)
       invisible(out)

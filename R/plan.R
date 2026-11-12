@@ -2008,13 +2008,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
         isTRUE(plan$options$factor_concepts %||% TRUE)) {
       .harmonizePublicationFactors(inventories, conns)
     }
-    .plan_remove_status(conns, exec_symbol)
     if (any(partial)) {
       warning("Plan publication is partial: ", paste(rejected, collapse = "; "),
               ".", call. = FALSE)
     }
-    owned <- lapply(inventories, .plan_inventory_symbols)
-    .record_session_outputs(symbol, unlist(owned, recursive = FALSE))
     # Preserve the v1 return for an ordinary successful run. When publication
     # differs by site, expose the actual inventory and retain NULL skip entries.
     standard <- !any(refused | partial) && all(vapply(inventories, function(x) {
@@ -2026,6 +2023,9 @@ ds.omop.plan.execute <- function(plan, out = NULL,
         length(symbols) > 0L && identical(unname(symbols), unname(expected))
       }, logical(1)))
     }, logical(1)))
+    .plan_remove_status(conns, exec_symbol)
+    owned <- lapply(inventories, .plan_inventory_symbols)
+    .record_session_outputs(symbol, unlist(owned, recursive = FALSE))
     if (standard) out else inventories
   }, error = function(e) {
     cleanup <- tryCatch({
@@ -2086,7 +2086,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
           is.na(component$symbol) ||
           !grepl("^[A-Za-z][A-Za-z0-9._]*$", component$symbol) ||
           !is.character(component$grain) || length(component$grain) != 1L ||
-          is.na(component$grain) || !nzchar(component$grain) ||
+          is.na(component$grain) ||
+          !component$grain %in% c("row", "person", "episode", "none") ||
           !is.numeric(component$n_columns) || length(component$n_columns) != 1L ||
           is.na(component$n_columns) || !is.finite(component$n_columns) ||
           component$n_columns < 0 || component$n_columns %% 1 != 0) invalid()
