@@ -365,8 +365,8 @@ omop_querylibrary_sticky <- function(
 
   if (!is.null(preparation)) {
     if (inherits(preparation, "omop_recipe")) {
-      plan <- recipe_to_plan(preparation)
-    } else if (inherits(preparation, "omop_plan")) {
+      plan <- .recipe_plan_auto(preparation)
+    } else if (inherits(preparation, c("omop_plan", "omop_plan_v2"))) {
       plan <- preparation
     } else {
       stop("preparation must be an omop_recipe or omop_plan.",
@@ -729,7 +729,7 @@ ds.omop.querylibrary.sticky.release <- function(
            automatic, "\")."), call. = FALSE)
   }
   plan <- if (inherits(preparation, "omop_recipe")) {
-    recipe_to_plan(preparation)
+    .recipe_plan_auto(preparation)
   } else preparation
   if (!is.list(plan$outputs) || length(plan$outputs) != 1L) {
     stop("The redesign preparation must have exactly one output.",

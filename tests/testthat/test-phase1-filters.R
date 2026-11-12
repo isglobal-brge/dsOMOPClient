@@ -68,7 +68,11 @@ test_that("omop_filter_value_concept honours a custom column and is allow-listed
   f <- omop_filter_value_concept(45877994L, column = "qualifier_concept_id")
   expect_equal(f$params$var, "qualifier_concept_id")
   expect_equal(f$params$value, 45877994L)
-  # The structural contract accepts value_concept as a row filter.
+  # 2.10.3 (F-23): the client no longer classifies filters by disclosure
+  # policy; the structural contract accepts value_concept as a row filter.
+  expect_false(exists(".classifyFilterClient", envir = asNamespace("dsOMOPClient"),
+                      inherits = FALSE))
+  expect_identical(f$level, "row")
   expect_true("value_concept" %in% .recipeFilterContract()$row)
 })
 
@@ -80,7 +84,7 @@ test_that("a value_concept row filter flows into a compiled recipe plan", {
   r <- dsOMOPClient:::recipe_add_variable(r, v)
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "obs", type = "long"))
 
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   ft <- plan$outputs[[1]]$filters$custom
   expect_false(is.null(ft))
   leaf <- if ("and" %in% names(ft)) ft$and[[1]] else ft

@@ -4,23 +4,44 @@
 \alias{recipe_to_plan}
 \title{Convert a recipe to an extraction plan}
 \usage{
-recipe_to_plan(recipe)
+recipe_to_plan(recipe, version = 2L)
 }
 \arguments{
 \item{recipe}{An \code{omop_recipe} object.}
+
+\item{version}{Plan version: \code{2} (default) or \code{1}.}
 }
 \value{
-An \code{omop_plan} object ready for execution.
+An \code{omop_plan_v2} (version 2) or \code{omop_plan} (version 1)
+  object ready for execution.
 }
 \description{
+Compiles the recipe into the plan sent to the server. \code{version = 2}
+(the default) emits a recipe-language 2.0 plan (\code{omop_plan_v2}),
+validated against the vendored \code{plan-v2.json} schema: named concept
+sets, events, intervals, populations, variables and outputs with typed
+references, inline objects interned under deterministic names, legacy
+constructors lowered to their native equivalents (or refused, naming the
+construct, when no faithful equivalent exists). \code{version = 1} emits
+the 2.10.1 plan unchanged for recipes built from 2.10.1 constructors; it
+refuses language-2 constructs, which have no v1 equivalent.
+}
+\details{
+\code{\link{recipe_execute}} chooses the version per execution: a recipe
+built only from 2.10.1 constructors (and without \code{parent_id}) runs as
+its v1 plan, so its results stay identical; any other recipe
+runs as a v2 plan on servers advertising \code{recipe_language} 2 and every
+operation it needs, and is refused (naming the operation) otherwise.
+
+The legacy (version 1) compilation:
+
 Compiles the recipe into an \code{omop_plan} suitable for server-side
 execution via \code{\link{ds.omop.plan.execute}}. The conversion maps
 population-level filters to cohort specifications, groups variables by
 output and table, selects the appropriate plan builder (person_level,
 features, events, survival, intervals, baseline, temporal_covariates, or
 person_period) for each output type, and attaches row-level filter trees.
-}
-\details{
+
 Multiple populations and recipe-level scope are both serialized into the
 plan for the server to execute:
 \itemize{

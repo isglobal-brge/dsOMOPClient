@@ -154,8 +154,14 @@ test_that("omop_filter_date_range constructor", {
 })
 
 test_that("omop_filter_date_range validates ISO dates and ordering", {
-  expect_error(omop_filter_date_range("2020-01-01", NULL),
-               "requires both start and end")
+  # 2.10.3 (F-17): one-sided ranges compile to a single >= / <= leaf.
+  expect_equal(.filter_to_leaf(omop_filter_date_range("2020-01-01", NULL),
+                               table = "condition_occurrence"),
+               list(var = "condition_start_date", op = ">=", value = "2020-01-01"))
+  expect_equal(.filter_to_leaf(omop_filter_date_range(NULL, "2020-12-31"),
+                               table = "condition_occurrence"),
+               list(var = "condition_start_date", op = "<=", value = "2020-12-31"))
+  expect_error(omop_filter_date_range(NULL, NULL), "start and/or end")
   expect_error(omop_filter_date_range("01-01-2020", "2020-03-01"),
                "ISO date")
   expect_error(omop_filter_date_range("2020-02-30", "2020-04-01"),
@@ -181,12 +187,19 @@ test_that("omop_filter_value constructor with safe_bins", {
 })
 
 test_that("omop_filter_value compiles exact comparisons without safe_bins", {
+  # 2.10.3 (F-23): mandatory bins were a client mirror of a removed gate;
+  # above and below are complements (>= and <).
   above <- omop_filter_value(threshold = 5, direction = "above")
   below <- omop_filter_value(threshold = 5, direction = "below")
+  expect_identical(above$type, "custom")
   expect_identical(.filter_to_leaf(above), list(var = "value_as_number", op = ">=", value = 5))
   expect_identical(.filter_to_leaf(below), list(var = "value_as_number", op = "<", value = 5))
+  g <- omop_filter_value(column = "quantity", threshold = 2, direction = "below")
+  expect_equal(.filter_to_leaf(g), list(var = "quantity", op = "<", value = 2))
   expect_error(omop_filter_value(threshold = Inf), "finite numeric")
   expect_error(omop_filter_value(threshold = c(1, 2)), "finite numeric")
+  expect_error(omop_filter_value(threshold = NA_real_, direction = "above"),
+               "finite numeric")
 })
 
 test_that("omop_filter_value rejects degenerate bins", {
@@ -230,7 +243,7 @@ test_that("omop_filter_value round-trip through recipe_to_plan", {
     direction = "above", safe_bins = bins
   ))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "out", type = "long"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   out <- plan$outputs$out
   # Row-level value_bin filter should compile into the executable custom filter
   # tree (output$filters$custom — the slot the server actually runs).
@@ -248,7 +261,7 @@ test_that("date_range compiles to one table-aware BETWEEN leaf", {
                             concept_id = 201820)
   r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_date_range("2020-01-01", "2023-12-31"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "ev", type = "long"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   ft <- plan$outputs$ev$filters$custom
   expect_equal(ft$var, "condition_start_date")
   expect_equal(ft$op, "between")
@@ -378,7 +391,7 @@ test_that("recipe_to_plan routes derived variables correctly", {
     table = "condition_occurrence", concept_id = 201820, format = "binary",
     name = "diabetes"))
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "out1", type = "wide"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   out <- plan$outputs[["out1"]]
   expect_equal(out$type, "person_level")
   expect_true(!is.null(out$derived_columns))
@@ -393,7 +406,7 @@ test_that("recipe_to_plan handles only-derived recipes", {
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_age())
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_sex())
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "demog", type = "wide"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   out <- plan$outputs[["demog"]]
   expect_equal(out$type, "person_level")
   expect_equal(length(out$tables), 0)
@@ -596,7 +609,7 @@ test_that("recipe_to_plan generates plan with wide output", {
   c <- dsOMOPClient:::recipe_add_variable(c,
     name = "yob", table = "person", column = "year_of_birth")
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "demographics", type = "wide"))
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   expect_s3_class(plan, "omop_plan")
   expect_true("demographics" %in% names(plan$outputs))
   expect_equal(plan$outputs$demographics$type, "person_level")
@@ -608,7 +621,7 @@ test_that("recipe_to_plan generates plan with long output", {
     name = "cond", table = "condition_occurrence",
     concept_id = 201820, format = "raw")
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "events", type = "long"))
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   expect_true("events" %in% names(plan$outputs))
 })
 
@@ -618,13 +631,13 @@ test_that("recipe_to_plan applies population filters", {
                           column = "year_of_birth")
   c <- dsOMOPClient:::recipe_add_filter(c, omop_filter_sex("F"), id = "sex_filter")
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "out", type = "wide"))
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   expect_true(!is.null(plan$cohort))
   expect_equal(plan$cohort$type, "spec")
 })
 
 test_that("recipe_to_plan rejects non-recipe", {
-  expect_error(recipe_to_plan(list()), "omop_recipe")
+  expect_error(recipe_to_plan(list(), version = 1), "omop_recipe")
 })
 
 # --- recipe_to_code -----------------------------------------------------------
@@ -923,12 +936,18 @@ test_that("omop_output supports baseline type", {
   expect_equal(o$type, "baseline")
 })
 
-test_that("omop_output formals advertise only executable layouts", {
-  choices <- eval(formals(omop_output)$type)
-  expect_identical(choices, c(
-    "wide", "long", "features", "survival", "intervals", "baseline",
-    "temporal_covariates", "person_period"))
-  expect_false("covariates_sparse" %in% choices)
+test_that("omop_output accepts exactly the executable legacy layouts", {
+  # 2.10.3: `type` defaults to NULL (format = is its language-2 alternative);
+  # giving neither keeps the 2.10.1 default "wide", and the positional legacy
+  # presets keep their meaning.
+  layouts <- c("wide", "long", "features", "survival", "intervals", "baseline",
+               "temporal_covariates", "person_period")
+  for (layout in layouts) expect_identical(omop_output("o", layout)$type, layout)
+  expect_null(formals(omop_output)$type)
+  expect_identical(omop_output("o")$type, "wide")
+  # 2.10.3 (B-22): the legacy covariates_sparse label is the sparse format
+  expect_identical(omop_output("o", "covariates_sparse")$type, "covariates_sparse")
+  expect_error(omop_output("o", "sparse_matrix"))
 })
 
 test_that("omop_output rejects the removed joined_long type", {
@@ -937,10 +956,15 @@ test_that("omop_output rejects the removed joined_long type", {
   expect_error(omop_output(name = "all_events", type = "joined_long"))
 })
 
-test_that("omop_output rejects legacy covariates_sparse type", {
-  expect_error(
-    omop_output(name = "features", type = "covariates_sparse"),
-    "no faithful executable mapping")
+test_that("omop_output accepts the legacy covariates_sparse label as format sparse (B-22)", {
+  o <- omop_output(name = "features", type = "covariates_sparse")
+  r <- omop_recipe(variables = omop_variable(name = "dx", table = "condition_occurrence",
+                                             concept_id = 201820),
+                   outputs = o)
+  plan <- recipe_to_plan(r)
+  expect_identical(plan$outputs$features$format, "sparse")
+  expect_identical(unlist(plan$outputs$features$options$analyses), "binary")
+  expect_error(recipe_to_plan(r, version = 1), "no v1 rendering")
 })
 
 test_that("omop_output with population_id", {
@@ -1277,7 +1301,7 @@ test_that("recipe_to_plan with cohort population", {
   c <- dsOMOPClient:::recipe_add_variable(c, name = "v", table = "person",
                           column = "year_of_birth")
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "out", type = "wide"))
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   expect_true(!is.null(plan$cohort))
   expect_equal(plan$cohort$cohort_definition_id, 42L)
 })
@@ -1289,7 +1313,7 @@ test_that("recipe_to_plan includes base population filters", {
                           column = "year_of_birth")
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "out", type = "wide"))
 
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
 
   expect_equal(plan$cohort$type, "spec")
   expect_equal(plan$cohort$filter_tree$type, "age_range")
@@ -1310,7 +1334,7 @@ test_that("recipe_to_plan preserves population filter group tree", {
                           column = "year_of_birth")
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "out", type = "wide"))
 
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
 
   expect_true("or" %in% names(plan$cohort$filter_tree))
   expect_true("and" %in% names(plan$cohort$filter_tree$or[[2]]))
@@ -1323,7 +1347,7 @@ test_that("recipe_to_plan supports cohort definition filters", {
                           column = "year_of_birth")
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "out", type = "wide"))
 
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
 
   expect_equal(plan$cohort$filter_tree$params$cohort_definition_id, 42L)
 })
@@ -1339,7 +1363,7 @@ test_that("row filter tree skips population filters inside mixed groups", {
                           concept_id = 201820)
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "events", type = "long"))
 
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
 
   expect_equal(plan$cohort$filter_tree$type, "sex")
   ft <- plan$outputs$events$filters$custom
@@ -1356,7 +1380,7 @@ test_that("recipe_to_plan with features output", {
     name = "aspirin_count", table = "drug_exposure",
     concept_id = 1154070, format = "count")
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "feat", type = "features"))
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   # Features from two tables -> two output entries
   feat_names <- grep("feat", names(plan$outputs), value = TRUE)
   expect_true(length(feat_names) >= 1)
@@ -1368,7 +1392,7 @@ test_that("recipe_to_plan with row-level date filter", {
                           concept_id = 201820)
   c <- dsOMOPClient:::recipe_add_filter(c, omop_filter_date_range("2020-01-01", "2023-12-31"))
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "events", type = "long"))
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   # Row filter compiled into the executable custom filter tree on the output
   out <- plan$outputs$events
   expect_true(!is.null(out$filters$custom))
@@ -1380,7 +1404,7 @@ test_that("recipe_to_plan with baseline output type", {
   c <- dsOMOPClient:::recipe_add_variable(c, name = "yob", table = "person",
                           column = "year_of_birth")
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "demo", type = "baseline"))
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   expect_true("demo" %in% names(plan$outputs))
   expect_equal(plan$outputs$demo$type, "baseline")
 })
@@ -1390,7 +1414,7 @@ test_that("recipe_to_plan with survival output type", {
   c <- dsOMOPClient:::recipe_add_variable(c, name = "event", table = "condition_occurrence",
                           concept_id = 201820)
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "surv", type = "survival"))
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   expect_true("surv" %in% names(plan$outputs))
   expect_equal(plan$outputs$surv$type, "survival")
 })
@@ -1400,7 +1424,7 @@ test_that("recipe_to_plan with intervals output type", {
   c <- dsOMOPClient:::recipe_add_variable(c, name = "v", table = "condition_occurrence",
                           concept_id = 201820)
   c <- dsOMOPClient:::recipe_add_output(c, omop_output(name = "int", type = "intervals"))
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   expect_true("int" %in% names(plan$outputs))
   expect_equal(plan$outputs$int$type, "intervals_long")
 })
@@ -1947,13 +1971,13 @@ test_that("recipe_to_plan with variables but no output defaults to a wide output
   # empty (do-nothing) plan.
   c <- omop_recipe()
   c <- dsOMOPClient:::recipe_add_variable(c, name = "v", table = "person")
-  plan <- recipe_to_plan(c)
+  plan <- recipe_to_plan(c, version = 1)
   expect_s3_class(plan, "omop_plan")
   expect_equal(length(plan$outputs), 1)
 })
 
 test_that("recipe_to_plan with neither variables nor outputs stays empty", {
-  plan <- recipe_to_plan(omop_recipe())
+  plan <- recipe_to_plan(omop_recipe(), version = 1)
   expect_s3_class(plan, "omop_plan")
   expect_equal(length(plan$outputs), 0)
 })
@@ -1964,7 +1988,7 @@ test_that("recipe_to_plan with output referencing nonexistent variables", {
   c <- dsOMOPClient:::recipe_add_output(c,
     omop_output(name = "out", type = "wide",
                 variables = c("a", "nonexistent")))
-  expect_error(recipe_to_plan(c), "unknown variable.*nonexistent")
+  expect_error(recipe_to_plan(c, version = 1), "unknown variable.*nonexistent")
 })
 
 test_that("recipe meta tracks modification time", {
@@ -1996,6 +2020,15 @@ test_that("omop_filter_age_group can be added to recipe", {
   c <- dsOMOPClient:::recipe_add_filter(c, f)
   expect_equal(length(c$filters), 1)
   expect_equal(c$filters[[1]]$type, "age_group")
+})
+
+test_that("the client no longer mirrors server filter classification (F-23)", {
+  expect_false(exists(".classifyFilterClient", envir = asNamespace("dsOMOPClient"),
+                      inherits = FALSE))
+  # Every executable type still constructs and keeps its level.
+  expect_identical(omop_filter_sex("F")$level, "population")
+  expect_identical(omop_filter_age(40, 43)$level, "population")
+  expect_identical(omop_filter_date_range("2020-01-01")$level, "row")
 })
 
 test_that("ds.omop.safe.cutpoints has expected signature", {
@@ -2215,7 +2248,18 @@ test_that("omop_filter_has_measurement creates correct filter", {
 })
 
 test_that("omop_filter_has_measurement authenticates supplied bin ranges", {
+  # 2.10.3 (F-23): a range without issued bins is newly permitted, one- or
+  # two-sided ([min_value, max_value)); issued bins, when given, must match.
   expect_no_error(omop_filter_has_measurement(3004410, min_value = 4, max_value = 6))
+  f <- omop_filter_has_measurement(3004410, min_value = 4, max_value = 6)
+  expect_equal(f$params$min_value, 4)
+  expect_equal(f$params$max_value, 6)
+  expect_null(f$params$safe_scope)
+  expect_null(omop_filter_has_measurement(3004410, min_value = 4)$params$max_value)
+  expect_error(omop_filter_has_measurement(3004410, min_value = 7, max_value = 6),
+               "min_value < max_value")
+  expect_error(omop_filter_has_measurement(3004410, min_value = 6, max_value = 6),
+               "min_value < max_value")
   expect_error(
     omop_filter_has_measurement(
       3004410, min_value = 4,
@@ -2281,13 +2325,13 @@ test_that(".build_feature_specs maps duration_sum correctly", {
   expect_equal(specs[[1]]$type, "duration_sum")
 })
 
-# === New derived kinds routing in recipe_to_plan() ===
+# === New derived kinds routing in recipe_to_plan(, version = 1) ===
 
 test_that("recipe_to_plan routes prior_obs to derived_columns", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_prior_obs())
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(type = "wide"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   dc <- plan$outputs$output_1$derived_columns
   expect_true(length(dc) > 0)
   expect_equal(dc[[1]]$kind, "prior_obs")
@@ -2297,7 +2341,7 @@ test_that("recipe_to_plan routes followup to derived_columns", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_followup())
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(type = "wide"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   dc <- plan$outputs$output_1$derived_columns
   expect_equal(dc[[1]]$kind, "followup")
 })
@@ -2306,7 +2350,7 @@ test_that("recipe_to_plan routes chads2 to derived_columns", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_chads2())
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(type = "wide"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   dc <- plan$outputs$output_1$derived_columns
   expect_true(length(dc) > 0)
   expect_equal(dc[[1]]$kind, "chads2")
@@ -2316,7 +2360,7 @@ test_that("recipe_to_plan routes dcsi to derived_columns", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_dcsi())
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(type = "wide"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   dc <- plan$outputs$output_1$derived_columns
   expect_equal(dc[[1]]$kind, "dcsi")
 })
@@ -2325,7 +2369,7 @@ test_that("recipe_to_plan routes hfrs to derived_columns", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_hfrs())
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(type = "wide"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   dc <- plan$outputs$output_1$derived_columns
   expect_equal(dc[[1]]$kind, "hfrs")
 })
@@ -2334,7 +2378,7 @@ test_that("recipe_to_plan routes charlson to derived_columns", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_charlson())
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(type = "wide"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   dc <- plan$outputs$output_1$derived_columns
   expect_equal(dc[[1]]$kind, "charlson")
 })
@@ -2343,7 +2387,7 @@ test_that("recipe_to_plan routes demo_missingness to derived_columns", {
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_demo_missingness())
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(type = "wide"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   dc <- plan$outputs$output_1$derived_columns
   expect_equal(dc[[1]]$kind, "demo_missingness")
 })
@@ -2458,4 +2502,16 @@ test_that("JSON round-trip preserves new filter types", {
   types <- vapply(r2$filters, function(f) f$type, character(1))
   expect_true("not_has_concept" %in% types)
   expect_true("prior_observation" %in% types)
+})
+
+# === Client-side filter classification ===
+
+test_that("population filter types stay executable at the population level", {
+  new_types <- c("not_has_concept", "concept_count", "prior_observation",
+                 "followup", "visit_count", "has_measurement",
+                 "missing_measurement")
+  for (ft in new_types) {
+    expect_true(ft %in% dsOMOPClient:::.recipeFilterContract()$population,
+                info = paste("Filter type:", ft))
+  }
 })

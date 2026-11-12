@@ -23,11 +23,14 @@
   state$exec_symbol <- NULL
   state$revoked <- character()
   conns <- stats::setNames(as.list(sites), sites)
+  # Every site publishes the current method inventory (the publication
+  # protocol); helper-legacy-servers.R covers dsOMOP 2.10.2 sites.
   testthat::local_mocked_bindings(
     .get_session = function(...) list(conns = conns, res_symbol = "resource"),
     .prepare_plan_for_federation = function(plan, ...) plan,
     .session_harmonization_for_connections = function(...) NULL,
     .record_session_outputs = function(...) invisible(NULL),
+    .dsomop_published_methods = .current_published_methods,
     .package = "dsOMOPClient", .env = parent.frame()
   )
   testthat::local_mocked_bindings(

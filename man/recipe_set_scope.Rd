@@ -39,4 +39,3 @@ plain recipe carries no scope and is byte-identical to one built without it.
 \code{\link{omop_recipe}}, \code{\link{recipe_execute}},
   \code{\link{recipe_to_plan}}, \code{\link{.cohort_scope_arg}}
 }
-\keyword{internal}

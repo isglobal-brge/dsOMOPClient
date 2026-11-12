@@ -13,9 +13,9 @@ test_that("client assignment classification matches the shared frozen column cor
     recipe <- omop_recipe(variables = variable,
                           outputs = omop_output(name = "rows", type = "long"))
     if (blocked) {
-      expect_error(recipe_to_plan(recipe), "blocked class-1 column", info = column)
+      expect_error(recipe_to_plan(recipe, version = 1), "blocked class-1 column", info = column)
     } else {
-      expect_no_error(recipe_to_plan(recipe))
+      expect_no_error(recipe_to_plan(recipe, version = 1))
     }
     report <- recipe_lint(recipe)
     info <- report[report$code == "quasi_identifier", , drop = FALSE]
@@ -45,8 +45,8 @@ test_that("derived age emits informational quasi-identifier lint", {
   recipe <- omop_recipe(variables = omop_variable_age(reference_date = "2020-01-01"),
                         outputs = omop_output(name = "ages", type = "wide"))
   # Lint is advisory and leaves the compiled plan identical.
-  before <- recipe_to_plan(recipe)
+  before <- recipe_to_plan(recipe, version = 1)
   report <- recipe_lint(recipe)
   expect_identical(report$severity[report$code == "quasi_identifier"], "INFO")
-  expect_identical(recipe_to_plan(recipe), before)
+  expect_identical(recipe_to_plan(recipe, version = 1), before)
 })
