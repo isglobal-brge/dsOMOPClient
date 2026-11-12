@@ -39,6 +39,12 @@ workstream fills its entries.
   ...), or `concept_col`. Row concept-set filters compiled to the column
   `concept_id`, which the server refused.
 
+- (A-18) The section 11 adapter refusals reach the analyst as the error
+  `Plan publication refused: <site>:<output> [validation_error] (<reason>)`
+  with `adapter_person_mismatch` or `cost_currency_mixed`, under both
+  `on_small_site` settings (they are never skippable), and nothing is
+  published; tested end to end through DSLite against a PostgreSQL CDM.
+
 ## Newly refused
 - (F-2) A recipe-level row filter is attached only to outputs whose event
   table has every column it references; otherwise `recipe_to_plan()` stops
