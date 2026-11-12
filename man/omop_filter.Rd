@@ -155,11 +155,13 @@ restricts absence to that window (e.g. "no HbA1c in the prior year")}
 
 \item{min_count}{Integer; minimum number of visits}
 
-\item{start}{Character; inclusive start date in ISO \code{YYYY-MM-DD} form.}
+\item{start}{Character or \code{NULL}; inclusive start date in ISO
+\code{YYYY-MM-DD} form. A one-sided range (only \code{start} or only
+\code{end}) compiles to a single \code{>=} / \code{<=} comparison.}
 
-\item{end}{Character; inclusive end date in ISO \code{YYYY-MM-DD} form and
-not before \code{start}. The server applies the authoritative minimum
-disclosure-safe width configured by the data controller.}
+\item{end}{Character or \code{NULL}; inclusive end date in ISO
+\code{YYYY-MM-DD} form and not before \code{start}. No client width floor
+applies (publication is the only disclosure gate on 2.10.3 servers).}
 
 \item{date_column}{Character or \code{NULL}; explicit OMOP date column. When
 \code{NULL}, \code{\link{recipe_to_plan}} infers the standard date column
@@ -172,9 +174,11 @@ from the output's OMOP table.}
 
 \item{direction}{Character; "above" or "below"}
 
-\item{safe_bins}{Server-issued result for the same measurement concept from
-\code{ds.omop.safe.cutpoints()}. Required whenever a numeric range is
-supplied; client-authored thresholds are not executable.}
+\item{safe_bins}{Optional server-issued result for the same measurement
+concept from \code{ds.omop.safe.cutpoints()}; when given, both limits must
+be issued edges. Without it the numeric range (one or both limits) is
+applied as given and a 2.10.3 server applies only its final publication
+rule.}
 
 \item{concept_ids}{Integer scalar or vector; the value concept(s) to keep
 (a record matches if its value concept is any of them)}

@@ -6,12 +6,17 @@
 \usage{
 omop_output(
   name = "output_1",
-  type = c("wide", "long", "features", "survival", "intervals", "baseline",
-    "temporal_covariates", "person_period"),
+  type = NULL,
   variables = NULL,
   population_id = "base",
   options = list(),
-  result_symbol = NULL
+  result_symbol = NULL,
+  rows = NULL,
+  grain = NULL,
+  columns = NULL,
+  format = NULL,
+  sources = NULL,
+  collapse = NULL
 )
 }
 \arguments{
@@ -38,6 +43,26 @@ survival outputs).}
 
 \item{result_symbol}{Character or \code{NULL}; R symbol name for the result
 on the server (auto-generated as \code{D_<name>} if \code{NULL}).}
+
+\item{rows}{(2.10.3) Alias of \code{population_id} (give one).}
+
+\item{grain}{(2.10.3) \code{"episode"} or \code{"person"}; default episode
+over an indexed population, person otherwise. Person grain over an indexed
+population needs \code{collapse}.}
+
+\item{columns}{(2.10.3) Alias of \code{variables} (give one).}
+
+\item{format}{(2.10.3) Language-2 format: \code{"wide"}, \code{"long"},
+\code{"survival"}, \code{"intervals"}, \code{"temporal_covariates"},
+\code{"person_period"}, \code{"sparse"}, \code{"membership"},
+\code{"dictionary"} or \code{"joined"}. \code{type} (the legacy presets)
+and \code{format} are alternatives; giving neither keeps the legacy
+\code{type = "wide"}.}
+
+\item{sources}{(2.10.3) Event/era sources of a \code{long} output.}
+
+\item{collapse}{(2.10.3) \code{"first_episode"}, \code{"last_episode"} or
+\code{"any"}: person grain over an indexed population.}
 }
 \value{
 An \code{omop_output} object.
@@ -49,6 +74,14 @@ specifies a layout type (e.g. wide person-level, long event-level, or
 feature matrix). Outputs are passed to \code{\link{omop_recipe}} via its
 \code{outputs} argument and determine the server-side plan structure
 produced by \code{\link{recipe_to_plan}}.
+}
+\details{
+Survival outputs keep the legacy 730-day time-at-risk default when
+  no \code{tar}/\code{tars} is given (\code{print()},
+  \code{recipe_explain()} and \code{recipe_lint()} state it); give
+  \code{tar = omop_window(1, NULL)} for unbounded follow-up. A language-2
+  survival output needs an explicit \code{censor} list: only listed sources
+  cap follow-up.
 }
 \examples{
 \dontrun{

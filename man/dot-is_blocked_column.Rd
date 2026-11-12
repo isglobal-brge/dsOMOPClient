@@ -2,7 +2,7 @@
 % Please edit documentation in R/recipe.R
 \name{.is_blocked_column}
 \alias{.is_blocked_column}
-\title{Is a column name a server-blocked free-text / source-value column?}
+\title{Is a column name a class-1 (never released) column?}
 \usage{
 .is_blocked_column(col)
 }
@@ -13,10 +13,15 @@
 Logical scalar.
 }
 \description{
-Mirrors the server's blocked-column patterns (dsOMOP blueprint:
-\code{*_source_value}, \code{value_as_string}, \code{value_source_value},
-\code{sig}, \code{*_source_concept_value}, note text). These are never
-releasable, so a recipe that requests one as a variable's \code{value_source}
-or raw \code{column} is rejected at compile time rather than silently dropped.
+Mirrors, pattern for pattern, the server's assignment-policy class 1
+(design-2.10.3 section 7.6): the sensitive-column patterns of
+\code{.detectSensitiveColumns()} minus the birth components, which are
+class 2 (quasi-identifiers released on assign paths through the final
+minimum-persons rule only). Direct identifiers, narrative and source values,
+source concept IDs, note/NLP text, address/geo, provider and care-site
+identifying fields are refused at compile time. A birth-named column that is
+also, e.g., a source value (\code{birth_date_source_value}) stays class 1.
+Untyped extension identifiers are recognised from the server's column
+metadata only and are refused there.
 }
 \keyword{internal}

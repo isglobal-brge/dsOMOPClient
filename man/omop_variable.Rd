@@ -6,7 +6,7 @@
 \usage{
 omop_variable(
   name = NULL,
-  table,
+  table = NULL,
   column = NULL,
   concept_id = NULL,
   concept_name = NULL,
@@ -24,7 +24,12 @@ omop_variable(
   concept_col = NULL,
   expand = FALSE,
   reference_date = NULL,
-  unit = NULL
+  unit = NULL,
+  event = NULL,
+  reducer = NULL,
+  where = NULL,
+  visit = NULL,
+  broadcast = FALSE
 )
 }
 \arguments{
@@ -79,6 +84,22 @@ required when \code{format = "time_since"}.}
 \item{unit}{Character or \code{NULL}; \code{"day"} (default for
 \code{time_since}) or \code{"month"}. Months are complete calendar months,
 not fixed 30-day intervals.}
+
+\item{event}{(2.10.3) An \code{\link{omop_event}} or \code{\link{omop_era}}
+(or a registry name): the language-2 spelling of the source. Give either
+\code{table}/\code{format} or \code{event}/\code{reducer}, never both.}
+
+\item{reducer}{(2.10.3) An \code{\link{omop_reduce}} reducer.}
+
+\item{where}{(2.10.3) A row predicate from \code{\link{omop_where}} that
+narrows this variable's rows.}
+
+\item{visit}{(2.10.3) \code{NULL}, \code{list(type = <visit_concept_ids>)} or
+\code{"index"}; \code{visit_filter} is kept as its legacy alias (giving
+both is an error).}
+
+\item{broadcast}{(2.10.3) Logical; allow this reducer column in a
+\code{long} output (broadcast per episode).}
 }
 \value{
 An \code{omop_variable} object (a named list with class
@@ -102,8 +123,13 @@ recipe <- omop_recipe(
   ),
   outputs = omop_output(type = "wide")
 )
+# Language 2: an event and a reducer
+hba1c <- omop_event("measurement", 3004410, name = "hba1c")
+omop_variable(name = "hba1c_last", event = hba1c,
+              reducer = omop_reduce("last_value", window = omop_window(-365, 0)))
 }
 }
 \seealso{
-\code{\link{omop_recipe}}, \code{\link{omop_variable_block}}
+\code{\link{omop_recipe}}, \code{\link{omop_variable_block}},
+  \code{\link{omop_reduce}}
 }

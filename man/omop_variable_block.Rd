@@ -17,7 +17,10 @@ omop_variable_block(
   population_id = "base",
   expand = FALSE,
   reference_date = NULL,
-  unit = NULL
+  unit = NULL,
+  where = NULL,
+  visit = NULL,
+  concept_col = NULL
 )
 }
 \arguments{
@@ -58,6 +61,14 @@ required for a \code{"time_since"} block.}
 
 \item{unit}{Character or \code{NULL}; \code{"day"} (default for
 \code{time_since}) or complete calendar \code{"month"} units.}
+
+\item{where}{(2.10.3) A row predicate from \code{\link{omop_where}} applied
+to every variable of the block.}
+
+\item{visit}{(2.10.3) \code{NULL}, \code{list(type = <visit_concept_ids>)}
+or \code{"index"}, for every variable of the block.}
+
+\item{concept_col}{(2.10.3) Concept column the block's concepts scope.}
 }
 \value{
 An \code{omop_variable_block} object.

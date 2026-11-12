@@ -9,7 +9,8 @@ ds.omop.plan.execute(
   out = NULL,
   symbol = "omop",
   conns = NULL,
-  output_mode = "memory"
+  output_mode = "memory",
+  on_small_site = c("error", "skip")
 )
 }
 \arguments{
@@ -42,6 +43,10 @@ connections stored in the session.}
 \item{output_mode}{Character; \code{"memory"} (default, backwards
 compatible) or \code{"staged"} (writes server-local files and returns
 descriptors). Arrow provides Parquet; without it the server uses CSV.}
+
+\item{on_small_site}{(2.10.3) \code{"error"} or \code{"skip"}; see
+\code{\link{recipe_execute}}. Used with servers that report their
+publication status (dsOMOP 2.10.3).}
 }
 \value{
 Invisible; the resolved \code{out} symbol mapping (for chaining).
