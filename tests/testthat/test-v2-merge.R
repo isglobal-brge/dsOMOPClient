@@ -157,3 +157,18 @@ test_that("parameters are shared by name across a merge", {
     outputs = omop_output("w2", format = "wide"))
   expect_error(recipe_merge(mk(1), other), "declared with different definitions")
 })
+
+test_that("unnamed registry events merge by definition", {
+  a <- omop_recipe(events = list(omop_event("death")),
+                   variables = list(d = omop_variable(event = omop_event("death"),
+                                                      reducer = omop_reduce("binary"))),
+                   outputs = omop_output("w", format = "wide"))
+  b <- omop_recipe(events = list(omop_event("visit_occurrence", 9201)),
+                   variables = list(v = omop_variable(event = omop_event("visit_occurrence", 9201),
+                                                      reducer = omop_reduce("count"))),
+                   outputs = omop_output("w2", format = "wide"))
+  m <- recipe_merge(a, b)
+  expect_length(m$events, 2L)
+  plan <- recipe_to_plan(m)
+  expect_setequal(names(plan$events), c("death", "visit_occurrence_9201"))
+})

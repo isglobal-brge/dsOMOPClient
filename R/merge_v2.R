@@ -395,9 +395,12 @@ recipe_merge <- function(a, b, prefix = NULL) {
   join <- function(slot, what) {
     x <- a[[slot]] %||% list()
     y <- b[[slot]] %||% list()
-    for (nm in names(y)) {
+    ynm <- names(y) %||% rep("", length(y))
+    for (i in seq_along(y)) {
+      nm <- ynm[[i]]
       if (!nzchar(nm)) {
-        x <- c(x, y[nm])
+        # An unnamed registry event is interned by its definition.
+        x <- c(x, y[i])
         next
       }
       if (is.null(x[[nm]])) {
