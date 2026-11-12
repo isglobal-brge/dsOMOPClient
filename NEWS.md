@@ -21,10 +21,12 @@ workstream fills its entries.
   `omop_followup()`, `omop_observed_days()`, `omop_score()`,
   `omop_population_column()`; `omop_match()`, `omop_age_band()`,
   `omop_strata()`; `recipe_concept_sets()`, `recipe_import_concept_sets()`,
-  `recipe_export_concept_sets()` and `recipe_explain()`.
+  `recipe_export_concept_sets()` and `recipe_explain()` (its appended
+  `symbol` names the server handle `omopPlanExplainDS()` reads).
 - Every 2.10.1 export keeps its positional formals; new arguments are
   appended: `omop_variable(event, reducer, where, visit, broadcast)`,
-  `omop_variable_block(where, visit, concept_col)` (F-24),
+  `omop_variable_block(where, visit, concept_col, visit_filter)` (F-24;
+  `visit_filter` is the legacy alias of `visit`, giving both is an error),
   `omop_population(index, match, coverage)`, `omop_output(rows, grain,
   columns, format, sources, collapse)` (`type` now defaults to `NULL`; giving
   neither `type` nor `format` keeps `"wide"`), `omop_recipe(concept_sets,

@@ -2088,6 +2088,10 @@ print.omop_population <- function(x, ...) {
 #' @param visit (2.10.3) \code{NULL}, \code{list(type = <visit_concept_ids>)}
 #'   or \code{"index"}, for every variable of the block.
 #' @param concept_col (2.10.3) Concept column the block's concepts scope.
+#' @param visit_filter (2.10.3) Legacy alias of \code{visit}, spelled as in
+#'   \code{\link{omop_variable}}: \code{list(concept_ids = <visit_concept_ids>)}
+#'   is \code{visit = list(type = <visit_concept_ids>)}. Giving both is an
+#'   error.
 #' @return An \code{omop_variable_block} object.
 #' @examples
 #' \dontrun{
@@ -2118,10 +2122,25 @@ omop_variable_block <- function(id = NULL,
                                 unit = NULL,
                                 where = NULL,
                                 visit = NULL,
-                                concept_col = NULL) {
+                                concept_col = NULL,
+                                visit_filter = NULL) {
   concept_ids <- .plan_integer_vector(
     concept_ids, "concept_ids", allow_empty = TRUE)
   where <- .v2_predicate_arg(where, "omop_variable_block(): where")
+  if (!is.null(visit) && !is.null(visit_filter)) {
+    stop("omop_variable_block(): visit_filter is the legacy alias of visit; give one.",
+         call. = FALSE)
+  }
+  if (!is.null(visit_filter)) {
+    # F-24: the legacy omop_variable() spelling list(concept_ids = ids) is
+    # exactly visit = list(type = ids).
+    if (!is.list(visit_filter) || !identical(names(visit_filter), "concept_ids")) {
+      stop("omop_variable_block(): visit_filter must be NULL or ",
+           "list(concept_ids = <visit_concept_ids>).", call. = FALSE)
+    }
+    visit <- list(type = .v2_ids(visit_filter$concept_ids,
+                                 "omop_variable_block(): visit_filter$concept_ids"))
+  }
   visit <- .v2_visit(visit, "omop_variable_block(): visit")
   concept_col <- .v2_column(concept_col, "omop_variable_block(): concept_col")
   time_since <- identical(format, "time_since")

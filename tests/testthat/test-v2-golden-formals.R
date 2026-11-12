@@ -229,7 +229,9 @@ test_that("the appended 2.10.3 arguments are the frozen ones", {
   appended <- function(f, n) utils::tail(names(formals(f)), n)
   expect_identical(appended(omop_variable, 5L),
                    c("event", "reducer", "where", "visit", "broadcast"))
-  expect_identical(appended(omop_variable_block, 3L), c("where", "visit", "concept_col"))
+  # F-24 keeps visit_filter as the legacy alias of visit (appended last)
+  expect_identical(appended(omop_variable_block, 4L),
+                   c("where", "visit", "concept_col", "visit_filter"))
   expect_identical(appended(omop_population, 3L), c("index", "match", "coverage"))
   expect_identical(appended(omop_output, 6L),
                    c("rows", "grain", "columns", "format", "sources", "collapse"))

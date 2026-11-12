@@ -266,3 +266,22 @@ test_that("populations and outputs accept the appended arguments consistently", 
   expect_identical(o$population_id, "p")
   expect_identical(o$collapse, "any")
 })
+
+test_that("variable blocks take where, visit and concept_col; visit_filter is the alias (F-24)", {
+  blk <- function(...) omop_variable_block("blk", "condition_occurrence", c(1, 2), c("a", "b"),
+                                           format = "binary", concept_col = "condition_type_concept_id",
+                                           where = omop_where(condition_status_concept_id == 4230359), ...)
+  b <- blk(visit = list(type = 9201))
+  expect_identical(blk(visit_filter = list(concept_ids = 9201)), b)
+  expect_error(blk(visit = "index", visit_filter = list(concept_ids = 9201)), "legacy alias of visit")
+  expect_error(blk(visit_filter = 9201), "list\\(concept_ids")
+  r <- omop_recipe(blocks = b, outputs = omop_output("w", format = "wide"))
+  expect_identical(r$variables$a$visit_filter, list(concept_ids = 9201L))
+  expect_identical(r$variables$b$concept_col, "condition_type_concept_id")
+  expect_s3_class(r$variables$a$where, "omop_predicate")
+  plan <- recipe_to_plan(r)
+  ev <- plan$events[[plan$variables$a$source$event]]
+  expect_identical(ev$visit, list(type = list(9201L)))
+  expect_identical(ev$concept_col, "condition_type_concept_id")
+  expect_identical(ev$where, list(var = "condition_status_concept_id", op = "==", value = 4230359))
+})

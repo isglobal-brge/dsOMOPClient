@@ -20,7 +20,8 @@ omop_variable_block(
   unit = NULL,
   where = NULL,
   visit = NULL,
-  concept_col = NULL
+  concept_col = NULL,
+  visit_filter = NULL
 )
 }
 \arguments{
@@ -69,6 +70,11 @@ to every variable of the block.}
 or \code{"index"}, for every variable of the block.}
 
 \item{concept_col}{(2.10.3) Concept column the block's concepts scope.}
+
+\item{visit_filter}{(2.10.3) Legacy alias of \code{visit}, spelled as in
+\code{\link{omop_variable}}: \code{list(concept_ids = <visit_concept_ids>)}
+is \code{visit = list(type = <visit_concept_ids>)}. Giving both is an
+error.}
 }
 \value{
 An \code{omop_variable_block} object.
