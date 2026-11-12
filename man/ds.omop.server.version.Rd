@@ -4,18 +4,29 @@
 \alias{ds.omop.server.version}
 \title{dsOMOP version on each server}
 \usage{
-ds.omop.server.version(conns = NULL)
+ds.omop.server.version(conns = NULL, symbol = "omop")
 }
 \arguments{
 \item{conns}{DSI connections (default: the DSI default connections).}
+
+\item{symbol}{OMOP session symbol whose capability blocks (read by
+\code{\link{ds.omop.connect}}) are reported.}
 }
 \value{
 A data frame with one row per server: \code{server},
   \code{published} (version of the published dsOMOP methods, NA when none),
   \code{running} (version answering \code{omopPingDS}, NA when it cannot be
   called), \code{missing} (methods this client calls that the profile lacks),
-  \code{ready} and \code{advice}. The client version is in its
-  \code{"client"} attribute.
+  \code{ready}, \code{advice} and the list column \code{recipe_language}:
+  per server the recipe-language capability block of its OMOP session
+  (\code{version}, \code{semantic_version}, \code{operations},
+  \code{reducers}, \code{dialect}), independently of method readiness. The
+  string \code{"unavailable"} means the connected site supplied no block,
+  or an unconnected site's profile lacks the publication protocol;
+  \code{"not connected"} means no OMOP session \code{symbol} is connected
+  to a site publishing that protocol. No language capability is inferred
+  from a package version or from \code{ready}. The client version is in
+  its \code{"client"} attribute.
 }
 \description{
 Works on plain DataSHIELD connections, before (or without)
@@ -29,6 +40,14 @@ and nothing is missing; otherwise \code{advice} says what to change.
 Opal publishes a package's methods when it is first installed, but not when
 an installed package is upgraded: after an upgrade the profile keeps the old
 list until an administrator publishes the package's settings again.
+
+A server whose profile lacks the publication protocol
+(\code{omopPlanStatusDS}, \code{omopStagedRevokeDS}) runs v1 plans only
+through the legacy call and refuses language-2 plans; the advice says
+whether the installed dsOMOP predates the protocol (install the release
+that has it, then publish) or its upgraded methods are not published yet
+(publish again). \code{ready} concerns the published methods only: whether
+a server executes a language-2 plan is its \code{recipe_language} block.
 }
 \examples{
 \dontrun{

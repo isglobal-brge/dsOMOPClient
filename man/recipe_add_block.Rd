@@ -18,9 +18,10 @@ The modified \code{omop_recipe} object.
 Registers the block and expands its \code{concept_ids} into individual
 \code{\link{omop_variable}} objects using the block's default settings
 (table, format, time window, filters). Variable names are auto-generated
-from concept names or IDs with uniqueness enforcement.
+from concept names or IDs with uniqueness enforcement. Adding an identical
+block again leaves the recipe unchanged; a conflicting definition with an
+existing block ID is refused.
 }
 \seealso{
 \code{\link{omop_variable_block}}, \code{\link{omop_recipe}}
 }
-\keyword{internal}

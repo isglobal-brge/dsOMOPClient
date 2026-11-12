@@ -1668,9 +1668,9 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
 #' @export
 ds.omop.dp.prepare <- function(x, out = NULL, symbol = "omop", conns = NULL) {
   if (inherits(x, "omop_recipe")) {
-    plan <- recipe_to_plan(x)
-    out <- .recipe_out_symbols(x, plan, out)
-  } else if (inherits(x, "omop_plan")) {
+    plan <- .recipe_plan_auto(x)
+    if (!.v2_is_plan_v2(plan)) out <- .recipe_out_symbols(x, plan, out)
+  } else if (inherits(x, c("omop_plan", "omop_plan_v2"))) {
     plan <- x
   } else {
     stop("x must be an omop_recipe or omop_plan.", call. = FALSE)

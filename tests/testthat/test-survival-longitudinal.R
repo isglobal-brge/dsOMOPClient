@@ -131,7 +131,7 @@ test_that("named recipe endpoints preserve table-specific filters", {
     )
   )
 
-  plan <- recipe_to_plan(recipe)
+  plan <- recipe_to_plan(recipe, version = 1)
   endpoints <- plan$outputs$events$outcomes
   expect_identical(names(endpoints), c("mi_outcome", "pci_outcome"))
   expect_identical(
@@ -172,7 +172,7 @@ test_that("composite recipes reject ambiguous multi-table outcomes", {
     outputs = omop_output(name = "tte", type = "survival")
   )
 
-  expect_error(recipe_to_plan(recipe), "outcome_mode='named'")
+  expect_error(recipe_to_plan(recipe, version = 1), "outcome_mode='named'")
 })
 
 test_that("multi-state plans retain a canonical cyclic transition graph", {
@@ -328,19 +328,19 @@ test_that("multi-state recipes round-trip and preview both components", {
     )
   )
 
-  plan <- recipe_to_plan(recipe)
+  plan <- recipe_to_plan(recipe, version = 1)
   expect_identical(plan$outputs$course$format, "multi_state")
   expect_identical(plan$outputs$course$event_order, "all")
   expect_identical(
-    recipe_to_plan(recipe_import_json(recipe_export_json(recipe)))$outputs$course,
+    recipe_to_plan(recipe_import_json(recipe_export_json(recipe)), version = 1)$outputs$course,
     plan$outputs$course
   )
   expect_identical(
-    recipe_to_plan(recipe_import_yaml(recipe_export_yaml(recipe)))$outputs$course,
+    recipe_to_plan(recipe_import_yaml(recipe_export_yaml(recipe)), version = 1)$outputs$course,
     plan$outputs$course
   )
   expect_identical(
-    recipe_to_plan(eval(parse(text = recipe_to_code(recipe))))$outputs$course,
+    recipe_to_plan(eval(parse(text = recipe_to_code(recipe))), version = 1)$outputs$course,
     plan$outputs$course
   )
 
@@ -357,5 +357,5 @@ test_that("multi-state recipes round-trip and preview both components", {
 
   invalid <- recipe
   invalid$outputs$course$options$outcome_mode <- "composite"
-  expect_error(recipe_to_plan(invalid), "requires outcome_mode='named'")
+  expect_error(recipe_to_plan(invalid, version = 1), "requires outcome_mode='named'")
 })

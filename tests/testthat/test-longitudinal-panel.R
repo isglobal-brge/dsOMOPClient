@@ -49,7 +49,7 @@ test_that("person-period recipes compile without inventing longitudinal fields",
     )
   )
 
-  out <- recipe_to_plan(recipe)$outputs$panel
+  out <- recipe_to_plan(recipe, version = 1)$outputs$panel
   expect_identical(out$type, "person_period")
   expect_identical(out$grain, "episode")
   expect_identical(out$time_origin, "index")
@@ -67,5 +67,5 @@ test_that("person-period recipes compile without inventing longitudinal fields",
   expect_equal(attr(schema, "join_key"), "rowId")
 
   recipe$outputs$panel$options$grain <- "person"
-  expect_error(recipe_to_plan(recipe), "unsupported option.*grain")
+  expect_error(recipe_to_plan(recipe, version = 1), "unsupported option.*grain")
 })

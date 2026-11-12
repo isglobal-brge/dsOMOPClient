@@ -1,0 +1,82 @@
+[
+  {
+    "name": "sex_wide",
+    "recipe": "omop_recipe(variables = omop_variable_sex(), outputs = omop_output(\"w\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InciOnsidHlwZSI6InBlcnNvbl9sZXZlbCIsInRhYmxlcyI6W10sInJlcHJlc2VudGF0aW9uIjoiZmVhdHVyZXMiLCJkZXJpdmVkX2NvbHVtbnMiOnsic2V4Ijp7ImtpbmQiOiJzZXhfbWYiLCJuYW1lIjoic2V4In19LCJwb3B1bGF0aW9uX2lkIjoiYmFzZSIsIm9wdGlvbnMiOltdfX0sIm9wdGlvbnMiOnsidHJhbnNsYXRlX2NvbmNlcHRzIjp0cnVlLCJibG9ja19zZW5zaXRpdmUiOnRydWUsImZhY3Rvcl9jb25jZXB0cyI6dHJ1ZX0sInBvcHVsYXRpb25zIjp7ImJhc2UiOnsiaWQiOiJiYXNlIiwibGFiZWwiOiJBbGwgUGVyc29ucyIsImtpbmQiOiJjcml0ZXJpYSJ9fX0"
+  },
+  {
+    "name": "age_sex_wide",
+    "recipe": "omop_recipe(variables = list(omop_variable_age(year = 2020), omop_variable_sex()), outputs = omop_output(\"w\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InciOnsidHlwZSI6InBlcnNvbl9sZXZlbCIsInRhYmxlcyI6W10sInJlcHJlc2VudGF0aW9uIjoiZmVhdHVyZXMiLCJkZXJpdmVkX2NvbHVtbnMiOnsiYWdlIjp7ImtpbmQiOiJhZ2UiLCJuYW1lIjoiYWdlIiwicmVmZXJlbmNlIjoidG9kYXkiLCJyZWZlcmVuY2VfZGF0ZSI6IjIwMjAtMDctMDEifSwic2V4Ijp7ImtpbmQiOiJzZXhfbWYiLCJuYW1lIjoic2V4In19LCJwb3B1bGF0aW9uX2lkIjoiYmFzZSIsIm9wdGlvbnMiOltdfX0sIm9wdGlvbnMiOnsidHJhbnNsYXRlX2NvbmNlcHRzIjp0cnVlLCJibG9ja19zZW5zaXRpdmUiOnRydWUsImZhY3Rvcl9jb25jZXB0cyI6dHJ1ZX0sInBvcHVsYXRpb25zIjp7ImJhc2UiOnsiaWQiOiJiYXNlIiwibGFiZWwiOiJBbGwgUGVyc29ucyIsImtpbmQiOiJjcml0ZXJpYSJ9fX0"
+  },
+  {
+    "name": "charlson",
+    "recipe": "omop_recipe(variables = omop_variable_charlson(), outputs = omop_output(\"w\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InciOnsidHlwZSI6InBlcnNvbl9sZXZlbCIsInRhYmxlcyI6W10sInJlcHJlc2VudGF0aW9uIjoiZmVhdHVyZXMiLCJkZXJpdmVkX2NvbHVtbnMiOnsiY2hhcmxzb24iOnsia2luZCI6ImNoYXJsc29uIiwibmFtZSI6ImNoYXJsc29uIn19LCJwb3B1bGF0aW9uX2lkIjoiYmFzZSIsIm9wdGlvbnMiOltdfX0sIm9wdGlvbnMiOnsidHJhbnNsYXRlX2NvbmNlcHRzIjp0cnVlLCJibG9ja19zZW5zaXRpdmUiOnRydWUsImZhY3Rvcl9jb25jZXB0cyI6dHJ1ZX0sInBvcHVsYXRpb25zIjp7ImJhc2UiOnsiaWQiOiJiYXNlIiwibGFiZWwiOiJBbGwgUGVyc29ucyIsImtpbmQiOiJjcml0ZXJpYSJ9fX0"
+  },
+  {
+    "name": "scores",
+    "recipe": "omop_recipe(variables = list(omop_variable_chads2(reference_date = \"2020-01-01\"), omop_variable_dcsi()), outputs = omop_output(\"w\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InciOnsidHlwZSI6InBlcnNvbl9sZXZlbCIsInRhYmxlcyI6W10sInJlcHJlc2VudGF0aW9uIjoiZmVhdHVyZXMiLCJkZXJpdmVkX2NvbHVtbnMiOnsiY2hhZHMyIjp7ImtpbmQiOiJjaGFkczIiLCJuYW1lIjoiY2hhZHMyIiwicmVmZXJlbmNlX2RhdGUiOiIyMDIwLTAxLTAxIn0sImRjc2kiOnsia2luZCI6ImRjc2kiLCJuYW1lIjoiZGNzaSJ9fSwicG9wdWxhdGlvbl9pZCI6ImJhc2UiLCJvcHRpb25zIjpbXX19LCJvcHRpb25zIjp7InRyYW5zbGF0ZV9jb25jZXB0cyI6dHJ1ZSwiYmxvY2tfc2Vuc2l0aXZlIjp0cnVlLCJmYWN0b3JfY29uY2VwdHMiOnRydWV9LCJwb3B1bGF0aW9ucyI6eyJiYXNlIjp7ImlkIjoiYmFzZSIsImxhYmVsIjoiQWxsIFBlcnNvbnMiLCJraW5kIjoiY3JpdGVyaWEifX19"
+  },
+  {
+    "name": "long_one",
+    "recipe": "omop_recipe(variables = omop_variable(table = \"measurement\", concept_id = 1), outputs = omop_output(\"l\", type = \"long\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7ImwiOnsidHlwZSI6ImV2ZW50X2xldmVsIiwidGFibGUiOiJtZWFzdXJlbWVudCIsImNvbHVtbnMiOm51bGwsInJlcHJlc2VudGF0aW9uIjp7ImZvcm1hdCI6ImxvbmcifSwiZmlsdGVycyI6eyJjb25jZXB0X3NldCI6eyJpZHMiOjF9fSwiY29uY2VwdF9zZXQiOjEsInBvcHVsYXRpb25faWQiOiJiYXNlIiwib3B0aW9ucyI6W119fSwib3B0aW9ucyI6eyJ0cmFuc2xhdGVfY29uY2VwdHMiOnRydWUsImJsb2NrX3NlbnNpdGl2ZSI6dHJ1ZSwiZmFjdG9yX2NvbmNlcHRzIjp0cnVlfSwicG9wdWxhdGlvbnMiOnsiYmFzZSI6eyJpZCI6ImJhc2UiLCJsYWJlbCI6IkFsbCBQZXJzb25zIiwia2luZCI6ImNyaXRlcmlhIn19fQ"
+  },
+  {
+    "name": "long_split",
+    "recipe": "omop_recipe(variables = list(omop_variable(name = \"m\", table = \"measurement\", concept_id = 1), omop_variable(name = \"c\", table = \"condition_occurrence\", concept_id = 2)), outputs = omop_output(\"l\", type = \"long\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7ImxfbWVhc3VyZW1lbnQiOnsidHlwZSI6ImV2ZW50X2xldmVsIiwidGFibGUiOiJtZWFzdXJlbWVudCIsImNvbHVtbnMiOm51bGwsInJlcHJlc2VudGF0aW9uIjp7ImZvcm1hdCI6ImxvbmcifSwiZmlsdGVycyI6eyJjb25jZXB0X3NldCI6eyJpZHMiOjF9fSwiY29uY2VwdF9zZXQiOjEsInBvcHVsYXRpb25faWQiOiJiYXNlIiwib3B0aW9ucyI6W119LCJsX2NvbmRpdGlvbl9vY2N1cnJlbmNlIjp7InR5cGUiOiJldmVudF9sZXZlbCIsInRhYmxlIjoiY29uZGl0aW9uX29jY3VycmVuY2UiLCJjb2x1bW5zIjpudWxsLCJyZXByZXNlbnRhdGlvbiI6eyJmb3JtYXQiOiJsb25nIn0sImZpbHRlcnMiOnsiY29uY2VwdF9zZXQiOnsiaWRzIjoyfX0sImNvbmNlcHRfc2V0IjoyLCJwb3B1bGF0aW9uX2lkIjoiYmFzZSIsIm9wdGlvbnMiOltdfX0sIm9wdGlvbnMiOnsidHJhbnNsYXRlX2NvbmNlcHRzIjp0cnVlLCJibG9ja19zZW5zaXRpdmUiOnRydWUsImZhY3Rvcl9jb25jZXB0cyI6dHJ1ZX0sInBvcHVsYXRpb25zIjp7ImJhc2UiOnsiaWQiOiJiYXNlIiwibGFiZWwiOiJBbGwgUGVyc29ucyIsImtpbmQiOiJjcml0ZXJpYSJ9fX0"
+  },
+  {
+    "name": "features",
+    "recipe": "omop_recipe(variables = list(omop_variable(name = \"m\", table = \"measurement\", concept_id = 1, format = \"count\")), outputs = omop_output(\"f\", type = \"features\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7ImYiOnsidHlwZSI6ImV2ZW50X2xldmVsIiwidGFibGUiOiJtZWFzdXJlbWVudCIsImNvbHVtbnMiOm51bGwsInJlcHJlc2VudGF0aW9uIjp7ImZvcm1hdCI6ImZlYXR1cmVzIiwiZ3JhaW4iOiJwZXJzb24iLCJmZWF0dXJlcyI6eyJtIjp7InR5cGUiOiJjb3VudCIsImNvbmNlcHRfc2V0IjoxLCJuYW1lIjoibSJ9fX0sImZpbHRlcnMiOltdLCJwb3B1bGF0aW9uX2lkIjoiYmFzZSIsIm9wdGlvbnMiOltdfX0sIm9wdGlvbnMiOnsidHJhbnNsYXRlX2NvbmNlcHRzIjp0cnVlLCJibG9ja19zZW5zaXRpdmUiOnRydWUsImZhY3Rvcl9jb25jZXB0cyI6dHJ1ZX0sInBvcHVsYXRpb25zIjp7ImJhc2UiOnsiaWQiOiJiYXNlIiwibGFiZWwiOiJBbGwgUGVyc29ucyIsImtpbmQiOiJjcml0ZXJpYSJ9fX0"
+  },
+  {
+    "name": "features_windowed",
+    "recipe": "omop_recipe(variables = list(omop_variable(name = \"m\", table = \"measurement\", concept_id = 1, format = \"count\", time_window = list(start = -90, end = 0))), outputs = omop_output(\"f\", type = \"features\", options = list(grain = \"episode\")))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7ImYiOnsidHlwZSI6ImV2ZW50X2xldmVsIiwidGFibGUiOiJtZWFzdXJlbWVudCIsImNvbHVtbnMiOm51bGwsInJlcHJlc2VudGF0aW9uIjp7ImZvcm1hdCI6ImZlYXR1cmVzIiwiZ3JhaW4iOiJlcGlzb2RlIiwiZmVhdHVyZXMiOnsibSI6eyJ0eXBlIjoiY291bnQiLCJjb25jZXB0X3NldCI6MSwibmFtZSI6Im0iLCJ0aW1lX3dpbmRvdyI6eyJzdGFydCI6LTkwLCJlbmQiOjB9fX19LCJmaWx0ZXJzIjpbXSwidGVtcG9yYWwiOnsiaW5kZXhfd2luZG93Ijp7InN0YXJ0IjotOTAsImVuZCI6MH19LCJwb3B1bGF0aW9uX2lkIjoiYmFzZSIsIm9wdGlvbnMiOnsiZ3JhaW4iOiJlcGlzb2RlIn19fSwib3B0aW9ucyI6eyJ0cmFuc2xhdGVfY29uY2VwdHMiOnRydWUsImJsb2NrX3NlbnNpdGl2ZSI6dHJ1ZSwiZmFjdG9yX2NvbmNlcHRzIjp0cnVlfSwicG9wdWxhdGlvbnMiOnsiYmFzZSI6eyJpZCI6ImJhc2UiLCJsYWJlbCI6IkFsbCBQZXJzb25zIiwia2luZCI6ImNyaXRlcmlhIn19fQ"
+  },
+  {
+    "name": "baseline",
+    "recipe": "omop_recipe(variables = omop_variable_age(reference = \"index\"), outputs = omop_output(\"b\", type = \"baseline\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7ImIiOnsidHlwZSI6ImJhc2VsaW5lIiwiY29sdW1ucyI6W10sImRlcml2ZWQiOiJhZ2VfYXRfaW5kZXgiLCJwb3B1bGF0aW9uX2lkIjoiYmFzZSIsIm9wdGlvbnMiOltdfX0sIm9wdGlvbnMiOnsidHJhbnNsYXRlX2NvbmNlcHRzIjp0cnVlLCJibG9ja19zZW5zaXRpdmUiOnRydWUsImZhY3Rvcl9jb25jZXB0cyI6dHJ1ZX0sInBvcHVsYXRpb25zIjp7ImJhc2UiOnsiaWQiOiJiYXNlIiwibGFiZWwiOiJBbGwgUGVyc29ucyIsImtpbmQiOiJjcml0ZXJpYSJ9fX0"
+  },
+  {
+    "name": "survival",
+    "recipe": "omop_recipe(variables = omop_variable(name = \"c\", table = \"condition_occurrence\", concept_id = 2), outputs = omop_output(\"s\", type = \"survival\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InMiOnsidHlwZSI6InN1cnZpdmFsIiwib3V0Y29tZSI6eyJ0YWJsZSI6ImNvbmRpdGlvbl9vY2N1cnJlbmNlIiwiY29uY2VwdF9zZXQiOjJ9LCJ0YXIiOnsic3RhcnRfb2Zmc2V0IjowLCJlbmRfb2Zmc2V0Ijo3MzB9LCJldmVudF9vcmRlciI6ImZpcnN0IiwicG9wdWxhdGlvbl9pZCI6ImJhc2UiLCJvcHRpb25zIjpbXX19LCJvcHRpb25zIjp7InRyYW5zbGF0ZV9jb25jZXB0cyI6dHJ1ZSwiYmxvY2tfc2Vuc2l0aXZlIjp0cnVlLCJmYWN0b3JfY29uY2VwdHMiOnRydWV9LCJwb3B1bGF0aW9ucyI6eyJiYXNlIjp7ImlkIjoiYmFzZSIsImxhYmVsIjoiQWxsIFBlcnNvbnMiLCJraW5kIjoiY3JpdGVyaWEifX19"
+  },
+  {
+    "name": "recurrent",
+    "recipe": "omop_recipe(variables = omop_variable(name = \"c\", table = \"condition_occurrence\", concept_id = 2), outputs = omop_output(\"s\", type = \"survival\", options = list(format = \"recurrent_events\", outcome_mode = \"named\")))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InMiOnsidHlwZSI6InN1cnZpdmFsIiwib3V0Y29tZXMiOnsiYyI6eyJ0YWJsZSI6ImNvbmRpdGlvbl9vY2N1cnJlbmNlIiwiY29uY2VwdF9zZXQiOjJ9fSwidGFyIjp7InN0YXJ0X29mZnNldCI6MCwiZW5kX29mZnNldCI6NzMwfSwiZm9ybWF0IjoicmVjdXJyZW50X2V2ZW50cyIsImV2ZW50X29yZGVyIjoiYWxsIiwid2FzaG91dF9kYXlzIjowLCJ0aWVfcG9saWN5IjoicHJpb3JpdHkiLCJwb3B1bGF0aW9uX2lkIjoiYmFzZSIsIm9wdGlvbnMiOnsiZm9ybWF0IjoicmVjdXJyZW50X2V2ZW50cyIsIm91dGNvbWVfbW9kZSI6Im5hbWVkIn19fSwib3B0aW9ucyI6eyJ0cmFuc2xhdGVfY29uY2VwdHMiOnRydWUsImJsb2NrX3NlbnNpdGl2ZSI6dHJ1ZSwiZmFjdG9yX2NvbmNlcHRzIjp0cnVlfSwicG9wdWxhdGlvbnMiOnsiYmFzZSI6eyJpZCI6ImJhc2UiLCJsYWJlbCI6IkFsbCBQZXJzb25zIiwia2luZCI6ImNyaXRlcmlhIn19fQ"
+  },
+  {
+    "name": "intervals",
+    "recipe": "omop_recipe(variables = omop_variable(name = \"c\", table = \"condition_occurrence\", concept_id = 2), outputs = omop_output(\"i\", type = \"intervals\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7ImkiOnsidHlwZSI6ImludGVydmFsc19sb25nIiwidGFibGVzIjoiY29uZGl0aW9uX29jY3VycmVuY2UiLCJjb25jZXB0X2ZpbHRlciI6eyJjb25kaXRpb25fb2NjdXJyZW5jZSI6Mn0sImludGVydmFsX21hdGNoIjoib3ZlcmxhcHMiLCJldmVudF9zZWxlY3QiOiJhbGwiLCJzZWxlY3RfbiI6MSwic2VsZWN0X2J5IjoiZXBpc29kZV9zb3VyY2UiLCJhbmNob3IiOjAsInBvcHVsYXRpb25faWQiOiJiYXNlIiwib3B0aW9ucyI6W119fSwib3B0aW9ucyI6eyJ0cmFuc2xhdGVfY29uY2VwdHMiOnRydWUsImJsb2NrX3NlbnNpdGl2ZSI6dHJ1ZSwiZmFjdG9yX2NvbmNlcHRzIjp0cnVlfSwicG9wdWxhdGlvbnMiOnsiYmFzZSI6eyJpZCI6ImJhc2UiLCJsYWJlbCI6IkFsbCBQZXJzb25zIiwia2luZCI6ImNyaXRlcmlhIn19fQ"
+  },
+  {
+    "name": "temporal",
+    "recipe": "omop_recipe(variables = omop_variable(name = \"c\", table = \"condition_occurrence\", concept_id = 2, format = \"binary\"), outputs = omop_output(\"tc\", type = \"temporal_covariates\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InRjIjp7InR5cGUiOiJ0ZW1wb3JhbF9jb3ZhcmlhdGVzIiwidGFibGUiOiJjb25kaXRpb25fb2NjdXJyZW5jZSIsImNvbmNlcHRfc2V0IjoyLCJiaW5fd2lkdGgiOjMwLCJ3aW5kb3dfc3RhcnQiOi0zNjUsIndpbmRvd19lbmQiOjAsImFuYWx5c2VzIjoiYmluYXJ5IiwicG9wdWxhdGlvbl9pZCI6ImJhc2UiLCJvcHRpb25zIjpbXX19LCJvcHRpb25zIjp7InRyYW5zbGF0ZV9jb25jZXB0cyI6dHJ1ZSwiYmxvY2tfc2Vuc2l0aXZlIjp0cnVlLCJmYWN0b3JfY29uY2VwdHMiOnRydWV9LCJwb3B1bGF0aW9ucyI6eyJiYXNlIjp7ImlkIjoiYmFzZSIsImxhYmVsIjoiQWxsIFBlcnNvbnMiLCJraW5kIjoiY3JpdGVyaWEifX19"
+  },
+  {
+    "name": "person_period",
+    "recipe": "omop_recipe(variables = omop_variable(name = \"c\", table = \"condition_occurrence\", concept_id = 2, format = \"binary\"), outputs = omop_output(\"pp\", type = \"person_period\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InBwIjp7InR5cGUiOiJwZXJzb25fcGVyaW9kIiwidGFibGUiOiJjb25kaXRpb25fb2NjdXJyZW5jZSIsImNvbmNlcHRfc2V0IjoyLCJiaW5fd2lkdGgiOjMwLCJ3aW5kb3dfc3RhcnQiOi0zNjUsIndpbmRvd19lbmQiOjAsImFuYWx5c2VzIjoiYmluYXJ5IiwiZ3JhaW4iOiJlcGlzb2RlIiwidGltZV9vcmlnaW4iOiJpbmRleCIsInBvcHVsYXRpb25faWQiOiJiYXNlIiwib3B0aW9ucyI6W119fSwib3B0aW9ucyI6eyJ0cmFuc2xhdGVfY29uY2VwdHMiOnRydWUsImJsb2NrX3NlbnNpdGl2ZSI6dHJ1ZSwiZmFjdG9yX2NvbmNlcHRzIjp0cnVlfSwicG9wdWxhdGlvbnMiOnsiYmFzZSI6eyJpZCI6ImJhc2UiLCJsYWJlbCI6IkFsbCBQZXJzb25zIiwia2luZCI6ImNyaXRlcmlhIn19fQ"
+  },
+  {
+    "name": "filters",
+    "recipe": "omop_recipe(variables = omop_variable_sex(), filters = list(omop_filter_sex(\"F\"), omop_filter_age(18, 65, year = 2020)), outputs = omop_output(\"w\"))",
+    "payload": "B64:eyJjb2hvcnQiOnsidHlwZSI6InNwZWMiLCJmaWx0ZXJfdHJlZSI6eyJhbmQiOlt7InR5cGUiOiJzZXgiLCJwYXJhbXMiOnsidmFsdWUiOiJGIn19LHsidHlwZSI6ImFnZV9yYW5nZSIsInBhcmFtcyI6eyJtaW4iOjE4LCJtYXgiOjY1LCJyZWZlcmVuY2VfZGF0ZSI6IjIwMjAtMDctMDEifX1dfX0sImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InciOnsidHlwZSI6InBlcnNvbl9sZXZlbCIsInRhYmxlcyI6W10sInJlcHJlc2VudGF0aW9uIjoiZmVhdHVyZXMiLCJkZXJpdmVkX2NvbHVtbnMiOnsic2V4Ijp7ImtpbmQiOiJzZXhfbWYiLCJuYW1lIjoic2V4In19LCJwb3B1bGF0aW9uX2lkIjoiYmFzZSIsIm9wdGlvbnMiOltdfX0sIm9wdGlvbnMiOnsidHJhbnNsYXRlX2NvbmNlcHRzIjp0cnVlLCJibG9ja19zZW5zaXRpdmUiOnRydWUsImZhY3Rvcl9jb25jZXB0cyI6dHJ1ZX0sInBvcHVsYXRpb25zIjp7ImJhc2UiOnsiaWQiOiJiYXNlIiwibGFiZWwiOiJBbGwgUGVyc29ucyIsImtpbmQiOiJjcml0ZXJpYSJ9fX0"
+  },
+  {
+    "name": "setop_union",
+    "recipe": "omop_recipe(variables = omop_variable_sex(), populations = list(omop_population(\"a\", filters = list(omop_filter_sex(\"F\"))), omop_population(\"b\", filters = list(omop_filter_sex(\"M\"))), omop_population(\"u\", union = c(\"a\", \"b\"))), outputs = omop_output(\"w\", population_id = \"u\"))",
+    "payload": "B64:eyJjb2hvcnQiOm51bGwsImFuY2hvciI6eyJ0YWJsZSI6InBlcnNvbiIsImlkX2NvbCI6InBlcnNvbl9pZCJ9LCJvdXRwdXRzIjp7InciOnsidHlwZSI6InBlcnNvbl9sZXZlbCIsInRhYmxlcyI6W10sInJlcHJlc2VudGF0aW9uIjoiZmVhdHVyZXMiLCJkZXJpdmVkX2NvbHVtbnMiOnsic2V4Ijp7ImtpbmQiOiJzZXhfbWYiLCJuYW1lIjoic2V4In19LCJwb3B1bGF0aW9uX2lkIjoidSIsIm9wdGlvbnMiOltdfX0sIm9wdGlvbnMiOnsidHJhbnNsYXRlX2NvbmNlcHRzIjp0cnVlLCJibG9ja19zZW5zaXRpdmUiOnRydWUsImZhY3Rvcl9jb25jZXB0cyI6dHJ1ZX0sInBvcHVsYXRpb25zIjp7ImJhc2UiOnsiaWQiOiJiYXNlIiwibGFiZWwiOiJBbGwgUGVyc29ucyIsImtpbmQiOiJjcml0ZXJpYSJ9LCJhIjp7ImlkIjoiYSIsImxhYmVsIjoiQmFzZSBQb3B1bGF0aW9uIiwia2luZCI6ImNyaXRlcmlhIiwiZmlsdGVyX3RyZWUiOnsidHlwZSI6InNleCIsInBhcmFtcyI6eyJ2YWx1ZSI6IkYifX19LCJiIjp7ImlkIjoiYiIsImxhYmVsIjoiQmFzZSBQb3B1bGF0aW9uIiwia2luZCI6ImNyaXRlcmlhIiwiZmlsdGVyX3RyZWUiOnsidHlwZSI6InNleCIsInBhcmFtcyI6eyJ2YWx1ZSI6Ik0ifX19LCJ1Ijp7ImlkIjoidSIsImxhYmVsIjoiQmFzZSBQb3B1bGF0aW9uIiwia2luZCI6InNldG9wIiwic2V0b3AiOnsib3AiOiJ1bmlvbiIsIm1lbWJlcnMiOlsiYSIsImIiXX19fX0"
+  }
+]

@@ -22,4 +22,3 @@ populations, each producing a separate server-side dataset.
 \seealso{
 \code{\link{omop_output}}, \code{\link{omop_recipe}}
 }
-\keyword{internal}
