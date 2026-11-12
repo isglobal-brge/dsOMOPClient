@@ -590,7 +590,7 @@
 #' @param policy \code{"strict"} or \code{"pooled_only_ok"} (record-weighted
 #'   strata present on only some servers).
 #' @param columns The entry's contracted columns (record-weighted schema).
-#' @return List: \code{result} (one row per owner and stratum with the pooled
+#' @return List: \code{result} (one row per owner, stratum and interaction view with the pooled
 #'   persons, mean, SD, quantiles, events and time where defined; the pooled
 #'   cells as attribute \code{cells}) and \code{warnings}.
 #' @keywords internal

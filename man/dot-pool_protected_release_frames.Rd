@@ -15,7 +15,7 @@ strata present on only some servers).}
 \item{columns}{The entry's contracted columns (record-weighted schema).}
 }
 \value{
-List: \code{result} (one row per owner and stratum with the pooled
+List: \code{result} (one row per owner, stratum and interaction view with the pooled
   persons, mean, SD, quantiles, events and time where defined; the pooled
   cells as attribute \code{cells}) and \code{warnings}.
 }

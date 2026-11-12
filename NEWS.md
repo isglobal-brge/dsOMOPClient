@@ -26,7 +26,7 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
   distinct-label cardinality is not pooled across sites.
 - `ds.omop.analysis.run()` pools protected catalog releases (the
   `release_pooling` descriptor of 2.10.3 entries) from their signed components
-  (one row per owner and stratum: persons, mean, SD, events, person-time and
+  (one row per owner, stratum and interaction view: persons, mean, SD, events, person-time and
   rate where defined; pooled cells in the `cells` attribute). It never mixes
   standard and protected frames. Older clients see these entries as not
   poolable and display the per-server frames.
