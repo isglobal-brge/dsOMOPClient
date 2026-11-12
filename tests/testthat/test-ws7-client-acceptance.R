@@ -271,21 +271,21 @@ test_that("staged recipe parity permits only fractional CSV rounding", {
   expect_silent(.ws7e_expect_parity(staged, memory, "CSV rounding"))
   bad <- staged
   bad$row_id[1L] <- "9007199254740993"
-  expect_failure(.ws7e_expect_parity(bad, memory, "adjacent analytic key"))
+  expect_error(.ws7e_expect_parity(bad, memory, "adjacent analytic key"), class = "expectation_failure")
   bad <- staged
   bad$count[1L] <- "2"
-  expect_failure(.ws7e_expect_parity(bad, memory, "integer value"))
+  expect_error(.ws7e_expect_parity(bad, memory, "integer value"), class = "expectation_failure")
   for (row in 1:2) {
     bad <- staged
     bad$text[row] <- NA_character_
-    expect_failure(.ws7e_expect_parity(bad, memory, "text to missing"))
+    expect_error(.ws7e_expect_parity(bad, memory, "text to missing"), class = "expectation_failure")
   }
   bad <- staged
   bad$missing[1L] <- ""
-  expect_failure(.ws7e_expect_parity(bad, memory, "missing to empty"))
+  expect_error(.ws7e_expect_parity(bad, memory, "missing to empty"), class = "expectation_failure")
   bad <- staged
   bad$value[1L] <- "6.90800000001"
-  expect_failure(.ws7e_expect_parity(bad, memory, "beyond CSV precision"))
+  expect_error(.ws7e_expect_parity(bad, memory, "beyond CSV precision"), class = "expectation_failure")
 })
 
 .ws7e_run <- function(ctx, recipe) {
