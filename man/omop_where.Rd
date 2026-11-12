@@ -28,6 +28,10 @@ event is \code{value}. Logic is three-valued as in SQL: a comparison with a
 NULL column is UNKNOWN and only TRUE rows are kept.
 }
 \details{
+A parameter placeholder, \code{omop_param(...)} written inline with literal
+arguments, may stand for any literal; it is the only call ever evaluated
+(alone, in the caller's frame) and is bound before emission.
+
 \code{omop_where_tree()} takes the explicit tree form of the plan schema
 (\code{list(var =, op =, value =)} leaves, \code{and}/\code{or} lists,
 \code{not}), which also offers \code{between}.

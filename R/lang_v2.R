@@ -398,6 +398,10 @@ print.omop_event <- function(x, ...) {
 #' event is \code{value}. Logic is three-valued as in SQL: a comparison with a
 #' NULL column is UNKNOWN and only TRUE rows are kept.
 #'
+#' A parameter placeholder, \code{omop_param(...)} written inline with literal
+#' arguments, may stand for any literal; it is the only call ever evaluated
+#' (alone, in the caller's frame) and is bound before emission.
+#'
 #' \code{omop_where_tree()} takes the explicit tree form of the plan schema
 #' (\code{list(var =, op =, value =)} leaves, \code{and}/\code{or} lists,
 #' \code{not}), which also offers \code{between}.
@@ -420,7 +424,8 @@ omop_where <- function(...) {
     stop("omop_where(): predicates are unnamed expressions (use == for ",
          "equality, not =).", call. = FALSE)
   }
-  parts <- lapply(exprs, .v2_where_expr)
+  env <- parent.frame()
+  parts <- lapply(exprs, .v2_where_expr, env = env)
   tree <- if (length(parts) == 1L) parts[[1L]] else .v2_pred_flatten("and", parts)
   .v2_predicate(tree)
 }
@@ -454,7 +459,7 @@ print.omop_predicate <- function(x, ...) {
 .V2_CMP_FLIP <- c("==" = "==", "!=" = "!=", "<" = ">", "<=" = ">=",
                   ">" = "<", ">=" = "<=")
 
-.v2_where_expr <- function(e) {
+.v2_where_expr <- function(e, env = emptyenv()) {
   if (is.symbol(e)) {
     stop("omop_where(): a bare column (", as.character(e), ") is not a ",
          "predicate; compare it, e.g. ", as.character(e), " == 1.", call. = FALSE)
@@ -463,11 +468,11 @@ print.omop_predicate <- function(x, ...) {
     stop("omop_where(): a literal is not a predicate.", call. = FALSE)
   }
   fn <- as.character(e[[1L]])
-  if (identical(fn, "(")) return(.v2_where_expr(e[[2L]]))
+  if (identical(fn, "(")) return(.v2_where_expr(e[[2L]], env))
   if (fn %in% c("&", "|")) {
     op <- if (fn == "&") "and" else "or"
-    return(.v2_pred_flatten(op, list(.v2_where_expr(e[[2L]]),
-                                     .v2_where_expr(e[[3L]]))))
+    return(.v2_pred_flatten(op, list(.v2_where_expr(e[[2L]], env),
+                                     .v2_where_expr(e[[3L]], env))))
   }
   if (fn %in% c("&&", "||")) {
     stop("omop_where(): use & and | (vectorised), not ", fn, ".", call. = FALSE)
@@ -479,11 +484,11 @@ print.omop_predicate <- function(x, ...) {
       return(list(var = .v2_where_column(inner[[2L]]), op = "not_null"))
     }
     if (is.call(inner) && identical(as.character(inner[[1L]]), "%in%")) {
-      leaf <- .v2_where_expr(inner)
+      leaf <- .v2_where_expr(inner, env)
       leaf$op <- "not_in"
       return(leaf)
     }
-    return(list(not = .v2_where_expr(inner)))
+    return(list(not = .v2_where_expr(inner, env)))
   }
   if (identical(fn, "is.na")) {
     if (length(e) != 2L) stop("omop_where(): is.na() takes one column.", call. = FALSE)
@@ -493,11 +498,11 @@ print.omop_predicate <- function(x, ...) {
     lhs <- e[[2L]]; rhs <- e[[3L]]
     if (is.symbol(lhs) && !is.symbol(rhs)) {
       return(list(var = .v2_where_column(lhs), op = fn,
-                  value = .v2_where_literal(rhs)))
+                  value = .v2_where_literal(rhs, env = env)))
     }
     if (is.symbol(rhs) && !is.symbol(lhs)) {
       return(list(var = .v2_where_column(rhs), op = unname(.V2_CMP_FLIP[[fn]]),
-                  value = .v2_where_literal(lhs)))
+                  value = .v2_where_literal(lhs, env = env)))
     }
     stop("omop_where(): a comparison needs one column and one literal.",
          call. = FALSE)
@@ -507,7 +512,7 @@ print.omop_predicate <- function(x, ...) {
     if (!is.symbol(lhs)) {
       stop("omop_where(): the left side of %in% must be a column.", call. = FALSE)
     }
-    values <- .v2_where_literal(e[[3L]], vector = TRUE)
+    values <- .v2_where_literal(e[[3L]], vector = TRUE, env = env)
     if (length(values) == 0L || length(values) > 10000L) {
       stop("omop_where(): %in% needs 1 to 10000 values.", call. = FALSE)
     }
@@ -526,7 +531,34 @@ print.omop_predicate <- function(x, ...) {
   col
 }
 
-.v2_where_literal <- function(e, vector = FALSE) {
+# A parameter placeholder is the one call a predicate admits in a literal
+# position: omop_param(...) with literal arguments, evaluated alone in the
+# caller's frame, so nothing else in the expression is ever evaluated.
+.v2_where_param <- function(v, env) {
+  head <- v[[1L]]
+  is_param_call <- identical(head, as.name("omop_param")) ||
+    (is.call(head) && length(head) == 3L &&
+       as.character(head[[1L]]) %in% c("::", ":::") &&
+       identical(as.character(head[[2L]]), "dsOMOPClient") &&
+       identical(as.character(head[[3L]]), "omop_param"))
+  if (!is_param_call) return(NULL)
+  literal <- function(a) {
+    if (is.call(a) && identical(as.character(a[[1L]]), "-") && length(a) == 2L) a <- a[[2L]]
+    is.null(a) || ((is.character(a) || is.numeric(a) || is.logical(a)) && length(a) == 1L)
+  }
+  if (!all(vapply(as.list(v)[-1L], literal, logical(1)))) {
+    stop("omop_where(): an inline omop_param() takes literal arguments only.",
+         call. = FALSE)
+  }
+  p <- eval(v, env)
+  if (!.v2_is_param(p)) {
+    stop("omop_where(): omop_param() did not return a parameter placeholder.",
+         call. = FALSE)
+  }
+  p
+}
+
+.v2_where_literal <- function(e, vector = FALSE, env = emptyenv()) {
   one <- function(v) {
     if (is.call(v) && identical(as.character(v[[1L]]), "-") && length(v) == 2L &&
         is.numeric(v[[2L]])) {
@@ -536,6 +568,10 @@ print.omop_predicate <- function(x, ...) {
     if (is.numeric(v) && length(v) == 1L && is.finite(v)) return(v)
     if (is.character(v) && length(v) == 1L && !is.na(v)) return(v)
     if (is.logical(v) && length(v) == 1L && !is.na(v)) return(v)
+    if (is.call(v)) {
+      p <- .v2_where_param(v, env)
+      if (!is.null(p)) return(p)
+    }
     stop("omop_where(): literals must be numbers, strings or TRUE/FALSE; ",
          "expressions are never evaluated.", call. = FALSE)
   }
@@ -577,7 +613,12 @@ print.omop_predicate <- function(x, ...) {
   }
   out <- tree
   if (!is.null(tree$op) && tree$op %in% c("in", "not_in")) {
-    out$value <- as.list(unlist(tree$value, use.names = FALSE))
+    vals <- tree$value
+    has_param <- .v2_is_param(vals) ||
+      (is.list(vals) && any(vapply(vals, .v2_is_param, logical(1))))
+    out$value <- if (.v2_is_param(vals)) vals
+                 else if (has_param) unname(as.list(vals))
+                 else as.list(unlist(vals, use.names = FALSE))
   }
   if (identical(tree$op, "between") && is.list(tree$value)) {
     out$value <- tree$value[intersect(c("lower", "upper", "upper_inclusive"),
@@ -586,8 +627,23 @@ print.omop_predicate <- function(x, ...) {
   out
 }
 
+# Placeholders are bound before emission (the emitted plan is validated
+# again); the construction-time check sees a stand-in of the declared type.
+.v2_param_standin <- function(x) {
+  if (.v2_is_param(x)) {
+    type <- if (is.character(x$type) && length(x$type) == 1L) x$type else "number"
+    return(switch(type, string = "x", date = "2000-01-01", integer = 0L, 0))
+  }
+  if (is.list(x)) {
+    nms <- names(x)
+    x <- lapply(x, .v2_param_standin)
+    names(x) <- nms
+  }
+  x
+}
+
 .v2_check_predicate_tree <- function(tree) {
-  res <- .jsonSchemaValidate(.v2_schema_def("predicate"), tree,
+  res <- .jsonSchemaValidate(.v2_schema_def("predicate"), .v2_param_standin(tree),
                              root = .v2_plan_schema())
   if (!res$valid) {
     stop("Invalid predicate: ", paste(utils::head(res$errors, 3L), collapse = "; "),
@@ -616,7 +672,10 @@ print.omop_predicate <- function(x, ...) {
     if (!is.null(n$and)) return(paste0("(", paste(vapply(n$and, node, ""), collapse = " & "), ")"))
     if (!is.null(n$or)) return(paste0("(", paste(vapply(n$or, node, ""), collapse = " | "), ")"))
     if (!is.null(n$not)) return(paste0("!", node(n$not)))
-    lit <- function(v) if (is.character(v)) paste0("\"", v, "\"") else format(v)
+    lit <- function(v) {
+      if (.v2_is_param(v)) return(paste0("<param ", v$name %||% "?", ">"))
+      if (is.character(v)) paste0("\"", v, "\"") else format(v)
+    }
     switch(n$op,
       is_null = paste0("is.na(", n$var, ")"),
       not_null = paste0("!is.na(", n$var, ")"),

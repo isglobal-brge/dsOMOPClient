@@ -285,3 +285,35 @@ test_that("variable blocks take where, visit and concept_col; visit_filter is th
   expect_identical(ev$concept_col, "condition_type_concept_id")
   expect_identical(ev$where, list(var = "condition_status_concept_id", op = "==", value = 4230359))
 })
+
+test_that("an inline omop_param() placeholder may stand for a predicate literal (acceptance 13, variant 04)", {
+  # Test-local stand-in for the WS-9 constructor: any object inheriting
+  # "omop_param" is a placeholder for the language-2 constructors.
+  omop_param <- function(name, type = "number", default = NULL, description = NULL) {
+    structure(list(name = name, type = type, default = default), class = "omop_param")
+  }
+  pr <- omop_where(value >= omop_param("threshold", type = "number"))
+  expect_s3_class(pr$tree$value, "omop_param")
+  expect_output(print(pr), "value >= <param threshold>")
+  flipped <- omop_where(omop_param("threshold") <= value)
+  expect_identical(flipped$tree$op, ">=")
+  expect_error(omop_where(value >= omop_param(paste0("thr", "eshold"))), "literal arguments only")
+  expect_error(omop_where(value >= max(1, 2)), "never evaluated")
+  mk <- function(where) {
+    a1c <- omop_event("measurement", 3004410, where = where, name = "a1c_hi")
+    omop_recipe(variables = list(n = omop_variable(event = a1c, reducer = omop_reduce("count"))),
+                outputs = omop_output("w", format = "wide"))
+  }
+  expect_error(recipe_to_plan(mk(omop_where(value >= omop_param("threshold")))),
+               "Unbound parameter 'threshold'")
+  plan <- recipe_to_plan(mk(omop_where(value >= omop_param("threshold", default = 6.5))))
+  expect_identical(plan$events$a1c_hi$where, list(var = "value", op = ">=", value = 6.5))
+  lit <- recipe_to_plan(omop_recipe(
+    variables = list(n = omop_variable(event = omop_event("measurement", 3004410,
+                                                          where = omop_where(value >= 6.5),
+                                                          name = "a1c_hi"),
+                                       reducer = omop_reduce("count"))),
+    outputs = omop_output("w", format = "wide")))
+  expect_identical(dsOMOPClient:::.plan_v2_digest(plan)$sha256,
+                   dsOMOPClient:::.plan_v2_digest(lit)$sha256)
+})

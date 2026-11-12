@@ -12,11 +12,13 @@
   d
 }
 
-.run_acceptance_recipe <- function(dir, file = "recipe.R") {
+# `wd` is the working directory relative file references resolve against (a
+# variant reads its base recipe's files, e.g. 12's circe.json).
+.run_acceptance_recipe <- function(dir, file = "recipe.R", wd = dir) {
   code <- readLines(file.path(dir, file), warn = FALSE)
   code <- code[!grepl("^\\s*library\\(", code)]
   env <- new.env(parent = asNamespace("dsOMOPClient"))
-  withr::with_dir(dir, eval(parse(text = code), envir = env))
+  withr::with_dir(wd, eval(parse(text = code), envir = env))
   env
 }
 
@@ -85,7 +87,10 @@ test_that("recipe 13 and its 12 variants bind to the frozen plans (with the para
                                  simplifyVector = FALSE)
   for (i in sprintf("%02d", 1:12)) {
     vdir <- file.path(d13, "variants")
-    env <- .run_acceptance_recipe(vdir, paste0("recipe-", i, ".R"))
+    entry <- Filter(function(m) identical(m$variant, paste0("recipe-", i, ".R")), manifest)
+    expect_length(entry, 1L)
+    env <- .run_acceptance_recipe(vdir, paste0("recipe-", i, ".R"),
+                                  wd = file.path(acc, entry[[1]]$equals_plan_of))
     frozen <- .frozen_plan(vdir, paste0("plan-", i, ".json"))
     mine <- env$plan
     if (identical(i, "12")) {
