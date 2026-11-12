@@ -44,11 +44,10 @@
     e <- -e[[2L]]
   }
   if (is.call(e) && identical(e[[1L]], as.name("as.Date"))) {
-    d <- e[[2L]]
-    if (length(e) != 2L || !is.character(d)) {
+    if (length(e) != 2L || !is.character(e[[2L]])) {
       .mutate_stop("as.Date() takes one literal ISO date.")
     }
-    return(list(lit = .plan_iso_date(d, "ds.omop.mutate(): as.Date()"), as = "date"))
+    return(list(lit = .plan_iso_date(e[[2L]], "ds.omop.mutate(): as.Date()"), as = "date"))
   }
   if (!is.atomic(e) || length(e) != 1L) return(NULL)
   if (is.na(e)) {
