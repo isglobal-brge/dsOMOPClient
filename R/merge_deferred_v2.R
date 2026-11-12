@@ -74,7 +74,8 @@
     # Parameters may introduce a named node only after the merge. Its possible
     # correspondence is still subject to the same current-definition proof.
     head <- paste0(kind, ":")
-    nms <- substring(names(nodes)[startsWith(names(nodes), head)], nchar(head) + 1L)
+    keys <- names(nodes) %||% character(0)
+    nms <- substring(keys[startsWith(keys, head)], nchar(head) + 1L)
     for (nm in nms[startsWith(nms, marker$source_prefix)]) {
       if (!nm %in% names(aliases[[kind]])) {
         aliases[[kind]][nm] <- paste0(marker$target_prefix,
@@ -129,8 +130,9 @@
   aliases <- .merge_deferred_empty_maps()
   for (kind in c("event", "interval", "concept_set")) {
     head <- paste0(kind, ":")
-    nms <- substring(names(bn)[startsWith(names(bn), head)], nchar(head) + 1L)
-    maps[[kind]] <- stats::setNames(paste0(".merge_candidate.", nms), nms)
+    keys <- names(bn) %||% character(0)
+    nms <- substring(keys[startsWith(keys, head)], nchar(head) + 1L)
+    maps[[kind]] <- stats::setNames(vapply(nms, function(nm) paste0(".merge_candidate.", nm), ""), nms)
     aliases[[kind]] <- stats::setNames(nms, unname(maps[[kind]]))
   }
   rn <- .merge_renamer(maps)
@@ -140,8 +142,13 @@
     kind <- sub(":.*$", "", key)
     nodes[[paste0(kind, ":", definitions[[1L]]$name)]] <- definitions
   }
+  renamed <- rn$population(right)
+  # Index source identity is observable in index_source and censor tags. A
+  # prefix may also change an unnamed source through its named concept set;
+  # only an index whose complete source expression is unchanged can share.
+  if (!identical(left[["index"]], renamed[["index"]])) return(FALSE)
   inverse <- .merge_renamer(.merge_deferred_verified_maps(nodes, aliases))
-  right <- inverse$population(rn$population(right))
+  right <- inverse$population(renamed)
   identical(.merge_population_definition(left), .merge_population_definition(right))
 }
 
@@ -175,6 +182,7 @@
       if (identical(id, target_id) || is.null(target)) next
       if (identical(target_id, "base")) target <- .merge_effective_base(r)
       if (.merge_deferred_has_params(list(p, target))) next
+      if (!identical(p[["index"]], target[["index"]])) next
       nodes <- .merge_deferred_nodes(r)
       maps <- .merge_deferred_verified_maps(nodes, .merge_deferred_aliases(marker, nodes))
       maps$population <- stats::setNames(target_id, id)

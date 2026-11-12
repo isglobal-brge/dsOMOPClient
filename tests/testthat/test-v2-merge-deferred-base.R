@@ -99,7 +99,9 @@ test_that("post-merge population and output edits survive deferred reconciliatio
 })
 
 .mdb_named <- function(washout, concept = 1503297) {
-  r <- .mdb_study(washout, omop_event("drug_exposure", "drug", name = "rx"))
+  r <- .mdb_study(washout)
+  r$events <- list(rx = omop_event("drug_exposure", "drug", name = "rx"))
+  r$populations$base$filters <- c(r$populations$base$filters, list(omop_has("rx")))
   r$concept_sets <- list(drug = omop_concept_set(concept, name = "drug"))
   r
 }
@@ -178,7 +180,8 @@ test_that("collapsing a base preserves still-unbound source and window occurrenc
 test_that("base aliases wait for parameters in referenced registry declarations", {
   make <- function(concepts) {
     omop_recipe(events = list(omop_event("drug_exposure", concepts, name = "rx")),
-      populations = omop_population("base", index = omop_index("rx")),
+      populations = omop_population("base",
+        index = omop_index(omop_event("drug_exposure", 1503297)), filters = omop_has("rx")),
       variables = list(age = omop_age()),
       outputs = omop_output("ages", rows = "base", format = "wide"))
   }
@@ -194,5 +197,28 @@ test_that("base aliases wait for parameters in referenced registry declarations"
     .mdb_same(recipe_bind(r, drug = set), expected)
     changed <- recipe_bind(r, drug = omop_concept_set(2, name = "drug"))
     expect_identical(names(changed$populations), c("base", "b_base"))
+  }
+})
+
+
+test_that("shared base checks retain prefixed index source provenance", {
+  for (kind in c("named_event", "inline_named_set", "era_named_set")) {
+    make <- function(washout) {
+      source <- if (identical(kind, "named_event")) {
+        omop_event("drug_exposure", 1503297, name = "rx")
+      } else omop_event("drug_exposure", "drug")
+      r <- .mdb_study(washout, source)
+      if (!identical(kind, "era_named_set")) r$populations$base$index <- omop_index(source)
+      r$concept_sets <- list(drug = omop_concept_set(1503297, name = "drug"))
+      r
+    }
+    a <- make(0L)
+    b <- make(omop_param("washout", "integer", default = 0L))
+    expected <- recipe_merge(a, recipe_bind(b, washout = 0L), prefix = "b")
+    expect_identical(names(expected$populations), c("base", "b_base"))
+    for (r in .mdb_roundtrips(recipe_merge(a, b, prefix = "b"))) {
+      .mdb_same(r, expected)
+      .mdb_same(recipe_bind(r, washout = 0L), expected)
+    }
   }
 })
