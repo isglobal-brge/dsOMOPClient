@@ -694,8 +694,13 @@
         for (j in seq_along(strata)) {
           N <- shown[[j]]
           if (N < 2) next
-          p <- .dp_project_moments(sum_field("s", j) / J,
-                                   sum_field("q", j) / J, N)
+          S <- sum_field("s", j)
+          Q <- sum_field("q", j)
+          # A distribution gate can withhold moments while releasing the
+          # complete public histogram. Keep those moments unavailable and
+          # continue pooling its cells.
+          if (!is.finite(S) || !is.finite(Q)) next
+          p <- .dp_project_moments(S / J, Q / J, N)
           frame$mean[[j]] <- (L + U) / 2 + (U - L) / 2 * p[["S"]] / N
           frame$sd[[j]] <- sqrt(max(0, (p[["Q"]] - p[["S"]]^2 / N) /
                                       (N - 1))) * (U - L) / 2
