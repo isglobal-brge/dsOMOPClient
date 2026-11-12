@@ -94,6 +94,8 @@ workstream fills its entries.
 - A-18 `.plan_validate_status()` admits the optional closed `reason` of a
   rejected entry (only with `validation_error`); the refusal diagnostic names
   it with the output and code (`site:output [validation_error] (reason)`).
+  Amendment A-20 (j) adds `stockpile_row_cap` and `reducer_row_cap` (the
+  server's bounded interval realisations) to the vocabulary.
 
 # dsOMOPClient 2.10.2
 
