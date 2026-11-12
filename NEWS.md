@@ -33,7 +33,20 @@ workstream fills its entries.
   semantics; half-open two-sided ranges and authenticated bin contracts still
   refuse export because Circe cannot preserve them.
 
+- (F-1) New `omop_filter_concept_set(concept_ids, concept_col = NULL)`: a
+  row concept-set filter matching the output table's domain concept column
+  from the role registry (`condition_concept_id` for `condition_occurrence`,
+  ...), or `concept_col`. Row concept-set filters compiled to the column
+  `concept_id`, which the server refused.
+
 ## Newly refused
+- (F-2) A recipe-level row filter is attached only to outputs whose event
+  table has every column it references; otherwise `recipe_to_plan()` stops
+  naming the output and the missing column (the filter was attached to every
+  output and failed at the server). Table-agnostic date and concept-set
+  filters still apply to every output, and columns no CDM table defines are
+  left to the server. Put the predicate on an `omop_event(where = ...)` of
+  the right table instead.
 - Invalid or incomplete publication status fails closed; only
   `insufficient_support` can skip a site.
 - Plans that do not validate against the vendored `plan-v2.json` are never
