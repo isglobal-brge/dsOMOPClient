@@ -1,101 +1,69 @@
-# dsOMOPClient 2.10.3 (in development)
+# dsOMOPClient 2.10.4 (in development)
 
-Recipe language 2.0 (design-2.10.3). This section is the WS-0 skeleton; each
-workstream fills its entries.
+This release absorbs the unreleased 2.10.3 recipe-language-2 work. The rewritten
+population and extraction vignettes teach the simple and advanced layers,
+including coded education level and cause of death. Examples remain
+`eval = FALSE` until integrated compilers pass acceptance.
 
 ## Corrected
-- Plan execution reads authenticated publication status before cleanup and uses
-  the server inventory, including freshly allocated component symbols. Technical
-  and transport failures revoke staged files as well as assigned outputs.
-- A partial `out` mapping without an explicit `publish` requests only the
-  mapped outputs. For example, `out = c(conditions = "cond_df")` publishes
-  only `cond_df`; the server leaves other computed outputs private and the
-  client accepts the matching publication status.
-- (B-8) `parent_id` now restricts membership (see dsOMOP 2.10.3).
-- (F-3) The client blocklist is identical to the server's class-1 patterns;
-  birth components are not blocked on assignment paths. Informational
-  `quasi_identifier` lint identifies birth, age and date variables without
-  changing compilation or aggregate admission.
+
+- Execution reads authenticated status before deleting its execution symbol,
+  uses the committed dynamic inventory and verifies cleanup of assigned and
+  staged artefacts. A partial `out` mapping without explicit `publish` releases
+  only mapped outputs; an explicit empty publication set is preserved.
+- Parent populations constrain membership. The shared normalizer and semantic
+  digest agree with the server; version semantics are bound and advisory names
+  are excluded. Safe v1 behavior and legacy positional arguments are retained.
+- Class-1 blocking agrees with the server. Birth, age and date variables receive
+  informational quasi-identifier lint without changing aggregate admission.
+  Concept-valued wide outputs are translated by declared type, including
+  renamed education/cause columns, as a 2.10.4 integration requirement.
+- Parameters, simple-study expansion and recipe composition retain declared
+  semantics. Native indexed windowed features may default to episode grain;
+  the exact unindexed legacy fixture remains invalid (A-24).
 
 ## Newly permitted
-- (B-20) `omop_index_event()` accepts every event table of the server's role
-  registry (vendored `inst/ohdsi/roles-5.3.csv`, `roles-5.4.csv`): besides the
-  seven tables of 2.10.2, `visit_detail`, `observation_period`, `death`,
-  `specimen`, `note`, `payer_plan_period`, the era tables and `episode`; the
-  server checks the table against its own CDM version.
-- `on_small_site = "skip"` on plan and recipe execution keeps successful sites
-  while asking each server to commit all output families or none. Non-strict
-  partial results warn with rejected family names and codes.
-- Numeric row thresholds and one-sided measurement criteria compile without
-  safe bins; supplied bin contracts retain their scope checks. Removed the
-  `narrow_filter` / `unbound_numeric_filter` lints and filter safety categories.
-- Circe round-trips one-sided measurement bounds with identical endpoint
-  semantics; half-open two-sided ranges and authenticated bin contracts still
-  refuse export because Circe cannot preserve them.
 
-- (F-1) New `omop_filter_concept_set(concept_ids, concept_col = NULL)`: a
-  row concept-set filter matching the output table's domain concept column
-  from the role registry (`condition_concept_id` for `condition_occurrence`,
-  ...), or `concept_col`. Row concept-set filters compiled to the column
-  `concept_id`, which the server refused.
-
-- (A-18) The section 11 adapter refusals reach the analyst as the error
-  `Plan publication refused: <site>:<output> [validation_error] (<reason>)`
-  with `adapter_person_mismatch` or `cost_currency_mixed`, under both
-  `on_small_site` settings (they are never skippable), and nothing is
-  published; tested end to end through DSLite against a PostgreSQL CDM.
+- `omop_study()` and shortcuts return advanced recipe objects; printing states
+  defaults and `recipe_to_code()` reproduces the expansion. Events, reducers,
+  eras, anchors, coverage, matching and named output components use language 2.
+- Assigned exact birth components and age; off-grid age bands, narrow windows,
+  numeric predicates and private small intermediates. Aggregate policy stays
+  unchanged. Coded education and death cause use concept-valued wide columns;
+  free text remains class 1 even when declared categorical.
+- `on_small_site = "skip"` retains passing sites and asks a small site to commit
+  all families or none. Non-strict `"error"` returns partial results with a
+  warning naming rejected roots by code. Only support failures are skippable.
+- Closed mutation expressions and expression filters, subject to advertised
+  operations and actual DataSHIELD method classifications. In-place mutations
+  retain recoverable originals until federation commit/restoration is verified.
+- Role-registry index tables, table-domain concept filters and one-sided numeric
+  criteria; supported Circe round-trips retain endpoint semantics. Unsupported
+  half-open/bin-contract exports still refuse explicitly.
 
 ## Newly refused
-- (F-2) A recipe-level row filter is attached only to outputs whose event
-  table has every column it references; otherwise `recipe_to_plan()` stops
-  naming the output and the missing column (the filter was attached to every
-  output and failed at the server). Table-agnostic date and concept-set
-  filters still apply to every output, and columns no CDM table defines are
-  left to the server. Put the predicate on an `omop_event(where = ...)` of
-  the right table instead.
-- Invalid or incomplete publication status fails closed; only
-  `insufficient_support` can skip a site.
-- Plans that do not validate against the vendored `plan-v2.json` are never
-  sent; a v2 recipe whose operations an older server lacks is refused with
-  the operation named.
 
-## Shared with dsOMOP 2.10.3 (WS-2)
-- The language 2.0 normal form is the frozen, byte-identically vendored
-  `R/plan_normalize_v2.R` (`.planNormalizeV2()`, amendment A-11); the
-  server's `.irNormalize()` calls the same function, so normalised forms and
-  semantic digests agree on both sides. WS-2's interim `R/ir_defaults.R`
-  (`.irNormalizeWire()`) is removed.
-- The role-registry tables (`inst/ohdsi/roles-5.3.csv`, `roles-5.4.csv`) are
-  vendored byte-identically from dsOMOP.
+- Malformed or incomplete publication status and technical/transport failures
+  fail closed with cleanup, rather than being mistaken for skipped sites.
+- V2 plans that fail the vendored schema, unsupported operations on an older
+  server, protected-key/class-1 mutation references and invalid grain/index
+  combinations fail before assignment. Unknown recipe fields are not ignored.
+- Recipe-level row filters cannot attach to an output whose event table lacks
+  their columns; put the predicate on the appropriate `omop_event(where = ...)`.
+- Adapter errors remain errors under both small-site policies, with the bounded
+  `validation_error` reason shown alongside site and output. They cannot skip
+  a site as though it merely lacked final support.
 
 ## Upgrading clients and servers
-- Plan execution with dsOMOPClient 2.10.3 requires the server's published
-  `omopPlanStatusDS` and `omopStagedRevokeDS` methods; dsOMOP 2.10.1 does not
-  provide them. Upgrade the server to 2.10.3 and check
-  `ds.omop.server.version()`. On Opal, publish dsOMOP's settings again after
-  upgrading so the profile exposes the new methods.
-- With a 2.10.1 client and a 2.10.3 server, a strict publication refusal
-  still publishes nothing. The assign call returns status `refused`, and the
-  old client then reports that requested outputs did not materialize instead
-  of receiving the previous constant `Disclosive` error.
 
-## Contracts shipped by WS-0
-- Vendored `inst/schema/` (byte-identical to dsOMOP's), `R/json_schema.R`,
-  `R/semantic_digest.R`; `openssl` added to Imports for the semantic digest.
-  The digest's number serialisation finds the ECMAScript shortest round-trip
-  decimal for every finite double (power-of-two regression `2^-24` ->
-  `5.960464477539063e-8`; digest vector `power_of_two_factor`).
-- Vendored `R/plan_normalize_v2.R` (amendment A-11): `.planNormalizeV2()` is
-  the one normal form the semantic digest hashes on client and server; the
-  normalised fixtures of `inst/schema/normalized/` are pinned. `plan-v2.json`
-  gains `source_analyses` on temporal and person-period outputs (A-14).
-  The vendored probe corpus carries the A-15/A-16 IR-only variants, refused
-  on the wire (P64-P66).
-- A-18 `.plan_validate_status()` admits the optional closed `reason` of a
-  rejected entry (only with `validation_error`); the refusal diagnostic names
-  it with the output and code (`site:output [validation_error] (reason)`).
-  Amendment A-20 (j) adds `stockpile_row_cap` and `reducer_row_cap` (the
-  server's bounded interval realisations) to the vocabulary.
+Use matching dsOMOP/dsOMOPClient 2.10.4 versions. Republish dsOMOP's methods and
+Options on Opal after upgrading, then call `ds.omop.server.version()`.
+`omopPlanStatusDS` and `omopStagedRevokeDS` are required for plan execution;
+2.10.1 servers lack them and language-2 operations. A 2.10.1 client can still
+run safe v1 plans on the new server, but a refused plan can surface as missing
+requested outputs. The Opal O1–O12 matrix tests both compatibility directions
+and the installation/republishing path. README separates required dialect
+support from runtime evidence; native operations remain capability-gated.
 
 # dsOMOPClient 2.10.2
 

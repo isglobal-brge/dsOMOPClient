@@ -108,7 +108,7 @@ compilers pass acceptance; advertised operations determine what a build runs.
 | DuckDB | Optional embedded tests | Actual engine/driver version recorded |
 | MySQL / MariaDB | Live vendor tests; floors 8.0 / 10.2 | 8.4 / 11.4 (pod: 8.4.11 / 10.6) |
 | SQL Server / Synapse / PDW, Oracle, Redshift, BigQuery, Snowflake, Spark / Databricks | Rendered SQL contracts only; no cross-statement temporary materialisation | No live runtime claim |
-| Opal / Rock | O1–O12 on both pinned Opal versions | Opal 6.1.3 and 5.7.5; R ≥4.2 |
+| Opal / Rock | O1–O12 on both pinned Opal versions | Opal 6.1.3 and 5.7.6; R ≥4.2 |
 
 The server README contains the construct-by-construct matrix. A supported
 connector alone does not establish recipe support. Unsupported constructs
