@@ -31,6 +31,9 @@ workstream fills its entries.
 ## Contracts shipped by WS-0
 - Vendored `inst/schema/` (byte-identical to dsOMOP's), `R/json_schema.R`,
   `R/semantic_digest.R`; `openssl` added to Imports for the semantic digest.
+  The digest's number serialisation finds the ECMAScript shortest round-trip
+  decimal for every finite double (power-of-two regression `2^-24` ->
+  `5.960464477539063e-8`; digest vector `power_of_two_factor`).
 
 # dsOMOPClient 2.10.2
 
