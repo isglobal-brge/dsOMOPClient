@@ -100,3 +100,46 @@ test_that("lint compiles as execution does: newly permitted 2.10.1 shapes are la
   plain <- omop_recipe(variables = omop_variable_age(), outputs = omop_output(name = "age", type = "wide"))
   expect_false("language_2_only" %in% recipe_lint(plain)$code)
 })
+
+test_that("explain selects the plan exactly as execution does (A-14)", {
+  # a recipe of 2.10.1 constructors that also has a native rendering is
+  # explained as the v1 plan it executes as, never as that rendering
+  legacy <- omop_recipe(variables = omop_variable_sex(), outputs = omop_output("w", type = "wide"))
+  expect_s3_class(recipe_to_plan(legacy), "omop_plan_v2")
+  ex <- recipe_explain(legacy)
+  expect_identical(ex$selected, "v1")
+  expect_s3_class(ex$payload, "omop_plan")
+  expect_null(ex$digest)
+  expect_null(ex$plan)
+  expect_match(paste(ex$text, collapse = "\n"), "not available offline")
+  # a newly permitted shape and a language-2 recipe are explained as v2
+  negated <- omop_recipe(variables = omop_variable_age(),
+                         filters = omop_filter_group(omop_filter_sex("F"), operator = "NOT"),
+                         outputs = omop_output(name = "age", type = "wide"))
+  ex2 <- recipe_explain(negated)
+  expect_identical(ex2$selected, "v2")
+  expect_identical(ex2$digest, dsOMOPClient:::.plan_v2_digest(recipe_to_plan(negated))$sha256)
+})
+
+test_that("server explain receives the selected wire plan; missing explain is reported", {
+  .with_caps(list(a = .caps(), b = list()))
+  sent <- NULL
+  testthat::local_mocked_bindings(
+    .ds_safe_aggregate = function(conns, expr, ...) {
+      sent <<- expr
+      stats::setNames(lapply(names(conns), function(s) {
+        list(semantic_digest = "d1", plan = list(populations = list(base = list(
+          kind = "index", index = list(source = list(legacy_spec = list()))))))
+      }), names(conns))
+    }, .package = "dsOMOPClient")
+  legacy <- omop_recipe(variables = omop_variable_sex(), outputs = omop_output("w", type = "wide"))
+  ex <- recipe_explain(legacy, conns = list(a = "A", b = "B"))
+  expect_identical(ex$selected, "v1")
+  expect_identical(as.character(sent[[1L]]), "omopPlanExplainDS")
+  expect_null(.decode(sent[[3L]])$version)            # the v1 plan, as executed
+  expect_identical(ex$digest, "d1")
+  txt <- paste(ex$text, collapse = "\n")
+  expect_match(txt, "compatibility variants: legacy_spec")
+  expect_match(txt, "Server explain is unavailable on b")
+  expect_named(ex$server, "a")
+})

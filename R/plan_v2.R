@@ -53,6 +53,12 @@
 # A-9: exactly these five abbreviations name interned events; every other table
 # keeps its full name.
 
+# A construct without a faithful native rendering (A-14): named, and the
+# caller is directed to the legacy plan.
+.v2_no_native <- function(...) {
+  .v2_stop(..., " recipe_to_plan(version = 1) renders the legacy plan.")
+}
+
 .v2_truncate_name <- function(x) {
   x <- gsub("[^A-Za-z0-9_]+", "_", x)
   if (!grepl("^[A-Za-z]", x)) x <- paste0("n_", x)
@@ -496,7 +502,7 @@
     },
     prior_observation = , followup = {
       if (!is.null(p$reference_date)) {
-        .v2_stop(where, ": a fixed-reference observation filter has no native v2 ",
+        .v2_no_native(where, ": a fixed-reference observation filter has no native v2 ",
                  "form; use omop_observed() relative to an index.")
       }
       key <- if (identical(f$type, "prior_observation")) "before" else "after"
@@ -539,7 +545,7 @@
       if (!is.null(w)) inner$window <- w
       list(has = inner)
     },
-    .v2_stop(where, ": no native v2 lowering."))
+    .v2_no_native(where, ": no native v2 lowering."))
 }
 
 # --- index, coverage, populations ------------------------------------------------------
@@ -596,7 +602,7 @@
     } else if (off$Offset >= 0L) {
       end <- omop_end("event_end", pad = as.integer(off$Offset))
     } else {
-      .v2_stop(context, ": a negative EndDate offset has no native v2 end strategy.")
+      .v2_no_native(context, ": a negative EndDate offset has no native v2 end strategy.")
     }
   }
   .v2w_index(ctx, omop_index(ev, select = ie$primary_limit, end = end), context)
@@ -823,7 +829,7 @@
     return(list(raw = list(table = v$table, column = tolower(v$column))))
   }
   if (!fmt %in% .V2_LEGACY_FEATURES) {
-    .v2_stop(context, ": legacy format '", fmt, "' has no v2 lowering.")
+    .v2_no_native(context, ": legacy format '", fmt, "' has no v2 lowering.")
   }
   ev <- .v2_legacy_variable_event(v, context)
   window <- if (!is.null(v$time_window)) {
@@ -893,7 +899,7 @@
           list(var = p$var, op = "between", value = list(lower = b[[1L]], upper = b[[2L]]))
         } else list(var = p$var, op = op, value = p$value)
       },
-      .v2_stop(context, ": row filter '", f$type, "' has no v2 lowering."))
+      .v2_no_native(context, ": row filter '", f$type, "' has no v2 lowering."))
   }
   parts <- lapply(filters, node)
   tree <- if (length(parts) == 1L) parts[[1L]] else .v2_pred_flatten("and", parts)
@@ -1212,11 +1218,11 @@
   allowed <- c("temporal", "time_window", "date_handling", "grain")
   unknown <- setdiff(names(o), allowed)
   if (length(unknown)) {
-    .v2_stop(context, ": legacy option(s) ", paste(unknown, collapse = ", "),
+    .v2_no_native(context, ": legacy option(s) ", paste(unknown, collapse = ", "),
              " have no v2 lowering.")
   }
   if (!is.null(o$time_window)) {
-    .v2_stop(context, ": a calendar time_window has no v2 lowering; put the date range ",
+    .v2_no_native(context, ": a calendar time_window has no v2 lowering; put the date range ",
              "on the events' where =.")
   }
   if (!is.null(o$temporal$index_window) || !is.null(o$temporal$calendar)) {

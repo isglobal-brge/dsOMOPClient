@@ -277,30 +277,55 @@
            })
 }
 
-#' The plan a recipe executes as on the connected servers
+#' The plan a recipe executes as, before any capability check (A-14)
 #'
-#' A recipe built only from 2.10.1 constructors executes as its unchanged v1
-#' plan (the server's legacy adapters keep its results),
-#' unless the v1 compiler refuses one of the shapes 2.10.3 newly permits
-#' (\code{.v1_newly_permitted()}). Such a recipe, and any recipe that needs a
-#' language-2 construct, executes as its v2 plan where every server speaks it
-#' and is refused, naming the reason, otherwise.
+#' A recipe built only from 2.10.1 constructors (and without \code{parent_id})
+#' executes as its unchanged v1 plan; the server's legacy adapters keep its
+#' results. When the v1 compiler refuses one of the shapes 2.10.3 newly permits
+#' (\code{.v1_newly_permitted()}), or the recipe uses a language-2 construct
+#' or \code{parent_id}, the plan is its v2 rendering. A recipe that has
+#' neither a v1 plan nor a native rendering is refused, naming both the
+#' construct the native compiler cannot render and what prevents the v1 plan.
+#' @param recipe An \code{omop_recipe}.
+#' @return A v1 \code{omop_plan} or an \code{omop_plan_v2}; attribute
+#'   \code{"v1_refusal"} on a v2 plan selected for a newly permitted shape.
 #' @keywords internal
-.recipe_plan_for_execution <- function(recipe, session, conns) {
-  if (length(.recipe_needs_v2(recipe)) == 0L) {
+.recipe_select_plan <- function(recipe) {
+  needs <- .recipe_needs_v2(recipe)
+  v1_refusal <- NULL
+  if (length(needs) == 0L) {
     v1 <- .recipe_v1_or_null(recipe)
     if (!inherits(v1, "dsomop_no_v1")) return(v1)
-    plan <- recipe_to_plan(recipe, version = 2L)
-    supported <- tryCatch(.v2_assert_supported(plan, session, names(conns)),
-                          error = function(e) e)
-    if (inherits(supported, "error")) {
-      stop(attr(v1, "v1_refusal"), " At least one connected server is older than ",
-           "dsOMOP 2.10.3 (", conditionMessage(supported), ")", call. = FALSE)
-    }
-    return(plan)
+    v1_refusal <- attr(v1, "v1_refusal")
   }
-  plan <- recipe_to_plan(recipe, version = 2L)
-  .v2_assert_supported(plan, session, names(conns))
+  plan <- tryCatch(recipe_to_plan(recipe, version = 2L), error = function(e) {
+    why <- if (length(needs)) paste0("it uses ", paste(needs, collapse = "; ")) else v1_refusal
+    stop(conditionMessage(e), " It cannot execute as a v1 plan either (", why, ").",
+         call. = FALSE)
+  })
+  attr(plan, "v1_refusal") <- v1_refusal
+  plan
+}
+
+#' The plan a recipe executes as on the connected servers
+#'
+#' \code{.recipe_select_plan()}, then, for a v2 plan, every server must
+#' advertise recipe language 2 and the operations the plan needs; a recipe
+#' selected for a newly permitted shape is refused naming its v1 refusal and
+#' the older server.
+#' @keywords internal
+.recipe_plan_for_execution <- function(recipe, session, conns,
+                                       plan = .recipe_select_plan(recipe)) {
+  if (!.v2_is_plan_v2(plan)) return(plan)
+  v1_refusal <- attr(plan, "v1_refusal")
+  attr(plan, "v1_refusal") <- NULL
+  supported <- tryCatch(.v2_assert_supported(plan, session, names(conns)),
+                        error = function(e) e)
+  if (inherits(supported, "error")) {
+    if (is.null(v1_refusal)) stop(supported)
+    stop(v1_refusal, " At least one connected server is older than ",
+         "dsOMOP 2.10.3 (", conditionMessage(supported), ")", call. = FALSE)
+  }
   plan
 }
 

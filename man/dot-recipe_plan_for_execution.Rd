@@ -4,14 +4,17 @@
 \alias{.recipe_plan_for_execution}
 \title{The plan a recipe executes as on the connected servers}
 \usage{
-.recipe_plan_for_execution(recipe, session, conns)
+.recipe_plan_for_execution(
+  recipe,
+  session,
+  conns,
+  plan = .recipe_select_plan(recipe)
+)
 }
 \description{
-A recipe built only from 2.10.1 constructors executes as its unchanged v1
-plan (the server's legacy adapters keep its results),
-unless the v1 compiler refuses one of the shapes 2.10.3 newly permits
-(\code{.v1_newly_permitted()}). Such a recipe, and any recipe that needs a
-language-2 construct, executes as its v2 plan where every server speaks it
-and is refused, naming the reason, otherwise.
+\code{.recipe_select_plan()}, then, for a v2 plan, every server must
+advertise recipe language 2 and the operations the plan needs; a recipe
+selected for a newly permitted shape is refused naming its v1 refusal and
+the older server.
 }
 \keyword{internal}

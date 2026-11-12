@@ -67,7 +67,7 @@
 .v2_legacy_check_options <- function(o, allowed, context) {
   unknown <- setdiff(names(o %||% list()), allowed)
   if (length(unknown)) {
-    .v2_stop(context, ": legacy option(s) ", paste(unknown, collapse = ", "),
+    .v2_no_native(context, ": legacy option(s) ", paste(unknown, collapse = ", "),
              " have no v2 lowering.")
   }
   invisible(TRUE)
@@ -236,7 +236,7 @@
     }
   }
   if (!is.null(o$anchor) && !identical(as.integer(o$anchor), 0L)) {
-    .v2_stop(context, ": a legacy anchor shifted from index has no v2 lowering; use an ",
+    .v2_no_native(context, ": a legacy anchor shifted from index has no v2 lowering; use an ",
              "omop_anchor() in a format = \"intervals\" output.")
   }
   .v2_legacy_check_concept_scope(vars, context)

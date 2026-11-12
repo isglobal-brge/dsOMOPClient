@@ -13,11 +13,22 @@
 #' observation coverage of an indexed population). No counts and no SQL are
 #' shown.
 #'
-#' Without connections the explanation is rendered from the client-side
-#' normalised plan. With \code{conns}, each server's
-#' \code{omopPlanExplainDS} (dsOMOP 2.10.3) is also asked for its normalised
-#' plan, the role records used, the column classes and the dialect preflight,
-#' which are attached as \code{$server}.
+#' The plan explained is the plan execution would send (amendment A-14):
+#' \code{recipe_explain()}, \code{\link{recipe_validate}},
+#' \code{\link{recipe_preview}} and \code{\link{recipe_execute}} share one
+#' plan-selection rule and, with \code{conns}, the same target capabilities.
+#' A language-2 plan is explained from its normal form with its semantic
+#' digest. A recipe that executes as its v1 plan is explained from that v1
+#' payload and the legacy rules it relies on; offline its lowered IR and
+#' digest are not available (the server lowers it), and its native rendering
+#' (\code{recipe_to_plan(version = 2)}) is never presented as the executed
+#' plan. With \code{conns}, each server that explains plans (dsOMOP 2.10.3)
+#' receives the selected wire plan through \code{omopPlanExplainDS} and
+#' reports its normalised IR, compatibility variants and semantic digest
+#' (attached as \code{$server}; for a v1 plan the digest and IR are taken
+#' from it); a server without explain is reported and changes nothing, and a
+#' recipe these servers could not execute is still explained, with the
+#' refusal reported.
 #'
 #' @param recipe An \code{omop_recipe}.
 #' @param detail \code{"summary"} (one line per node) or \code{"semantics"}
@@ -25,9 +36,14 @@
 #' @param conns Optional DSI connections (uses the active OMOP session).
 #' @param symbol OMOP session symbol used with \code{conns}.
 #' @return An \code{omop_recipe_explain} object: \code{$text} (character
-#'   lines), \code{$plan} (the normalised plan), \code{$defaults} (a data
-#'   frame of the defaults relied on) and \code{$server} (per-server explain
-#'   payloads, when \code{conns} is given). Printing it shows the text.
+#'   lines), \code{$selected} (\code{"v1"} or \code{"v2"}), \code{$payload}
+#'   (the selected wire plan), \code{$plan} (the normalised plan, or
+#'   \code{NULL} for an offline v1 explanation), \code{$defaults} (a data
+#'   frame of the defaults relied on), \code{$digest} (the semantic digest,
+#'   or \code{NULL} when unavailable), \code{$server} (per-server explain
+#'   payloads, when \code{conns} is given) and \code{$refusal} (why
+#'   execution on these servers would be refused, if it would). Printing it
+#'   shows the text.
 #' @examples
 #' \dontrun{
 #' recipe_explain(recipe, detail = "semantics")
@@ -38,23 +54,70 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
                            symbol = "omop") {
   .v2_recipe_check(recipe)
   detail <- match.arg(detail)
-  plan <- tryCatch(recipe_to_plan(recipe, version = 2L), error = function(e) e)
+  # A-14: explain selects the plan exactly as recipe_execute() does (and, with
+  # conns, against the same target capabilities). A recipe that execution
+  # would refuse on these servers is still explained from the only plan it
+  # has, and the refusal is reported.
+  refusal <- NULL
+  plan <- if (is.null(conns)) .recipe_plan_auto(recipe) else
+    tryCatch(.recipe_plan_for_session(recipe, symbol, conns), error = function(e) e)
   if (inherits(plan, "error")) {
-    if (length(.recipe_needs_v2(recipe))) stop(conditionMessage(plan), call. = FALSE)
-    return(.explain_v1(recipe, conditionMessage(plan)))
+    refusal <- conditionMessage(plan)
+    plan <- .recipe_plan_auto(recipe)
   }
-  norm <- .planNormalizeV2(plan)
-  defaults <- .explain_defaults(recipe, norm)
-  text <- .explain_text(norm, defaults, detail)
+  v2 <- .v2_is_plan_v2(plan)
+  if (v2) {
+    norm <- .planNormalizeV2(plan)
+    defaults <- .explain_defaults(recipe, norm)
+    text <- .explain_text(norm, defaults, detail)
+    digest <- .planNormalizedDigest(plan)$sha256
+  } else {
+    norm <- NULL
+    digest <- NULL
+    v1 <- .explain_v1(recipe, plan)
+    text <- v1$text
+    defaults <- v1$defaults
+  }
   server <- NULL
   if (!is.null(conns)) {
     session <- .get_session(symbol)
-    .v2_assert_supported(plan, session, names(conns))
-    server <- .ds_safe_aggregate(conns, expr = call("omopPlanExplainDS", session$res_symbol,
-                                                    .ds_encode_lossless(plan)))
+    conns <- conns %||% session$conns
+    lang <- .v2_server_language(session, names(conns))
+    explains <- vapply(lang, function(rl) {
+      !is.null(rl) && isTRUE(suppressWarnings(as.integer(rl$version %||% 0L)) >= 2L)
+    }, logical(1))
+    if (!all(explains)) {
+      text <- c(text, paste0("Server explain is unavailable on ",
+                             paste(names(conns)[!explains], collapse = ", "),
+                             " (dsOMOP 2.10.3 explains plans); the plan selection is unchanged."))
+    }
+    if (any(explains)) {
+      # The selected wire plan, sent as execution would send it.
+      server <- .ds_safe_aggregate(conns[explains], expr = call(
+        "omopPlanExplainDS", session$res_symbol,
+        if (v2) .ds_encode_lossless(plan) else .ds_encode(plan)))
+      if (!v2) {
+        # The server lowers a v1 plan: its normalised IR and digest are the
+        # executed plan's.
+        digests <- unique(vapply(server, function(x) {
+          as.character(x$semantic_digest %||% NA_character_)
+        }, ""))
+        if (length(digests) == 1L && !is.na(digests)) {
+          digest <- digests
+          norm <- server[[1L]]$plan
+          variants <- unique(grep("^legacy_", .explain_names(norm), value = TRUE))
+          text <- c(text, paste0("Server-lowered IR: semantic digest ", digest,
+                                 if (length(variants)) paste0("; compatibility variants: ",
+                                                              paste(sort(variants), collapse = ", "))))
+        }
+      }
+    }
   }
-  structure(list(text = text, plan = norm, defaults = defaults, server = server,
-                 digest = .planSemanticDigest(norm)$sha256),
+  if (!is.null(refusal)) {
+    text <- c(text, paste0("Execution on these servers would be refused: ", refusal))
+  }
+  structure(list(text = text, selected = if (v2) "v2" else "v1", payload = plan, plan = norm,
+                 defaults = defaults, server = server, digest = digest, refusal = refusal),
             class = c("omop_recipe_explain", "list"))
 }
 
@@ -66,22 +129,34 @@ print.omop_recipe_explain <- function(x, ...) {
   invisible(x)
 }
 
-# A recipe whose outputs have no v2 lowering is explained from its v1 shape.
-.explain_v1 <- function(recipe, why) {
-  lines <- c("Recipe (2.10.1 constructors; executes as its unchanged v1 plan)",
-             paste0("  (no language-2 rendering: ", why, ")"))
+# Every name in a nested list.
+.explain_names <- function(x) {
+  if (!is.list(x)) return(character(0))
+  c(names(x) %||% character(0), unlist(lapply(x, .explain_names), use.names = FALSE))
+}
+
+# A v1-selected recipe (A-14): its v1 payload and the legacy rules it relies
+# on; never a native-v2 rendering presented as the executed plan.
+.explain_v1 <- function(recipe, plan) {
+  lines <- c(paste0("Recipe (2.10.1 constructors): executes as its unchanged v1 plan; the ",
+                    "server lowers it, so the lowered IR and its semantic digest are not ",
+                    "available offline."),
+             paste0("  recipe_to_plan(version = 2) renders a separate language-2 plan, which ",
+                    "is not the executed plan."))
   defaults <- .explain_defaults(recipe, NULL)
   for (nm in names(recipe$outputs %||% list())) {
     o <- recipe$outputs[[nm]]
     lines <- c(lines, paste0("Output '", nm, "' [", o$type %||% o$format, "] on population '",
                              o$population_id %||% "base", "'"))
   }
+  if (length(plan$outputs)) {
+    lines <- c(lines, paste0("v1 plan outputs: ", paste(names(plan$outputs), collapse = ", ")))
+  }
   if (nrow(defaults)) {
     lines <- c(lines, "Defaults relied on:",
                paste0("  - ", defaults$locus, ": ", defaults$statement))
   }
-  structure(list(text = lines, plan = NULL, defaults = defaults, server = NULL, digest = NULL),
-            class = c("omop_recipe_explain", "list"))
+  list(text = lines, defaults = defaults)
 }
 
 .explain_row <- function(locus, code, statement) {

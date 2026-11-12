@@ -234,8 +234,12 @@ test_that("the operation inventory names what a plan needs (section 4.4)", {
                     "population.coverage.union", "population.parent", "population.criteria",
                     "criteria.not", "interval", "interval.ingredient",
                     "variable.population_column", "output.wide", "output.survival",
-                    "output.survival.censor_source", "publish.roots", "event") %in% ops))
+                    "output.survival.censor_source", "event") %in% ops))
   expect_false("population.match" %in% ops)
+  # as on the server, publish.roots is needed only for a strict subset of outputs
+  expect_false("publish.roots" %in% ops)
+  r$publish <- "w"
+  expect_true("publish.roots" %in% dsOMOPClient:::.plan_v2_operations(recipe_to_plan(r)))
 })
 
 test_that("plans are sent losslessly (no 4-digit rounding)", {

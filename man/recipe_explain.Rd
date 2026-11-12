@@ -23,9 +23,14 @@ recipe_explain(
 }
 \value{
 An \code{omop_recipe_explain} object: \code{$text} (character
-  lines), \code{$plan} (the normalised plan), \code{$defaults} (a data
-  frame of the defaults relied on) and \code{$server} (per-server explain
-  payloads, when \code{conns} is given). Printing it shows the text.
+  lines), \code{$selected} (\code{"v1"} or \code{"v2"}), \code{$payload}
+  (the selected wire plan), \code{$plan} (the normalised plan, or
+  \code{NULL} for an offline v1 explanation), \code{$defaults} (a data
+  frame of the defaults relied on), \code{$digest} (the semantic digest,
+  or \code{NULL} when unavailable), \code{$server} (per-server explain
+  payloads, when \code{conns} is given) and \code{$refusal} (why
+  execution on these servers would be refused, if it would). Printing it
+  shows the text.
 }
 \description{
 Renders what a recipe means as prose: each population (index, selection,
@@ -39,11 +44,22 @@ observation coverage of an indexed population). No counts and no SQL are
 shown.
 }
 \details{
-Without connections the explanation is rendered from the client-side
-normalised plan. With \code{conns}, each server's
-\code{omopPlanExplainDS} (dsOMOP 2.10.3) is also asked for its normalised
-plan, the role records used, the column classes and the dialect preflight,
-which are attached as \code{$server}.
+The plan explained is the plan execution would send (amendment A-14):
+\code{recipe_explain()}, \code{\link{recipe_validate}},
+\code{\link{recipe_preview}} and \code{\link{recipe_execute}} share one
+plan-selection rule and, with \code{conns}, the same target capabilities.
+A language-2 plan is explained from its normal form with its semantic
+digest. A recipe that executes as its v1 plan is explained from that v1
+payload and the legacy rules it relies on; offline its lowered IR and
+digest are not available (the server lowers it), and its native rendering
+(\code{recipe_to_plan(version = 2)}) is never presented as the executed
+plan. With \code{conns}, each server that explains plans (dsOMOP 2.10.3)
+receives the selected wire plan through \code{omopPlanExplainDS} and
+reports its normalised IR, compatibility variants and semantic digest
+(attached as \code{$server}; for a v1 plan the digest and IR are taken
+from it); a server without explain is reported and changes nothing, and a
+recipe these servers could not execute is still explained, with the
+refusal reported.
 }
 \examples{
 \dontrun{

@@ -100,6 +100,13 @@ test_that("A-18 end to end: adapter refusals reach the analyst with their reason
     conns <- DSI::datashield.login(builder$build())
     ds.omop.connect(resource = "omop_ws4e", symbol = "omop_ws4e", conns = conns)
     out <- stats::setNames("D_ws4e", case$root)
+    # The server advertises a recipe-language operation only when everything
+    # it needs is installed (design 4.4), and the client sends a language-2
+    # plan only to servers advertising every operation the plan uses (WS-8).
+    # This test exercises the server's adapter refusal transport, so the
+    # client-side capability check is stubbed here.
+    testthat::local_mocked_bindings(.v2_assert_supported = function(...) invisible(TRUE),
+                                    .package = "dsOMOPClient")
     for (on_small_site in c("error", "skip")) {
       err <- tryCatch(
         withr::with_options(list(nfilter.subset = 3L),

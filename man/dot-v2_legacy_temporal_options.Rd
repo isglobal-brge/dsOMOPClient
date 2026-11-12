@@ -7,11 +7,12 @@
 .v2_legacy_temporal_options(ctx, out, vars, context, format)
 }
 \description{
-One source per group of variables reading the same rows; the analyses are
-the requested ones (\code{count} for count variables, \code{binary}
-otherwise) unless \code{options$analyses} names them. Every
-\code{(source, concept, analysis)} pair is a covariate identity of the
-server's registry (design 6.12); different analyses per concept need
-per-source analyses (A-14) and are refused until the client emits them.
+Sources are the groups of variables reading the same rows, split by the
+analyses each concept requests (\code{count} for count variables,
+\code{binary} otherwise); the output's analyses are the requested ones
+unless \code{options$analyses} names them. A source whose analyses differ
+from the output's carries them in \code{source_analyses} (A-14), so only
+the declared \code{(source, concept, analysis)} pairs are computed, each a
+covariate identity of the server's registry (design 6.12).
 }
 \keyword{internal}

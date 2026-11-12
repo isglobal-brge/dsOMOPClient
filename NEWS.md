@@ -46,7 +46,32 @@ workstream fills its entries.
   death when `censoring$death = TRUE` and at the cohort end); a legacy
   multi-state survival output keeps its v1 plan.
 - `omop_where()` admits an inline `omop_param()` placeholder (the only call
-  it evaluates, with literal arguments; CR-13).
+  it evaluates, with literal arguments; A-13).
+- Plan selection (A-14) is one rule for `recipe_execute()`,
+  `recipe_validate()`, `recipe_preview()`, `recipe_explain()` and
+  `recipe_lint()`. `recipe_explain()` of a recipe that executes as its v1
+  plan explains that v1 payload and its legacy rules (with `conns`, the
+  server's lowered IR and digest) and never presents the native rendering as
+  the executed plan; a server without explain is reported. A recipe with
+  neither a v1 plan nor a native rendering is refused naming both causes;
+  native-rendering limitations direct to `recipe_to_plan(version = 1)`.
+- Language-2 plans always carry an explicit `publish` list: the recipe's
+  roots, else every declared output; an execution with a partial `out`
+  publishes exactly the mapped roots.
+- Temporal-covariates and person-period outputs whose variables request
+  different analyses per concept emit per-source analyses
+  (`source_analyses`, A-14): only the declared (concept, analysis) pairs are
+  computed. A `covariates_sparse` output, which has no per-source selection,
+  refuses them; `options$analyses` naming an analysis no variable requests is
+  refused.
+- Names follow A-9: an imported Circe concept set is
+  `.sanitize_name(<name>)` (fallback `concept_set_<CodesetId>`); an unnamed
+  event is `<concept set>_<table>` with exactly five abbreviations (`dx`,
+  `rx`, `px`, `lab`, `obs`) and the full table name otherwise; collisions take
+  the first free `_2`, `_3`, ... without truncating the suffix.
+- The normal form and semantic digest of language-2 plans come from the
+  vendored A-11 normaliser (`R/plan_normalize_v2.R`), whose grain rule
+  follows the left member of an intersect or setdiff.
 - Language-2 plans execute through the same publication protocol as v1
   plans (status, inventory, `on_small_site`, rollback; see Corrected and
   Newly permitted), sent losslessly after every server's recipe-language
@@ -117,12 +142,14 @@ workstream fills its entries.
   `format = "sparse"` over the output's variables; `format = "membership"`
   and `"dictionary"` are reachable too.
 - (B-19) A feature output may mix variables with and without an
-  index-relative window: one roster with one reducer window per variable.
+  index-relative window: one roster with one reducer window per variable;
+  a windowed features output without an explicit grain takes episode grain
+  (A-14).
 - (design 2.2, 6.12) Survival outcomes and interval or temporal-covariate
   sources may be narrowed by visit or concept column; an intervals output
   may mix concept-scoped and unscoped variables of one table (one source per
-  scope). A temporal-covariates output declaring different analyses per
-  concept stays refused until per-source analyses are emitted (A-14).
+  scope); a temporal-covariates output may declare different analyses per
+  concept (per-source analyses, A-14).
 - These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers;
   `recipe_lint()` reports them as INFO `language_2_only`.
 

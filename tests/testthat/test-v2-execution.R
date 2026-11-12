@@ -169,3 +169,13 @@ test_that("a 2.10.1-style recipe the v1 compiler refuses as newly permitted runs
   expect_error(dsOMOPClient:::.recipe_plan_for_session(r, "omop", conns),
                "no v1 rendering.*older than dsOMOP 2.10.3")
 })
+
+test_that("a recipe with neither a v1 plan nor a native rendering names both (A-14)", {
+  r <- omop_recipe(populations = list(omop_population("a", filters = list(omop_filter_sex("F"))),
+                                      omop_population("b", parent_id = "a")),
+                   variables = omop_variable(name = "m", table = "measurement", concept_id = 1),
+                   outputs = omop_output("l", type = "long", population_id = "b"))
+  expect_error(dsOMOPClient:::.recipe_plan_auto(r),
+               "legacy type 'long'.*cannot execute as a v1 plan either.*parent_id")
+  expect_true("no_compile" %in% recipe_lint(r)$code)
+})

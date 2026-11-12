@@ -4225,6 +4225,16 @@ recipe_to_plan <- function(recipe, version = 2L) {
               is.null(feature_temporal$index_window)) {
             feature_temporal$index_window <- feature_window
           }
+          if (!is.null(feature_temporal$index_window) &&
+              !identical(out$options$grain %||% "person", "episode")) {
+            # A-14: a windowed features output takes grain = "episode" in
+            # language 2; its v1 refusal is a newly permitted shape.
+            stop(.v1_newly_permitted(
+              "Index-relative wide/features/sparse require ",
+              "representation$grain='episode'. Language 2 takes grain = \"episode\" ",
+              "for a windowed features output (recipe_to_plan(version = 2)), which ",
+              "runs on dsOMOP 2.10.3 servers."))
+          }
           plan <- ds.omop.plan.features(
             plan, name = nm, table = tbl, specs = specs,
             grain = out$options$grain %||% "person",
@@ -7195,10 +7205,14 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   } else {
     .circe_codeset_details(spec$CodesetId, concept_sets)
   }
+  # An unnamed (empty-named) Circe concept set has no label (A-9: its language-2
+  # name is concept_set_<CodesetId>).
+  label <- details$name
+  if (!is.null(label) && (length(label) != 1L || is.na(label) || !nzchar(label))) label <- NULL
   omop_index_event(
     concept_id = details$ids,
     table = .circe_table_from_domain(domain),
-    concept_name = details$name,
+    concept_name = label,
     primary_limit = primary_limit,
     include_descendants = details$include_descendants,
     include_mapped = details$include_mapped,
@@ -7968,27 +7982,22 @@ recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
   ds.omop.plan.preview(plan, symbol = symbol, conns = conns)
 }
 
-# The plan version a recipe compiles to without a session: v1 for recipes built
-# only from 2.10.1 constructors (their results stay identical),
-# v2 for recipes with language-2 constructs or a newly permitted shape the v1
-# compiler refuses (support is negotiated when it executes).
+# The plan a recipe compiles to without a session (A-14 selection, no
+# capability check): v1 for recipes built only from 2.10.1 constructors, v2
+# for recipes with language-2 constructs or a newly permitted shape.
 .recipe_plan_auto <- function(recipe) {
-  if (length(.recipe_needs_v2(recipe)) == 0L) {
-    v1 <- .recipe_v1_or_null(recipe)
-    if (!inherits(v1, "dsomop_no_v1")) return(v1)
-  }
-  recipe_to_plan(recipe, version = 2L)
+  plan <- .recipe_select_plan(recipe)
+  attr(plan, "v1_refusal") <- NULL
+  plan
 }
 
-# The plan a recipe executes as: v1 for 2.10.1-style recipes the v1 compiler
-# renders (no session needed), otherwise the negotiated v2 plan.
+# The plan a recipe executes as: the v1 plan needs no session; a v2 plan is
+# checked against the servers' capabilities.
 .recipe_plan_for_session <- function(recipe, symbol, conns) {
-  if (length(.recipe_needs_v2(recipe)) == 0L) {
-    v1 <- .recipe_v1_or_null(recipe)
-    if (!inherits(v1, "dsomop_no_v1")) return(v1)
-  }
+  plan <- .recipe_select_plan(recipe)
+  if (!.v2_is_plan_v2(plan)) return(plan)
   session <- .get_session(symbol)
-  .recipe_plan_for_execution(recipe, session, conns %||% session$conns)
+  .recipe_plan_for_execution(recipe, session, conns %||% session$conns, plan = plan)
 }
 
 #' Validate a recipe on the server
@@ -8126,15 +8135,7 @@ recipe_lint <- function(recipe) {
   # compiler refuses a newly permitted shape (INFO language_2_only).
   v1_refusal <- NULL
   compile_err <- tryCatch({
-    if (length(.recipe_needs_v2(recipe)) == 0L) {
-      v1 <- .recipe_v1_or_null(recipe)
-      if (inherits(v1, "dsomop_no_v1")) {
-        v1_refusal <- attr(v1, "v1_refusal")
-        recipe_to_plan(recipe, version = 2L)
-      }
-    } else {
-      recipe_to_plan(recipe, version = 2L)
-    }
+    v1_refusal <- attr(.recipe_select_plan(recipe), "v1_refusal")
     NULL
   }, error = function(e) conditionMessage(e))
   if (!is.null(compile_err)) {
