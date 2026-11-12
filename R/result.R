@@ -230,10 +230,27 @@ print.dsomop_result <- function(x, ...) {
     kind <- switch(p$protection,
       dp = paste0("differential privacy (epsilon ", format(p$epsilon),
                   ", sensitivity ", format(p$sensitivity), " person)"),
+      fixed_synopsis = paste0(
+        "fixed-synopsis protection (declared vector epsilon ",
+        format(p$mechanism_epsilon), "; reference calibration ",
+        format(p$noise_reference_epsilon), ")"),
+      realised_sticky = paste0(
+        "heuristic realised-contribution protection (reference calibration ",
+        format(p$noise_reference_epsilon), "; no joint DP guarantee)"),
+      mixed = if (is.list(p$blocks) && length(p$blocks) > 0L) {
+        paste0("mixed: ", paste(names(p$blocks), unlist(p$blocks),
+                                sep = " ", collapse = ", "))
+      } else "mixed: standard binary rows with protected distribution rows",
       standard_fallback = "standard controls (DP unavailable on the server)",
       standard = "standard DataSHIELD controls",
       p$protection
     )
+    if (length(p$masked_fields)) {
+      kind <- paste0(kind, "; unavailable: ",
+                     paste(p$masked_fields, collapse = ", "),
+                     " (", p$masked_reason %||% "protected_output_required",
+                     ")")
+    }
     kind
   }
   cat("Protection:\n")

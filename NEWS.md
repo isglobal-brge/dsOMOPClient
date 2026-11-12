@@ -1,3 +1,35 @@
+# dsOMOPClient 2.10.3
+
+Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
+
+- New protected-release contract: dsOMOP 2.10.3 servers advertise
+  `privacy_contract = "protected_release_fixed_basis_or_realised_v1"`.
+  `ds.omop.dp.release()` validates their `dsomop-protected-release-v1`
+  payloads (route, guarantee scope, signed components, no private material,
+  no history-dependent fields) and pools them by summing the signed components
+  of compatible sites and deriving each view once. A federation mixing 2.10.3
+  servers with per-release servers (2.7.1-2.10.2) is refused; per-release
+  federations keep the previous behavior.
+- Heuristic payloads are never presented as differential privacy:
+  `realised_sticky` releases report `mechanism_epsilon = NA`, a warning, and no
+  pooled epsilon; `meta$privacy$protection` names each site's route. For
+  fixed-synopsis releases the pooled epsilon is reported for disjoint sites
+  (maximum) and overlapping sites (sum).
+- Standalone typed counts on 2.10.3 servers use the shared person-total
+  allocation (0.2 of the reference calibration) and are noisier than before;
+  typed bounded means need a registered public scale; typed histogram breaks
+  are reported as requested and as effective (public-grid) breaks; a
+  distinct-label cardinality is not pooled across sites.
+- `ds.omop.analysis.run()` pools protected catalog releases (the
+  `release_pooling` descriptor of 2.10.3 entries) from their signed components
+  (one row per owner and stratum: persons, mean, SD, events, person-time and
+  rate where defined; pooled cells in the `cells` attribute). It never mixes
+  standard and protected frames. Older clients see these entries as not
+  poolable and display the per-server frames.
+- Printed protection labels describe fixed-synopsis, heuristic
+  realised-contribution and mixed protection and list the fields a server
+  withheld and why.
+
 # dsOMOPClient 2.10.2
 
 - Version aligned with dsOMOP 2.10.2 (which reads every OMOP CDM version

@@ -805,7 +805,14 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   # or the standard fallback when its DP service is unavailable).
   protection <- .analysis_protection_labels(raw)
 
-  pool_out <- if (.result_type_wants_combine(type)) {
+  pool_out <- if (.result_type_wants_combine(type) &&
+                  identical(entry_meta$release_pooling$strategy,
+                            "protected_components")) {
+    # dsOMOP 2.10.3 protected releases: pool the signed components of
+    # compatible sites, never the projected per-site values.
+    pooled <- .pool_protected_release_frames(raw)
+    c(pooled, list(harmonization = contract))
+  } else if (.result_type_wants_combine(type)) {
     .pool_analysis_contract(
       raw, entry_meta$pooling_contract, policy = pooling_policy,
       harmonization = contract
@@ -846,7 +853,8 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   .result_type_view(
     result, type,
     combine_reason = if (identical(entry_meta$pooling_contract$strategy,
-                                   "not_poolable")) {
+                                   "not_poolable") &&
+                         is.null(entry_meta$release_pooling)) {
       entry_meta$pooling_contract$reason
     } else NULL
   )
