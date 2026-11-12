@@ -158,11 +158,14 @@ restricts absence to that window (e.g. "no HbA1c in the prior year")}
 
 \item{min_count}{Integer; minimum number of visits}
 
-\item{start}{Character; inclusive start date in ISO \code{YYYY-MM-DD} form.}
+\item{start}{Character or \code{NULL}; inclusive start date in ISO
+\code{YYYY-MM-DD} form. A one-sided range (only \code{start} or only
+\code{end}) compiles to a single \code{>=} / \code{<=} comparison.}
 
-\item{end}{Character; inclusive end date in ISO \code{YYYY-MM-DD} form and
-not before \code{start}. No minimum calendar width is imposed on private
-assignment filters; publication applies final support.}
+\item{end}{Character or \code{NULL}; inclusive end date in ISO
+\code{YYYY-MM-DD} form and not before \code{start}. No minimum calendar
+width is imposed on private assignment filters; publication applies final
+support.}
 
 \item{date_column}{Character or \code{NULL}; explicit OMOP date column. When
 \code{NULL}, \code{\link{recipe_to_plan}} infers the standard date column
@@ -219,6 +222,18 @@ Convenience constructors are provided for common filter types:
 \code{\link{omop_filter_age_group}}, \code{\link{omop_filter_has_concept}},
 \code{\link{omop_filter_date_range}}, \code{\link{omop_filter_value}}.
 }
+\section{has_measurement and missing_measurement are not complements}{
+
+  \code{omop_filter_has_measurement()} keeps persons with at least one
+  measurement row of the concept (in the value range when one is given);
+  \code{omop_filter_missing_measurement()} keeps persons with \emph{no row
+  with a non-null value}, so a person whose only rows have a NULL value
+  satisfies both. Both keep this 2.10.1 meaning. In language 2 the two
+  absences are explicit: \code{omop_has_not(event)} (no row) and
+  \code{omop_has_not(event, nonmissing = "value_as_number")} (no non-null
+  value); \code{recipe_lint()} reports the legacy pair (INFO).
+}
+
 \examples{
 \dontrun{
 f <- omop_filter(type = "sex", level = "population",

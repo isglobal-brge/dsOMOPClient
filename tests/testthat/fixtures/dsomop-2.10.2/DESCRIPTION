@@ -1,0 +1,171 @@
+Package: dsOMOP
+Type: Package
+Title: DataSHIELD Server-Side Integration for OMOP CDM Databases
+Version: 2.10.2
+Authors@R: c(
+    person("David", "Sarrat González", role = c("aut", "cre"), email = "david.sarrat@isglobal.org"),
+    person("Xavier", "Escribà-Montagut", role = "aut"),
+    person("Juan R", "González", role = "aut"))
+Description: Server-side DataSHIELD package providing typed, reviewed access to
+    OMOP Common Data Model databases. It uses vendored OHDSI CDM metadata, with
+    optional CommonDataModel metadata, for schema and concept-role
+    classification. Features include a curated query library with 80 locally
+    controlled SQL templates, selected pre-computed and live-computed Achilles
+    analysis contracts, plan-based extraction with feature engineering, cohort
+    management, and endpoint-specific controls informed by DataSHIELD nfilter
+    settings. Disclosure safety still depends on the deployed method allowlist,
+    server policy, database privileges, and the contract of each operation.
+    Includes DBI/ODBC resource connectors for PostgreSQL, SQLite, DuckDB,
+    MySQL/MariaDB, SQL Server/Synapse/PDW, Oracle, Redshift, BigQuery,
+    Snowflake, Spark, and Databricks, plus a small built-in SQL helper for
+    parameter rendering, common DATEADD/DATEDIFF/TOP translations, and Oracle
+    alias syntax. Canonical OHDSI
+    SQL can optionally be rendered and translated with OHDSI SqlRender on its
+    supported dialects; MySQL/MariaDB remain an explicitly reviewed extension.
+    Query feature parity depends on the target DBMS and installed driver.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends:
+    R (>= 4.1.0)
+Imports:
+    DBI,
+    R6,
+    resourcer,
+    jsonlite,
+    filelock,
+    openssl,
+    RSQLite,
+    methods,
+    stats,
+    utils
+Suggests:
+    arrow,
+    gmp,
+    RPostgres,
+    RMariaDB (>= 1.3.2),
+    ROracle,
+    RPostgreSQL,
+    duckdb,
+    odbc,
+    bit64,
+    bigrquery,
+    testthat (>= 3.0.0),
+    withr,
+    pkgload,
+    DSLite,
+    dsOMOPClient,
+    CommonDataModel,
+    SqlRender (>= 1.10.0),
+    survival,
+    gnm
+AggregateMethods:
+    omopPingDS,
+    omopGetCapabilitiesDS,
+    omopDisclosureSettingsDS,
+    omopListTablesDS,
+    omopListColumnsDS,
+    omopRelationshipGraphDS,
+    omopTableStatsDS,
+    omopColumnStatsDS,
+    omopDomainCoverageDS,
+    omopMissingnessDS,
+    omopValueCountsDS,
+    omopSearchConceptsDS,
+    omopLookupConceptsDS,
+    omopGetDescendantsDS,
+    omopExpandConceptSetDS,
+    omopConceptAncestorsDS,
+    omopConceptSynonymsDS,
+    omopConceptRelationshipsDS,
+    omopListConceptsDS,
+    omopVocabulariesDS,
+    omopDomainsDS,
+    omopConceptClassesDS,
+    omopCdmSourceDS,
+    omopCdmVersionDS,
+    omopPlanPreviewDS,
+    omopCohortListDS,
+    omopCohortGetDefinitionDS,
+    omopConceptPrevalenceDS,
+    omopCrossTabDS,
+    omopNumericRangeDS,
+    omopNumericHistogramDS,
+    omopNumericQuantilesDS,
+    omopDateCountsDS,
+    omopConceptDrilldownDS,
+    omopLocateConceptDS,
+    omopSafeCutpointsDS,
+    omopAchillesStatusDS,
+    omopAchillesAnalysesDS,
+    omopAchillesResultsDS,
+    omopAchillesDistributionDS,
+    omopAchillesCatalogDS,
+    omopOhdsiStatusDS,
+    omopOhdsiTablesDS,
+    omopOhdsiResultsDS,
+    omopOhdsiResultContractDS,
+    omopOhdsiSummaryDS,
+    omopQueryListDS,
+    omopQueryGetDS,
+    omopQueryExecDS,
+    omopAnalysisListDS,
+    omopAnalysisGetDS,
+    omopAnalysisRunDS,
+    omopQueryLibraryStickyCatalogDS,
+    omopDpStatusDS,
+    omopDpReleaseDS,
+    omopFactorLevelsDS
+AssignMethods:
+    omopInitDS,
+    omopPlanExecuteDS,
+    omopCohortCreateDS,
+    omopCohortCombineDS,
+    omopCohortFromTableDS,
+    omopCleanupDS,
+    omopAsFactorColumnsDS,
+    omopMergeDS,
+    omopFilterDS,
+    omopSelectDS,
+    omopBindRowsDS,
+    omopAnalysisRunAssignDS,
+    omopDpPlanExecuteDS
+Options:
+    nfilter.subset=3,
+    nfilter.tab=3,
+    nfilter.levels.max=40,
+    nfilter.levels.density=0.33,
+    nfilter.string=80,
+    nfilter.stringShort=20,
+    nfilter.noise=0.25,
+    nfilter.glm=0.33,
+    dsomop.nfilter.dist=10,
+    dsomop.nfilter.band=5,
+    dsomop.nfilter.age_range=5,
+    dsomop.nfilter.date_range=30,
+    dsomop.max_feature_specs=1000,
+    dsomop.max_pivot_concepts=1000,
+    dsomop.max_output_columns=5000,
+    dsomop.max_temporal_bins=10000,
+    dsomop.max_filter_depth=32,
+    dsomop.max_filter_nodes=1024,
+    dsomop.max_filter_values=10000,
+    dsomop.max_plan_outputs=100,
+    dsomop.max_analysis_scope_tables=8,
+    dsomop.max_temp_tables_per_handle=256,
+    dsomop.datetime_timezone="UTC",
+    dsomop.query_strict=TRUE,
+    dsomop.allow_absolute_dates=FALSE,
+    dsomop.allow_sensitive_columns=FALSE,
+    default.dsomop.tools.enabled=TRUE,
+    default.dsomop.tools.mode="auto",
+    default.dsomop.dp.enabled=TRUE,
+    default.dsomop.dp.exclusive=FALSE,
+    default.dsomop.dp.domain="",
+    default.dsomop.dp.snapshot_id="",
+    default.dsomop.dp.release_epsilon=0.1,
+    default.dsomop.dp.privacy_epoch=1,
+    default.dsomop.dp.max_levels=1000,
+    default.dsomop.dp.max_contributions=10,
+    default.dsomop.dp.numeric_grid=65535
+Config/testthat/edition: 3
+RoxygenNote: 7.3.3

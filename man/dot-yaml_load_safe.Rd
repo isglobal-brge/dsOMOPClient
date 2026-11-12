@@ -4,7 +4,7 @@
 \alias{.yaml_load_safe}
 \title{Parse YAML without evaluating embedded R expressions}
 \usage{
-.yaml_load_safe(text)
+.yaml_load_safe(text, sequences_as_lists = FALSE)
 }
 \arguments{
 \item{text}{A length-one YAML document.}

@@ -5,7 +5,7 @@
 # table and every feature. For EACH archetype we assert five properties:
 #
 #   (a) the declarative omop_recipe(...) BUILDS without error;
-#   (b) recipe_to_plan() COMPILES it;
+#   (b) recipe_to_plan(, version = 1) COMPILES it;
 #   (c) EQUIVALENCE: the SAME recipe built by calling the now-internal setters
 #       directly (omop_recipe() + dsOMOPClient:::recipe_add_*) is identical() to
 #       the declarative one (meta timestamps excluded) -- proving the
@@ -14,7 +14,7 @@
 #   (e) recipe_to_code() emits a declarative omop_recipe(...) that re-evaluates
 #       to the same recipe.
 #
-# recipe_to_plan() is connection-free, so none of this needs a DB.
+# recipe_to_plan(, version = 1) is connection-free, so none of this needs a DB.
 #
 # The internal setters are intentionally unexported (the declarative
 # constructor is the single authoring entry point); we reach them via ::: only
@@ -31,10 +31,10 @@ strip_meta <- function(r) { r$meta <- NULL; r }
 recipe_checks <- function(declarative, stepwise) {
   out <- c(
     builds        = inherits(declarative, "omop_recipe"),
-    compiles      = inherits(recipe_to_plan(declarative), "omop_plan"),
+    compiles      = inherits(recipe_to_plan(declarative, version = 1), "omop_plan"),
     identical_set = identical(strip_meta(declarative), strip_meta(stepwise)),
-    plan_identical = identical(recipe_to_plan(declarative),
-                               recipe_to_plan(stepwise)),
+    plan_identical = identical(recipe_to_plan(declarative, version = 1),
+                               recipe_to_plan(stepwise, version = 1)),
     yaml_roundtrip = identical(
       strip_meta(declarative),
       strip_meta(recipe_import_yaml(recipe_export_yaml(declarative)))),
@@ -1235,8 +1235,8 @@ test_that("multi-population DAG builds, is identical, and compiles", {
   expect_identical(strip_meta(decl),
                    strip_meta(recipe_import_yaml(recipe_export_yaml(decl))))
   # (b) COMPILE now succeeds for BOTH forms and serializes every population.
-  plan_d <- recipe_to_plan(decl)
-  plan_s <- recipe_to_plan(step)
+  plan_d <- recipe_to_plan(decl, version = 1)
+  plan_s <- recipe_to_plan(step, version = 1)
   expect_identical(plan_d$populations, plan_s$populations)
   expect_setequal(names(plan_d$populations), c("base", "diab", "diab_f"))
   expect_identical(plan_d$populations$diab$kind, "criteria")
@@ -1255,7 +1255,7 @@ test_that("cross-population output target compiles and is stamped", {
     variables = omop_variable_age(),
     outputs = omop_output(name = "w", type = "wide", population_id = "sub"))
   expect_s3_class(decl, "omop_recipe")
-  plan <- recipe_to_plan(decl)
+  plan <- recipe_to_plan(decl, version = 1)
   expect_setequal(names(plan$populations), c("base", "sub"))
   expect_identical(plan$populations$sub$kind, "criteria")
   expect_identical(plan$outputs[[names(plan$outputs)[1]]]$population_id, "sub")
@@ -1279,7 +1279,7 @@ test_that("set-op population serializes and an output can target it", {
   expect_identical(decl$populations$either$setop$op, "union")
   expect_identical(decl$populations$either$setop$members, c("diab", "hyp"))
 
-  plan <- recipe_to_plan(decl)
+  plan <- recipe_to_plan(decl, version = 1)
   expect_identical(plan$populations$either$kind, "setop")
   expect_identical(plan$populations$either$setop$op, "union")
   expect_identical(plan$populations$either$setop$members, c("diab", "hyp"))
@@ -1302,7 +1302,7 @@ test_that("recipe-level scope serializes into plan$scope", {
   # A string/handle cohort is scope, NOT the base population cohort.
   expect_null(decl$populations$base$cohort_definition_id)
 
-  plan <- recipe_to_plan(decl)
+  plan <- recipe_to_plan(decl, version = 1)
   expect_identical(plan$scope$cohort, "scope_tbl")
   # tables stay a character vector: ds.omop.plan.execute splices the symbol names
   # into the DataSHIELD call (they cannot ride in the plan JSON).
@@ -1317,6 +1317,6 @@ test_that("output targeting an undeclared population fails closed", {
     recipe_to_plan(omop_recipe(
       variables = omop_variable_age(),
       outputs = omop_output(name = "w", type = "wide",
-                            population_id = "ghost"))),
+                            population_id = "ghost")), version = 1),
     "undeclared population")
 })

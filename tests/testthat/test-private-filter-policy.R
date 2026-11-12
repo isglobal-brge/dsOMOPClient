@@ -9,7 +9,7 @@ test_that("ordinary private numeric predicates compile and lint without safe bin
       filters = list(criterion, omop_filter_age(40, 41),
                      omop_filter_value(threshold = 6.5)),
       outputs = omop_output(name = "rows", type = "long"))
-    plan <- recipe_to_plan(recipe)
+    plan <- recipe_to_plan(recipe, version = 1)
     expect_identical(plan$outputs$rows$filters$custom,
                      list(var = "value_as_number", op = ">=", value = 6.5))
     expect_false(any(recipe_lint(recipe)$code %in%

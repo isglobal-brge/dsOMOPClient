@@ -113,6 +113,22 @@ ds.omop.plan <- function() {
   value
 }
 
+# A window endpoint: an exact integer offset, or an infinite bound meaning
+# "unbounded" (A-E5) -- -Inf only as a start and Inf only as an end; a reversed
+# infinity is an error. Returns NULL for an unbounded endpoint.
+.plan_window_endpoint <- function(value, field, side = c("start", "end")) {
+  side <- match.arg(side)
+  if (is.numeric(value) && length(value) == 1L && !is.na(value) &&
+      is.infinite(value)) {
+    if ((side == "start" && value < 0) || (side == "end" && value > 0)) {
+      return(NULL)
+    }
+    stop(field, ": ", format(value), " is not an unbounded ", side,
+         " (only -Inf starts and Inf ends are unbounded).", call. = FALSE)
+  }
+  .plan_integer_scalar(value, field)
+}
+
 .plan_day_window <- function(window, field, strict = FALSE) {
   if (!is.list(window) || is.null(names(window)) ||
       any(!nzchar(names(window))) || anyDuplicated(names(window)) ||
@@ -123,12 +139,15 @@ ds.omop.plan <- function() {
   }
   result <- list()
   if (!is.null(window$start)) {
-    result$start <- .plan_integer_scalar(window$start,
-                                         paste0(field, "$start"))
+    result$start <- .plan_window_endpoint(window$start,
+                                          paste0(field, "$start"), "start")
   }
   if (!is.null(window$end)) {
-    result$end <- .plan_integer_scalar(window$end,
-                                       paste0(field, "$end"))
+    result$end <- .plan_window_endpoint(window$end,
+                                        paste0(field, "$end"), "end")
+  }
+  if (length(result) == 0L) {
+    stop(field, " is unbounded on both sides; omit it instead.", call. = FALSE)
   }
   invalid_order <- !is.null(result$start) && !is.null(result$end) &&
     (if (strict) result$start >= result$end else result$start > result$end)
@@ -661,7 +680,7 @@ ds.omop.plan.survival <- function(plan,
   start_offset <- if (is.null(tar$start_offset)) 0L else
     .plan_integer_scalar(tar$start_offset, "tar$start_offset")
   end_offset <- if (is.null(tar$end_offset)) NULL else
-    .plan_integer_scalar(tar$end_offset, "tar$end_offset")
+    .plan_window_endpoint(tar$end_offset, "tar$end_offset", "end")
   if (!is.null(end_offset) && start_offset > end_offset) {
     stop("tar$start_offset must not be after tar$end_offset.", call. = FALSE)
   }
@@ -1652,6 +1671,7 @@ omop.date_handling <- function(mode = "remove", reference = "index",
 #' @export
 ds.omop.plan.validate <- function(plan, symbol = "omop",
                                   conns = NULL) {
+  if (.v2_is_plan_v2(plan)) return(.plan_v2_preview(plan, symbol, conns))
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   plan <- .prepare_plan_for_federation(plan, symbol, conns)
@@ -1716,6 +1736,7 @@ ds.omop.plan.validate <- function(plan, symbol = "omop",
 #' @export
 ds.omop.plan.preview <- function(plan, symbol = "omop",
                                  conns = NULL) {
+  if (.v2_is_plan_v2(plan)) return(.plan_v2_preview(plan, symbol, conns))
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   plan <- .prepare_plan_for_federation(plan, symbol, conns)
@@ -1772,7 +1793,10 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' strict schema/semantic harmonization contract. Concept factors are harmonized
 #' only over the retained sites and their published components.
 #'
-#' @param plan An \code{omop_plan} object.
+#' @param plan An \code{omop_plan} object, or a language-2 plan
+#'   (\code{omop_plan_v2}, from \code{\link{recipe_to_plan}}). A v2 plan needs
+#'   every server to advertise recipe language 2 and every operation it uses;
+#'   it is sent losslessly and published through the same status protocol.
 #' @param out Optional output-to-symbol mapping. Three forms are accepted:
 #'   \itemize{
 #'     \item \strong{Missing or \code{NULL} (default):} symbol names are
@@ -1803,6 +1827,10 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #'   \code{NULL}. With the default, a non-strict server may publish complete
 #'   passing output families and warn about rejected families. A strict refusal
 #'   rolls back the federation. Other failures always roll back and error.
+#'   These policies require the publication protocol on every site. If any
+#'   site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere with one
+#'   warning, and \code{on_small_site} does not change that call; a language-2
+#'   plan is refused before assignment.
 #' @details Loading tables never depends on differential privacy. After a
 #'   memory execution, concept columns are converted to factors harmonized
 #'   across servers (see \code{ds.omop.plan.options}).
@@ -1862,6 +1890,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
                                on_small_site = c("error", "skip")) {
   on_small_site <- match.arg(on_small_site)
   output_mode <- match.arg(output_mode, c("memory", "staged"))
+  # A language-2 plan (recipe_to_plan(), version 2) runs through the same
+  # publication protocol as a v1 plan; only its preparation and its lossless
+  # wire encoding differ.
+  v2 <- .v2_is_plan_v2(plan)
   if (identical(output_mode, "staged")) {
     # Standard concept identifiers are the stable OHDSI interchange encoding
     # and allow the server to stream fact tables without per-chunk vocabulary
@@ -1872,41 +1904,95 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       # federation signature. Force the normal preparation path to rebuild the
       # contract for the staged representation instead of rejecting it as a
       # post-harmonization mutation or, worse, reusing stale schema evidence.
-      plan$harmonization <- NULL
+      if (v2) {
+        attr(plan, "harmonization") <- NULL
+        .v2_assert_schema(plan)
+      } else {
+        plan$harmonization <- NULL
+      }
     }
   }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
-  plan <- .prepare_plan_for_federation(plan, symbol, conns)
-  contract <- .session_harmonization_for_connections(session, conns)
-  if (!is.null(contract)) {
-    plan <- .apply_plan_harmonization(plan, contract)
-    .validate_plan_harmonization(plan, contract)
+  # B1: which protocol every participating site supports, before anything is
+  # assigned. The publication protocol needs it on every site; otherwise a v2
+  # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
+  harmonizes <- isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
+    isTRUE(plan$options$factor_concepts %||% TRUE) &&
+    !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
+  route <- .plan_protocol_route(conns, server_method, harmonizes)
+  if (!route$protocol) {
+    if (v2) {
+      v1_refusal <- attr(plan, "v1_refusal")
+      stop(.plan_protocol_refusal(route, v1_refusal = v1_refusal), call. = FALSE)
+    }
+    warning(.plan_legacy_warning(route), call. = FALSE)
+    return(.plan_execute_legacy(plan, out, symbol, session, conns, output_mode,
+                                server_method, harmonize_factors))
   }
+  if (v2) {
+    # Every server must speak the recipe language and every operation the
+    # plan needs: a construct is never dropped to fit an older server
+    # (design 5). A multi-server execution binds the plan's semantic digest,
+    # the participating servers and their schemas (section 4.4); the
+    # contract travels as a plan attribute, never on the wire.
+    roots <- if (is.null(plan$publish)) names(plan$outputs) else
+      as.character(unlist(plan$publish))
+    if (length(roots) == 0L) {
+      # An explicitly empty publish list releases nothing: the execution
+      # still runs (capabilities, digest, status), with zero roots.
+      if (length(out)) {
+        stop("The plan publishes no outputs (publish = []); out must be empty.",
+             call. = FALSE)
+      }
+      out <- stats::setNames(character(0), character(0))
+    } else {
+      out <- .resolve_plan_out(
+        list(outputs = plan$outputs[roots]), out,
+        reserved_symbols = c(symbol, session$res_symbol)
+      )
+    }
+    # The roots sent are exactly the requested ones: a partial out mapping
+    # leaves the other outputs private (B1), so publish names the mapped roots
+    # before the capability check and the federation contract bind the plan.
+    if (is.null(plan$publish) || !setequal(names(out), roots)) {
+      plan$publish <- .v2_array(roots[roots %in% names(out)])
+      attr(plan, "harmonization") <- NULL
+      .v2_assert_schema(plan)
+    }
+    .v2_assert_supported(plan, session, names(conns))
+    plan <- .plan_v2_federation(plan, symbol, conns)
+  } else {
+    plan <- .prepare_plan_for_federation(plan, symbol, conns)
+    contract <- .session_harmonization_for_connections(session, conns)
+    if (!is.null(contract)) {
+      plan <- .apply_plan_harmonization(plan, contract)
+      .validate_plan_harmonization(plan, contract)
+    }
 
-  # Resolve the out mapping: NULL -> auto-derive D_<name> for every output;
-  # a bare unnamed string -> bind the single output; a named vector -> as-is.
-  out <- .resolve_plan_out(
-    plan, out,
-    reserved_symbols = c(symbol, session$res_symbol)
-  )
+    # Resolve the out mapping: NULL -> auto-derive D_<name> for every output;
+    # a bare unnamed string -> bind the single output; a named vector -> as-is.
+    out <- .resolve_plan_out(
+      plan, out,
+      reserved_symbols = c(symbol, session$res_symbol)
+    )
+  }
   reserved_targets <- unname(out)
 
   # Recipe-level scope: a cohort reference and/or omop.table symbol(s) the server
   # folds into ONE cohort and intersects into every population. Validate symbol
   # collisions locally before asking any server for its workspace inventory.
-  scope_args <- NULL
-  combine <- "union"
-  if (!is.null(plan$scope) &&
-      (!is.null(plan$scope$cohort) || length(plan$scope$tables) > 0)) {
-    scope_args <- .analysis_scope_expr(cohort = plan$scope$cohort,
-                                       tables = plan$scope$tables)
-    combine <- plan$scope$combine %||% "union"
-  }
-
   scope_tables <- as.character(unlist(
     plan$scope$tables %||% character(0), use.names = FALSE
   ))
+  scope_args <- NULL
+  combine <- "union"
+  if (!is.null(plan$scope) &&
+      (!is.null(plan$scope$cohort) || length(scope_tables) > 0)) {
+    scope_args <- .analysis_scope_expr(cohort = plan$scope$cohort,
+                                       tables = if (length(scope_tables)) scope_tables)
+    combine <- plan$scope$combine %||% "union"
+  }
   collisions <- intersect(reserved_targets, scope_tables)
   if (length(collisions) > 0L) {
     stop("Output symbols collide with execution-scope input symbol(s): ",
@@ -1938,7 +2024,13 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 
   exec_args <- list(
     as.name(server_method),
-    session$res_symbol, .ds_encode(plan), .ds_encode(out),
+    session$res_symbol,
+    # v2 plans keep every digit, explicit nulls and empty objects, so the
+    # server parses exactly the plan whose semantic digest was computed.
+    if (v2) .ds_encode_lossless(plan) else .ds_encode(plan),
+    # zero publication roots (publish = []): an empty JSON object, never a
+    # bare character(0) that a DataSHIELD expression parser would refuse
+    if (length(out)) .ds_encode(out) else .ds_encode(stats::setNames(list(), character(0))),
     output_mode, commit_policy = if (on_small_site == "skip") {
       "all_or_none"
     } else "server")
@@ -2019,7 +2111,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     # Preserve the v1 return for an ordinary successful run. When publication
     # differs by site, expose the actual inventory and retain NULL skip entries.
     standard <- !any(refused | partial) && all(vapply(inventories, function(x) {
-      identical(names(x), names(out)) && all(vapply(names(x), function(root) {
+      identical(as.character(names(x)), as.character(names(out))) &&
+        all(vapply(names(x), function(root) {
         symbols <- .plan_inventory_symbols(x[root])[[root]]
         components <- names(x[[root]])
         aliases <- c(risk_sets = "riskSets", transition_ref = "transitionRef")
@@ -2122,7 +2215,9 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       anyDuplicated(names(statuses))) {
     stop("Plan status retrieval was incomplete.", call. = FALSE)
   }
-  roots <- plan$publish %||% names(out)
+  # B1: the publication roots are the plan's publish list, else the requested
+  # outputs (names(out)); an explicit empty publish list releases nothing.
+  roots <- if (is.null(plan$publish)) names(out) else as.character(unlist(plan$publish))
   for (server in names(conns)) .plan_validate_status(statuses[[server]], roots)
   statuses[names(conns)]
 }
@@ -4001,7 +4096,8 @@ ds.omop.plan.harmonize <- function(plan,
 #' \code{\link{ds.omop.plan.load}} executes identically to the original
 #' (the round-trip is lossless with respect to what is sent to the server).
 #'
-#' @param plan An \code{omop_plan} object.
+#' @param plan An \code{omop_plan} object, or a language-2 plan
+#'   (\code{omop_plan_v2}, saved as its wire plan).
 #' @param file Character; destination path ending in \code{.json},
 #'   \code{.yml}, or \code{.yaml}.
 #' @param format Character or \code{NULL}; optional explicit format
@@ -4020,22 +4116,25 @@ ds.omop.plan.harmonize <- function(plan,
 #' @seealso \code{\link{ds.omop.plan.load}}, \code{\link{ds.omop.plan.execute}}
 #' @export
 ds.omop.plan.save <- function(plan, file, format = NULL) {
-  if (!inherits(plan, "omop_plan"))
+  v2 <- .v2_is_plan_v2(plan)
+  if (!inherits(plan, "omop_plan") && !v2)
     stop("plan must be an omop_plan object", call. = FALSE)
   if (missing(file) || length(file) != 1L || !nzchar(file)) {
     stop("file must be a single non-empty path.", call. = FALSE)
   }
   fmt <- .plan_file_format(file, format)
-  plain <- .plan_plain(plan)
+  # A v2 plan is saved as its wire plan (plan-v2.json), unchanged.
+  plain <- if (v2) .v2_plain(plan) else .plan_plain(plan)
   if (fmt == "json") {
+    # digits = NA: numbers keep their full precision (lossless round-trip).
     json <- jsonlite::toJSON(plain, auto_unbox = TRUE, pretty = TRUE,
-                             null = "null")
+                             null = "null", digits = NA)
     writeLines(as.character(json), file)
   } else {
     if (!requireNamespace("yaml", quietly = TRUE))
       stop("Package 'yaml' is required for YAML plans. Install it with ",
            "install.packages(\"yaml\").", call. = FALSE)
-    writeLines(yaml::as.yaml(plain), file)
+    writeLines(yaml::as.yaml(plain, precision = 15L), file)
   }
   invisible(file)
 }
@@ -4077,7 +4176,32 @@ ds.omop.plan.load <- function(file) {
     text <- paste(readLines(file, warn = FALSE), collapse = "\n")
     data <- .yaml_load_safe(text)
   }
+  if (identical(suppressWarnings(as.integer(data$version %||% NA)), 2L) &&
+      is.numeric(data$version)) {
+    if (fmt == "yaml") data <- .yaml_load_safe(text, sequences_as_lists = TRUE)
+    return(.plan_v2_from_plain(data))
+  }
   .plan_from_plain(data)
+}
+
+# A saved v2 wire plan, validated against plan-v2.json on load.
+.plan_v2_from_plain <- function(data) {
+  fix_objects <- function(x, key = NULL) {
+    if (!is.list(x)) return(x)
+    if (length(x) == 0L && !is.null(key) &&
+        key %in% c("convert", "tars", "anchors", "relations", "outcomes", "exposures",
+                   "carry_forward", "partition", "options", "concept_sets", "events",
+                   "intervals", "populations", "variables", "age")) {
+      return(.v2_empty_object())
+    }
+    nms <- names(x)
+    out <- lapply(seq_along(x), function(i) fix_objects(x[[i]], if (!is.null(nms)) nms[[i]]))
+    names(out) <- nms
+    out
+  }
+  plan <- fix_objects(data)
+  .v2_assert_schema(plan)
+  structure(plan, class = c("omop_plan_v2", "list"))
 }
 
 #' Print method for extraction plans

@@ -14,7 +14,10 @@ ds.omop.plan.execute(
 )
 }
 \arguments{
-\item{plan}{An \code{omop_plan} object.}
+\item{plan}{An \code{omop_plan} object, or a language-2 plan
+(\code{omop_plan_v2}, from \code{\link{recipe_to_plan}}). A v2 plan needs
+every server to advertise recipe language 2 and every operation it uses;
+it is sent losslessly and published through the same status protocol.}
 
 \item{out}{Optional output-to-symbol mapping. Three forms are accepted:
 \itemize{
@@ -49,7 +52,11 @@ Only insufficient final person support is skippable. Skip requests an
 all-or-none server commit: a rejected site publishes nothing and returns
 \code{NULL}. With the default, a non-strict server may publish complete
 passing output families and warn about rejected families. A strict refusal
-rolls back the federation. Other failures always roll back and error.}
+rolls back the federation. Other failures always roll back and error.
+These policies require the publication protocol on every site. If any
+site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere with one
+warning, and \code{on_small_site} does not change that call; a language-2
+plan is refused before assignment.}
 }
 \value{
 Invisibly, the resolved \code{out} symbol mapping for a complete

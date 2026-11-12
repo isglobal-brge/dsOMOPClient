@@ -114,8 +114,11 @@ ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
 #' }
 #' @seealso \code{\link{ds.omop.select}}, \code{\link{ds.omop.merge}}
 #' @export
-ds.omop.filter <- function(x = NULL, var, op, value,
+ds.omop.filter <- function(x = NULL, var = NULL, op = NULL, value = NULL,
                            newobj = NULL, symbol = "omop", conns = NULL) {
+  if (is.null(var) || is.null(op) || missing(value)) {
+    stop("ds.omop.filter() needs var, op and value.", call. = FALSE)
+  }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   op <- match.arg(op, c("==", "!=", "in", "not_in"))

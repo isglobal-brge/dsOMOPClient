@@ -45,10 +45,24 @@ or wrong), and \code{"INFO"} (advisory). Rules:
   \item{long_split (INFO)}{a \code{"long"} output spanning > 1 table.}
   \item{no_value_source (INFO)}{an aggregate format with no
     \code{value_source}.}
+  \item{tar_default, censoring_default, age_group_default, coverage,
+    collapse, representation, missing_skip (INFO)}{a default the recipe
+    relies on, stated (e.g. "follow-up ends 730 days after index").}
   \item{quasi_identifier (INFO)}{a permitted birth component, age, age band,
-    or date column; final publication support and the absolute-date policy
-    still apply. Aggregate admission is unchanged.}
+    birth-year band or date column, one row per variable; final publication
+    support and the absolute-date policy still apply. Aggregate admission
+    is unchanged.}
+  \item{measurement_pair (INFO)}{\code{has_measurement} /
+    \code{missing_measurement} are not complements.}
+  \item{parent_inheritance (INFO)}{a \code{parent_id} now restricts the
+    child population.}
+  \item{language_2_only (INFO)}{a recipe of 2.10.1 constructors whose
+    shape 2.10.3 newly permits (e.g. a NOT group) has no v1 plan and runs
+    as its language-2 plan on dsOMOP 2.10.4 servers only.}
 }
+The lint has no mirror of server disclosure gates (no width floors, no
+mandatory bins): from 2.10.3 the server's final publication rule is the
+only release criterion on assign paths.
 Edge cases: a \code{NULL} recipe returns a single \code{empty_recipe} info
 row; a recipe with no outputs adds a \code{no_output} warning.
 }
