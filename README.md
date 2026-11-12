@@ -173,6 +173,14 @@ Crossed hierarchy and nested histogram displays preserve both parent margins.
 Their versioned Dykstra algorithm keeps converged results; after its iteration
 limit, a deterministic feasible repair preserves nonnegativity and margins
 without claiming an exact L2 projection.
+Grouped-time Cox cells share the pooled C6 event and non-event totals.
+Interaction C6/C8 pooling retains the complete signed atomic family, projects
+it against the arm parents, then derives each requested subgroup or age view.
+Pooled supplemental rows and cells carry `family`, `view` and `subgroup_kind`
+identifiers. C8 family cells use finite IPF with a feasible margin repair;
+this display is not claimed to be an exact KL or L2 projection. Missing or
+incompatible status mappings and family definitions are refused. Effect
+estimates continue to use inverse-variance meta-analysis of per-site fits.
 Weighted record histograms reconcile to a protected record total, never a
 person total. Unregistered record scales expose coarse histograms and interval
 quantiles with explicit tail-censoring flags instead of invented bounded means.

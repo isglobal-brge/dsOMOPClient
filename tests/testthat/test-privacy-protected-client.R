@@ -1478,3 +1478,188 @@ test_that("record histogram intervals show tails and respect the public display 
   expect_error(.pool_protected_release_frames(list(a = a, b = b)),
                "incompatible public basis")
 })
+
+.pc_survival_owner <- function(family = "C8", h = c(-8, 10, 18, -10)) {
+  arms <- c("arm=target", "arm=comparator")
+  o <- list(owner = paste0("survival/", family), family = family,
+            horizon_days = 3650, strata_kind = "independent", cap = 1L,
+            components = lapply(arms, function(arm) {
+              c(list(stratum = arm, n = 10, status = c(2, 8)),
+                if (family == "C8") list(h = h) else list(time = 100))
+            }))
+  if (family == "C8") {
+    o$status_of_cell <- c("event", "event", "censored", "admin_censored")
+    o$cell_keys <- paste0("cell=", 1:4, "|status=", o$status_of_cell)
+    o$display_projection <- "c8-status-parent-simplex-v1"
+  }
+  o
+}
+
+.pc_survival_family <- function(family = "C8", coarse = FALSE, scale = 1) {
+  root <- .pc_survival_owner(family)
+  arms <- c("arm=target", "arm=comparator")
+  atom_keys <- c("atom=a", "atom=b", "atom=c")
+  H <- rbind(c(-5, 2, 5, -4), c(1, 1, 6, -3), c(-4, 7, 7, -3))
+  atoms <- stats::setNames(lapply(1:3, function(i) {
+    stats::setNames(lapply(arms, function(arm) {
+      c(list(stratum = arm, n = c(-2, 5, 7)[[i]] * scale,
+             status = c(c(-3, 2, 3)[[i]], c(1, 3, 4)[[i]]) * scale),
+        if (family == "C8") list(h = H[i, ] * scale) else
+          list(time = c(-10, 50, 60)[[i]] * scale))
+    }), arms)
+  }), atom_keys)
+  sum_atoms <- function(indices) stats::setNames(lapply(1:2, function(j) {
+    out <- list(stratum = arms[[j]])
+    for (f in if (family == "C8") c("n", "status", "h") else c("n", "status", "time")) {
+      out[[f]] <- Reduce(`+`, lapply(atoms[indices], function(a) a[[j]][[f]]))
+    }
+    out
+  }), arms)
+  views <- if (coarse) list(ab = 1:2, c = 3L) else list(a = 1L, b = 2L, c = 3L)
+  basis <- list(version = "interaction-family-v1",
+    projection = if (family == "C8") "finite-ipf-feasible-repair-v1" else "bounded-simplex-v1",
+    family_id = list(kind = "explicit-partition", atoms = atom_keys),
+    horizon_days = 3650, arms = sum_atoms(1:3), atoms = atoms, view_of_atoms = views)
+  if (family == "C8") basis$status_of_cell <- root$status_of_cell
+  lapply(seq_along(views), function(i) {
+    o <- root
+    o$components <- sum_atoms(views[[i]])
+    o$parent <- "arm"
+    if (family == "C6") o$parent_owner <- "survival/root/C6"
+    o$family_basis <- c(basis, list(view_index = i))
+    o
+  })
+}
+
+.pc_survival_frame <- function(owners, source) {
+  frame <- .pc_effect_frame(log(1.5), .2, source, c(10, 10), c(2, 2), c(100, 100))
+  p <- attr(frame, "dsomop_release")
+  p$owners <- owners
+  attr(frame, "dsomop_release") <- p
+  frame
+}
+
+test_that("public effect pooling exposes C8 cells with shared status parents", {
+  a <- .pc_survival_frame(list(.pc_survival_owner()), 1L)
+  b <- .pc_survival_frame(list(.pc_survival_owner(h = c(2, 0, 0, 8))), 2L)
+  for (count in 1:2) {
+    frames <- list(a = a, b = b)[seq_len(count)]
+    .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
+      result <- ds.omop.meta.effect_estimate(
+        params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L))
+      shown <- attr(result$pooled, "protected_components")
+      cells <- attr(shown, "cells")
+      expect_equal(shown$persons, rep(10 * count, 2))
+      expect_equal(shown$events, rep(2 * count, 2))
+      expect_equal(cells$count[cells$stratum == "arm=target"],
+                    if (count == 1L) c(0, 2, 8, 0) else c(0, 4, 16, 0))
+      expect_equal(result$pooled$estimate_fixed, rep(1.5, 2))
+      expect_match(paste(result$meta$warnings, collapse = " "), "C6 event/no-event")
+    })
+  }
+})
+
+test_that("complete interaction families pool before projection and view coarsening", {
+  for (family in c("C6", "C8")) for (sites in 1:2) {
+    fine <- lapply(seq_len(sites), function(i) .pc_survival_frame(
+      .pc_survival_family(family, scale = i), i))
+    coarse <- lapply(seq_len(sites), function(i) .pc_survival_frame(
+      .pc_survival_family(family, coarse = TRUE, scale = i), i))
+    names(fine) <- names(coarse) <- letters[seq_len(sites)]
+    fp <- .pool_protected_release_frames(fine)$result
+    cp <- .pool_protected_release_frames(coarse)$result
+    expect_identical(unique(fp$view), c("a", "b", "c"))
+    expect_identical(unique(cp$view), c("ab", "c"))
+    expect_true(all(fp$family == family))
+    expect_true(all(fp$subgroup_kind == "explicit-partition"))
+    fields <- if (family == "C6") c("persons", "events", "person_time") else c("persons", "events")
+    for (arm in c("arm=target", "arm=comparator")) {
+      F <- fp[fp$stratum == arm, ]
+      C <- cp[cp$stratum == arm, ]
+      for (field in fields) {
+        expect_equal(C[[field]], c(sum(F[[field]][1:2]), F[[field]][[3L]]), tolerance = 1e-9)
+      }
+      expect_equal(sum(F$persons), 10 * sum(seq_len(sites)))
+      expect_equal(sum(F$events), 2 * sum(seq_len(sites)))
+      expect_true(all(F$persons >= F$events & F$events >= 0))
+      if (family == "C6") {
+        expect_equal(sum(F$person_time), 100 * sum(seq_len(sites)))
+        expect_true(all(F$person_time >= 0 & F$person_time <= 3650 * F$persons))
+      } else {
+        FH <- attr(fp, "cells"); CH <- attr(cp, "cells")
+        FH <- FH[FH$stratum == arm, ]; CH <- CH[CH$stratum == arm, ]
+        expect_equal(CH$count[CH$view == "ab"],
+          FH$count[FH$view == "a"] + FH$count[FH$view == "b"], tolerance = 1e-9)
+        expect_equal(CH$count[CH$view == "c"], FH$count[FH$view == "c"], tolerance = 1e-9)
+        expect_equal(as.numeric(tapply(FH$count, FH$cell, sum)),
+                      c(0, 2, 8, 0) * sum(seq_len(sites)), tolerance = 1e-9)
+        for (view in unique(FH$view)) {
+          v <- FH[FH$view == view, ]
+          expect_equal(sum(v$count[grepl("status=event$", v$cell)]),
+                        F$events[F$view == view], tolerance = 1e-9)
+        }
+        expect_true(all(FH$count >= 0))
+      }
+    }
+  }
+})
+
+test_that("survival pooling refuses omitted and incompatible public metadata", {
+  o <- .pc_survival_owner()
+  variants <- list(
+    missing_status = function(x) {x$status_of_cell <- NULL; x},
+    wrong_status = function(x) {x$status_of_cell[[1L]] <- "censored"; x},
+    missing_projection = function(x) {x$display_projection <- NULL; x},
+    missing_family = function(x) {x$parent <- "arm"; x},
+    broken_status_margin = function(x) {x$components[[1L]]$status <- c(3, 7); x})
+  for (name in names(variants)) {
+    bad <- variants[[name]](o)
+    expect_error(.dp_pool_survival_owner(list(bad)), "survival hierarchy", info = name)
+    expect_error(.dp_pool_survival_owner(list(o, bad)), "survival hierarchy", info = name)
+  }
+  for (family in c("C6", "C8")) {
+    o <- .pc_survival_family(family)[[1L]]
+    variants <- list(
+      missing_family = function(x) {x$family_basis <- NULL; x},
+      parent_only = function(x) {x$family_basis <- NULL; x$parent_owner <- NULL; x},
+      missing_identity = function(x) {x$family_basis$family_id <- NULL; x},
+      wrong_kind = function(x) {x$family_basis$family_id$kind <- "sex"; x},
+      missing_atom_name = function(x) {names(x$family_basis$atoms)[[1L]] <- ""; x},
+      wrong_arm_name = function(x) {names(x$family_basis$atoms[[1L]])[[1L]] <- "other"; x},
+      incomplete_partition = function(x) {x$family_basis$view_of_atoms$c <- NULL; x},
+      duplicate_atom = function(x) {x$family_basis$view_of_atoms$b <- 1L; x},
+      wrong_view = function(x) {x$family_basis$view_index <- 2L; x},
+      wrong_horizon = function(x) {x$family_basis$horizon_days <- 365; x},
+      infinite_signed = function(x) {x$family_basis$atoms[[1L]][[1L]]$n <- Inf; x})
+    for (name in names(variants)) {
+      bad <- variants[[name]](o)
+      expect_error(.dp_pool_survival_owner(list(bad)), "survival hierarchy", info = paste(family, name))
+      expect_error(.dp_pool_survival_owner(list(o, bad)), "survival hierarchy", info = paste(family, name))
+      expect_error(.pool_protected_release_frames(list(a = .pc_survival_frame(list(bad), 1L))),
+                    "survival hierarchy", info = paste(family, name))
+    }
+  }
+})
+
+test_that("the ordinary C6 survival helper keeps its common horizon", {
+  o <- .pc_survival_owner("C6")
+  out <- .dp_pool_survival_owner(list(o))$frame
+  expect_equal(out$persons, c(10, 10))
+  expect_equal(out$events, c(2, 2))
+  expect_equal(out$person_time, c(100, 100))
+  o$horizon_days <- 365
+  expect_error(.dp_pool_survival_owner(list(o)), "survival hierarchy")
+})
+
+test_that("public survival pooling rejects different equal-width family identities", {
+  a <- .pc_survival_family("C8")[[1L]]
+  b <- a
+  keys <- c("other=a", "other=b", "other=c")
+  b$family_basis$family_id$atoms <- keys
+  names(b$family_basis$atoms) <- keys
+  expect_silent(.dp_pool_survival_owner(list(a)))
+  expect_silent(.dp_pool_survival_owner(list(b)))
+  expect_error(.pool_protected_release_frames(list(
+    a = .pc_survival_frame(list(a), 1L), b = .pc_survival_frame(list(b), 2L))),
+    "not compatible")
+})

@@ -80,8 +80,13 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
   interaction estimates, the SCCS incidence rate ratio) are pooled, as in
   2.10.2, by inverse-variance meta-analysis of the per-site protected
   estimates; the signed-component pooling stays in the `protected_components`
-  attribute. Cox exit-time cells are summed but never refitted, and SCCS
-  cells are never pooled.
+  attribute. Cox exit-time cells are projected onto the pooled C6 event and
+  non-event parents. Interaction C6/C8 pooling projects the complete signed
+  atomic family before deriving requested subgroup views, retaining both
+  subgroup and arm margins and explicit view identifiers. C8 uses finite IPF
+  plus a feasible margin repair, not an exact KL/L2 projection. Missing or
+  incompatible status/family metadata is refused. Cox cells are never
+  refitted, and SCCS cells are never pooled.
 - Servers without the DP service pool their standard outputs by the
   established contract; protected and standard frames are never mixed. Pooled
   standard-mode frames with protected person-time say that those fields are

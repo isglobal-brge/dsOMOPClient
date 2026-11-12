@@ -578,8 +578,12 @@
 #'
 #' Record-weighted releases (family \code{RM}) are pooled per stratum by
 #' \code{.pool_protected_record_moments}. Exit-time x status cells of a
-#' grouped-time Cox release (family \code{C8}) are summed and projected like
-#' any partition and never refitted; the event-weighted q x exposure cells of
+#' grouped-time Cox release (family \code{C8}) are summed and projected onto
+#' their pooled C6 event/non-event parents. Interaction C6/C8 exports retain
+#' the complete signed atomic family, projected before view coarsening;
+#' supplemental rows and cells retain family and view identifiers. C8 uses
+#' finite IPF with a feasible margin repair, not an exact KL/L2 claim. Cox
+#' cells are never refitted; the event-weighted q x exposure cells of
 #' an SCCS release (\code{w}) are not pooled (only its case total).
 #'
 #' @param per_site Named list of released frames.
@@ -629,6 +633,7 @@
            o$strata_kind, o$cell_keys,
            o$horizon_days, o$recurrent_cap,
            .dp_c6_hierarchy_signature(o),
+           .dp_survival_signature(o),
            if (!is.null(o$parent_basis)) signature(list(owners = list(o$parent_basis))),
            vapply(o$components, `[[`, character(1L), "stratum"))
     })
@@ -648,6 +653,14 @@
   for (i in seq_along(payloads[[1L]]$owners)) {
     owners <- lapply(payloads, function(p) p$owners[[i]])
     o <- owners[[1L]]
+    if (identical(o$family, "C8") || !is.null(o$family_basis) ||
+        (identical(o$family, "C6") &&
+          (!is.null(o$parent_owner) || !is.null(o$parent)))) {
+      displayed <- .dp_pool_survival_owner(owners)
+      rows[[length(rows) + 1L]] <- displayed$frame
+      if (!is.null(displayed$cells)) cells[[length(cells) + 1L]] <- displayed$cells
+      next
+    }
     if (identical(o$family, "C6") && !is.null(o$hierarchy)) {
       rows[[length(rows) + 1L]] <- .dp_pool_c6_hierarchy(owners)
       next
@@ -718,13 +731,21 @@
     rows[[length(rows) + 1L]] <- frame
   }
   result <- do.call(rbind, lapply(rows, function(r) {
+    for (col in c("family", "view", "subgroup_kind")) {
+      if (!col %in% names(r)) r[[col]] <- NA_character_
+    }
     for (col in c("mean", "sd", "events", "person_time", "rate", "recurrent")) {
       if (!col %in% names(r)) r[[col]] <- NA_real_
     }
     r[, c("owner", "stratum", "persons", "mean", "sd", "events",
-          "person_time", "rate", "recurrent")]
+          "person_time", "rate", "recurrent", "family", "view", "subgroup_kind")]
   }))
-  attr(result, "cells") <- if (length(cells)) do.call(rbind, cells) else NULL
+  attr(result, "cells") <- if (length(cells)) do.call(rbind, lapply(cells, function(x) {
+    for (col in c("family", "view", "subgroup_kind")) {
+      if (!col %in% names(x)) x[[col]] <- NA_character_
+    }
+    x
+  })) else NULL
   routes <- vapply(payloads, `[[`, character(1L), "protection")
   warnings <- paste0(
     "Pooled protected components: per owner and stratum the signed noisy ",
@@ -732,7 +753,8 @@
   if ("C8" %in% families) {
     warnings <- c(warnings, paste0(
       "Grouped-time Cox exit-time x status cells (C8) were summed across ",
-      "sites and projected onto the pooled arm totals; no hazard ratio is ",
+      "sites and projected onto their pooled C6 event/no-event parents; ",
+      "interaction views retain complete atomic family margins. No hazard ratio is ",
       "refitted on them."))
   }
   if ("SCCS" %in% families) {
