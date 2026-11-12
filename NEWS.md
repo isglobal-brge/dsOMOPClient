@@ -52,6 +52,10 @@ workstream fills its entries.
   The digest's number serialisation finds the ECMAScript shortest round-trip
   decimal for every finite double (power-of-two regression `2^-24` ->
   `5.960464477539063e-8`; digest vector `power_of_two_factor`).
+- Vendored `R/plan_normalize_v2.R` (amendment A-11): `.planNormalizeV2()` is
+  the one normal form the semantic digest hashes on client and server; the
+  normalised fixtures of `inst/schema/normalized/` are pinned. `plan-v2.json`
+  gains `source_analyses` on temporal and person-period outputs (A-14).
 
 # dsOMOPClient 2.10.2
 
