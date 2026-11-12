@@ -145,7 +145,17 @@
     } else if (length(args)) {
       out <- c(out, args)
     }
+    if (inherits(x, "omop_predicate")) {
+      # JSON has one numeric kind. Preserve predicate literal storage without
+      # changing its validated grammar or its emitted plan.
+      storage <- .v2_predicate_numeric_storage(x$tree)
+      if (length(storage)) out$omop_numeric_storage <- storage
+    }
     if (!is.null(spec$name)) out$variable_name <- spec$name
+    if (!is.null(x$simple)) out$omop_simple <- .v2_plain_value(x$simple)
+    if (!is.null(attr(x, "omop_namespace", exact = TRUE))) {
+      out$omop_namespace <- .v2_plain_value(attr(x, "omop_namespace", exact = TRUE))
+    }
     return(out)
   }
   if (is.list(x) && !is.data.frame(x)) {
@@ -158,6 +168,43 @@
   # Named atomic vectors (e.g. c(factor = , offset = )) keep their names.
   if (is.atomic(x) && !is.null(names(x))) return(as.list(x))
   x
+}
+
+.v2_predicate_numeric_storage <- function(x, path = integer()) {
+  if (is.numeric(x) && !is.object(x)) return(list(list(path = path, type = typeof(x))))
+  storage <- list()
+  if (is.list(x) && !.v2_is_tagged(x)) {
+    for (i in seq_along(x)) {
+      storage <- c(storage, .v2_predicate_numeric_storage(x[[i]], c(path, i)))
+    }
+  }
+  storage
+}
+
+.v2_restore_predicate_storage <- function(tree, storage) {
+  invalid <- function() stop("Invalid predicate numeric storage metadata.", call. = FALSE)
+  restore <- function(node, path, type) {
+    if (!length(path)) {
+      if (!is.numeric(node) || is.object(node)) invalid()
+      if (identical(type, "integer")) {
+        if (anyNA(node) || any(!is.finite(node)) || any(node != trunc(node)) ||
+            any(abs(node) > .Machine$integer.max)) invalid()
+        return(as.integer(node))
+      }
+      if (!identical(type, "double")) invalid()
+      return(as.numeric(node))
+    }
+    i <- path[[1L]]
+    if (!is.list(node) || !is.numeric(i) || length(i) != 1L || is.na(i) ||
+        i != trunc(i) || i < 1L || i > length(node)) invalid()
+    node[[i]] <- restore(node[[i]], path[-1L], type)
+    node
+  }
+  for (item in storage) {
+    if (!is.list(item) || !identical(names(item), c("path", "type"))) invalid()
+    tree <- restore(tree, unlist(item$path, use.names = FALSE), item$type)
+  }
+  tree
 }
 
 # Inverse of .v2_plain_value(): rebuild tagged objects through their
@@ -183,7 +230,13 @@
                "omop_end", "omop_coverage", "omop_era", "omop_censor", "omop_reduce",
                "omop_match", "omop_age_band", "omop_strata", "omop_param", ".v2_param_op")
   if (!ctor %in% allowed) stop("Unknown language-2 object '", ctor, "' in the recipe.", call. = FALSE)
+  numeric_storage <- x$omop_numeric_storage
+  x$omop_numeric_storage <- NULL
   variable_name <- x$variable_name
+  namespace <- x$omop_namespace
+  simple <- x$omop_simple
+  x$omop_simple <- NULL
+  x$omop_namespace <- NULL
   x[[.V2_CTOR_TAG]] <- NULL
   x$variable_name <- NULL
   if (!is.null(x$items)) {
@@ -211,7 +264,31 @@
   # A NULL stored argument always equals its constructor default.
   if (!is.null(names(args))) args <- args[!vapply(args, is.null, logical(1))]
   obj <- do.call(ctor, args)
+  if (!is.null(numeric_storage)) {
+    if (!identical(ctor, "omop_where_tree") || !is.list(numeric_storage)) {
+      stop("Invalid predicate numeric storage metadata.", call. = FALSE)
+    }
+    # Restore after constructor canonicalization, which may promote all IN
+    # members together. Validate the resulting tree through the same grammar.
+    tree <- .v2_restore_predicate_storage(obj$tree, numeric_storage)
+    obj <- .v2_predicate(tree)
+  }
   if (!is.null(variable_name)) obj$name <- variable_name
+  if (!is.null(simple)) {
+    obj$simple <- .v2_restore(simple)
+    obj <- .simple_expand_tagged(obj)
+  }
+  if (!is.null(namespace)) {
+    if (!inherits(obj, "omop_param") || !is.list(namespace) ||
+        !all(vapply(namespace, function(step) {
+          is.list(step) && (is.null(step$prefix) ||
+            (is.character(step$prefix) && length(step$prefix) == 1L && !is.na(step$prefix))) &&
+            is.list(step$maps)
+        }, logical(1)))) {
+      stop("Invalid parameter reference namespace in the recipe.", call. = FALSE)
+    }
+    attr(obj, "omop_namespace") <- namespace
+  }
   obj
 }
 
@@ -245,7 +322,26 @@
   }
   # Built by hand: do.call(.codegen_call, ...) would partially match an
   # argument called `fn` to its `fn_name` formal.
-  paste0(spec$ctor, "(", paste(parts, collapse = ", "), ")")
+  code <- paste0(spec$ctor, "(", paste(parts, collapse = ", "), ")")
+  if (inherits(x, "omop_predicate") &&
+      !identical(.v2_tree_canonical(x$tree), x$tree)) {
+    # Validate the original tree before embedding it: restoring literal
+    # storage must never reinstate a malformed field canonicalization dropped.
+    .v2_check_predicate_tree(x$tree)
+    # Its IN canonicalizer promotes mixed numeric members. The generated
+    # closure retains the already-validated original literal storage.
+    code <- paste0("(function(x) { x$tree <- ", value_code(arg_code(x$tree)),
+                   "; x })(", code, ")")
+  }
+  if (!is.null(x$simple)) {
+    code <- paste0("(function(x) { x$simple <- ", .v2_codegen_list(x$simple),
+                   "; x })(", code, ")")
+  }
+  namespace <- attr(x, "omop_namespace", exact = TRUE)
+  if (!is.null(namespace)) {
+    code <- paste0("structure(", code, ", omop_namespace = ", .codegen_value(namespace), ")")
+  }
+  code
 }
 
 # A serialised visit restriction: "index" or list(type = <ids>).
