@@ -401,3 +401,19 @@ test_that("an index-relative age criterion needs an index; explicit names are re
   expect_identical(plan$events$dm_dx$concept_set$concepts, list(2L))
   expect_identical(plan$populations$p$index$source$event, "dm_dx_2")
 })
+
+test_that("each language-2 object has its section 4 JSON form", {
+  dm <- omop_concept_set(201820, descendants = TRUE, name = "dm")
+  ev <- omop_event("condition_occurrence", dm, name = "dx")
+  w <- dsOMOPClient:::.v2_wire_of(omop_has(ev, n = 2, window = omop_window(-365, 0), distinct = "day"))
+  expect_identical(w$node$has$source, list(event = "dx"))
+  expect_named(w$events, "dx")
+  expect_named(w$concept_sets, "dm")
+  expect_true(dsOMOPClient:::.jsonSchemaValidate(dsOMOPClient:::.v2_schema_def("criteria"), w$node,
+                                                 root = dsOMOPClient:::.v2_plan_schema())$valid)
+  expect_identical(dsOMOPClient:::.v2_wire_of(omop_window(omop_bound("index", 1), NULL))$node,
+                   list(start = list(anchor = "index", offset = 1L), end = NULL, anchor = "index"))
+  expect_identical(dsOMOPClient:::.v2_wire_of(omop_reduce("count", distinct = "visit"))$node,
+                   list(fn = "count", distinct = "visit"))
+  expect_error(dsOMOPClient:::.v2_wire_of(omop_output("o")), "compiled with their recipe")
+})

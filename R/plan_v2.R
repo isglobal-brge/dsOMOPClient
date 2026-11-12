@@ -1564,3 +1564,55 @@ print.omop_plan_v2 <- function(x, ...) {
   if (!is.null(x$publish)) cat("  publish:", paste(unlist(x$publish), collapse = ", "), "\n")
   invisible(x)
 }
+
+#' The plan-v2 (design section 4) JSON form of one language-2 object
+#'
+#' Compiles a single object the way \code{recipe_to_plan()} compiles it inside a
+#' recipe and returns its wire node together with the registry nodes it
+#' references (concept sets, events, intervals), so the object's JSON form can
+#' be inspected or reused (section 12.1: "JSON = section 4").
+#'
+#' @param x A language-2 object (concept set, event, era, criterion, window,
+#'   anchor, index, censor, reducer, match or variable) or a recipe.
+#' @return \code{list(node, concept_sets, events, intervals)} (a recipe gives its
+#'   whole plan).
+#' @keywords internal
+.v2_wire_of <- function(x) {
+  if (inherits(x, "omop_recipe")) return(.v2_plain(recipe_to_plan(x, version = 2L)))
+  ctx <- .v2_new_context(omop_recipe())
+  ctx$reserved_names <- character(0)
+  context <- paste0(class(x)[[1L]], " object")
+  node <- if (inherits(x, "omop_concept_set")) {
+    .v2c_concept_set(ctx, x, context)
+  } else if (.v2_is_event(x)) {
+    .v2w_event(ctx, x, context)
+  } else if (.v2_is_interval(x)) {
+    .v2w_interval(ctx, x, context)
+  } else if (inherits(x, c("omop_criterion", "omop_filter", "omop_filter_group"))) {
+    .v2w_criterion(ctx, x, context)
+  } else if (inherits(x, "omop_window")) {
+    .v2w_window(ctx, x, context)
+  } else if (inherits(x, c("omop_anchor"))) {
+    .v2w_anchor(ctx, x, context)
+  } else if (inherits(x, "omop_bound")) {
+    .v2w_endpoint(ctx, x, context)
+  } else if (inherits(x, "omop_index")) {
+    .v2w_index(ctx, x, context)
+  } else if (inherits(x, "omop_censor")) {
+    .v2w_censor_item(ctx, x, context)
+  } else if (inherits(x, "omop_reducer")) {
+    .v2w_reducer(ctx, x, context)
+  } else if (inherits(x, "omop_match")) {
+    .v2w_match(ctx, x, context)
+  } else if (inherits(x, "omop_coverage")) {
+    .v2w_coverage(x)
+  } else if (inherits(x, "omop_variable")) {
+    .v2w_variable(ctx, x, x$name %||% "variable")
+  } else {
+    stop("No plan-v2 JSON form for an object of class ", class(x)[[1L]],
+         "; outputs and populations are compiled with their recipe (recipe_to_plan()).",
+         call. = FALSE)
+  }
+  list(node = .v2_plain(node), concept_sets = ctx$concept_sets, events = ctx$events,
+       intervals = ctx$intervals)
+}
