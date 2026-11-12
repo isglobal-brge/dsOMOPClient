@@ -91,6 +91,11 @@ workstream fills its entries.
   longer round to 4 / 7 digits on export.
 
 ## Newly permitted
+- (B-20) `omop_index_event()` accepts every event table of the server's role
+  registry (vendored `inst/ohdsi/roles-5.3.csv`, `roles-5.4.csv`): besides the
+  seven tables of 2.10.2, `visit_detail`, `observation_period`, `death`,
+  `specimen`, `note`, `payer_plan_period`, the era tables and `episode`; the
+  server checks the table against its own CDM version.
 - `on_small_site = "skip"` on plan and recipe execution keeps successful sites
   while asking each server to commit all output families or none. Non-strict
   partial results warn with rejected family names and codes.
@@ -121,7 +126,26 @@ workstream fills its entries.
 - These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers;
   `recipe_lint()` reports them as INFO `language_2_only`.
 
+- (F-1) New `omop_filter_concept_set(concept_ids, concept_col = NULL)`: a
+  row concept-set filter matching the output table's domain concept column
+  from the role registry (`condition_concept_id` for `condition_occurrence`,
+  ...), or `concept_col`. Row concept-set filters compiled to the column
+  `concept_id`, which the server refused.
+
+- (A-18) The section 11 adapter refusals reach the analyst as the error
+  `Plan publication refused: <site>:<output> [validation_error] (<reason>)`
+  with `adapter_person_mismatch` or `cost_currency_mixed`, under both
+  `on_small_site` settings (they are never skippable), and nothing is
+  published; tested end to end through DSLite against a PostgreSQL CDM.
+
 ## Newly refused
+- (F-2) A recipe-level row filter is attached only to outputs whose event
+  table has every column it references; otherwise `recipe_to_plan()` stops
+  naming the output and the missing column (the filter was attached to every
+  output and failed at the server). Table-agnostic date and concept-set
+  filters still apply to every output, and columns no CDM table defines are
+  left to the server. Put the predicate on an `omop_event(where = ...)` of
+  the right table instead.
 - Invalid or incomplete publication status fails closed; only
   `insufficient_support` can skip a site.
 - Plans that do not validate against the vendored `plan-v2.json` are never
@@ -132,6 +156,13 @@ workstream fills its entries.
 - A language-2 survival output needs an explicit `censor` list; class-1
   columns are refused at compile time in projections, value columns and
   predicates of v2 plans.
+
+## Shared with dsOMOP 2.10.3 (WS-2)
+- `R/ir_defaults.R` (`.irNormalizeWire()`), the language 2.0 normaliser shared
+  byte-identically with the server (schema defaults plus the semantic
+  defaults of change request CR-11, nothing else added): normalised forms and
+  their semantic digests agree on both sides; leaving the semantic defaults
+  of the canonical example A implicit gives the same normal form.
 
 ## Upgrading clients and servers
 - Plan execution with dsOMOPClient 2.10.3 requires the server's published
@@ -150,6 +181,15 @@ workstream fills its entries.
   The digest's number serialisation finds the ECMAScript shortest round-trip
   decimal for every finite double (power-of-two regression `2^-24` ->
   `5.960464477539063e-8`; digest vector `power_of_two_factor`).
+- Vendored `R/plan_normalize_v2.R` (amendment A-11): `.planNormalizeV2()` is
+  the one normal form the semantic digest hashes on client and server; the
+  normalised fixtures of `inst/schema/normalized/` are pinned. `plan-v2.json`
+  gains `source_analyses` on temporal and person-period outputs (A-14).
+  The vendored probe corpus carries the A-15/A-16 IR-only variants, refused
+  on the wire (P64-P66).
+- A-18 `.plan_validate_status()` admits the optional closed `reason` of a
+  rejected entry (only with `validation_error`); the refusal diagnostic names
+  it with the output and code (`site:output [validation_error] (reason)`).
 
 # dsOMOPClient 2.10.2
 

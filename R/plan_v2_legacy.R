@@ -34,17 +34,21 @@
 # union); concept-scoped and unscoped variables of a table stay separate
 # sources, as do variables with different narrowing (filters, where, visit,
 # concept_col, value column, descendants).
+.v2_legacy_source_key <- function(v, ids) {
+  paste(deparse(list(table = v$table, scoped = length(ids) > 0L,
+                     expand = isTRUE(v$expand), filters = v$filters,
+                     where = v[["where"]], visit_filter = v$visit_filter,
+                     visit = v[["visit"]], concept_col = v$concept_col,
+                     value_source = v$value_source)), collapse = "")
+}
+
 .v2_legacy_grouped_events <- function(vars, context) {
   keys <- character(0)
   groups <- list()
   for (nm in names(vars)) {
     v <- vars[[nm]]
     ids <- as.integer(unlist(v$concept_id %||% integer(0)))
-    key <- paste(deparse(list(table = v$table, scoped = length(ids) > 0L,
-                              expand = isTRUE(v$expand), filters = v$filters,
-                              where = v[["where"]], visit_filter = v$visit_filter,
-                              visit = v[["visit"]], concept_col = v$concept_col,
-                              value_source = v$value_source)), collapse = "")
+    key <- .v2_legacy_source_key(v, ids)
     i <- match(key, keys)
     if (is.na(i)) {
       keys <- c(keys, key)
@@ -248,14 +252,85 @@
   .v2w_options(ctx, "intervals", Filter(Negate(is.null), o2), context)
 }
 
+# A legacy variable's temporal analysis.
+.v2_legacy_analysis <- function(v) if (identical(v$format, "count")) "count" else "binary"
+
+# The variables declare the (concept, analysis) pairs; a legacy
+# options$analyses may only order them: naming an analysis no variable
+# requests, or omitting a requested one, is refused (the v1 compiler refused
+# the undeclared product).
+.v2_legacy_check_analyses <- function(per_var, analyses, context) {
+  omitted <- setdiff(per_var, analyses)
+  if (length(omitted)) {
+    .v2_stop(context, ": the variables request the ", paste(unique(omitted), collapse = ", "),
+             " analysis, which options$analyses omits.")
+  }
+  extra <- setdiff(analyses, per_var)
+  if (length(extra)) {
+    .v2_stop(context, ": options$analyses names ", paste(extra, collapse = ", "),
+             ", which no variable requests; declare it with a variable of that format.")
+  }
+  invisible(TRUE)
+}
+
+# Temporal sources: the variables of one narrowing group read the same rows;
+# their concepts are split by the analyses requested for each concept, so a
+# source's concepts share one analysis set (A-14: sources whose concept sets
+# need different analysis selections stay distinct). Returns the events and,
+# per event, its analyses in the output's order.
+.v2_legacy_temporal_sources <- function(vars, analyses, context) {
+  keys <- character(0)
+  groups <- list()
+  for (nm in names(vars)) {
+    v <- vars[[nm]]
+    a <- .v2_legacy_analysis(v)
+    ids <- as.integer(unlist(v$concept_id %||% integer(0)))
+    key <- .v2_legacy_source_key(v, ids)
+    i <- match(key, keys)
+    if (is.na(i)) {
+      keys <- c(keys, key)
+      groups[[length(groups) + 1L]] <- list(v = v, by_concept = list(), unscoped = character(0))
+      i <- length(groups)
+    }
+    if (length(ids)) {
+      for (cid in as.character(ids)) {
+        groups[[i]]$by_concept[[cid]] <- union(groups[[i]]$by_concept[[cid]], a)
+      }
+    } else {
+      groups[[i]]$unscoped <- union(groups[[i]]$unscoped, a)
+    }
+  }
+  events <- list()
+  sets <- list()
+  in_order <- function(set) analyses[analyses %in% set]
+  for (g in groups) {
+    if (length(g$by_concept)) {
+      set_key <- vapply(g$by_concept, function(x) paste(in_order(x), collapse = ","), "")
+      for (sk in unique(set_key)) {
+        v <- g$v
+        v$concept_id <- as.integer(names(g$by_concept)[set_key == sk])
+        events[[length(events) + 1L]] <- .v2_legacy_variable_event(v, context)
+        sets[[length(sets) + 1L]] <- in_order(g$by_concept[[which(set_key == sk)[[1L]]]])
+      }
+    } else {
+      v <- g$v
+      v$concept_id <- NULL
+      events[[length(events) + 1L]] <- .v2_legacy_variable_event(v, context)
+      sets[[length(sets) + 1L]] <- in_order(g$unscoped)
+    }
+  }
+  list(events = events, sets = sets)
+}
+
 #' Legacy temporal-covariates and person-period presets lowered to v2
 #'
-#' One source per group of variables reading the same rows; the analyses are
-#' the requested ones (\code{count} for count variables, \code{binary}
-#' otherwise) unless \code{options$analyses} names them. Every
-#' \code{(source, concept, analysis)} pair is a covariate identity of the
-#' server's registry (design 6.12); different analyses per concept need
-#' per-source analyses (A-14) and are refused until the client emits them.
+#' Sources are the groups of variables reading the same rows, split by the
+#' analyses each concept requests (\code{count} for count variables,
+#' \code{binary} otherwise); the output's analyses are the requested ones
+#' unless \code{options$analyses} names them. A source whose analyses differ
+#' from the output's carries them in \code{source_analyses} (A-14), so only
+#' the declared \code{(source, concept, analysis)} pairs are computed, each a
+#' covariate identity of the server's registry (design 6.12).
 #' @keywords internal
 .v2_legacy_temporal_options <- function(ctx, out, vars, context, format) {
   o <- out$options %||% list()
@@ -278,35 +353,27 @@
   if (!is.null(vw$end) && !is.null(o$window_end) && as.integer(o$window_end) != vw$end) {
     .v2_stop(context, ": conflicting variable and output window_end.")
   }
-  per_var <- vapply(vars, function(v) {
-    if (identical(v$format, "count")) "count" else "binary"
-  }, character(1))
-  analyses <- o$analyses %||% unique(per_var)
-  # A-14: different analyses per concept need per-source analyses
-  # (source_analyses); until the client emits them such a recipe is refused,
-  # never run as the expanded concept-by-analysis product.
-  scoped <- vapply(vars, function(v) length(v$concept_id %||% integer(0)) > 0L, logical(1))
-  if (any(scoped)) {
-    requested <- unique(unlist(lapply(which(scoped), function(i) {
-      paste(as.integer(unlist(vars[[i]]$concept_id)), per_var[[i]], sep = "/")
-    })))
-    concepts <- unique(as.integer(unlist(lapply(vars[scoped], function(v) v$concept_id))))
-    product <- as.vector(outer(concepts, analyses, paste, sep = "/"))
-    if (!setequal(requested, product)) {
-      .v2_stop(context, ": the variables declare different analyses per concept (",
-               paste(requested, collapse = ", "), "); per-source analyses are not emitted ",
-               "yet, so the output would compute the undeclared pairs as well. Split the ",
-               "variables into outputs with one analysis set each.")
-    }
-  }
-  o2 <- list(sources = .v2_legacy_grouped_events(vars, context),
-             window = .v2_legacy_window(ws, we), analyses = analyses)
+  per_var <- vapply(vars, .v2_legacy_analysis, character(1))
+  analyses <- as.character(unlist(o$analyses %||% unique(per_var)))
+  .v2_legacy_check_analyses(per_var, analyses, context)
+  src <- .v2_legacy_temporal_sources(vars, analyses, context)
+  o2 <- list(sources = src$events, window = .v2_legacy_window(ws, we), analyses = analyses)
   if (identical(format, "person_period")) {
     o2$bins <- list(width = o$bin_width %||% 30L)
   } else {
     o2$bin_width <- o$bin_width %||% 30L
   }
-  .v2w_options(ctx, format, o2, context)
+  res <- .v2w_options(ctx, format, o2, context)
+  refs <- vapply(res$sources, function(r) as.character(r$event), "")
+  if (anyDuplicated(refs)) {
+    .v2_stop(context, ": two sources resolve to one event; give the variables distinct scopes.")
+  }
+  sa <- list()
+  for (i in seq_along(refs)) {
+    if (!identical(src$sets[[i]], analyses)) sa[[refs[[i]]]] <- .v2_array(src$sets[[i]])
+  }
+  if (length(sa)) res$source_analyses <- sa
+  res
 }
 
 #' Legacy covariates_sparse label lowered to the language-2 sparse format (B-22)
@@ -321,9 +388,17 @@
                "are presence/count analyses.")
     }
   }
-  analyses <- o$analyses %||% unique(vapply(vars, function(v) {
-    if (identical(v$format, "count")) "count" else "binary"
-  }, character(1)))
+  per_var <- vapply(vars, .v2_legacy_analysis, character(1))
+  analyses <- as.character(unlist(o$analyses %||% unique(per_var)))
+  .v2_legacy_check_analyses(per_var, analyses, context)
+  # The sparse format has no per-source analysis selection: different analyses
+  # per concept would compute the undeclared pairs too, so they are refused.
+  src <- .v2_legacy_temporal_sources(vars, analyses, context)
+  if (!all(vapply(src$sets, identical, logical(1), analyses))) {
+    .v2_stop(context, ": the variables declare different analyses per concept, which a ",
+             "sparse output cannot select per source; split them into outputs with one ",
+             "analysis set each.")
+  }
   .v2w_options(ctx, "sparse", list(sources = .v2_legacy_grouped_events(vars, context),
                                    analyses = analyses), context)
 }

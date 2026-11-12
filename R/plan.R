@@ -1916,14 +1916,22 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     # (design 5). A multi-server execution binds the plan's semantic digest,
     # the participating servers and their schemas (section 4.4); the
     # contract travels as a plan attribute, never on the wire.
-    .v2_assert_supported(plan, session, names(conns))
-    plan <- .plan_v2_federation(plan, symbol, conns)
     roots <- if (is.null(plan$publish)) names(plan$outputs) else
       as.character(unlist(plan$publish))
     out <- .resolve_plan_out(
       list(outputs = plan$outputs[roots]), out,
       reserved_symbols = c(symbol, session$res_symbol)
     )
+    # The roots sent are exactly the requested ones: a partial out mapping
+    # leaves the other outputs private (B1), so publish names the mapped roots
+    # before the capability check and the federation contract bind the plan.
+    if (is.null(plan$publish) || !setequal(names(out), roots)) {
+      plan$publish <- .v2_array(roots[roots %in% names(out)])
+      attr(plan, "harmonization") <- NULL
+      .v2_assert_schema(plan)
+    }
+    .v2_assert_supported(plan, session, names(conns))
+    plan <- .plan_v2_federation(plan, symbol, conns)
   } else {
     plan <- .prepare_plan_for_federation(plan, symbol, conns)
     contract <- .session_harmonization_for_connections(session, conns)
@@ -2037,8 +2045,12 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     rejected <- unlist(lapply(names(statuses), function(server) {
       x <- statuses[[server]]$rejected
       if (!length(x)) return(character(0))
+      # A-18: the validated reason, when present, names the refused construct
       paste0(server, ":", names(x), " [",
-             vapply(x, `[[`, "", "code"), "]")
+             vapply(x, `[[`, "", "code"), "]",
+             vapply(x, function(r) {
+               if (is.null(r$reason)) "" else paste0(" (", r$reason, ")")
+             }, ""))
     }), use.names = FALSE)
     codes <- unlist(lapply(statuses, function(x) {
       vapply(x$rejected, `[[`, "", "code")
@@ -2123,13 +2135,19 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   codes <- c("insufficient_support", "coverage_ambiguous", "join_cardinality",
              "match_candidates_exceeded", "dialect_unsupported",
              "unavailable_table", "validation_error")
+  # A-18: a rejected entry may carry a third closed field `reason`, only with
+  # code validation_error and one constant of the section 11 vocabulary
+  reasons <- c("adapter_person_mismatch", "cost_currency_mixed")
   for (rejection in x$rejected) {
-    if (!is.list(rejection) || length(rejection) != 2L ||
-        !setequal(names(rejection), c("code", "message")) ||
+    if (!is.list(rejection) || !length(rejection) %in% 2:3 ||
+        !setequal(names(rejection), c("code", "message", "reason")[seq_along(rejection)]) ||
         !is.character(rejection$code) || length(rejection$code) != 1L ||
         is.na(rejection$code) || !rejection$code %in% codes ||
         !is.character(rejection$message) || length(rejection$message) != 1L ||
         is.na(rejection$message)) invalid()
+    if (length(rejection) == 3L && (!identical(rejection$code, "validation_error") ||
+        !is.character(rejection$reason) || length(rejection$reason) != 1L ||
+        is.na(rejection$reason) || !rejection$reason %in% reasons)) invalid()
   }
   symbols <- character(0)
   for (root in x$published) {

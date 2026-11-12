@@ -464,7 +464,7 @@ test_that("typed index events compile and survive recipe round-trips", {
   expect_s3_class(idx, "omop_index_event")
   expect_equal(idx$table, "condition_occurrence")
   expect_equal(idx$primary_limit, "last")
-  expect_error(omop_index_event(201820L, "death"), "must be one of")
+  expect_error(omop_index_event(201820L, "episode_event"), "must be one of")
   expect_error(omop_index_event(1.5, "condition_occurrence"),
                "non-negative integers")
   expect_error(omop_index_event(

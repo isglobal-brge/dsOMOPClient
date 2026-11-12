@@ -260,6 +260,12 @@ test_that("feature windows compile at episode grain with per-spec scopes", {
     outputs = omop_output(name = "features", type = "features"))
   expect_error(recipe_to_plan(common, version = 1),
                "grain='episode'")
+  # A-14: newly permitted -- the v1 refusal keeps its message and carries the
+  # class; the v2 rendering takes episode grain and execution selects it.
+  e <- tryCatch(recipe_to_plan(common, version = 1), error = function(e) e)
+  expect_s3_class(e, "dsomop_v1_newly_permitted")
+  expect_identical(recipe_to_plan(common)$outputs$features$grain, "episode")
+  expect_s3_class(dsOMOPClient:::.recipe_plan_auto(common), "omop_plan_v2")
 
   common$outputs$features$options <- list(grain = "episode")
   plan <- recipe_to_plan(common, version = 1)
@@ -498,13 +504,27 @@ test_that("temporal covariates reject undeclared Cartesian products", {
     variables = list(binary, count),
     outputs = omop_output(name = "tc", type = "temporal_covariates"))
   expect_error(recipe_to_plan(mixed, version = 1), "Cartesian product")
-  # A-14: the v1 refusal is a newly permitted shape, but until per-source
-  # analyses (source_analyses) are emitted the v2 rendering refuses too, never
-  # computing the undeclared 1/count and 2/binary pairs.
+  # A-14: the v1 refusal is a newly permitted shape; the v2 rendering computes
+  # exactly the declared pairs 1/binary and 2/count (per-source analyses),
+  # never their product.
   e <- tryCatch(recipe_to_plan(mixed, version = 1), error = function(e) e)
   expect_s3_class(e, "dsomop_v1_newly_permitted")
-  expect_error(recipe_to_plan(mixed), "different analyses per concept.*1/binary, 2/count")
-  expect_error(dsOMOPClient:::.recipe_plan_auto(mixed), "different analyses per concept")
+  plan <- recipe_to_plan(mixed)
+  tc <- plan$outputs$tc$options
+  srcs <- vapply(tc$sources, function(r) r$event, "")
+  out_analyses <- unlist(tc$analyses)
+  expect_identical(out_analyses, c("binary", "count"))
+  pairs <- unlist(lapply(srcs, function(nm) {
+    selected <- unlist(tc$source_analyses[[nm]]) %||% out_analyses
+    as.vector(outer(unlist(plan$events[[nm]]$concept_set$concepts), selected, paste, sep = "/"))
+  }))
+  expect_setequal(pairs, c("1/binary", "2/count"))
+  expect_s3_class(dsOMOPClient:::.recipe_plan_auto(mixed), "omop_plan_v2")
+  # an analysis no variable requests is refused rather than invented
+  mixed$outputs$tc$options <- list(analyses = c("binary", "count"))
+  only_binary <- mixed
+  only_binary$variables <- list(presence = binary)
+  expect_error(recipe_to_plan(only_binary), "no variable requests")
 
   unscoped <- binary
   unscoped$concept_id <- NULL

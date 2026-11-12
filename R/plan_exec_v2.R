@@ -63,6 +63,127 @@
   invisible(TRUE)
 }
 
+#' Semantic digest of a v2 plan over its normal form
+#'
+#' The digest binds the federation harmonisation signature and the DP
+#' provenance capsule: \code{.planNormalizedDigest()} of the vendored A-11
+#' normaliser (R/plan_normalize_v2.R), i.e. SHA-256 of the RFC 8785
+#' serialisation of the normalised plan without its advisory fields.
+#'
+#' @param plan A v2 plan.
+#' @return A list with \code{payload} and \code{sha256}.
+#' @keywords internal
+.plan_v2_digest <- function(plan) {
+  .planNormalizedDigest(plan)
+}
+
+.v2_has_not <- function(x) {
+  if (!is.list(x)) return(FALSE)
+  if (identical(names(x), "not")) return(TRUE)
+  any(vapply(x, .v2_has_not, logical(1)))
+}
+
+.v2_has_source_anchor <- function(x) {
+  if (!is.list(x)) return(FALSE)
+  for (key in intersect(names(x) %||% character(0), c("anchor", "reference"))) {
+    a <- x[[key]]
+    if (is.list(a) && !is.null(a[["source"]])) return(TRUE)
+  }
+  any(vapply(x, .v2_has_source_anchor, logical(1)))
+}
+
+#' Language operations a v2 plan needs from a server
+#'
+#' The same inventory the server computes (\code{.irOperations()}), over the
+#' normal form of the plan, so the client sends a v2 plan exactly when every
+#' server advertises what it needs (design section 4.4).
+#'
+#' @param plan A v2 plan.
+#' @return A sorted character vector of operation names and, as attribute
+#'   \code{"reducers"}, the reducer functions used.
+#' @keywords internal
+.plan_v2_operations <- function(plan) {
+  x <- .planNormalizeV2(plan)
+  ops <- character(0)
+  add <- function(...) ops <<- c(ops, ...)
+  events <- x$events %||% list()
+  if (length(x$concept_sets %||% list()) ||
+      any(vapply(events, function(e) !is.null(e$concept_set), logical(1)))) {
+    add("concept_set")
+  }
+  for (e in events) {
+    if (!is.null(e$episode_members)) add("event.episode_members")
+    else if (!is.null(e$cost)) add("event.cost")
+    else add("event")
+    if (!is.null(e$unit)) add("event.unit")
+    on_missing <- e$on_missing_table %||% e$episode_members$on_missing_table %||%
+      e$cost$on_missing_table
+    if (identical(on_missing, "unavailable")) add("event.on_missing_table")
+  }
+  for (i in x$intervals %||% list()) {
+    add("interval")
+    if (identical(i$by, "ingredient")) add("interval.ingredient")
+    if (isTRUE(i$stockpile)) add("interval.stockpile")
+  }
+  for (p in x$populations %||% list()) {
+    kind <- p$kind
+    if (identical(kind, "index")) {
+      add("population.index")
+      if (identical(p$index$select, "first_eligible")) add("population.first_eligible")
+      if (!is.null(p$index$source$any_of)) add("population.any_of")
+    }
+    if (identical(kind, "criteria")) add("population.criteria")
+    if (identical(kind, "setop")) add("population.setop")
+    if (identical(kind, "match")) add("population.match")
+    if (is.character(p$parent)) add("population.parent")
+    if (identical(p$coverage$policy, "union")) add("population.coverage.union")
+    .v2_walk(p$where, function(node) {
+      if (is.list(node) && identical(names(node), "age")) add("criteria.age")
+    })
+    if (.v2_has_not(p)) add("criteria.not")
+  }
+  if (.v2_has_source_anchor(x[c("populations", "variables", "outputs")])) {
+    add("window.anchor.source")
+  }
+  reducers <- character(0)
+  for (v in x$variables %||% list()) {
+    if (!is.null(v$reducer)) {
+      add("variable.reducer")
+      reducers <- c(reducers, v$reducer$fn)
+      if (identical(v$reducer$fn, "supply_days")) add("reducer.supply_days")
+      if (identical(v$reducer$coverage, "effective_supply")) {
+        add("reducer.covered_days.effective_supply")
+      }
+    }
+    if (!is.null(v$derived)) add("variable.derived")
+    if (!is.null(v$raw)) add("variable.raw")
+    if (!is.null(v$population_column)) add("variable.population_column")
+  }
+  for (o in x$outputs %||% list()) {
+    add(paste0("output.", o$format))
+    if (identical(o$format, "long") && isTRUE(o$options$event_log)) add("output.long.event_log")
+    if (identical(o$format, "survival") &&
+        any(vapply(o$options$censor %||% list(), function(cz) {
+          is.list(cz) && (!is.null(cz$censor) || !is.null(cz$event) || !is.null(cz$interval))
+        }, logical(1)))) {
+      add("output.survival.censor_source")
+    }
+    pt <- o$options$partition
+    if (identical(o$format, "person_period") &&
+        length(pt$boundaries %||% list()) + length(pt$age_bands %||% NULL) +
+          length(pt$calendar %||% NULL) > 0L) {
+      add("output.person_period.partition")
+    }
+  }
+  # publish.roots: a declared strict subset of the outputs.
+  if (!is.null(x$publish) && length(x$publish) != length(x$outputs %||% list())) {
+    add("publish.roots")
+  }
+  ops <- sort(unique(ops))
+  attr(ops, "reducers") <- sort(unique(reducers))
+  ops
+}
+
 #' Constructs that make a recipe need a v2 plan
 #'
 #' Language-2 objects, and \code{parent_id} (whose v1 rendering silently ignored

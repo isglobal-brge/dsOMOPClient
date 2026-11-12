@@ -49,16 +49,27 @@
 
 .v2_table_abbrev <- c(
   condition_occurrence = "dx", drug_exposure = "rx", procedure_occurrence = "px",
-  measurement = "lab", observation = "obs", device_exposure = "device",
-  visit_occurrence = "visit", visit_detail = "visit_detail", death = "death",
-  specimen = "specimen", note = "note", episode = "episode",
-  payer_plan_period = "payer_plan", observation_period = "observation_period",
-  condition_era = "dx_era", drug_era = "rx_era", dose_era = "dose_era")
+  measurement = "lab", observation = "obs")
+# A-9: exactly these five abbreviations name interned events; every other table
+# keeps its full name.
 
 .v2_truncate_name <- function(x) {
   x <- gsub("[^A-Za-z0-9_]+", "_", x)
   if (!grepl("^[A-Za-z]", x)) x <- paste0("n_", x)
   substr(x, 1L, 64L)
+}
+
+# A-9: on a collision, the first free `_2`, `_3`, ...; the stem is shortened so
+# the whole name fits the 64-character grammar and the suffix is never cut.
+.v2_free_name <- function(base, taken) {
+  if (!base %in% taken) return(base)
+  i <- 2L
+  repeat {
+    suffix <- paste0("_", i)
+    name <- paste0(substr(base, 1L, 64L - nchar(suffix)), suffix)
+    if (!name %in% taken) return(name)
+    i <- i + 1L
+  }
 }
 
 # --- compile context ------------------------------------------------------------
@@ -276,13 +287,7 @@
     if (identical(.jcsCanonical(reg[[nm]]), key)) return(nm)
   }
   base <- .v2_truncate_name(base)
-  name <- base
-  i <- 2L
-  taken <- c(names(ctx$events), names(ctx$intervals), ctx$reserved_names)
-  while (name %in% taken) {
-    name <- .v2_truncate_name(paste0(substr(base, 1L, 60L), "_", i))
-    i <- i + 1L
-  }
+  name <- .v2_free_name(base, c(names(ctx$events), names(ctx$intervals), ctx$reserved_names))
   reg[[name]] <- wire
   ctx[[slot]] <- reg
   name
@@ -860,8 +865,17 @@
           if (!is.null(p$end)) list(var = col, op = "<=", value = p$end)))
         if (length(parts) == 1L) parts[[1L]] else list(and = parts)
       },
-      concept_set = list(var = p$concept_col %||% .plan_domain_concept_column(table),
-                         op = "in", value = .v2_array(as.integer(unlist(p$concept_ids %||% p$concept_id)))),
+      concept_set = {
+        # F-1: the table's domain concept column from the role registry, as
+        # the v1 compiler (.filter_to_leaf); v2 has no table-agnostic sentinel.
+        col <- p$concept_col %||% .role_domain_concept(table) %||% .plan_domain_concept_column(table)
+        if (is.null(col)) {
+          .v2_stop(context, ": a row concept-set filter on '", table, "' needs concept_col ",
+                   "(the table has no domain concept column).")
+        }
+        list(var = col, op = "in",
+             value = .v2_array(as.integer(unlist(p$concept_ids %||% p$concept_id))))
+      },
       value_concept = list(var = p$var %||% "value_as_concept_id", op = "in",
                            value = .v2_array(as.integer(unlist(p$value)))),
       value_bin = list(and = list(list(var = p$var, op = ">=", value = p$value$lower),
@@ -898,9 +912,9 @@
                "state_hierarchy", "state_step", "complete"),
   intervals = c("sources", "window", "interval_match", "event_select", "select_n",
                 "select_by", "anchor"),
-  temporal_covariates = c("sources", "bin_width", "window", "analyses"),
+  temporal_covariates = c("sources", "bin_width", "window", "analyses", "source_analyses"),
   person_period = c("representation", "sources", "bins", "window", "partition", "outcomes",
-                    "exposures", "carry_forward", "analyses"),
+                    "exposures", "carry_forward", "analyses", "source_analyses"),
   sparse = c("sources", "analyses"),
   membership = c("date_handling"),
   dictionary = c("source_outputs"),
@@ -1088,6 +1102,9 @@
     names(out$relations) <- names(o$relations)
   }
   if (!is.null(o$analyses)) out$analyses <- .v2_array(as.character(o$analyses))
+  if (!is.null(o$source_analyses)) {
+    out$source_analyses <- .v2w_source_analyses(o$source_analyses, out, context)
+  }
   if (!is.null(o$bins)) {
     out$bins <- if (!is.null(o$bins$calendar)) list(calendar = o$bins$calendar) else
       list(width = .v2_int(o$bins$width, paste0(context, " bins width"), min = 1L))
@@ -1122,6 +1139,32 @@
   out
 }
 
+# A-14 per-source analysis selection: resolved source name -> nonempty unique
+# subset of the output's analyses (in the output's order); every key names
+# exactly one source of the output.
+.v2w_source_analyses <- function(sa, out, context) {
+  if (!is.list(sa) || is.null(names(sa)) || any(!nzchar(names(sa))) || anyDuplicated(names(sa))) {
+    .v2_stop(context, ": source_analyses must be a uniquely named list.")
+  }
+  srcs <- vapply(out$sources %||% list(), function(r) {
+    as.character(r$event %||% r$interval %||% NA_character_)
+  }, "")
+  analyses <- as.character(unlist(out$analyses %||% list("binary")))
+  for (nm in names(sa)) {
+    hits <- sum(srcs == nm, na.rm = TRUE)
+    if (hits != 1L) {
+      .v2_stop(context, ": source_analyses names ",
+               if (hits == 0L) "an unknown" else "an ambiguous", " source '", nm, "'.")
+    }
+    a <- as.character(unlist(sa[[nm]]))
+    if (!length(a) || anyDuplicated(a) || !all(a %in% analyses)) {
+      .v2_stop(context, ": source_analyses '", nm, "' must be a nonempty subset of the ",
+               "output's analyses (", paste(analyses, collapse = ", "), ").")
+    }
+  }
+  lapply(sa, function(a) .v2_array(analyses[analyses %in% as.character(unlist(a))]))
+}
+
 # Legacy output types mapped onto v2 formats.
 .v2_output_format <- function(out) {
   if (!is.null(out$format)) return(out$format)
@@ -1137,30 +1180,23 @@
              "recipe_to_plan(version = 1)."))
 }
 
-# Populations that yield episodes (one row per index episode) by default.
-.v2_population_is_indexed <- function(pops, id, seen = character(0)) {
-  p <- pops[[id]]
-  if (is.null(p) || id %in% seen) return(FALSE)
-  if (identical(p$kind, "index") || identical(p$kind, "match")) return(TRUE)
-  seen <- c(seen, id)
-  if (identical(p$kind, "setop")) {
-    members <- unlist(p$setop$members)
-    return(any(vapply(members, function(m) .v2_population_is_indexed(pops, m, seen), logical(1))))
-  }
-  if (!is.null(p$parent)) return(.v2_population_is_indexed(pops, p$parent, seen))
-  FALSE
-}
+# Which populations yield episodes (grain defaults, grain/collapse validation)
+# is the vendored A-11 rule, .pnv2PopulationIndexed() (R/plan_normalize_v2.R).
 
-# Populations whose rows have an index date (episodes): indexed or matched
-# populations, criteria populations seeded from a results cohort, and their
-# descendants.
+# Populations whose rows have an index date, for index-relative criteria:
+# indexed or matched populations, criteria populations seeded from a results
+# cohort, and their descendants. A union needs every member to carry one; an
+# intersect or setdiff keeps its left member's rows (design 6.9).
 .v2_population_has_index <- function(pops, id, seen = character(0)) {
   p <- pops[[id]]
   if (is.null(p) || id %in% seen) return(FALSE)
   if (p$kind %in% c("index", "match") || !is.null(p$cohort_definition_id)) return(TRUE)
   seen <- c(seen, id)
   if (identical(p$kind, "setop")) {
-    return(all(vapply(unlist(p$setop$members), function(m)
+    members <- as.character(unlist(p$setop$members))
+    if (!length(members)) return(FALSE)
+    if (!identical(p$setop$op, "union")) return(.v2_population_has_index(pops, members[[1L]], seen))
+    return(all(vapply(members, function(m)
       .v2_population_has_index(pops, m, seen), logical(1))))
   }
   if (!is.null(p$parent)) return(.v2_population_has_index(pops, p$parent, seen))
@@ -1343,7 +1379,7 @@
   for (nm in names(ctx$outputs)) {
     o <- ctx$outputs[[nm]]
     if (identical(o$grain, "<default>")) {
-      o$grain <- if (.v2_population_is_indexed(wire_pops, o$rows)) "episode" else "person"
+      o$grain <- if (.pnv2PopulationIndexed(wire_pops, o$rows)) "episode" else "person"
       ctx$outputs[[nm]] <- o
     }
   }
@@ -1365,7 +1401,10 @@
   plan$populations <- wire_pops
   if (length(ctx$variables)) plan$variables <- ctx$variables
   plan$outputs <- ctx$outputs
-  if (!is.null(recipe$publish)) plan$publish <- .v2_array(as.character(recipe$publish))
+  # The publication roots are always explicit: the recipe's publish list, else
+  # every declared output in declaration order (design 2.10), so the
+  # normaliser's absent-publish default never decides what is released.
+  plan$publish <- .v2_array(as.character(recipe$publish %||% names(ctx$outputs)))
   if (!is.null(recipe$scope)) {
     sc <- recipe$scope
     plan$scope <- .v2_compact(list(cohort = sc$cohort,
@@ -1428,6 +1467,13 @@
          if (length(res$errors) > 6L) "; ..." else "", call. = FALSE)
   }
   invisible(TRUE)
+}
+
+# Calls fn on x and on every node below it (depth first).
+.v2_walk <- function(x, fn) {
+  fn(x)
+  if (is.list(x)) for (el in x) .v2_walk(el, fn)
+  invisible(NULL)
 }
 
 .v2_plain <- function(x) {
@@ -1500,7 +1546,7 @@
     o <- outs[[nm]]
     context <- paste0("output '", nm, "'")
     if (is.null(pops[[o$rows]])) .v2_stop(context, " targets unknown population '", o$rows, "'.")
-    indexed <- .v2_population_is_indexed(pops, o$rows)
+    indexed <- .pnv2PopulationIndexed(pops, o$rows)
     if (identical(o$grain, "person") && indexed && is.null(o$collapse)) {
       .v2_stop(context, ": person grain over the indexed population '", o$rows,
                "' needs collapse = \"first_episode\", \"last_episode\" or \"any\".")
