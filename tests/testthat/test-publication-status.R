@@ -23,6 +23,40 @@ test_that("ordinary successful publication retains its v1 mapping", {
                    c(data = "D"))
 })
 
+test_that("status retrieval treats only mapped v1 outputs as publication roots", {
+  plan <- .publication_plan(c("conditions", "other"))
+  out <- c(conditions = "cond_df")
+  statuses <- list(a = .publication_status(out))
+  conns <- list(a = "A")
+  expect_null(plan$publish)
+  expect_named(plan$outputs, c("conditions", "other"))
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, ...) {
+      expect_identical(expr, call("omopPlanStatusDS", "execution"))
+      statuses[names(conns)]
+    }, .package = "DSI"
+  )
+  expect_identical(dsOMOPClient:::.plan_read_status(
+    conns, "execution", plan, out
+  ), statuses)
+
+  # A server publishing the unmapped output must still fail transport validation.
+  statuses$a <- .publication_status(c(out, other = "other"))
+  expect_error(dsOMOPClient:::.plan_read_status(
+    conns, "execution", plan, out
+  ), "Invalid plan publication status")
+})
+
+test_that("partial v1 out mappings retain only requested published symbols", {
+  plan <- .publication_plan(c("conditions", "other"))
+  out <- c(conditions = "cond_df")
+  state <- .publication_backend(list(a = .publication_status(out)))
+  expect_identical(ds.omop.plan.execute(plan, out = out), out)
+  expect_identical(state$symbols$a, "cond_df")
+  expect_identical(state$calls[[1L]]$method, "omopPlanStatusDS")
+  expect_length(state$revoked, 0L)
+})
+
 test_that("strict/error refuses and rolls back every site", {
   statuses <- list(a = .publication_status(),
                    b = .publication_status(character(), "refused",

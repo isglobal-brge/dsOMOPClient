@@ -7,6 +7,10 @@ workstream fills its entries.
 - Plan execution reads authenticated publication status before cleanup and uses
   the server inventory, including freshly allocated component symbols. Technical
   and transport failures revoke staged files as well as assigned outputs.
+- A partial `out` mapping without an explicit `publish` requests only the
+  mapped outputs. For example, `out = c(conditions = "cond_df")` publishes
+  only `cond_df`; the server leaves other computed outputs private and the
+  client accepts the matching publication status.
 - (B-8) `parent_id` now restricts membership (see dsOMOP 2.10.3).
 - (F-3) The client blocklist is identical to the server's class-1 patterns;
   birth components are not blocked on assignment paths. Informational
@@ -42,6 +46,17 @@ workstream fills its entries.
   defaults of change request CR-11, nothing else added): normalised forms and
   their semantic digests agree on both sides; leaving the semantic defaults
   of the canonical example A implicit gives the same normal form.
+
+## Upgrading clients and servers
+- Plan execution with dsOMOPClient 2.10.3 requires the server's published
+  `omopPlanStatusDS` and `omopStagedRevokeDS` methods; dsOMOP 2.10.1 does not
+  provide them. Upgrade the server to 2.10.3 and check
+  `ds.omop.server.version()`. On Opal, publish dsOMOP's settings again after
+  upgrading so the profile exposes the new methods.
+- With a 2.10.1 client and a 2.10.3 server, a strict publication refusal
+  still publishes nothing. The assign call returns status `refused`, and the
+  old client then reports that requested outputs did not materialize instead
+  of receiving the previous constant `Disclosive` error.
 
 ## Contracts shipped by WS-0
 - Vendored `inst/schema/` (byte-identical to dsOMOP's), `R/json_schema.R`,
