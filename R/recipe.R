@@ -2009,8 +2009,14 @@ omop_population <- function(id = "base",
            call. = FALSE)
     }
     op <- names(setops)[1]
-    members <- as.character(setops[[1]])
-    members <- members[nzchar(members)]
+    members <- setops[[1]]
+    if (.v2_is_param(members)) members <- list(members)
+    if (is.list(members) && any(vapply(members, .v2_is_param, logical(1)))) {
+      members <- lapply(members, function(x) .v2_name(x, "omop_population(): member", allow_null = FALSE))
+    } else {
+      members <- as.character(members)
+      members <- members[nzchar(members)]
+    }
     if (length(members) < 2) {
       stop("omop_population(): ", op, " needs at least two member population ",
            "IDs.", call. = FALSE)
@@ -2414,8 +2420,10 @@ omop_output <- function(name = "output_1",
     type          = type,
     # as.character(unlist(...)) so JSON-imported lists of names behave the
     # same as character vectors in recipe_to_plan()'s subsetting.
-    variables     = if (!is.null(variables))
-      as.character(unlist(variables)) else NULL,
+    variables     = if (is.null(variables) || .v2_is_param(variables) ||
+                        (is.list(variables) && any(vapply(variables, .v2_is_param, logical(1))))) {
+      variables
+    } else as.character(unlist(variables)),
     population_id = population_id,
     options       = options,
     result_symbol = result_symbol
@@ -2735,7 +2743,7 @@ recipe_add_population <- function(recipe, population) {
   if (!inherits(population, "omop_population"))
     stop("population must be an omop_population object", call. = FALSE)
   # Validate parent exists
-  if (!is.null(population$parent_id) &&
+  if (!is.null(population$parent_id) && !.v2_is_param(population$parent_id) &&
       !population$parent_id %in% names(recipe$populations)) {
     stop("Parent population '", population$parent_id, "' not found in recipe",
          call. = FALSE)
@@ -2744,7 +2752,8 @@ recipe_add_population <- function(recipe, population) {
   # in dependency order, exactly like parents). A member may itself be a set-op
   # population, which lets set operations nest.
   if (!is.null(population$setop)) {
-    missing <- setdiff(population$setop$members, names(recipe$populations))
+    members <- Filter(function(x) !.v2_is_param(x), as.list(population$setop$members))
+    missing <- setdiff(unlist(members, use.names = FALSE), names(recipe$populations))
     if (length(missing) > 0) {
       stop("Set-op population '", population$id, "' references unknown member",
            if (length(missing) > 1) "s" else "", " '",
@@ -2754,8 +2763,9 @@ recipe_add_population <- function(recipe, population) {
     }
   }
   if (!is.null(population$match)) {
-    missing <- setdiff(c(population$match$cases, population$match$controls),
-                       names(recipe$populations))
+    sources <- Filter(function(x) !.v2_is_param(x),
+                      list(population$match$cases, population$match$controls))
+    missing <- setdiff(unlist(sources, use.names = FALSE), names(recipe$populations))
     if (length(missing) > 0) {
       stop("Match population '", population$id, "' references undeclared ",
            "population(s) '", paste(missing, collapse = "', '"),
@@ -5630,8 +5640,11 @@ recipe_to_code <- function(recipe) {
       # Set-op population: emit the matching named set arg (union/intersect/
       # setdiff = c(members)), never filters/cohort_definition_id.
       pop_args <- list("omop_population",
-                       id = p$id, label = p$label, parent_id = p$parent_id)
-      pop_args[[p$setop$op]] <- as.character(p$setop$members)
+                       id = p$id, label = p$label, parent_id = if (.v2_is_tagged(p$parent_id))
+                         .codegen_raw(.v2_codegen(p$parent_id)) else p$parent_id)
+      pop_args[[p$setop$op]] <- if (.v2_has_tagged(p$setop$members)) {
+        .codegen_raw(.v2_codegen_list(p$setop$members))
+      } else as.character(p$setop$members)
       pop_code <- c(pop_code, do.call(.codegen_call, pop_args))
     } else {
       index_code <- NULL
@@ -5647,7 +5660,8 @@ recipe_to_code <- function(recipe) {
           end_strategy = ie$end_strategy))
       }
       pop_code <- c(pop_code, .codegen_call("omop_population",
-        id = p$id, label = p$label, parent_id = p$parent_id,
+        id = p$id, label = p$label, parent_id = if (.v2_is_tagged(p$parent_id))
+                         .codegen_raw(.v2_codegen(p$parent_id)) else p$parent_id,
         filters = .codegen_filter_list(p$filters),
         cohort_definition_id = p$cohort_definition_id,
         episode_policy = p$episode_policy,
@@ -5844,8 +5858,11 @@ recipe_to_code <- function(recipe) {
     opts <- if (length(o$options %||% list()) > 0) o$options else NULL
     out_code <- c(out_code, .codegen_call("omop_output",
       name = o$name, type = o$type,
-      variables = o$variables,
-      population_id = o$population_id,
+      variables = if (.v2_has_tagged(o$variables)) .codegen_raw(
+        if (.v2_is_tagged(o$variables)) .v2_codegen(o$variables) else .v2_codegen_list(o$variables))
+        else o$variables,
+      population_id = if (.v2_is_tagged(o$population_id))
+        .codegen_raw(.v2_codegen(o$population_id)) else o$population_id,
       options = if (!is.null(opts) && .v2_has_tagged(opts))
         .codegen_raw(.v2_codegen_list(opts)) else opts,
       result_symbol = o$result_symbol,
@@ -6242,7 +6259,7 @@ recipe_to_code <- function(recipe) {
       if (!is.null(p$setop)) {
         # Set-op population: rebuild through the matching named argument so the
         # constructor re-validates (one op, >= 2 members) on import.
-        members <- as.character(unlist(p$setop$members))
+        members <- .v2_restore(p$setop$members)
         setop_args <- stats::setNames(list(members), p$setop$op)
         recipe$populations[[pid]] <- do.call(omop_population, c(
           list(id = p$id %||% pid, label = p$label %||% pid,

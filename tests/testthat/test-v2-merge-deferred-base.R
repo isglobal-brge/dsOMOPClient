@@ -148,10 +148,12 @@ test_that("collapsing a base preserves still-unbound source and window occurrenc
   window <- omop_window(omop_bound(omop_anchor("lab"), -7L), 0L)
   for (type in c("event", "string")) {
     add <- function(r) {
-      r$events <- list(lab = omop_event("measurement", 1, name = "lab"))
+      r$events <- list(lab = omop_event("measurement",
+        omop_param("concepts", "concept_set"), name = "lab"))
       r$variables$n <- omop_variable(event = omop_param("source", type),
         reducer = omop_reduce("count", window = omop_param("window", "window")))
       r$outputs$baseline$variables <- c("age", "n")
+      r$outputs$baseline$population_id <- omop_param("rows", "string", default = "base")
       r
     }
     a <- add(.mdb_study(0L))
@@ -159,10 +161,38 @@ test_that("collapsing a base preserves still-unbound source and window occurrenc
     pending <- recipe_merge(a, b, prefix = "b")
     staged <- recipe_bind(pending, washout = 0L)
     expect_identical(names(staged$populations), "base")
-    expected <- recipe_merge(recipe_bind(a, source = "lab", window = window),
-      recipe_bind(b, washout = 0L, source = "lab", window = window), prefix = "b")
+    concepts <- omop_concept_set(1, name = "lab_codes")
+    expected <- recipe_merge(recipe_bind(a, source = "lab", window = window, concepts = concepts, rows = "base"),
+      recipe_bind(b, washout = 0L, source = "lab", window = window, concepts = concepts, rows = "base"), prefix = "b")
     for (r in .mdb_roundtrips(staged)) {
-      .mdb_same(recipe_bind(r, source = "lab", window = window), expected)
+      .mdb_same(recipe_bind(r, source = "lab", window = window, concepts = concepts, rows = "base"), expected)
+      still_pending <- recipe_bind(r, source = "lab")
+      for (partial in .mdb_roundtrips(still_pending)) {
+        .mdb_same(recipe_bind(partial, window = window, concepts = concepts, rows = "base"), expected)
+      }
     }
+  }
+})
+
+
+test_that("base aliases wait for parameters in referenced registry declarations", {
+  make <- function(concepts) {
+    omop_recipe(events = list(omop_event("drug_exposure", concepts, name = "rx")),
+      populations = omop_population("base", index = omop_index("rx")),
+      variables = list(age = omop_age()),
+      outputs = omop_output("ages", rows = "base", format = "wide"))
+  }
+  set <- omop_concept_set(1503297, name = "drug")
+  a <- make(set)
+  b <- make(omop_param("drug", "concept_set", default = set))
+  pending <- recipe_merge(a, b, prefix = "b")
+  expect_identical(names(pending$populations), c("base", "b_base"))
+  expected <- recipe_merge(a, recipe_bind(b, drug = set), prefix = "b")
+  expect_identical(names(expected$populations), "base")
+  for (r in .mdb_roundtrips(pending)) {
+    .mdb_same(r, expected)
+    .mdb_same(recipe_bind(r, drug = set), expected)
+    changed <- recipe_bind(r, drug = omop_concept_set(2, name = "drug"))
+    expect_identical(names(changed$populations), c("base", "b_base"))
   }
 })

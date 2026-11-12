@@ -9,7 +9,8 @@
 }
 
 .merge_deferred_needed <- function(a, b) {
-  .merge_deferred_has_params(list(.merge_effective_base(a), .merge_effective_base(b)))
+  .merge_deferred_has_params(list(.merge_effective_base(a), .merge_effective_base(b),
+    .merge_deferred_nodes(a), .merge_deferred_nodes(b)))
 }
 
 .merge_deferred_empty_maps <- function() {
