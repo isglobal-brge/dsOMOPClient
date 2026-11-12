@@ -260,10 +260,10 @@ test_that("feature windows compile at episode grain with per-spec scopes", {
     outputs = omop_output(name = "features", type = "features"))
   expect_error(recipe_to_plan(common, version = 1),
                "grain='episode'")
-  # A-14: newly permitted -- the v1 refusal keeps its message and carries the
-  # class. Over this unindexed base the v2 rendering (episode grain) is refused
-  # plainly (review B5); over an indexed population it compiles and execution
-  # selects it.
+  # A-24: exact frozen row #1 is unchanged_invalid. The v1 refusal retains
+  # its newly-permitted marker only to permit an attempted native rendering;
+  # this unindexed base still refuses episode grain. A separate indexed
+  # variant compiles and automatic selection chooses its native plan.
   e <- tryCatch(recipe_to_plan(common, version = 1), error = function(e) e)
   expect_s3_class(e, "dsomop_v1_newly_permitted")
   expect_error(recipe_to_plan(common), "episode grain needs an indexed population")

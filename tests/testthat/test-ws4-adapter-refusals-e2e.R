@@ -143,7 +143,7 @@ test_that("A-18 end to end: adapter refusals reach the analyst with their reason
   }
 })
 
-test_that("indexed windowed features execute through ordinary capability negotiation (B5 gate)", {
+test_that("A-24 indexed per-variable windows execute through ordinary capability negotiation (B5 gate)", {
   missing <- .ws4e_missing_compilers()
   skip_if(length(missing) > 0L,
           paste("compiler integration required:", paste(missing, collapse = ", ")))
@@ -188,13 +188,20 @@ test_that("indexed windowed features execute through ordinary capability negotia
   ds.omop.connect(resource = "omop_ws8_features", symbol = "omop_ws8_features", conns = conns)
   r <- omop_recipe(
     populations = omop_population("indexed", index_event = omop_index_event(3004410, "measurement")),
-    variables = omop_variable(name = "n_a1c", table = "measurement", concept_id = 3004410,
-                               format = "count", time_window = list(start = -90L, end = 0L)),
+    variables = list(
+      omop_variable(name = "n_a1c", table = "measurement", concept_id = 3004410,
+                    format = "count", time_window = list(start = -90L, end = 0L)),
+      omop_variable(name = "recent_a1c", table = "measurement", concept_id = 3004410,
+                    format = "binary", time_window = list(start = -30L, end = -1L))),
     outputs = omop_output("features", type = "features", population_id = "indexed"),
     options = list(factor_concepts = FALSE))
   selected <- dsOMOPClient:::.recipe_plan_for_session(r, "omop_ws8_features", conns)
   expect_s3_class(selected, "omop_plan_v2")
   expect_identical(selected$outputs$features$grain, "episode")
+  expect_identical(selected$variables$n_a1c$reducer$window,
+                   list(start = -90L, end = 0L, anchor = "index"))
+  expect_identical(selected$variables$recent_a1c$reducer$window,
+                   list(start = -30L, end = -1L, anchor = "index"))
   expect_length(dsOMOP:::.irSemanticErrors(dsOMOP:::.planNormalizeV2(
     dsOMOPClient:::.v2_plain(selected))), 0L)
   result <- withr::with_options(list(nfilter.subset = 3L),

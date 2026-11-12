@@ -4243,15 +4243,15 @@ recipe_to_plan <- function(recipe, version = 2L) {
             feature_temporal$index_window <- feature_window
           }
           if (!is.null(feature_temporal$index_window) && is.null(out$options$grain)) {
-            # A-14: a windowed features output WITHOUT an explicit grain takes
-            # grain = "episode" in language 2; only that v1 refusal is a newly
-            # permitted shape (an explicit incompatible grain keeps the v1
-            # builder's ordinary refusal).
+            # A-24: omitted grain on windowed features permits an attempted
+            # native rendering, which still requires an indexed population.
+            # An explicit incompatible grain keeps the ordinary v1 refusal.
             stop(.v1_newly_permitted(
               "Index-relative wide/features/sparse require ",
               "representation$grain='episode'. Language 2 takes grain = \"episode\" ",
-              "for a windowed features output (recipe_to_plan(version = 2)), which ",
-              "runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers."))
+              "for a windowed features output over an indexed population ",
+              "(recipe_to_plan(version = 2)); the complete recipe must admit ",
+              "native rendering and requires dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers."))
           }
           plan <- ds.omop.plan.features(
             plan, name = nm, table = tbl, specs = specs,
@@ -4887,12 +4887,13 @@ recipe_to_plan <- function(recipe, version = 2L) {
         msg <- paste0("Recipe feature output '", output_name,
                       "' is index-relative; set options = list(grain = 'episode') to ",
                       "preserve recurrent cohort entries.")
-        # A-14: the windowed features preset takes episode grain in language 2,
-        # so its v1 refusal is a newly permitted shape (it runs as v2).
+        # A-24: this grain refusal permits an attempted native rendering;
+        # the complete recipe must still satisfy indexedness and other rules.
         if (identical(recipe_output$type, "features") && is.null(recipe_output$options$grain)) {
           stop(.v1_newly_permitted(msg, " Language 2 takes grain = \"episode\" for a ",
-                                   "windowed features output (recipe_to_plan(version = 2)), ",
-                                   "which runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers."))
+                                   "windowed features output over an indexed population ",
+                                   "(recipe_to_plan(version = 2)); the complete recipe must admit ",
+                                   "native rendering and requires dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers."))
         }
         stop(msg, call. = FALSE)
       }

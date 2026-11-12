@@ -180,6 +180,14 @@ workstream fills its entries.
   `ds.omop.server.version()`.
 
 ## Corrected
+- (A-24) The exact frozen windowed-features corpus fixture `#1` has an
+  unindexed `base` and is `unchanged_invalid`. Its explicit v1 omitted-grain
+  refusal permits an attempted native rendering, but does not certify that
+  the recipe executes: native rendering and automatic selection refuse with
+  the indexed-population diagnostic before assignment. Root cohort scope
+  alone does not supply an index. A separate indexed, per-variable-window
+  variant defaults to episode grain and passes server semantic validation;
+  its execution regression exercises native compiler integration.
 - `ds.omop.mutate()` and `ds.omop.filter(expr = )` check every participating
   site's published protocol and verb method before any assignment, including
   an in-place mutation's rollback copy. Old, incomplete or unavailable
@@ -245,9 +253,10 @@ workstream fills its entries.
 - (B-19) A feature output may mix variables with and without an
   index-relative window: one roster with one reducer window per variable;
   a windowed features output without an explicit grain takes episode grain
-  (A-14) and needs an indexed population; with an explicit grain (such as
-  `options = list(grain = "person")`) it keeps the 2.10.2 refusal (review
-  B5).
+  (A-14/A-24) and needs an indexed population; an explicit incompatible grain
+  (such as `options = list(grain = "person")`) keeps the ordinary v1 refusal,
+  as does the corresponding `wide` grain refusal. An explicit episode grain
+  retains v1 selection when the complete recipe is v1-expressible.
 - (design 2.2, 6.12) Survival outcomes and interval or temporal-covariate
   sources may be narrowed by visit or concept column; an intervals output
   may mix concept-scoped and unscoped variables of one table (one source per
