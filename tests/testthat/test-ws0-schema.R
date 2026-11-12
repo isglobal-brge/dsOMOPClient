@@ -43,11 +43,23 @@ test_that("examples and probes behave identically on the client validator", {
   n <- 0L
   for (p in probes) {
     if (!p$schema %in% names(schemas)) next   # ir-v2 probes are server-only
-    res <- dsOMOPClient:::.jsonSchemaValidate(schemas[[p$schema]], p$instance)
+    inst <- if (!is.null(p$instance)) p$instance else jsonlite::fromJSON(p$instance_text, simplifyVector = FALSE)
+    res <- dsOMOPClient:::.jsonSchemaValidate(schemas[[p$schema]], inst)
     expect_identical(res$valid, identical(p$expect, "valid"), info = paste(p$id, p$label))
     n <- n + 1L
   }
-  expect_gte(n, 47L)
+  expect_gte(n, 57L)
+})
+
+test_that("the shared column corpus is vendored byte-identically", {
+  cc <- system.file("column_classes.csv", package = "dsOMOPClient")
+  if (!nzchar(cc)) cc <- "inst/column_classes.csv"
+  expect_true(file.exists(cc))
+  rows <- read.csv(cc, stringsAsFactors = FALSE)
+  expect_true(all(c("column", "assignment_class", "aggregate_admission") %in% names(rows)))
+  expect_true(all(c("year_of_birth", "birth_datetime", "age", "person_source_value") %in% rows$column))
+  server <- system.file("column_classes.csv", package = "dsOMOP")
+  if (nzchar(server)) expect_identical(.ws0_sha256_file(cc), .ws0_sha256_file(server))
 })
 
 test_that("the digest vectors reproduce on the client", {
@@ -58,4 +70,7 @@ test_that("the digest vectors reproduce on the client", {
     expect_identical(got$payload, v$payload, info = v$label)
     expect_identical(got$sha256, v$payload_sha256, info = v$label)
   }
+  expect_gte(length(vec$vectors), 11L)
+  expect_identical(dsOMOPClient:::.jcsNumber(1e-7), "1e-7")
+  expect_identical(dsOMOPClient:::.jcsNumber(1000000000000000100), "1000000000000000100")
 })
