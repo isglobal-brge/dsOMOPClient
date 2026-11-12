@@ -229,7 +229,10 @@ test_that("numeric measurement bounds fail closed on Circe export", {
           params = list(concept_id = 3013682L, min_value = NULL,
                         max_value = 140, safe_scope = NULL)))),  # lte
     outputs = omop_output(type = "wide", population_id = "p"))
-  expect_true("unbound_numeric_filter" %in% recipe_lint(r)$code)
+  # 2.10.3 (F-23): one-sided numeric criteria without issued bins are newly
+  # permitted (no client gate mirror); Circe export still refuses them because
+  # a Circe expression cannot carry the issued safe-bin contract.
+  expect_false("unbound_numeric_filter" %in% recipe_lint(r)$code)
   expect_error(recipe_export_circe(r, "p"), "safe-bin contract")
 })
 

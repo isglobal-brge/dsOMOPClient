@@ -1027,11 +1027,17 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
       stop("Custom row predicates require one valid column name in params$var.",
            call. = FALSE)
     }
-    allowed_ops <- c("in", "not_in", "is_null", "not_null", "between")
+    allowed_ops <- c("in", "not_in", "is_null", "not_null", "between",
+                     "==", "!=", "<", "<=", ">", ">=")
     if (!op %in% allowed_ops) {
       stop("Custom row predicate op must be one of: ",
-           paste(allowed_ops, collapse = ", "),
-           ". Exact and ordered client-authored thresholds are not executable.",
+           paste(allowed_ops, collapse = ", "), ".", call. = FALSE)
+    }
+    if (op %in% c("==", "!=", "<", "<=", ">", ">=") &&
+        (length(params$value) != 1L || is.list(params$value) ||
+         (!is.numeric(params$value) && !is.character(params$value)) ||
+         anyNA(params$value))) {
+      stop("Custom comparison op '", op, "' requires one numeric or text value.",
            call. = FALSE)
     }
     if (!op %in% c("is_null", "not_null") && is.null(params$value)) {
@@ -1281,10 +1287,12 @@ omop_filter_has_concept <- function(concept_id, table, concept_name = NULL,
 }
 
 #' @rdname omop_filter
-#' @param start Character; inclusive start date in ISO \code{YYYY-MM-DD} form.
-#' @param end Character; inclusive end date in ISO \code{YYYY-MM-DD} form and
-#'   not before \code{start}. The server applies the authoritative minimum
-#'   disclosure-safe width configured by the data controller.
+#' @param start Character or \code{NULL}; inclusive start date in ISO
+#'   \code{YYYY-MM-DD} form. A one-sided range (only \code{start} or only
+#'   \code{end}) compiles to a single \code{>=} / \code{<=} comparison.
+#' @param end Character or \code{NULL}; inclusive end date in ISO
+#'   \code{YYYY-MM-DD} form and not before \code{start}. No client width floor
+#'   applies (publication is the only disclosure gate on 2.10.3 servers).
 #' @param date_column Character or \code{NULL}; explicit OMOP date column. When
 #'   \code{NULL}, \code{\link{recipe_to_plan}} infers the standard date column
 #'   from the output's OMOP table.
@@ -1324,13 +1332,12 @@ omop_filter_date_range <- function(start = NULL, end = NULL,
     list(text = x, date = parsed)
   }
 
-  if (is.null(start) || is.null(end)) {
-    stop("date_range requires both start and end; use an explicitly validated ",
-         "time_window for a one-sided bound.", call. = FALSE)
+  if (is.null(start) && is.null(end)) {
+    stop("date_range needs start and/or end.", call. = FALSE)
   }
-  start <- normalize(start, "start")
-  end <- normalize(end, "end")
-  if (end$date < start$date) {
+  start <- if (is.null(start)) NULL else normalize(start, "start")
+  end <- if (is.null(end)) NULL else normalize(end, "end")
+  if (!is.null(start) && !is.null(end) && end$date < start$date) {
     stop("date_range start must not be after end.", call. = FALSE)
   }
   list(start = start$text, end = end$text)
@@ -1340,21 +1347,31 @@ omop_filter_date_range <- function(start = NULL, end = NULL,
 #' @param column Character; column to compare
 #' @param threshold Numeric; threshold value
 #' @param direction Character; "above" or "below"
-#' @param safe_bins Per-site list with \code{$breaks} and the server-issued
-#'   \code{$contract} returned by \code{ds.omop.safe.cutpoints()}. A bare list of
-#'   client-authored edges is deliberately rejected.
+#' @param safe_bins Optional per-site list with \code{$breaks} and the
+#'   server-issued \code{$contract} returned by \code{ds.omop.safe.cutpoints()}:
+#'   the threshold then snaps to the issued bin edges (the 2.10.1 behaviour).
+#'   Without it the filter is the plain comparison \code{column >= threshold}
+#'   (\code{"above"}) or \code{column <= threshold} (\code{"below"}); a
+#'   2.10.3 server applies only its final publication rule to the result.
 #' @export
 omop_filter_value <- function(column = "value_as_number", threshold,
                                direction = c("above", "below"),
                                safe_bins = NULL) {
   direction <- match.arg(direction)
-  if (is.null(safe_bins) || is.null(safe_bins$breaks) ||
-      !is.list(safe_bins$contract)) {
-    stop("omop_filter_value() needs server-issued disclosure-safe bin edges. ",
-         "Either call ",
-         "ds.omop.safe.filter.value(table, column, threshold, direction) which ",
-         "fetches them, or pass one per-site result (including $contract) from ",
-         "ds.omop.safe.cutpoints(table, column).", call. = FALSE)
+  if (is.null(safe_bins)) {
+    if (missing(threshold) || !is.numeric(threshold) || length(threshold) != 1L ||
+        !is.finite(threshold)) {
+      stop("omop_filter_value(): threshold must be one finite number.", call. = FALSE)
+    }
+    op <- if (identical(direction, "above")) ">=" else "<="
+    return(omop_filter(
+      type = "custom", level = "row",
+      params = list(var = column, op = op, value = threshold),
+      label = paste0(column, " ", op, " ", threshold)))
+  }
+  if (is.null(safe_bins$breaks) || !is.list(safe_bins$contract)) {
+    stop("omop_filter_value(): safe_bins must be one per-site result (including ",
+         "$contract) from ds.omop.safe.cutpoints(table, column).", call. = FALSE)
   }
   if (length(safe_bins$breaks) < 2) {
     stop("omop_filter_value() needs at least 2 bin edges, but the server ",
@@ -1532,9 +1549,11 @@ omop_filter_visit_count <- function(min_count = 1L,
 #'   (a vector matches if any measurement is present)
 #' @param min_value Numeric or NULL; minimum value
 #' @param max_value Numeric or NULL; maximum value
-#' @param safe_bins Server-issued result for the same measurement concept from
-#'   \code{ds.omop.safe.cutpoints()}. Required whenever a numeric range is
-#'   supplied; client-authored thresholds are not executable.
+#' @param safe_bins Optional server-issued result for the same measurement
+#'   concept from \code{ds.omop.safe.cutpoints()}; when given, both limits must
+#'   be issued edges. Without it the numeric range (one or both limits) is
+#'   applied as given and a 2.10.3 server applies only its final publication
+#'   rule.
 #' @export
 omop_filter_has_measurement <- function(concept_id,
                                          min_value = NULL,
@@ -1544,19 +1563,31 @@ omop_filter_has_measurement <- function(concept_id,
                                          reference_date = NULL) {
   concept_id <- as.integer(concept_id)
   has_range <- !is.null(min_value) || !is.null(max_value)
-  if (has_range) {
+  if (has_range && is.null(safe_bins)) {
+    for (bound in c("min_value", "max_value")) {
+      value <- get(bound)
+      if (!is.null(value) && (!is.numeric(value) || length(value) != 1L ||
+                              !is.finite(value))) {
+        stop(bound, " must be one finite number.", call. = FALSE)
+      }
+    }
+    if (!is.null(min_value) && !is.null(max_value) && min_value > max_value) {
+      stop("min_value must not exceed max_value.", call. = FALSE)
+    }
+    min_value <- if (is.null(min_value)) NULL else as.numeric(min_value)
+    max_value <- if (is.null(max_value)) NULL else as.numeric(max_value)
+  } else if (has_range) {
     if (is.null(min_value) || is.null(max_value)) {
-      stop("Numeric measurement filters require both min_value and max_value; ",
-           "one-sided exact thresholds are not disclosure-safe.", call. = FALSE)
+      stop("A numeric range snapped to issued safe_bins needs both min_value ",
+           "and max_value.", call. = FALSE)
     }
     if (length(concept_id) != 1L || is.na(concept_id)) {
       stop("Numeric measurement filters require exactly one concept_id.",
            call. = FALSE)
     }
-    if (is.null(safe_bins) || !is.list(safe_bins$contract) ||
-        length(safe_bins$breaks) < 2L) {
-      stop("Numeric measurement filters need server-issued safe_bins from ",
-           "ds.omop.safe.cutpoints() for the same concept.", call. = FALSE)
+    if (!is.list(safe_bins$contract) || length(safe_bins$breaks) < 2L) {
+      stop("safe_bins must be one result of ds.omop.safe.cutpoints() for the ",
+           "same concept.", call. = FALSE)
     }
     min_value <- suppressWarnings(as.numeric(min_value))
     max_value <- suppressWarnings(as.numeric(max_value))
@@ -1607,7 +1638,7 @@ omop_filter_has_measurement <- function(concept_id,
       concept_id = concept_id,
       min_value = min_value,
       max_value = max_value,
-      safe_scope = if (has_range) safe_bins$contract else NULL,
+      safe_scope = if (has_range && !is.null(safe_bins)) safe_bins$contract else NULL,
       window = window,
       reference_date = reference_date
     ),
@@ -1634,34 +1665,6 @@ omop_filter_missing_measurement <- function(concept_id, window = NULL,
     label = paste0("Missing measurement ",
                    paste(as.integer(concept_id), collapse = ", "))
   )
-}
-
-#' Client-side filter safety classification (informational only)
-#'
-#' Mirrors the server-side classification for UI display purposes.
-#' The server performs the authoritative check.
-#'
-#' @param filter_type Character; filter type
-#' @param params List; filter parameters (unused for now)
-#' @return Character; "allowed", "constrained", or "blocked"
-#' @keywords internal
-.classifyFilterClient <- function(filter_type, params = list()) {
-  always_allowed <- c("sex", "cohort", "concept_set", "value_bin",
-                      "value_concept")
-  constrained <- c("age_range", "age_group", "has_concept", "date_range",
-                    "not_has_concept", "concept_count", "prior_observation",
-                    "followup", "visit_count", "has_measurement",
-                    "missing_measurement")
-
-  if (filter_type %in% always_allowed) return("allowed")
-  if (filter_type %in% constrained) return("constrained")
-  if (identical(filter_type, "custom")) {
-    op <- tolower(params$op %||% "")
-    if (op %in% c("in", "not_in", "is_null", "not_null", "between")) {
-      return("constrained")
-    }
-  }
-  "blocked"
 }
 
 # --- omop_population: DAG of subpopulations ---
@@ -4557,11 +4560,15 @@ recipe_to_plan <- function(recipe, version = 2L) {
   }
   normalize_bound <- function(x, name) {
     if (is.null(x)) return(NULL)
-    .plan_integer_scalar(x, paste0("time_window ", name, " for '",
-                                   context, "'"))
+    .plan_window_endpoint(x, paste0("time_window ", name, " for '",
+                                    context, "'"), name)
   }
   start <- normalize_bound(start, "start")
   end <- normalize_bound(end, "end")
+  if (is.null(start) && is.null(end)) {
+    stop("time_window for '", context, "' is unbounded on both sides; use ",
+         "time_window = NULL.", call. = FALSE)
+  }
   if (!is.null(start) && !is.null(end) && start > end) {
     stop("time_window start must be <= end for '", context, "'.",
          call. = FALSE)
@@ -4861,23 +4868,66 @@ recipe_set_options <- function(recipe,
   ids
 }
 
-#' Is a column name a server-blocked free-text / source-value column?
+#' Is a column name a class-1 (never released) column?
 #'
-#' Mirrors the server's blocked-column patterns (dsOMOP blueprint:
-#' \code{*_source_value}, \code{value_as_string}, \code{value_source_value},
-#' \code{sig}, \code{*_source_concept_value}, note text). These are never
-#' releasable, so a recipe that requests one as a variable's \code{value_source}
-#' or raw \code{column} is rejected at compile time rather than silently dropped.
+#' Mirrors, pattern for pattern, the server's assignment-policy class 1
+#' (design-2.10.3 section 7.6): the sensitive-column patterns of
+#' \code{.detectSensitiveColumns()} minus the birth components, which are
+#' class 2 (quasi-identifiers released on assign paths through the final
+#' minimum-persons rule only). Direct identifiers, narrative and source values,
+#' source concept IDs, note/NLP text, address/geo, provider and care-site
+#' identifying fields are refused at compile time. A birth-named column that is
+#' also, e.g., a source value (\code{birth_date_source_value}) stays class 1.
+#' Untyped extension identifiers are recognised from the server's column
+#' metadata only and are refused there.
 #'
 #' @param col Character; a column name (case-insensitive).
 #' @return Logical scalar.
 #' @keywords internal
 .is_blocked_column <- function(col) {
-  if (is.null(col) || !nzchar(col)) return(FALSE)
-  col <- tolower(col)
-  patterns <- c("_source_value$", "^value_as_string$", "^value_source_value$",
-                "^sig$", "^note_text$", "^note_source_value$")
-  any(vapply(patterns, function(p) grepl(p, col), logical(1)))
+  if (is.null(col) || length(col) != 1L || is.na(col) || !nzchar(col)) return(FALSE)
+  col <- tolower(trimws(col))
+  birth <- paste0("(^|_)(dob|date_of_birth|birth_date|birth_datetime)($|_)|",
+                  "^(year|month|day)_of_birth$")
+  if (grepl(birth, col)) {
+    col <- gsub("^(year|month|day)_of_birth$", "birth_component", col)
+    col <- gsub("dob|date_of_birth|birth_datetime|birth_date", "birth_component", col)
+  }
+  any(vapply(.CLASS1_COLUMN_PATTERNS, function(p) grepl(p, col), logical(1)))
+}
+
+# Class-1 name patterns (section 7.6), identical to the server's sensitive
+# patterns without the two birth-component patterns.
+.CLASS1_COLUMN_PATTERNS <- c(
+  "(^|_)patient_(id|identifier|key)($|_)",
+  "(^|_)(mrn|medical_record_number|medical_record_id)($|_)",
+  "(^|_)(ssn|social_security_number)($|_)",
+  "(^|_)(email|email_address|e_mail)($|_)",
+  "(^|_)(phone|phone_number|telephone|mobile|mobile_phone)($|_)",
+  "(^|_)(comment|comments|free_text|freetext|narrative|remark|remarks)($|_)",
+  "_source_value$", "_source_concept_id$", "^value_as_string$",
+  "^value_source_value$", "^sig$", "^stop_reason$", "^lot_number$",
+  "^unique_device_id$", "^note_text$", "^note_title$", "^note_source_value$",
+  "^note_nlp_source_concept_id$", "^snippet$", "^lexical_variant$",
+  "^note_nlp_concept_id$", "(^|_)term_modifiers$", "^address_1$", "^address_2$",
+  "^city$", "^state$", "^zip$", "^county$", "^latitude$", "^longitude$",
+  "^provider_name$", "^npi$", "^dea$", "^care_site_name$")
+
+#' Is a column a class-2 quasi-identifier (released on assign paths)?
+#'
+#' Exact birth components and birth-date extension names, exact age and
+#' birth-year bands. Reported by \code{recipe_lint()} and
+#' \code{recipe_explain()} as INFO \code{quasi_identifier}; reporting changes
+#' nothing about eligibility.
+#' @param col Character; a column name.
+#' @return Logical scalar.
+#' @keywords internal
+.is_quasi_identifier_column <- function(col) {
+  if (is.null(col) || length(col) != 1L || is.na(col) || !nzchar(col)) return(FALSE)
+  col <- tolower(trimws(col))
+  !.is_blocked_column(col) &&
+    grepl(paste0("(^|_)(dob|date_of_birth|birth_date|birth_datetime)($|_)|",
+                 "^(year|month|day)_of_birth$|^age$|^age_group$|^birth_year_band$"), col)
 }
 
 #' Reject variables whose value_source / raw column is a blocked column
@@ -5213,8 +5263,14 @@ recipe_set_options <- function(recipe,
              "' because no standard date column can be inferred.",
              call. = FALSE)
       }
-      list(var = date_column, op = "between",
-           value = c(bounds$start, bounds$end))
+      if (is.null(bounds$start)) {
+        list(var = date_column, op = "<=", value = bounds$end)
+      } else if (is.null(bounds$end)) {
+        list(var = date_column, op = ">=", value = bounds$start)
+      } else {
+        list(var = date_column, op = "between",
+             value = c(bounds$start, bounds$end))
+      }
     },
     "has_concept" =, "concept_set" = list(
       var = f$params$concept_col %||% "concept_id",
@@ -7789,9 +7845,6 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'     fixed ISO \code{derived$reference_date} or \code{derived$unit}.}
 #'   \item{age_no_index (WARNING)}{\code{format = "age"} with index reference
 #'     but the base population has neither a cohort nor a date filter.}
-#'   \item{narrow_filter (WARNING)}{population \code{age_range} width < 5 years
-#'     (server rejects). Calendar-window width is server policy and is therefore
-#'     not hard-coded by this client lint.}
 #'   \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column with
 #'     \code{factor_concepts = TRUE}, or a categorical format on a
 #'     high-cardinality domain.}
@@ -7800,7 +7853,20 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'   \item{long_split (INFO)}{a \code{"long"} output spanning > 1 table.}
 #'   \item{no_value_source (INFO)}{an aggregate format with no
 #'     \code{value_source}.}
+#'   \item{tar_default, censoring_default, age_group_default, coverage,
+#'     collapse, representation, missing_skip (INFO)}{a default the recipe
+#'     relies on, stated (e.g. "follow-up ends 730 days after index").}
+#'   \item{quasi_identifier (INFO)}{a class-2 column (exact birth components,
+#'     exact age, birth-year bands) released only through the final
+#'     minimum-persons rule.}
+#'   \item{measurement_pair (INFO)}{\code{has_measurement} /
+#'     \code{missing_measurement} are not complements.}
+#'   \item{parent_inheritance (INFO)}{a \code{parent_id} now restricts the
+#'     child population.}
 #' }
+#' The lint has no mirror of server disclosure gates (no width floors, no
+#' mandatory bins): from 2.10.3 the server's final publication rule is the
+#' only release criterion on assign paths.
 #' Edge cases: a \code{NULL} recipe returns a single \code{empty_recipe} info
 #' row; a recipe with no outputs adds a \code{no_output} warning.
 #'
@@ -7863,7 +7929,8 @@ recipe_lint <- function(recipe) {
     resolved <- out$variables %||% names(vars)
     resolved_vars <- Filter(Negate(is.null), vars[resolved])
 
-    if (length(resolved_vars) == 0) {
+    if (length(resolved_vars) == 0 &&
+        (is.null(out$format) || identical(out$format, "wide"))) {
       add("ERROR", "empty_output",
           paste0("Output '", onm, "' resolves to zero variables."),
           paste0("outputs$", onm))
@@ -7985,36 +8052,11 @@ recipe_lint <- function(recipe) {
     }
   }
 
-  # WARNING narrow_filter: age bands have a fixed public contract. Calendar
-  # window width is intentionally absent: the server derives its authoritative
-  # minimum from the data controller's DataSHIELD disclosure options.
-  population_filters <- unlist(lapply(recipe$populations %||% list(),
-    function(pop) .flatten_filters(pop$filters %||% list(),
-                                    level = "population")),
-    recursive = FALSE)
-  pop_filters <- c(
-    .flatten_filters(recipe$filters %||% list(), level = "population"),
-    population_filters
-  )
-  for (f in pop_filters) {
-    if (identical(f$type, "has_measurement") &&
-        (!is.null(f$params$min_value) || !is.null(f$params$max_value)) &&
-        is.null(f$params$safe_scope)) {
-      add("ERROR", "unbound_numeric_filter",
-          paste0(
-            "Numeric measurement criterion '", f$label %||% "<unnamed>",
-            "' has no server-issued safe-bin contract and cannot execute."
-          ),
-          "filters")
-    }
-    if (identical(f$type, "age_range")) {
-      lo <- f$params$min; hi <- f$params$max
-      if (!is.null(lo) && !is.null(hi) && (hi - lo) < 5) {
-        add("WARNING", "narrow_filter",
-            paste0("age_range filter width (", hi - lo,
-                   ") < 5 years; server will reject."), "filters")
-      }
-    }
+  # 2.10.3: defaults made visible, column classes, legacy pairs (no mirror of
+  # server disclosure gates -- publication is the only release criterion).
+  v2_rows <- .lint_v2_rows(recipe)
+  if (!is.null(v2_rows)) {
+    for (i in seq_len(nrow(v2_rows))) rows[[length(rows) + 1L]] <- v2_rows[i, , drop = FALSE]
   }
 
   if (length(rows) == 0) return(empty)

@@ -64,10 +64,18 @@ test_that("generic custom filters are typed, row-only and fail closed", {
     params = list(var = "condition_type_concept_id", op = "in",
                   value = 32020L)),
     "executable only at level 'row'")
+  # 2.10.3 (F-23): ordered comparisons are newly permitted (the server's
+  # final publication rule is the only release criterion); malformed operands
+  # still fail closed.
+  ordered <- omop_filter(
+    type = "custom",
+    params = list(var = "value_as_number", op = ">", value = 5))
+  expect_equal(.filter_to_leaf(ordered),
+               list(var = "value_as_number", op = ">", value = 5))
   expect_error(omop_filter(
     type = "custom",
-    params = list(var = "value_as_number", op = ">", value = 5)),
-    "ordered client-authored thresholds are not executable")
+    params = list(var = "value_as_number", op = ">", value = c(5, 6))),
+    "requires one numeric or text value")
 })
 
 test_that("non-executable output labels and options never degrade silently", {

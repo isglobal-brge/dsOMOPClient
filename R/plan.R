@@ -113,6 +113,22 @@ ds.omop.plan <- function() {
   value
 }
 
+# A window endpoint: an exact integer offset, or an infinite bound meaning
+# "unbounded" (A-E5) -- -Inf only as a start and Inf only as an end; a reversed
+# infinity is an error. Returns NULL for an unbounded endpoint.
+.plan_window_endpoint <- function(value, field, side = c("start", "end")) {
+  side <- match.arg(side)
+  if (is.numeric(value) && length(value) == 1L && !is.na(value) &&
+      is.infinite(value)) {
+    if ((side == "start" && value < 0) || (side == "end" && value > 0)) {
+      return(NULL)
+    }
+    stop(field, ": ", format(value), " is not an unbounded ", side,
+         " (only -Inf starts and Inf ends are unbounded).", call. = FALSE)
+  }
+  .plan_integer_scalar(value, field)
+}
+
 .plan_day_window <- function(window, field, strict = FALSE) {
   if (!is.list(window) || is.null(names(window)) ||
       any(!nzchar(names(window))) || anyDuplicated(names(window)) ||
@@ -123,12 +139,15 @@ ds.omop.plan <- function() {
   }
   result <- list()
   if (!is.null(window$start)) {
-    result$start <- .plan_integer_scalar(window$start,
-                                         paste0(field, "$start"))
+    result$start <- .plan_window_endpoint(window$start,
+                                          paste0(field, "$start"), "start")
   }
   if (!is.null(window$end)) {
-    result$end <- .plan_integer_scalar(window$end,
-                                       paste0(field, "$end"))
+    result$end <- .plan_window_endpoint(window$end,
+                                        paste0(field, "$end"), "end")
+  }
+  if (length(result) == 0L) {
+    stop(field, " is unbounded on both sides; omit it instead.", call. = FALSE)
   }
   invalid_order <- !is.null(result$start) && !is.null(result$end) &&
     (if (strict) result$start >= result$end else result$start > result$end)
@@ -661,7 +680,7 @@ ds.omop.plan.survival <- function(plan,
   start_offset <- if (is.null(tar$start_offset)) 0L else
     .plan_integer_scalar(tar$start_offset, "tar$start_offset")
   end_offset <- if (is.null(tar$end_offset)) NULL else
-    .plan_integer_scalar(tar$end_offset, "tar$end_offset")
+    .plan_window_endpoint(tar$end_offset, "tar$end_offset", "end")
   if (!is.null(end_offset) && start_offset > end_offset) {
     stop("tar$start_offset must not be after tar$end_offset.", call. = FALSE)
   }

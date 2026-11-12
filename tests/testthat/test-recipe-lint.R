@@ -101,14 +101,17 @@ test_that("age_no_index: suppressed when base has a cohort", {
   expect_false(has_code(L, "age_no_index"))
 })
 
-test_that("narrow_filter: age_range width < 5 years", {
+test_that("narrow age ranges are newly permitted: no narrow_filter mirror", {
+  # 2.10.3 (F-23, F-26): the server's age-width floor is removed for private
+  # criteria, so the client lint no longer mirrors it.
   r <- omop_recipe()
   r <- dsOMOPClient:::recipe_add_filter(r, omop_filter_age(min = 40, max = 43))
   r <- dsOMOPClient:::recipe_add_variable(r, omop_variable_sex())
   r <- dsOMOPClient:::recipe_add_output(r, omop_output(name = "w", type = "wide"))
   L <- recipe_lint(r)
-  expect_true(has_code(L, "narrow_filter"))
-  expect_equal(sev_of(L, "narrow_filter"), "WARNING")
+  expect_false(has_code(L, "narrow_filter"))
+  expect_false(any(L$severity %in% c("ERROR", "WARNING") &
+                     grepl("width", L$message)))
 })
 
 test_that("date_range width is not hard-coded by client lint", {
