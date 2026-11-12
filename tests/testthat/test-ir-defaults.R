@@ -13,7 +13,8 @@ test_that("the client normaliser expands the documented defaults", {
   expect_identical(b$populations$cases$coverage$policy, "unique")
   expect_identical(b$outputs$cc_table$grain, "episode")
   expect_identical(unlist(b$publish), "cc_table")
-  expect_identical(b$scope$combine, "union")
+  # a field with neither a schema nor a semantic default stays absent (CR-11)
+  expect_false("scope" %in% names(b))
   expect_false(grepl("legacy_", .jcsCanonical(b), fixed = TRUE))
   # fixed point, and still a valid wire plan
   again <- .irNormalizeWire(b, .ird_schema())
@@ -26,6 +27,18 @@ test_that("normalised digests are independent of default spelling", {
   n1 <- .irNormalizeWire(a, .ird_schema())
   n2 <- .irNormalizeWire(n1, .ird_schema())
   expect_identical(.planSemanticDigest(n1)$sha256, .planSemanticDigest(n2)$sha256)
+  # example A writes out the semantic defaults its R recipe leaves implicit
+  # (wide columns, publish, coverage, grain, event_order); leaving them
+  # implicit gives the same normal form (CR-11)
+  implicit <- a
+  implicit$outputs$baseline$columns <- NULL
+  implicit$publish <- NULL
+  implicit$populations$new_users$coverage <- NULL
+  implicit$outputs$baseline$grain <- NULL
+  implicit$outputs$tte$grain <- NULL
+  implicit$outputs$tte$options$event_order <- NULL
+  expect_identical(.planSemanticDigest(.irNormalizeWire(implicit, .ird_schema()))$sha256,
+                   .planSemanticDigest(n1)$sha256)
 })
 
 test_that("index-event tables follow the vendored role registry (B-20)", {

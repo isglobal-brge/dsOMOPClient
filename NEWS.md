@@ -38,8 +38,10 @@ workstream fills its entries.
 
 ## Shared with dsOMOP 2.10.3 (WS-2)
 - `R/ir_defaults.R` (`.irNormalizeWire()`), the language 2.0 normaliser shared
-  byte-identically with the server: normalised forms and their semantic
-  digests agree on both sides.
+  byte-identically with the server (schema defaults plus the semantic
+  defaults of change request CR-11, nothing else added): normalised forms and
+  their semantic digests agree on both sides; leaving the semantic defaults
+  of the canonical example A implicit gives the same normal form.
 
 ## Contracts shipped by WS-0
 - Vendored `inst/schema/` (byte-identical to dsOMOP's), `R/json_schema.R`,
