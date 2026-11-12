@@ -217,7 +217,7 @@ test_that("multi-concept codesets round-trip and dedup shared concept sets", {
                c(201820L, 201826L))
 })
 
-test_that("numeric measurement bounds fail closed on Circe export", {
+test_that("one-sided numeric measurement bounds round-trip without private gates", {
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
       index_event = omop_index_event(201820, "condition_occurrence"),
@@ -229,8 +229,17 @@ test_that("numeric measurement bounds fail closed on Circe export", {
           params = list(concept_id = 3013682L, min_value = NULL,
                         max_value = 140, safe_scope = NULL)))),  # lte
     outputs = omop_output(type = "wide", population_id = "p"))
-  expect_true("unbound_numeric_filter" %in% recipe_lint(r)$code)
-  expect_error(recipe_export_circe(r, "p"), "safe-bin contract")
+  expect_false("unbound_numeric_filter" %in% recipe_lint(r)$code)
+  exported <- recipe_export_circe(r, "p")
+  imported <- recipe_import_circe(exported)
+  measurements <- Filter(function(f) identical(f$type, "has_measurement"), imported$filters)
+  expect_length(measurements, 2L)
+  expect_identical(measurements[[1]]$params$min_value, 6.5)
+  expect_null(measurements[[1]]$params$max_value)
+  expect_null(measurements[[2]]$params$min_value)
+  expect_equal(measurements[[2]]$params$max_value, 140)
+  expect_null(measurements[[1]]$params$safe_scope)
+  expect_null(measurements[[2]]$params$safe_scope)
 })
 
 test_that("non-anchor not_has_concept windows round-trip", {

@@ -253,8 +253,10 @@ test_that("a scalar cohort to omop_recipe is scope, not the base cohort", {
       invisible(NULL)
     },
     datashield.aggregate = function(conns, expr, success = NULL, ...) {
-      report <- list(levels = list(), unsafe = character(0),
-                     nfilter_levels_max = 40)
+      report <- if (as.character(expr[[1L]]) == "omopPlanStatusDS") {
+        .publication_status(captured[[4L]])
+      } else list(levels = list(), unsafe = character(0),
+                   nfilter_levels_max = 40)
       if (is.function(success)) success("srv", report)
       list(srv = report)
     },
@@ -378,8 +380,10 @@ test_that("recipe_execute applies an execution-time scope override", {
       invisible(NULL)
     },
     datashield.aggregate = function(conns, expr, success = NULL, ...) {
-      report <- list(levels = list(), unsafe = character(0),
-                     nfilter_levels_max = 40)
+      report <- if (as.character(expr[[1L]]) == "omopPlanStatusDS") {
+        .publication_status(captured[[4L]])
+      } else list(levels = list(), unsafe = character(0),
+                   nfilter_levels_max = 40)
       if (is.function(success)) success("srv", report)
       list(srv = report)
     },

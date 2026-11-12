@@ -54,11 +54,13 @@ test_that("memory execution never requests DP status and keeps factors", {
     },
     .record_session_outputs = function(...) invisible(NULL),
     .session_harmonization_for_connections = function(...) NULL,
-    .harmonizeConceptFactors = function(...) { harmonized <<- TRUE }
+    .harmonizePublicationFactors = function(...) { harmonized <<- TRUE }
   )
   testthat::local_mocked_bindings(
     datashield.aggregate = function(conns, expr, ...) {
-      stop("loading tables must not call ", as.character(expr[[1L]]))
+      expect_identical(as.character(expr[[1L]]), "omopPlanStatusDS")
+      stats::setNames(rep(list(.publication_status(c(baseline = "D"))), length(conns)),
+                      names(conns))
     },
     datashield.symbols = function(conns, ...) {
       stats::setNames(rep(list(assigned), length(conns)), names(conns))

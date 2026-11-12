@@ -4,9 +4,14 @@ Recipe language 2.0 (design-2.10.3). This section is the WS-0 skeleton; each
 workstream fills its entries.
 
 ## Corrected
+- Plan execution reads authenticated publication status before cleanup and uses
+  the server inventory, including freshly allocated component symbols. Technical
+  and transport failures revoke staged files as well as assigned outputs.
 - (B-8) `parent_id` now restricts membership (see dsOMOP 2.10.3).
 - (F-3) The client blocklist is identical to the server's class-1 patterns;
-  birth components are not blocked on assignment paths.
+  birth components are not blocked on assignment paths. Informational
+  `quasi_identifier` lint identifies birth, age and date variables without
+  changing compilation or aggregate admission.
 
 ## Newly permitted
 - (B-20) `omop_index_event()` accepts every event table of the server's role
@@ -14,11 +19,19 @@ workstream fills its entries.
   seven tables of 2.10.2, `visit_detail`, `observation_period`, `death`,
   `specimen`, `note`, `payer_plan_period`, the era tables and `episode`; the
   server checks the table against its own CDM version.
-- No client-side mirrors of removed server gates (`narrow_filter`,
-  `unbound_numeric_filter`, mandatory bins); defaults are surfaced by
-  `print()`, `recipe_explain()` and `recipe_lint()` instead.
+- `on_small_site = "skip"` on plan and recipe execution keeps successful sites
+  while asking each server to commit all output families or none. Non-strict
+  partial results warn with rejected family names and codes.
+- Numeric row thresholds and one-sided measurement criteria compile without
+  safe bins; supplied bin contracts retain their scope checks. Removed the
+  `narrow_filter` / `unbound_numeric_filter` lints and filter safety categories.
+- Circe round-trips one-sided measurement bounds with identical endpoint
+  semantics; half-open two-sided ranges and authenticated bin contracts still
+  refuse export because Circe cannot preserve them.
 
 ## Newly refused
+- Invalid or incomplete publication status fails closed; only
+  `insufficient_support` can skip a site.
 - Plans that do not validate against the vendored `plan-v2.json` are never
   sent; a v2 recipe whose operations an older server lacks is refused with
   the operation named.

@@ -180,11 +180,13 @@ test_that("omop_filter_value constructor with safe_bins", {
   expect_equal(f$params$value$upper, 20)
 })
 
-test_that("omop_filter_value rejects NULL safe_bins", {
-  expect_error(
-    omop_filter_value(threshold = 5, direction = "above", safe_bins = NULL),
-    "server-issued"
-  )
+test_that("omop_filter_value compiles exact comparisons without safe_bins", {
+  above <- omop_filter_value(threshold = 5, direction = "above")
+  below <- omop_filter_value(threshold = 5, direction = "below")
+  expect_identical(.filter_to_leaf(above), list(var = "value_as_number", op = ">=", value = 5))
+  expect_identical(.filter_to_leaf(below), list(var = "value_as_number", op = "<", value = 5))
+  expect_error(omop_filter_value(threshold = Inf), "finite numeric")
+  expect_error(omop_filter_value(threshold = c(1, 2)), "finite numeric")
 })
 
 test_that("omop_filter_value rejects degenerate bins", {
@@ -1759,7 +1761,8 @@ test_that("recipe_execute forwards output_mode to plan execution", {
   seen <- NULL
   testthat::local_mocked_bindings(
     ds.omop.plan.execute = function(plan, out, symbol = "omop", conns = NULL,
-                                    output_mode = "memory") {
+                                    output_mode = "memory",
+                                    on_small_site = c("error", "skip")) {
       seen <<- list(plan = plan, out = out, symbol = symbol,
                     output_mode = output_mode)
       invisible(out)
@@ -1995,20 +1998,6 @@ test_that("omop_filter_age_group can be added to recipe", {
   expect_equal(c$filters[[1]]$type, "age_group")
 })
 
-test_that("classifyFilterClient returns correct safety level", {
-  expect_equal(.classifyFilterClient("sex"), "allowed")
-  expect_equal(.classifyFilterClient("age_group"), "constrained")
-  expect_equal(.classifyFilterClient("cohort"), "allowed")
-  expect_equal(.classifyFilterClient("concept_set"), "allowed")
-  expect_equal(.classifyFilterClient("custom"), "blocked")
-  expect_equal(.classifyFilterClient(
-    "custom", list(op = "in")), "constrained")
-  expect_equal(.classifyFilterClient("has_concept"), "constrained")
-  expect_equal(.classifyFilterClient("age_range"), "constrained")
-  expect_equal(.classifyFilterClient("date_range"), "constrained")
-  expect_equal(.classifyFilterClient("min_count"), "blocked")
-})
-
 test_that("ds.omop.safe.cutpoints has expected signature", {
   expect_true(is.function(ds.omop.safe.cutpoints))
   args <- formals(ds.omop.safe.cutpoints)
@@ -2225,16 +2214,13 @@ test_that("omop_filter_has_measurement creates correct filter", {
   expect_equal(f$params$max_value, 6.0)
 })
 
-test_that("omop_filter_has_measurement rejects unissued or mismatched ranges", {
-  expect_error(
-    omop_filter_has_measurement(3004410, min_value = 4, max_value = 6),
-    "server-issued"
-  )
+test_that("omop_filter_has_measurement authenticates supplied bin ranges", {
+  expect_no_error(omop_filter_has_measurement(3004410, min_value = 4, max_value = 6))
   expect_error(
     omop_filter_has_measurement(
       3004410, min_value = 4,
       safe_bins = .test_safe_bins(c(0, 4, 6, 10))),
-    "require both"
+    "requires both"
   )
   expect_error(
     omop_filter_has_measurement(
@@ -2472,16 +2458,4 @@ test_that("JSON round-trip preserves new filter types", {
   types <- vapply(r2$filters, function(f) f$type, character(1))
   expect_true("not_has_concept" %in% types)
   expect_true("prior_observation" %in% types)
-})
-
-# === Client-side filter classification ===
-
-test_that("new filters are classified as constrained", {
-  new_types <- c("not_has_concept", "concept_count", "prior_observation",
-                 "followup", "visit_count", "has_measurement",
-                 "missing_measurement")
-  for (ft in new_types) {
-    expect_equal(dsOMOPClient:::.classifyFilterClient(ft), "constrained",
-                 info = paste("Filter type:", ft))
-  }
 })
