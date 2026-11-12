@@ -580,8 +580,12 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' treated as \code{FALSE}. Servers 2.9.0 and later also report
 #' \code{tools_mode}, the community tools' protection mode (\code{"auto"} by
 #' default, \code{"standard"} or \code{"dp"}).
-#' Each status contains the custodian's public \code{snapshot_id}. Federated
-#' sites may legitimately report different snapshot identifiers.
+#' Each status contains a public \code{snapshot_id} label. Federated sites may
+#' legitimately report different labels. On 2.10.3 servers it is a display
+#' value only: fixed synopses are keyed on an automatic data generation the
+#' server derives per session and never releases (\code{data_generation},
+#' \code{data_generation_basis} and \code{data_generation_residual} describe
+#' it).
 #' Release preflight rejects either a repeated \code{noise_domain_id} or a
 #' repeated server-owned logical \code{domain}. The second check also prevents
 #' one logical privacy node from being pooled twice when its connections expose
