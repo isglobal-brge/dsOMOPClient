@@ -9,7 +9,9 @@ workstream fills its entries.
   and transport failures revoke staged files as well as assigned outputs.
 - (B-8) `parent_id` now restricts membership (see dsOMOP 2.10.3).
 - (F-3) The client blocklist is identical to the server's class-1 patterns;
-  birth components are not blocked on assignment paths.
+  birth components are not blocked on assignment paths. Informational
+  `quasi_identifier` lint identifies birth, age and date variables without
+  changing compilation or aggregate admission.
 
 ## Newly permitted
 - `on_small_site = "skip"` on plan and recipe execution keeps successful sites

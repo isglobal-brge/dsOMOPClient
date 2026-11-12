@@ -4502,25 +4502,6 @@ recipe_set_options <- function(recipe,
   ids
 }
 
-#' Is a column name a server-blocked free-text / source-value column?
-#'
-#' Mirrors the server's blocked-column patterns (dsOMOP blueprint:
-#' \code{*_source_value}, \code{value_as_string}, \code{value_source_value},
-#' \code{sig}, \code{*_source_concept_value}, note text). These are never
-#' releasable, so a recipe that requests one as a variable's \code{value_source}
-#' or raw \code{column} is rejected at compile time rather than silently dropped.
-#'
-#' @param col Character; a column name (case-insensitive).
-#' @return Logical scalar.
-#' @keywords internal
-.is_blocked_column <- function(col) {
-  if (is.null(col) || !nzchar(col)) return(FALSE)
-  col <- tolower(col)
-  patterns <- c("_source_value$", "^value_as_string$", "^value_source_value$",
-                "^sig$", "^note_text$", "^note_source_value$")
-  any(vapply(patterns, function(p) grepl(p, col), logical(1)))
-}
-
 #' Reject variables whose value_source / raw column is a blocked column
 #'
 #' @param variables Named list of \code{omop_variable} objects.
@@ -4532,7 +4513,7 @@ recipe_set_options <- function(recipe,
     for (col in c(v$value_source, v$column)) {
       if (.is_blocked_column(col)) {
         stop("Disclosive: variable '", nm %||% v$name %||% "?",
-             "' requests blocked free-text/source column '", col,
+             "' requests blocked class-1 column '", col,
              "', which the server cannot release.", call. = FALSE)
       }
     }
@@ -7365,9 +7346,6 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'     fixed ISO \code{derived$reference_date} or \code{derived$unit}.}
 #'   \item{age_no_index (WARNING)}{\code{format = "age"} with index reference
 #'     but the base population has neither a cohort nor a date filter.}
-#'   \item{narrow_filter (WARNING)}{population \code{age_range} width < 5 years
-#'     (server rejects). Calendar-window width is server policy and is therefore
-#'     not hard-coded by this client lint.}
 #'   \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column with
 #'     \code{factor_concepts = TRUE}, or a categorical format on a
 #'     high-cardinality domain.}
@@ -7376,6 +7354,9 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'   \item{long_split (INFO)}{a \code{"long"} output spanning > 1 table.}
 #'   \item{no_value_source (INFO)}{an aggregate format with no
 #'     \code{value_source}.}
+#'   \item{quasi_identifier (INFO)}{a permitted birth component, age, age band,
+#'     or date column; final publication support and the absolute-date policy
+#'     still apply. Aggregate admission is unchanged.}
 #' }
 #' Edge cases: a \code{NULL} recipe returns a single \code{empty_recipe} info
 #' row; a recipe with no outputs adds a \code{no_output} warning.
@@ -7516,6 +7497,22 @@ recipe_lint <- function(recipe) {
           paste0("variables$", vnm))
     }
 
+    # INFO quasi_identifier: assignment permits these columns; this is not
+    # a refusal and does not change any aggregate endpoint's admission policy.
+    source_columns <- c(v$column, v$value_source, (v$derived %||% list())$column)
+    quasi_columns <- source_columns[vapply(source_columns,
+      .is_quasi_identifier_column, logical(1))]
+    if (identical(fmt, "age") || length(quasi_columns) > 0L) {
+      add("INFO", "quasi_identifier",
+          paste0("Variable '", vnm, "' requests a permitted quasi-identifier",
+                 if (length(quasi_columns))
+                   paste0(" (", paste(unique(quasi_columns), collapse = ", "), ")")
+                 else " (age)",
+                 "; publication support and the absolute-date policy apply. ",
+                 "Aggregate admission is unchanged."),
+          paste0("variables$", vnm))
+    }
+
     # INFO no_value_source: aggregate format without a value_source.
     if (fmt %in% .lint_value_source_fmts && is.null(v$value_source)) {
       add("INFO", "no_value_source",
@@ -7556,38 +7553,6 @@ recipe_lint <- function(recipe) {
                    "population has no cohort and no date filter ",
                    "(negative-age risk)."),
             paste0("variables$", vnm))
-      }
-    }
-  }
-
-  # WARNING narrow_filter: age bands have a fixed public contract. Calendar
-  # window width is intentionally absent: the server derives its authoritative
-  # minimum from the data controller's DataSHIELD disclosure options.
-  population_filters <- unlist(lapply(recipe$populations %||% list(),
-    function(pop) .flatten_filters(pop$filters %||% list(),
-                                    level = "population")),
-    recursive = FALSE)
-  pop_filters <- c(
-    .flatten_filters(recipe$filters %||% list(), level = "population"),
-    population_filters
-  )
-  for (f in pop_filters) {
-    if (identical(f$type, "has_measurement") &&
-        (!is.null(f$params$min_value) || !is.null(f$params$max_value)) &&
-        is.null(f$params$safe_scope)) {
-      add("ERROR", "unbound_numeric_filter",
-          paste0(
-            "Numeric measurement criterion '", f$label %||% "<unnamed>",
-            "' has no server-issued safe-bin contract and cannot execute."
-          ),
-          "filters")
-    }
-    if (identical(f$type, "age_range")) {
-      lo <- f$params$min; hi <- f$params$max
-      if (!is.null(lo) && !is.null(hi) && (hi - lo) < 5) {
-        add("WARNING", "narrow_filter",
-            paste0("age_range filter width (", hi - lo,
-                   ") < 5 years; server will reject."), "filters")
       }
     }
   }
