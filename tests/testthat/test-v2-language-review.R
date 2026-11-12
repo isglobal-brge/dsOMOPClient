@@ -10,7 +10,7 @@
   selected <- do.call(omop_population, c(list(id = "selected"),
                                         stats::setNames(list(members), op)))
   omop_recipe(
-    events = list(mi = omop_event("condition_occurrence", 1)),
+    events = list(omop_event("condition_occurrence", 1, name = "mi")),
     populations = list(
       omop_population("indexed", index = omop_index("mi")),
       omop_population("plain"), selected,
@@ -28,7 +28,7 @@ test_that("matching and inherited age use A-11 set-operation indexedness (B3)", 
     for (indexed_first in orders) {
       plan <- recipe_to_plan(.language_setop_match(op, indexed_first, age = TRUE))
       expect_identical(plan$outputs$members$grain, "episode", info = op)
-      expect_length(.language_server_errors(plan), 0L, info = op)
+      expect_identical(length(.language_server_errors(plan)), 0L, info = op)
     }
   }
 })
@@ -52,13 +52,13 @@ test_that("right-only indexes do not make intersect or setdiff cases indexed (B3
 test_that("forward episode adapters and interval dependencies preserve meaning (N1)", {
   skip_if_not_installed("dsOMOP")
   events <- list(
-    members = omop_episode_members("episode", tables = "drug_exposure"),
-    costs = omop_cost("rx", currency = 44818668),
-    episode = omop_event("episode", 32528),
-    rx = omop_event("drug_exposure", 1))
+    omop_episode_members("episode", tables = "drug_exposure", name = "members"),
+    omop_cost("rx", currency = 44818668, name = "costs"),
+    omop_event("episode", 32528, name = "episode"),
+    omop_event("drug_exposure", 1, name = "rx"))
   make <- function(events) omop_recipe(
     events = events,
-    intervals = list(treatment = omop_era("rx")),
+    intervals = list(omop_era("rx", name = "treatment")),
     outputs = list(omop_output("linked", format = "long", sources = "members"),
                    omop_output("costs", format = "long", sources = "costs"),
                    omop_output("courses", format = "long", sources = "treatment")))
@@ -76,13 +76,13 @@ test_that("forward episode adapters and interval dependencies preserve meaning (
 test_that("named dependency failures distinguish cycles and missing declarations (N1)", {
   make <- function(events) omop_recipe(events = events,
                                       outputs = omop_output("o", format = "long", sources = "a"))
-  expect_error(recipe_to_plan(make(list(a = omop_cost("a")))), "cycle: a -> a")
-  expect_error(recipe_to_plan(make(list(a = omop_cost("b"), b = omop_cost("c"),
-                                        c = omop_cost("a")))), "cycle: a -> b -> c -> a")
-  expect_error(recipe_to_plan(make(list(a = omop_cost("missing")))),
+  expect_error(recipe_to_plan(make(list(omop_cost("a", name = "a")))), "cycle: a -> a")
+  expect_error(recipe_to_plan(make(list(omop_cost("b", name = "a"), omop_cost("c", name = "b"),
+                                        omop_cost("a", name = "c")))), "cycle: a -> b -> c -> a")
+  expect_error(recipe_to_plan(make(list(omop_cost("missing", name = "a")))),
                "references event 'missing'.*does not declare")
   # A failed traversal must not leave state behind for the next compilation.
-  good <- make(list(a = omop_cost("rx"), rx = omop_event("drug_exposure", 1)))
+  good <- make(list(omop_cost("rx", name = "a"), omop_event("drug_exposure", 1, name = "rx")))
   expect_s3_class(recipe_to_plan(good), "omop_plan_v2")
 })
 
