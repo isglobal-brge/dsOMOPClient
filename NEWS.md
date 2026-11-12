@@ -190,8 +190,12 @@ workstream fills its entries.
   recovery, failed cleanup and a mutation that has already committed.
 - (WS-9 review B6–B8; A-23) Prefixed recipe merges preserve the original
   namespace at each deferred parameter occurrence, including defaults,
-  inline concept sets and window anchors, through binding and serialization.
+  inline concept sets, window anchors, censor tags, population/output references
+  and publication roots, through binding and serialization. A whole-source
+  placeholder remains intact in generated advanced code.
   Parameterized zero washout generates the same criteria as literal zero.
+  Base sharing is resolved after binding when necessary, using current
+  population and source definitions and preserving edits made after merging.
   Generated advanced code preserves edited block members and provenance;
   simple new-user and study printing states the chosen washout and era defaults.
 - Large numeric literals and public cut boundaries use round-tripping JSON
