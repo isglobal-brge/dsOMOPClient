@@ -234,3 +234,28 @@ test_that("v1 explanation reports disagreement and method-listing failures (B7)"
                "Server explain is unavailable on b \\(the profile's methods could not be listed: profile inventory timed out\\)")
   expect_identical(ex2$payload, recipe_to_plan(r, version = 1L))
 })
+
+test_that("explain checks the factor methods required by ordinary memory execution", {
+  for (method in c("omopFactorLevelsDS", "omopAsFactorColumnsDS")) {
+    state <- .legacy_federation(new = "a", unpublished = method)
+    testthat::local_mocked_bindings(
+      .ds_safe_aggregate = function(...) list(a = list()), .package = "dsOMOPClient")
+    recipes <- list(
+      omop_recipe(variables = omop_variable_sex(), outputs = omop_output("w")),
+      omop_recipe(variables = list(sex = omop_sex()), outputs = omop_output("w", format = "wide")))
+    for (r in recipes) {
+      ex <- recipe_explain(r, conns = list(a = "a"))
+      expect_match(ex$refusal, paste0("a lacks ", method))
+      expect_match(paste(ex$text, collapse = "\n"), "Execution on these servers would be refused")
+      expect_error(recipe_execute(r), paste0("a lacks ", method))
+      expect_identical(unname(state$assigns), 0L)
+
+      enabled <- recipe_explain(recipe_set_options(r, factor_concepts = FALSE), conns = list(a = "a"))
+      expect_null(enabled$refusal)
+      expect_match(paste(enabled$text, collapse = "\n"),
+                   "Execution would use the publication protocol on every site")
+    }
+    empty <- dsOMOPClient:::recipe_set_publish(recipes[[2L]], character(0))
+    expect_null(recipe_explain(empty, conns = list(a = "a"))$refusal)
+  }
+})

@@ -137,13 +137,19 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
                                } else "no site explained it", "."))
       }
     }
-    # B1: the execution route these sites would take.
+    # B1: the route of ordinary memory execution, including its default
+    # factor harmonisation. A plan publishing nothing calls no factor method.
     if (is.null(refusal)) {
-      route <- tryCatch(.plan_protocol_route(conns), error = function(e) e)
+      harmonizes <- isTRUE(plan$options$factor_concepts %||% TRUE) &&
+        !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
+      route <- tryCatch(.plan_protocol_route(conns, harmonizes = harmonizes),
+                        error = function(e) e)
       if (inherits(route, "error")) {
         refusal <- conditionMessage(route)
       } else if (!route$protocol) {
         text <- c(text, paste0("Execution would run the legacy call: ", .plan_legacy_warning(route)))
+      } else {
+        text <- c(text, "Execution would use the publication protocol on every site.")
       }
     }
   }
