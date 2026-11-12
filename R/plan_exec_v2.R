@@ -347,14 +347,13 @@
 
 #' Encode a v2 plan for DataSHIELD transport without losing precision
 #'
-#' Like \code{.ds_encode()} (URL-safe base64 JSON) but with every digit kept
-#' (\code{digits = NA}), explicit JSON nulls and empty objects preserved, so
+#' Like \code{.ds_encode()} (URL-safe base64 JSON) but using the canonical
+#' encoder's round-tripping numbers, explicit JSON nulls and empty objects, so
 #' the server parses exactly the plan whose semantic digest the client
 #' computed (unit conversion factors such as 0.45359237 must not be rounded).
 #' @keywords internal
 .ds_encode_lossless <- function(x) {
-  json <- as.character(jsonlite::toJSON(.v2_plain(x), auto_unbox = TRUE, null = "null",
-                                        digits = NA))
+  json <- .jcsCanonical(.v2_plain(x))
   b64 <- gsub("[\r\n]", "", jsonlite::base64_enc(charToRaw(enc2utf8(json))))
   b64 <- gsub("\\+", "-", b64)
   b64 <- gsub("/", "_", b64)

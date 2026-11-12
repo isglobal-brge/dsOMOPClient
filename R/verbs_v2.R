@@ -252,8 +252,7 @@
 
 # The vendored schema validates exactly what the server will parse.
 .mutate_schema_check <- function(x, schema, field, root = schema) {
-  wire <- jsonlite::fromJSON(as.character(jsonlite::toJSON(.v2_plain(x), auto_unbox = TRUE,
-                                                           null = "null", digits = NA)),
+  wire <- jsonlite::fromJSON(.jcsCanonical(.v2_plain(x)),
                              simplifyVector = FALSE)
   res <- .jsonSchemaValidate(schema, wire, root = root)
   if (!res$valid) {
@@ -299,10 +298,15 @@
 #' gives \code{NA}), \code{coalesce(...)} and \code{cut(x, breaks, labels,
 #' right)} (R's \code{right = TRUE} default; text labels, \code{NA} outside
 #' the breaks; \code{breaks}/\code{labels} may name vectors of your session).
+#' Integer arithmetic uses exact signed 64-bit storage when needed; results
+#' beyond the ordinary R integer range are retained, and checked 64-bit
+#' overflow yields typed NA. Branches and coalescing preserve integer64 and
+#' datetime values. Repeated explicit cut labels group their intervals.
 #' Nothing is evaluated as R code, on the client or on the server.
 #'
 #' Person, episode and set keys and protected columns can be neither read nor
-#' written. The result is a released object: its distinct persons must reach
+#' written. Class-1 source and assignment names are also refused, even when
+#' the administrator permits their direct projection. The result is a released object: its distinct persons must reach
 #' the server's \code{nfilter.subset} (the server refuses it otherwise, with
 #' its constant message) and it carries no differential-privacy provenance.
 #' With \code{newobj = x} the target is replaced in place on every server; a

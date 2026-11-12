@@ -30,6 +30,7 @@
   conns <- DSI::datashield.login(builder$build())
   withr::defer(try(DSI::datashield.logout(conns), silent = TRUE), envir = env)
   ds.omop.connect(resource = "omop_v9", symbol = "omop_v9", conns = conns)
+  withr::defer(try(ds.omop.disconnect("omop_v9", conns = conns), silent = TRUE), envir = env)
   recipe_execute(omop_recipe(variables = list(omop_variable_age(name = "age"), omop_variable_sex()),
                              outputs = omop_output("w", type = "wide")),
                  out = c(w = "D_w"), symbol = "omop_v9", conns = conns)
@@ -89,4 +90,25 @@ test_that("ds.omop.mutate() and ds.omop.filter(expr) run through DSLite on the i
   expect_match(conditionMessage(err), "left unchanged", fixed = TRUE)
   for (f in .v9e_frames(ctx$server, "D_m")) expect_equal(f$age10, f$age * 10L + 1L)
   expect_false(any(grepl("^omop\\.rollback\\.", unlist(DSI::datashield.symbols(conns)))))
+})
+
+test_that("public cut boundaries retain exact bigint groupings through DSLite transport", {
+  skip_if_not_installed("DSLite")
+  skip_if_not_installed("dsOMOP")
+  skip_if_not_installed("resourcer")
+  skip_if_not_installed("RSQLite")
+  skip_if_not_installed("bit64")
+  ctx <- .v9e_setup()
+  breaks <- 2^53 + c(0, 2, 4)
+  expect_identical(ds.omop.mutate(
+    "D_w", big = 2147483647L * 4194304L + 4194304L, next_big = big + 1L,
+    lower_band = cut(next_big, breaks, labels = c("lower", "upper"), right = FALSE),
+    upper_band = cut(big + 3L, breaks, labels = c("lower", "upper"), right = FALSE),
+    newobj = "D_big", symbol = "omop_v9", conns = ctx$conns), "D_big")
+  for (frame in .v9e_frames(ctx$server, "D_big")) {
+    expect_s3_class(frame$next_big, "integer64")
+    expect_identical(as.character(frame$next_big), rep("9007199254740993", nrow(frame)))
+    expect_identical(frame$lower_band, rep("lower", nrow(frame)))
+    expect_identical(frame$upper_band, rep("upper", nrow(frame)))
+  }
 })

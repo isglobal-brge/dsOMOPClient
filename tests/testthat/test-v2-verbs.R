@@ -162,12 +162,16 @@ test_that("ds.omop.filter(expr) sends the predicate tree; the legacy form is unc
   call <- state$calls[[1L]]
   expect_identical(as.character(call$expr[[1L]]), "omopFilterDS")
   expect_identical(names(call$expr)[[3L]], "expr")
-  expect_identical(.vb_decode(call$expr$expr),
-                   list(and = list(list(var = "age", op = ">=", value = 18L),
-                                   list(var = "bmi", op = "not_null"))))
+  # JSON object member order is immaterial; transport now uses canonical
+  # encoding to preserve every numeric boundary exactly.
+  expect_identical(dsOMOPClient:::.jcsCanonical(.vb_decode(call$expr$expr)),
+                   dsOMOPClient:::.jcsCanonical(list(and = list(
+                     list(var = "age", op = ">=", value = 18L),
+                     list(var = "bmi", op = "not_null")))))
   ds.omop.filter("D", expr = omop_where(bmi > omop_param("thr", type = "number", default = 30)),
                  newobj = "G")
-  expect_identical(.vb_decode(state$calls[[2L]]$expr$expr), list(var = "bmi", op = ">", value = 30L))
+  expect_identical(dsOMOPClient:::.jcsCanonical(.vb_decode(state$calls[[2L]]$expr$expr)),
+                   dsOMOPClient:::.jcsCanonical(list(var = "bmi", op = ">", value = 30L)))
   expect_error(ds.omop.filter("D", var = "a", op = "==", value = 1, expr = omop_where(a == 1)),
                "not both")
   expect_error(ds.omop.filter("D", expr = "age > 1"), "omop_where")
