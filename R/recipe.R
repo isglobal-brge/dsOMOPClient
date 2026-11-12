@@ -5436,7 +5436,8 @@ recipe_set_options <- function(recipe,
 .codegen_filter_list <- function(filters) {
   if (is.null(filters) || length(filters) == 0) return(NULL)
   code <- vapply(filters, function(f) {
-    if (inherits(f, "omop_filter_group")) .codegen_filter_group(f)
+    if (inherits(f, "omop_criterion")) .v2_codegen(f)
+    else if (inherits(f, "omop_filter_group")) .codegen_filter_group(f)
     else .codegen_filter(f)
   }, character(1))
   .codegen_raw(paste0("list(", paste(code, collapse = ", "), ")"))
@@ -5506,7 +5507,19 @@ recipe_to_code <- function(recipe) {
         filters = .codegen_filter_list(p$filters),
         cohort_definition_id = p$cohort_definition_id,
         episode_policy = p$episode_policy,
-        index_event = index_code))
+        index_event = index_code,
+        index = if (!is.null(p[["index"]])) .codegen_raw(.v2_codegen(p[["index"]])),
+        match = if (!is.null(p$match)) .codegen_raw(.v2_codegen(p$match)),
+        coverage = if (!is.null(p$coverage)) .codegen_raw(.v2_codegen(p$coverage))))
+      if (!is.null(p$circe_v2)) {
+        # The language-2 form of a Circe import has no constructor argument;
+        # the generated code re-imports it explicitly.
+        pop_code[[length(pop_code)]] <- paste0(
+          "(function(p) { p$circe_v2 <- list(index = ", .v2_codegen(p$circe_v2$index),
+          ", filters = list(", paste(vapply(p$circe_v2$filters, .v2_codegen, ""), collapse = ", "),
+          "), coverage = ", .v2_codegen(p$circe_v2$coverage), "); p })(",
+          pop_code[[length(pop_code)]], ")")
+      }
     }
   }
   if (length(pop_code) > 0)
@@ -5529,7 +5542,10 @@ recipe_to_code <- function(recipe) {
       population_id = b$population_id,
       expand = if (isTRUE(b$expand)) TRUE else NULL,
       reference_date = b$reference_date,
-      unit = b$unit))
+      unit = b$unit,
+      where = if (!is.null(b$where)) .codegen_raw(.v2_codegen(b$where)),
+      visit = b$visit,
+      concept_col = b$concept_col))
   }
   if (length(block_code) > 0)
     slot_args$blocks <- .codegen_list_arg(block_code)
@@ -5542,6 +5558,10 @@ recipe_to_code <- function(recipe) {
   for (nm in names(recipe$variables)) {
     v <- recipe$variables[[nm]]
     if (!is.null(v$block_id)) next
+    if (.v2_is_v2_variable(v)) {
+      var_code <- c(var_code, paste0(.codegen_name(nm), " = ", .v2_codegen(v)))
+      next
+    }
 
     # Use convenience constructors for derived variables
     code <- NULL
@@ -5616,7 +5636,10 @@ recipe_to_code <- function(recipe) {
         reference_date = if (identical(v$format, "time_since"))
           v$derived$reference_date else NULL,
         unit = if (identical(v$format, "time_since"))
-          v$derived$unit else NULL)
+          v$derived$unit else NULL,
+        where = if (!is.null(v[["where"]])) .codegen_raw(.v2_codegen(v[["where"]])),
+        visit = v[["visit"]],
+        broadcast = if (isTRUE(v[["broadcast"]])) TRUE)
     }
     var_code <- c(var_code, code)
   }
@@ -5627,7 +5650,8 @@ recipe_to_code <- function(recipe) {
   filt_code <- character(0)
   for (id in names(recipe$filters)) {
     f <- recipe$filters[[id]]
-    one <- if (inherits(f, "omop_filter_group")) .codegen_filter_group(f)
+    one <- if (inherits(f, "omop_criterion")) .v2_codegen(f)
+           else if (inherits(f, "omop_filter_group")) .codegen_filter_group(f)
            else .codegen_filter(f)
     filt_code <- c(filt_code, paste0(.codegen_name(id), " = ", one))
   }
@@ -5639,12 +5663,19 @@ recipe_to_code <- function(recipe) {
   out_code <- character(0)
   for (nm in names(recipe$outputs)) {
     o <- recipe$outputs[[nm]]
+    opts <- if (length(o$options %||% list()) > 0) o$options else NULL
     out_code <- c(out_code, .codegen_call("omop_output",
       name = o$name, type = o$type,
       variables = o$variables,
       population_id = o$population_id,
-      options = if (length(o$options %||% list()) > 0) o$options else NULL,
-      result_symbol = o$result_symbol))
+      options = if (!is.null(opts) && any(vapply(opts, function(x)
+        .v2_is_tagged(x) || (is.list(x) && any(vapply(x, .v2_is_tagged, logical(1)))),
+        logical(1)))) .codegen_raw(.v2_codegen_list(opts)) else opts,
+      result_symbol = o$result_symbol,
+      grain = o$grain,
+      format = o$format,
+      sources = if (!is.null(o$sources)) .codegen_raw(.v2_codegen_list(o$sources)),
+      collapse = o$collapse))
   }
   if (length(out_code) > 0)
     slot_args$outputs <- .codegen_list_arg(out_code)
@@ -5675,6 +5706,19 @@ recipe_to_code <- function(recipe) {
       block_sensitive    = o$block_sensitive    %||% TRUE,
       factor_concepts    = o$factor_concepts    %||% TRUE)
   }
+
+  # Language-2 recipe slots.
+  if (length(recipe$concept_sets %||% list())) {
+    slot_args$concept_sets <- .codegen_raw(.v2_codegen_list(unname(recipe$concept_sets)))
+  }
+  if (length(recipe$events %||% list())) {
+    slot_args$events <- .codegen_raw(.v2_codegen_list(unname(recipe$events)))
+  }
+  if (length(recipe$intervals %||% list())) {
+    slot_args$intervals <- .codegen_raw(.v2_codegen_list(unname(recipe$intervals)))
+  }
+  if (!is.null(recipe$coverage)) slot_args$coverage <- .codegen_raw(.v2_codegen(recipe$coverage))
+  if (!is.null(recipe$publish)) slot_args$publish <- recipe$publish
 
   lines <- paste0("recipe <- ",
                   do.call(.codegen_call, c("omop_recipe", slot_args)))
@@ -5827,6 +5871,8 @@ recipe_to_code <- function(recipe) {
 # --- Recipe import/export ---
 
 .recipe_strip_classes <- function(x) {
+  # Language-2 objects serialise as their tagged constructor arguments.
+  if (.v2_is_tagged(x)) return(.v2_plain_value(x))
   if (is.list(x) && !is.data.frame(x)) {
     x <- lapply(x, .recipe_strip_classes)
     class(x) <- "list"
@@ -5854,11 +5900,18 @@ recipe_to_code <- function(recipe) {
   # byte-for-byte (no spurious `scope: null` key). Population set-op fields are
   # plain lists and survive .recipe_strip_classes above unchanged.
   if (!is.null(recipe$scope)) out$scope <- recipe$scope
+  # Language-2 recipe slots, only when used.
+  for (slot in c("concept_sets", "events", "intervals")) {
+    if (length(recipe[[slot]] %||% list())) out[[slot]] <- .recipe_strip_classes(recipe[[slot]])
+  }
+  if (!is.null(recipe$coverage)) out$coverage <- .v2_plain_value(recipe$coverage)
+  if (!is.null(recipe$publish)) out$publish <- as.list(recipe$publish)
   out
 }
 
 .recipe_restore_filter <- function(f) {
   if (is.null(f)) return(NULL)
+  if (!is.null(f[[.V2_CTOR_TAG]])) return(.v2_restore(f))
 
   if (!is.null(f$operator) || !is.null(f$children)) {
     children <- .recipe_restore_filter_list(f$children %||% list())
@@ -6045,8 +6098,14 @@ recipe_to_code <- function(recipe) {
           filters = .recipe_restore_filter_list(p$filters),
           cohort_definition_id = p$cohort_definition_id,
           episode_policy = p$episode_policy,
-          index_event = index_event
+          index_event = index_event,
+          index = .v2_restore(p[["index"]]),
+          match = .v2_restore(p$match),
+          coverage = .v2_restore(p$coverage)
         )
+        if (!is.null(p$circe_v2)) {
+          recipe$populations[[pid]]$circe_v2 <- .v2_restore(p$circe_v2)
+        }
       }
     }
   }
@@ -6067,7 +6126,10 @@ recipe_to_code <- function(recipe) {
         filters = .recipe_restore_filter_list(b$filters),
         population_id = b$population_id %||% "base",
         reference_date = b$reference_date,
-        unit = b$unit
+        unit = b$unit,
+        where = .v2_restore(b$where),
+        visit = .v2_restore_visit(b$visit),
+        concept_col = b$concept_col
       )
       if (isTRUE(b$expand)) blk$expand <- TRUE
       recipe$blocks[[bid]] <- blk
@@ -6078,6 +6140,12 @@ recipe_to_code <- function(recipe) {
     recipe$variables <- list()
     for (nm in names(data$variables)) {
       v <- data$variables[[nm]]
+      if (!is.null(v[[.V2_CTOR_TAG]])) {
+        var <- .v2_restore(v)
+        var$name <- var$name %||% nm
+        recipe$variables[[nm]] <- var
+        next
+      }
       var <- omop_variable(
         name = v$name %||% nm,
         table = v$table,
@@ -6100,6 +6168,9 @@ recipe_to_code <- function(recipe) {
       if (!is.null(v$derived)) var$derived <- v$derived
       if (!is.null(v$block_id)) var$block_id <- v$block_id
       if (isTRUE(v$expand)) var$expand <- TRUE
+      if (!is.null(v[["where"]])) var$where <- .v2_restore(v[["where"]])
+      if (!is.null(v[["visit"]])) var$visit <- .v2_restore_visit(v[["visit"]])
+      if (isTRUE(v[["broadcast"]])) var$broadcast <- TRUE
       recipe$variables[[nm]] <- var
     }
   }
@@ -6118,14 +6189,22 @@ recipe_to_code <- function(recipe) {
           output_options$analyses, use.names = FALSE
         ))
       }
-      output_options <- .recipe_restore_multistate_options(output_options)
+      if (is.null(o$format)) {
+        output_options <- .recipe_restore_multistate_options(output_options)
+      } else {
+        output_options <- .v2_restore(output_options)
+      }
       recipe$outputs[[nm]] <- omop_output(
         name = o$name %||% nm,
-        type = o$type %||% "wide",
+        type = if (is.null(o$format)) o$type %||% "wide" else NULL,
         variables = o$variables,
         population_id = o$population_id %||% "base",
         options = output_options,
-        result_symbol = o$result_symbol
+        result_symbol = o$result_symbol,
+        grain = o$grain,
+        format = o$format,
+        sources = .v2_restore(o$sources),
+        collapse = o$collapse
       )
     }
   }
@@ -6137,6 +6216,16 @@ recipe_to_code <- function(recipe) {
     # removed option such as min_persons imports without error, simply ignored).
     recipe$options <- utils::modifyList(recipe$options %||% list(),
                                         data$options, keep.null = TRUE)
+  }
+
+  for (cs in .v2_restore(data$concept_sets %||% list())) {
+    recipe <- recipe_add_concept_set(recipe, cs)
+  }
+  for (ev in .v2_restore(data$events %||% list())) recipe <- recipe_add_event(recipe, ev)
+  for (iv in .v2_restore(data$intervals %||% list())) recipe <- recipe_add_interval(recipe, iv)
+  if (!is.null(data$coverage)) recipe$coverage <- .v2_restore(data$coverage)
+  if (!is.null(data$publish)) {
+    recipe <- recipe_set_publish(recipe, as.character(unlist(data$publish)))
   }
 
   if (!is.null(data$scope)) {
@@ -6185,8 +6274,10 @@ recipe_to_code <- function(recipe) {
 #' @seealso \code{\link{recipe_import_json}}, \code{\link{recipe_to_code}}
 #' @export
 recipe_export_json <- function(recipe, file = NULL) {
+  # digits = NA: every number keeps its full precision (unit conversion
+  # factors and value thresholds must round-trip exactly).
   json <- jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
-                            null = "null")
+                            null = "null", digits = NA)
   if (is.null(file)) return(as.character(json))
   writeLines(as.character(json), file)
   invisible(file)
@@ -6237,7 +6328,7 @@ recipe_import_json <- function(json) {
 recipe_export_yaml <- function(recipe, file = NULL) {
   if (!requireNamespace("yaml", quietly = TRUE))
     stop("Package 'yaml' is required for YAML export.", call. = FALSE)
-  text <- yaml::as.yaml(.recipe_plain(recipe))
+  text <- yaml::as.yaml(.recipe_plain(recipe), precision = 15L)
   if (is.null(file)) return(text)
   writeLines(text, file)
   invisible(file)
