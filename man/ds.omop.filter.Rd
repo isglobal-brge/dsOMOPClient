@@ -36,7 +36,7 @@ initialised (default: \code{"omop"}).}
 \item{conns}{DSI connection object(s). If \code{NULL} (the default), the
 connections stored in the active session are used.}
 
-\item{expr}{(2.10.3) A predicate from \code{\link{omop_where}} (instead of
+\item{expr}{(2.10.4) A predicate from \code{\link{omop_where}} (instead of
 \code{var}/\code{op}/\code{value}).}
 }
 \value{
@@ -45,11 +45,15 @@ Invisibly, the name of the created server-side symbol (\code{newobj}).
 \description{
 Keeps the rows of a server-side, token-keyed data frame that satisfy an
 equality/membership condition (\code{var}, \code{op}, \code{value}) or,
-from 2.10.3, a language-2 predicate (\code{expr = omop_where(...)}): the
+from 2.10.4, a language-2 predicate (\code{expr = omop_where(...)}): the
 closed grammar \code{== != < <= > >= \%in\% is.na() ! & |} over the frame's
 columns, three-valued (a row whose condition is unknown is dropped), sent
 as data and validated and type-checked by the server before any row is
-read (servers advertise it as \code{verb.filter_expr}, dsOMOP 2.10.3).
+read (servers advertise it as \code{verb.filter_expr}, dsOMOP 2.10.4).
+The predicate form checks that every participating server publishes the
+dsOMOP 2.10.4 publication protocol and \code{omopFilterDS}, and advertises
+\code{verb.filter_expr}, before any assignment. An old server or an
+incomplete published profile refuses the whole call.
 Filtering on a protected/identifier column (the person token or any
 \code{dsomop_protected} column) is rejected server-side. The filtered
 result is a released object: its distinct persons must reach the server's

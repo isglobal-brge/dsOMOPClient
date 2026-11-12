@@ -47,6 +47,10 @@ its constant message) and it carries no differential-privacy provenance.
 With \code{newobj = x} the target is replaced in place on every server; a
 rollback copy is kept until every server has succeeded, so a failure on
 one server leaves the target unchanged everywhere.
+Every participating server must publish the dsOMOP 2.10.4 publication
+protocol and \code{omopMutateDS}, and advertise \code{verb.mutate}.
+The client checks this before any assignment, including a rollback copy;
+an old server or an incomplete published profile refuses the whole call.
 }
 \examples{
 \dontrun{
