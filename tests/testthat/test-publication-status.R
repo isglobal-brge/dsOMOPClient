@@ -278,3 +278,50 @@ test_that("legacy composite aliases preserve the successful return mapping", {
   expect_identical(ds.omop.plan.execute(.publication_plan(), out = "D"),
                    c(data = "D"))
 })
+
+test_that("status validation admits the closed reason only with validation_error (A-18)", {
+  entry <- function(...) list(code = "validation_error",
+                              message = "Publication refused: validation_error.", ...)
+  good <- .publication_status(character(), "refused",
+                              list(data = entry(reason = "adapter_person_mismatch")))
+  expect_invisible(dsOMOPClient:::.plan_validate_status(good, "data"))
+  good$rejected$data$reason <- "cost_currency_mixed"
+  expect_invisible(dsOMOPClient:::.plan_validate_status(good, "data"))
+  bad <- good; bad$rejected$data$reason <- "unit_unknown"
+  expect_error(dsOMOPClient:::.plan_validate_status(bad, "data"), "Invalid")
+  bad <- good; bad$rejected$data$reason <- 1L
+  expect_error(dsOMOPClient:::.plan_validate_status(bad, "data"), "Invalid")
+  bad <- good; bad$rejected$data$reason <- NA_character_
+  expect_error(dsOMOPClient:::.plan_validate_status(bad, "data"), "Invalid")
+  bad <- good; bad$rejected$data$code <- "unavailable_table"
+  expect_error(dsOMOPClient:::.plan_validate_status(bad, "data"), "Invalid")
+  bad <- good; bad$rejected$data$field <- "events/members"
+  expect_error(dsOMOPClient:::.plan_validate_status(bad, "data"), "Invalid")
+})
+
+test_that("the refusal diagnostic names the validated reason with the output and code (A-18)", {
+  for (reason in c("adapter_person_mismatch", "cost_currency_mixed")) {
+    for (policy in c("error", "skip")) {
+      statuses <- list(a = .publication_status(),
+                       b = .publication_status(character(), "refused", list(data = list(
+                         code = "validation_error",
+                         message = "Publication refused: validation_error.",
+                         reason = reason))))
+      state <- .publication_backend(statuses)
+      expect_error(ds.omop.plan.execute(.publication_plan(), out = "D", on_small_site = policy),
+                   paste0("b:data [validation_error] (", reason, ")"), fixed = TRUE)
+      expect_setequal(state$revoked, c("a", "b"))
+      expect_true(all(lengths(state$symbols) == 0L))
+    }
+  }
+  # a reason paired with another code is a malformed status: refused and rolled back
+  statuses <- list(a = .publication_status(),
+                   b = .publication_status(character(), "refused", list(data = list(
+                     code = "unavailable_table",
+                     message = "Publication refused: unavailable_table.",
+                     reason = "cost_currency_mixed"))))
+  state <- .publication_backend(statuses)
+  expect_error(ds.omop.plan.execute(.publication_plan(), out = "D", on_small_site = "skip"),
+               "Invalid plan publication status")
+  expect_setequal(state$revoked, c("a", "b"))
+})

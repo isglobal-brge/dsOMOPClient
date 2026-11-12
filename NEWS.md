@@ -81,6 +81,11 @@ workstream fills its entries.
   the one normal form the semantic digest hashes on client and server; the
   normalised fixtures of `inst/schema/normalized/` are pinned. `plan-v2.json`
   gains `source_analyses` on temporal and person-period outputs (A-14).
+  The vendored probe corpus carries the A-15/A-16 IR-only variants, refused
+  on the wire (P64-P66).
+- A-18 `.plan_validate_status()` admits the optional closed `reason` of a
+  rejected entry (only with `validation_error`); the refusal diagnostic names
+  it with the output and code (`site:output [validation_error] (reason)`).
 
 # dsOMOPClient 2.10.2
 

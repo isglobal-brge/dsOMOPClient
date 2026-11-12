@@ -1986,8 +1986,12 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     rejected <- unlist(lapply(names(statuses), function(server) {
       x <- statuses[[server]]$rejected
       if (!length(x)) return(character(0))
+      # A-18: the validated reason, when present, names the refused construct
       paste0(server, ":", names(x), " [",
-             vapply(x, `[[`, "", "code"), "]")
+             vapply(x, `[[`, "", "code"), "]",
+             vapply(x, function(r) {
+               if (is.null(r$reason)) "" else paste0(" (", r$reason, ")")
+             }, ""))
     }), use.names = FALSE)
     codes <- unlist(lapply(statuses, function(x) {
       vapply(x$rejected, `[[`, "", "code")
@@ -2072,13 +2076,19 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   codes <- c("insufficient_support", "coverage_ambiguous", "join_cardinality",
              "match_candidates_exceeded", "dialect_unsupported",
              "unavailable_table", "validation_error")
+  # A-18: a rejected entry may carry a third closed field `reason`, only with
+  # code validation_error and one constant of the section 11 vocabulary
+  reasons <- c("adapter_person_mismatch", "cost_currency_mixed")
   for (rejection in x$rejected) {
-    if (!is.list(rejection) || length(rejection) != 2L ||
-        !setequal(names(rejection), c("code", "message")) ||
+    if (!is.list(rejection) || !length(rejection) %in% 2:3 ||
+        !setequal(names(rejection), c("code", "message", "reason")[seq_along(rejection)]) ||
         !is.character(rejection$code) || length(rejection$code) != 1L ||
         is.na(rejection$code) || !rejection$code %in% codes ||
         !is.character(rejection$message) || length(rejection$message) != 1L ||
         is.na(rejection$message)) invalid()
+    if (length(rejection) == 3L && (!identical(rejection$code, "validation_error") ||
+        !is.character(rejection$reason) || length(rejection$reason) != 1L ||
+        is.na(rejection$reason) || !rejection$reason %in% reasons)) invalid()
   }
   symbols <- character(0)
   for (root in x$published) {
