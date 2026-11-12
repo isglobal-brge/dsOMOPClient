@@ -169,6 +169,10 @@ requests select views of complete registered public domains; positive binary
 masks and nonmissing denominators select cells of the same protected basis.
 Numeric/date bins coarsen a common atom basis. Pooling sums compatible signed
 components once and applies the same complete-basis projection as the server.
+Crossed hierarchy and nested histogram displays preserve both parent margins.
+Their versioned Dykstra algorithm keeps converged results; after its iteration
+limit, a deterministic feasible repair preserves nonnegativity and margins
+without claiming an exact L2 projection.
 Weighted record histograms reconcile to a protected record total, never a
 person total. Unregistered record scales expose coarse histograms and interval
 quantiles with explicit tail-censoring flags instead of invented bounded means.

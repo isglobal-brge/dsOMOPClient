@@ -56,7 +56,10 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
 - Person-time pooling reconstructs the complete gender, age and year
   hierarchy before selecting views, preserving parent event, time and capped
   recurrent totals and both margins of crossed views. Nested Achilles
-  histograms retain their root's histogram margins. First-event and capped
+  histograms retain their root's histogram margins. Versioned transportation
+  display keeps converged Dykstra results and uses a deterministic feasible
+  margin repair after its iteration limit; that fallback is not an exact L2
+  projection. First-event and capped
   recurrent event-time histograms pool their complete signed day hierarchy,
   project it onto the person or recurrent event total, then select the
   requested day, month or year bins. Recurrent `persons` counts distinct

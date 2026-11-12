@@ -1,6 +1,7 @@
 # Client projections for complete protected hierarchies. These algorithms
-# match dsOMOP's versioned l2-transportation-dykstra-v1 contract; all inputs
-# are released signed components, never raw or hidden support counts.
+# match dsOMOP's versioned Dykstra-with-feasible-fallback contract; all inputs
+# are released signed components, never raw or hidden support counts. The
+# finite-iteration fallback preserves margins but is not an exact L2 projection.
 
 .dp_bounded_simplex <- function(y, total, lower = 0, upper = Inf) {
   y <- as.numeric(y)
@@ -44,6 +45,17 @@
   pmax(Y - tau, 0)
 }
 
+# Match the server's nonnegative column repair without moving row parents.
+.dp_repair_columns <- function(Z, target) {
+  current <- colSums(Z)
+  surplus <- pmax(current - target, 0)
+  deficit <- pmax(target - current, 0)
+  if (sum(surplus) <= 0 || sum(deficit) <= 0) return(Z)
+  fraction <- ifelse(current > 0, pmin(surplus / current, 1), 0)
+  removed <- sweep(Z, 2L, fraction, `*`)
+  Z - removed + outer(rowSums(removed), deficit / sum(deficit))
+}
+
 
 .dp_transport <- function(Y, rows, cols, tol = 1e-12,
                                     max_iter = 20000L) {
@@ -81,7 +93,17 @@
     if (done) break
   }
   if (max(abs(rowSums(X) - rows), abs(colSums(X) - cols)) > 1e-8 * scale) {
-    stop("Canonical hierarchy projection did not converge.", call. = FALSE)
+    # Keep converged Dykstra outputs unchanged. A finite iteration limit is
+    # not evidence that the nonempty feasible set is unavailable.
+    X <- pmax(X, 0)
+    rs <- rowSums(X)
+    live <- rs > 0
+    X[live, ] <- X[live, , drop = FALSE] * (rows[live] / rs[live])
+    if (any(!live)) X[!live, ] <- outer(rows[!live], cols / total)
+    X <- .dp_repair_columns(X, cols)
+    if (max(abs(rowSums(X) - rows), abs(colSums(X) - cols)) > 1e-8 * scale) {
+      stop("Canonical hierarchy projection did not converge.", call. = FALSE)
+    }
   }
   X
 }
@@ -100,7 +122,7 @@
   o <- owners[[1L]]
   meta <- o$hierarchy
   if (!identical(meta$version, "c6-tree-gender-age5-year-v1") ||
-      !identical(meta$display, "l2-transportation-dykstra-v1")) {
+      !identical(meta$display, "l2-transportation-dykstra-feasible-fallback-v2")) {
     stop("Unknown person-time hierarchy projection; upgrade dsOMOPClient.",
          call. = FALSE)
   }

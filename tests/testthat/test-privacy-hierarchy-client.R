@@ -9,7 +9,7 @@
                                             nodes[[level]]$key)
   list(owner = "C6/test", family = "C6", hierarchy_nodes = nodes,
        hierarchy = list(version = "c6-tree-gender-age5-year-v1",
-         display = "l2-transportation-dykstra-v1", horizon_days = 3650,
+         display = "l2-transportation-dykstra-feasible-fallback-v2", horizon_days = 3650,
          recurrent_cap = 10L, view_level = level, view_of_nodes = view),
        components = lapply(names(view), function(k) list(stratum = k)))
 }
