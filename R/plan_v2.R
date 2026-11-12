@@ -386,10 +386,14 @@
 .v2w_criterion <- function(ctx, x, context) {
   if (.v2_is_param(x)) x <- .v2_param_value(x, context)
   if (inherits(x, "omop_filter_group")) {
-    op <- if (identical(toupper(x$operator), "OR")) "or" else "and"
+    op <- toupper(x$operator %||% "AND")
+    if (!op %in% c("AND", "OR", "NOT")) .v2_stop(context, ": unknown filter operator '", op, "'.")
     parts <- lapply(x$children, .v2w_criterion, ctx = ctx, context = context)
-    if (length(parts) == 1L) return(parts[[1L]])
-    return(.v2_pred_flatten(op, parts))
+    if (length(parts) == 0L) .v2_stop(context, ": an empty filter group has no meaning.")
+    inner <- if (length(parts) == 1L) parts[[1L]] else
+      .v2_pred_flatten(if (op == "OR") "or" else "and", parts)
+    # NOT negates the conjunction of its children (omop_not() spelling).
+    return(if (op == "NOT") list(not = inner) else inner)
   }
   if (inherits(x, "omop_filter")) return(.v2_lower_legacy_filter(ctx, x, context))
   if (!inherits(x, "omop_criterion")) .v2_stop(context, ": invalid criterion.")
@@ -512,13 +516,20 @@
       list(has = inner)
     },
     has_measurement = {
-      if (!is.null(p$min_value) || !is.null(p$max_value)) {
-        .v2_stop(where, ": a numeric has_measurement range has no faithful native v2 ",
-                 "form here; use omop_has(omop_event(\"measurement\", ..., where = ",
-                 "omop_where(value >= a & value <= b))).")
-      }
-      inner <- list(source = legacy_event("measurement", p$concept_id %||% p$concept_ids),
-                    op = ">=", n = 1L)
+      ids <- as.integer(unlist(p$concept_id %||% p$concept_ids))
+      # The legacy leaf's range is [min_value, max_value) on value_as_number,
+      # one- or two-sided (the issued-bin contract is not needed in 2.10.3,
+      # design 7.4): the same rows as a measurement event narrowed by
+      # value >= min_value & value < max_value.
+      bounds <- Filter(Negate(is.null), list(
+        if (!is.null(p$min_value)) list(var = "value", op = ">=", value = as.numeric(p$min_value)),
+        if (!is.null(p$max_value)) list(var = "value", op = "<", value = as.numeric(p$max_value))))
+      source <- if (length(bounds)) {
+        tree <- if (length(bounds) == 1L) bounds[[1L]] else list(and = bounds)
+        list(event = .v2c_event(ctx, omop_event("measurement", ids,
+                                                where = omop_where_tree(tree)), where))
+      } else legacy_event("measurement", ids)
+      inner <- list(source = source, op = ">=", n = 1L)
       w <- window_of()
       if (!is.null(w)) inner$window <- w
       list(has = inner)
@@ -809,16 +820,7 @@
   if (!fmt %in% .V2_LEGACY_FEATURES) {
     .v2_stop(context, ": legacy format '", fmt, "' has no v2 lowering.")
   }
-  where <- .v2_lower_row_filters(v$filters, v$table, context)
-  if (!is.null(v[["where"]])) where <- .v2_and_predicates(where, .v2w_predicate(v[["where"]]))
-  visit <- if (!is.null(v$visit_filter)) {
-    list(type = as.integer(unlist(v$visit_filter$concept_ids %||% v$visit_filter)))
-  } else if (identical(v[["visit"]], "index")) "index" else NULL
-  concepts <- if (length(v$concept_id %||% integer(0))) {
-    omop_concept_set(v$concept_id, descendants = isTRUE(v$expand))
-  } else NULL
-  ev <- omop_event(v$table, concepts, where = if (!is.null(where)) .v2_predicate(where),
-                   visit = visit, value = v$value_source, concept_col = v$concept_col)
+  ev <- .v2_legacy_variable_event(v, context)
   window <- if (!is.null(v$time_window)) {
     tw <- .normalize_recipe_time_window(v$time_window, name)
     omop_window(tw$start, tw$end)
@@ -840,9 +842,13 @@
   if (length(filters %||% list()) == 0L) return(NULL)
   node <- function(f) {
     if (inherits(f, "omop_filter_group")) {
-      op <- if (identical(toupper(f$operator), "OR")) "or" else "and"
+      op <- toupper(f$operator %||% "AND")
+      if (!op %in% c("AND", "OR", "NOT")) .v2_stop(context, ": unknown filter operator '", op, "'.")
       parts <- lapply(f$children, node)
-      return(if (length(parts) == 1L) parts[[1L]] else .v2_pred_flatten(op, parts))
+      if (length(parts) == 0L) .v2_stop(context, ": an empty filter group has no meaning.")
+      inner <- if (length(parts) == 1L) parts[[1L]] else
+        .v2_pred_flatten(if (op == "OR") "or" else "and", parts)
+      return(if (op == "NOT") list(not = inner) else inner)
     }
     p <- f$params %||% list()
     switch(f$type,
@@ -1119,10 +1125,13 @@
   type <- out$type %||% "wide"
   switch(type,
     wide = , features = , baseline = "wide",
+    survival = "survival", intervals = "intervals",
+    temporal_covariates = "temporal_covariates", person_period = "person_period",
+    covariates_sparse = "sparse",
     .v2_stop("output '", out$name, "': legacy type '", type, "' has no v2 lowering in ",
-             "recipe_to_plan(version = 2) (its v1 component shapes and censoring ",
-             "defaults are kept only by the v1 adapter); use omop_output(format = \"",
-             type, "\", ...) with v2 sources, or recipe_to_plan(version = 1)."))
+             "recipe_to_plan(version = 2) (its v1 split shapes are kept only by the v1 ",
+             "adapter); use omop_output(format = \"", type, "\", sources = ...), or ",
+             "recipe_to_plan(version = 1)."))
 }
 
 # Populations that yield episodes (one row per index episode) by default.
@@ -1203,6 +1212,17 @@
 
   columns <- out$columns %||% out$variables
   recipe_vars <- ctx$recipe$variables %||% list()
+  if (legacy && format %in% c("survival", "intervals", "temporal_covariates",
+                              "person_period", "sparse")) {
+    # The preset's variables are its event sources (design 2.9, B-22).
+    take <- columns %||% names(recipe_vars)
+    missing <- setdiff(take, names(recipe_vars))
+    if (length(missing)) {
+      .v2_stop(context, " references unknown variable(s): ", paste(missing, collapse = ", "), ".")
+    }
+    wire$options <- .v2_legacy_source_output_options(ctx, out, format, recipe_vars[take], context)
+    return(wire)
+  }
   if (format %in% c("wide", "long", "sparse")) {
     take <- if (is.null(columns)) {
       if (identical(format, "wide")) names(recipe_vars) else character(0)

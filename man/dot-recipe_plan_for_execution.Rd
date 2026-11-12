@@ -7,6 +7,11 @@
 .recipe_plan_for_execution(recipe, session, conns)
 }
 \description{
-The plan a recipe executes as on the connected servers
+A recipe built only from 2.10.1 constructors executes as its unchanged v1
+plan on every server (the server's legacy adapters keep its results),
+unless the v1 compiler refuses one of the shapes 2.10.3 newly permits
+(\code{.v1_newly_permitted()}). Such a recipe, and any recipe that needs a
+language-2 construct, executes as its v2 plan where every server speaks it
+and is refused, naming the reason, otherwise.
 }
 \keyword{internal}

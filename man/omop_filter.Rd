@@ -188,9 +188,12 @@ rule.}
 \item{visit_concept_id}{Integer scalar or vector, or NULL; visit type
 filter (a vector counts visits of any of the given types)}
 
-\item{min_value}{Numeric or NULL; minimum value}
+\item{min_value}{Numeric or NULL; inclusive lower limit
+(\code{value_as_number >= min_value}).}
 
-\item{max_value}{Numeric or NULL; maximum value}
+\item{max_value}{Numeric or NULL; exclusive upper limit
+(\code{value_as_number < max_value}); the range is
+\code{[min_value, max_value)}, as the server applies it.}
 }
 \value{
 An \code{omop_filter} object (a named list with class

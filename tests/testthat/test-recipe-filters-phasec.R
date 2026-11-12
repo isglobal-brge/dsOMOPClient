@@ -88,9 +88,19 @@ test_that("features output carries per-variable row filter on its feature spec",
   .expect_value_bin_leaf(out$representation$features[["hba1c"]]$filter)
 })
 
-test_that("legacy covariates_sparse fails instead of degrading to features", {
-  expect_error(omop_output(name = "labs", type = "covariates_sparse"),
-               "no faithful executable mapping")
+test_that("legacy covariates_sparse compiles to the sparse format, never to features", {
+  # 2.10.3 (B-22): the sparse format is reachable; it does not degrade to
+  # features and has no v1 rendering.
+  r <- omop_recipe(
+    variables = list(omop_variable(name = "hba1c", table = "measurement",
+                                   concept_id = 3004410, format = "count")),
+    outputs = omop_output(name = "labs", type = "covariates_sparse"))
+  plan <- recipe_to_plan(r)
+  expect_identical(plan$outputs$labs$format, "sparse")
+  expect_identical(unlist(plan$outputs$labs$options$analyses), "count")
+  expect_length(plan$outputs$labs$options$sources, 1L)
+  e <- tryCatch(recipe_to_plan(r, version = 1), error = function(e) e)
+  expect_s3_class(e, "dsomop_v1_newly_permitted")
 })
 
 test_that("survival output forwards per-variable row filter to filters$custom", {

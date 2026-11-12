@@ -36,9 +36,17 @@ workstream fills its entries.
   vendored `plan-v2.json`); `recipe_to_plan(version = 1)` returns the
   unchanged 2.10.1 plan of a recipe built from 2.10.1 constructors. A recipe
   built only from 2.10.1 constructors (and without `parent_id`) executes as
-  that v1 plan on every server, so its results are unchanged; any other
-  recipe executes as a v2 plan on servers advertising `recipe_language` 2
-  and every operation it needs.
+  that v1 plan on every server, so its results are unchanged, unless the v1
+  compiler refuses one of the shapes 2.10.3 newly permits (below); such a
+  recipe, and any recipe using language-2 constructs, executes as a v2 plan
+  on servers advertising `recipe_language` 2 and every operation it needs.
+- The legacy `survival`, `intervals`, `temporal_covariates` and
+  `person_period` presets lower to their language-2 formats with the legacy
+  defaults (TAR 0 to 730 days, censoring at the observation-period end, at
+  death when `censoring$death = TRUE` and at the cohort end); a legacy
+  multi-state survival output keeps its v1 plan.
+- `omop_where()` admits an inline `omop_param()` placeholder (the only call
+  it evaluates, with literal arguments; CR-13).
 - With dsOMOP 2.10.3 servers the client reads each execution's publication
   status (`omopPlanStatusDS`) and takes symbol names from the published
   inventory (one symbol per survival TAR, fresh names on collision) instead
@@ -92,6 +100,23 @@ workstream fills its entries.
   are errors.
 - Exact birth components and exact age may be requested in assigned tables
   (class 2, released only through the final minimum-persons rule).
+- (design 6.6) `omop_filter_group(operator = "NOT")` negates the conjunction
+  of its children: the legacy spelling of `omop_not()`.
+- (B-22) `omop_output(type = "covariates_sparse")` is the language-2
+  `format = "sparse"` over the output's variables; `format = "membership"`
+  and `"dictionary"` are reachable too.
+- (B-19) A feature output may mix variables with and without an
+  index-relative window: one roster with one reducer window per variable.
+- (design 2.2, 6.12) Survival outcomes and interval or temporal-covariate
+  sources may be narrowed by visit or concept column; an intervals output
+  may mix concept-scoped and unscoped variables of one table (one source per
+  scope); a temporal-covariates output may declare different analyses per
+  concept (covariate identities come from the server's registry).
+- `recipe_export_circe()` exports numeric measurement limits as plain Circe
+  ranges (`gte` for `min_value`, `lt` for `max_value`; the dsOMOP range is
+  `[min_value, max_value)`), and `recipe_import_circe()` reads them back; a
+  two-sided range has no exact Circe form and is refused.
+- These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers.
 
 ## Newly refused
 - Plans that do not validate against the vendored `plan-v2.json` are never
@@ -99,6 +124,8 @@ workstream fills its entries.
   the operation named (parent inheritance, coverage policies, event
   censoring and matching are never dropped to fit an older server).
 - `recipe_to_plan(version = 1)` refuses language-2 constructs, naming them.
+- `omop_filter_has_measurement()` requires `min_value < max_value` when both
+  are given (the server's rule for the range `[min_value, max_value)`).
 - A language-2 survival output needs an explicit `censor` list; class-1
   columns are refused at compile time in projections, value columns and
   predicates of v2 plans.

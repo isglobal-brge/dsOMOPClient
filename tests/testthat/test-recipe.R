@@ -940,7 +940,8 @@ test_that("omop_output accepts exactly the executable legacy layouts", {
   for (layout in layouts) expect_identical(omop_output("o", layout)$type, layout)
   expect_null(formals(omop_output)$type)
   expect_identical(omop_output("o")$type, "wide")
-  expect_error(omop_output("o", "covariates_sparse"), "no faithful executable")
+  # 2.10.3 (B-22): the legacy covariates_sparse label is the sparse format
+  expect_identical(omop_output("o", "covariates_sparse")$type, "covariates_sparse")
   expect_error(omop_output("o", "sparse_matrix"))
 })
 
@@ -950,10 +951,15 @@ test_that("omop_output rejects the removed joined_long type", {
   expect_error(omop_output(name = "all_events", type = "joined_long"))
 })
 
-test_that("omop_output rejects legacy covariates_sparse type", {
-  expect_error(
-    omop_output(name = "features", type = "covariates_sparse"),
-    "no faithful executable mapping")
+test_that("omop_output accepts the legacy covariates_sparse label as format sparse (B-22)", {
+  o <- omop_output(name = "features", type = "covariates_sparse")
+  r <- omop_recipe(variables = omop_variable(name = "dx", table = "condition_occurrence",
+                                             concept_id = 201820),
+                   outputs = o)
+  plan <- recipe_to_plan(r)
+  expect_identical(plan$outputs$features$format, "sparse")
+  expect_identical(unlist(plan$outputs$features$options$analyses), "binary")
+  expect_error(recipe_to_plan(r, version = 1), "no v1 rendering")
 })
 
 test_that("omop_output with population_id", {
@@ -2244,7 +2250,9 @@ test_that("omop_filter_has_measurement ranges: plain or snapped to issued bins",
   expect_null(f$params$safe_scope)
   expect_null(omop_filter_has_measurement(3004410, min_value = 4)$params$max_value)
   expect_error(omop_filter_has_measurement(3004410, min_value = 7, max_value = 6),
-               "must not exceed")
+               "must be less than")
+  expect_error(omop_filter_has_measurement(3004410, min_value = 6, max_value = 6),
+               "\\[min_value, max_value\\)")
   expect_error(
     omop_filter_has_measurement(
       3004410, min_value = 4,

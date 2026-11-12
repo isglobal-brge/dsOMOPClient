@@ -131,11 +131,56 @@
   out
 }
 
+#' A v1 refusal of a shape the 2.10.3 language permits
+#'
+#' The v1 compiler refuses some 2.10.1-style recipes that 2.10.3 newly permits
+#' (design 5, corpus class \code{newly_permitted}): NOT filter groups, the
+#' \code{covariates_sparse} label (B-22), feature outputs mixing windowed and
+#' unwindowed variables (B-19), survival outcomes and interval or
+#' temporal-covariate sources narrowed by visit or concept column, interval
+#' outputs mixing concept-scoped and unscoped variables of a table, and
+#' temporal covariates declaring different analyses per concept. Those
+#' refusals carry this condition class; execution then routes the recipe to
+#' its language-2 plan. Every other v1 refusal stands.
+#' @param ... Message parts.
+#' @return A condition object.
+#' @keywords internal
+.v1_newly_permitted <- function(...) {
+  structure(class = c("dsomop_v1_newly_permitted", "error", "condition"),
+            list(message = paste0(...), call = NULL))
+}
+
+# The v1 plan of a 2.10.1-style recipe, or a "dsomop_no_v1" marker (carrying
+# the v1 message) when the v1 compiler refuses a newly permitted shape: the
+# recipe then runs as its v2 plan. Other v1 refusals are raised.
+.recipe_v1_or_null <- function(recipe) {
+  tryCatch(recipe_to_plan(recipe, version = 1L),
+           dsomop_v1_newly_permitted = function(e) {
+             structure(list(), v1_refusal = conditionMessage(e), class = "dsomop_no_v1")
+           })
+}
+
 #' The plan a recipe executes as on the connected servers
+#'
+#' A recipe built only from 2.10.1 constructors executes as its unchanged v1
+#' plan on every server (the server's legacy adapters keep its results),
+#' unless the v1 compiler refuses one of the shapes 2.10.3 newly permits
+#' (\code{.v1_newly_permitted()}). Such a recipe, and any recipe that needs a
+#' language-2 construct, executes as its v2 plan where every server speaks it
+#' and is refused, naming the reason, otherwise.
 #' @keywords internal
 .recipe_plan_for_execution <- function(recipe, session, conns) {
   if (length(.recipe_needs_v2(recipe)) == 0L) {
-    return(recipe_to_plan(recipe, version = 1L))
+    v1 <- .recipe_v1_or_null(recipe)
+    if (!inherits(v1, "dsomop_no_v1")) return(v1)
+    plan <- recipe_to_plan(recipe, version = 2L)
+    supported <- tryCatch(.v2_assert_supported(plan, session, names(conns)),
+                          error = function(e) e)
+    if (inherits(supported, "error")) {
+      stop(attr(v1, "v1_refusal"), " At least one connected server is older than ",
+           "dsOMOP 2.10.3 (", conditionMessage(supported), ")", call. = FALSE)
+    }
+    return(plan)
   }
   plan <- recipe_to_plan(recipe, version = 2L)
   .v2_assert_supported(plan, session, names(conns))

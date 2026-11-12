@@ -261,3 +261,24 @@ test_that("on_small_site = 'skip' is refused when a server has no status transpo
   expect_error(recipe_execute(.legacy_recipe(), on_small_site = "skip"),
                "needs every server to report its publication status")
 })
+
+test_that("a 2.10.1-style recipe the v1 compiler refuses as newly permitted runs as its v2 plan", {
+  # design 5: newly permitted shapes run only where every server speaks
+  # language 2; every other v1 refusal stands.
+  r <- omop_recipe(variables = omop_variable_age(),
+                   filters = omop_filter_group(omop_filter_sex("F"), operator = "NOT"),
+                   outputs = omop_output(name = "age", type = "wide"))
+  conns <- .with_servers(list(a = .caps(), b = .caps()))
+  expect_s3_class(dsOMOPClient:::.recipe_plan_for_session(r, "omop", conns), "omop_plan_v2")
+  plain <- omop_recipe(variables = omop_variable_age(), filters = omop_filter_sex("F"),
+                       outputs = omop_output(name = "age", type = "wide"))
+  expect_s3_class(dsOMOPClient:::.recipe_plan_for_session(plain, "omop", conns), "omop_plan")
+  common <- omop_recipe(
+    variables = list(omop_variable(name = "a", table = "measurement", concept_id = 1,
+                                   format = "count", time_window = list(start = -90, end = 0))),
+    outputs = omop_output(name = "f", type = "features"))
+  expect_error(dsOMOPClient:::.recipe_plan_for_session(common, "omop", conns), "grain")
+  conns <- .with_servers(list(a = .caps(), old = list()))
+  expect_error(dsOMOPClient:::.recipe_plan_for_session(r, "omop", conns),
+               "no v1 rendering.*older than dsOMOP 2.10.3")
+})

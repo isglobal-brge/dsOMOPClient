@@ -1081,7 +1081,10 @@ print.omop_filter <- function(x, ...) {
 #' filter DSL.
 #'
 #' @param ... \code{omop_filter} or \code{omop_filter_group} objects to combine.
-#' @param operator Character; \code{"AND"} or \code{"OR"}.
+#' @param operator Character; \code{"AND"}, \code{"OR"} or (2.10.3)
+#'   \code{"NOT"}, which negates the conjunction of its children: the legacy
+#'   spelling of \code{\link{omop_not}()}. A NOT group has no v1 rendering; it
+#'   runs as a language-2 plan on dsOMOP 2.10.3 servers.
 #' @param label Character or \code{NULL}; human-readable description
 #'   (auto-generated from children if \code{NULL}).
 #' @return An \code{omop_filter_group} object.
@@ -1095,9 +1098,12 @@ print.omop_filter <- function(x, ...) {
 #' }
 #' @seealso \code{\link{omop_filter}}, \code{\link{omop_recipe}}
 #' @export
-omop_filter_group <- function(..., operator = c("AND", "OR"), label = NULL) {
+omop_filter_group <- function(..., operator = c("AND", "OR", "NOT"), label = NULL) {
   operator <- match.arg(operator)
   children <- list(...)
+  if (identical(operator, "NOT") && length(children) == 0L) {
+    stop("A NOT filter group needs at least one filter to negate.", call. = FALSE)
+  }
   # Validate children
   for (ch in children) {
     if (!inherits(ch, "omop_filter") && !inherits(ch, "omop_filter_group"))
@@ -1113,7 +1119,11 @@ omop_filter_group <- function(..., operator = c("AND", "OR"), label = NULL) {
         ch$label
       }
     }, character(1))
-    label <- paste(child_labels, collapse = paste0(" ", operator, " "))
+    label <- if (identical(operator, "NOT")) {
+      paste0("NOT (", paste(child_labels, collapse = " AND "), ")")
+    } else {
+      paste(child_labels, collapse = paste0(" ", operator, " "))
+    }
   }
 
   obj <- list(
@@ -1547,8 +1557,11 @@ omop_filter_visit_count <- function(min_count = 1L,
 #' @rdname omop_filter
 #' @param concept_id Integer scalar or vector; measurement concept ID(s)
 #'   (a vector matches if any measurement is present)
-#' @param min_value Numeric or NULL; minimum value
-#' @param max_value Numeric or NULL; maximum value
+#' @param min_value Numeric or NULL; inclusive lower limit
+#'   (\code{value_as_number >= min_value}).
+#' @param max_value Numeric or NULL; exclusive upper limit
+#'   (\code{value_as_number < max_value}); the range is
+#'   \code{[min_value, max_value)}, as the server applies it.
 #' @param safe_bins Optional server-issued result for the same measurement
 #'   concept from \code{ds.omop.safe.cutpoints()}; when given, both limits must
 #'   be issued edges. Without it the numeric range (one or both limits) is
@@ -1571,8 +1584,9 @@ omop_filter_has_measurement <- function(concept_id,
         stop(bound, " must be one finite number.", call. = FALSE)
       }
     }
-    if (!is.null(min_value) && !is.null(max_value) && min_value > max_value) {
-      stop("min_value must not exceed max_value.", call. = FALSE)
+    if (!is.null(min_value) && !is.null(max_value) && min_value >= max_value) {
+      stop("min_value must be less than max_value: the range is ",
+           "[min_value, max_value).", call. = FALSE)
     }
     min_value <- if (is.null(min_value)) NULL else as.numeric(min_value)
     max_value <- if (is.null(max_value)) NULL else as.numeric(max_value)
@@ -2230,9 +2244,11 @@ print.omop_variable_block <- function(x, ...) {
 #'   \code{"person_period"}. A \code{"long"} output that
 #'   spans multiple source tables always splits into one per-table output
 #'   (named \code{<name>_<table>}); there is no single cross-table joined frame.
-#'   The former \code{"joined_long"} and \code{"covariates_sparse"} recipe
-#'   labels are rejected because they had no faithful executable mapping; use
-#'   split \code{"long"} outputs or the lower-level temporal-covariates plan API.
+#'   The former \code{"joined_long"} label is rejected because it had no
+#'   faithful executable mapping; use split \code{"long"} outputs. The
+#'   \code{"covariates_sparse"} label (2.10.3, B-22) is the language-2
+#'   \code{format = "sparse"} over the output's variables as sources; it has
+#'   no v1 rendering and runs on dsOMOP 2.10.3 servers.
 #' @param variables Character vector or \code{NULL}; variable names to include
 #'   (\code{NULL} means all variables in the recipe).
 #' @param population_id Character; which population to use (default
@@ -2333,15 +2349,14 @@ omop_output <- function(name = "output_1",
     grain <- NULL
   }
   if (!is.null(type)) {
-    if (length(type) == 1L &&
-        type %in% c("joined_long", "covariates_sparse")) {
+    if (length(type) == 1L && identical(type, "joined_long")) {
       stop("Recipe output type '", type,
            "' has no faithful executable mapping. Use split 'long'/'features' ",
-           "outputs, or ds.omop.plan.temporal_covariates() for sparse temporal ",
-           "covariates.", call. = FALSE)
+           "outputs.", call. = FALSE)
     }
     type <- match.arg(type, c("wide", "long", "features", "survival", "intervals",
-                              "baseline", "temporal_covariates", "person_period"))
+                              "baseline", "temporal_covariates", "person_period",
+                              "covariates_sparse"))
   }
   if (is.null(result_symbol)) {
     result_symbol <- paste0("D_", name)
@@ -3226,11 +3241,15 @@ print.omop_recipe <- function(x, ...) {
     stop("Invalid filter node in ", context, ".", call. = FALSE)
   }
   op <- toupper(node$operator %||% "")
+  if (identical(op, "NOT")) {
+    stop(.v1_newly_permitted(
+      "A NOT filter group in ", context, " has no v1 rendering (a pre-2.10.3 ",
+      "server cannot negate a group); it is omop_not() of the language-2 plan ",
+      "and runs on dsOMOP 2.10.3 servers (recipe_to_plan(version = 2))."))
+  }
   if (!op %in% c("AND", "OR")) {
     stop("Filter operator '", op %||% "?",
-         "' is not executable. NOT groups are rejected fail-closed; express ",
-         "absence with a supported population filter such as ",
-         "omop_filter_not_has_concept().", call. = FALSE)
+         "' is not executable.", call. = FALSE)
   }
   if (length(node$children %||% list()) == 0L) {
     stop("Empty filter group in ", context, " is not executable.",
@@ -3839,7 +3858,13 @@ recipe_to_plan <- function(recipe, version = 2L) {
   # Group variables by output
   for (out_name in names(recipe$outputs)) {
     out <- recipe$outputs[[out_name]]
-    if (out$type %in% c("joined_long", "covariates_sparse")) {
+    if (identical(out$type, "covariates_sparse")) {
+      stop(.v1_newly_permitted(
+        "Recipe output '", out_name, "' (covariates_sparse) has no v1 rendering; ",
+        "it is the language-2 format = \"sparse\" and runs on dsOMOP 2.10.3 ",
+        "servers (recipe_to_plan(version = 2))."))
+    }
+    if (identical(out$type, "joined_long")) {
       stop("Recipe output '", out_name, "' uses unsupported type '",
            out$type, "'. No executable Recipe-to-Plan mapping preserves ",
            "that contract.", call. = FALSE)
@@ -4225,14 +4250,21 @@ recipe_to_plan <- function(recipe, version = 2L) {
         }
         unsupported <- Filter(function(v) {
           !v$format %in% c("raw", "binary", "count") ||
-            !is.null(v$column) || !is.null(v$value_source) ||
-            !is.null(v$visit_filter) || !is.null(v$concept_col)
+            !is.null(v$column) || !is.null(v$value_source)
         }, vs)
         if (length(unsupported) > 0L) {
           stop("Temporal-covariates output '", out_name,
                "' supports concept presence/count variables only (formats ",
-               "raw, binary, count), without raw columns, visit/concept-column ",
-               "overrides.", call. = FALSE)
+               "raw, binary, count), without raw columns.", call. = FALSE)
+        }
+        if (any(vapply(vs, function(v) {
+          !is.null(v$visit_filter) || !is.null(v$concept_col)
+        }, logical(1)))) {
+          stop(.v1_newly_permitted(
+            "Temporal-covariates output '", out_name, "' has variables with ",
+            "visit/concept-column overrides, which a v1 temporal source cannot ",
+            "carry; its language-2 sources carry them on dsOMOP 2.10.3 servers ",
+            "(recipe_to_plan(version = 2))."))
         }
 
         # The server computes the Cartesian product concept_set x analyses.
@@ -4255,10 +4287,12 @@ recipe_to_plan <- function(recipe, version = 2L) {
           )
           pair_key <- function(x) paste(x$concept, x$analysis, sep = "\r")
           if (!setequal(pair_key(requested_pairs), pair_key(emitted_pairs))) {
-            stop("Temporal-covariates output '", out_name,
-                 "' mixes analyses by concept in a way the server would expand ",
-                 "to an undeclared concept-by-analysis Cartesian product. Split ",
-                 "the variables into separate outputs.", call. = FALSE)
+            stop(.v1_newly_permitted(
+              "Temporal-covariates output '", out_name,
+              "' mixes analyses by concept in a way a v1 server would expand ",
+              "to an undeclared concept-by-analysis Cartesian product; the ",
+              "language-2 plan names every (source, concept, analysis) covariate ",
+              "identity on dsOMOP 2.10.3 servers (recipe_to_plan(version = 2))."))
           }
         }
 
@@ -4327,16 +4361,23 @@ recipe_to_plan <- function(recipe, version = 2L) {
       unsupported <- Filter(function(v) {
         !v$format %in% c("raw", "binary") ||
           !is.null(v$column) || !is.null(v$value_source) ||
-          !is.null(v$visit_filter) || !is.null(v$concept_col) ||
           !is.null(v$time_window)
       }, vars)
       if (length(unsupported) > 0L) {
         stop("Survival output '", out_name,
              "' accepts outcome concept variables only (raw/binary); value ",
-             "columns, visit/concept-column overrides, ",
-             "variable-specific time windows, and aggregation formats cannot ",
-             "be represented. Use the output TAR for the common risk window.",
+             "columns, variable-specific time windows, and aggregation formats ",
+             "cannot be represented. Use the output TAR for the common risk window.",
              call. = FALSE)
+      }
+      if (any(vapply(vars, function(v) {
+        !is.null(v$visit_filter) || !is.null(v$concept_col)
+      }, logical(1)))) {
+        stop(.v1_newly_permitted(
+          "Survival output '", out_name, "' has outcome variables with ",
+          "visit/concept-column overrides, which a v1 survival endpoint cannot ",
+          "carry; its outcome events carry them in the language-2 plan, which ",
+          "runs on dsOMOP 2.10.3 servers (recipe_to_plan(version = 2))."))
       }
       if (any(vapply(vars, function(v) {
         length(v$concept_id %||% integer(0)) == 0L
@@ -4432,15 +4473,22 @@ recipe_to_plan <- function(recipe, version = 2L) {
       tables <- names(by_table)
       invalid <- Filter(function(v) {
         !identical(v$format %||% "raw", "raw") ||
-          !is.null(v$column) || !is.null(v$value_source) ||
-          !is.null(v$visit_filter) || !is.null(v$concept_col)
+          !is.null(v$column) || !is.null(v$value_source)
       }, vars)
       if (length(invalid) > 0L) {
         stop("Intervals output '", out_name,
              "' only accepts raw concept variables; explicit columns and ",
-             "aggregated formats, visit/concept-column overrides, and ",
-             "unsupported value projections cannot be represented.",
-             call. = FALSE)
+             "aggregated formats and unsupported value projections cannot be ",
+             "represented.", call. = FALSE)
+      }
+      if (any(vapply(vars, function(v) {
+        !is.null(v$visit_filter) || !is.null(v$concept_col)
+      }, logical(1)))) {
+        stop(.v1_newly_permitted(
+          "Intervals output '", out_name, "' has variables with ",
+          "visit/concept-column overrides, which v1 interval sources cannot ",
+          "carry; its language-2 sources carry them on dsOMOP 2.10.3 servers ",
+          "(recipe_to_plan(version = 2))."))
       }
       mixed_scope <- vapply(by_table, function(vs) {
         scoped <- vapply(vs, function(v) {
@@ -4449,10 +4497,13 @@ recipe_to_plan <- function(recipe, version = 2L) {
         any(scoped) && !all(scoped)
       }, logical(1))
       if (any(mixed_scope)) {
-        stop("Intervals output '", out_name,
-             "' mixes concept-scoped and unscoped variables in table(s): ",
-             paste(names(mixed_scope)[mixed_scope], collapse = ", "),
-             ". Split them into separate outputs.", call. = FALSE)
+        stop(.v1_newly_permitted(
+          "Intervals output '", out_name,
+          "' mixes concept-scoped and unscoped variables in table(s): ",
+          paste(names(mixed_scope)[mixed_scope], collapse = ", "),
+          ", which one v1 source per table cannot carry; the language-2 plan ",
+          "keeps one source per scope on dsOMOP 2.10.3 servers ",
+          "(recipe_to_plan(version = 2))."))
       }
       concept_filter <- lapply(by_table, function(vs) {
         ids <- unique(unlist(lapply(vs, function(v) v$concept_id)))
@@ -4663,10 +4714,12 @@ recipe_to_plan <- function(recipe, version = 2L) {
   present <- !vapply(windows, is.null, logical(1))
   if (!any(present)) return(NULL)
   if (!all(present)) {
-    stop("Recipe feature output '", output_name,
-         "' mixes variables with and without an index-relative time_window. ",
-         "Split them so each cohort episode has an unambiguous event scope.",
-         call. = FALSE)
+    stop(.v1_newly_permitted(
+      "Recipe feature output '", output_name,
+      "' mixes variables with and without an index-relative time_window, which ",
+      "a v1 feature output cannot scope per variable; it runs as one language-2 ",
+      "roster (one reducer window per variable) on dsOMOP 2.10.3 servers ",
+      "(recipe_to_plan(version = 2))."))
   }
   normalized <- lapply(seq_along(windows), function(i) {
     .normalize_recipe_time_window(
@@ -5882,10 +5935,9 @@ recipe_to_code <- function(recipe) {
     has_numeric <- !is.null(f$params$min_value) ||
       !is.null(f$params$max_value)
     if (has_numeric && is.null(f$params$safe_scope)) {
-      # Circe can carry exact ValueAsNumber criteria but cannot carry a
-      # DataSHIELD resource-session contract. Preserve such imports faithfully
-      # as explicitly non-executable generic filters; recipe_lint() and the
-      # server both fail closed until the analyst binds server-issued bins.
+      # A range without issued bins (newly permitted in 2.10.3, e.g. from a
+      # Circe ValueAsNumber import) is regenerated through the generic
+      # constructor so its params round-trip exactly.
       .codegen_call("omop_filter", type = "has_measurement",
         level = "population", params = f$params, label = f$label)
     } else {
@@ -6576,17 +6628,27 @@ recipe_import_yaml <- function(yaml) {
 #' @keywords internal
 .circe_measurement_from_filter <- function(f, sets) {
   p <- f$params
-  if (!is.null(p$min_value) || !is.null(p$max_value)) {
-    stop("Circe export: numeric measurement bounds do not carry dsOMOP's ",
-         "issued safe-bin contract and cannot be exported equivalently.",
-         call. = FALSE)
-  }
   if (!is.null(p$reference_date)) {
     stop("Circe export: a fixed-reference measurement filter cannot be ",
          "represented as an index-relative Circe criterion.", call. = FALSE)
   }
+  # 2.10.3 (design 7.4): numeric bounds export as plain Circe ranges; no bin
+  # contract. dsOMOP's range is [min_value, max_value), so a lower limit is
+  # 'gte' and an upper limit 'lt'; a two-sided range has no exact Circe form
+  # (Circe 'bt' is inclusive at both ends).
+  if (!is.null(p$min_value) && !is.null(p$max_value)) {
+    stop("Circe export: a two-sided measurement range is [min_value, max_value) ",
+         "in dsOMOP but inclusive ('bt') in Circe, so it cannot be exported ",
+         "exactly; export one-sided limits.", call. = FALSE)
+  }
   cs <- .circe_codeset(sets, p$concept_id)
   meas <- list(CodesetId = cs$id)
+  if (!is.null(p$min_value)) {
+    meas$ValueAsNumber <- list(Value = as.numeric(p$min_value), Op = "gte")
+  }
+  if (!is.null(p$max_value)) {
+    meas$ValueAsNumber <- list(Value = as.numeric(p$max_value), Op = "lt")
+  }
   criteria <- list(
     Criteria = list(Measurement = meas),
     StartWindow = .circe_window_from_recipe(p$window),
@@ -6756,9 +6818,11 @@ recipe_import_yaml <- function(yaml) {
 #'     "exactly 0" criteria.
 #'   \item \code{omop_filter_concept_count} -> InclusionRule occurrence "at
 #'     least N" criteria.
-#'   \item Presence-only \code{omop_filter_has_measurement} -> Measurement
-#'     criteria. Numeric bounds are rejected because Circe cannot carry the
-#'     DataSHIELD-issued safe-bin contract.
+#'   \item \code{omop_filter_has_measurement} -> Measurement criteria; a
+#'     lower limit exports as \code{ValueAsNumber} \code{gte} and an upper
+#'     limit as \code{lt} (the dsOMOP range is \code{[min_value,
+#'     max_value)}). A two-sided range has no exact Circe form and is
+#'     refused.
 #'   \item \code{omop_filter_sex} / \code{omop_filter_age} -> DemographicCriteria
 #'     Gender / Age.
 #'   \item Filter \code{window = list(start, end)} day offsets -> criteria
@@ -6999,11 +7063,13 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   }
   domain <- domain[[1]]
   spec <- inner[[domain]]
-  unknown_spec <- setdiff(names(spec) %||% character(0), "CodesetId")
+  allowed_spec <- c("CodesetId", if (identical(domain, "Measurement")) "ValueAsNumber")
+  unknown_spec <- setdiff(names(spec) %||% character(0), allowed_spec)
   if (length(unknown_spec) > 0L) {
     stop("Circe import: unsupported ", domain, " field(s): ",
          paste(unknown_spec, collapse = ", "), ".", call. = FALSE)
   }
+  value_range <- .circe_value_range_to_recipe(spec$ValueAsNumber)
   table <- .circe_table_from_domain(domain)
   ids <- .circe_ids_for_codeset(spec$CodesetId, concept_sets)
   window <- .circe_window_to_recipe(crit$StartWindow)
@@ -7029,6 +7095,10 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
          call. = FALSE)
   }
   if (identical(occurrence_type, 0L) && identical(count, 0L)) {
+    if (length(value_range)) {
+      stop("Circe import: 'exactly 0' measurements with a ValueAsNumber range ",
+           "have no executable recipe filter.", call. = FALSE)
+    }
     return(omop_filter_not_has_concept(concept_id = ids, table = table,
                                        window = window))
   }
@@ -7041,7 +7111,10 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
       stop("Circe import: measurement occurrence counts above one are not ",
            "supported by the executable subset.", call. = FALSE)
     }
-    return(omop_filter_has_measurement(concept_id = ids, window = window))
+    return(omop_filter_has_measurement(concept_id = ids,
+                                       min_value = value_range$min_value,
+                                       max_value = value_range$max_value,
+                                       window = window))
   }
   if (count > 1L) {
     return(omop_filter_concept_count(concept_id = ids, table = table,
@@ -7049,6 +7122,29 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   }
   omop_filter_has_concept(concept_id = ids, table = table, window = window,
                           min_count = count)
+}
+
+#' Convert a Circe ValueAsNumber range into has_measurement limits
+#'
+#' Only the exact forms of the dsOMOP range \code{[min_value, max_value)} are
+#' accepted: \code{gte} (lower limit) and \code{lt} (upper limit).
+#' @keywords internal
+.circe_value_range_to_recipe <- function(r) {
+  if (is.null(r)) return(list())
+  if (!is.list(r) || length(setdiff(names(r) %||% "", c("Value", "Op", "Extent")))) {
+    stop("Circe import: ValueAsNumber must be an object with Value and Op.", call. = FALSE)
+  }
+  value <- suppressWarnings(as.numeric(r$Value))
+  op <- tolower(as.character(r$Op %||% ""))
+  if (length(value) != 1L || !is.finite(value)) {
+    stop("Circe import: ValueAsNumber Value must be one finite number.", call. = FALSE)
+  }
+  if (!is.null(r$Extent) || !op %in% c("gte", "lt")) {
+    stop("Circe import: ValueAsNumber Op '", op, "' has no exact dsOMOP form (the ",
+         "measurement range is [min_value, max_value): 'gte' for a lower limit, ",
+         "'lt' for an upper limit).", call. = FALSE)
+  }
+  if (identical(op, "gte")) list(min_value = value) else list(max_value = value)
 }
 
 #' Convert Circe demographic criteria back into recipe filters
@@ -7909,15 +8005,23 @@ recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
 
 # The plan version a recipe compiles to without a session: v1 for recipes built
 # only from 2.10.1 constructors (their results stay identical on every server),
-# v2 otherwise (support is negotiated when it executes).
+# v2 for recipes with language-2 constructs or a newly permitted shape the v1
+# compiler refuses (support is negotiated when it executes).
 .recipe_plan_auto <- function(recipe) {
-  recipe_to_plan(recipe, version = if (length(.recipe_needs_v2(recipe))) 2L else 1L)
+  if (length(.recipe_needs_v2(recipe)) == 0L) {
+    v1 <- .recipe_v1_or_null(recipe)
+    if (!inherits(v1, "dsomop_no_v1")) return(v1)
+  }
+  recipe_to_plan(recipe, version = 2L)
 }
 
-# The plan a recipe executes as: v1 for 2.10.1-only recipes, v2 (negotiated)
-# otherwise. A v1-expressible recipe needs no session to compile.
+# The plan a recipe executes as: v1 for 2.10.1-style recipes the v1 compiler
+# renders (no session needed), otherwise the negotiated v2 plan.
 .recipe_plan_for_session <- function(recipe, symbol, conns) {
-  if (length(.recipe_needs_v2(recipe)) == 0L) return(recipe_to_plan(recipe, version = 1L))
+  if (length(.recipe_needs_v2(recipe)) == 0L) {
+    v1 <- .recipe_v1_or_null(recipe)
+    if (!inherits(v1, "dsomop_no_v1")) return(v1)
+  }
   session <- .get_session(symbol)
   .recipe_plan_for_execution(recipe, session, conns %||% session$conns)
 }

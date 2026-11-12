@@ -13,7 +13,7 @@ test_that("date ranges compile once as a safe table-aware BETWEEN leaf", {
   expect_false(is.null(out$filters$concept_set))
 })
 
-test_that("mixed-level OR and unsupported NOT groups fail closed", {
+test_that("mixed-level OR fails closed; NOT groups are newly permitted", {
   mixed <- omop_filter_group(
     omop_filter_sex("F"),
     omop_filter_date_range("2020-01-01", "2020-03-01"),
@@ -23,14 +23,35 @@ test_that("mixed-level OR and unsupported NOT groups fail closed", {
     filters = mixed,
     outputs = omop_output(name = "event", type = "long"))
   expect_error(recipe_to_plan(r, version = 1), "OR group.*mixes filter levels")
+  wide <- omop_recipe(variables = omop_variable_sex(), filters = mixed,
+                      outputs = omop_output(name = "w", type = "wide"))
+  expect_error(recipe_to_plan(wide, version = 1), "OR group.*mixes filter levels")
+  expect_error(recipe_to_plan(wide), "row")
 
-  negated <- omop_filter_group(omop_filter_sex("F"), operator = "AND")
-  negated$operator <- "NOT"
+  # 2.10.3 (design 6.6): a NOT group is omop_not() of the language-2 plan; it
+  # has no v1 rendering, so it runs only on 2.10.3 servers.
+  negated <- omop_filter_group(omop_filter_sex("F"), operator = "NOT")
+  expect_identical(negated$label, "NOT (Sex = F)")
   r2 <- omop_recipe(
     variables = omop_variable_age(),
     filters = negated,
     outputs = omop_output(name = "age", type = "wide"))
-  expect_error(recipe_to_plan(r2, version = 1), "NOT groups are rejected")
+  plan <- recipe_to_plan(r2)
+  expect_identical(plan$populations$base$where,
+                   list(not = list(person = list(var = "gender_concept_id", op = "==",
+                                                 value = 8532L))))
+  e <- tryCatch(recipe_to_plan(r2, version = 1), error = function(e) e)
+  expect_s3_class(e, "dsomop_v1_newly_permitted")
+  expect_match(conditionMessage(e), "no v1 rendering")
+  expect_s3_class(dsOMOPClient:::.recipe_plan_auto(r2), "omop_plan_v2")
+  # a row-level NOT group negates its rows
+  rows <- omop_recipe(variables = list(n = omop_variable(
+    name = "n", table = "condition_occurrence", concept_id = 201820, format = "count",
+    filters = list(omop_filter_group(omop_filter_date_range("2020-01-01", "2020-12-31"),
+                                     operator = "NOT")))),
+    outputs = omop_output(name = "w", type = "wide"))
+  ev <- recipe_to_plan(rows)$events[[1]]
+  expect_identical(names(ev$where), "not")
 })
 
 test_that("tampered or imported filters are revalidated recursively", {
@@ -81,8 +102,8 @@ test_that("generic custom filters are typed, row-only and fail closed", {
 test_that("non-executable output labels and options never degrade silently", {
   expect_error(omop_output(type = "joined_long"),
                "no faithful executable mapping")
-  expect_error(omop_output(type = "covariates_sparse"),
-               "no faithful executable mapping")
+  # 2.10.3 (B-22): the covariates_sparse label is the sparse format
+  expect_identical(omop_output(type = "covariates_sparse")$type, "covariates_sparse")
 
   r <- omop_recipe(
     variables = omop_variable(
@@ -92,6 +113,7 @@ test_that("non-executable output labels and options never degrade silently", {
       name = "features", type = "features",
       options = list(sparse = TRUE)))
   expect_error(recipe_to_plan(r, version = 1), "unsupported option.*sparse")
+  expect_error(recipe_to_plan(r), "sparse")
 })
 
 test_that("long output preserves population, temporal, calendar and row filters", {
@@ -257,6 +279,14 @@ test_that("feature windows compile at episode grain with per-spec scopes", {
   mixed <- common
   mixed$variables$b$time_window <- NULL
   expect_error(recipe_to_plan(mixed, version = 1), "mixes variables with and without")
+  # 2.10.3 (B-19): one roster, many sources and windows
+  e <- tryCatch(recipe_to_plan(mixed, version = 1), error = function(e) e)
+  expect_s3_class(e, "dsomop_v1_newly_permitted")
+  plan <- recipe_to_plan(mixed)
+  expect_identical(plan$outputs$features$format, "wide")
+  expect_identical(plan$outputs$features$grain, "episode")
+  expect_identical(plan$variables$a$reducer$window$start, -90L)
+  expect_null(plan$variables$b$reducer$window)
 })
 
 test_that("temporal_covariates maps to the executable plan helper per table", {
@@ -434,6 +464,22 @@ test_that("survival and intervals reject variable semantics they cannot carry", 
     outputs = omop_output(name = "iv", type = "intervals"))
   expect_error(recipe_to_plan(intervals, version = 1),
                "mixes concept-scoped and unscoped")
+  # 2.10.3 (design 2.2, 6.12): language-2 sources carry visit and concept
+  # column; survival keeps the legacy TAR and censoring (cohort-end cap).
+  for (r in list(survival, intervals)) {
+    e <- tryCatch(recipe_to_plan(r, version = 1), error = function(e) e)
+    expect_s3_class(e, "dsomop_v1_newly_permitted")
+  }
+  sp <- recipe_to_plan(survival)
+  so <- sp$outputs$tte$options
+  expect_identical(sp$events[[so$outcomes$outcome$event]]$visit, list(type = list(9201L)))
+  expect_identical(so$censor, list("observation_end", "index_end"))
+  expect_identical(so$tar$end, 730L)
+  ip <- recipe_to_plan(intervals)
+  srcs <- vapply(ip$outputs$iv$options$sources, function(x) x$event, "")
+  expect_length(srcs, 2L)
+  expect_null(ip$events[[srcs[[1]]]]$concept_set)
+  expect_identical(ip$events[[srcs[[2]]]]$concept_set$concepts, list(1124300L))
 })
 
 test_that("temporal covariates reject undeclared Cartesian products", {
@@ -445,6 +491,12 @@ test_that("temporal covariates reject undeclared Cartesian products", {
     variables = list(binary, count),
     outputs = omop_output(name = "tc", type = "temporal_covariates"))
   expect_error(recipe_to_plan(mixed, version = 1), "Cartesian product")
+  # 2.10.3 (design 6.12): covariate identities come from the server's registry
+  e <- tryCatch(recipe_to_plan(mixed, version = 1), error = function(e) e)
+  expect_s3_class(e, "dsomop_v1_newly_permitted")
+  tp <- recipe_to_plan(mixed)$outputs$tc
+  expect_identical(tp$format, "temporal_covariates")
+  expect_identical(unlist(tp$options$analyses), c("binary", "count"))
 
   unscoped <- binary
   unscoped$concept_id <- NULL

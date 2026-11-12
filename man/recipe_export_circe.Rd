@@ -39,9 +39,11 @@ accidentally broadening the cohort.
     "exactly 0" criteria.
   \item \code{omop_filter_concept_count} -> InclusionRule occurrence "at
     least N" criteria.
-  \item Presence-only \code{omop_filter_has_measurement} -> Measurement
-    criteria. Numeric bounds are rejected because Circe cannot carry the
-    DataSHIELD-issued safe-bin contract.
+  \item \code{omop_filter_has_measurement} -> Measurement criteria; a
+    lower limit exports as \code{ValueAsNumber} \code{gte} and an upper
+    limit as \code{lt} (the dsOMOP range is \code{[min_value,
+    max_value)}). A two-sided range has no exact Circe form and is
+    refused.
   \item \code{omop_filter_sex} / \code{omop_filter_age} -> DemographicCriteria
     Gender / Age.
   \item Filter \code{window = list(start, end)} day offsets -> criteria
