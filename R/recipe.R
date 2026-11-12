@@ -5668,7 +5668,8 @@ recipe_to_code <- function(recipe) {
     if (!is.null(p$simple)) {
       pop_code[[length(pop_code)]] <- paste0(
         "(function(p) { p$simple <- ", .v2_codegen_list(p$simple),
-        "; p })(", pop_code[[length(pop_code)]], ")")
+        "; structure(p[", .codegen_value(names(p)), "], class = class(p)) })(",
+        pop_code[[length(pop_code)]], ")")
     }
   }
   if (length(pop_code) > 0)
