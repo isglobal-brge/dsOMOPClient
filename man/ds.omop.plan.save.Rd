@@ -7,7 +7,8 @@
 ds.omop.plan.save(plan, file, format = NULL)
 }
 \arguments{
-\item{plan}{An \code{omop_plan} object.}
+\item{plan}{An \code{omop_plan} object, or a language-2 plan
+(\code{omop_plan_v2}, saved as its wire plan).}
 
 \item{file}{Character; destination path ending in \code{.json},
 \code{.yml}, or \code{.yaml}.}

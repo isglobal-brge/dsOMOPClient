@@ -3,20 +3,103 @@
 Recipe language 2.0 (design-2.10.3). This section is the WS-0 skeleton; each
 workstream fills its entries.
 
+## Recipe language 2.0 (WS-8)
+- New language-2 constructors (design section 2): `omop_concept_set()`,
+  `omop_event()` with `omop_where()` / `omop_where_tree()` row predicates and
+  `omop_unit()` normalisation, the bounded adapters `omop_episode_members()`
+  and `omop_cost()`; criteria `omop_has()`, `omop_has_not()`,
+  `omop_count_is()`, `omop_not()`, `omop_all()`, `omop_any()`,
+  `omop_person()`, `omop_age_is()`, `omop_observed()`, `omop_in_cohort()`;
+  `omop_window()`, `omop_bound()`, `omop_anchor()`; `omop_index()`,
+  `omop_any_of()`, `omop_end()`, `omop_coverage()`; `omop_era()` and
+  `omop_censor()` (with `when_index_source`, amendment A-7); `omop_reduce()`
+  under the frozen reducer contract (including `covered_days(coverage =,
+  observed_only =)` and `supply_days(fills =)`); `omop_age()` (with
+  `bands` / `age_breaks`), `omop_sex()`, `omop_race()`, `omop_ethnicity()`,
+  `omop_birth_year_band()`, `omop_died()`, `omop_days_to_death()`,
+  `omop_n_observation_periods()`, `omop_obs_duration()`, `omop_prior_obs()`,
+  `omop_followup()`, `omop_observed_days()`, `omop_score()`,
+  `omop_population_column()`; `omop_match()`, `omop_age_band()`,
+  `omop_strata()`; `recipe_concept_sets()`, `recipe_import_concept_sets()`,
+  `recipe_export_concept_sets()` and `recipe_explain()`.
+- Every 2.10.1 export keeps its positional formals; new arguments are
+  appended: `omop_variable(event, reducer, where, visit, broadcast)`,
+  `omop_variable_block(where, visit, concept_col)` (F-24),
+  `omop_population(index, match, coverage)`, `omop_output(rows, grain,
+  columns, format, sources, collapse)` (`type` now defaults to `NULL`; giving
+  neither `type` nor `format` keeps `"wide"`), `omop_recipe(concept_sets,
+  events, intervals, coverage, publish)`, `recipe_execute(on_small_site)`,
+  `ds.omop.plan.execute(on_small_site)`, `recipe_to_plan(version = 2L)`.
+- `recipe_to_plan()` emits a v2 plan by default (validated against the
+  vendored `plan-v2.json`); `recipe_to_plan(version = 1)` returns the
+  unchanged 2.10.1 plan of a recipe built from 2.10.1 constructors. A recipe
+  built only from 2.10.1 constructors (and without `parent_id`) executes as
+  that v1 plan on every server, so its results are unchanged; any other
+  recipe executes as a v2 plan on servers advertising `recipe_language` 2
+  and every operation it needs.
+- With dsOMOP 2.10.3 servers the client reads each execution's publication
+  status (`omopPlanStatusDS`) and takes symbol names from the published
+  inventory (one symbol per survival TAR, fresh names on collision) instead
+  of predicting them (A-E13); `on_small_site = "skip"` returns `NULL` for a
+  site that refuses a release below its minimum number of persons and keeps
+  the others (strict and non-strict servers, design section 7.3). Federated
+  v2 executions bind the plan's semantic digest.
+- `print()`, `recipe_explain()` and `recipe_lint()` state the defaults a
+  recipe relies on: "follow-up ends 730 days after index" for a survival
+  output without `tar` (F-4, the default is kept), the banded `age_group` of
+  `baseline` versus exact age in `wide` (F-5), the unique/drop/drop coverage
+  of indexed populations, `collapse`, `missing = "skip"`; class-2 columns are
+  reported as INFO `quasi_identifier`; the `has_measurement` /
+  `missing_measurement` pair is explained (B-7, unchanged v1 meanings; in v2
+  `omop_has_not(event)` = no row, `omop_has_not(event, nonmissing =
+  "value_as_number")` = no non-null value).
+- Index-relative recency uses `days_since` / `days_until` / `first_date` /
+  `last_date` reducers with an explicit `reference` anchor (F-18);
+  `time_since` keeps its fixed-date meaning.
+
 ## Corrected
-- (B-8) `parent_id` now restricts membership (see dsOMOP 2.10.3).
-- (F-3) The client blocklist is identical to the server's class-1 patterns;
-  birth components are not blocked on assignment paths.
+- (B-8) `parent_id` now restricts membership (see dsOMOP 2.10.3): a child
+  population is a subset of its parent, as `print()` has always shown. A
+  recipe with `parent_id` is compiled to a v2 plan and refused, naming
+  `population.parent`, by servers that cannot apply it.
+- (F-3) The client blocklist is identical to the server's class-1 patterns
+  (it gains `_source_concept_id`, `stop_reason`, `lot_number`,
+  `unique_device_id`, note/NLP fields, address/geo, provider, care-site and
+  direct-identifier patterns); birth components are not blocked on
+  assignment paths.
+- Circe imports carry their language-2 form: the first primary event that
+  satisfies the observation window (`select = "first_eligible"` over
+  `omop_observed(before = PriorDays, after = PostDays)`, unique coverage),
+  which is Circe's own order; expressions with inclusion rules keep the
+  2.10.1 form.
+- Recipe JSON export and plan JSON save keep every digit (`digits = NA`) and
+  YAML 15 significant digits: numbers such as unit conversion factors no
+  longer round to 4 / 7 digits on export.
 
 ## Newly permitted
-- No client-side mirrors of removed server gates (`narrow_filter`,
-  `unbound_numeric_filter`, mandatory bins); defaults are surfaced by
-  `print()`, `recipe_explain()` and `recipe_lint()` instead.
+- No client-side mirrors of removed server gates (F-23): `recipe_lint()` has
+  no `narrow_filter` / `unbound_numeric_filter`, `.classifyFilterClient` is
+  removed, `omop_filter_value()` without `safe_bins` is the plain comparison
+  `>=` / `<=` and `omop_filter_has_measurement()` takes a one- or two-sided
+  numeric range without issued bins; custom row predicates accept ordered
+  comparisons. Defaults are surfaced by `print()`, `recipe_explain()` and
+  `recipe_lint()` instead.
+- (F-17) `omop_filter_date_range()` accepts one-sided ranges (`>=` / `<=`).
+- (A-E5) `-Inf` is accepted as an unbounded window start and `Inf` as an
+  unbounded end (also for a survival `tar$end_offset`); reversed infinities
+  are errors.
+- Exact birth components and exact age may be requested in assigned tables
+  (class 2, released only through the final minimum-persons rule).
 
 ## Newly refused
 - Plans that do not validate against the vendored `plan-v2.json` are never
   sent; a v2 recipe whose operations an older server lacks is refused with
-  the operation named.
+  the operation named (parent inheritance, coverage policies, event
+  censoring and matching are never dropped to fit an older server).
+- `recipe_to_plan(version = 1)` refuses language-2 constructs, naming them.
+- A language-2 survival output needs an explicit `censor` list; class-1
+  columns are refused at compile time in projections, value columns and
+  predicates of v2 plans.
 
 ## Contracts shipped by WS-0
 - Vendored `inst/schema/` (byte-identical to dsOMOP's), `R/json_schema.R`,

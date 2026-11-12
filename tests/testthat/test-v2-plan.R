@@ -250,3 +250,86 @@ test_that("plans are sent losslessly (no 4-digit rounding)", {
   expect_identical(dsOMOPClient:::.plan_v2_digest(back)$sha256,
                    dsOMOPClient:::.plan_v2_digest(plan)$sha256)
 })
+
+test_that("v2 plans save and load losslessly (JSON and YAML)", {
+  w <- omop_event("measurement", 3025315,
+                  unit = omop_unit(9529, list("8739" = c(factor = 0.45359237))), name = "w")
+  r <- omop_recipe(
+    populations = omop_population("c", index = omop_index(list(cohort_definition_id = 1), "all",
+                                                         end = omop_end("event_end"))),
+    variables = list(x = omop_variable(event = w, reducer = omop_reduce("mean"))),
+    outputs = list(omop_output("o", rows = "c", format = "wide"),
+                   omop_output("pp", rows = "c", format = "person_period",
+                               options = list(sources = list(w), partition = list()))))
+  plan <- recipe_to_plan(r)
+  for (ext in c("json", "yaml")) {
+    f <- withr::local_tempfile(fileext = paste0(".", ext))
+    ds.omop.plan.save(plan, f)
+    back <- ds.omop.plan.load(f)
+    expect_s3_class(back, "omop_plan_v2")
+    expect_identical(dsOMOPClient:::.plan_v2_digest(back)$sha256,
+                     dsOMOPClient:::.plan_v2_digest(plan)$sha256, info = ext)
+  }
+})
+
+test_that("emitted v2 plans never contain a compatibility (IR-only) construct", {
+  r <- omop_recipe(
+    populations = list(omop_population("a", index_event = omop_index_event(201820, "condition_occurrence")),
+                       omop_population("b", parent_id = "a",
+                                       filters = list(omop_filter_has_concept(1, "drug_exposure"),
+                                                      omop_filter_age(18, 65)))),
+    variables = list(omop_variable_age(reference = "index"), sex = omop_sex()),
+    outputs = omop_output("w", type = "wide", population_id = "b"))
+  json <- as.character(jsonlite::toJSON(dsOMOPClient:::.v2_plain(recipe_to_plan(r)),
+                                        auto_unbox = TRUE, null = "null"))
+  for (k in c("\"legacy\"", "legacy_spec", "legacy_end_strategy", "legacy_cohort_end_cap",
+              "legacy_composite", "legacy_covariate_ids", "legacy_split",
+              "legacy_all_time_conditions", "filter_tree", "\"type\":\"person_level\"")) {
+    expect_false(grepl(k, json, fixed = TRUE), info = k)
+  }
+})
+
+test_that("language-2 recipes round-trip through JSON, YAML and generated code", {
+  rx <- omop_event("drug_exposure", omop_concept_set(1503297, descendants = TRUE, name = "metf"),
+                   end = list(fallback = "days_supply"), name = "rx")
+  era <- omop_era(rx, gap = 15, stockpile = TRUE, name = "era")
+  mi <- omop_event("condition_occurrence", 4329847, descendants = TRUE, name = "mi")
+  r <- omop_recipe(
+    events = list(rx, mi), intervals = list(era), coverage = omop_coverage("earliest"),
+    populations = list(
+      omop_population("nu", label = "New users",
+                      index = omop_index(era, "first_eligible", end = omop_end("interval_end", pad = 7)),
+                      filters = list(omop_observed(before = 365, gap = 30),
+                                     omop_has_not(rx, window = omop_window(-365, -1)),
+                                     omop_any(omop_person(omop_where(year_of_birth >= 1950)),
+                                              omop_age_is(40, NULL)))),
+      omop_population("eligible", filters = list(omop_observed(before = 365))),
+      omop_population("cc", match = omop_match("nu", "eligible", mi,
+                                               match = list("sex", omop_age_band(10),
+                                                            omop_strata(mi, before = 365)),
+                                               seed = 5))),
+    variables = list(age = omop_age(bands = TRUE, age_breaks = c(0, 18, 65)),
+                     pdc = omop_variable(event = era, reducer = omop_reduce(
+                       "covered_days", window = omop_window(1, 90),
+                       coverage = "effective_supply", observed_only = TRUE)),
+                     a1c = omop_variable(event = omop_event("measurement", 3004410,
+                                                            unit = omop_unit(8554, list("8753" = c(factor = 0.0915, offset = 2.15))),
+                                                            where = omop_where(value > 0), name = "a1c"),
+                                         reducer = omop_reduce("closest_value", side = "before",
+                                                               window = omop_window(-180, 0))),
+                     set = omop_population_column("set_id")),
+    outputs = list(omop_output("w", rows = "cc", format = "wide"),
+                   omop_output("t", rows = "nu", format = "survival", options = list(
+                     outcomes = list(mi = mi), tars = list(itt = omop_window(1, NULL)),
+                     censor = list("observation_end", list(admin_date = "2025-12-31"),
+                                   omop_censor(era, offset = 30, missing = "ineligible"))))),
+    publish = c("w", "t"))
+  d0 <- dsOMOPClient:::.plan_v2_digest(recipe_to_plan(r))$sha256
+  expect_identical(dsOMOPClient:::.plan_v2_digest(
+    recipe_to_plan(recipe_import_json(recipe_export_json(r))))$sha256, d0)
+  expect_identical(dsOMOPClient:::.plan_v2_digest(
+    recipe_to_plan(recipe_import_yaml(recipe_export_yaml(r))))$sha256, d0)
+  env <- new.env(parent = asNamespace("dsOMOPClient"))
+  eval(parse(text = recipe_to_code(r)), envir = env)
+  expect_identical(dsOMOPClient:::.plan_v2_digest(recipe_to_plan(env$recipe))$sha256, d0)
+})

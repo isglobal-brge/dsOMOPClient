@@ -81,13 +81,16 @@
 #' @param text A length-one YAML document.
 #' @return The parsed R object.
 #' @keywords internal
-.yaml_load_safe <- function(text) {
+.yaml_load_safe <- function(text, sequences_as_lists = FALSE) {
   blocked <- function(value) {
     structure(list(value = value), class = "dsomop_blocked_yaml_expr")
   }
+  handlers <- list(expr = blocked)
+  # JSON-shaped documents (v2 plans) keep one-element arrays as arrays.
+  if (isTRUE(sequences_as_lists)) handlers$seq <- function(x) as.list(x)
   parsed <- yaml::yaml.load(
     text,
-    handlers = list(expr = blocked),
+    handlers = handlers,
     eval.expr = FALSE
   )
   contains_blocked <- function(x) {

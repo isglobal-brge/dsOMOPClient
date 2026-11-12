@@ -7505,6 +7505,10 @@ recipe_preview_schema <- function(recipe) {
   # helper from advertising aliases, joins, or output types the plan will not
   # materialize. The preview describes the 2.10.1 (version 1) output shapes;
   # recipe_explain() describes language-2 recipes.
+  if (length(.recipe_v2_constructs(recipe))) {
+    stop("recipe_preview_schema() previews 2.10.1 output shapes; use ",
+         "recipe_explain() for a recipe with language-2 constructs.", call. = FALSE)
+  }
   plan <- recipe_to_plan(recipe, version = 1L)
 
   empty_schema <- function() data.frame(

@@ -212,6 +212,18 @@ Convenience constructors are provided for common filter types:
 \code{\link{omop_filter_age_group}}, \code{\link{omop_filter_has_concept}},
 \code{\link{omop_filter_date_range}}, \code{\link{omop_filter_value}}.
 }
+\section{has_measurement and missing_measurement are not complements}{
+
+  \code{omop_filter_has_measurement()} keeps persons with at least one
+  measurement row of the concept (in the value range when one is given);
+  \code{omop_filter_missing_measurement()} keeps persons with \emph{no row
+  with a non-null value}, so a person whose only rows have a NULL value
+  satisfies both. Both keep this 2.10.1 meaning. In language 2 the two
+  absences are explicit: \code{omop_has_not(event)} (no row) and
+  \code{omop_has_not(event, nonmissing = "value_as_number")} (no non-null
+  value); \code{recipe_lint()} reports the legacy pair (INFO).
+}
+
 \examples{
 \dontrun{
 f <- omop_filter(type = "sex", level = "population",

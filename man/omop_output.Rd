@@ -76,7 +76,13 @@ feature matrix). Outputs are passed to \code{\link{omop_recipe}} via its
 produced by \code{\link{recipe_to_plan}}.
 }
 \details{
-Survival outputs keep the legacy 730-day time-at-risk default when
+The \code{baseline} preset reports age as the banded legacy
+  \code{age_group} (the server's default grid), while a \code{wide} output
+  with \code{omop_age()} reports exact annual age; \code{omop_age(bands =
+  TRUE/FALSE, age_breaks =)} chooses explicitly in every format, and
+  \code{recipe_explain()} states the choice.
+
+  Survival outputs keep the legacy 730-day time-at-risk default when
   no \code{tar}/\code{tars} is given (\code{print()},
   \code{recipe_explain()} and \code{recipe_lint()} state it); give
   \code{tar = omop_window(1, NULL)} for unbounded follow-up. A language-2

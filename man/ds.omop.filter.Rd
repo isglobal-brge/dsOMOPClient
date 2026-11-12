@@ -6,9 +6,9 @@
 \usage{
 ds.omop.filter(
   x = NULL,
-  var,
-  op,
-  value,
+  var = NULL,
+  op = NULL,
+  value = NULL,
   newobj = NULL,
   symbol = "omop",
   conns = NULL

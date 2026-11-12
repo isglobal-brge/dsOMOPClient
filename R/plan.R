@@ -3874,7 +3874,8 @@ ds.omop.plan.harmonize <- function(plan,
 #' \code{\link{ds.omop.plan.load}} executes identically to the original
 #' (the round-trip is lossless with respect to what is sent to the server).
 #'
-#' @param plan An \code{omop_plan} object.
+#' @param plan An \code{omop_plan} object, or a language-2 plan
+#'   (\code{omop_plan_v2}, saved as its wire plan).
 #' @param file Character; destination path ending in \code{.json},
 #'   \code{.yml}, or \code{.yaml}.
 #' @param format Character or \code{NULL}; optional explicit format
@@ -3893,22 +3894,25 @@ ds.omop.plan.harmonize <- function(plan,
 #' @seealso \code{\link{ds.omop.plan.load}}, \code{\link{ds.omop.plan.execute}}
 #' @export
 ds.omop.plan.save <- function(plan, file, format = NULL) {
-  if (!inherits(plan, "omop_plan"))
+  v2 <- .v2_is_plan_v2(plan)
+  if (!inherits(plan, "omop_plan") && !v2)
     stop("plan must be an omop_plan object", call. = FALSE)
   if (missing(file) || length(file) != 1L || !nzchar(file)) {
     stop("file must be a single non-empty path.", call. = FALSE)
   }
   fmt <- .plan_file_format(file, format)
-  plain <- .plan_plain(plan)
+  # A v2 plan is saved as its wire plan (plan-v2.json), unchanged.
+  plain <- if (v2) .v2_plain(plan) else .plan_plain(plan)
   if (fmt == "json") {
+    # digits = NA: numbers keep their full precision (lossless round-trip).
     json <- jsonlite::toJSON(plain, auto_unbox = TRUE, pretty = TRUE,
-                             null = "null")
+                             null = "null", digits = NA)
     writeLines(as.character(json), file)
   } else {
     if (!requireNamespace("yaml", quietly = TRUE))
       stop("Package 'yaml' is required for YAML plans. Install it with ",
            "install.packages(\"yaml\").", call. = FALSE)
-    writeLines(yaml::as.yaml(plain), file)
+    writeLines(yaml::as.yaml(plain, precision = 15L), file)
   }
   invisible(file)
 }
@@ -3950,7 +3954,32 @@ ds.omop.plan.load <- function(file) {
     text <- paste(readLines(file, warn = FALSE), collapse = "\n")
     data <- .yaml_load_safe(text)
   }
+  if (identical(suppressWarnings(as.integer(data$version %||% NA)), 2L) &&
+      is.numeric(data$version)) {
+    if (fmt == "yaml") data <- .yaml_load_safe(text, sequences_as_lists = TRUE)
+    return(.plan_v2_from_plain(data))
+  }
   .plan_from_plain(data)
+}
+
+# A saved v2 wire plan, validated against plan-v2.json on load.
+.plan_v2_from_plain <- function(data) {
+  fix_objects <- function(x, key = NULL) {
+    if (!is.list(x)) return(x)
+    if (length(x) == 0L && !is.null(key) &&
+        key %in% c("convert", "tars", "anchors", "relations", "outcomes", "exposures",
+                   "carry_forward", "partition", "options", "concept_sets", "events",
+                   "intervals", "populations", "variables", "age")) {
+      return(.v2_empty_object())
+    }
+    nms <- names(x)
+    out <- lapply(seq_along(x), function(i) fix_objects(x[[i]], if (!is.null(nms)) nms[[i]]))
+    names(out) <- nms
+    out
+  }
+  plan <- fix_objects(data)
+  .v2_assert_schema(plan)
+  structure(plan, class = c("omop_plan_v2", "list"))
 }
 
 #' Print method for extraction plans
