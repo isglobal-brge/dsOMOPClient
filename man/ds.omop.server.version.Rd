@@ -19,11 +19,14 @@ A data frame with one row per server: \code{server},
   called), \code{missing} (methods this client calls that the profile lacks),
   \code{ready}, \code{advice} and the list column \code{recipe_language}:
   per server the recipe-language capability block of its OMOP session
-  (\code{version}, \code{operations}, \code{reducers}, \code{dialect}), the
-  string \code{"unavailable"} for a server without the publication protocol
-  (an older dsOMOP, which has no recipe language 2), or \code{"not
-  connected"} when no OMOP session \code{symbol} is connected to it. The
-  client version is in its \code{"client"} attribute.
+  (\code{version}, \code{semantic_version}, \code{operations},
+  \code{reducers}, \code{dialect}), independently of method readiness. The
+  string \code{"unavailable"} means the connected site supplied no block,
+  or an unconnected site's profile lacks the publication protocol;
+  \code{"not connected"} means no OMOP session \code{symbol} is connected
+  to a site publishing that protocol. No language capability is inferred
+  from a package version or from \code{ready}. The client version is in
+  its \code{"client"} attribute.
 }
 \description{
 Works on plain DataSHIELD connections, before (or without)
