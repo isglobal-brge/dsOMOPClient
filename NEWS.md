@@ -41,11 +41,13 @@ workstream fills its entries.
   the operation named.
 
 ## Shared with dsOMOP 2.10.3 (WS-2)
-- `R/ir_defaults.R` (`.irNormalizeWire()`), the language 2.0 normaliser shared
-  byte-identically with the server (schema defaults plus the semantic
-  defaults of change request CR-11, nothing else added): normalised forms and
-  their semantic digests agree on both sides; leaving the semantic defaults
-  of the canonical example A implicit gives the same normal form.
+- The language 2.0 normal form is the frozen, byte-identically vendored
+  `R/plan_normalize_v2.R` (`.planNormalizeV2()`, amendment A-11); the
+  server's `.irNormalize()` calls the same function, so normalised forms and
+  semantic digests agree on both sides. WS-2's interim `R/ir_defaults.R`
+  (`.irNormalizeWire()`) is removed.
+- The role-registry tables (`inst/ohdsi/roles-5.3.csv`, `roles-5.4.csv`) are
+  vendored byte-identically from dsOMOP.
 
 ## Upgrading clients and servers
 - Plan execution with dsOMOPClient 2.10.3 requires the server's published
