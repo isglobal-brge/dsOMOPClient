@@ -34,30 +34,63 @@ test_that("execute, DP and sticky send the full selected v1 payload on both prot
       expect_identical(state$sent[[s]][[3L]], f$payload, info = s)
     }
   }
-  # the sticky query library prepares its input through DP preparation
-  age <- Filter(function(x) identical(x$name, "age_sex_wide"), .payload_fixtures())[[1L]]
-  state <- .legacy_federation(new = "a")
-  spec <- omop_querylibrary_sticky("PE12", variable = "age", breaks = seq(0, 120, 10),
-                                   preparation = .fixture_recipe(age))
-  dsOMOPClient:::.querylibrary_sticky_prepare(spec, list(a = "a"), "omop")
-  expect_identical(as.character(state$sent$a[[1L]]), "omopDpPlanExecuteDS")
-  expect_identical(state$sent$a[[3L]], age$payload)
+  # The real sticky preparation path also retains the tagged payload and
+  # selects one protocol for every site in an old/new federation.
+  for (old in list(character(0), "old")) {
+    state <- .legacy_federation(old = old, new = "new")
+    spec <- omop_querylibrary_sticky("PE12", variable = "age", breaks = seq(0, 120, 10),
+                                     preparation = r)
+    sites <- c(old, "new")
+    conns <- stats::setNames(as.list(sites), sites)
+    suppressWarnings(dsOMOPClient:::.querylibrary_sticky_prepare(spec, conns, "omop"))
+    expect_identical(unname(state$assigns), rep(1L, length(sites)))
+    for (s in sites) {
+      expect_identical(as.character(state$sent[[s]][[1L]]), "omopDpPlanExecuteDS")
+      expect_identical(state$sent[[s]][[3L]], f$payload)
+      if (length(old)) expect_null(as.list(state$sent[[s]])$commit_policy)
+      else expect_identical(as.list(state$sent[[s]])$commit_policy, "server")
+    }
+    if (length(old)) expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
+  }
 })
 
-test_that("validate, preview and explain send the same payload", {
-  f <- Filter(function(x) identical(x$name, "filters"), .payload_fixtures())[[1L]]
-  r <- .fixture_recipe(f)
-  state <- .legacy_federation(new = "a")
+test_that("validate, preview and explain preserve every tagged representative payload", {
+  state <- .legacy_federation(old = "old", new = "new")
   sent <- list()
+  destinations <- list()
   testthat::local_mocked_bindings(
     .ds_safe_aggregate = function(conns, expr, ...) {
       sent[[length(sent) + 1L]] <<- expr
+      destinations[[length(destinations) + 1L]] <<- names(conns)
       stats::setNames(rep(list(list()), length(conns)), names(conns))
     }, .package = "dsOMOPClient")
-  recipe_validate(r)
-  recipe_preview(r)
-  recipe_explain(r, conns = list(a = "a"))
-  methods <- vapply(sent, function(e) as.character(e[[1L]]), "")
-  expect_identical(methods, c("omopPlanPreviewDS", "omopPlanPreviewDS", "omopPlanExplainDS"))
-  for (e in sent) expect_identical(e[[3L]], f$payload)
+  for (f in .payload_fixtures()) {
+    sent <- destinations <- list()
+    r <- .fixture_recipe(f)
+    recipe_validate(r)
+    recipe_preview(r)
+    ex <- recipe_explain(r, conns = list(old = "old", new = "new"))
+    methods <- vapply(sent, function(e) as.character(e[[1L]]), "")
+    expect_identical(methods, c("omopPlanPreviewDS", "omopPlanPreviewDS", "omopPlanExplainDS"), info = f$name)
+    for (e in sent) expect_identical(e[[3L]], f$payload, info = f$name)
+    expect_identical(destinations, list(c("old", "new"), c("old", "new"), "new"), info = f$name)
+    expect_identical(dsOMOPClient:::.ds_encode(ex$payload), f$payload, info = f$name)
+    expect_null(ex$plan)
+    expect_null(ex$digest)
+    expect_match(paste(ex$text, collapse = "\n"), "Server explain is unavailable on old")
+    expect_match(paste(ex$text, collapse = "\n"), "Execution would run the legacy call")
+  }
+})
+
+test_that("sticky native preparation refuses an old/new federation before every assignment", {
+  state <- .legacy_federation(old = "old", new = "new")
+  native <- omop_recipe(variables = list(age = omop_age()),
+                        outputs = omop_output("w", format = "wide"))
+  spec <- omop_querylibrary_sticky("PE12", variable = "age", breaks = seq(0, 120, 10),
+                                   preparation = native)
+  expect_error(dsOMOPClient:::.querylibrary_sticky_prepare(spec,
+    list(old = "old", new = "new"), "omop"), "old.*2.10.4|old.*Upgrade")
+  expect_identical(unname(state$assigns), c(0L, 0L))
+  expect_length(state$sent, 0L)
+  expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
 })

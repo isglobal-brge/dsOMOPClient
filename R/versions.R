@@ -96,11 +96,14 @@ ds.omop.client.version <- function() {
 #'   called), \code{missing} (methods this client calls that the profile lacks),
 #'   \code{ready}, \code{advice} and the list column \code{recipe_language}:
 #'   per server the recipe-language capability block of its OMOP session
-#'   (\code{version}, \code{operations}, \code{reducers}, \code{dialect}), the
-#'   string \code{"unavailable"} for a server without the publication protocol
-#'   (an older dsOMOP, which has no recipe language 2), or \code{"not
-#'   connected"} when no OMOP session \code{symbol} is connected to it. The
-#'   client version is in its \code{"client"} attribute.
+#'   (\code{version}, \code{semantic_version}, \code{operations},
+#'   \code{reducers}, \code{dialect}), independently of method readiness. The
+#'   string \code{"unavailable"} means the connected site supplied no block,
+#'   or an unconnected site's profile lacks the publication protocol;
+#'   \code{"not connected"} means no OMOP session \code{symbol} is connected
+#'   to a site publishing that protocol. No language capability is inferred
+#'   from a package version or from \code{ready}. The client version is in
+#'   its \code{"client"} attribute.
 #' @examples
 #' \dontrun{
 #' ds.omop.client.version()
@@ -139,20 +142,35 @@ ds.omop.server.version <- function(conns = NULL, symbol = "omop") {
     } else if (any(grepl("^1\\.", pub$version))) {
       paste0("The profile publishes the methods of dsOMOP ", version,
              ", which this client cannot use. ", .DSOMOP_PUBLISH_ADVICE)
+    } else if (any(.DSOMOP_PROTOCOL_METHODS %in% missing) &&
+               !is.na(running) &&
+               utils::compareVersion(running, .DSOMOP_PROTOCOL_RELEASE) < 0L) {
+      paste0("dsOMOP ", running, " is installed",
+             if (identical(version, running)) " and published" else "",
+             " but predates the publication protocol (",
+             paste(intersect(.DSOMOP_PROTOCOL_METHODS, missing), collapse = ", "),
+             "): v1 plans run only through the legacy call and language-2 plans are ",
+             "refused. Publishing again cannot add these methods: an administrator ",
+             "installs dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " or later on the server and then ",
+             "publishes its settings (Administration > DataSHIELD > Packages > dsOMOP > ",
+             "Publish).")
     } else if (!is.na(running) && !identical(version, running)) {
       paste0("dsOMOP ", running, " is installed but the profile publishes ",
              "the methods of ", version, ": an administrator publishes ",
              "dsOMOP's settings again (Administration > DataSHIELD > ",
              "Packages > dsOMOP > Publish).")
     } else if (any(.DSOMOP_PROTOCOL_METHODS %in% missing)) {
-      paste0("dsOMOP ", if (is.na(running)) version else running, " is installed and ",
-             "published but predates the publication protocol (",
+      paste0(if (is.na(running)) {
+               "The installed dsOMOP version could not be verified. The profile lacks "
+             } else paste0("dsOMOP ", running, " is installed but the profile lacks "),
+             "publication protocol methods (",
              paste(intersect(.DSOMOP_PROTOCOL_METHODS, missing), collapse = ", "),
              "): v1 plans run only through the legacy call and language-2 plans are ",
-             "refused. Publishing again cannot add these methods: an administrator ",
-             "installs dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " on the server and then ",
-             "publishes its settings (Administration > DataSHIELD > Packages > dsOMOP > ",
-             "Publish).")
+             "refused. An administrator ",
+             if (is.na(running)) paste0("checks that dsOMOP ", .DSOMOP_PROTOCOL_RELEASE,
+                                        " or later is installed, upgrades if needed, then ") else "",
+             "publishes dsOMOP's settings again (Administration > DataSHIELD > ",
+             "Packages > dsOMOP > Publish).")
     } else if (length(missing) > 0L) {
       paste0("The profile lacks ", length(missing), " dsOMOP method(s) this ",
              "client calls. ", .DSOMOP_PUBLISH_ADVICE)
@@ -174,10 +192,9 @@ ds.omop.server.version <- function(conns = NULL, symbol = "omop") {
     old <- is.null(pub$error) && any(.DSOMOP_PROTOCOL_METHODS %in% missing)
     block <- session$capabilities[[server]]$recipe_language
     row$recipe_language <- I(list(
-      if (old) "unavailable"
-      else if (!is.null(block)) block[intersect(c("version", "semantic_version", "operations",
+      if (!is.null(block)) block[intersect(c("version", "semantic_version", "operations",
                                                    "reducers", "dialect"), names(block))]
-      else if (!is.null(session) && server %in% names(session$conns)) "unavailable"
+      else if (old || (!is.null(session) && server %in% names(session$conns))) "unavailable"
       else "not connected"))
     row
   })

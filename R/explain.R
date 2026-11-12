@@ -91,11 +91,20 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     explains <- vapply(names(conns), function(s) {
       is.null(published[[s]]$error) && "omopPlanExplainDS" %in% published[[s]]$aggregate
     }, logical(1))
-    if (!all(explains)) {
+    missing <- names(conns)[!explains & vapply(names(conns), function(s) {
+      is.null(published[[s]]$error)
+    }, logical(1))]
+    if (length(missing)) {
       text <- c(text, paste0("Server explain is unavailable on ",
-                             paste(names(conns)[!explains], collapse = ", "),
+                             paste(missing, collapse = ", "),
                              " (the profile does not publish omopPlanExplainDS); the plan ",
                              "selection is unchanged."))
+    }
+    for (s in names(conns)[!explains & !names(conns) %in% missing]) {
+      text <- c(text, paste0("Server explain is unavailable on ", s,
+                             " (the profile's methods could not be listed: ",
+                             .ds_error_core(published[[s]]$error),
+                             "); the plan selection is unchanged."))
     }
     if (any(explains)) {
       # The selected wire plan, sent as execution would send it.

@@ -156,7 +156,7 @@ test_that("server explain receives the selected wire plan; missing explain is re
   expect_named(ex$server, "a")
 })
 
-test_that("an advertised explain that fails is reported; a v1 digest is then unavailable (B7)", {
+test_that("explain reports partial transport failures and missing methods by site (B7)", {
   .with_caps(list(a = .caps(), b = .caps()))
   testthat::local_mocked_bindings(
     .dsomop_published_methods = .current_published_methods,
@@ -180,4 +180,57 @@ test_that("an advertised explain that fails is reported; a v1 digest is then una
   txt2 <- paste(ex2$text, collapse = "\n")
   expect_match(txt2, "Server explain is unavailable on a, b")
   expect_match(txt2, "lowered IR and semantic digest of this v1 plan are unavailable: no site explained it")
+})
+
+test_that("all failed server explanations preserve v1 payloads and the local v2 digest (B7)", {
+  .with_caps(list(a = .caps(), b = .caps()))
+  sent <- list()
+  testthat::local_mocked_bindings(
+    .dsomop_published_methods = .current_published_methods,
+    .ds_safe_aggregate = function(conns, expr, ...) {
+      sent[[length(sent) + 1L]] <<- expr
+      structure(list(), ds_errors = list(a = "Error : disconnected", b = "Error : timed out"))
+    }, .package = "dsOMOPClient")
+  v1 <- omop_recipe(variables = omop_variable_sex(), outputs = omop_output("w", type = "wide"))
+  ex1 <- recipe_explain(v1, conns = list(a = "A", b = "B"))
+  expect_identical(ex1$payload, recipe_to_plan(v1, version = 1L))
+  expect_identical(sent[[1L]][[3L]], dsOMOPClient:::.ds_encode(ex1$payload))
+  expect_null(ex1$plan)
+  expect_null(ex1$digest)
+  expect_match(paste(ex1$text, collapse = "\n"), "Server explain failed on a: disconnected")
+  expect_match(paste(ex1$text, collapse = "\n"), "Server explain failed on b: timed out")
+  expect_match(paste(ex1$text, collapse = "\n"), "unavailable: no site explained it")
+
+  v2 <- omop_recipe(variables = list(sex = omop_sex()), outputs = omop_output("w", format = "wide"))
+  ex2 <- recipe_explain(v2, conns = list(a = "A", b = "B"))
+  expect_identical(ex2$selected, "v2")
+  expect_identical(ex2$digest, dsOMOPClient:::.plan_v2_digest(recipe_to_plan(v2))$sha256)
+  expect_identical(sent[[2L]][[3L]], dsOMOPClient:::.ds_encode_lossless(ex2$payload))
+  expect_match(paste(ex2$text, collapse = "\n"), "Server explain failed on b: timed out")
+})
+
+test_that("v1 explanation reports disagreement and method-listing failures (B7)", {
+  .with_caps(list(a = .caps(), b = .caps()))
+  testthat::local_mocked_bindings(
+    .dsomop_published_methods = .current_published_methods,
+    .ds_safe_aggregate = function(conns, expr, ...) list(
+      a = list(semantic_digest = "d1", plan = list()),
+      b = list(semantic_digest = "d2", plan = list())),
+    .package = "dsOMOPClient")
+  r <- omop_recipe(variables = omop_variable_sex(), outputs = omop_output("w"))
+  ex <- recipe_explain(r, conns = list(a = "A", b = "B"))
+  expect_null(ex$plan)
+  expect_null(ex$digest)
+  expect_match(paste(ex$text, collapse = "\n"), "the sites that explained it disagree")
+
+  testthat::local_mocked_bindings(
+    .dsomop_published_methods = function(conns, ...) {
+      inv <- .current_published_methods(conns)
+      inv$b$error <- "Error : profile inventory timed out"
+      inv
+    }, .package = "dsOMOPClient")
+  ex2 <- recipe_explain(r, conns = list(a = "A", b = "B"))
+  expect_match(paste(ex2$text, collapse = "\n"),
+               "Server explain is unavailable on b \\(the profile's methods could not be listed: profile inventory timed out\\)")
+  expect_identical(ex2$payload, recipe_to_plan(r, version = 1L))
 })
