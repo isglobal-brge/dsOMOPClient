@@ -1,6 +1,7 @@
 # Release gate for design sections 10.7 and 12.3: execute the frozen public
-# recipes, including Circe import and parameter binding, through DSLite and
-# the real population/reducer/output/publication stack at k = 5. Inspection
+# recipes, including Circe import and all twelve recipe-13 parameterised
+# variants, through DSLite and the real population/reducer/output/publication
+# stack at k = 5. Inspection
 # of the server's session store below is test-only; the analyst receives only
 # published symbols. No roster or compiler is replaced by a test double.
 # Set DSOMOP_TEST_WS7_ACCEPTANCE_REQUIRED=true for the integrated WS-7 run:
@@ -288,18 +289,29 @@ test_that("staged recipe parity permits only fractional CSV rounding", {
   expect_error(.ws7e_expect_parity(bad, memory, "beyond CSV precision"), class = "expectation_failure")
 })
 
-.ws7e_run <- function(ctx, recipe) {
+.ws7e_run <- function(ctx, recipe, variant = NULL) {
   path <- file.path(ctx$paths$recipes, recipe)
+  variant_path <- file.path(ctx$paths$recipes, "13-parametrised", "variants")
+  recipe_file <- if (is.null(variant)) file.path(path, "recipe.R") else
+    file.path(variant_path, variant$variant)
+  plan_file <- if (is.null(variant)) file.path(path, "plan.json") else
+    file.path(variant_path, variant$bound_plan)
+  expected_file <- if (is.null(variant)) file.path(path, "expected.json") else
+    file.path(ctx$paths$recipes, variant$expected_from)
+  label <- if (is.null(variant)) recipe else paste("13-parametrised", variant$variant)
+  id <- paste0(if (!is.null(variant)) "13_", substr(recipe, 1L, 2L))
   env <- new.env(parent = asNamespace("dsOMOPClient"))
-  withr::with_dir(path, sys.source("recipe.R", envir = env))
-  rec <- if (identical(recipe, "13-parametrised")) env$bound else env$rec
-  frozen <- jsonlite::fromJSON(file.path(path, "plan.json"), simplifyVector = FALSE)
+  # Circe variants resolve relative inputs in their base recipe directory.
+  withr::with_dir(path, sys.source(recipe_file, envir = env))
+  rec <- if (!is.null(variant) || identical(recipe, "13-parametrised")) env$bound else env$rec
+  expect_length(recipe_params(rec), 0L)
+  frozen <- jsonlite::fromJSON(plan_file, simplifyVector = FALSE)
   expect_identical(.plan_v2_digest(recipe_to_plan(rec))$sha256,
-                   .plan_v2_digest(frozen)$sha256, info = recipe)
-  expected <- jsonlite::fromJSON(file.path(path, "expected.json"), simplifyVector = FALSE)$outputs
+                   .plan_v2_digest(frozen)$sha256, info = label)
+  expected <- jsonlite::fromJSON(expected_file, simplifyVector = FALSE)$outputs
   frames <- list()
   for (mode in c("memory", "staged")) {
-    prefix <- paste0("D_ws7_", substr(recipe, 1L, 2L), "_", mode, "_")
+    prefix <- paste0("D_ws7_", id, "_", mode, "_")
     roots <- names(frozen$outputs)
     out <- stats::setNames(paste0(prefix, roots), roots)
     before <- unlist(DSI::datashield.symbols(ctx$conns), use.names = FALSE)
@@ -320,9 +332,9 @@ test_that("staged recipe parity permits only fractional CSV rounding", {
       expect_identical(inherits(raw, "FlowerDatasetDescriptor"), identical(mode, "staged"))
       frame <- .ws7e_frame(ctx, published)
       episodes <- .ws7e_episode_catalog(ctx, recipe, frozen, expected, component)
-      .ws7e_compare(frame, expected[[component]], ctx$handle, paste(recipe, mode, component), episodes)
+      .ws7e_compare(frame, expected[[component]], ctx$handle, paste(label, mode, component), episodes)
       if (identical(mode, "memory")) frames[[component]] <- frame else {
-        .ws7e_expect_parity(frame, frames[[component]], paste(recipe, component))
+        .ws7e_expect_parity(frame, frames[[component]], paste(label, component))
       }
     }
     expect_setequal(added, seen)
@@ -334,11 +346,18 @@ test_that("staged recipe parity permits only fractional CSV rounding", {
 
 for (.ws7e_backend in c("sqlite", "postgresql")) local({
   backend <- .ws7e_backend
-  test_that(paste("all 15 public acceptance recipes reproduce the oracle in memory and staged on", backend), {
+  test_that(paste("all 15 public recipes and 12 bound variants reproduce the oracle in memory and staged on", backend), {
     ctx <- .ws7e_setup(backend, environment())
     recipes <- sort(list.dirs(ctx$paths$recipes, recursive = FALSE, full.names = FALSE))
     recipes <- recipes[grepl("^[0-9][0-9]-", recipes)]
     expect_identical(length(recipes), 15L)
     for (recipe in recipes) expect_error(.ws7e_run(ctx, recipe), NA, info = recipe)
+    variants <- jsonlite::fromJSON(file.path(ctx$paths$recipes, "13-parametrised", "variants", "variants.json"),
+                                    simplifyVector = FALSE)
+    expect_identical(sort(vapply(variants, function(variant) variant$variant, "")),
+                     sprintf("recipe-%02d.R", 1:12))
+    for (variant in variants) {
+      expect_error(.ws7e_run(ctx, variant$equals_plan_of, variant), NA, info = variant$variant)
+    }
   })
 })
