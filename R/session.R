@@ -931,6 +931,15 @@ ds.omop.connect <- function(resource,
     stop("dsOMOP is not ready on ", paste(not_ready, collapse = ", "), ":\n",
          .ds_failure_detail(ping_errors, servers = not_ready), call. = FALSE)
   }
+  # Servers older than dsOMOP 2.10.3 lack its security fixes: say so plainly
+  # (once here, and in every analysis result of this session).
+  server_versions <- vapply(server_names, function(server) {
+    v <- tryCatch(as.character(ping[[server]]$version), error = function(e) "")
+    if (length(v) == 1L && !is.na(v)) v else NA_character_
+  }, character(1L))
+  for (message in .dsomop_unpatched_server_warnings(server_versions)) {
+    warning(message, call. = FALSE)
+  }
 
   remove_symbol <- function(servers, target) {
     failures <- character(0)
@@ -1093,6 +1102,7 @@ ds.omop.connect <- function(resource,
     capabilities = caps,
     harmonization = harmonization,
     server_names = server_names,
+    server_versions = server_versions,
     errors = errors
   )
   class(session) <- "omop_session"

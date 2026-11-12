@@ -46,6 +46,38 @@
   "package by itself."
 )
 
+# The first dsOMOP release with the security fixes of the OHDSI community
+# tools (protected releases, support and window fixes).
+.DSOMOP_PATCHED_SERVER_VERSION <- "2.10.3"
+
+#' Plain warnings for servers older than dsOMOP 2.10.3
+#'
+#' Such a server lacks the dsOMOP 2.10.3 security fixes of its OHDSI community
+#' tools (analysis catalogue, Achilles and OHDSI readers, DP releases); a
+#' newer client cannot repair a server, and never claims to.
+#'
+#' @param versions Named character vector of server dsOMOP versions (NA when
+#'   unknown).
+#' @return Character vector of warnings, one per server older than 2.10.3.
+#' @keywords internal
+.dsomop_unpatched_server_warnings <- function(versions) {
+  old <- names(versions)[vapply(versions, function(v) {
+    !is.na(v) && nzchar(v) && !inherits(try(numeric_version(v), silent = TRUE),
+                                        "try-error") &&
+      numeric_version(v) < numeric_version(.DSOMOP_PATCHED_SERVER_VERSION)
+  }, logical(1L))]
+  vapply(old, function(server) {
+    paste0(
+      "Server '", server, "' runs dsOMOP ", versions[[server]], ", older than ",
+      .DSOMOP_PATCHED_SERVER_VERSION, ": its OHDSI community-tool results ",
+      "(analysis catalogue, Achilles and OHDSI readers, DP releases) lack the ",
+      "dsOMOP ", .DSOMOP_PATCHED_SERVER_VERSION, " security fixes, and this ",
+      "dsOMOPClient cannot repair them. They are reported under that server's ",
+      "own legacy contract; upgrade the server to dsOMOP ",
+      .DSOMOP_PATCHED_SERVER_VERSION, ".")
+  }, character(1L), USE.NAMES = FALSE)
+}
+
 #' dsOMOPClient version
 #'
 #' @return Character; the installed dsOMOPClient version.

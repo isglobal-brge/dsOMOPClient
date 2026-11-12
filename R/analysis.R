@@ -234,9 +234,12 @@ utils::globalVariables(".data")
 
 # Public protection labels of per-server analysis results (attribute
 # dsomop_protection set by dsOMOP >= 2.9.0; absent from older servers). The
-# labels of dsOMOP 2.10.3 protected routes must make consistent claims: a
-# fixed synopsis declares its finite vector epsilon and delta 0; heuristic
-# realised-contribution and mixed releases claim no epsilon and no delta.
+# labels of dsOMOP 2.10.3 routes must make coherent claims (the same check as
+# typed payloads, B14): a fixed synopsis declares its scope, finite vector
+# epsilon and delta 0; a heuristic realised-contribution release its scope
+# and no epsilon or delta; a mixed frame exactly one protected block route
+# with that route's scope; standard, standard-fallback and unavailable labels
+# no protected scope, epsilon or delta.
 .analysis_protection_labels <- function(raw) {
   labels <- lapply(raw, function(x) {
     label <- if (is.data.frame(x)) attr(x, "dsomop_protection", exact = TRUE)
@@ -245,7 +248,8 @@ utils::globalVariables(".data")
   labels <- labels[!vapply(labels, is.null, logical(1))]
   for (server in names(labels)) {
     if (labels[[server]]$protection[[1L]] %in%
-        c(.DP_PROTECTED_ROUTES, "mixed")) {
+        c(.DP_PROTECTED_ROUTES, "mixed", "standard", "standard_fallback",
+          "unavailable")) {
       .dp_check_protected_claims(labels[[server]], server, "protection label")
     }
   }
@@ -814,6 +818,12 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   # Each server labels how its result is protected (standard controls, DP,
   # or the standard fallback when its DP service is unavailable).
   protection <- .analysis_protection_labels(raw)
+  # Servers older than dsOMOP 2.10.3 answer under their legacy contract,
+  # without its security fixes; the client says so with every result.
+  unpatched <- .dsomop_unpatched_server_warnings(
+    (session$server_versions %||% character(0))[
+      intersect(names(conns), names(session$server_versions %||% list()))])
+  for (message in unpatched) warning(message, call. = FALSE)
 
   pool_out <- if (.result_type_wants_combine(type) &&
                   identical(entry_meta$release_pooling$strategy,
@@ -857,7 +867,7 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
                   "per_site",
                 type = type, servers = names(raw),
                 pooling_policy = pooling_policy,
-                warnings = pool_out$warnings))
+                warnings = c(unpatched, pool_out$warnings)))
   # The dsomop_result constructor keeps only its known meta fields, so attach the
   # built plot explicitly (as documented: available via both the "plot"
   # attribute and meta$plot). NULL when plot = FALSE or no recipe was built.

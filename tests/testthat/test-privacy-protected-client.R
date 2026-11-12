@@ -61,9 +61,30 @@
                            coordinates = coordinates, families = families,
                            reconciliation =
                              "declared_cells_sum_to_person_total",
-                           signed = signed))), list(...))
+                           # The complete basis and its versioned projection
+                           # (dsOMOP 2.10.3, R04/R05).
+                           projection = .pc_projection(families),
+                           view_kind = "basis",
+                           signed = signed,
+                           basis = list(
+                             id = paste0("typed-", statistic, "-basis/v1"),
+                             coordinates = coordinates, families = families,
+                             signed = signed)))), list(...))
   if (fixed && !"delta" %in% names(list(...))) payload$delta <- 0
   payload
+}
+
+# The server's projection identifier for a basis of these families.
+.pc_projection <- function(families) {
+  if (length(families) > 1L && identical(families[[1L]], "N") &&
+      families[[2L]] %in% c("H")) return("typed-partition-simplex-v1")
+  if (length(families) > 1L && identical(families[[1L]], "T")) {
+    return("typed-weighted-total-simplex-v1")
+  }
+  if (length(families) && all(families == "W")) {
+    return("typed-weighted-atomwise-clip-v1")
+  }
+  "none"
 }
 
 # Mock servers: every status gets its own noise domain and every release that
@@ -631,7 +652,8 @@ test_that("typed views pool from their complete basis (dsOMOP 2.10.3 B05)", {
                      c(basis_signed[[1L]], shown_cells),
                      c("root", "cell=F", "cell=M"), c("N", "H", "H"),
                      list(levels = c("F", "M"), counts = pmax(0, shown_cells)))
-    p$components$basis <- list(coordinates = basis_coords,
+    p$components$basis <- list(id = "typed-one-label/domain=F,M/v2",
+                               coordinates = basis_coords,
                                families = basis_families,
                                signed = basis_signed)
     p$components$view_of_basis <- view
@@ -999,8 +1021,10 @@ test_that("pooled mixed frames say their protected fields are not exact", {
     df <- data.frame(arm = c("target", "comparator"), persons = c(100, 90),
                      person_days = days, outcomes = c(20, 15),
                      mdrr = c(1.8, 1.8), stringsAsFactors = FALSE)
+    # As dsOMOP 2.10.3 labels it: the protected block's guarantee scope.
     attr(df, "dsomop_protection") <- list(
       protection = "mixed",
+      guarantee_scope = "heuristic_realised_contribution_reuse",
       blocks = list(standard = c("arm", "persons", "outcomes"),
                     person_time = "realised_sticky"))
     df
@@ -1058,4 +1082,301 @@ test_that("the client's moment projection is the server's, candidate order too",
     expect_identical(.dp_project_moments(g$S0, g$Q0, g$N),
                      server(g$S0, g$Q0, g$N), info = paste(unlist(g)))
   }
+})
+
+# --- Round 3 (re-review R04, R05, B14, R08) -----------------------------------------
+
+# A one-label binary payload on the complete basis N + cells (a, b, Other,
+# Unknown), with its public numerator and denominator masks.
+.pc_binary <- function(basis_signed, positive = 2L, nonmissing = FALSE,
+                       domain = c("a", "b"), source = 1L) {
+  cells <- basis_signed[-1L]
+  view <- list(as.integer(positive),
+               if (nonmissing) 1:3 else 1:4)
+  h <- .dp_simplex(cells, max(0, basis_signed[[1L]]))
+  num <- sum(h[view[[1L]]]); den <- sum(h[view[[2L]]])
+  p <- .pc_payload(
+    "binary_rate", c(basis_signed[[1L]], sum(cells[view[[1L]]]),
+                     sum(cells[view[[2L]]])),
+    c("stratum=root", "stratum=root|view=numerator",
+      "stratum=root|view=denominator"), c("N", "H", "H"),
+    list(noisy_numerator = num, noisy_denominator = den,
+         value = if (den > 0) num / den else NULL, reducer = "first",
+         denominator = if (nonmissing) "nonmissing" else "all_persons",
+         value_type = "categorical_utf8_v1"))
+  p$components$owner <- "typed/categorical-one-label/reducer=first/v2"
+  p$components$projection <- "typed-partition-simplex-v1"
+  p$components$view_kind <- "binary_rate_numerator_denominator"
+  p$components$view_of_basis <- view
+  p$components$basis <- list(
+    id = paste0("typed-one-label/reducer=first/domain=",
+                paste(domain, collapse = ","), "/v2"),
+    domain = domain,
+    coordinates = c("stratum=root", paste0("stratum=root|cell=", domain),
+                    "stratum=root|other", "stratum=root|unknown"),
+    families = c("N", "H", "H", "H", "H"), signed = basis_signed)
+  p$source <- .pc_source(source)
+  p
+}
+
+test_that("binary rates pool their numerator and denominator masks (R04)", {
+  statuses <- list(a = .pc_status(), b = .pc_status())
+  privacy <- omop_privacy("binary_rate", "label", positive = "b",
+                          reducer = "first", order_by = "day",
+                          denominator = "nonmissing")
+  a <- .pc_binary(c(100, 40, 35, 15, 10), nonmissing = TRUE)
+  b <- .pc_binary(c(60, 20, 25, 5, 10), nonmissing = TRUE, source = 2L)
+  # One site: the pool reproduces the per-site display exactly.
+  one <- .dp_pool_protected(list(a = a), privacy)
+  expect_equal(one$noisy_numerator, a$noisy_numerator, tolerance = 1e-12)
+  expect_equal(one$noisy_denominator, a$noisy_denominator, tolerance = 1e-12)
+  .pc_backend(statuses, list(a = a, b = b), function(datasources, sent) {
+    value <- ds.omop.dp.release("analysis_table", privacy, datasources)
+    h <- .dp_simplex(c(60, 60, 20, 20), 160)
+    expect_equal(value$pooled$noisy_numerator, h[[2L]], tolerance = 1e-12)
+    expect_equal(value$pooled$noisy_denominator, sum(h[1:3]),
+                 tolerance = 1e-12)
+    expect_equal(value$pooled$estimate, h[[2L]] / sum(h[1:3]),
+                 tolerance = 1e-12)
+  })
+  # Equal-width domains with other labels, other masks, a payload without
+  # masks: never pooled.
+  z <- .pc_binary(c(60, 20, 25, 5, 10), nonmissing = TRUE, domain = c("b", "z"),
+                  source = 2L)
+  expect_error(.dp_pool_protected(list(a = a, b = z), privacy),
+               "not compatible")
+  all_persons <- .pc_binary(c(60, 20, 25, 5, 10), source = 2L)
+  expect_error(.dp_pool_protected(list(a = a, b = all_persons), privacy),
+               "not compatible")
+  bare <- a
+  bare$components$view_of_basis <- NULL
+  bare$components$view_kind <- "basis"
+  .pc_backend(list(a = .pc_status()), list(a = bare),
+              function(datasources, sent) {
+    expect_error(ds.omop.dp.release("analysis_table", privacy, datasources),
+                 "numerator and denominator masks")
+  })
+})
+
+test_that("weighted histograms pool through their protected total (R05)", {
+  statuses <- list(a = .pc_status(), b = .pc_status())
+  site <- function(total, atoms, source) {
+    view <- list(1:2, 3L)
+    h <- .dp_simplex(atoms, max(0, total))
+    p <- .pc_payload(
+      "numeric_histogram", c(total, sum(atoms[1:2]), atoms[[3L]]),
+      c("stratum=root|records", "stratum=root|bin=[-inf,1)",
+        "stratum=root|bin=[1,inf)"), c("T", "W", "W"),
+      list(breaks = c(0, 1, 2), counts = c(sum(h[1:2]), h[[3L]]),
+           reducer = "records", max_contributions = 1L,
+           value_type = "number"))
+    p$components$projection <- "typed-weighted-total-simplex-v1"
+    p$components$view_kind <- "sums_of_basis_cells"
+    p$components$view_of_basis <- view
+    p$components$basis <- list(
+      id = "typed-number-signed-nice-v1",
+      coordinates = c("stratum=root|records", "stratum=root|atom=[-inf,0)",
+                      "stratum=root|atom=[0,1)", "stratum=root|atom=[1,inf)"),
+      families = c("T", "W", "W", "W"), signed = c(total, atoms))
+    p$source <- .pc_source(source)
+    p
+  }
+  a <- site(50, c(-30, 40, 40), 1L)
+  b <- site(70, c(10, -20, 80), 2L)
+  privacy <- omop_privacy("numeric_histogram", "x", breaks = c(0, 1, 2),
+                          reducer = "records", max_contributions = 1L)
+  one <- .dp_pool_protected(list(a = a), privacy)
+  expect_equal(one$counts, a$counts, tolerance = 1e-12)
+  .pc_backend(statuses, list(a = a, b = b), function(datasources, sent) {
+    value <- ds.omop.dp.release("analysis_table", privacy, datasources)
+    h <- .dp_simplex(c(-20, 20, 120), 120)
+    expect_equal(value$pooled$counts, c(sum(h[1:2]), h[[3L]]),
+                 tolerance = 1e-12)
+    expect_identical(value$pooled$projection,
+                     "typed-weighted-total-simplex-v1")
+  })
+  # An unknown projection is refused before pooling.
+  odd <- a
+  odd$components$projection <- "typed-weighted-something-v9"
+  .pc_backend(list(a = .pc_status()), list(a = odd),
+              function(datasources, sent) {
+    expect_error(ds.omop.dp.release("analysis_table", privacy, datasources),
+                 "known projection")
+  })
+})
+
+test_that("catalogue labels and typed payloads share one scope check (B14)", {
+  base <- list(protection = "realised_sticky",
+               guarantee_scope = "heuristic_realised_contribution_reuse",
+               mechanism_epsilon = NA_real_, api_transcript_epsilon = NA_real_)
+  frame <- function(label) {
+    x <- data.frame(count = 10)
+    attr(x, "dsomop_protection") <- label
+    list(site = x)
+  }
+  expect_length(.analysis_protection_labels(frame(base)), 1L)
+  bad <- list(
+    realised_claiming_fixed = utils::modifyList(base, list(
+      guarantee_scope = "fixed_vector_before_exact_support_gate")),
+    realised_without_scope = utils::modifyList(base, list(
+      guarantee_scope = NULL)),
+    fixed_without_scope = list(protection = "fixed_synopsis",
+                               mechanism_epsilon = 0.1, delta = 0),
+    mixed_without_blocks = list(
+      protection = "mixed",
+      guarantee_scope = "heuristic_realised_contribution_reuse"),
+    mixed_two_routes = list(
+      protection = "mixed",
+      guarantee_scope = "heuristic_realised_contribution_reuse",
+      blocks = list(a = "realised_sticky", b = "fixed_synopsis")),
+    mixed_wrong_scope = list(
+      protection = "mixed",
+      guarantee_scope = "fixed_vector_before_exact_support_gate",
+      blocks = list(standard = c("x", "y"), person_time = "realised_sticky")),
+    standard_claiming_scope = list(
+      protection = "standard",
+      guarantee_scope = "fixed_vector_before_exact_support_gate"),
+    standard_claiming_delta = list(protection = "standard_fallback",
+                                   delta = 0))
+  for (name in names(bad)) {
+    expect_error(.analysis_protection_labels(frame(bad[[name]])),
+                 "guarantee scope|protected block|claims", info = name)
+  }
+  # A coherent mixed frame (the server's shape) and a legacy DP label pass.
+  ok_mixed <- list(
+    protection = "mixed",
+    guarantee_scope = "fixed_vector_before_exact_support_gate",
+    mechanism_epsilon = NA_real_,
+    blocks = list(binary = "standard", distribution = "fixed_synopsis"))
+  expect_length(.analysis_protection_labels(frame(ok_mixed)), 1L)
+  legacy <- list(protection = "dp", epsilon = 0.1, delta = 0)
+  expect_length(.analysis_protection_labels(frame(legacy)), 1L)
+  # Typed payloads use the same check.
+  statuses <- list(a = .pc_status())
+  wrong <- .pc_payload("count", 10, "stratum=root", "N",
+                       list(noisy_count = 10),
+                       guarantee_scope = "fixed_vector_before_exact_support_gate")
+  .pc_backend(statuses, list(a = wrong), function(datasources, sent) {
+    expect_error(ds.omop.dp.release("analysis_table", omop_privacy("count"),
+                                    datasources), "guarantee scope")
+  })
+})
+
+test_that("Astra: protected NA pooling skips with an explicit warning", {
+  frames <- list(a=.pc_effect_frame(log(1.5), .2, 1L),
+                 b=.pc_effect_frame(NA_real_, NA_real_, 2L))
+  .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
+    loose <- ds.omop.meta.effect_estimate(params=list(outcome_concept_id=4329847),
+      cohort=c(1L,2L), pooling_policy="pooled_only_ok")
+    expect_true(all(loose$pooled$n_databases == 1L))
+    expect_equal(loose$pooled$estimate_fixed, rep(1.5,2L), tolerance=1e-9)
+    expect_match(paste(loose$meta$warnings,collapse=" "), "Dropped server.*b")
+    message("ASTRA NA warning: ", paste(loose$meta$warnings,collapse=" | "))
+  })
+})
+
+test_that("Astra: real 2.10.2 client validator rejects current protected status", {
+  old <- new.env(parent=environment())
+  sys.source(test_path("fixtures/astra-client-2.10.2-privacy.R"),old)
+  error <- tryCatch({old$.dp_status_shape(.pc_status(),"newserver");NULL},
+                    error=conditionMessage)
+  message("ASTRA old-client/new-server error: ", error)
+  expect_match(error,"incoherent v3 DP contract field 'history_dependent'")
+  # Its actual 2.10.2 pooling code respects the current server's not_poolable fallback.
+  sys.source(test_path("fixtures/astra-client-2.10.2-pooling.R"),old)
+  out <- old$.pool_analysis_contract(list(site=.pc_effect_frame(log(1.5),.2,1L)),
+    .pc_effect_meta()$pooling_contract)
+  expect_null(out$result)
+  expect_match(paste(out$warnings,collapse=" "), "Protected release")
+})
+
+test_that("the 2.10.2 client shows a server's DP status refusal verbatim (R08)", {
+  # dsOMOP 2.10.3 refuses status calls without the client contract (server
+  # suite: test-privacy-typed-views.R); the old client's own transport code
+  # surfaces that message, so the analyst reads the upgrade instruction.
+  old <- new.env(parent = environment())
+  sys.source(test_path("fixtures/astra-client-2.10.2-privacy.R"), old)
+  refusal <- paste0("This server runs dsOMOP 2.10.3, whose DP releases are ",
+                    "protected components ... Upgrade dsOMOPClient to 2.10.3 ",
+                    "or later to use ds.omop.dp.status()")
+  sent <- list()
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, error = NULL, ...) {
+      sent[[length(sent) + 1L]] <<- expr
+      if (is.function(error)) error(names(conns)[[1L]], refusal)
+      list()
+    }, .package = "DSI")
+  message <- tryCatch({
+    old$ds.omop.dp.status(datasources = list(newserver = "FAKE"))
+    NA_character_
+  }, error = conditionMessage)
+  expect_match(message, "Upgrade dsOMOPClient to 2.10.3", fixed = TRUE)
+  # The 2.10.2 client sends no client contract.
+  expect_identical(length(sent[[1L]]), 1L)
+})
+
+test_that("DP status negotiates the contract and flags pre-2.10.3 servers (R08)", {
+  legacy <- .pc_status(privacy_contract = "fixed_per_release_seed_data_versioned_v1",
+                       release_binding = "seed_data_versioned_v1",
+                       privacy_guarantee = .DP_PRIVACY_GUARANTEE)
+  legacy$history_based_admission <- NULL
+  statuses <- list(new = .pc_status(noise_domain_id = paste0("dpn_", strrep("1", 40L))),
+                   old = legacy)
+  statuses$old$noise_domain_id <- paste0("dpn_", strrep("2", 40L))
+  sent <- list()
+  testthat::local_mocked_bindings(
+    datashield.aggregate = function(conns, expr, error = NULL, ...) {
+      server <- names(conns)[[1L]]
+      sent[[length(sent) + 1L]] <<- list(server = server, expr = expr)
+      if (identical(server, "old") && length(expr) > 1L) {
+        # A dsOMOP 2.10.2 omopDpStatusDS takes no argument.
+        if (is.function(error)) {
+          error(server, paste0("Error in omopDpStatusDS(\"",
+                               .DP_PROTECTED_RELEASE_PROTOCOL, "\") : unused ",
+                               "argument (\"", .DP_PROTECTED_RELEASE_PROTOCOL,
+                               "\")"))
+        }
+        return(list())
+      }
+      stats::setNames(list(statuses[[server]]), server)
+    }, .package = "DSI")
+  datasources <- list(new = "FAKE_1", old = "FAKE_2")
+  expect_warning(value <- ds.omop.dp.status(datasources),
+                 "Server 'old' runs dsOMOP 2.10.2 or older")
+  expect_identical(attr(value, "unpatched"), "old")
+  expect_identical(value$new$privacy_contract, .DP_PROTECTED_PRIVACY_CONTRACT)
+  expect_identical(value$old$privacy_contract,
+                   "fixed_per_release_seed_data_versioned_v1")
+  # The new server is asked once, with the client contract; the old one is
+  # asked again without it.
+  calls <- vapply(sent, function(s) paste(s$server, length(s$expr)),
+                  character(1L))
+  expect_identical(calls, c("new 2", "old 2", "old 1"))
+  expect_identical(sent[[1L]]$expr[[2L]], .DP_PROTECTED_RELEASE_PROTOCOL)
+  # Releases mixing the two contracts are refused when pooled.
+  expect_error(suppressWarnings(
+    ds.omop.dp.release("analysis_table", omop_privacy("count"), datasources)),
+    "cannot be combined")
+})
+
+test_that("catalogue results of pre-2.10.3 servers carry a plain warning (R08)", {
+  expect_identical(.dsomop_unpatched_server_warnings(
+    c(a = "2.10.3", b = "2.10.4", c = NA_character_)), character(0))
+  warned <- .dsomop_unpatched_server_warnings(c(a = "2.10.2", b = "2.10.3"))
+  expect_length(warned, 1L)
+  expect_match(warned, "Server 'a' runs dsOMOP 2.10.2, older than 2.10.3")
+  expect_match(warned, "cannot repair them")
+  frames <- list(a = .pc_effect_frame(log(1.5), .2, 1L),
+                 b = .pc_effect_frame(log(1.4), .2, 2L))
+  .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
+    session <- get("omop", envir = dsOMOPClient:::.dsomop_client_env)
+    session$server_versions <- c(a = "2.10.2", b = "2.10.3")
+    assign("omop", session, envir = dsOMOPClient:::.dsomop_client_env)
+    expect_warning(res <- ds.omop.meta.effect_estimate(
+      params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L)),
+      "Server 'a' runs dsOMOP 2.10.2")
+    expect_match(paste(res$meta$warnings, collapse = " "),
+                 "Server 'a' runs dsOMOP 2.10.2, older than 2.10.3")
+    expect_false(any(grepl("Server 'b' runs", res$meta$warnings)))
+  })
 })

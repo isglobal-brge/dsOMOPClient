@@ -66,13 +66,25 @@
 # two connections to one logical node carry the same identifier.
 .DP_PROTECTED_SOURCE_PATTERN <- "^dsl_[0-9a-f]{40}$"
 
+# Guarantee scope of each protected route (dsOMOP 2.10.3).
+.DP_PROTECTED_SCOPES <- c(
+  fixed_synopsis = "fixed_vector_before_exact_support_gate",
+  realised_sticky = "heuristic_realised_contribution_reuse"
+)
+
 #' Check the guarantee claims of a protected release or protection label
 #'
-#' A fixed synopsis declares the finite epsilon of its bounded vector and
-#' delta 0 (before the exact support gates). A heuristic realised-contribution
-#' or mixed release claims neither: no finite mechanism epsilon, no delta.
-#' No route claims a finite epsilon for the whole API transcript. Anything
-#' else is an inconsistent claim and is refused.
+#' One coherence check for typed payloads and catalogue protection labels
+#' (B14). A fixed synopsis declares its guarantee scope
+#' (\code{fixed_vector_before_exact_support_gate}), the finite epsilon of its
+#' bounded vector and delta 0 (before the exact support gates). A heuristic
+#' realised-contribution release declares the heuristic scope and claims no
+#' finite mechanism epsilon and no delta. A mixed frame names the protection
+#' of each block: exactly one protected route among its blocks, whose scope
+#' the frame declares, and no frame-level epsilon or delta. Standard,
+#' standard-fallback and unavailable labels claim no protected scope, epsilon
+#' or delta. No route claims a finite epsilon for the whole API transcript. A
+#' missing or contradictory descriptor is refused rather than displayed.
 #'
 #' @param value Payload or \code{dsomop_protection} label.
 #' @param server Server name (for messages).
@@ -93,6 +105,42 @@
     fail("that claims an epsilon for the whole API transcript.")
   }
   route <- value$protection
+  scope <- value$guarantee_scope
+  scope_ok <- function(expected) {
+    is.character(scope) && length(scope) == 1L && !is.na(scope) &&
+      identical(unname(scope), unname(expected))
+  }
+  if (is.character(route) && length(route) == 1L &&
+      route %in% names(.DP_PROTECTED_SCOPES) &&
+      !scope_ok(.DP_PROTECTED_SCOPES[[route]])) {
+    fail("whose guarantee scope is missing or incoherent with its ", route,
+         " route.")
+  }
+  if (identical(route, "mixed")) {
+    blocks <- value$blocks
+    routes <- if (is.list(blocks) && length(blocks)) {
+      unique(unlist(lapply(blocks, function(b) {
+        if (is.character(b) && length(b) == 1L &&
+            b %in% names(.DP_PROTECTED_SCOPES)) b else NULL
+      }), use.names = FALSE))
+    } else character(0)
+    if (length(routes) != 1L) {
+      fail("that is mixed without exactly one protected block route.")
+    }
+    if (!scope_ok(.DP_PROTECTED_SCOPES[[routes]])) {
+      fail("whose guarantee scope is missing or incoherent with its ",
+           routes, " block.")
+    }
+  }
+  if (is.character(route) && length(route) == 1L &&
+      route %in% c("standard", "standard_fallback", "unavailable")) {
+    if (is.character(scope) && any(scope %in% .DP_PROTECTED_SCOPES)) {
+      fail("that is ", route, " but claims a protected guarantee scope.")
+    }
+    if (present(value$mechanism_epsilon) || present(value$delta)) {
+      fail("that is ", route, " but claims a mechanism epsilon or delta.")
+    }
+  }
   if (identical(route, "fixed_synopsis")) {
     if (!finite_number(value$mechanism_epsilon) ||
         value$mechanism_epsilon <= 0) {
@@ -182,13 +230,8 @@
     stop("Server '", server, "' returned a protected release that does not ",
          "match the request.", call. = FALSE)
   }
-  scope <- if (identical(value$protection, "fixed_synopsis")) {
-    "fixed_vector_before_exact_support_gate"
-  } else "heuristic_realised_contribution_reuse"
-  if (!identical(value$guarantee_scope, scope)) {
-    stop("Server '", server, "' returned an incoherent guarantee scope.",
-         call. = FALSE)
-  }
+  # Route, guarantee scope, epsilon and delta coherence (shared with the
+  # catalogue protection labels, B14).
   .dp_check_protected_claims(value, server)
   if (!identical(value$privacy_call_quota, "none") ||
       !identical(value$history_based_admission, FALSE)) {
@@ -202,6 +245,33 @@
       any(!is.finite(comps$signed))) {
     stop("Server '", server, "' returned malformed protected components.",
          call. = FALSE)
+  }
+  # The complete basis, its versioned projection and the view masks are what
+  # pooling derives every view from (R04/R05).
+  basis <- comps$basis
+  ncells <- if (is.list(basis) && is.numeric(basis$signed)) {
+    length(basis$signed) - as.integer(length(basis$families) > 0L &&
+                                        basis$families[[1L]] %in% c("N", "T"))
+  } else NA_integer_
+  valid_view <- is.null(comps$view_of_basis) ||
+    (is.list(comps$view_of_basis) && all(vapply(comps$view_of_basis,
+      function(i) is.numeric(i) && length(i) >= 0L && !anyNA(i) &&
+        all(i == floor(i)) && all(i >= 1) &&
+        (is.na(ncells) || all(i <= ncells)), logical(1L))))
+  if (!is.list(basis) || !is.character(basis$id) || length(basis$id) != 1L ||
+      !is.character(basis$coordinates) || !is.numeric(basis$signed) ||
+      length(basis$signed) != length(basis$coordinates) ||
+      any(!is.finite(basis$signed)) ||
+      !is.character(comps$projection) || length(comps$projection) != 1L ||
+      !comps$projection %in% .DP_TYPED_PROJECTIONS || !valid_view) {
+    stop("Server '", server, "' returned protected components without a ",
+         "complete basis, a known projection or a valid view.", call. = FALSE)
+  }
+  if (identical(privacy$statistic, "binary_rate") &&
+      (!identical(comps$view_kind, "binary_rate_numerator_denominator") ||
+       length(comps$view_of_basis) != 2L)) {
+    stop("Server '", server, "' returned a binary rate without its ",
+         "numerator and denominator masks.", call. = FALSE)
   }
   statistic <- privacy$statistic
   if (statistic %in% c("count", "bounded_record_count", "bounded_distinct")) {
@@ -234,43 +304,63 @@
   value
 }
 
+# Versioned complete-basis projections of dsOMOP 2.10.3 typed releases, the
+# server's rule (R05): a person partition onto the simplex of its person
+# total; capped weighted records onto the simplex of their protected weighted
+# total; multi-label presence cells clipped at zero one by one.
+.DP_TYPED_PROJECTIONS <- c(
+  "typed-partition-simplex-v1", "typed-weighted-total-simplex-v1",
+  "typed-weighted-atomwise-clip-v1", "none"
+)
+
+.dp_typed_project <- function(projection, total, cells) {
+  switch(projection,
+    "typed-partition-simplex-v1" = ,
+    "typed-weighted-total-simplex-v1" = .dp_simplex(cells, max(0, total)),
+    "typed-weighted-atomwise-clip-v1" = pmax(0, cells),
+    stop("Unknown typed projection '", projection, "'.", call. = FALSE))
+}
+
+# The public basis/view description of a typed payload that every pooled
+# site must share: owner, complete basis (identity, registered domain,
+# coordinates, families), projection, view kind and view masks, effective
+# breaks.
+.dp_typed_semantics <- function(p) {
+  comps <- p$components
+  b <- comps$basis %||% list()
+  list(owner = comps$owner, family = comps$family,
+       coordinates = comps$coordinates, families = comps$families,
+       basis_id = b$id, domain = b$domain,
+       basis_coordinates = b$coordinates, basis_families = b$families,
+       projection = comps$projection, view_kind = comps$view_kind,
+       view_of_basis = comps$view_of_basis, basis_id_top = p$basis_id,
+       breaks = p$breaks)
+}
+
 #' Pool compatible protected typed releases
 #'
-#' Sums the signed components of every site (same owner, families and
-#' coordinates) and derives the pooled view once: person totals are clipped at
-#' zero, partition cells projected onto the pooled total, weighted cells
-#' clipped, bounded moments projected. Every site must be a distinct logical
-#' source (\code{.dp_protected_sources}). A distinct-label cardinality is not
-#' additive across sites and is not pooled.
+#' Every site must report the same complete public basis (owner, basis
+#' identity including the registered domain labels, coordinates, families),
+#' the same versioned projection and the same view (kind and public masks of
+#' basis cells), and be a distinct logical source
+#' (\code{.dp_protected_sources}). The signed basis components are summed
+#' once, the complete basis is projected once with the server's rule, and
+#' every view is derived from those projected cells: histogram bins are sums
+#' of cells; a binary rate's numerator and denominator are the sums of its
+#' numerator and denominator masks (R04); a one-site pool therefore equals the
+#' site's displayed values. A distinct-label cardinality is not additive across
+#' sites and is not pooled.
 #'
 #' @keywords internal
 .dp_pool_protected <- function(per_site, privacy) {
   .dp_protected_sources(per_site, "protected releases")
-  # dsOMOP 2.10.3 typed releases are views of one complete public basis: pool
-  # the signed basis components and derive every view once from the pooled,
-  # projected basis (older payloads without a basis pool their view cells).
-  basis_of <- function(p) {
-    p$components$basis %||% list(coordinates = p$components$coordinates,
-                                 families = p$components$families,
-                                 signed = p$components$signed)
-  }
   first <- per_site[[1L]]
-  fc <- first$components
-  fb <- basis_of(first)
+  reference <- .dp_typed_semantics(first)
   for (site in names(per_site)) {
-    p <- per_site[[site]]
-    comps <- p$components
-    b <- basis_of(p)
-    if (!identical(comps$owner, fc$owner) ||
-        !identical(comps$coordinates, fc$coordinates) ||
-        !identical(comps$families, fc$families) ||
-        !identical(b$coordinates, fb$coordinates) ||
-        !identical(b$families, fb$families) ||
-        !identical(comps$view_of_basis, fc$view_of_basis) ||
-        !identical(p$basis_id, first$basis_id)) {
+    if (!identical(.dp_typed_semantics(per_site[[site]]), reference)) {
       stop("Protected releases of server '", site, "' are not compatible ",
-           "with the other sites (different owner, basis, grid or domain).",
-           call. = FALSE)
+           "with the other sites (different owner, basis, registered domain, ",
+           "projection, view or grid).", call. = FALSE)
     }
   }
   statistic <- privacy$statistic
@@ -278,20 +368,31 @@
     stop("A distinct-label cardinality is not additive across sites; use ",
          "the per-site results.", call. = FALSE)
   }
-  pooled <- Reduce(`+`, lapply(per_site, function(p) basis_of(p)$signed))
-  families <- fb$families
+  projection <- reference$projection %||% "none"
+  if (!projection %in% .DP_TYPED_PROJECTIONS) {
+    stop("The protected releases use a basis projection ('", projection,
+         "') this dsOMOPClient does not implement; upgrade dsOMOPClient.",
+         call. = FALSE)
+  }
+  basis_signed <- function(p) {
+    p$components$basis$signed %||% p$components$signed
+  }
+  pooled <- Reduce(`+`, lapply(per_site, basis_signed))
+  families <- reference$basis_families %||% reference$families
   routes <- vapply(per_site, `[[`, character(1L), "protection")
   out <- list(statistic = statistic,
               protection = if (all(routes == "fixed_synopsis"))
                 "fixed_synopsis" else "realised_sticky",
-              pooling = "sum_of_signed_basis_components_then_derived_once")
-  has_n <- length(families) > 0L && identical(families[[1L]], "N")
-  n <- if (has_n) max(0, pooled[[1L]]) else NA_real_
-  cells <- if (has_n) pooled[-1L] else pooled
-  view <- fc$view_of_basis
+              pooling = "sum_of_signed_basis_components_then_derived_once",
+              projection = projection)
+  lead <- length(families) > 0L && families[[1L]] %in% c("N", "T")
+  total <- if (lead) pooled[[1L]] else NA_real_
+  n <- if (lead && identical(families[[1L]], "N")) max(0, total) else NA_real_
+  cells <- if (lead) pooled[-1L] else pooled
+  view <- reference$view_of_basis
   projected <- function() {
     if (length(cells) == 0L) return(numeric(0))
-    if (has_n) .dp_simplex(cells, n) else pmax(0, cells)
+    .dp_typed_project(projection, total, cells)
   }
   view_counts <- function(h) {
     if (is.null(view)) h else vapply(view, function(i) sum(h[i]), numeric(1L))
@@ -325,10 +426,16 @@
     }
     out$lower <- lower; out$upper <- upper
   } else {
+    # Binary rate: numerator and denominator masks of the one projected basis.
+    if (!identical(reference$view_kind, "binary_rate_numerator_denominator") ||
+        !is.list(view) || length(view) != 2L) {
+      stop("The protected binary releases carry no numerator/denominator ",
+           "view of their basis; they cannot be pooled.", call. = FALSE)
+    }
     v <- view_counts(projected())
     out$noisy_numerator <- v[[1L]]
-    out$noisy_denominator <- n
-    out$estimate <- if (n > 0) v[[1L]] / n else NA_real_
+    out$noisy_denominator <- v[[2L]]
+    out$estimate <- if (v[[2L]] > 0) v[[1L]] / v[[2L]] else NA_real_
   }
   out
 }

@@ -1,0 +1,2084 @@
+# Module: Result Pooling
+# Functions for pooling per-site results into combined summaries.
+
+#' Pool counts by summing across servers
+#' @param per_site_counts Named numeric vector or list of counts
+#' @param policy Character; "strict" or "pooled_only_ok"
+#' @return List with $result and $warnings
+#' @keywords internal
+.pool_counts <- function(per_site_counts, policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  vals <- unlist(per_site_counts)
+  warnings <- character(0)
+
+  has_na <- is.na(vals)
+  if (any(has_na)) {
+    bad <- names(vals)[has_na]
+    if (policy == "strict") {
+      return(list(
+        result = NULL,
+        warnings = paste0("Strict pooling failed: NA counts from server(s) ",
+                          paste(bad, collapse = ", "))
+      ))
+    }
+    warnings <- paste0("Dropped server(s) with NA counts: ",
+                       paste(bad, collapse = ", "))
+    vals <- vals[!has_na]
+  }
+
+  if (length(vals) == 0) {
+    return(list(result = NULL, warnings = c(warnings, "No valid counts to pool")))
+  }
+
+  list(result = sum(vals), warnings = warnings)
+}
+
+#' Pool means weighted by count
+#' @param per_site_means Named numeric vector of means
+#' @param per_site_counts Named numeric vector of counts (same names)
+#' @param policy Character; pooling policy
+#' @return List with $result and $warnings
+#' @keywords internal
+.pool_means <- function(per_site_means, per_site_counts, policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  means <- unlist(per_site_means)
+  counts <- unlist(per_site_counts)
+  warnings <- character(0)
+
+  # Align by common names
+  common <- intersect(names(means), names(counts))
+  means <- means[common]
+  counts <- counts[common]
+
+  invalid <- is.na(means) | is.na(counts)
+  if (any(invalid)) {
+    bad <- common[invalid]
+    if (policy == "strict") {
+      return(list(
+        result = NULL,
+        warnings = paste0("Strict pooling failed: invalid mean/count from server(s) ",
+                          paste(bad, collapse = ", "))
+      ))
+    }
+    warnings <- paste0("Dropped server(s): ", paste(bad, collapse = ", "))
+    means <- means[!invalid]
+    counts <- counts[!invalid]
+  }
+
+  if (length(means) == 0 || sum(counts) == 0) {
+    return(list(result = NULL, warnings = c(warnings, "No valid data to pool means")))
+  }
+
+  list(result = sum(counts * means) / sum(counts), warnings = warnings)
+}
+
+#' Pool variance using Cochrane formula
+#' @param per_site_var Named numeric vector of variances
+#' @param per_site_means Named numeric vector of means
+#' @param per_site_counts Named numeric vector of counts
+#' @param policy Character; pooling policy
+#' @return List with $result and $warnings
+#' @keywords internal
+.pool_variance <- function(per_site_var, per_site_means, per_site_counts,
+                           policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  vars <- unlist(per_site_var)
+  means <- unlist(per_site_means)
+  counts <- unlist(per_site_counts)
+  warnings <- character(0)
+
+  common <- Reduce(intersect, list(names(vars), names(means), names(counts)))
+  vars <- vars[common]
+  means <- means[common]
+  counts <- counts[common]
+
+  invalid <- is.na(vars) | is.na(means) | is.na(counts)
+  if (any(invalid)) {
+    bad <- common[invalid]
+    if (policy == "strict") {
+      return(list(
+        result = NULL,
+        warnings = paste0("Strict pooling failed: invalid data from server(s) ",
+                          paste(bad, collapse = ", "))
+      ))
+    }
+    warnings <- paste0("Dropped server(s): ", paste(bad, collapse = ", "))
+    vars <- vars[!invalid]
+    means <- means[!invalid]
+    counts <- counts[!invalid]
+  }
+
+  N <- sum(counts)
+  if (length(vars) == 0 || N <= 1) {
+    return(list(result = NULL, warnings = c(warnings, "Insufficient data for pooled variance")))
+  }
+
+  pooled_mean <- sum(counts * means) / N
+  within_ss <- sum((counts - 1) * vars)
+  between_ss <- sum(counts * (means - pooled_mean)^2)
+  pooled_var <- (within_ss + between_ss) / (N - 1)
+
+  list(result = pooled_var, warnings = warnings)
+}
+
+#' Inverse-variance meta-analysis of per-site log-effect estimates
+#'
+#' The cross-database EVIDENCE SYNTHESIS half that the server cannot do
+#' single-site: pool each site's per-site effect estimate (a log hazard/rate
+#' ratio from \code{dsomop:cm.effect_estimate}, or a log IRR from
+#' \code{dsomop:sccs.incidence_rate_ratio}) into ONE pooled estimate + 95\% CI
+#' by inverse-variance weighting — the \code{metafor::rma} pattern done by hand
+#' (no new dependency). Both a FIXED-effect and a random-effects
+#' (DerSimonian-Laird) pool are returned, plus Cochran's Q, \eqn{I^2}, and
+#' \eqn{\tau^2}.
+#'
+#' No patient data crosses sites: the inputs are the already disclosure-safe
+#' per-site \code{log_estimate} + \code{se_log_estimate} (the inverse-variance
+#' sufficient statistics). A site whose per-site estimate was SUPPRESSED (NA /
+#' small arm, the server fail-closed) is simply ABSENT from the pool — exactly
+#' the \code{pooled_only_ok} behaviour of \code{\link{.pool_variance}}; under
+#' \code{strict} any NA site aborts the pool fail-closed.
+#'
+#' @param per_site_logest Named numeric vector of per-site log-effect estimates.
+#' @param per_site_se Named numeric vector of per-site SEs of the log-estimate
+#'   (same names).
+#' @param policy Character; \code{"strict"} (any NA site aborts) or
+#'   \code{"pooled_only_ok"} (drop NA sites, pool the rest).
+#' @return List with \code{$result} (a one-row data.frame: pooled HR/RR + CI
+#'   under both models, plus \code{n_databases}, \code{q}, \code{i2}, \code{tau2})
+#'   and \code{$warnings}.
+#' @keywords internal
+.pool_effect_estimate <- function(per_site_logest, per_site_se,
+                                  policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  logest <- unlist(per_site_logest)
+  se <- unlist(per_site_se)
+  warnings <- character(0)
+
+  common <- intersect(names(logest), names(se))
+  logest <- logest[common]
+  se <- se[common]
+
+  # A site is usable only with a finite estimate AND a finite, strictly positive
+  # SE (se <= 0 is degenerate; the server NAs both together, but guard anyway).
+  invalid <- is.na(logest) | is.na(se) | !is.finite(logest) | !is.finite(se) |
+    se <= 0
+  if (any(invalid)) {
+    bad <- common[invalid]
+    if (policy == "strict") {
+      return(list(
+        result = NULL,
+        warnings = paste0("Strict pooling failed: suppressed/invalid per-site ",
+                          "effect estimate from server(s) ",
+                          paste(bad, collapse = ", "))
+      ))
+    }
+    warnings <- paste0("Dropped server(s) with suppressed per-site estimate: ",
+                       paste(bad, collapse = ", "))
+    logest <- logest[!invalid]
+    se <- se[!invalid]
+  }
+
+  k <- length(logest)
+  if (k == 0) {
+    return(list(result = NULL,
+                warnings = c(warnings, "No valid per-site estimates to pool")))
+  }
+
+  # --- Fixed-effect inverse-variance pool ---
+  w <- 1 / se^2
+  fe_logest <- sum(w * logest) / sum(w)
+  fe_se <- sqrt(1 / sum(w))
+
+  # --- Heterogeneity (Cochran's Q, I^2, DerSimonian-Laird tau^2) ---
+  q <- sum(w * (logest - fe_logest)^2)
+  df <- k - 1
+  i2 <- if (df > 0 && q > 0) max(0, (q - df) / q) * 100 else 0
+  c_dl <- sum(w) - sum(w^2) / sum(w)
+  tau2 <- if (df > 0 && c_dl > 0) max(0, (q - df) / c_dl) else 0
+
+  # --- Random-effects pool (inverse of within + between variance) ---
+  w_re <- 1 / (se^2 + tau2)
+  re_logest <- sum(w_re * logest) / sum(w_re)
+  re_se <- sqrt(1 / sum(w_re))
+
+  z <- stats::qnorm(0.975)
+  result <- data.frame(
+    n_databases       = k,
+    estimate_fixed    = exp(fe_logest),
+    ci_lo_fixed       = exp(fe_logest - z * fe_se),
+    ci_hi_fixed       = exp(fe_logest + z * fe_se),
+    estimate_random   = exp(re_logest),
+    ci_lo_random      = exp(re_logest - z * re_se),
+    ci_hi_random      = exp(re_logest + z * re_se),
+    log_estimate_fixed = fe_logest,
+    se_log_estimate_fixed = fe_se,
+    q                 = q,
+    i2                = i2,
+    tau2              = tau2,
+    stringsAsFactors  = FALSE)
+
+  if (k == 1) {
+    warnings <- c(warnings,
+                  "Only one site contributed; pooled estimate == that site's.")
+  }
+  list(result = result, warnings = warnings)
+}
+
+#' Pool proportions weighted by denominator
+#' @param per_site_num Named numeric vector of numerators
+#' @param per_site_denom Named numeric vector of denominators
+#' @param policy Character; pooling policy
+#' @return List with $result and $warnings
+#' @keywords internal
+.pool_proportions <- function(per_site_num, per_site_denom, policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  nums <- unlist(per_site_num)
+  denoms <- unlist(per_site_denom)
+  warnings <- character(0)
+
+  common <- intersect(names(nums), names(denoms))
+  nums <- nums[common]
+  denoms <- denoms[common]
+
+  invalid <- is.na(nums) | is.na(denoms)
+  if (any(invalid)) {
+    bad <- common[invalid]
+    if (policy == "strict") {
+      return(list(
+        result = NULL,
+        warnings = paste0("Strict pooling failed: invalid data from server(s) ",
+                          paste(bad, collapse = ", "))
+      ))
+    }
+    warnings <- paste0("Dropped server(s): ", paste(bad, collapse = ", "))
+    nums <- nums[!invalid]
+    denoms <- denoms[!invalid]
+  }
+
+  if (length(nums) == 0 || sum(denoms) == 0) {
+    return(list(result = NULL, warnings = c(warnings, "No valid data to pool proportions")))
+  }
+
+  list(result = sum(nums) / sum(denoms), warnings = warnings)
+}
+
+#' Pool histograms by bin-wise sum
+#' @param per_site_histograms Named list of histogram data frames
+#'   (each with bin_start, bin_end, count, suppressed)
+#' @param policy Character; pooling policy
+#' @return List with $result (data.frame) and $warnings
+#' @keywords internal
+.pool_histograms <- function(per_site_histograms, policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  warnings <- character(0)
+
+  # Filter valid histograms
+  valid <- list()
+  for (srv in names(per_site_histograms)) {
+    df <- per_site_histograms[[srv]]
+    if (is.data.frame(df) && nrow(df) > 0 &&
+        all(c("bin_start", "bin_end", "count") %in% names(df))) {
+      valid[[srv]] <- df
+    } else {
+      if (policy == "strict") {
+        return(list(
+          result = NULL,
+          warnings = paste0("Strict pooling failed: invalid histogram from server ", srv)
+        ))
+      }
+      warnings <- c(warnings, paste0("Dropped server with invalid histogram: ", srv))
+    }
+  }
+
+  if (length(valid) == 0) {
+    return(list(result = NULL, warnings = c(warnings, "No valid histograms to pool")))
+  }
+
+  # Use first server's bins as reference
+  ref <- valid[[1]]
+  pooled <- data.frame(
+    bin_start = ref$bin_start,
+    bin_end = ref$bin_end,
+    count = rep(0, nrow(ref)),
+    suppressed = rep(FALSE, nrow(ref)),
+    stringsAsFactors = FALSE
+  )
+
+  eps <- 1e-6  # tolerance for floating point bin edge comparison
+
+  for (srv in names(valid)) {
+    df <- valid[[srv]]
+    # Validate bin count match
+    if (nrow(df) != nrow(pooled)) {
+      if (policy == "strict") {
+        return(list(
+          result = NULL,
+          warnings = paste0("Strict pooling failed: mismatched bin count from server ", srv)
+        ))
+      }
+      warnings <- c(warnings, paste0("Skipped server with mismatched bins: ", srv))
+      next
+    }
+    # Validate bin edges match within epsilon tolerance
+    edges_ok <- all(abs(df$bin_start - pooled$bin_start) < eps) &&
+                all(abs(df$bin_end - pooled$bin_end) < eps)
+    if (!edges_ok) {
+      if (policy == "strict") {
+        return(list(
+          result = NULL,
+          warnings = paste0("Strict pooling failed: mismatched bin edges from server ", srv)
+        ))
+      }
+      warnings <- c(warnings, paste0("Skipped server with mismatched bin edges: ", srv))
+      next
+    }
+    pooled$count <- pooled$count + ifelse(is.na(df$count), 0, df$count)
+    # Propagate suppressed flags (TRUE if any server suppressed that bin)
+    if ("suppressed" %in% names(df)) {
+      pooled$suppressed <- pooled$suppressed | (df$suppressed %in% TRUE)
+    }
+    pooled$suppressed <- pooled$suppressed | is.na(df$count)
+  }
+
+  # A suppressed site contribution is unknown, not zero.  Under the default
+  # strict policy the corresponding pooled cell must therefore remain unknown;
+  # otherwise pooled - visible sites would reveal the suppressed contribution.
+  if (identical(policy, "strict")) {
+    pooled$count[pooled$suppressed] <- NA_real_
+  } else if (any(pooled$suppressed)) {
+    warnings <- c(
+      warnings,
+      "Some histogram bins omit suppressed site contributions."
+    )
+  }
+
+  list(result = pooled, warnings = warnings)
+}
+
+#' Pool top-K concept results using two-pass merge
+#' @param per_site_dfs Named list of data frames with concept_id and a metric column
+#' @param metric_col Character; name of the metric column to sum
+#' @param k Integer; number of top results to return
+#' @param policy Character; pooling policy
+#' @return List with $result (data.frame) and $warnings
+#' @keywords internal
+.pool_top_k <- function(per_site_dfs, metric_col, k, policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  warnings <- character(0)
+
+  valid <- list()
+  for (srv in names(per_site_dfs)) {
+    df <- per_site_dfs[[srv]]
+    if (is.data.frame(df) && nrow(df) > 0 && "concept_id" %in% names(df) &&
+        metric_col %in% names(df)) {
+      valid[[srv]] <- df
+    } else {
+      if (policy == "strict") {
+        return(list(
+          result = NULL,
+          warnings = paste0("Strict pooling failed: invalid data from server ", srv)
+        ))
+      }
+      warnings <- c(warnings, paste0("Dropped server with invalid data: ", srv))
+    }
+  }
+
+  if (length(valid) == 0) {
+    return(list(result = NULL, warnings = c(warnings, "No valid data for top-K pooling")))
+  }
+
+  # Pass 1: Union all concept_ids
+  all_ids <- unique(unlist(lapply(valid, function(df) df$concept_id)))
+
+  # Build merged data frame
+  merged <- data.frame(concept_id = all_ids, stringsAsFactors = FALSE)
+  merged[[metric_col]] <- 0
+
+  # Carry concept_name from any server that has it
+  has_names <- any(vapply(valid, function(df) "concept_name" %in% names(df), logical(1)))
+  if (has_names) merged$concept_name <- NA_character_
+
+  # Track which concepts appear in each server (for suppression propagation)
+  n_servers <- length(valid)
+  concept_server_count <- rep(0L, nrow(merged))
+  names(concept_server_count) <- as.character(merged$concept_id)
+
+  for (srv in names(valid)) {
+    df <- valid[[srv]]
+    idx <- match(df$concept_id, merged$concept_id)
+    vals <- as.numeric(df[[metric_col]])
+    has_na <- is.na(vals)
+    vals[has_na] <- 0
+    merged[[metric_col]][idx] <- merged[[metric_col]][idx] + vals
+    # Count servers that have this concept with a non-NA value
+    present_idx <- idx[!has_na]
+    concept_server_count[as.character(merged$concept_id[present_idx])] <-
+      concept_server_count[as.character(merged$concept_id[present_idx])] + 1L
+    if (has_names && "concept_name" %in% names(df)) {
+      na_names <- is.na(merged$concept_name[idx])
+      merged$concept_name[idx[na_names]] <- as.character(df$concept_name[na_names])
+    }
+  }
+
+  # Strict pooling: keep ONLY concepts present (above the per-site gate) on every
+  # server, summed across them. A concept missing/suppressed on any server is
+  # DROPPED entirely -- never surfaced, and no `suppressed` column is built,
+  # because a concept's mere appearance would itself reveal it exists with too
+  # few people. (Disclosure is enforced server-side; the client never constructs
+  # or exposes a suppressed marker.)
+  cnt <- concept_server_count[as.character(merged$concept_id)]
+  merged <- merged[!is.na(cnt) & cnt >= n_servers, , drop = FALSE]
+  merged <- merged[order(-merged[[metric_col]], na.last = TRUE), ]
+  n <- min(nrow(merged), k)
+  merged <- merged[seq_len(n), , drop = FALSE]
+  rownames(merged) <- NULL
+
+  list(result = merged, warnings = warnings)
+}
+
+# --- Contracted analysis-catalog pooling ------------------------------------
+#
+# Catalog entries advertise a server-owned pooling contract.  This path is
+# intentionally separate from the legacy result-type dispatcher below: a
+# catalog result is never combined by guessing semantics from column names.
+
+.analysis_pooling_fail <- function(...) {
+  stop("Invalid analysis pooling contract: ", ..., call. = FALSE)
+}
+
+.analysis_pooling_scalar_name <- function(x, field, columns) {
+  if (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x) ||
+      !x %in% columns) {
+    .analysis_pooling_fail("'", field,
+                           "' must name one contracted output column.")
+  }
+  x
+}
+
+.analysis_pooling_column_names <- function(x, field, columns) {
+  if (!is.character(x) || length(x) == 0L || anyNA(x) || any(!nzchar(x)) ||
+      anyDuplicated(x) || !all(x %in% columns)) {
+    .analysis_pooling_fail("'", field,
+                           "' must name one or more contracted columns.")
+  }
+  x
+}
+
+.validate_analysis_pooling_columns <- function(columns) {
+  if (!is.list(columns) || length(columns) == 0L || is.null(names(columns)) ||
+      anyNA(names(columns)) || any(!nzchar(names(columns))) ||
+      anyDuplicated(names(columns))) {
+    .analysis_pooling_fail(
+      "'columns' must be a non-empty, uniquely named list."
+    )
+  }
+  roles <- character(length(columns))
+  names(roles) <- names(columns)
+  for (column in names(columns)) {
+    spec <- columns[[column]]
+    if (!is.list(spec) || is.null(names(spec)) || anyNA(names(spec)) ||
+        any(!nzchar(names(spec))) || anyDuplicated(names(spec))) {
+      .analysis_pooling_fail("column '", column,
+                             "' must have a uniquely named specification.")
+    }
+    role <- spec$role
+    allowed_roles <- c("key", "label", "sum", "ratio", "weighted_mean",
+                       "pooled_sd", "min", "max", "nonpoolable")
+    if (!is.character(role) || length(role) != 1L || is.na(role) ||
+        !role %in% allowed_roles) {
+      .analysis_pooling_fail("column '", column,
+                             "' has an unsupported role.")
+    }
+    allowed_fields <- switch(
+      role,
+      ratio = c("role", "numerator", "denominator", "scale"),
+      weighted_mean = c("role", "weight"),
+      pooled_sd = c("role", "mean", "count"),
+      nonpoolable = c("role", "reason"),
+      "role"
+    )
+    extra <- setdiff(names(spec), allowed_fields)
+    missing <- setdiff(allowed_fields, names(spec))
+    if (length(extra) > 0L || length(missing) > 0L) {
+      .analysis_pooling_fail("column '", column,
+                             "' has fields inconsistent with role '", role,
+                             "'.")
+    }
+    if (identical(role, "nonpoolable") &&
+        (!is.character(spec$reason) || length(spec$reason) != 1L ||
+         is.na(spec$reason) || !nzchar(spec$reason))) {
+      .analysis_pooling_fail("column '", column,
+                             "' has an invalid non-poolable reason.")
+    }
+    roles[[column]] <- role
+  }
+
+  for (column in names(columns)) {
+    spec <- columns[[column]]
+    role <- roles[[column]]
+    if (identical(role, "ratio")) {
+      numerator <- .analysis_pooling_column_names(
+        spec$numerator, paste0(column, "$numerator"), names(columns)
+      )
+      denominator <- .analysis_pooling_column_names(
+        spec$denominator, paste0(column, "$denominator"), names(columns)
+      )
+      scale <- suppressWarnings(as.numeric(spec$scale))
+      if (length(scale) != 1L || is.na(scale) || !is.finite(scale) ||
+          scale <= 0 || !all(roles[numerator] == "sum") ||
+          !all(roles[denominator] == "sum")) {
+        .analysis_pooling_fail("ratio column '", column,
+                               "' requires two sum columns and a positive ",
+                               "finite scale.")
+      }
+    } else if (identical(role, "weighted_mean")) {
+      weight <- .analysis_pooling_scalar_name(
+        spec$weight, paste0(column, "$weight"), names(columns)
+      )
+      if (!identical(roles[[weight]], "sum")) {
+        .analysis_pooling_fail("weighted-mean column '", column,
+                               "' must reference a sum column.")
+      }
+    } else if (identical(role, "pooled_sd")) {
+      mean_column <- .analysis_pooling_scalar_name(
+        spec$mean, paste0(column, "$mean"), names(columns)
+      )
+      count_column <- .analysis_pooling_scalar_name(
+        spec$count, paste0(column, "$count"), names(columns)
+      )
+      if (!roles[[mean_column]] %in% c("weighted_mean", "nonpoolable") ||
+          !identical(roles[[count_column]], "sum")) {
+        .analysis_pooling_fail("pooled-SD column '", column,
+                               "' must reference a mean and a sum column.")
+      }
+    }
+  }
+  roles
+}
+
+#' Validate a server-owned analysis pooling contract
+#'
+#' @param contract Contract returned by omopAnalysisGetDS().
+#' @param per_site Optional named list of returned data frames.  When supplied,
+#'   each frame must have exactly the contracted schema, including empty frames.
+#' @return The validated contract, invisibly.
+#' @keywords internal
+.validate_analysis_pooling_contract <- function(contract, per_site = NULL) {
+  if (!is.list(contract) || is.null(names(contract)) ||
+      anyNA(names(contract)) || any(!nzchar(names(contract))) ||
+      anyDuplicated(names(contract))) {
+    .analysis_pooling_fail("the contract must be a uniquely named list.")
+  }
+  version <- suppressWarnings(as.numeric(contract$version))
+  if (length(version) != 1L || is.na(version) || !is.finite(version) ||
+      version != 1) {
+    .analysis_pooling_fail("'version' must be exactly 1.")
+  }
+  strategy <- contract$strategy
+  strategies <- c("tabular", "effect_estimate", "kaplan_meier",
+                  "not_poolable")
+  if (!is.character(strategy) || length(strategy) != 1L || is.na(strategy) ||
+      !strategy %in% strategies) {
+    .analysis_pooling_fail("'strategy' is unsupported.")
+  }
+
+  required <- switch(
+    strategy,
+    tabular = c("version", "strategy", "columns"),
+    effect_estimate = c("version", "strategy", "columns", "strata",
+                        "log_estimate", "standard_error", "transform"),
+    kaplan_meier = c("version", "strategy", "columns", "strata", "order",
+                     "at_risk", "events", "survival", "order_start",
+                     "order_step"),
+    not_poolable = c("version", "strategy", "reason")
+  )
+  if (!setequal(names(contract), required)) {
+    .analysis_pooling_fail("strategy '", strategy,
+                           "' has missing or unknown top-level fields.")
+  }
+
+  if (identical(strategy, "not_poolable")) {
+    if (!is.character(contract$reason) || length(contract$reason) != 1L ||
+        is.na(contract$reason) || !nzchar(contract$reason)) {
+      .analysis_pooling_fail("'reason' must be one non-empty string.")
+    }
+    return(invisible(contract))
+  }
+
+  roles <- .validate_analysis_pooling_columns(contract$columns)
+  column_names <- names(contract$columns)
+  if (identical(strategy, "effect_estimate")) {
+    log_column <- .analysis_pooling_scalar_name(
+      contract$log_estimate, "log_estimate", column_names
+    )
+    se_column <- .analysis_pooling_scalar_name(
+      contract$standard_error, "standard_error", column_names
+    )
+    if (identical(log_column, se_column) ||
+        any(roles[c(log_column, se_column)] != "nonpoolable") ||
+        !identical(contract$transform, "exp")) {
+      .analysis_pooling_fail(
+        "effect_estimate requires distinct non-poolable estimate/SE columns ",
+        "and transform 'exp'."
+      )
+    }
+    strata <- contract$strata
+    if (!is.character(strata) || anyNA(strata) || any(!nzchar(strata)) ||
+        anyDuplicated(strata) || !all(strata %in% column_names) ||
+        !all(roles[strata] == "key")) {
+      .analysis_pooling_fail(
+        "effect_estimate 'strata' must contain unique key columns."
+      )
+    }
+    if (!setequal(strata, names(roles)[roles == "key"])) {
+      .analysis_pooling_fail(
+        "effect_estimate 'strata' must include every key column."
+      )
+    }
+  } else if (identical(strategy, "kaplan_meier")) {
+    strata <- contract$strata
+    if (!is.character(strata) || length(strata) == 0L || anyNA(strata) ||
+        any(!nzchar(strata)) ||
+        anyDuplicated(strata) || !all(strata %in% column_names)) {
+      .analysis_pooling_fail("'strata' must contain unique contracted columns.")
+    }
+    fields <- c("order", "at_risk", "events", "survival")
+    referenced <- vapply(fields, function(field) {
+      .analysis_pooling_scalar_name(contract[[field]], field, column_names)
+    }, character(1L))
+    if (anyDuplicated(c(strata, referenced)) ||
+        !all(roles[c(strata, referenced[["order"]])] == "key") ||
+        !all(roles[c(referenced[["at_risk"]], referenced[["events"]])] ==
+             "sum") ||
+        !identical(roles[[referenced[["survival"]]]], "nonpoolable")) {
+      .analysis_pooling_fail(
+        "Kaplan-Meier strata/order must be keys, risk/events sums, and ",
+        "survival non-poolable."
+      )
+    }
+    for (field in c("order_start", "order_step")) {
+      value <- suppressWarnings(as.numeric(contract[[field]]))
+      if (length(value) != 1L || is.na(value) || !is.finite(value) ||
+          (identical(field, "order_step") && value <= 0)) {
+        .analysis_pooling_fail("Kaplan-Meier '", field,
+                               "' must be finite",
+                               if (identical(field, "order_step")) {
+                                 " and positive."
+                               } else ".")
+      }
+    }
+  }
+
+  if (!is.null(per_site)) {
+    if (!is.list(per_site) || length(per_site) == 0L ||
+        is.null(names(per_site)) || anyNA(names(per_site)) ||
+        any(!nzchar(names(per_site))) || anyDuplicated(names(per_site))) {
+      .analysis_pooling_fail("per-site results must be a non-empty named list.")
+    }
+    bad <- names(per_site)[!vapply(per_site, function(frame) {
+      is.data.frame(frame) && identical(names(frame), column_names)
+    }, logical(1L))]
+    if (length(bad) > 0L) {
+      .analysis_pooling_fail("output schema differs on server(s): ",
+                             paste(bad, collapse = ", "), ".")
+    }
+  }
+  invisible(contract)
+}
+
+.analysis_pooling_contract_uses_counts <- function(contract) {
+  if (!is.list(contract) || contract$strategy %in% "not_poolable") {
+    return(FALSE)
+  }
+  roles <- vapply(contract$columns, `[[`, character(1L), "role")
+  any(roles %in% c("sum", "ratio", "weighted_mean", "pooled_sd"))
+}
+
+.analysis_pooling_key <- function(frame, key_columns) {
+  if (nrow(frame) == 0L) return(character(0))
+  if (length(key_columns) == 0L) return(rep("__all__", nrow(frame)))
+  encoded <- lapply(frame[key_columns], function(value) {
+    value <- as.character(value)
+    missing <- is.na(value)
+    value[missing] <- ""
+    paste0(ifelse(missing, "N", "V"), nchar(value, type = "bytes"),
+           ":", value)
+  })
+  do.call(paste, c(encoded, sep = "\034"))
+}
+
+.analysis_pooling_numeric <- function(frame, column) {
+  value <- suppressWarnings(as.numeric(frame[[column]]))
+  if (length(value) != nrow(frame)) rep(NA_real_, nrow(frame)) else value
+}
+
+.analysis_pooling_na_like <- function(x, n) {
+  if (inherits(x, "Date")) return(as.Date(rep(NA_real_, n), origin = "1970-01-01"))
+  if (inherits(x, "POSIXct")) return(as.POSIXct(rep(NA_real_, n), origin = "1970-01-01"))
+  if (is.factor(x)) return(factor(rep(NA_character_, n), levels = levels(x)))
+  if (is.character(x)) return(rep(NA_character_, n))
+  if (is.integer(x)) return(rep(NA_integer_, n))
+  if (is.logical(x)) return(rep(NA, n))
+  rep(NA_real_, n)
+}
+
+.pool_analysis_tabular <- function(per_site, contract,
+                                   policy = c("strict", "pooled_only_ok")) {
+  policy <- match.arg(policy)
+  if (all(vapply(per_site, nrow, integer(1L)) == 0L)) {
+    return(list(result = NULL,
+                warnings = "No server returned a disclosure-safe result."))
+  }
+  roles <- vapply(contract$columns, `[[`, character(1L), "role")
+  key_columns <- names(roles)[roles == "key"]
+  keys <- lapply(per_site, .analysis_pooling_key, key_columns = key_columns)
+  duplicates <- names(keys)[vapply(keys, anyDuplicated, integer(1L)) > 0L]
+  if (length(duplicates) > 0L) {
+    .analysis_pooling_fail("group keys are not unique on server(s): ",
+                           paste(duplicates, collapse = ", "), ".")
+  }
+
+  groups <- if (identical(policy, "strict")) {
+    if (length(keys) == 1L) keys[[1L]] else Reduce(intersect, keys)
+  } else {
+    unique(unlist(keys, use.names = FALSE))
+  }
+  incomplete <- any(vapply(keys, function(x) !setequal(x, groups), logical(1L)))
+  if (length(groups) == 0L) {
+    return(list(
+      result = NULL,
+      warnings = "No group was present and disclosure-safe on every server."
+    ))
+  }
+
+  # The first server supplies key values and column classes. Every common key
+  # has exactly one row per site (proved above); all arithmetic reads the source
+  # frames, never a previously derived pooled column.
+  index <- lapply(keys, function(x) match(groups, x))
+  source_site <- vapply(seq_along(groups), function(row) {
+    which(!vapply(index, function(i) is.na(i[[row]]), logical(1L)))[[1L]]
+  }, integer(1L))
+  pooled_rows <- lapply(seq_along(groups), function(row) {
+    server <- source_site[[row]]
+    per_site[[server]][index[[server]][[row]], , drop = FALSE]
+  })
+  pooled <- do.call(rbind, pooled_rows)
+  rownames(pooled) <- NULL
+  valid <- rep(TRUE, length(groups))
+
+  source_matrix <- function(column) {
+    values <- vapply(seq_along(per_site), function(i) {
+      .analysis_pooling_numeric(per_site[[i]], column)[index[[i]]]
+    }, numeric(length(groups)))
+    if (is.null(dim(values))) matrix(values, nrow = length(groups)) else values
+  }
+
+  complete <- function(values, predicate = is.finite) {
+    ok <- predicate(values)
+    if (identical(policy, "strict")) rowSums(ok) == ncol(values) else
+      rowSums(ok) > 0L
+  }
+  sum_available <- function(values) {
+    if (identical(policy, "strict")) return(rowSums(values))
+    values[!is.finite(values)] <- NA_real_
+    rowSums(values, na.rm = TRUE)
+  }
+
+  for (column in names(roles)[roles == "sum"]) {
+    values <- source_matrix(column)
+    ok <- complete(values)
+    pooled[[column]] <- sum_available(values)
+    valid <- valid & ok
+  }
+  for (column in names(roles)[roles == "ratio"]) {
+    spec <- contract$columns[[column]]
+    total_components <- function(columns) {
+      values <- vapply(columns, function(component) {
+        suppressWarnings(as.numeric(pooled[[component]]))
+      }, numeric(nrow(pooled)))
+      if (is.null(dim(values))) rep(sum(values), nrow(pooled)) else
+        rowSums(values)
+    }
+    numerator <- total_components(spec$numerator)
+    denominator <- total_components(spec$denominator)
+    value <- numerator / denominator * as.numeric(spec$scale)
+    # The released ratio is derived afresh from the contracted, pooled
+    # sufficient statistics. A site may deliberately suppress its own ratio
+    # while still releasing banded numerator/denominator components; requiring
+    # that redundant site-local value would unnecessarily discard a safe pool.
+    ok <- is.finite(numerator) & numerator >= 0 & is.finite(denominator) &
+      denominator > 0 & is.finite(value)
+    pooled[[column]] <- value
+    valid <- valid & ok
+  }
+  for (column in names(roles)[roles == "weighted_mean"]) {
+    spec <- contract$columns[[column]]
+    values <- source_matrix(column)
+    weights <- source_matrix(spec$weight)
+    usable <- is.finite(values) & is.finite(weights) & weights > 0
+    weighted_values <- values * weights
+    weighted_values[!usable] <- 0
+    eligible_weights <- weights
+    eligible_weights[!usable] <- 0
+    total_weight <- rowSums(eligible_weights)
+    value <- rowSums(weighted_values) / total_weight
+    ok <- if (identical(policy, "strict")) {
+      rowSums(usable) == ncol(usable)
+    } else rowSums(usable) > 0L
+    ok <- ok &
+      is.finite(total_weight) & total_weight > 0 & is.finite(value)
+    pooled[[column]] <- value
+    valid <- valid & ok
+  }
+  for (column in names(roles)[roles == "pooled_sd"]) {
+    spec <- contract$columns[[column]]
+    sds <- source_matrix(column)
+    means <- source_matrix(spec$mean)
+    counts <- source_matrix(spec$count)
+    usable <- is.finite(sds) & sds >= 0 & is.finite(means) &
+      is.finite(counts) & counts >= 1
+    sds[!usable] <- 0
+    means[!usable] <- 0
+    counts[!usable] <- 0
+    total_count <- rowSums(counts)
+    pooled_mean <- rowSums(means * counts) / total_count
+    within <- rowSums((counts - (counts > 0)) * sds^2)
+    between <- rowSums(counts * (means - pooled_mean)^2)
+    value <- sqrt(pmax(0, (within + between) / (total_count - 1)))
+    ok <- if (identical(policy, "strict")) {
+      rowSums(usable) == ncol(usable)
+    } else rowSums(usable) > 0L
+    ok <- ok &
+      is.finite(total_count) & total_count > 1 & is.finite(value)
+    pooled[[column]] <- value
+    valid <- valid & ok
+  }
+  for (role in c("min", "max")) {
+    for (column in names(roles)[roles == role]) {
+      values <- source_matrix(column)
+      ok <- complete(values)
+      values[!is.finite(values)] <- NA_real_
+      pooled[[column]] <- apply(values, 1L,
+        if (role == "min") min else max, na.rm = TRUE)
+      valid <- valid & ok
+    }
+  }
+  label_conflicts <- character(0)
+  for (column in names(roles)[roles == "label"]) {
+    output <- pooled[[column]]
+    if (is.factor(output)) output <- as.character(output)
+    for (row in seq_along(groups)) {
+      values <- lapply(seq_along(per_site), function(i) {
+        at <- index[[i]][[row]]
+        if (is.na(at)) return(NULL)
+        value <- per_site[[i]][[column]][[at]]
+        if (length(value) != 1L || is.na(value)) NULL else value
+      })
+      values <- Filter(Negate(is.null), values)
+      if (length(values) == 0L) {
+        output[[row]] <- NA
+      } else if (all(vapply(values, identical, logical(1L), values[[1L]]))) {
+        output[[row]] <- values[[1L]]
+      } else {
+        output[[row]] <- NA
+        label_conflicts <- c(label_conflicts, column)
+      }
+    }
+    pooled[[column]] <- output
+  }
+  nonpoolable <- names(roles)[roles == "nonpoolable"]
+  for (column in nonpoolable) {
+    pooled[[column]] <- .analysis_pooling_na_like(pooled[[column]], nrow(pooled))
+  }
+
+  pooled <- pooled[valid, names(contract$columns), drop = FALSE]
+  rownames(pooled) <- NULL
+  warnings <- character(0)
+  if (incomplete) {
+    warnings <- c(warnings, if (identical(policy, "strict")) {
+      "Groups absent or suppressed on at least one server were omitted."
+    } else {
+      "Some groups were pooled only over servers that returned them."
+    })
+  }
+  if (any(!valid)) {
+    warnings <- c(warnings,
+      "Groups with suppressed or invalid sufficient statistics were omitted.")
+  }
+  if (length(nonpoolable) > 0L) {
+    warnings <- c(warnings, paste0(
+      "Non-poolable columns were retained as NA: ",
+      paste(nonpoolable, collapse = ", "), "."
+    ))
+  }
+  if (length(label_conflicts) > 0L) {
+    warnings <- c(warnings, paste0(
+      "Conflicting presentation labels were retained as NA: ",
+      paste(unique(label_conflicts), collapse = ", "), "."
+    ))
+  }
+  if (nrow(pooled) == 0L) {
+    return(list(result = NULL, warnings = unique(c(
+      warnings, "No disclosure-safe complete group remained to pool."
+    ))))
+  }
+  list(result = pooled, warnings = unique(warnings))
+}
+
+.pool_analysis_effect <- function(per_site, contract,
+                                  policy = c("strict", "pooled_only_ok")) {
+  policy <- match.arg(policy)
+  substrate <- .pool_analysis_tabular(per_site, contract, policy = policy)
+  if (is.null(substrate$result)) return(substrate)
+
+  strata_columns <- contract$strata
+  site_keys <- lapply(per_site, .analysis_pooling_key,
+                      key_columns = strata_columns)
+  groups <- if (identical(policy, "strict")) {
+    if (length(site_keys) == 1L) unique(site_keys[[1L]]) else
+      Reduce(intersect, lapply(site_keys, unique))
+  } else unique(unlist(site_keys, use.names = FALSE))
+  if (length(groups) == 0L && length(strata_columns) == 0L) groups <- "__all__"
+
+  one_site <- function(frame, keys, group) {
+    rows <- if (length(strata_columns) == 0L) seq_len(nrow(frame)) else
+      which(keys == group)
+    frame <- frame[rows, , drop = FALSE]
+    log_value <- .analysis_pooling_numeric(frame, contract$log_estimate)
+    se_value <- .analysis_pooling_numeric(frame, contract$standard_error)
+    ok <- is.finite(log_value) & is.finite(se_value) & se_value > 0
+    pairs <- unique(data.frame(log_value = log_value[ok], se_value = se_value[ok]))
+    if (nrow(pairs) != 1L) return(c(log_value = NA_real_, se_value = NA_real_))
+    unlist(pairs[1L, , drop = TRUE], use.names = TRUE)
+  }
+  pooled_rows <- list()
+  warnings <- substrate$warnings %||% character(0)
+  for (group in groups) {
+    pairs <- lapply(seq_along(per_site), function(i) {
+      one_site(per_site[[i]], site_keys[[i]], group)
+    })
+    log_values <- vapply(pairs, `[[`, numeric(1L), "log_value")
+    se_values <- vapply(pairs, `[[`, numeric(1L), "se_value")
+    names(log_values) <- names(per_site)
+    names(se_values) <- names(per_site)
+    pooled <- .pool_effect_estimate(log_values, se_values, policy = policy)
+    warnings <- c(warnings, pooled$warnings)
+    if (is.null(pooled$result)) next
+
+    if (length(strata_columns) > 0L) {
+      source <- which(vapply(site_keys, function(keys) group %in% keys,
+                             logical(1L)))[[1L]]
+      source_row <- match(group, site_keys[[source]])
+      strata <- per_site[[source]][source_row, strata_columns, drop = FALSE]
+      pooled$result <- cbind(strata, pooled$result)
+    }
+    pooled_rows[[length(pooled_rows) + 1L]] <- pooled$result
+  }
+  if (length(pooled_rows) == 0L) {
+    return(list(result = NULL, warnings = unique(c(
+      warnings, "No disclosure-safe effect-estimate stratum remained to pool."
+    ))))
+  }
+  estimates <- do.call(rbind, pooled_rows)
+  if (length(strata_columns) == 0L) {
+    result <- cbind(substrate$result, estimates)
+  } else {
+    substrate$result$.pool_order <- seq_len(nrow(substrate$result))
+    result <- merge(substrate$result, estimates, by = strata_columns,
+                    all = FALSE, sort = FALSE)
+    result <- result[order(result$.pool_order), , drop = FALSE]
+    result$.pool_order <- NULL
+  }
+  rownames(result) <- NULL
+  list(result = result, warnings = unique(warnings))
+}
+
+.pool_analysis_kaplan_meier <- function(per_site, contract,
+                                        policy = c("strict",
+                                                   "pooled_only_ok")) {
+  policy <- match.arg(policy)
+  # A survival value is a recurrence over every preceding risk set. Allowing a
+  # site to disappear for one bin and reappear later would produce no coherent
+  # pooled estimand, so KM always uses complete-bin pooling even when the caller
+  # permits partial pooling for ordinary independent rows.
+  pooled <- .pool_analysis_tabular(per_site, contract, policy = "strict")
+  if (is.null(pooled$result)) return(pooled)
+
+  frame <- pooled$result
+  strata_columns <- contract$strata
+  strata_key <- .analysis_pooling_key(frame, strata_columns)
+  order_value <- suppressWarnings(as.numeric(frame[[contract$order]]))
+  keep <- is.finite(order_value)
+  survival <- rep(NA_real_, nrow(frame))
+  warnings <- setdiff(
+    pooled$warnings,
+    paste0("Non-poolable columns were retained as NA: ",
+           contract$survival, ".")
+  )
+  if (identical(policy, "pooled_only_ok")) {
+    warnings <- c(warnings,
+      "Kaplan-Meier pooling still requires every preceding risk-set bin from every server; pooled_only_ok cannot skip bins in a survival recurrence.")
+  }
+
+  # If a time bin was absent/suppressed anywhere, the common table omits it.
+  # Truncate that curve at the first omitted bin instead of silently multiplying
+  # across a gap.
+  source_orders <- list()
+  invalid_order_strata <- character(0)
+  for (site in per_site) {
+    if (!is.data.frame(site) || nrow(site) == 0L ||
+        !all(c(strata_columns, contract$order) %in% names(site))) next
+    site_strata <- .analysis_pooling_key(site, strata_columns)
+    site_order <- suppressWarnings(as.numeric(site[[contract$order]]))
+    invalid_order_strata <- union(
+      invalid_order_strata, site_strata[!is.finite(site_order)]
+    )
+    for (key in unique(site_strata)) {
+      source_orders[[key]] <- unique(c(
+        source_orders[[key]] %||% numeric(0),
+        site_order[site_strata == key & is.finite(site_order)]
+      ))
+    }
+  }
+  truncated_for_gap <- FALSE
+  if (length(invalid_order_strata) > 0L) {
+    keep[strata_key %in% invalid_order_strata] <- FALSE
+    warnings <- c(warnings,
+      "A Kaplan-Meier curve with an invalid order value was omitted.")
+  }
+  for (key in names(source_orders)) {
+    pooled_orders <- order_value[strata_key == key & is.finite(order_value)]
+    omitted <- setdiff(source_orders[[key]], pooled_orders)
+    if (length(omitted) > 0L) {
+      cutoff <- min(omitted)
+      keep[strata_key == key & order_value >= cutoff] <- FALSE
+      truncated_for_gap <- TRUE
+    }
+  }
+  if (truncated_for_gap) {
+    warnings <- c(warnings,
+      "A Kaplan-Meier curve was truncated before its first missing or suppressed time bin.")
+  }
+
+  # The contract declares the public sequential grid. This also catches a bin
+  # suppressed on every server: such a bin is absent from the union above, but
+  # survival must still stop before the gap rather than skip over it.
+  grid_truncated <- FALSE
+  grid_start <- as.numeric(contract$order_start)
+  grid_step <- as.numeric(contract$order_step)
+  for (stratum in unique(strata_key)) {
+    rows <- which(strata_key == stratum & keep)
+    if (length(rows) == 0L) next
+    rows <- rows[order(order_value[rows])]
+    expected <- grid_start + (seq_along(rows) - 1L) * grid_step
+    tolerance <- sqrt(.Machine$double.eps) * pmax(1, abs(expected))
+    mismatch <- which(abs(order_value[rows] - expected) > tolerance)
+    if (length(mismatch) > 0L) {
+      first_bad <- mismatch[[1L]]
+      keep[rows[seq.int(first_bad, length(rows))]] <- FALSE
+      grid_truncated <- TRUE
+    }
+  }
+  if (grid_truncated) {
+    warnings <- c(warnings,
+      "A Kaplan-Meier curve was truncated before a missing contracted time bin.")
+  }
+
+  for (stratum in unique(strata_key)) {
+    rows <- which(strata_key == stratum & keep)
+    if (length(rows) == 0L) next
+    rows <- rows[order(order_value[rows])]
+    if (anyDuplicated(order_value[rows])) {
+      .analysis_pooling_fail(
+        "Kaplan-Meier order values are not unique within a stratum."
+      )
+    }
+    risk <- suppressWarnings(as.numeric(frame[[contract$at_risk]][rows]))
+    events <- suppressWarnings(as.numeric(frame[[contract$events]][rows]))
+    valid <- is.finite(risk) & risk > 0 & is.finite(events) & events >= 0 &
+      events <= risk
+    if (!all(valid)) {
+      first_bad <- which(!valid)[[1L]]
+      keep[rows[seq.int(first_bad, length(rows))]] <- FALSE
+      rows <- rows[seq_len(first_bad - 1L)]
+      warnings <- c(warnings,
+        "A Kaplan-Meier curve was truncated at its first invalid time bin.")
+    }
+    if (length(rows) > 0L) {
+      risk <- suppressWarnings(as.numeric(frame[[contract$at_risk]][rows]))
+      events <- suppressWarnings(as.numeric(frame[[contract$events]][rows]))
+      survival[rows] <- cumprod(1 - events / risk)
+    }
+  }
+  frame[[contract$survival]] <- survival
+  frame <- frame[keep & is.finite(survival), , drop = FALSE]
+  if (nrow(frame) == 0L) {
+    return(list(result = NULL, warnings = unique(c(
+      warnings, "No complete Kaplan-Meier curve remained to pool."
+    ))))
+  }
+  ordering <- c(contract$strata, contract$order)
+  frame <- frame[do.call(order, frame[ordering]), , drop = FALSE]
+  rownames(frame) <- NULL
+  list(result = frame[, names(contract$columns), drop = FALSE],
+       warnings = unique(warnings))
+}
+
+#' Pool an analysis-catalog result using only its server-owned contract
+#'
+#' @param per_site Named per-server data frames.
+#' @param contract Valid pooling contract from analysis metadata.
+#' @param policy Suppression policy: \code{"strict"} or
+#'   \code{"pooled_only_ok"}.
+#' @param harmonization Optional negotiated federation contract.
+#' @return List with \code{result}, \code{warnings}, and
+#'   \code{harmonization}.
+#' @keywords internal
+.pool_analysis_contract <- function(per_site, contract,
+                                    policy = c("strict", "pooled_only_ok"),
+                                    harmonization = NULL) {
+  policy <- match.arg(policy)
+  .validate_analysis_pooling_contract(contract, per_site)
+  strategy <- contract$strategy
+  if (identical(strategy, "not_poolable")) {
+    return(list(result = NULL, warnings = contract$reason,
+                harmonization = harmonization))
+  }
+  if (length(per_site) == 1L && strategy %in% c("tabular", "kaplan_meier")) {
+    result <- per_site[[1L]]
+    return(list(result = result, warnings = character(0),
+                harmonization = harmonization))
+  }
+  if (length(per_site) > 1L &&
+      .analysis_pooling_contract_uses_counts(contract) &&
+      !is.null(harmonization) && !isTRUE(harmonization$poolable_counts)) {
+    .analysis_pooling_fail(
+      "server count-band settings are incompatible across the federation."
+    )
+  }
+
+  out <- switch(
+    strategy,
+    tabular = .pool_analysis_tabular(per_site, contract, policy = policy),
+    effect_estimate = .pool_analysis_effect(per_site, contract,
+                                            policy = policy),
+    kaplan_meier = .pool_analysis_kaplan_meier(per_site, contract,
+                                              policy = policy)
+  )
+  if (length(per_site) > 1L &&
+      .analysis_pooling_contract_uses_counts(contract)) {
+    out$warnings <- c(
+      out$warnings %||% character(0),
+      "Pooled counts are sums of site-level releases; a person represented in multiple databases contributes once per database."
+    )
+    if (!is.null(harmonization) &&
+        is.finite(harmonization$count_band_width %||% NA_real_) &&
+        harmonization$count_band_width > 1L && !is.null(out$result)) {
+      out$warnings <- c(out$warnings, paste0(
+        "Counts are sums of per-site banded lower bounds (width ",
+        harmonization$count_band_width,
+        "); derived pooled statistics are therefore approximate."
+      ))
+    }
+  }
+  out$warnings <- unique(out$warnings %||% character(0))
+  out$harmonization <- harmonization
+  out
+}
+
+#' Dispatch pooling by result type
+#'
+#' @param per_site Named list of per-server results
+#' @param result_type Character; one of the recognized result types
+#' @param policy Character; "strict" or "pooled_only_ok"
+#' @return List with $result and $warnings
+#' @keywords internal
+.pool_result <- function(per_site, result_type, policy = "strict",
+                         harmonization = NULL) {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  aggregate_errors <- attr(per_site, "ds_errors") %||% list()
+  if (policy == "strict" && length(aggregate_errors) > 0L) {
+    unavailable <- names(aggregate_errors)
+    if (is.null(unavailable) || any(!nzchar(unavailable))) {
+      unavailable <- rep("<unknown>", length(aggregate_errors))
+    }
+    return(list(
+      result = NULL,
+      warnings = paste0(
+        "Strict pooling failed: incomplete federation; unavailable server(s): ",
+        paste(unavailable, collapse = ", "), "."
+      ),
+      harmonization = harmonization
+    ))
+  }
+  if (is.null(harmonization)) {
+    harmonization <- .pooling_harmonization_for_servers(names(per_site))
+  }
+  if (length(per_site) > 1L && !is.null(harmonization) &&
+      !isTRUE(harmonization$poolable_counts)) {
+    widths <- harmonization$count_band_widths
+    detail <- if (length(widths) > 0L) {
+      paste(names(widths), widths, sep = "=", collapse = ", ")
+    } else "metadata unavailable"
+    return(list(
+      result = NULL,
+      warnings = paste0(
+        "Federated pooling failed closed: incompatible count-band contracts (",
+        detail, "). Align dsomop.nfilter.band across servers."),
+      harmonization = harmonization
+    ))
+  }
+
+  out <- switch(result_type,
+
+    "table_stats" = {
+      # per_site[[srv]] is a list with $rows, $persons, etc.
+      row_counts <- vapply(per_site, function(s) {
+        if (is.list(s) && !is.null(s$rows) && !isTRUE(s$rows_suppressed)) s$rows
+        else NA_real_
+      }, numeric(1))
+      names(row_counts) <- names(per_site)
+      pool_rows <- .pool_counts(row_counts, policy)
+
+      person_counts <- vapply(per_site, function(s) {
+        if (is.list(s) && !is.null(s$persons) && !isTRUE(s$persons_suppressed)) s$persons
+        else NA_real_
+      }, numeric(1))
+      names(person_counts) <- names(per_site)
+      pool_persons <- .pool_counts(person_counts, policy)
+
+      warnings <- c(pool_rows$warnings, pool_persons$warnings)
+      result <- if (!is.null(pool_rows$result)) {
+        list(rows = pool_rows$result, persons = pool_persons$result)
+      } else NULL
+
+      list(result = result, warnings = warnings)
+    },
+
+    "column_stats" = {
+      # Person-bearing OMOP tables are longitudinal: the server reduces repeated
+      # rows to one numeric value per person before computing mean and SD. Row
+      # counts remain useful output, but they are not valid statistical weights.
+      counts <- vapply(per_site, function(s) {
+        if (is.list(s) && !is.null(s$n_total)) as.numeric(s$n_total)
+        else if (is.list(s) && !is.null(s$count)) as.numeric(s$count)
+        else NA_real_
+      }, numeric(1))
+      names(counts) <- names(per_site)
+
+      means <- vapply(per_site, function(s) {
+        if (is.list(s) && !is.null(s$mean)) as.numeric(s$mean) else NA_real_
+      }, numeric(1))
+      names(means) <- names(per_site)
+
+      pool_n <- .pool_counts(counts, policy)
+
+      has_person_counts <- vapply(per_site, function(s) {
+        is.list(s) && !is.null(s$n_persons)
+      }, logical(1))
+      person_counts <- vapply(per_site, function(s) {
+        if (is.list(s) && !is.null(s$n_persons)) as.numeric(s$n_persons)
+        else NA_real_
+      }, numeric(1))
+      names(person_counts) <- names(per_site)
+      pool_persons <- if (any(has_person_counts)) {
+        .pool_counts(person_counts, policy)
+      } else list(result = NULL, warnings = character(0))
+
+      missing_counts <- vapply(per_site, function(s) {
+        if (!is.list(s)) return(NA_real_)
+        if (is.null(s$n_missing)) return(0)
+        as.numeric(s$n_missing)
+      }, numeric(1))
+      names(missing_counts) <- names(per_site)
+      pool_missing <- .pool_counts(missing_counts, policy)
+
+      # n_missing is person-unit when n_persons is returned, otherwise record-
+      # unit. An explicit NA is a suppressed count and must not fall back to a
+      # larger denominator.
+      n_eff <- ifelse(has_person_counts, person_counts, counts) - missing_counts
+      n_eff[!is.finite(n_eff) | n_eff < 0] <- NA_real_
+      names(n_eff) <- names(per_site)
+      pool_mean <- .pool_means(means, n_eff, policy)
+
+      # Pooled SD via the sum-of-squares identity (delegated to .pool_variance):
+      #   pooled_var = (Σ(n_i-1)·var_i + Σ n_i·(mean_i - mean_pool)^2) / (N-1)
+      # The same contributor count must weight the SD. A site that suppresses SD
+      # cannot be silently omitted under strict policy.
+      sds <- vapply(per_site, function(s) {
+        if (is.list(s) && !is.null(s$sd)) as.numeric(s$sd) else NA_real_
+      }, numeric(1))
+      names(sds) <- names(per_site)
+
+      pooled_sd <- NULL
+      sd_warnings <- character(0)
+      if (any(!is.na(sds))) {
+        vars <- sds^2
+        pool_var <- .pool_variance(vars, means, n_eff, policy = policy)
+        if (!is.null(pool_var$result)) {
+          pooled_sd <- sqrt(max(pool_var$result, 0))
+        }
+        sd_warnings <- pool_var$warnings
+      }
+
+      warnings <- c(pool_n$warnings, pool_persons$warnings,
+                    pool_missing$warnings, pool_mean$warnings, sd_warnings)
+      result <- if (!is.null(pool_n$result)) {
+        out <- list(n_total = pool_n$result, mean = pool_mean$result)
+        if (any(has_person_counts)) {
+          out$n_persons <- pool_persons$result %||% NA_real_
+        }
+        out$n_missing <- pool_missing$result %||% NA_real_
+        if (!is.null(pooled_sd)) out$sd <- pooled_sd
+        out
+      } else NULL
+
+      list(result = result, warnings = warnings)
+    },
+
+    "domain_coverage" = {
+      # per_site[[srv]] is a data.frame with table_name, n_records, n_persons, etc.
+      all_dfs <- list()
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        if (is.data.frame(df) && nrow(df) > 0) {
+          df$.server <- srv
+          all_dfs[[srv]] <- df
+        } else if (identical(policy, "strict")) {
+          return(list(
+            result = NULL,
+            warnings = paste0(
+              "Strict pooling failed: invalid domain coverage from server ",
+              srv
+            )
+          ))
+        }
+      }
+      if (length(all_dfs) == 0) {
+        return(list(result = NULL, warnings = "No valid domain coverage data"))
+      }
+      combined <- do.call(rbind, all_dfs)
+      rownames(combined) <- NULL
+
+      # Sum counts per table (propagate NA if any server has NA)
+      tables <- unique(combined$table_name)
+      pooled_rows <- list()
+      incomplete <- character(0)
+      for (tbl in tables) {
+        sub <- combined[combined$table_name == tbl, , drop = FALSE]
+        complete <- length(unique(sub$.server)) == length(per_site) &&
+          !anyDuplicated(sub$.server)
+        if (!complete) incomplete <- c(incomplete, as.character(tbl))
+        row <- list(table_name = tbl)
+        if ("n_records" %in% names(sub)) {
+          row$n_records <- if ((!complete && identical(policy, "strict")) ||
+                               any(is.na(sub$n_records))) NA_real_
+                           else sum(sub$n_records)
+        }
+        if ("n_persons" %in% names(sub)) {
+          row$n_persons <- if ((!complete && identical(policy, "strict")) ||
+                               any(is.na(sub$n_persons))) NA_real_
+                           else sum(sub$n_persons)
+        }
+        pooled_rows[[length(pooled_rows) + 1]] <- as.data.frame(row,
+          stringsAsFactors = FALSE)
+      }
+      result <- do.call(rbind, pooled_rows)
+      rownames(result) <- NULL
+      warnings <- if (length(incomplete) > 0L) {
+        paste0(
+          "Domain rows absent on at least one server were not treated as zero: ",
+          paste(unique(incomplete), collapse = ", "), "."
+        )
+      } else character(0)
+      list(result = result, warnings = warnings)
+    },
+
+    "missingness" = {
+      # per_site[[srv]] is a data.frame with column_name, n_total, n_missing, missing_rate
+      all_dfs <- list()
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        if (is.data.frame(df) && nrow(df) > 0 &&
+            all(c("column_name", "n_total", "n_missing") %in% names(df))) {
+          df$.server <- srv
+          all_dfs[[srv]] <- df
+        } else if (identical(policy, "strict")) {
+          return(list(
+            result = NULL,
+            warnings = paste0(
+              "Strict pooling failed: invalid missingness result from server ",
+              srv
+            )
+          ))
+        }
+      }
+      if (length(all_dfs) == 0) {
+        return(list(result = NULL, warnings = "No valid missingness data"))
+      }
+
+      # Pool per column: sum n_missing / sum n_total
+      combined <- do.call(rbind, all_dfs)
+      cols <- unique(combined$column_name)
+      pooled_rows <- list()
+      incomplete <- character(0)
+      for (col in cols) {
+        sub <- combined[combined$column_name == col, , drop = FALSE]
+        complete <- length(unique(sub$.server)) == length(per_site) &&
+          !anyDuplicated(sub$.server)
+        suppressed <- any(is.na(sub$n_total)) || any(is.na(sub$n_missing))
+        unknown <- suppressed || (!complete && identical(policy, "strict"))
+        if (!complete) incomplete <- c(incomplete, as.character(col))
+        total <- if (unknown) NA_real_ else sum(sub$n_total, na.rm = TRUE)
+        missing <- if (unknown) NA_real_ else sum(sub$n_missing, na.rm = TRUE)
+        rate <- if (!is.na(total) && total > 0 && !is.na(missing)) {
+          missing / total
+        } else NA_real_
+        pooled_rows[[length(pooled_rows) + 1]] <- data.frame(
+          column_name = col, n_total = total, n_missing = missing,
+          missing_rate = rate, stringsAsFactors = FALSE
+        )
+      }
+      result <- do.call(rbind, pooled_rows)
+      rownames(result) <- NULL
+      warnings <- if (length(incomplete) > 0L) {
+        paste0(
+          "Missingness columns absent on at least one server were not treated ",
+          "as zero: ", paste(unique(incomplete), collapse = ", "), "."
+        )
+      } else character(0)
+      list(result = result, warnings = warnings)
+    },
+
+    "value_counts" = {
+      # Top-K value counts (data frames with value, n columns)
+      metric <- if (any(vapply(per_site, function(df) {
+        is.data.frame(df) && "n" %in% names(df)
+      }, logical(1)))) "n" else "count"
+
+      # Need concept_id for pool_top_k; value_counts use "value" instead
+      # Convert to concept_id temporarily
+      adapted <- list()
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        if (is.data.frame(df) && nrow(df) > 0) {
+          if ("value" %in% names(df) && !"concept_id" %in% names(df)) {
+            df$concept_id <- df$value
+          }
+          adapted[[srv]] <- df
+        }
+      }
+
+      k <- if (length(adapted) > 0) max(vapply(adapted, nrow, integer(1))) else 20
+      pool_out <- .pool_top_k(adapted, metric, k, policy)
+
+      # Rename back
+      if (!is.null(pool_out$result) && "concept_id" %in% names(pool_out$result)) {
+        pool_out$result$value <- pool_out$result$concept_id
+        pool_out$result$concept_id <- NULL
+      }
+      pool_out
+    },
+
+    "concept_prevalence" = {
+      metric <- "n_persons"
+      # Check if any per_site has n_persons column
+      has_persons <- any(vapply(per_site, function(df) {
+        is.data.frame(df) && "n_persons" %in% names(df)
+      }, logical(1)))
+      if (!has_persons) metric <- "n_records"
+
+      k <- 50
+      if (length(per_site) > 0) {
+        first_valid <- per_site[[which(vapply(per_site, is.data.frame, logical(1)))[1]]]
+        if (!is.null(first_valid)) k <- nrow(first_valid)
+      }
+      .pool_top_k(per_site, metric, k, policy)
+    },
+
+    "histogram" = {
+      .pool_histograms(per_site, policy)
+    },
+
+    "date_counts" = {
+      # Period is the key. Never adapt rows to seq_len(): a server may omit a
+      # suppressed month/year, in which case positional pooling would silently
+      # add different calendar periods together.
+      valid <- list()
+      warnings <- character(0)
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        ok <- is.data.frame(df) && nrow(df) > 0L &&
+          all(c("period", "n_records") %in% names(df)) &&
+          !anyNA(df$period) && !anyDuplicated(as.character(df$period))
+        if (ok) {
+          valid[[srv]] <- df
+        } else if (policy == "strict") {
+          return(list(
+            result = NULL,
+            warnings = paste0("Strict pooling failed: invalid date counts from ",
+                              "server ", srv)))
+        } else {
+          warnings <- c(warnings,
+                        paste0("Dropped server with invalid date counts: ", srv))
+        }
+      }
+      if (length(valid) == 0L) {
+        return(list(result = NULL,
+                    warnings = c(warnings, "No valid date counts to pool")))
+      }
+
+      period_sets <- lapply(valid, function(df) as.character(df$period))
+      same_periods <- all(vapply(period_sets[-1L], setequal, logical(1),
+                                 period_sets[[1L]]))
+      if (policy == "strict" && !same_periods) {
+        return(list(
+          result = NULL,
+          warnings = paste0("Strict pooling failed: servers returned different ",
+                            "calendar periods (possibly locally suppressed).")))
+      }
+      periods <- sort(Reduce(intersect, period_sets))
+      if (length(periods) == 0L) {
+        return(list(result = NULL,
+                    warnings = c(warnings,
+                                 "No common calendar periods to pool")))
+      }
+      if (!same_periods) {
+        warnings <- c(warnings,
+          "Pooled only the exact calendar-period intersection across servers.")
+      }
+
+      count_cols <- c("n_records", "n_persons")
+      count_cols <- count_cols[vapply(count_cols, function(column) {
+        all(vapply(valid, function(df) column %in% names(df), logical(1)))
+      }, logical(1))]
+      pooled <- data.frame(period = periods, stringsAsFactors = FALSE)
+      safe <- rep(TRUE, length(periods))
+      for (column in count_cols) {
+        matrix_values <- vapply(valid, function(df) {
+          as.numeric(df[[column]][match(periods, as.character(df$period))])
+        }, numeric(length(periods)))
+        if (is.null(dim(matrix_values))) {
+          matrix_values <- matrix(matrix_values, nrow = length(periods))
+        }
+        safe <- safe & apply(matrix_values, 1L, function(x) !anyNA(x))
+        pooled[[column]] <- rowSums(matrix_values, na.rm = FALSE)
+      }
+      if (policy == "strict" && !all(safe)) {
+        return(list(
+          result = NULL,
+          warnings = "Strict pooling failed: a common period was suppressed."))
+      }
+      pooled <- pooled[safe, , drop = FALSE]
+      rownames(pooled) <- NULL
+      if (nrow(pooled) == 0L) {
+        return(list(result = NULL,
+                    warnings = c(warnings,
+                                 "No disclosure-safe common periods to pool")))
+      }
+      list(result = pooled, warnings = warnings)
+    },
+
+    "concept_drilldown" = {
+      # Composite: pool summary counts; skip quantiles
+      warnings <- character(0)
+
+      # Pool summary (n_records, n_persons)
+      rec_counts <- vapply(per_site, function(s) {
+        if (is.list(s) && !is.null(s$summary) && !is.null(s$summary$n_records))
+          s$summary$n_records else NA_real_
+      }, numeric(1))
+      names(rec_counts) <- names(per_site)
+      pool_rec <- .pool_counts(rec_counts, policy)
+
+      per_counts <- vapply(per_site, function(s) {
+        if (is.list(s) && !is.null(s$summary) && !is.null(s$summary$n_persons))
+          s$summary$n_persons else NA_real_
+      }, numeric(1))
+      names(per_counts) <- names(per_site)
+      pool_per <- .pool_counts(per_counts, policy)
+
+      pooled_summary <- if (!is.null(pool_rec$result)) {
+        list(n_records = pool_rec$result, n_persons = pool_per$result)
+      } else NULL
+      warnings <- c(warnings, pool_rec$warnings, pool_per$warnings)
+
+      # Pool histograms if present
+      hist_data <- list()
+      for (srv in names(per_site)) {
+        s <- per_site[[srv]]
+        if (is.list(s) && !is.null(s$numeric_summary) &&
+            !is.null(s$numeric_summary$histogram)) {
+          hist_data[[srv]] <- s$numeric_summary$histogram
+        }
+      }
+      pooled_histogram <- NULL
+      if (length(hist_data) > 0) {
+        ph <- .pool_histograms(hist_data, policy)
+        pooled_histogram <- ph$result
+        warnings <- c(warnings, ph$warnings)
+      }
+
+      # Pool categorical values if present
+      cat_data <- list()
+      for (srv in names(per_site)) {
+        s <- per_site[[srv]]
+        if (is.list(s) && !is.null(s$categorical_values) &&
+            is.data.frame(s$categorical_values) && nrow(s$categorical_values) > 0) {
+          cat_data[[srv]] <- s$categorical_values
+        }
+      }
+      pooled_categorical <- NULL
+      if (length(cat_data) > 0) {
+        metric <- if ("n" %in% names(cat_data[[1]])) "n" else "count"
+        k <- max(vapply(cat_data, nrow, integer(1)))
+        # Need concept_id column for pool_top_k
+        for (srv in names(cat_data)) {
+          if (!"concept_id" %in% names(cat_data[[srv]]) &&
+              "value_as_concept_id" %in% names(cat_data[[srv]])) {
+            cat_data[[srv]]$concept_id <- cat_data[[srv]]$value_as_concept_id
+          }
+        }
+        pc <- .pool_top_k(cat_data, metric, k, policy)
+        pooled_categorical <- pc$result
+        warnings <- c(warnings, pc$warnings)
+      }
+
+      # Quantiles: NOT pooled
+      warnings <- c(warnings, "Quantiles cannot be safely pooled without individual-level data")
+
+      result <- list(
+        summary = pooled_summary,
+        numeric_summary = if (!is.null(pooled_histogram))
+          list(histogram = pooled_histogram, quantiles = NULL) else NULL,
+        categorical_values = pooled_categorical
+      )
+      list(result = result, warnings = warnings)
+    },
+
+    "concept_locate" = {
+      # Row-bind + sum counts per concept/table pair
+      all_dfs <- list()
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        if (is.data.frame(df) && nrow(df) > 0) {
+          df$.server <- srv
+          all_dfs[[srv]] <- df
+        } else if (identical(policy, "strict")) {
+          return(list(
+            result = NULL,
+            warnings = paste0(
+              "Strict pooling failed: invalid concept locator from server ",
+              srv
+            )
+          ))
+        }
+      }
+      if (length(all_dfs) == 0) {
+        return(list(result = NULL, warnings = "No valid locator data"))
+      }
+      combined <- do.call(rbind, all_dfs)
+      rownames(combined) <- NULL
+
+      # Aggregate by concept_id + table_name + concept_column
+      group_cols <- intersect(c("concept_id", "table_name", "concept_column"),
+                              names(combined))
+      if (length(group_cols) == 0) {
+        return(list(result = combined, warnings = character(0)))
+      }
+
+      groups <- split(
+        combined, .analysis_pooling_key(combined, group_cols), drop = TRUE
+      )
+      pooled_rows <- lapply(groups, function(sub) {
+        row <- sub[1, group_cols, drop = FALSE]
+        complete <- length(unique(sub$.server)) == length(per_site) &&
+          !anyDuplicated(sub$.server)
+        if ("n_records" %in% names(sub)) {
+          row$n_records <- if ((!complete && identical(policy, "strict")) ||
+                               any(is.na(sub$n_records))) NA_real_ else
+            sum(sub$n_records)
+        }
+        if ("n_persons" %in% names(sub)) {
+          row$n_persons <- if ((!complete && identical(policy, "strict")) ||
+                               any(is.na(sub$n_persons))) NA_real_ else
+            sum(sub$n_persons)
+        }
+        row
+      })
+      result <- do.call(rbind, pooled_rows)
+      rownames(result) <- NULL
+      count_cols <- intersect(c("n_records", "n_persons"), names(result))
+      if (identical(policy, "strict") && length(count_cols) > 0L) {
+        keep <- !apply(result[count_cols], 1L, function(x) all(is.na(x)))
+        result <- result[keep, , drop = FALSE]
+      }
+      list(
+        result = result,
+        warnings = if (nrow(result) < length(groups)) {
+          "Concept/table groups absent or suppressed on a server were omitted."
+        } else character(0)
+      )
+    },
+
+    "achilles_results" = {
+      # Sum count_value per (analysis_id, stratum_1..5) across servers
+      all_dfs <- list()
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        if (is.data.frame(df) && nrow(df) > 0 &&
+            all(c("analysis_id", "count_value") %in% names(df))) {
+          df$.server <- srv
+          all_dfs[[srv]] <- df
+        } else {
+          if (policy == "strict") {
+            return(list(
+              result = NULL,
+              warnings = paste0("Strict pooling failed: invalid Achilles results from server ", srv)
+            ))
+          }
+        }
+      }
+      if (length(all_dfs) == 0) {
+        return(list(result = NULL, warnings = "No valid Achilles results to pool"))
+      }
+
+      combined <- do.call(rbind, all_dfs)
+      rownames(combined) <- NULL
+
+      # Group by analysis_id + all strata
+      key_cols <- c("analysis_id", "stratum_1", "stratum_2", "stratum_3",
+                     "stratum_4", "stratum_5")
+      key_cols <- intersect(key_cols, names(combined))
+
+      # Replace NA strata with sentinel for grouping
+      for (kc in key_cols[-1]) {
+        combined[[kc]][is.na(combined[[kc]])] <- "__NA__"
+      }
+
+      groups <- split(combined, combined[key_cols], drop = TRUE)
+      incomplete <- FALSE
+      pooled_rows <- lapply(groups, function(sub) {
+        row <- sub[1, key_cols, drop = FALSE]
+        vals <- sub$count_value
+        complete <- length(unique(sub$.server)) == length(per_site) &&
+          !anyDuplicated(sub$.server)
+        if (!complete) incomplete <<- TRUE
+        # Fix E: ALWAYS propagate suppression. If any site suppressed a cell
+        # (NA/missing), pooled must be suppressed too — otherwise na.rm=TRUE
+        # would undo per-site disclosure controls and enable subtraction attacks.
+        if (any(is.na(vals)) || (!complete && identical(policy, "strict"))) {
+          row$count_value <- NA_real_
+        } else {
+          row$count_value <- sum(vals)
+        }
+        row
+      })
+      result <- do.call(rbind, pooled_rows)
+      rownames(result) <- NULL
+
+      # Drop pooled rows that were suppressed (no hints in pooled output either)
+      result <- result[!is.na(result$count_value), , drop = FALSE]
+
+      # Restore NA sentinels
+      for (kc in key_cols[-1]) {
+        result[[kc]][result[[kc]] == "__NA__"] <- NA_character_
+      }
+
+      list(
+        result = result,
+        warnings = if (incomplete) {
+          "Achilles strata absent on at least one server were not treated as zero."
+        } else character(0)
+      )
+    },
+
+    "achilles_distribution" = {
+      # Weighted distribution aggregation across servers
+      all_dfs <- list()
+      warnings <- character(0)
+      for (srv in names(per_site)) {
+        df <- per_site[[srv]]
+        if (is.data.frame(df) && nrow(df) > 0 &&
+            all(c("analysis_id", "count_value", "avg_value") %in% names(df))) {
+          df$.server <- srv
+          all_dfs[[srv]] <- df
+        } else {
+          if (policy == "strict") {
+            return(list(
+              result = NULL,
+              warnings = paste0("Strict pooling failed: invalid Achilles dist from server ", srv)
+            ))
+          }
+          warnings <- c(warnings, paste0("Dropped server with invalid dist data: ", srv))
+        }
+      }
+      if (length(all_dfs) == 0) {
+        return(list(result = NULL, warnings = c(warnings, "No valid Achilles distributions to pool")))
+      }
+
+      combined <- do.call(rbind, all_dfs)
+      rownames(combined) <- NULL
+
+      key_cols <- c("analysis_id", "stratum_1", "stratum_2", "stratum_3",
+                     "stratum_4", "stratum_5")
+      key_cols <- intersect(key_cols, names(combined))
+
+      for (kc in key_cols[-1]) {
+        combined[[kc]][is.na(combined[[kc]])] <- "__NA__"
+      }
+
+      groups <- split(combined, combined[key_cols], drop = TRUE)
+      incomplete <- FALSE
+      pooled_rows <- lapply(groups, function(sub) {
+        row <- sub[1, key_cols, drop = FALSE]
+        counts <- sub$count_value
+        complete <- length(unique(sub$.server)) == length(per_site) &&
+          !anyDuplicated(sub$.server)
+        if (!complete) incomplete <<- TRUE
+        # Fix E: ALWAYS propagate suppression for distributions too
+        if (any(is.na(counts)) ||
+            (!complete && identical(policy, "strict"))) {
+          row$count_value <- NA_real_
+          row$avg_value <- NA_real_
+          row$stdev_value <- NA_real_
+          row$median_value <- NA_real_
+          row$p10_value <- NA_real_
+          row$p25_value <- NA_real_
+          row$p75_value <- NA_real_
+          row$p90_value <- NA_real_
+          return(row)
+        }
+
+        n <- counts
+        N <- sum(n)
+        row$count_value <- N
+
+        # Weighted mean. NON-DISCLOSURE INVARIANT: the server masks avg_value/
+        # stdev_value to NA for any site whose count_value < nfilter_dist
+        # (small-sample suppression). The !any(is.na(avgs)) guard therefore
+        # makes the pooled mean/SD computable ONLY when every contributing site
+        # was >= nfilter_dist, so the pooled N is itself >= nfilter_dist. Do not
+        # weaken this guard — it is what keeps pooled avg/stdev non-disclosive.
+        avgs <- sub$avg_value
+        row$avg_value <- if (N > 0 && !any(is.na(avgs))) {
+          sum(n * avgs) / N
+        } else NA_real_
+
+        # Fix F: min/max are NEVER pooled (extreme values can identify
+        # individuals, and server no longer returns them)
+
+        # Pooled stdev via Cochrane formula
+        if ("stdev_value" %in% names(sub) && N > 1 && !any(is.na(avgs))) {
+          sds <- sub$stdev_value
+          if (!any(is.na(sds))) {
+            pooled_mean <- row$avg_value
+            within_ss <- sum((n - 1) * sds^2)
+            between_ss <- sum(n * (avgs - pooled_mean)^2)
+            row$stdev_value <- sqrt((within_ss + between_ss) / (N - 1))
+          } else {
+            row$stdev_value <- NA_real_
+          }
+        } else {
+          row$stdev_value <- NA_real_
+        }
+
+        # Median and percentiles: NOT poolable from summary stats
+        row$median_value <- NA_real_
+        row$p10_value <- NA_real_
+        row$p25_value <- NA_real_
+        row$p75_value <- NA_real_
+        row$p90_value <- NA_real_
+
+        row
+      })
+      result <- do.call(rbind, pooled_rows)
+      rownames(result) <- NULL
+
+      # Drop suppressed rows from pooled output (no hints)
+      result <- result[!is.na(result$count_value), , drop = FALSE]
+
+      for (kc in key_cols[-1]) {
+        result[[kc]][result[[kc]] == "__NA__"] <- NA_character_
+      }
+
+      warnings <- c(warnings,
+        "Median and percentiles cannot be pooled from summary statistics; set to NA")
+      if (incomplete) {
+        warnings <- c(
+          warnings,
+          "Achilles distribution strata absent on a server were not treated as zero."
+        )
+      }
+      list(result = result, warnings = warnings)
+    },
+
+    "crosstab" = {
+      .pool_crosstab(per_site, policy)
+    },
+
+    # Default: no pooling
+    {
+      list(result = NULL,
+           warnings = paste0("Unknown result type for pooling: ", result_type))
+    }
+  )
+  if (is.list(out)) {
+    out$harmonization <- harmonization
+    if (length(per_site) > 1L && !is.null(harmonization) &&
+        is.finite(harmonization$count_band_width %||% NA_real_) &&
+        harmonization$count_band_width > 1L && !is.null(out$result)) {
+      out$warnings <- c(
+        out$warnings %||% character(0),
+        paste0(
+          "Federated counts are sums of per-site banded lower bounds (width ",
+          harmonization$count_band_width,
+          "); count-weighted means and variances are therefore approximate, ",
+          "not reconstructed exact pooled statistics."
+        )
+      )
+    }
+  }
+  out
+}
+
+#' Pool a server cross-tab object by cell-wise summation
+#'
+#' Each server returns a cross-tab list with \code{$counts} (a matrix whose
+#' dimnames are row x col labels, NA for suppressed cells) or, when stratified,
+#' \code{$stratified = TRUE} with \code{$strata} (a named list of slices). This
+#' helper sums \code{n} per (row, col) cell key across sites. A cell that is
+#' absent on any site (its row/col label not present) or NA (suppressed) on any
+#' site is suppressed in the pooled table: under \code{strict} it renders as
+#' \code{NA}; this fail-closed behaviour prevents subtraction attacks.
+#'
+#' @param per_site Named list of server cross-tab objects.
+#' @param policy Character; "strict" or "pooled_only_ok".
+#' @return List with $result and $warnings.
+#' @keywords internal
+.pool_crosstab <- function(per_site, policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  # Stratified: pool each slice independently; never combine across strata
+  # (the union of slices == the unstratified total, which is never published).
+  is_strat <- vapply(per_site, function(s) {
+    is.list(s) && isTRUE(s$stratified)
+  }, logical(1))
+  if (any(is_strat)) {
+    warnings <- character(0)
+    if (!all(is_strat) && identical(policy, "strict")) {
+      return(list(
+        result = NULL,
+        warnings = "Strict pooling failed: mixed stratified/unstratified cross-tabs."
+      ))
+    }
+    strat_sites <- per_site[is_strat]
+    if (!all(is_strat)) {
+      warnings <- c(
+        warnings,
+        "Dropped unstratified server results from a stratified cross-tab."
+      )
+    }
+    stratify_by <- strat_sites[[1]]$stratify_by
+    all_levels <- unique(unlist(lapply(strat_sites, function(s) names(s$strata))))
+    pooled_strata <- list()
+    for (lv in all_levels) {
+      slices <- lapply(strat_sites, function(s) s$strata[[lv]])
+      po <- .pool_crosstab_slice(slices, policy)
+      pooled_strata[[lv]] <- po$result
+      warnings <- c(warnings, po$warnings)
+    }
+    return(list(
+      result = list(stratified = TRUE, stratify_by = stratify_by,
+                    strata = pooled_strata),
+      warnings = warnings))
+  }
+  .pool_crosstab_slice(per_site, policy)
+}
+
+#' Pool a single (unstratified) set of cross-tab slices
+#' @keywords internal
+.pool_crosstab_slice <- function(slices, policy = "strict") {
+  policy <- match.arg(policy, c("strict", "pooled_only_ok"))
+  warnings <- character(0)
+
+  valid <- list()
+  for (srv in names(slices)) {
+    s <- slices[[srv]]
+    if (is.list(s) && is.matrix(s$counts) && length(s$counts) > 0) {
+      valid[[srv]] <- s
+    } else {
+      # A fully suppressed / empty slice (suppressed = TRUE, 0x0 matrix).
+      if (policy == "strict") {
+        return(list(
+          result = NULL,
+          warnings = paste0("Strict pooling failed: cross-tab suppressed or ",
+                            "empty on server ", srv)))
+      }
+      warnings <- c(warnings, paste0("Dropped server with empty cross-tab: ", srv))
+    }
+  }
+
+  if (length(valid) == 0) {
+    return(list(result = NULL,
+                warnings = c(warnings, "No valid cross-tab data to pool")))
+  }
+
+  # Union of row/col labels across the contributing sites.
+  row_keys <- unique(unlist(lapply(valid, function(s) rownames(s$counts))))
+  col_keys <- unique(unlist(lapply(valid, function(s) colnames(s$counts))))
+
+  n_sites <- length(valid)
+  pooled <- matrix(0, nrow = length(row_keys), ncol = length(col_keys),
+                   dimnames = list(row_keys, col_keys))
+  # Track per-cell coverage: a cell must be present and non-NA on EVERY site.
+  present <- matrix(0L, nrow = length(row_keys), ncol = length(col_keys),
+                    dimnames = list(row_keys, col_keys))
+
+  for (s in valid) {
+    M <- s$counts
+    ri <- match(rownames(M), row_keys)
+    ci <- match(colnames(M), col_keys)
+    for (i in seq_along(ri)) {
+      for (j in seq_along(ci)) {
+        v <- M[i, j]
+        if (!is.na(v)) {
+          pooled[ri[i], ci[j]] <- pooled[ri[i], ci[j]] + as.numeric(v)
+          present[ri[i], ci[j]] <- present[ri[i], ci[j]] + 1L
+        }
+      }
+    }
+  }
+
+  # Fail-closed: any cell not present-and-visible on all sites is suppressed.
+  suppressed <- present < n_sites
+  pooled[suppressed] <- NA_real_
+
+  list(
+    result = list(counts = pooled, suppressed = any(suppressed)),
+    warnings = warnings)
+}
+
+#' Pool vocabulary / concept METADATA rows across servers (de-duplicated union)
+#'
+#' Concept metadata (ids, names, domains, descendants, expansions) is shared
+#' vocabulary: identical across sites and non-disclosive (it carries no patient
+#' counts), so the pooled view is the row-wise union de-duplicated to a single
+#' clean answer. Per-site frames remain available on the result for inspecting
+#' any cross-site vocabulary differences. A partial server response returns
+#' NULL instead of presenting an incomplete union as federation-wide. Returns
+#' NULL when no site had data.
+#' @param per_site Named list of per-server data frames.
+#' @return A de-duplicated data frame, or NULL.
+#' @keywords internal
+.pool_concept_metadata <- function(per_site) {
+  if (length(attr(per_site, "ds_errors")) > 0L) return(NULL)
+  dfs <- Filter(function(d) is.data.frame(d) && nrow(d) > 0, per_site)
+  if (length(dfs) == 0) return(NULL)
+  cols <- Reduce(intersect, lapply(dfs, names))
+  if (length(cols) == 0) return(NULL)
+  combined <- do.call(rbind, lapply(dfs, function(d) d[, cols, drop = FALSE]))
+  combined <- unique(combined)
+  rownames(combined) <- NULL
+  combined
+}
