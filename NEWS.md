@@ -194,6 +194,9 @@ workstream fills its entries.
   profiles refuse the whole call with the missing methods and upgrade advice;
   advertised verb capabilities alone do not bypass this check. The legacy
   `var`/`op`/`value` filter keeps its existing route.
+- (WS-2f review B2) Shared normalization preserves the unindexed status of
+  v1 observation-period populations when their person seed has an index.
+  Fresh observation-period episodes do not inherit that index's identity.
 - Plan execution reads authenticated publication status before cleanup and uses
   the server inventory, including freshly allocated component symbols. Technical
   and transport failures revoke staged files as well as assigned outputs.
