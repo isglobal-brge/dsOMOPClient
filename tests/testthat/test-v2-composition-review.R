@@ -298,9 +298,10 @@ test_that("publication-root placeholders commute with merging and serialization"
   # Distinct placeholders can resolve to the same shared publication root.
   b <- mk(omop_param("second", type = "string", default = "w"))
   shared <- recipe_merge(a, b)
+  shared_target <- recipe_merge(mk("w"), mk("w"))
   for (r in .cmp_roundtrips(recipe_bind(shared, root = "w"))) {
-    .cmp_same(r, mk("w"))
-    .cmp_same(recipe_bind(r, second = "w"), mk("w"))
+    .cmp_same(r, shared_target)
+    .cmp_same(recipe_bind(r, second = "w"), shared_target)
   }
   for (r in .cmp_roundtrips(recipe_merge(mk(character()), a, prefix = "b"))) {
     .cmp_same(r, recipe_merge(mk(character()), mk("w"), prefix = "b"))
@@ -342,8 +343,8 @@ test_that("deferred column parent and match references keep their own namespaces
 
 test_that("deferred set-operation members are validated after binding", {
   mk <- function(member) omop_recipe(populations = list(
-    omop_population("p", filters = list(omop_person(omop_where(gender_concept_id == 8507)))),
-    omop_population("q", filters = list(omop_person(omop_where(gender_concept_id == 8532)))),
+    omop_population("p", filters = list(omop_person(omop_where(gender_concept_id == 8507L)))),
+    omop_population("q", filters = list(omop_person(omop_where(gender_concept_id == 8532L)))),
     omop_population("both", union = list("p", member))),
     variables = list(age = omop_age()),
     outputs = omop_output("w", rows = "both", format = "wide"))
@@ -375,4 +376,31 @@ test_that("deferred inline intervals rename every nested named declaration", {
   expect_identical(p$variables$b_n$source, list(interval = "b_iv"))
   expect_identical(p$intervals$b_iv$source, list(event = "b_ev"))
   expect_identical(p$events$b_ev$concept_set, "b_cs")
+})
+
+test_that("shared-base decisions preserve conditional censor source provenance", {
+  mk <- function(concepts) omop_recipe(
+    events = list(omop_event("measurement", concepts, name = "ev")),
+    populations = list(omop_population("base", index = omop_index("ev")),
+      omop_population("child", parent_id = "base")),
+    variables = list(source = omop_population_column("index_source")),
+    outputs = list(omop_output("w", rows = "child", format = "wide"),
+      omop_output("tte", rows = "child", format = "survival", options = list(
+        outcomes = list(outcome = "ev"), tar = omop_window(1L, 30L),
+        censor = list(omop_censor("ev", when_index_source = "ev"))))))
+  a <- mk(1L)
+  b <- mk(omop_param("concepts", type = "concept_set", default = 1L))
+  target <- recipe_merge(a, recipe_bind(b, concepts = 1L), prefix = "b")
+  p <- recipe_to_plan(target)
+  expect_identical(p$populations$b_base$index$source, list(event = "b_ev"))
+  expect_identical(p$populations$b_child$parent, "b_base")
+  expect_identical(p$outputs$b_tte$options$censor[[1L]]$censor$when_index_source, list("b_ev"))
+  merged <- recipe_merge(a, b, prefix = "b")
+  for (r in .cmp_roundtrips(merged)) {
+    .cmp_same(r, target)
+    .cmp_same(recipe_bind(r, concepts = 1L), target)
+  }
+  for (r in .cmp_roundtrips(recipe_merge(omop_recipe(), merged, prefix = "outer"))) {
+    .cmp_same(recipe_bind(r, concepts = 1L), recipe_merge(omop_recipe(), target, prefix = "outer"))
+  }
 })
