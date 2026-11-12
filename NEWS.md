@@ -141,7 +141,7 @@ workstream fills its entries.
   (a rollback copy is kept until all succeed). `ds.omop.filter(x, expr =
   omop_where(...))` filters with the closed predicate grammar. Both need
   the servers to advertise `verb.mutate` / `verb.filter_expr` (dsOMOP
-  2.10.3); `omopMutateDS` is a listed server method of
+  2.10.4); `omopMutateDS` is a listed server method of
   `ds.omop.server.version()`.
 
 ## Corrected

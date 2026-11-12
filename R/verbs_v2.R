@@ -15,14 +15,14 @@
 
 .mutate_stop <- function(...) stop("ds.omop.mutate(): ", ..., call. = FALSE)
 
-# Every server must advertise the verb's operation (dsOMOP 2.10.3).
+# Every server must advertise the verb's operation (dsOMOP 2.10.4).
 .verb_assert_supported <- function(session, servers, op, what) {
   lang <- .v2_server_language(session, servers)
   ok <- vapply(lang, function(rl) !is.null(rl) && op %in% rl$operations, logical(1))
   if (!all(ok)) {
     stop(what, " needs the '", op, "' operation, which ",
          paste(servers[!ok], collapse = ", "), if (sum(!ok) == 1L) " does" else " do",
-         " not advertise (it is part of dsOMOP 2.10.3). Upgrade dsOMOP on ",
+         " not advertise (it is part of dsOMOP 2.10.4). Upgrade dsOMOP on ",
          if (sum(!ok) == 1L) "that server." else "those servers.", call. = FALSE)
   }
   invisible(TRUE)
