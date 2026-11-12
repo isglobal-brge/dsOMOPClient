@@ -64,7 +64,10 @@ occurrence must carry the same definition.
   set-operation members, match inputs, output rows and columns, output
   dependencies and publication roots; \code{b}'s base population keeps its
   meaning (its recipe-level filters move onto it) and is shared only when it
-  equals \code{a}'s. Outputs whose columns were implicit (every variable)
+  equals \code{a}'s. When equality depends on parameters, it is reconsidered
+  after binding or default resolution against the current population and
+  source definitions, preserving edits made after merging. Outputs whose
+  columns were implicit (every variable)
   are made explicit first, so each output keeps exactly its own variables.
   Block metadata (\code{block_id}, \code{block_version}) is preserved.
   Parameters are shared by name.
