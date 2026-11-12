@@ -252,7 +252,7 @@
 
 # The vendored schema validates exactly what the server will parse.
 .mutate_schema_check <- function(x, schema, field, root = schema) {
-  wire <- jsonlite::fromJSON(.jcsCanonical(.v2_plain(x)),
+  wire <- jsonlite::fromJSON(.ds_json_lossless(.v2_plain(x)),
                              simplifyVector = FALSE)
   res <- .jsonSchemaValidate(schema, wire, root = root)
   if (!res$valid) {

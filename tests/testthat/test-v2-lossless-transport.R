@@ -27,6 +27,7 @@ test_that("lossless transport keeps objects arrays nulls and UTF-8 strings disti
                 empty_array = list(), null = NULL, singleton = list(2^53 + 2),
                 text = "dose \"quoted\" \\ \n \u03bcg", boolean = TRUE)
   decoded <- .precision_decode(value)
+  expect_identical(names(decoded$value), names(value))
   expect_identical(decoded$value$empty_object, value$empty_object)
   expect_identical(decoded$value$empty_array, value$empty_array)
   expect_true("null" %in% names(decoded$value))
@@ -46,6 +47,24 @@ test_that("transport preserves plan semantics with large numeric predicates", {
     outputs = omop_output("w", format = "wide")))
   decoded <- .precision_decode(plan)$value
   expect_identical(decoded$events$lab$where$value, 9007199254740994)
+  expect_identical(dsOMOPClient:::.planNormalizedDigest(decoded)$sha256,
+                   dsOMOPClient:::.planNormalizedDigest(plan)$sha256)
+})
+
+test_that("transport preserves nonalphabetical outcome declaration priority", {
+  study <- omop_study(
+    omop_event("condition_occurrence", 201826),
+    outcomes = list(z_stroke = omop_event("condition_occurrence", 381591),
+                    a_death = omop_event("death"),
+                    m_infarction = omop_event("condition_occurrence", 4329847)),
+    outputs = "survival")
+  plan <- recipe_to_plan(study)
+  expected <- c("z_stroke", "a_death", "m_infarction")
+  expect_identical(names(plan$outputs$survival$options$outcomes), expected)
+  decoded <- .precision_decode(plan)$value
+  expect_identical(names(decoded$outputs$survival$options$outcomes), expected)
+  expect_identical(decoded$outputs$survival$options$outcomes,
+                   plan$outputs$survival$options$outcomes)
   expect_identical(dsOMOPClient:::.planNormalizedDigest(decoded)$sha256,
                    dsOMOPClient:::.planNormalizedDigest(plan)$sha256)
 })

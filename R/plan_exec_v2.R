@@ -345,15 +345,41 @@
 
 # --- lossless transport ---------------------------------------------------------------
 
+# Keep declaration order on the wire (for example, outcome priority in a
+# competing-risk output). Reuse the frozen canonical encoder only for scalar
+# values and keys, retaining its exact round-tripping numeric representation.
+.ds_json_lossless <- function(x) {
+  if (!is.list(x)) {
+    if (!is.null(x) && length(x) != 1L) {
+      parts <- vapply(seq_along(x), function(i) .ds_json_lossless(x[[i]]), "")
+      return(paste0("[", paste(parts, collapse = ","), "]"))
+    }
+    return(.jcsCanonical(x))
+  }
+  nms <- names(x)
+  if (is.null(nms)) {
+    return(paste0("[", paste(vapply(x, .ds_json_lossless, ""), collapse = ","), "]"))
+  }
+  if (!length(x)) return("{}")
+  if (anyNA(nms) || any(!nzchar(nms)) || anyDuplicated(nms)) {
+    stop("JSON object keys must be non-empty and unique.", call. = FALSE)
+  }
+  parts <- vapply(seq_along(x), function(i) {
+    paste0(.jcsCanonical(nms[[i]]), ":", .ds_json_lossless(x[[i]]))
+  }, "")
+  paste0("{", paste(parts, collapse = ","), "}")
+}
+
 #' Encode a v2 plan for DataSHIELD transport without losing precision
 #'
 #' Like \code{.ds_encode()} (URL-safe base64 JSON) but using the canonical
-#' encoder's round-tripping numbers, explicit JSON nulls and empty objects, so
+#' encoder's round-tripping numbers while preserving declaration order,
+#' explicit JSON nulls and empty objects, so
 #' the server parses exactly the plan whose semantic digest the client
 #' computed (unit conversion factors such as 0.45359237 must not be rounded).
 #' @keywords internal
 .ds_encode_lossless <- function(x) {
-  json <- .jcsCanonical(.v2_plain(x))
+  json <- .ds_json_lossless(.v2_plain(x))
   b64 <- gsub("[\r\n]", "", jsonlite::base64_enc(charToRaw(enc2utf8(json))))
   b64 <- gsub("\\+", "-", b64)
   b64 <- gsub("/", "_", b64)
