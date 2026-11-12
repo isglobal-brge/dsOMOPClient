@@ -7680,6 +7680,9 @@ recipe_preview_stats <- function(recipe,
 #'   with \code{cohort}.
 #' @param combine Character; how to fold the scope sources together:
 #'   \code{"union"} (the default) or \code{"intersect"}.
+#' @param on_small_site Character; \code{"error"} or \code{"skip"}, passed to
+#'   \code{\link{ds.omop.plan.execute}}. Skip keeps successful sites and returns
+#'   \code{NULL} for sites whose publication fails final person support.
 #' @return Invisibly, the output symbol mapping (a named character vector).
 #'   As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
 #'   recorded on the session so the manipulation wrappers can default to the
@@ -7698,7 +7701,9 @@ recipe_preview_stats <- function(recipe,
 #' @export
 recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
                            output_mode = "memory", cohort = NULL,
-                           tables = NULL, combine = "union") {
+                           tables = NULL, combine = "union",
+                           on_small_site = c("error", "skip")) {
+  on_small_site <- match.arg(on_small_site)
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
 
@@ -7714,7 +7719,7 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
   plan <- recipe_to_plan(recipe)
   out <- .recipe_out_symbols(recipe, plan, out)
   ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns,
-                       output_mode = output_mode)
+                       output_mode = output_mode, on_small_site = on_small_site)
 }
 
 # Default server symbols for the plan outputs of a recipe (an output's
