@@ -37,9 +37,9 @@ Key features include:
 AggregateMethods inventory, and rejects methods named `c`/`list` or aliases
 whose target is `c`, `list`, `base::c` or `base::list`. Those generic
 constructors can otherwise wrap and return a protected server object without a
-reviewed disclosure gate. This preflight is defence in depth: the controller
-must remove the methods from the complete global DataSHIELD profile, because a
-caller using DSI directly can bypass the client package.
+reviewed disclosure gate. This preflight is defence in depth: these aliases are
+unsafe in the complete global DataSHIELD profile, and a caller using DSI directly can bypass the client
+package. dsOMOP does not publish them.
 
 ## Structure
 
@@ -89,6 +89,30 @@ the new version's methods: an administrator publishes its settings again
 (Administration > DataSHIELD > Packages > dsOMOP > Publish).
 `ds.omop.connect()` stops with the same explanation when a server cannot be
 used, and reports each server's own error instead of DSI's generic notice.
+
+### Upgrading to 2.10.3
+
+The matching release is dsOMOP 2.10.3 plus dsOMOPClient 2.10.3. Automatic
+server protection needs no privacy settings, secret provisioning, epoch bump,
+ETL coordination or TLS change. Existing valid roots survive package upgrade.
+Opal's installed-package and published-profile versions are distinct; the
+version check identifies an installed 2.10.3 whose profile still has older
+methods, so ordinary profile publication completes that package upgrade.
+
+Language-2 execution requires the publication methods at every site. Supported
+legacy recipes keep their v1 path; [NEWS.md](NEWS.md) describes corrected,
+newly permitted and newly refused cases and their migration paths. During a
+mixed-server upgrade, v1 execution uses the documented legacy path with a
+warning, while language-2 execution stops before assignment.
+
+Protected 2.10.3 payloads pool only with compatible 2.10.3 contracts.
+`type = "split"` keeps labelled per-site results when versions differ. Old typed
+clients receive an upgrade refusal, and a new client warns about old servers;
+installing the client alone does not repair server-side inference defects.
+Outputs can change under the repaired public grids and component contracts.
+Protection labels distinguish fixed-synopsis mechanisms from heuristic
+realised-contribution reuse; neither is a finite lifetime or full-transcript
+privacy guarantee.
 
 ## Federated result views
 

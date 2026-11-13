@@ -1,6 +1,13 @@
-# dsOMOPClient 2.10.3
+# dsOMOPClient 2.10.3 (2026-11-13)
 
 Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
+
+- Release 2.10.3 pairs both packages, including recipe language 2 and the
+  publication protocol. Existing valid secrets are reused; ordinary operation
+  needs no privacy settings, state provisioning, epoch bump, ETL hook or TLS
+  change. Opal's installed package and published profile remain distinct;
+  the version check identifies a stale profile. README upgrade notes describe
+  compatible pooling, legacy execution and changed-answer behavior.
 
 - Corrected upgrade advice for the publication protocol backported to 2.10.3:
   an installed 2.10.3 with a stale 2.10.2 profile asks to publish its settings,
@@ -103,8 +110,9 @@ Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
 
 ## Recipe language integration
 
-Recipe language 2.0 (design-2.10.3). This section is the WS-0 skeleton; each
-workstream fills its entries.
+Recipe language 2.0 ships with typed constructors, client validation, v1
+compatibility lowering and the server publication protocol. The entries below
+describe the supported operations and migration paths.
 
 ## Recipe language 2.0 (WS-8)
 - New language-2 constructors (design section 2): `omop_concept_set()`,
@@ -220,10 +228,9 @@ workstream fills its entries.
 - `recipe_export_concept_sets()` refuses a nested exclusion (an exclusion
   with its own exclusion), which an OHDSI concept-set expression cannot
   carry, instead of flattening it (review B4).
-- `ds.omop.server.version()` tells an old installation (dsOMOP before 2.10.4,
-  where publishing again cannot add the protocol methods: install 2.10.4 and
-  publish its methods) from an upgraded server whose profile still publishes
-  the old methods (publish again), and adds the list column
+- `ds.omop.server.version()` tells an old installation (dsOMOP before 2.10.3,
+  where publishing again cannot add the protocol methods) from an upgraded
+  server whose profile still publishes the old methods (stale publication), and adds the list column
   `recipe_language`: each site's capability block (`version`, `operations`,
   `dialect`), `"unavailable"` for a site that predates it and `"not
   connected"` without an OMOP session (review N2).
@@ -280,7 +287,7 @@ workstream fills its entries.
   `ds.omop.filter(x, expr =
   omop_where(...))` filters with the closed predicate grammar. Both need
   the servers to advertise `verb.mutate` / `verb.filter_expr` (dsOMOP
-  2.10.4); `omopMutateDS` is a listed server method of
+  2.10.3); `omopMutateDS` is a listed server method of
   `ds.omop.server.version()`.
 
 ## Corrected
@@ -393,7 +400,7 @@ workstream fills its entries.
   may mix concept-scoped and unscoped variables of one table (one source per
   scope); a temporal-covariates output may declare different analyses per
   concept (per-source analyses, A-14).
-- These shapes have no v1 rendering: they run on dsOMOP 2.10.4 servers;
+- These shapes have no v1 rendering: they run on dsOMOP 2.10.3 servers;
   `recipe_lint()` reports them as INFO `language_2_only`.
 - `ds.omop.filter(expr = omop_where(...))` filters a server-side table with
   every comparison of the predicate grammar (`< <= > >=`, `between`,
@@ -445,12 +452,12 @@ workstream fills its entries.
 
 ## Upgrading clients and servers
 - Before anything is assigned, every execution checks the methods each
-  site's profile publishes (review B1). With every site on dsOMOP 2.10.4 the
+  site's profile publishes (review B1). With every site on dsOMOP 2.10.3 the
   publication protocol runs (`omopPlanStatusDS`, `omopStagedRevokeDS`,
   `commit_policy`). While any site lacks it, a language-2 plan is
   refused before any assignment, naming the
-  sites, the missing methods and the upgrade (install dsOMOP 2.10.4 and
-  publish its methods). A v1-selected recipe or plan then runs on every site
+  sites, the missing methods and the required installed/published version
+  (dsOMOP 2.10.3). A v1-selected recipe or plan then runs on every site
   as the legacy call of dsOMOPClient 2.10.2 (the same v1 payload, no
   `commit_policy`, no status or revocation calls) with one warning naming the
   old sites: `on_small_site` does not change that legacy call; cross-site
@@ -459,9 +466,9 @@ workstream fills its entries.
   disclosure rules. DP preparation and the sticky query library follow the
   same rule. A site whose profile cannot be listed, or that lacks a method
   the call needs on either route, stops the execution before anything is
-  sent. Check with `ds.omop.server.version()`; on Opal, publish dsOMOP's
-  methods again after upgrading.
-- With a 2.10.1 or 2.10.2 client and a 2.10.4 server, a strict publication refusal
+  sent. `ds.omop.server.version()` reports both installed and published
+  versions; an Opal profile retains its previous methods until publication.
+- With a 2.10.1 or 2.10.2 client and a 2.10.3 server, a strict publication refusal
   still publishes nothing. The assign call returns status `refused`, and the
   old client then reports that requested outputs did not materialize instead
   of receiving the previous constant `Disclosive` error.
