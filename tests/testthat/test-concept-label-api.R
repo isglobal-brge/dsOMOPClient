@@ -66,3 +66,16 @@ test_that('A27 client checks final component names including numeric-only report
   report$generated$a_1$explicit <- 'education'
   expect_identical(unlist(.conceptUnionReports(list(a=report,b=report))$names),c(person_id='person_id',a_1='education',b_2='same'))
 })
+
+test_that('A27 explain uses only a matching successful-publication receipt', {
+  p <- recipe_to_plan(.cl_recipe())
+  session <- list(concept_presentation=list(key=.conceptPlanKey(p),sites=c('a','b'),
+    components=list('output/output'='education: 1 -> New; vocabulary conflict: New / Old; version 2026-01-01; newest comparable version; bytewise name tie')))
+  lines <- .conceptPublishedExplain(session,p,list(a=NULL,b=NULL))
+  expect_match(paste(lines,collapse='\n'),'vocabulary conflict: New / Old')
+  expect_match(paste(lines,collapse='\n'),'version 2026-01-01')
+  expect_length(.conceptPublishedExplain(session,p,list(a=NULL)),0)
+  p$options$translate_concepts <- FALSE
+  expect_length(.conceptPublishedExplain(session,p,list(a=NULL,b=NULL)),0)
+  expect_length(.conceptPublishedExplain(list(),p,list(a=NULL,b=NULL)),0)
+})

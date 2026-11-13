@@ -53,6 +53,10 @@
 #' recipe_explain(recipe, detail = "semantics")
 #' }
 #' @seealso \code{\link{recipe_lint}}, \code{\link{recipe_to_plan}}
+#' @details With connections, a matching last-successful-publication receipt
+#'   reports permitted conflicts, chosen labels and versions. It uses only the
+#'   factor metadata already admitted for each retained component; explain does
+#'   not query category occurrence. Before publication those names are unresolved.
 #' @export
 recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = NULL,
                            symbol = "omop") {
@@ -153,6 +157,9 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
         text <- c(text, "Execution would use the publication protocol on every site.")
       }
     }
+  }
+  if (!is.null(conns) && is.null(refusal)) {
+    text <- c(text,.conceptPublishedExplain(.get_session(symbol),plan,conns))
   }
   if (!is.null(refusal)) {
     text <- c(text, paste0("Execution on these servers would be refused: ", refusal))

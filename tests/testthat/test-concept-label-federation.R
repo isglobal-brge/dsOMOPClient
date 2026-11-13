@@ -5,6 +5,9 @@ test_that('A27 three-site education and cause factors pool by identity including
   out <- setNames('A27', names(plan$outputs))
   ds.omop.plan.execute(plan, out = out, symbol = 'labels', conns = ctx$conns)
   frames <- .clf_frames(ctx, 'A27')
+  explained <- recipe_explain(recipe, conns=ctx$conns, symbol='labels')
+  expect_match(paste(explained$text,collapse='\n'),'vocabulary conflict: New education / Old education')
+  expect_match(paste(explained$text,collapse='\n'),'version 2026-01-01')
   expected <- c('New education','Same [45000124]','Same [45000125]','declared only')
   for (f in frames) {
     expect_identical(levels(f$education), expected)

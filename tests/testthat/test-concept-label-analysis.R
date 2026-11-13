@@ -27,6 +27,7 @@ test_that('A27 pooled ds.table and protected-object ds.glm use aligned categorie
   expect_true(is.list(tables))
   pooled <- tables$output.list$TABLES.COMBINED_all.sources_counts
   expect_equal(as.numeric(pooled),c(24,24,6))
+  expect_identical(dimnames(pooled)[[1L]],levels(frames[[1L]]$education)[1:3])
   # No key extraction or class/seal stripping: dsBase receives the published
   # protected table through its normal data= route.
   # A category absent globally is not estimable. The declared recode can
