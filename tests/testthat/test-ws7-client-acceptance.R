@@ -212,6 +212,15 @@
                                            dsOMOP:::.personKeyPublicContract(handle))
   got <- as.data.frame(frame[cols], stringsAsFactors = FALSE)
   for (col in cols) {
+    # 2.10.4 publishes panel categories as ordered factors. Their labels retain
+    # the frozen numeric values; factor codes are presentation-local indices.
+    if (col %in% c("age_band", "calendar_year")) {
+      expect_true(is.ordered(got[[col]]), info = paste(info, col))
+      expect_identical(levels(got[[col]]),
+                       as.character(sort(as.numeric(levels(got[[col]])))),
+                       info = paste(info, col, "numeric category order"))
+      got[[col]] <- as.character(got[[col]])
+    }
     if (is.numeric(want[[col]])) got[[col]] <- as.numeric(got[[col]]) else {
       got[[col]] <- as.character(got[[col]])
       want[[col]] <- as.character(want[[col]])
@@ -240,6 +249,11 @@
     label <- paste(info, col)
     got <- staged[[col]]
     want <- memory[[col]]
+    if (is.factor(want)) {
+      expect_true(is.factor(got), info = label)
+      expect_identical(is.ordered(got), is.ordered(want), info = label)
+      expect_identical(levels(got), levels(want), info = label)
+    }
     # Check missingness before numeric parsing: neither empty strings nor the
     # literal text "NA" may become a missing value and pass the comparison.
     expect_identical(is.na(got), is.na(want), info = label)
