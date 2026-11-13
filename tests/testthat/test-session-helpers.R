@@ -502,3 +502,23 @@ test_that("ds.omop.cohort.create auto-assigns a non-colliding cohort id", {
   h3 <- ds.omop.cohort.create(spec = spec, cohort_id = 7)
   expect_equal(unclass(h3)[1], "dsomop_cohort_7")
 })
+
+
+test_that("named singleton arguments use scalar JSON transport without executable constructors", {
+  for (value in list(c(result = "D_result"), c(limit = 3L), c(enabled = TRUE))) {
+    wire <- .ds_encode(value)
+    expect_type(wire, "character")
+    expect_length(wire, 1L)
+    expect_null(names(wire))
+    expect_true(startsWith(wire, "B64:"))
+    b64 <- chartr("-_", "+/", substring(wire, 5L))
+    b64 <- paste0(b64, strrep("=", (4L - nchar(b64) %% 4L) %% 4L))
+    json <- rawToChar(jsonlite::base64_dec(b64))
+    expect_equal(jsonlite::fromJSON(json, simplifyVector = FALSE), as.list(value))
+    expr <- as.call(list(as.name("omopPlanExecuteDS"), "resource", "plan", wire))
+    expect_false(any(grepl("c\\(|structure\\(", deparse(expr))))
+  }
+  expect_identical(.ds_encode("D_result"), "D_result")
+  expect_identical(.ds_encode(3L), 3L)
+  expect_identical(.ds_encode(TRUE), TRUE)
+})

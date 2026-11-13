@@ -178,7 +178,7 @@ test_that("publish = character(0) is kept from the recipe to the executed plan (
   res <- ds.omop.plan.execute(plan)
   expect_identical(res, stats::setNames(character(0), character(0)))
   expect_identical(.decode(log$exec[[3L]])$publish, list())
-  # the JSON object {}: what a 2.10.4 server accepts with publish = []
+  # the JSON object {}: what a 2.10.3 server accepts with publish = []
   # (dsOMOP tests/testthat/test-legacy-execution-call.R)
   expect_identical(log$exec[[4L]], "B64:e30")
   expect_error(ds.omop.plan.execute(plan, out = c(one = "X")), "publishes no outputs")
@@ -223,16 +223,16 @@ test_that("server.version separates old installs from stale profiles and reports
   testthat::local_mocked_bindings(
     .dsomop_published_methods = function(...) inv,
     .ds_safe_aggregate = function(...) list(old = list(version = "2.10.2"),
-                                            stale = list(version = "2.10.4"),
-                                            new = list(version = "2.10.4")),
-    ds.omop.client.version = function() "2.10.4",
+                                            stale = list(version = "2.10.3"),
+                                            new = list(version = "2.10.3")),
+    ds.omop.client.version = function() "2.10.3",
     .get_session = function(...) list(conns = list(new = "N"), capabilities = list(new = .caps())),
     .package = "dsOMOPClient")
   got <- ds.omop.server.version(list(old = "O", stale = "S", new = "N"))
   expect_identical(got$ready, c(FALSE, FALSE, TRUE))
   expect_match(got$advice[[1L]], "dsOMOP 2.10.2 is installed and published but predates the publication protocol")
-  expect_match(got$advice[[1L]], "Publishing again cannot add these methods.*installs dsOMOP 2.10.4")
-  expect_match(got$advice[[2L]], "dsOMOP 2.10.4 is installed but the profile publishes the methods of 2.10.2")
+  expect_match(got$advice[[1L]], "Publishing again cannot add these methods.*installs dsOMOP 2.10.3")
+  expect_match(got$advice[[2L]], "dsOMOP 2.10.3 is installed but the profile publishes the methods of 2.10.2")
   expect_identical(got$recipe_language[[1L]], "unavailable")
   expect_identical(got$recipe_language[[2L]], "unavailable")
   expect_identical(got$recipe_language[[3L]]$version, 2L)

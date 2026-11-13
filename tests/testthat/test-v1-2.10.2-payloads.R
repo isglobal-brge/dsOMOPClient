@@ -89,7 +89,7 @@ test_that("sticky native preparation refuses an old/new federation before every 
   spec <- omop_querylibrary_sticky("PE12", variable = "age", breaks = seq(0, 120, 10),
                                    preparation = native)
   expect_error(dsOMOPClient:::.querylibrary_sticky_prepare(spec,
-    list(old = "old", new = "new"), "omop"), "old.*2.10.4|old.*Upgrade")
+    list(old = "old", new = "new"), "omop"), "old.*2.10.3|old.*Upgrade")
   expect_identical(unname(state$assigns), c(0L, 0L))
   expect_length(state$sent, 0L)
   expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))

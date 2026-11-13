@@ -198,7 +198,7 @@ test_that("verbs refuse tagged old and mixed profiles before any assignment or c
       # inventory, independently of the session's block, must be checked.
       err <- tryCatch(request(), error = conditionMessage)
       expect_type(err, "character")
-      expect_match(err, "dsOMOP 2.10.4", fixed = TRUE)
+      expect_match(err, "dsOMOP 2.10.3", fixed = TRUE)
       expect_match(err, "[Nn]othing was sent to any site")
       for (s in old) expect_match(err, paste0(s, " lacks omop"))
       expect_length(state$calls, 0L)

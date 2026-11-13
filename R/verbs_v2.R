@@ -16,7 +16,7 @@
 .mutate_stop <- function(...) stop("ds.omop.mutate(): ", ..., call. = FALSE)
 
 # Every server must publish the protocol and the verb's assign method, then
-# advertise its operation (dsOMOP 2.10.4). Check before even a rollback copy.
+# advertise its operation (dsOMOP 2.10.3). Check before even a rollback copy.
 .verb_assert_supported <- function(session, conns, op, what, server_method) {
   route <- .plan_protocol_route(conns, server_method)
   if (!route$protocol) {
@@ -28,7 +28,7 @@
   if (!all(ok)) {
     stop(what, " needs the '", op, "' operation, which ",
          paste(servers[!ok], collapse = ", "), if (sum(!ok) == 1L) " does" else " do",
-         " not advertise (it is part of dsOMOP 2.10.4). Upgrade dsOMOP on ",
+         " not advertise (it is part of dsOMOP 2.10.3). Upgrade dsOMOP on ",
          if (sum(!ok) == 1L) "that server." else "those servers.", call. = FALSE)
   }
   invisible(TRUE)
@@ -315,7 +315,7 @@
 #' confirmed, the error names the unresolved sites and the retained recovery
 #' symbol. A cleanup error after confirmed commit states that the mutation
 #' committed and identifies the remaining backup cleanup.
-#' Every participating server must publish the dsOMOP 2.10.4 publication
+#' Every participating server must publish the dsOMOP 2.10.3 publication
 #' protocol and \code{omopMutateDS}, and advertise \code{verb.mutate}.
 #' The client checks this before any assignment, including a rollback copy;
 #' an old server or an incomplete published profile refuses the whole call.

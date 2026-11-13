@@ -179,7 +179,7 @@ test_that("a 2.10.1-style recipe the v1 compiler refuses as newly permitted runs
   expect_error(dsOMOPClient:::.recipe_plan_for_session(unknown, "omop", conns), "nope")
   conns <- .with_servers(list(a = .caps(), old = list()))
   expect_error(dsOMOPClient:::.recipe_plan_for_session(r, "omop", conns),
-               "no v1 rendering.*older than dsOMOP 2.10.4")
+               "no v1 rendering.*older than dsOMOP 2.10.3")
 })
 
 test_that("a recipe with neither a v1 plan nor a native rendering names both (A-14)", {

@@ -1103,7 +1103,7 @@ print.omop_filter <- function(x, ...) {
 #' @param operator Character; \code{"AND"}, \code{"OR"} or (2.10.3)
 #'   \code{"NOT"}, which negates the conjunction of its children: the legacy
 #'   spelling of \code{\link{omop_not}()}. A NOT group has no v1 rendering; it
-#'   runs as a language-2 plan on dsOMOP 2.10.4 servers.
+#'   runs as a language-2 plan on dsOMOP 2.10.3 servers.
 #' @param label Character or \code{NULL}; human-readable description
 #'   (auto-generated from children if \code{NULL}).
 #' @return An \code{omop_filter_group} object.
@@ -2288,7 +2288,7 @@ print.omop_variable_block <- function(x, ...) {
 #'   faithful executable mapping; use split \code{"long"} outputs. The
 #'   \code{"covariates_sparse"} label (2.10.3, B-22) is the language-2
 #'   \code{format = "sparse"} over the output's variables as sources; it has
-#'   no v1 rendering and runs on dsOMOP 2.10.4 servers.
+#'   no v1 rendering and runs on dsOMOP 2.10.3 servers.
 #' @param variables Character vector or \code{NULL}; variable names to include
 #'   (\code{NULL} means all variables in the recipe).
 #' @param population_id Character; which population to use (default
@@ -8221,7 +8221,7 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'     child population.}
 #'   \item{language_2_only (INFO)}{a recipe of 2.10.1 constructors whose
 #'     shape 2.10.3 newly permits (e.g. a NOT group) has no v1 plan and runs
-#'     as its language-2 plan on dsOMOP 2.10.4 servers only.}
+#'     as its language-2 plan on dsOMOP 2.10.3 servers only.}
 #' }
 #' The lint has no mirror of server disclosure gates (no width floors, no
 #' mandatory bins): from 2.10.3 the server's final publication rule is the

@@ -56,7 +56,7 @@
 .current_published_methods <- function(conns, ...) {
   current <- dsOMOPClient:::.DSOMOP_SERVER_METHODS
   stats::setNames(lapply(names(conns), function(s) {
-    list(version = "2.10.4", aggregate = c(current$aggregate, current$optional),
+    list(version = "2.10.3", aggregate = c(current$aggregate, current$optional),
          assign = current$assign)
   }), names(conns))
 }
@@ -88,7 +88,7 @@
     }
     data.frame(server = s, name = nm, type = type, class = "function",
                value = paste0("dsOMOP::", nm), package = "dsOMOP",
-               version = if (s %in% old) m2102$version else "2.10.4",
+               version = if (s %in% old) m2102$version else "2.10.3",
                stringsAsFactors = FALSE)
   }
   log <- function(...) state$calls[[length(state$calls) + 1L]] <- list(...)

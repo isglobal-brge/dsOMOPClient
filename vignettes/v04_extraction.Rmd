@@ -12,7 +12,7 @@ vignette: >
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
-These 2.10.4 examples follow the frozen recipe-language-2 contract and stay
+These 2.10.3 examples follow the frozen recipe-language-2 contract and stay
 unevaluated until compiler integration. Patient tables are assigned beside the
 data; use reviewed DataSHIELD methods to analyse them. The previous chapter
 explains populations and index dates.
@@ -58,7 +58,7 @@ cause <- omop_variable(name = "cause_of_death", table = "death",
   column = "cause_concept_id", type = "categorical", format = "first_value")
 ```
 
-The 2.10.4 advanced spelling names an event and reducer. This selects the last
+The 2.10.3 advanced spelling names an event and reducer. This selects the last
 coded answer through the index day, avoiding post-index education updates:
 
 ```{r}
@@ -83,7 +83,7 @@ result <- recipe_execute(recipe, out = c(profile = "D_profile"), conns = conns)
 ```
 
 Translation follows the declared concept type, including renamed wide columns;
-it must not depend on an `_concept_id` suffix. This is a 2.10.4 integration
+it must not depend on an `_concept_id` suffix. This is a 2.10.3 integration
 requirement: verify translated names and retained IDs on your integrated build.
 `cause_of_death` is the coded cause, not proof that everyone has died; missing
 cause stays NA. It is an outcome description and may use future information,

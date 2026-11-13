@@ -10,7 +10,7 @@
 \item{x}{An R object to encode.}
 }
 \value{
-A JSON string if x is a list, or x unchanged if scalar.
+A base64 JSON string for complex or named input; unnamed scalars unchanged.
 }
 \description{
 When passing complex R objects (lists, named vectors) through
@@ -19,6 +19,6 @@ via deparse(), which generates structure()/c() calls not in the
 DataSHIELD whitelist. This helper wraps them as JSON strings.
 The server-side .ds_arg() transparently deserializes them.
 In DSLite, call() handles native R objects directly, so this
-function only encodes lists/complex objects — scalars pass through.
+function encodes lists, vectors and named scalars; unnamed scalars pass through.
 }
 \keyword{internal}

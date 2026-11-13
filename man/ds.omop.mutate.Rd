@@ -55,7 +55,7 @@ one server restores the original everywhere. If restoration cannot be
 confirmed, the error names the unresolved sites and the retained recovery
 symbol. A cleanup error after confirmed commit states that the mutation
 committed and identifies the remaining backup cleanup.
-Every participating server must publish the dsOMOP 2.10.4 publication
+Every participating server must publish the dsOMOP 2.10.3 publication
 protocol and \code{omopMutateDS}, and advertise \code{verb.mutate}.
 The client checks this before any assignment, including a rollback copy;
 an old server or an incomplete published profile refuses the whole call.

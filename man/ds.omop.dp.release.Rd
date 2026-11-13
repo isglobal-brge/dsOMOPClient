@@ -36,7 +36,12 @@ enters the server specification or sticky-release identity.}
 \code{TRUE} means both views and \code{FALSE} means split only.}
 }
 \value{
-A \code{dsomop_result}. The \code{meta$privacy} record reports the
+A \code{dsomop_result}. On 2.10.3, \code{meta$privacy} reports
+  each site's protection route and guarantee scope. Only all-fixed
+  federations report vector epsilon composition (maximum for disjoint
+  sites, sum for overlapping sites), never an API-transcript epsilon.
+  Heuristic and legacy warnings remain in \code{meta$warnings}.
+  For older servers, \code{meta$privacy} reports the
   effective population label, a named public snapshot map, fixed per-site
   epsilon and parallel cross-site composition for this release. Federated
   nodes are modeled as separate populations, so the combined epsilon and
@@ -55,8 +60,23 @@ Performs a complete-federation preflight, requests the same typed release
 from every node, verifies the returned mechanism contract, and optionally
 pools only the noisy sufficient statistics. A failure at any site stops the
 call without publishing another site's value. Retrying the identical
-request returns the same complete answer. The default v3 contract requires
-dsOMOP 2.7.1 or later.
+request returns the same complete answer when its bounded contributions
+and applicable fixed-synopsis generation are unchanged.
+}
+\details{
+On dsOMOP 2.10.3, typed binary rates carry numerator/denominator masks of
+the complete registered domain; numeric histograms use one versioned
+projection of their complete atom basis before coarsening. Pooling sums
+compatible signed bases and derives the view once. Fixed synopses declare
+their bounded-vector epsilon and delta zero before exact support gates;
+realised-contribution releases are heuristic and declare neither. No
+finite epsilon describes the whole service transcript. The public
+\code{snapshot_id} is optional display metadata and never controls
+admission or noise. All older servers receive an explicit upgrade warning.
+A mixed old/new federation supports \code{type = "split"} only.
+
+The remaining legacy semantics apply only to servers before 2.10.3.
+Their default v3 contract requires dsOMOP 2.7.1 or later.
 For a staged upgrade only, the client option
 \code{dsomop.dp.allow_legacy_servers} (default \code{FALSE}) can be set to
 \code{TRUE} to permit legacy v2 servers, including mixed federations. Every
@@ -83,9 +103,9 @@ depend on those value semantics and therefore do not require that unrelated
 contract.
 Every input must have been produced by an audited person-local server path
 and carry its authenticated content-bound provenance capsule.
-}
-\details{
-Every answer uses the fixed epsilon reported by its server and delta zero.
+
+Legacy per-release answers report their server's fixed epsilon and delta
+zero under that older contract.
 There is no lifetime privacy budget or privacy call quota. Composition
 metadata describes only the participating sites in the current federated
 release. Repeating a question adds no observation; no full temporal
