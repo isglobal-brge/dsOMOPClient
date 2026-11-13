@@ -19,7 +19,9 @@ omop_recipe(
   events = NULL,
   intervals = NULL,
   coverage = NULL,
-  publish = NULL
+  publish = NULL,
+  labels = NULL,
+  column_names = NULL
 )
 }
 \arguments{
@@ -76,6 +78,10 @@ recipe's populations.}
 \item{publish}{(2.10.3) \code{NULL} (every output is published) or the
 names of the outputs to publish; other outputs are computed privately
 when another output depends on them and are never released.}
+
+\item{labels}{Recipe-wide concept-ID to category-label map; variable maps win.}
+
+\item{column_names}{Recipe-wide stable generated-column key to final-name map.}
 }
 \value{
 An \code{omop_recipe} object.

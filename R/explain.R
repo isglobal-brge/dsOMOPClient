@@ -53,6 +53,10 @@
 #' recipe_explain(recipe, detail = "semantics")
 #' }
 #' @seealso \code{\link{recipe_lint}}, \code{\link{recipe_to_plan}}
+#' @details With connections, a matching last-successful-publication receipt
+#'   reports permitted conflicts, chosen labels and versions. It uses only the
+#'   factor metadata already admitted for each retained component; explain does
+#'   not query category occurrence. Before publication those names are unresolved.
 #' @export
 recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = NULL,
                            symbol = "omop") {
@@ -82,6 +86,7 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     text <- v1$text
     defaults <- v1$defaults
   }
+  text <- c(text, .conceptExplain(if (v2) norm else recipe))
   server <- NULL
   if (!is.null(conns)) {
     session <- .get_session(symbol)
@@ -140,7 +145,7 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     # B1: the route of ordinary memory execution, including its default
     # factor harmonisation. A plan publishing nothing calls no factor method.
     if (is.null(refusal)) {
-      harmonizes <- isTRUE(plan$options$factor_concepts %||% TRUE) &&
+      harmonizes <- !isFALSE(plan$options$translate_concepts) &&
         !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
       route <- tryCatch(.plan_protocol_route(conns, harmonizes = harmonizes),
                         error = function(e) e)
@@ -152,6 +157,9 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
         text <- c(text, "Execution would use the publication protocol on every site.")
       }
     }
+  }
+  if (!is.null(conns) && is.null(refusal)) {
+    text <- c(text,.conceptPublishedExplain(.get_session(symbol),plan,conns))
   }
   if (!is.null(refusal)) {
     text <- c(text, paste0("Execution on these servers would be refused: ", refusal))
