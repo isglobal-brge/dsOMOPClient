@@ -216,7 +216,9 @@ privileges, so package installation remains a trust boundary.
 
 Use the most restrictive DataSHIELD privacy-control level that supports
 the reviewed method allowlist. dsOMOP does not require a globally
-permissive privacy level for wide output. A hardened starting point is:
+permissive privacy level for wide output. Defaults work without owner
+privacy configuration. Sites with an existing governance policy may
+optionally override settings, for example:
 
 ``` r
 options(
@@ -243,10 +245,11 @@ options(
 )
 ```
 
-Numeric value filters are enabled only for controller-defined public
-grids. Their limits must come from clinical/domain governance fixed
-before inspecting the protected data, never from observed minima, maxima
-or quantiles. For example:
+Private recipe and expression filters accept typed numeric predicates
+without a controller-defined grid. The separate aggregate
+`ds.omop.safe.cutpoints()` endpoint uses public grids fixed by
+clinical/domain governance before inspecting the protected data.
+Optional cutpoint-discovery configuration looks like:
 
 ``` r
 options(dsomop.safe_numeric_grids = list(
@@ -269,7 +272,9 @@ one mean per person, clips that contribution to the public range, and
 issues the full grid only if every bin passes the protected cell floor.
 It does not merge bins adaptively. In a multi-site session the client
 uses only edges issued by every site; if no common usable interval
-exists, filter construction fails closed.
+exists, construction from those discovered cutpoints fails closed. This
+does not restrict explicit private numeric predicates or weaken final
+publication support.
 
 ## Federated policy harmonisation
 

@@ -205,7 +205,7 @@
 <div class="section level2">
 <h2 id="server-administrator-guide">Server administrator guide<a class="anchor" aria-label="anchor" href="#server-administrator-guide"></a>
 </h2>
-<p>Use the most restrictive DataSHIELD privacy-control level that supports the reviewed method allowlist. dsOMOP does not require a globally permissive privacy level for wide output. A hardened starting point is:</p>
+<p>Use the most restrictive DataSHIELD privacy-control level that supports the reviewed method allowlist. dsOMOP does not require a globally permissive privacy level for wide output. Defaults work without owner privacy configuration. Sites with an existing governance policy may optionally override settings, for example:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span></span>
 <span>  nfilter.subset <span class="op">=</span> <span class="fl">5</span>,</span>
@@ -229,7 +229,7 @@
 <span>  dsomop.max_temp_tables_per_handle <span class="op">=</span> <span class="fl">256</span>,</span>
 <span>  dsomop.analysis_pack_allowlist <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Numeric value filters are enabled only for controller-defined public grids. Their limits must come from clinical/domain governance fixed before inspecting the protected data, never from observed minima, maxima or quantiles. For example:</p>
+<p>Private recipe and expression filters accept typed numeric predicates without a controller-defined grid. The separate aggregate <code><a href="../reference/ds.omop.safe.cutpoints.html">ds.omop.safe.cutpoints()</a></code> endpoint uses public grids fixed by clinical/domain governance before inspecting the protected data. Optional cutpoint-discovery configuration looks like:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>dsomop.safe_numeric_grids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -243,7 +243,7 @@
 <span>    clipping <span class="op">=</span> <span class="st">"winsorize"</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>The requested table, column, concept scope and number of bins must match one configured entry exactly. The server reduces longitudinal values to one mean per person, clips that contribution to the public range, and issues the full grid only if every bin passes the protected cell floor. It does not merge bins adaptively. In a multi-site session the client uses only edges issued by every site; if no common usable interval exists, filter construction fails closed.</p>
+<p>The requested table, column, concept scope and number of bins must match one configured entry exactly. The server reduces longitudinal values to one mean per person, clips that contribution to the public range, and issues the full grid only if every bin passes the protected cell floor. It does not merge bins adaptively. In a multi-site session the client uses only edges issued by every site; if no common usable interval exists, construction from those discovered cutpoints fails closed. This does not restrict explicit private numeric predicates or weaken final publication support.</p>
 </div>
 <div class="section level2">
 <h2 id="federated-policy-harmonisation">Federated policy harmonisation<a class="anchor" aria-label="anchor" href="#federated-policy-harmonisation"></a>
