@@ -251,14 +251,14 @@ test_that("a scalar cohort to omop_recipe is scope, not the base cohort", {
       if (is.call(expr) && identical(as.character(expr[[1L]]),
                                      "omopPlanExecuteDS")) {
         captured <<- expr
-        symbols <<- union(symbols, as.character(expr[[4L]]))
+        symbols <<- union(symbols, as.character(unlist(.decode_ds(expr[[4L]]), use.names = FALSE)))
       }
       if (is.function(success)) success("srv")
       invisible(NULL)
     },
     datashield.aggregate = function(conns, expr, success = NULL, ...) {
       report <- if (as.character(expr[[1L]]) == "omopPlanStatusDS") {
-        .publication_status(captured[[4L]])
+        .publication_status(.decode_ds(captured[[4L]]))
       } else list(levels = list(), unsafe = character(0),
                    nfilter_levels_max = 40)
       if (is.function(success)) success("srv", report)
@@ -378,14 +378,14 @@ test_that("recipe_execute applies an execution-time scope override", {
       if (is.call(expr) && identical(as.character(expr[[1L]]),
                                      "omopPlanExecuteDS")) {
         captured <<- expr
-        symbols <<- union(symbols, as.character(expr[[4L]]))
+        symbols <<- union(symbols, as.character(unlist(.decode_ds(expr[[4L]]), use.names = FALSE)))
       }
       if (is.function(success)) success("srv")
       invisible(NULL)
     },
     datashield.aggregate = function(conns, expr, success = NULL, ...) {
       report <- if (as.character(expr[[1L]]) == "omopPlanStatusDS") {
-        .publication_status(captured[[4L]])
+        .publication_status(.decode_ds(captured[[4L]]))
       } else list(levels = list(), unsafe = character(0),
                    nfilter_levels_max = 40)
       if (is.function(success)) success("srv", report)

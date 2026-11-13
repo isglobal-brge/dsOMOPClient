@@ -2028,9 +2028,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     # v2 plans keep every digit, explicit nulls and empty objects, so the
     # server parses exactly the plan whose semantic digest was computed.
     if (v2) .ds_encode_lossless(plan) else .ds_encode(plan),
-    # zero publication roots (publish = []): an empty JSON object, never a
-    # bare character(0) that a DataSHIELD expression parser would refuse
-    if (length(out)) .ds_encode(out) else .ds_encode(stats::setNames(list(), character(0))),
+    # A mapping is an object even with one entry: a named scalar deparses as
+    # a nested c() call, which DataSHIELD does not publish. Zero publication
+    # roots (publish = []) retain an explicit empty JSON object.
+    if (length(out)) .ds_encode(as.list(out)) else .ds_encode(stats::setNames(list(), character(0))),
     output_mode, commit_policy = if (on_small_site == "skip") {
       "all_or_none"
     } else "server")
