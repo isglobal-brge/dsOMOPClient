@@ -204,7 +204,8 @@ omop_variable <- function(name = NULL,
                           where = NULL,
                           visit = NULL,
                           broadcast = FALSE,
-                          labels = NULL, column_names = NULL) {
+                          labels = NULL, column_names = NULL, date_spec = NULL) {
+  date_spec <- .dateSpecArg(date_spec)
   labels <- .conceptMap(labels, "omop_variable(): labels")
   column_names <- .conceptMap(column_names, "omop_variable(): column_names", TRUE)
   if (!is.null(event) || !is.null(reducer)) {
@@ -238,7 +239,7 @@ omop_variable <- function(name = NULL,
                         broadcast = .v2_flag(broadcast, "omop_variable(): broadcast"),
                         name = .v2_name(name, "omop_variable(): name"),
                         labels = if (length(labels)) labels,
-                        column_names = if (length(column_names)) column_names))
+                        column_names = if (length(column_names)) column_names, date_spec = date_spec))
   }
   if (is.null(table)) {
     stop("omop_variable(): table is required (or give event = and reducer =).",
@@ -2669,8 +2670,10 @@ omop_recipe <- function(variables = NULL,
                         intervals = NULL,
                         coverage = NULL,
                         publish = NULL,
-                        labels = NULL, column_names = NULL) {
+                        labels = NULL, column_names = NULL, date_spec = NULL) {
   recipe <- .omop_recipe_empty()
+  if (!is.null(date_spec)) recipe$options$date_spec <- .dateSpecArg(date_spec)
+  variables <- .dateExpandBundles(variables)
   labels <- .conceptMap(labels, "omop_recipe(): labels")
   column_names <- .conceptMap(column_names, "omop_recipe(): column_names", TRUE)
   if (length(labels)) recipe$options$labels <- labels
