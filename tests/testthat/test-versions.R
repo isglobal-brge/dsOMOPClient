@@ -200,3 +200,14 @@ test_that("ds.omop.connect stops before assigning anything when dsOMOP is not pu
   )
   expect_false(assigned)
 })
+
+
+test_that("2.10.3 upgrade with a stale 2.10.2 profile asks for publication", {
+  .mock_server("2.10.2", ping_version = "2.10.3",
+               drop = .DSOMOP_PROTOCOL_METHODS)
+  v <- ds.omop.server.version(list(site = "FAKE"))
+  expect_false(v$ready)
+  expect_match(v$advice, "2.10.3 is installed but the profile publishes")
+  expect_match(v$advice, "Publish")
+  expect_false(grepl("predates|cannot add|2.10.4", v$advice))
+})

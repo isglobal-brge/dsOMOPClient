@@ -2,6 +2,10 @@
 
 Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
 
+- Corrected upgrade advice for the publication protocol backported to 2.10.3:
+  an installed 2.10.3 with a stale 2.10.2 profile asks to publish its settings,
+  rather than incorrectly requiring a further package upgrade.
+
 - Protected histogram pooling retains its cells when a distribution gate
   withholds moments; unavailable means and standard deviations stay NA.
 - New protected-release contract: dsOMOP 2.10.3 servers advertise

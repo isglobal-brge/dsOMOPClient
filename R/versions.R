@@ -5,7 +5,7 @@
 # The dsOMOP server methods this client calls, by DataSHIELD type. A test keeps
 # this list equal to the methods named in the client's code. Plan execution
 # requires the publication status and revocation methods; ds.omop.mutate()
-# also requires omopMutateDS (dsOMOP 2.10.4).
+# also requires omopMutateDS (backported with the 2.10.3 publication protocol).
 # Methods under `optional` are called only on servers that advertise them
 # (omopPlanExplainDS, for a language-2 plan's server explain); a server without
 # them is still ready for the methods above.
@@ -47,7 +47,7 @@
 
 # The dsOMOP release whose methods this client's execution protocol needs
 # (publication status, revocation and commit_policy, design section 7.3).
-.DSOMOP_PROTOCOL_RELEASE <- "2.10.4"
+.DSOMOP_PROTOCOL_RELEASE <- "2.10.3"
 
 # What an administrator does when the profile lacks dsOMOP's methods.
 .DSOMOP_PUBLISH_ADVICE <- paste0(
