@@ -64,6 +64,11 @@ is then \code{NULL}). The execution route on these servers (the
 publication protocol, the legacy call of a federation with an older
 server, or a refusal) is stated, and a recipe they could not execute is
 still explained, with the refusal reported.
+
+With connections, a matching last-successful-publication receipt
+  reports permitted conflicts, chosen labels and versions. It uses only the
+  factor metadata already admitted for each retained component; explain does
+  not query category occurrence. Before publication those names are unresolved.
 }
 \examples{
 \dontrun{

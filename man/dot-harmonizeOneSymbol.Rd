@@ -7,20 +7,21 @@
 .harmonizeOneSymbol(sym, conns, .retry = TRUE)
 }
 \arguments{
-\item{sym}{Character; the server-side symbol to harmonize.}
+\item{sym}{Character; per-site server symbols of one retained component.}
 
-\item{conns}{DSI connections object restricted to servers holding
-\code{sym}.}
+\item{conns}{DSI connections restricted to that component's retained sites.}
+
+\item{.retry}{Internal flag allowing one evidence refresh.}
 }
 \value{
-\code{NULL} invisibly.
+Permitted resolution text invisibly, for the client publication receipt.
 }
 \description{
-Implements the three-phase coordination for a single symbol: (1) aggregate
-each server's safe levels via \code{omopFactorLevelsDS}; (2) union them
-client-side into one deterministic ordering (numeric ids sorted
-numerically, character names sorted lexically), dropping any column flagged
-unsafe on \emph{any} server and any union exceeding the smallest server
-cap; (3) broadcast the shared spec back via \code{omopAsFactorColumnsDS}.
+Collects only metadata admitted by the existing factor-level transport,
+reconciles A-27 identities and generated names, then applies a complete
+shared contract at every retained site in memory or staged execution.
+Unsafe or incomplete contracts fail publication. Changed vocabulary evidence
+is reconciled once more before assignment. Older untagged objects use the
+legacy level transport.
 }
 \keyword{internal}
