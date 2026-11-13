@@ -1896,7 +1896,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   v2 <- .v2_is_plan_v2(plan)
   .conceptValidatePlan(plan, wire = v2)
   # Translation is one contract for memory, staged and protected executions.
-  harmonize_factors <- !isFALSE(plan$options$translate_concepts) || .dateNeedsPresentation(plan)
+  harmonize_factors <- !isFALSE(plan$options$translate_concepts) || .categoryNeedsPresentation(plan)
   session <- .get_session(symbol)
   session$concept_presentation <- NULL
   assign(symbol, session, envir = .dsomop_client_env)
@@ -1906,7 +1906,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # assigned. The publication protocol needs it on every site; otherwise a v2
   # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
   harmonizes <- isTRUE(harmonize_factors) &&
-    (isTRUE(plan$options$factor_concepts %||% TRUE) || .dateNeedsPresentation(plan)) &&
+    (isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan)) &&
     !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
   if (harmonizes && !v2) {
     language <- .v2_server_language(session, names(conns))
@@ -2096,7 +2096,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     .plan_verify_publication(conns, inventories)
     presentation <- list()
     if (isTRUE(harmonize_factors) &&
-        (isTRUE(plan$options$factor_concepts %||% TRUE) || .dateNeedsPresentation(plan))) {
+        (isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan))) {
       presentation <- .harmonizePublicationFactors(inventories, conns)
     }
     if (any(partial)) {
@@ -4500,4 +4500,24 @@ plot.omop_plan <- function(x, engine = c("dot", "base"), ...) {
     }
   }
   invisible(x)
+}
+
+
+# Category presentation is independent of opting out of concept labels.
+# Sex has a fixed F/M domain; the remaining domains use the controlled date
+# metadata route so different local observations cannot change factor coding.
+.categoryNeedsPresentation <- function(plan) {
+  if (.dateNeedsPresentation(plan)) return(TRUE)
+  if (any(vapply(plan$variables, function(v) {
+    d <- v$derived
+    identical(d$kind, "birth_year_band") || (identical(d$kind, "age") && isTRUE(d$bands))
+  }, logical(1)))) return(TRUE)
+  any(vapply(plan$outputs, function(o) {
+    opts <- o$options %||% list()
+    dh <- opts$date_handling %||% o$date_handling
+    partition <- opts$partition %||% list()
+    "age_at_index" %in% unlist(o$derived) || identical(dh$mode, "binned") ||
+      !is.null(partition$age_bands) || any(partition$calendar %in% c("month", "year")) ||
+      identical(opts$bins$calendar, "year")
+  }, logical(1)))
 }

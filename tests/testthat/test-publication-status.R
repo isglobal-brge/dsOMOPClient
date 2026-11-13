@@ -1,6 +1,7 @@
 .publication_plan <- function(roots = "data") {
   plan <- ds.omop.plan()
-  for (root in roots) plan <- ds.omop.plan.baseline(plan, name = root)
+  # Transport-only fixtures do not implement categorical reconciliation.
+  for (root in roots) plan <- ds.omop.plan.baseline(plan, name = root, derived = character())
   ds.omop.plan.options(plan, factor_concepts = FALSE, translate_concepts = FALSE)
 }
 

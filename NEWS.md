@@ -1,5 +1,10 @@
 # dsOMOPClient 2.10.3 (2026-11-13)
 
+- Corrected: assigned age bands, birth-year bands and panel/calendar categories
+  use the controlled factor reconciliation even when concept-label translation
+  is disabled. Re-run recipes against the corrected server to recreate factors
+  with shared levels; explicit numeric date representations remain numeric.
+
 ## Date presentation (A-28 / CR-29)
 
 - Corrected (DATES-B4): year-bearing custom factors include every year in a
