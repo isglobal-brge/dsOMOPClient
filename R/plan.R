@@ -1894,32 +1894,22 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # publication protocol as a v1 plan; only its preparation and its lossless
   # wire encoding differ.
   v2 <- .v2_is_plan_v2(plan)
-  if (identical(output_mode, "staged")) {
-    # Standard concept identifiers are the stable OHDSI interchange encoding
-    # and allow the server to stream fact tables without per-chunk vocabulary
-    # lookups on an active DB cursor.
-    if (!identical(plan$options$translate_concepts, FALSE)) {
-      plan$options$translate_concepts <- FALSE
-      # Translation changes the output schema covered by a pre-existing
-      # federation signature. Force the normal preparation path to rebuild the
-      # contract for the staged representation instead of rejecting it as a
-      # post-harmonization mutation or, worse, reusing stale schema evidence.
-      if (v2) {
-        attr(plan, "harmonization") <- NULL
-        .v2_assert_schema(plan)
-      } else {
-        plan$harmonization <- NULL
-      }
-    }
-  }
+  .conceptValidatePlan(plan, wire = v2)
+  # Translation is one contract for memory, staged and protected executions.
+  harmonize_factors <- !isFALSE(plan$options$translate_concepts)
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   # B1: which protocol every participating site supports, before anything is
   # assigned. The publication protocol needs it on every site; otherwise a v2
   # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
-  harmonizes <- isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
+  harmonizes <- isTRUE(harmonize_factors) &&
     isTRUE(plan$options$factor_concepts %||% TRUE) &&
     !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
+  if (harmonizes && !v2) {
+    language <- .v2_server_language(session, names(conns))
+    missing <- names(conns)[!vapply(language, function(x) "output.concept_labels" %in% x$operations, logical(1))]
+    if (length(missing)) stop("Concept presentation requires output.concept_labels on: ", paste(missing, collapse = ", "), call. = FALSE)
+  }
   route <- .plan_protocol_route(conns, server_method, harmonizes)
   if (!route$protocol) {
     if (v2) {
@@ -2101,7 +2091,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       if (x$status == "refused") NULL else x$published
     })
     .plan_verify_publication(conns, inventories)
-    if (isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
+    if (isTRUE(harmonize_factors) &&
         isTRUE(plan$options$factor_concepts %||% TRUE)) {
       .harmonizePublicationFactors(inventories, conns)
     }
@@ -2631,7 +2621,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 #'   \code{sym}.
 #' @return \code{NULL} invisibly.
 #' @keywords internal
-.harmonizeOneSymbol <- function(sym, conns) {
+.harmonizeOneSymbol <- function(sym, conns, .retry = TRUE) {
   expected_servers <- names(conns)
   aggregate_success <- character(0)
   aggregate_errors <- character(0)
@@ -2686,15 +2676,18 @@ ds.omop.plan.execute <- function(plan, out = NULL,
          } else "", call. = FALSE)
   }
   per_server <- per_server[expected_servers]
-  spec <- .unionConceptLevels(per_server)
+  spec <- if (any(vapply(per_server, function(x) !is.null(x$concept_protocol), logical(1)))) {
+    .conceptUnionReports(per_server)
+  } else .unionConceptLevels(per_server)
   if (length(spec) == 0L) {
     return(invisible(NULL))
   }
   assign_success <- character(0)
   assign_errors <- character(0)
+  assign_condition <- NULL
   for (target in unique(unname(sym))) {
     sites <- names(sym)[sym == target]
-    DSI::datashield.assign.expr(
+    tryCatch(DSI::datashield.assign.expr(
       conns[sites], symbol = target,
       expr = call("omopAsFactorColumnsDS", as.symbol(target), .ds_encode(spec)),
       success = function(server) {
@@ -2703,11 +2696,14 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       error = function(server, message) {
         assign_errors[[server]] <<- message
       }
-    )
+    ), error = function(e) { assign_condition <<- e })
   }
   failed <- unique(c(names(assign_errors),
                      setdiff(expected_servers, assign_success)))
   if (length(failed) > 0L) {
+    if (.retry && length(assign_errors) && all(grepl("Concept presentation evidence changed", assign_errors, fixed = TRUE))) {
+      return(.harmonizeOneSymbol(sym, conns, .retry = FALSE))
+    }
     stop("Concept-factor recoding failed or was incomplete on: ",
          paste(failed, collapse = ", "), ".", call. = FALSE)
   }
@@ -2950,7 +2946,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
                    "concept_class_id", "standard_concept", "invalid_reason")
     }
     add("concept", columns, reason)
-    needs_vocabulary_identity <<- TRUE
+    if (dictionary) needs_vocabulary_identity <<- TRUE
   }
   add_concept_set <- function(spec, reason) {
     if (is.null(spec) || !is.list(spec) || is.null(spec$concepts)) {
@@ -3258,12 +3254,6 @@ ds.omop.plan.execute <- function(plan, out = NULL,
         if (length(flat) == 0L || anyNA(flat)) {
           issues <- c(issues, paste0(
             reason, " wide format requires a closed integer concept_set"
-          ))
-        }
-        if (translate) {
-          issues <- c(issues, paste0(
-            reason, " wide labels depend on vocabulary names; set ",
-            "translate_concepts = FALSE for a stable federated schema"
           ))
         }
       }

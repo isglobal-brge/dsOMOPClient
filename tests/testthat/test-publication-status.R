@@ -1,7 +1,7 @@
 .publication_plan <- function(roots = "data") {
   plan <- ds.omop.plan()
   for (root in roots) plan <- ds.omop.plan.baseline(plan, name = root)
-  ds.omop.plan.options(plan, factor_concepts = FALSE)
+  ds.omop.plan.options(plan, factor_concepts = FALSE, translate_concepts = FALSE)
 }
 
 test_that("status is retrieved before deletion and dynamic symbols are returned", {
@@ -194,6 +194,7 @@ test_that("factor failures revoke published artifacts federation-wide", {
   )
   plan <- .publication_plan()
   plan$options$factor_concepts <- TRUE
+  plan$options$translate_concepts <- TRUE
   expect_error(ds.omop.plan.execute(plan, out = "D"), "factor transport failed")
   expect_setequal(state$revoked, c("a", "b"))
   expect_true(all(lengths(state$symbols) == 0L))

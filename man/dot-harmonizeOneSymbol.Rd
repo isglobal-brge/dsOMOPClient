@@ -4,7 +4,7 @@
 \alias{.harmonizeOneSymbol}
 \title{Harmonize the concept-id columns of one server-side symbol}
 \usage{
-.harmonizeOneSymbol(sym, conns)
+.harmonizeOneSymbol(sym, conns, .retry = TRUE)
 }
 \arguments{
 \item{sym}{Character; the server-side symbol to harmonize.}

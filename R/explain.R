@@ -82,6 +82,7 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     text <- v1$text
     defaults <- v1$defaults
   }
+  text <- c(text, .conceptExplain(if (v2) norm else recipe))
   server <- NULL
   if (!is.null(conns)) {
     session <- .get_session(symbol)
@@ -140,7 +141,7 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     # B1: the route of ordinary memory execution, including its default
     # factor harmonisation. A plan publishing nothing calls no factor method.
     if (is.null(refusal)) {
-      harmonizes <- isTRUE(plan$options$factor_concepts %||% TRUE) &&
+      harmonizes <- !isFALSE(plan$options$translate_concepts) &&
         !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
       route <- tryCatch(.plan_protocol_route(conns, harmonizes = harmonizes),
                         error = function(e) e)

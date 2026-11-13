@@ -780,6 +780,15 @@
 }
 
 .v2w_variable <- function(ctx, v, name) {
+  out <- .v2w_variable_base(ctx, v, name)
+  for (key in c("labels", "column_names")) {
+    map <- .conceptMap(v[[key]], paste0("variables.", name, ".", key), key == "column_names")
+    if (length(map)) out[[key]] <- as.list(map)
+  }
+  out
+}
+
+.v2w_variable_base <- function(ctx, v, name) {
   context <- paste0("variable '", name, "'")
   if (!.v2_is_v2_variable(v)) return(.v2_lower_legacy_variable(ctx, v, name, context))
   switch(v$kind,
@@ -1405,6 +1414,10 @@
   plan_opts <- list()
   for (nm in c("translate_concepts", "block_sensitive", "factor_concepts")) {
     if (!is.null(opts[[nm]]) && !isTRUE(opts[[nm]])) plan_opts[[nm]] <- FALSE
+  }
+  for (key in c("labels", "column_names")) {
+    map <- .conceptMap(opts[[key]], paste0("options.", key), key == "column_names")
+    if (length(map)) plan_opts[[key]] <- as.list(map)
   }
   if (!is.null(recipe$coverage)) plan_opts$coverage <- .v2w_coverage(recipe$coverage)
   if (length(plan_opts)) plan$options <- plan_opts

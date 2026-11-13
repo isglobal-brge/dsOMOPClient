@@ -238,7 +238,7 @@
          paste(missing, collapse = ", "), ".", call. = FALSE)
   }
 
-  if (isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
+  if (isTRUE(harmonize_factors) &&
         isTRUE(plan$options$factor_concepts %||% TRUE)) {
     .harmonizeConceptFactors(owned, conns)
   }

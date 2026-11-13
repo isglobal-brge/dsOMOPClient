@@ -4,7 +4,7 @@
 # execution call. No rows or person counts cross this API.
 
 .V2_ALL_OPS <- c(
-  "concept_set", "event", "event.unit", "event.on_missing_table", "interval",
+  "output.concept_labels", "concept_set", "event", "event.unit", "event.on_missing_table", "interval",
   "interval.ingredient", "interval.stockpile", "population.index", "population.first_eligible",
   "population.any_of", "population.criteria", "population.parent", "population.setop",
   "population.match", "population.coverage.union", "criteria.not", "criteria.age",
