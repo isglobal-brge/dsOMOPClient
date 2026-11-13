@@ -225,18 +225,18 @@ test_that("every 2.10.1 export keeps its positional formals (new arguments appen
   expect_true(all(c("ds.omop.plan", "ds.omop.client.version") %in% exports))
 })
 
-test_that("the appended 2.10.3 arguments are the frozen ones", {
+test_that("the appended language-2 arguments include approved label and date extensions", {
   appended <- function(f, n) utils::tail(names(formals(f)), n)
-  expect_identical(appended(omop_variable, 7L),
-                   c("event", "reducer", "where", "visit", "broadcast", "labels", "column_names"))
+  expect_identical(appended(omop_variable, 8L),
+                   c("event", "reducer", "where", "visit", "broadcast", "labels", "column_names", "date_spec"))
   # F-24 keeps visit_filter as the legacy alias of visit (appended last)
   expect_identical(appended(omop_variable_block, 4L),
                    c("where", "visit", "concept_col", "visit_filter"))
   expect_identical(appended(omop_population, 3L), c("index", "match", "coverage"))
   expect_identical(appended(omop_output, 6L),
                    c("rows", "grain", "columns", "format", "sources", "collapse"))
-  expect_identical(appended(omop_recipe, 7L),
-                   c("concept_sets", "events", "intervals", "coverage", "publish", "labels", "column_names"))
+  expect_identical(appended(omop_recipe, 8L),
+                   c("concept_sets", "events", "intervals", "coverage", "publish", "labels", "column_names", "date_spec"))
   expect_identical(appended(recipe_execute, 1L), "on_small_site")
   expect_identical(names(formals(recipe_to_plan)), c("recipe", "version"))
   expect_identical(formals(recipe_to_plan)$version, 2L)

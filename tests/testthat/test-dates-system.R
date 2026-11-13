@@ -45,6 +45,8 @@ test_that("D39 D42 API binding, closed wire, conflict and capability contracts",
 })
 
 test_that("D40 date factors pool through real ds.table with missing public periods", {
+  skip_if_not_installed("dsBaseClient")
+  skip_if_not_installed("dsBase")
   f<-dates_va_fixture(two_sites=TRUE);conns<-f$conns
   on.exit({ds.omop.disconnect(conns=conns);DSI::datashield.logout(conns);unlink(f$path)},add=TRUE)
   r<-omop_recipe(variables=list(month=omop_date("first_visit",omop_date_spec(precision="month",level_range=c("2020-03-01","2020-07-31")))),outputs=omop_output(name="o",format="wide",grain="person"))
@@ -111,6 +113,8 @@ test_that("D42 date recipe JSON YAML and code preserve native semantics", {
 })
 
 test_that("D40 protected ds.glm uses identical ordered date contrasts", {
+  skip_if_not_installed("dsBaseClient")
+  skip_if_not_installed("dsBase")
   lexer<-get("Lexer",asNamespace("DSLite"));old_d<-lexer$public_fields$t_DBLSTRING;old_s<-lexer$public_fields$t_STRING
   withr::defer({lexer$public_fields$t_DBLSTRING<-old_d;lexer$public_fields$t_STRING<-old_s})
   lexer$public_fields$t_DBLSTRING<-r"("([^"\\]|\\.)*")";lexer$public_fields$t_STRING<-r"('([^'\\]|\\.)*')"

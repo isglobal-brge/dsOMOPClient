@@ -1,11 +1,12 @@
-dates_va_fixture <- function(two_sites=FALSE, threshold=5L, levels_max=NULL) {
+dates_va_fixture <- function(two_sites=FALSE, threshold=5L, levels_max=NULL, env=parent.frame()) {
 library(dsOMOP)
 library(dsOMOPClient)
 library(DSLite)
 library(DBI)
-options(nfilter.subset = 5, default.nfilter.subset = 5,
+withr::local_options(list(nfilter.subset = 5, default.nfilter.subset = 5,
         dsomop.pseudonym_provider = "injected",
-        dsomop.pseudonym_root = as.raw(openssl::sha256(charToRaw("synthetic-colleague-fixture"))))
+        dsomop.pseudonym_root = as.raw(openssl::sha256(charToRaw("synthetic-colleague-fixture")))),
+        .local_envir = env)
 fixture_path <- tempfile(fileext = ".sqlite")
 db <- DBI::dbConnect(RSQLite::SQLite(), fixture_path)
 DBI::dbWriteTable(db, "person", data.frame(person_id = 1:4,
@@ -73,7 +74,7 @@ if(two_sites) {
   DBI::dbDisconnect(db)
   server2<-DSLite::newDSLiteServer(resources=list(fixture=resourcer::newResource(name="fixture",url=paste0("omop+dbi:sqlite://",second_path),format="omop.dbi.db")),config=config)
 }
-options(datashield.env = environment())
+withr::local_options(list(datashield.env = environment()), .local_envir = env)
 builder <- DSI::newDSLoginBuilder()
 builder$append(server = "site", url = "server", driver = "DSLiteDriver")
 if(two_sites) builder$append(server="site2",url="server2",driver="DSLiteDriver")
