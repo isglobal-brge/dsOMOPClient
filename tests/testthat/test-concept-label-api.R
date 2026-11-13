@@ -4,8 +4,8 @@
 }
 
 test_that('A27 appended maps survive native rendering and binding', {
-  expect_identical(tail(names(formals(omop_variable)), 3L), c('broadcast','labels','column_names'))
-  expect_identical(tail(names(formals(omop_recipe)), 3L), c('publish','labels','column_names'))
+  expect_identical(tail(names(formals(omop_variable)), 4L), c('broadcast','labels','column_names','date_spec'))
+  expect_identical(tail(names(formals(omop_recipe)), 4L), c('publish','labels','column_names','date_spec'))
   r <- .cl_recipe(labels = c('2' = 'recipe', '1' = 'recipe'), column_names = c(education_1 = 'educated'))
   p <- recipe_to_plan(r)
   expect_identical(p$variables$education$labels, list('1' = 'variable'))
