@@ -144,13 +144,16 @@ test_that('A27 changed vocabulary evidence is reconciled again before final assi
   conn <- DBI::dbConnect(RSQLite::SQLite(),ctx$paths[[1L]])
   DBI::dbExecute(conn,'UPDATE observation SET value_as_concept_id = NULL WHERE observation_id IN (1,2,7,8,13,14)')
   DBI::dbDisconnect(conn)
-  for (label in c('NA','\\NA','quoted \"text\", comma\nnext line')) {
+  labels <- c('NA','\\NA','quoted \"text\", comma\nnext line')
+  for (i in seq_along(labels)) {
+    label <- labels[[i]]
     recipe <- .clf_recipe()
     recipe$options$labels <- c('45000123'=label,'45000126'='declared only')
     p <- recipe_to_plan(recipe)
-    ds.omop.plan.execute(p,out=c(output='CsvMemory'),symbol='labels',conns=ctx$conns)
-    ds.omop.plan.execute(p,out=c(output='CsvStaged'),symbol='labels',conns=ctx$conns,output_mode='staged')
-    mem <- .clf_frames(ctx,'CsvMemory'); staged <- .clf_frames(ctx,'CsvStaged')
+    memory_symbol <- paste0('CsvMemory',i); staged_symbol <- paste0('CsvStaged',i)
+    ds.omop.plan.execute(p,out=c(output=memory_symbol),symbol='labels',conns=ctx$conns)
+    ds.omop.plan.execute(p,out=c(output=staged_symbol),symbol='labels',conns=ctx$conns,output_mode='staged')
+    mem <- .clf_frames(ctx,memory_symbol); staged <- .clf_frames(ctx,staged_symbol)
     for (site in names(mem)) {
       expect_identical(as.character(staged[[site]]$education),as.character(mem[[site]]$education))
       expect_identical(levels(staged[[site]]$education),levels(mem[[site]]$education))
