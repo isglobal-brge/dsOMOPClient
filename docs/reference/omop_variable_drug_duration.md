@@ -17,21 +17,21 @@ omop_variable_drug_duration(
 
 ## Arguments
 
-- concept_id:
+  - concept\_id:
 
-  Integer; drug concept ID.
+    Integer; drug concept ID.
 
-- concept_name:
+  - concept\_name:
 
-  Character or `NULL`; human-readable name.
+    Character or `NULL`; human-readable name.
 
-- name:
+  - name:
 
-  Character or `NULL`; output column name (auto-generated if `NULL`).
+    Character or `NULL`; output column name (auto-generated if `NULL`).
 
-- agg:
+  - agg:
 
-  Character; aggregation function — `"mean"`, `"sum"`, or `"max"`.
+    Character; aggregation function — `"mean"`, `"sum"`, or `"max"`.
 
 ## Value
 
@@ -40,8 +40,7 @@ An `omop_variable` object with `format = "drug_duration"` and a
 
 ## See also
 
-[`omop_variable`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md),
-[`omop.feature.drug_duration`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.drug_duration.md)
+`omop_variable`, `omop.feature.drug_duration`
 
 ## Examples
 

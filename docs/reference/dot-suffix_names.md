@@ -18,25 +18,25 @@ multiple output columns.
 
 ## Arguments
 
-- base_name:
+  - base\_name:
 
-  Character; base variable name.
+    Character; base variable name.
 
-- n:
+  - n:
 
-  Integer; number of columns to generate.
+    Integer; number of columns to generate.
 
-- mode:
+  - mode:
 
-  Character; suffix mode ("index", "range", or "label").
+    Character; suffix mode ("index", "range", or "label").
 
-- labels:
+  - labels:
 
-  Character vector; labels for "label" mode (optional).
+    Character vector; labels for "label" mode (optional).
 
-- ranges:
+  - ranges:
 
-  Numeric matrix; start/end for "range" mode (optional).
+    Numeric matrix; start/end for "range" mode (optional).
 
 ## Value
 

@@ -13,9 +13,9 @@ mappings and arrays. The data itself is untouched. Mirrors
 
 ## Arguments
 
-- x:
+  - x:
 
-  Any object.
+    Any object.
 
 ## Value
 

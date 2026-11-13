@@ -1,13 +1,11 @@
-# Convert dsomop_result to data.frame
+# Convert dsomop\_result to data.frame
 
 Extracts a single data frame from a `dsomop_result` object. If a pooled
 result is available and is a data frame, it is returned. Otherwise, the
 first server's result is used only for a per-site result. A pooled-scope
-result whose pooled value is `NULL` returns an empty
-[`data.frame()`](https://rdrr.io/r/base/data.frame.html) so a failed
-strict federation cannot silently degrade to one server. Returns an
-empty [`data.frame()`](https://rdrr.io/r/base/data.frame.html) if no
-valid data frame is found.
+result whose pooled value is `NULL` returns an empty `data.frame()` so a
+failed strict federation cannot silently degrade to one server. Returns
+an empty `data.frame()` if no valid data frame is found.
 
 ## Usage
 
@@ -18,13 +16,13 @@ as.data.frame(x, ...)
 
 ## Arguments
 
-- x:
+  - x:
 
-  A `dsomop_result` object.
+    A `dsomop_result` object.
 
-- ...:
+  - ...:
 
-  Additional arguments (ignored).
+    Additional arguments (ignored).
 
 ## Value
 

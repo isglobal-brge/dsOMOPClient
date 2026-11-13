@@ -14,17 +14,17 @@ connected servers.
 
 ## Arguments
 
-- resource:
+  - resource:
 
-  Character scalar, named list/vector, or positional vector.
+    Character scalar, named list/vector, or positional vector.
 
-- server_names:
+  - server\_names:
 
-  Character; names of the connected servers.
+    Character; names of the connected servers.
 
-- strict:
+  - strict:
 
-  Logical; error (vs warn) on unknown/missing server mappings.
+    Logical; error (vs warn) on unknown/missing server mappings.
 
 ## Value
 

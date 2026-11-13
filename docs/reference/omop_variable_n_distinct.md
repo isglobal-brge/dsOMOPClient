@@ -11,14 +11,14 @@ omop_variable_n_distinct(table, name = NULL)
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; source OMOP CDM table (e.g. `"condition_occurrence"`).
+    Character; source OMOP CDM table (e.g. `"condition_occurrence"`).
 
-- name:
+  - name:
 
-  Character or `NULL`; output column name (auto-generated as
-  `"n_distinct_<table>"` if `NULL`).
+    Character or `NULL`; output column name (auto-generated as
+    `"n_distinct_<table>"` if `NULL`).
 
 ## Value
 
@@ -27,8 +27,7 @@ metadata field.
 
 ## See also
 
-[`omop_variable`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md),
-[`omop.feature.n_distinct`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.n_distinct.md)
+`omop_variable`, `omop.feature.n_distinct`
 
 ## Examples
 

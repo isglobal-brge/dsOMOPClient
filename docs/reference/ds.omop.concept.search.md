@@ -27,69 +27,69 @@ ds.omop.concept.search(
 
 ## Arguments
 
-- pattern:
+  - pattern:
 
-  Character; search term or SQL LIKE pattern to match against concept
-  names. Supports partial matching (e.g., `"diabetes"` matches
-  `"Type 2 diabetes mellitus"`). Now optional: pass `NULL` to search by
-  `concept_id` or by the metadata filters alone.
+    Character; search term or SQL LIKE pattern to match against concept
+    names. Supports partial matching (e.g., `"diabetes"` matches
+    `"Type 2 diabetes mellitus"`). Now optional: pass `NULL` to search
+    by `concept_id` or by the metadata filters alone.
 
-- domain:
+  - domain:
 
-  Character; restrict results to a specific OMOP domain (e.g.,
-  `"Condition"`, `"Drug"`, `"Measurement"`). `NULL` (the default)
-  returns concepts from all domains.
+    Character; restrict results to a specific OMOP domain (e.g.,
+    `"Condition"`, `"Drug"`, `"Measurement"`). `NULL` (the default)
+    returns concepts from all domains.
 
-- vocabulary:
+  - vocabulary:
 
-  Character; restrict results to a specific vocabulary (e.g.,
-  `"SNOMED"`, `"ICD10CM"`, `"RxNorm"`). `NULL` (the default) searches
-  across all vocabularies.
+    Character; restrict results to a specific vocabulary (e.g.,
+    `"SNOMED"`, `"ICD10CM"`, `"RxNorm"`). `NULL` (the default) searches
+    across all vocabularies.
 
-- standard_only:
+  - standard\_only:
 
-  Logical; if `TRUE` (the default), only standard concepts are returned.
-  Set to `FALSE` to include non-standard and classification concepts.
-  Ignored when `standard` is supplied.
+    Logical; if `TRUE` (the default), only standard concepts are
+    returned. Set to `FALSE` to include non-standard and classification
+    concepts. Ignored when `standard` is supplied.
 
-- limit:
+  - limit:
 
-  Integer; maximum number of results to return per server (default: 50).
-  Increase for broader searches, but larger values will increase
-  server-side processing time.
+    Integer; maximum number of results to return per server (default:
+    50). Increase for broader searches, but larger values will increase
+    server-side processing time.
 
-- concept_id:
+  - concept\_id:
 
-  Integer or numeric vector; restrict the search to these exact concept
-  IDs. `NULL` (the default) applies no ID filter.
+    Integer or numeric vector; restrict the search to these exact
+    concept IDs. `NULL` (the default) applies no ID filter.
 
-- standard:
+  - standard:
 
-  Character; explicit `standard_concept` value to filter on (e.g. `"S"`
-  for standard, `"C"` for classification). When supplied this overrides
-  `standard_only`. `NULL` (the default) applies no explicit value
-  filter.
+    Character; explicit `standard_concept` value to filter on (e.g.
+    `"S"` for standard, `"C"` for classification). When supplied this
+    overrides `standard_only`. `NULL` (the default) applies no explicit
+    value filter.
 
-- valid:
+  - valid:
 
-  Logical; `TRUE` keeps only currently-valid concepts
-  (`invalid_reason IS NULL`), `FALSE` only invalidated ones. `NULL` (the
-  default) returns both.
+    Logical; `TRUE` keeps only currently-valid concepts (`invalid_reason
+    IS NULL`), `FALSE` only invalidated ones. `NULL` (the default)
+    returns both.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, returns a dry-run `dsomop_result` containing only
-  the reproducible R code without contacting the servers.
+    Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
+    only the reproducible R code without contacting the servers.
 
 ## Value
 

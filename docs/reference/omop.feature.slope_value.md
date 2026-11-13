@@ -16,17 +16,17 @@ omop.feature.slope_value(
 
 ## Arguments
 
-- concept_set:
+  - concept\_set:
 
-  Numeric vector of concept IDs.
+    Numeric vector of concept IDs.
 
-- value_column:
+  - value\_column:
 
-  Character; numeric column (default `"value_as_number"`).
+    Character; numeric column (default `"value_as_number"`).
 
-- name:
+  - name:
 
-  Character; optional custom column name.
+    Character; optional custom column name.
 
 ## Value
 

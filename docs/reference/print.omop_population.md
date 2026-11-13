@@ -1,6 +1,6 @@
-# Print an omop_population
+# Print an omop\_population
 
-Print an omop_population
+Print an omop\_population
 
 ## Usage
 
@@ -11,13 +11,13 @@ print(x, ...)
 
 ## Arguments
 
-- x:
+  - x:
 
-  An `omop_population` object.
+    An `omop_population` object.
 
-- ...:
+  - ...:
 
-  Additional arguments (ignored).
+    Additional arguments (ignored).
 
 ## Value
 

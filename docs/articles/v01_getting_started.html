@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Getting Started with dsOMOP v2 • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,13 +39,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/v01_getting_started.html">Getting Started with dsOMOP v2</a></li>
     <li><a class="dropdown-item" href="../articles/v02_exploration.html">Schema Exploration</a></li>
-    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Cohort Management</a></li>
-    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Data Extraction with the Plan DSL</a></li>
+    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Populations, index dates and study recipes</a></li>
+    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Events, reducers and analysis outputs</a></li>
     <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
     <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -61,8 +62,7 @@
 
 
 
-
-<div class="row">
+<script src="v01_getting_started_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Getting Started with dsOMOP v2</h1>
@@ -77,27 +77,24 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><strong>dsOMOP v2</strong> provides a typed interface to OMOP Common
-Data Model databases through the DataSHIELD framework. The server
-implements endpoint-specific disclosure controls, but deployment safety
-also depends on its complete method allowlist, policy options, database
-role and downstream consumers. It consists of two packages:</p>
+<p><strong>dsOMOP v2</strong> provides a typed interface to OMOP Common Data Model databases through the DataSHIELD framework. The server implements endpoint-specific disclosure controls, but deployment safety also depends on its complete method allowlist, policy options, database role and downstream consumers. It consists of two packages:</p>
 <ul>
 <li>
-<strong>dsOMOP</strong> (server-side): runs on each DataSHIELD node.
-Handles database queries, disclosure control, and data preparation.</li>
+<strong>dsOMOP</strong> (server-side): runs on each DataSHIELD node. Handles database queries, disclosure control, and data preparation.</li>
 <li>
-<strong>dsOMOPClient</strong> (client-side): runs on your local
-machine. Provides an ergonomic API for schema exploration, cohort
-management, and data extraction.</li>
+<strong>dsOMOPClient</strong> (client-side): runs on your local machine. Provides an ergonomic API for schema exploration, cohort management, and data extraction.</li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="upgrading-to-2-10-4">Upgrading to 2.10.4<a class="anchor" aria-label="anchor" href="#upgrading-to-2-10-4"></a>
+</h2>
+<p>Install matching dsOMOP and dsOMOPClient 2.10.4, publish the server package’s methods and Options on Opal, and call <code>ds.omop.server.version(conns)</code> to confirm both installed and published versions. Existing private roots are reused; no privacy settings, key provisioning, epoch bump or TLS change is needed. Re-run recipes to obtain the new categorical outputs. The extraction chapter covers concept labels, native calendar dates and anchored ages.</p>
 </div>
 <div class="section level2">
 <h2 id="prerequisites">Prerequisites<a class="anchor" aria-label="anchor" href="#prerequisites"></a>
 </h2>
 <ul>
-<li>A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2
-installed</li>
+<li>A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2 installed</li>
 <li>An OMOP CDM database configured as a DataSHIELD resource</li>
 <li>The <code>dsOMOPClient</code> package installed locally</li>
 </ul>
@@ -136,11 +133,7 @@ installed</li>
 <span>  conns <span class="op">=</span> <span class="va">conns</span>,</span>
 <span>  symbol <span class="op">=</span> <span class="st">"omop"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>This initializes a server-side handle that connects to the database,
-introspects the schema, and prepares for queries. The session is stored
-under <code>symbol</code> (default <code>"omop"</code>). Every later
-call defaults to <code>symbol = "omop"</code>, so in a single-session
-workflow you can omit it entirely.</p>
+<p>This initializes a server-side handle that connects to the database, introspects the schema, and prepares for queries. The session is stored under <code>symbol</code> (default <code>"omop"</code>). Every later call defaults to <code>symbol = "omop"</code>, so in a single-session workflow you can omit it entirely.</p>
 </div>
 <div class="section level3">
 <h3 id="explore-the-schema">3. Explore the Schema<a class="anchor" aria-label="anchor" href="#explore-the-schema"></a>
@@ -149,9 +142,7 @@ workflow you can omit it entirely.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.tables.html">ds.omop.tables</a></span><span class="op">(</span>symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>            <span class="co"># available tables</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"person"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>  <span class="co"># columns of a table</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>  <span class="co"># gated/banded counts</span></span></code></pre></div>
-<p>See the <em>Schema Exploration</em> vignette for prevalence,
-statistics, missingness, and the disclosure-gated manipulation
-verbs.</p>
+<p>See the <em>Schema Exploration</em> vignette for prevalence, statistics, missingness, and the disclosure-gated manipulation verbs.</p>
 </div>
 <div class="section level3">
 <h3 id="extract-data-with-a-plan">4. Extract Data with a Plan<a class="anchor" aria-label="anchor" href="#extract-data-with-a-plan"></a>
@@ -174,19 +165,11 @@ verbs.</p>
 <div class="section level3">
 <h3 id="preview-and-execute">5. Preview and Execute<a class="anchor" aria-label="anchor" href="#preview-and-execute"></a>
 </h3>
-<p><code><a href="../reference/ds.omop.plan.preview.html">ds.omop.plan.preview()</a></code> is a server-side
-structural/schema preview. It returns declared columns plus a banded
-support indicator from the referenced source table without creating
-assignment outputs.</p>
+<p><code><a href="../reference/ds.omop.plan.preview.html">ds.omop.plan.preview()</a></code> is a server-side structural/schema preview. It returns declared columns plus a banded support indicator from the referenced source table without creating assignment outputs.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.plan.preview.html">ds.omop.plan.preview</a></span><span class="op">(</span><span class="va">plan</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>The preview is not an execution proof: its count does not model every
-cohort, filter, join or transformation. Full compilation, disclosure
-gating and DBMS compatibility are enforced again during execution.</p>
-<p><code><a href="../reference/ds.omop.plan.execute.html">ds.omop.plan.execute()</a></code> assigns each output into the
-DataSHIELD session. The <code>out</code> argument is a
-<strong>named</strong> vector mapping plan output names to server-side
-symbols:</p>
+<p>The preview is not an execution proof: its count does not model every cohort, filter, join or transformation. Full compilation, disclosure gating and DBMS compatibility are enforced again during execution.</p>
+<p><code><a href="../reference/ds.omop.plan.execute.html">ds.omop.plan.execute()</a></code> assigns each output into the DataSHIELD session. The <code>out</code> argument is a <strong>named</strong> vector mapping plan output names to server-side symbols:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.plan.execute.html">ds.omop.plan.execute</a></span><span class="op">(</span><span class="va">plan</span>,</span>
 <span>  out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D"</span>, conditions <span class="op">=</span> <span class="st">"E"</span><span class="op">)</span>,</span>
@@ -196,8 +179,8 @@ symbols:</p>
 <span></span>
 <span><span class="co"># D and E are now protected server-side omop.table objects. These calls are</span></span>
 <span><span class="co"># illustrative only after the deployment has reviewed their compatibility.</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D"</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"E"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D"</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"E"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="clean-up">6. Clean Up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
@@ -213,11 +196,7 @@ symbols:</p>
 <div class="section level3">
 <h3 id="recipes-named-reusable-saveloadable-extractions">Recipes: named, reusable, save/loadable extractions<a class="anchor" aria-label="anchor" href="#recipes-named-reusable-saveloadable-extractions"></a>
 </h3>
-<p>For anything beyond a one-off plan, use the <strong>recipe</strong>
-API. A recipe is a named container of variables and outputs that
-compiles to a plan, and it can be saved to and loaded from disk. Author
-it as a single declarative <code><a href="../reference/omop_recipe.html">omop_recipe()</a></code> call built from
-the leaf constructors:</p>
+<p>For anything beyond a one-off plan, use the <strong>recipe</strong> API. A recipe is a named container of variables and outputs that compiles to a plan, and it can be saved to and loaded from disk. Author it as a single declarative <code><a href="../reference/omop_recipe.html">omop_recipe()</a></code> call built from the leaf constructors:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span></span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>table <span class="op">=</span> <span class="st">"measurement"</span>, concept_id <span class="op">=</span> <span class="fl">3004410</span>,</span>
@@ -235,10 +214,7 @@ the leaf constructors:</p>
 <span><span class="co"># Persist the recipe (format inferred from the extension; YAML or JSON):</span></span>
 <span><span class="fu"><a href="../reference/recipe_save.html">recipe_save</a></span><span class="op">(</span><span class="va">rec</span>, <span class="st">"study.yaml"</span><span class="op">)</span></span>
 <span><span class="va">rec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_load.html">recipe_load</a></span><span class="op">(</span><span class="st">"study.yaml"</span><span class="op">)</span></span></code></pre></div>
-<p>See the <em>Data Extraction</em> vignette for the recipe and plan
-contracts, including the row-level filter DSL, episode-grain time
-windows, unit/type concept scoping, visit linkage and the unsupported
-longitudinal shapes.</p>
+<p>See the <em>Data Extraction</em> vignette for the recipe and plan contracts, including the row-level filter DSL, episode-grain time windows, unit/type concept scoping, visit linkage and the unsupported longitudinal shapes.</p>
 </div>
 </div>
 <div class="section level2">
@@ -246,20 +222,15 @@ longitudinal shapes.</p>
 </h2>
 <ul>
 <li>
-<strong>Schema Exploration</strong> – prevalence, statistics, and
-the manipulation verbs.</li>
+<strong>Schema Exploration</strong> – prevalence, statistics, and the manipulation verbs.</li>
 <li>
-<strong>Cohort Management</strong> – spec-based, workspace, and
-pre-existing cohorts; the unified <code>cohort =</code> argument.</li>
+<strong>Cohort Management</strong> – spec-based, workspace, and pre-existing cohorts; the unified <code>cohort =</code> argument.</li>
 <li>
-<strong>Data Extraction</strong> – the plan DSL, recipes, typed
-filters and output grains.</li>
+<strong>Data Extraction</strong> – the plan DSL, recipes, typed filters and output grains.</li>
 <li>
-<strong>Multi-Server</strong> – federated analysis and plan
-harmonization.</li>
+<strong>Multi-Server</strong> – federated analysis and plan harmonization.</li>
 <li>
-<strong>Security</strong> – the per-patient gate, the person token,
-and admin configuration.</li>
+<strong>Security</strong> – the per-patient gate, the person token, and admin configuration.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -275,7 +246,7 @@ and admin configuration.</li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
   </div></footer>

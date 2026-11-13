@@ -1,6 +1,6 @@
-# Print an omop_recipe
+# Print an omop\_recipe
 
-Print an omop_recipe
+Print an omop\_recipe
 
 ## Usage
 
@@ -11,13 +11,13 @@ print(x, ...)
 
 ## Arguments
 
-- x:
+  - x:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- ...:
+  - ...:
 
-  Additional arguments (ignored).
+    Additional arguments (ignored).
 
 ## Value
 

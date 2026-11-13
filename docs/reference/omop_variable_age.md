@@ -2,9 +2,8 @@
 
 Produces a derived variable that computes age from `year_of_birth`. With
 `reference = "today"`, the constructor records today's ISO date in the
-recipe so later executions remain reproducible. With
-`reference = "index"`, age is computed relative to the cohort start
-date.
+recipe so later executions remain reproducible. With `reference =
+"index"`, age is computed relative to the cohort start date.
 
 ## Usage
 
@@ -19,24 +18,24 @@ omop_variable_age(
 
 ## Arguments
 
-- name:
+  - name:
 
-  Character; output column name (default `"age"`).
+    Character; output column name (default `"age"`).
 
-- reference:
+  - reference:
 
-  Character; `"today"` or `"index"`.
+    Character; `"today"` or `"index"`.
 
-- reference_date:
+  - reference\_date:
 
-  Date or `NULL`; explicit reference date (overrides `reference`). Only
-  the year is used for age.
+    Date or `NULL`; explicit reference date (overrides `reference`).
+    Only the year is used for age.
 
-- year:
+  - year:
 
-  Integer or `NULL`; convenience shorthand for `reference_date` when you
-  only care about a data-collection year (e.g. `year = 2024`). Overrides
-  `reference`.
+    Integer or `NULL`; convenience shorthand for `reference_date` when
+    you only care about a data-collection year (e.g. `year = 2024`).
+    Overrides `reference`.
 
 ## Value
 
@@ -45,8 +44,7 @@ metadata field.
 
 ## See also
 
-[`omop_variable`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md),
-[`omop_variable_sex`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_sex.md)
+`omop_variable`, `omop_variable_sex`
 
 ## Examples
 

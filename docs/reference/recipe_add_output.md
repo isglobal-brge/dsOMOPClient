@@ -12,15 +12,13 @@ recipe_add_output(recipe, output)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- output:
+  - output:
 
-  An
-  [`omop_output`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_output.md)
-  object.
+    An `omop_output` object.
 
 ## Value
 
@@ -28,5 +26,4 @@ The modified `omop_recipe` object.
 
 ## See also
 
-[`omop_output`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_output.md),
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
+`omop_output`, `omop_recipe`

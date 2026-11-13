@@ -19,57 +19,63 @@ ds.omop.date.counts(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 ```
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; the CDM table name (e.g., `"condition_occurrence"`,
-  `"drug_exposure"`).
+    Character; the CDM table name (e.g., `"condition_occurrence"`,
+    `"drug_exposure"`).
 
-- date_col:
+  - date\_col:
 
-  Character; the date column to aggregate by, or NULL for automatic
-  detection based on the table's standard date column (default: NULL).
+    Character; the date column to aggregate by, or NULL for automatic
+    detection based on the table's standard date column (default: NULL).
 
-- granularity:
+  - granularity:
 
-  Character; the time granularity for aggregation: `"year"` (default),
-  `"quarter"`, or `"month"`.
+    Character; the time granularity for aggregation: `"year"` (default),
+    `"quarter"`, or `"month"`.
 
-- cohort_table:
+  - cohort\_table:
 
-  Character; name of a server-side cohort temp table for filtering, or
-  NULL (default: NULL).
+    Character; name of a server-side cohort temp table for filtering, or
+    NULL (default: NULL).
 
-- window:
+  - window:
 
-  List with `start`/`end` date strings for temporal filtering, or NULL
-  (default: NULL).
+    List with `start`/`end` date strings for temporal filtering, or NULL
+    (default: NULL).
 
-- scope:
+  - scope:
 
-  Character; `"per_site"` (default) or `"pooled"`.
+    Character; `"per_site"` (default) or `"pooled"`.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or NULL to use the session default.
+    DSI connection object(s) or NULL to use the session default.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, return a dry-run result containing only the
-  generated call code (default: `TRUE`).
+    Logical; if `FALSE`, return a dry-run result containing only the
+    generated call code (default: `TRUE`).
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. When
+    omitted, legacy `scope` behaviour is preserved.
 
 ## Value
 

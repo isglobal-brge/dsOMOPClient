@@ -14,13 +14,13 @@ omop_variable_followup(name = "followup", reference_date = NULL)
 
 ## Arguments
 
-- name:
+  - name:
 
-  Character; output column name (default `"followup"`).
+    Character; output column name (default `"followup"`).
 
-- reference_date:
+  - reference\_date:
 
-  Date or `NULL`; explicit reference date.
+    Date or `NULL`; explicit reference date.
 
 ## Value
 

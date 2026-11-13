@@ -18,27 +18,27 @@ omop.date_handling(
 
 ## Arguments
 
-- mode:
+  - mode:
 
-  Character; transformation mode. Defaults to `"remove"`
-  (privacy-preserving). One of `"absolute"` (keep original dates),
-  `"relative"` (convert to days from reference), `"binned"` (aggregate
-  into calendar bins), or `"remove"` (drop all date columns).
+    Character; transformation mode. Defaults to `"remove"`
+    (privacy-preserving). One of `"absolute"` (keep original dates),
+    `"relative"` (convert to days from reference), `"binned"` (aggregate
+    into calendar bins), or `"remove"` (drop all date columns).
 
-- reference:
+  - reference:
 
-  Character; reference point for relative mode. Currently only `"index"`
-  (cohort index date) is supported.
+    Character; reference point for relative mode. Currently only
+    `"index"` (cohort index date) is supported.
 
-- bin_width:
+  - bin\_width:
 
-  Character; bin granularity for binned mode. One of `"week"`,
-  `"month"`, or `"year"`.
+    Character; bin granularity for binned mode. One of `"week"`,
+    `"month"`, or `"year"`.
 
-- date_columns:
+  - date\_columns:
 
-  Character vector; specific date columns to transform. If `NULL`, all
-  date columns in the output are transformed.
+    Character vector; specific date columns to transform. If `NULL`, all
+    date columns in the output are transformed.
 
 ## Value
 
@@ -47,8 +47,7 @@ A list with elements `mode`, `reference`, `bin_width`, and
 
 ## See also
 
-[`ds.omop.plan.events`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.events.md),
-[`omop.temporal`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.temporal.md)
+`ds.omop.plan.events`, `omop.temporal`
 
 ## Examples
 

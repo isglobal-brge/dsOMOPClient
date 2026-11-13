@@ -1,4 +1,4 @@
-# Print a dsomop_result
+# Print a dsomop\_result
 
 Prints the per-site result tables and the pooled (cross-server) result
 table, followed by any disclosure/pooling warnings.
@@ -12,13 +12,13 @@ print(x, ...)
 
 ## Arguments
 
-- x:
+  - x:
 
-  A `dsomop_result` object.
+    A `dsomop_result` object.
 
-- ...:
+  - ...:
 
-  Additional arguments (ignored).
+    Additional arguments (ignored).
 
 ## Value
 

@@ -15,22 +15,22 @@ Pool variance using Cochrane formula
 
 ## Arguments
 
-- per_site_var:
+  - per\_site\_var:
 
-  Named numeric vector of variances
+    Named numeric vector of variances
 
-- per_site_means:
+  - per\_site\_means:
 
-  Named numeric vector of means
+    Named numeric vector of means
 
-- per_site_counts:
+  - per\_site\_counts:
 
-  Named numeric vector of counts
+    Named numeric vector of counts
 
-- policy:
+  - policy:
 
-  Character; pooling policy
+    Character; pooling policy
 
 ## Value
 
-List with \$result and \$warnings
+List with $result and $warnings

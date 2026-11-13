@@ -10,9 +10,9 @@ Generate R code string for a filter group
 
 ## Arguments
 
-- fg:
+  - fg:
 
-  An `omop_filter_group` object.
+    An `omop_filter_group` object.
 
 ## Value
 

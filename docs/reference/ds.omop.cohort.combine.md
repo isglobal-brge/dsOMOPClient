@@ -20,40 +20,38 @@ ds.omop.cohort.combine(
 
 ## Arguments
 
-- op:
+  - op:
 
-  Character; the set operation to apply. One of `"intersect"` (patients
-  in both cohorts), `"union"` (patients in either cohort), or
-  `"setdiff"` (patients in `cohort_a` but not `cohort_b`).
+    Character; the set operation to apply. One of `"intersect"`
+    (patients in both cohorts), `"union"` (patients in either cohort),
+    or `"setdiff"` (patients in `cohort_a` but not `cohort_b`).
 
-- cohort_a:
+  - cohort\_a:
 
-  Server-side cohort TABLE name for the first cohort (the value returned
-  by
-  [`ds.omop.cohort.create()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.create.md)),
-  its `dsomop_cohort_handle`, or a cohort definition ID (integer).
+    Server-side cohort TABLE name for the first cohort (the value
+    returned by `ds.omop.cohort.create()`), its `dsomop_cohort_handle`,
+    or a cohort definition ID (integer).
 
-- cohort_b:
+  - cohort\_b:
 
-  Server-side cohort TABLE name for the second cohort (the value
-  returned by
-  [`ds.omop.cohort.create()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.create.md)),
-  its `dsomop_cohort_handle`, or a cohort definition ID (integer).
+    Server-side cohort TABLE name for the second cohort (the value
+    returned by `ds.omop.cohort.create()`), its `dsomop_cohort_handle`,
+    or a cohort definition ID (integer).
 
-- new_name:
+  - new\_name:
 
-  Character; TABLE name for the combined result. If `NULL` (the
-  default), an auto-generated name is used.
+    Character; TABLE name for the combined result. If `NULL` (the
+    default), an auto-generated name is used.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
 ## Value
 
@@ -65,7 +63,7 @@ for the combined cohort. The handle can itself be passed as `cohort_a` /
 
 Each input is resolved + re-gated server-side, and the COMBINED result
 is gated on its distinct-subject count: if an operand is unavailable
-(absent/sub-threshold cohort_definition_id) or the combination yields
+(absent/sub-threshold cohort\_definition\_id) or the combination yields
 fewer than the server's per-subset threshold (`nfilter_subset`) persons,
 the call FAILS CLOSED and no result table is materialised. An
 "insufficient individuals" error here reflects the operands/operation

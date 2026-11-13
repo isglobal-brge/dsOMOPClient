@@ -14,9 +14,9 @@ free of both direct names and aliases to those functions.
 
 ## Arguments
 
-- conns:
+  - conns:
 
-  Named DataSHIELD connections.
+    Named DataSHIELD connections.
 
 ## Value
 

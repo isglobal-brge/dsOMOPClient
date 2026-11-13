@@ -11,13 +11,13 @@ input
 
 ## Arguments
 
-- session_symbol:
+  - session\_symbol:
 
-  Local OMOP session name.
+    Local OMOP session name.
 
-- symbol:
+  - symbol:
 
-  Newly committed server-side symbol.
+    Newly committed server-side symbol.
 
 ## Value
 

@@ -10,13 +10,13 @@ Validate one Recipe filter against the executable contract
 
 ## Arguments
 
-- type, level:
+  - type, level:
 
-  Scalar filter type and execution level.
+    Scalar filter type and execution level.
 
-- params:
+  - params:
 
-  Named parameter list.
+    Named parameter list.
 
 ## Value
 

@@ -1,12 +1,10 @@
 # Create a safe numeric value filter using server-computed bins
 
-Convenience wrapper that first calls
-[`ds.omop.safe.cutpoints`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.safe.cutpoints.md)
-to obtain disclosure-safe bin edges, then creates an
-[`omop_filter_value`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-filter whose boundary is snapped to the nearest safe bin edge. This
-ensures that any subsequent filtering operation will not inadvertently
-create small cells that violate disclosure controls.
+Convenience wrapper that first calls `ds.omop.safe.cutpoints` to obtain
+disclosure-safe bin edges, then creates an `omop_filter_value` filter
+whose boundary is snapped to the nearest safe bin edge. This ensures
+that any subsequent filtering operation will not inadvertently create
+small cells that violate disclosure controls.
 
 ## Usage
 
@@ -25,41 +23,41 @@ ds.omop.safe.filter.value(
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; the OMOP CDM table name (e.g., `"measurement"`).
+    Character; the OMOP CDM table name (e.g., `"measurement"`).
 
-- column:
+  - column:
 
-  Character; the numeric column to filter on (e.g.,
-  `"value_as_number"`).
+    Character; the numeric column to filter on (e.g.,
+    `"value_as_number"`).
 
-- threshold:
+  - threshold:
 
-  Numeric; the desired threshold value. The function snaps this to the
-  nearest safe bin boundary.
+    Numeric; the desired threshold value. The function snaps this to the
+    nearest safe bin boundary.
 
-- direction:
+  - direction:
 
-  Character; `"above"` (default) or `"below"`, indicating whether to
-  keep values above or below the threshold.
+    Character; `"above"` (default) or `"below"`, indicating whether to
+    keep values above or below the threshold.
 
-- concept_id:
+  - concept\_id:
 
-  Integer or NULL; optional concept ID to restrict rows before computing
-  cutpoints (default: NULL).
+    Integer or NULL; optional concept ID to restrict rows before
+    computing cutpoints (default: NULL).
 
-- n_bins:
+  - n\_bins:
 
-  Integer; the number of bins for cutpoint computation (default: 10).
+    Integer; the number of bins for cutpoint computation (default: 10).
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or NULL to use the session default.
+    DSI connection object(s) or NULL to use the session default.
 
 ## Value
 

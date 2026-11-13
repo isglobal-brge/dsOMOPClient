@@ -14,25 +14,25 @@ complete method allowlist: the `omop.table` class and `dsomop_protected`
 attributes are enforced by dsOMOP methods, but do not constrain
 arbitrary methods exported by another server package.
 
-[`ds.omop.connect()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.connect.md)
-enforces one non-negotiable allowlist preflight: every connected node
-must return a complete AggregateMethods inventory, and the connection is
-rejected if a method is named `c`/`list` or aliases an unqualified or
-qualified `c`/`list` target (`c`, `list`,
-[`base::c`](https://rdrr.io/r/base/c.html) or
-[`base::list`](https://rdrr.io/r/base/list.html)). Those generic
-containers can otherwise wrap and return a protected object without
-passing through a reviewed disclosure endpoint. This check applies even
-with `strict = FALSE`; administrators must remove such methods from all
-server profiles before dsOMOPClient will assign the resource. It is
-defence in depth rather than a server sandbox: a caller using DSI
-directly does not pass through this client preflight.
+`ds.omop.connect()` enforces one non-negotiable allowlist preflight:
+every connected node must return a complete AggregateMethods inventory,
+and the connection is rejected if a method is named `c`/`list` or
+aliases an unqualified or qualified `c`/`list` target (`c`, `list`,
+`base::c` or `base::list`). Those generic containers can otherwise wrap
+and return a protected object without passing through a reviewed
+disclosure endpoint. This check applies even with `strict = FALSE`;
+administrators must remove such methods from all server profiles before
+dsOMOPClient will assign the resource. It is defence in depth rather
+than a server sandbox: a caller using DSI directly does not pass through
+this client preflight.
 
 ## The per-person gate
 
-The principal assignment control is keyed on the number of unique
-persons, counted as `COUNT(DISTINCT person_id)` (or `subject_id` for
-cohorts). Person-bearing plan/recipe extractions, cohort
+The principal assignment control counts distinct genuine persons on each
+final materialised patient component, validating direct or roster
+lineage. A small or empty private intermediate is allowed; every
+independently accessible patient component of a published family must
+pass `nfilter.subset`. Person-bearing plan/recipe extractions, cohort
 creation/combination/`from_table`, and dsOMOP’s data-manipulation verbs
 flow through this gate. Duplicated longitudinal records cannot satisfy
 it by themselves.
@@ -55,19 +55,18 @@ itself protect an unrestricted sequence of adaptive queries.
 Row-level person and subject keys in dsOMOP assignment outputs are
 replaced by a pseudonymous person token:
 
-- It contains deterministic AES-256-CBC ciphertext under a per-resource
-  secret and a keyed HMAC. The same id maps to the same token while the
-  same persisted resource key is available.
-- Resource-separated keys produce different tokens, preventing direct
-  token matching across independently configured resources. The
-  deprecated legacy global key is an exception and does not provide that
-  separation.
-- Its form is `p2<ciphertext>.<HMAC>`. The `p` prefix makes numeric
-  coercion fail, and the HMAC is verified before any server-side
-  reversal.
-- Reversal is used only on the server for controlled operations such as
-  [`ds.omop.cohort.from_table()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.from_table.md);
-  the key never goes to the client.
+  - It contains deterministic AES-256-CBC ciphertext under a
+    per-resource secret and a keyed HMAC. The same id maps to the same
+    token while the same persisted resource key is available.
+  - Resource-separated keys produce different tokens, preventing direct
+    token matching across independently configured resources. The
+    deprecated legacy global key is an exception and does not provide
+    that separation.
+  - Its form is `p2<ciphertext>.<HMAC>`. The `p` prefix makes numeric
+    coercion fail, and the HMAC is verified before any server-side
+    reversal.
+  - Reversal is used only on the server for controlled operations such
+    as `ds.omop.cohort.from_table()`; the key never goes to the client.
 
 The token is tagged `dsomop_protected`, so dsOMOP’s factor/level and
 manipulation methods refuse to expose, filter or group it. Other direct
@@ -82,14 +81,14 @@ and the resource key must remain a server secret.
 not create key material: installation may run as root or while building
 an image. `.onLoad()` performs no key generation either. The first real
 resource-handle creation validates an injected secret or atomically
-creates a 32-byte node root at
-`$DSOMOP_STATE_DIR/secrets/pseudonym_root`; installation/check/dev loads
-do not bootstrap it. The state root must be an absolute, durable,
-owner-only location shared by all workers representing the same logical
-node; the secret directory and file are required to have modes `0700`
-and `0600` respectively.
+creates a 32-byte node root in the automatically resolved state
+directory (`$DSOMOP_STATE_DIR` can optionally override it);
+installation/check/dev loads do not bootstrap it. No owner setting or
+manual key provisioning is needed. The directory is shared by workers
+representing the same logical node; the secret directory and file are
+required to have modes `0700` and `0600` respectively.
 
-The preferred externally managed setting is `DSOMOP_PSEUDONYM_ROOT` (or
+An optional externally managed setting is `DSOMOP_PSEUDONYM_ROOT` (or
 the server-only R option `dsomop.pseudonym_root`). It accepts exactly 64
 hexadecimal characters or at least 32 bytes of non-hex text; text is
 reduced to 32 bytes with SHA-256. dsOMOP derives a different key for
@@ -122,8 +121,8 @@ resource can therefore change its tokens even when the node root is
 unchanged. Treat such a change as a key migration, or pin the old exact
 per-resource key while saved objects are still in use.
 
-This root controls pseudonym identity only. It is not a seed for noise,
-an epsilon/delta budget or a privacy ledger.
+This root controls pseudonym identity only. It is not the secret root
+used for sticky privacy noise.
 
 ## Disclosure settings
 
@@ -132,48 +131,48 @@ Each setting is read from a direct server option, then a compatible
 package `DATASHIELD` file declares the direct option names used by a
 standard installation.
 
-- `nfilter.subset` (default `3`): minimum distinct-person support.
-- `nfilter.tab` (default `3`): minimum protected table-cell support;
-  rare rows are omitted rather than returned with an informative
-  suppression marker.
-- `nfilter.levels.max` (default `40`) and `nfilter.levels.density`
-  (default `0.33`): categorical-cardinality limits.
-- `nfilter.string` (default `80`) and `nfilter.stringShort` (default
-  `20`): input string limits.
-- `nfilter.noise` (default `0.25`): a standard DataSHIELD policy value
-  that dsOMOP reports and validates. dsOMOP does not reinterpret it as a
-  generic differential-privacy budget or add it to arbitrary query
-  results.
-- `sticky_noise_enabled`: runtime readiness flag. It remains `FALSE` until
-  the persistent secret root and policy are ready. The DP release channel is
-  enabled by default since server 2.6.0; custodians can opt out with
-  `dsomop.dp.enabled = FALSE` or `DSOMOP_DP_ENABLED=0`. Unconfigured domain and
-  snapshot identifiers are derived from the connected resource and CDM source
-  metadata. Persistent state storage is required; custodians must advance
-  `dsomop.dp.privacy_epoch` for data changes without metadata changes.
-- `dsomop.nfilter.dist` (default `10`): minimum support for
-  distribution-style outputs.
-- `dsomop.nfilter.band` (default `5`): width used to floor protected
-  counts.
-- `dsomop.nfilter.age_range` (default `5`): minimum closed age span.
-- `dsomop.nfilter.date_range` (default `30`): minimum bounded date span
-  in days.
-- `dsomop.query_strict` (default `TRUE`): only reviewed Query Library
-  entries may execute. The heuristic non-strict fallback is for
-  development and must not be exposed to analysts.
-- `dsomop.allow_absolute_dates` (default `FALSE`): server-controlled
-  opt-in to raw calendar dates.
-- `dsomop.allow_sensitive_columns` (default `FALSE`): server-controlled
-  opt-in to fields classified as sensitive.
-- `dsomop.max_feature_specs` (default `1000`): maximum number of
-  explicit feature specifications in one output.
-- `dsomop.max_pivot_concepts` (default `1000`): maximum concept
-  cardinality expanded by wide, sparse, temporal-covariate or
-  automatic-feature output.
-- `dsomop.max_output_columns` (default `5000`): maximum final column
-  width of a wide or feature output.
-- `dsomop.max_temporal_bins` (default `10000`): maximum bins in one
-  requested temporal-covariate window.
+  - `nfilter.subset` (default `3`): minimum distinct-person support.
+  - `nfilter.tab` (default `3`): minimum protected table-cell support;
+    rare rows are omitted rather than returned with an informative
+    suppression marker.
+  - `nfilter.levels.max` (default `40`) and `nfilter.levels.density`
+    (default `0.33`): categorical-cardinality limits.
+  - `nfilter.string` (default `80`) and `nfilter.stringShort` (default
+    `20`): input string limits.
+  - `nfilter.noise` (default `0.25`): a standard DataSHIELD policy value
+    that dsOMOP reports and validates. dsOMOP does not reinterpret it as
+    a generic differential-privacy epsilon or add it to arbitrary query
+    results.
+  - `formal_dp_enabled`, `sticky_noise_enabled`,
+    `privacy_ledger_enabled`: always `FALSE` in these settings (server
+    2.8.0), because they describe the core, which does not use DP. The
+    community tools report their DP readiness through
+    `ds.omop.dp.status()`.
+  - `dsomop.nfilter.dist` (default `10`): minimum support for
+    distribution-style outputs.
+  - `dsomop.nfilter.band` (default `5`): width used to floor protected
+    counts.
+  - `dsomop.nfilter.age_range` (default `5`): minimum closed age span
+    for aggregate endpoints.
+  - `dsomop.nfilter.date_range` (default `30`): minimum bounded date
+    span for aggregate endpoints.
+  - `dsomop.query_strict` (default `TRUE`): only reviewed Query Library
+    entries may execute. The heuristic non-strict fallback is for
+    development and must not be exposed to analysts.
+  - `dsomop.allow_absolute_dates` (default `FALSE`): legacy option;
+    exact-date assignment in 2.10.4 does not require it. Aggregate date
+    controls remain in force.
+  - `dsomop.allow_sensitive_columns` (default `FALSE`):
+    server-controlled opt-in to fields classified as sensitive.
+  - `dsomop.max_feature_specs` (default `1000`): maximum number of
+    explicit feature specifications in one output.
+  - `dsomop.max_pivot_concepts` (default `1000`): maximum concept
+    cardinality expanded by wide, sparse, temporal-covariate or
+    automatic-feature output.
+  - `dsomop.max_output_columns` (default `5000`): maximum final column
+    width of a wide or feature output.
+  - `dsomop.max_temporal_bins` (default `10000`): maximum bins in one
+    requested temporal-covariate window.
 
 The four `max_*` settings are configurable CPU/memory-amplification
 controls, not statistical disclosure thresholds. A federation uses the
@@ -182,15 +181,15 @@ that exceeds it.
 
 ## Where controls are enforced
 
-| Operation | Principal controls |
-|----|----|
-| Exploration aggregates | endpoint-specific person support; rare cells/levels omitted; protected numeric tails; surviving counts banded |
-| Plan/recipe assignment | distinct-person support; identifier removal/tokenisation; date/sensitive-column policy; output-size limits |
-| Plan/recipe preview | structural/schema checks; banded distinct-person count only for honestly countable unscoped, unfiltered, unreduced sources; scoped count unavailable; no row data created; execution authoritative |
-| Cohort create/combine/from-table | distinct-person support; only handle-owned temporary tables accepted as named scopes |
-| Merge/filter/select/bind-rows | only dsOMOP-produced `omop.table` inputs; fresh destination on every node; partial assignment rolled back; result re-gated and protected attributes restored |
-| Row filter DSL | typed operator allowlist; identifier filters rejected; age/date minimum ranges; result re-gated |
-| Staged Parquet/CSV output | same assignment gate and output caps; private server-local path and descriptor, not client download |
+| Operation                        | Principal controls                                                                                                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exploration aggregates           | endpoint-specific person support; rare cells/levels omitted; protected numeric tails; surviving counts banded                                                                                      |
+| Plan/recipe assignment           | distinct-person support; identifier removal/tokenisation; class-1 blocking and class-2 provenance; output-size limits                                                                              |
+| Plan/recipe preview              | structural/schema checks; banded distinct-person count only for honestly countable unscoped, unfiltered, unreduced sources; scoped count unavailable; no row data created; execution authoritative |
+| Cohort create/combine/from-table | distinct-person support; only handle-owned temporary tables accepted as named scopes                                                                                                               |
+| Merge/filter/select/bind-rows    | only dsOMOP-produced `omop.table` inputs; fresh destination on every node; partial assignment rolled back; result re-gated and protected attributes restored                                       |
+| Row filter DSL                   | typed operator allowlist; identifier filters rejected; private numeric/date predicates allowed; final result re-gated                                                                              |
+| Staged Parquet/CSV output        | same assignment gate and output caps; private server-local path and descriptor, not client download                                                                                                |
 
 ## SQL safety
 
@@ -220,7 +219,6 @@ the reviewed method allowlist. dsOMOP does not require a globally
 permissive privacy level for wide output. A hardened starting point is:
 
 ``` r
-
 options(
   nfilter.subset = 5,
   nfilter.tab = 5,
@@ -251,7 +249,6 @@ before inspecting the protected data, never from observed minima, maxima
 or quantiles. For example:
 
 ``` r
-
 options(dsomop.safe_numeric_grids = list(
   list(
     table = "measurement",
@@ -276,28 +273,23 @@ exists, filter construction fails closed.
 
 ## Federated policy harmonisation
 
-At connection time dsOMOPClient records a versioned policy snapshot from
-every server. A federated execution uses the largest age/date minimum,
-the intersection of public age boundaries, and identical declared
-age/date semantics. Age means `reference_year - year_of_birth`; it is
-annual-resolution, not birthday-aware completed age, and month/day of
-birth are not used. This matches OHDSI Circe’s
-`YEAR(event_date) - person.year_of_birth` criterion and avoids different
-results merely because one site populated optional birth components.
-Calendar conversion also agrees on day granularity, controller timezone
-and Monday as the first day of the week. Missing metadata, different
-contract versions or no common age grid block execution. For
-`age_at_index`, the client injects that common coarsening into every
-server request; no site emits its finer local labels. Reconnect after a
-controller changes policy.
+At connection time dsOMOPClient records each server’s policy. Aggregate
+age and date queries keep their minimum ranges, public grids and
+calendar semantics; these are separate from assignment. Assigned native
+dates require no opt-in, assigned bands need no aggregate-grid
+coarsening, and private intermediate support does not gate the final
+output. Each published patient component still needs distinct-person
+support, valid lineage and the shared factor contract. `omop_age()`
+retains annual age; `omop_age_at()` selects completed age explicitly.
+Reconnect after a controller changes policy.
 
 With two or more servers, `validate`, `preview` and `execute`
 automatically establish or revalidate a strict schema/semantic contract
 bound to the exact nodes, dependencies and compatible SQL type families.
-Vocabulary-dependent plans additionally require one identical
-non-missing reported vocabulary version. Missing introspection, an
-incomplete output component or a changed binding fails closed rather
-than silently weakening the request.
+Vocabulary-dependent computation retains strict vocabulary checks;
+presentation-only label reconciliation can use differing vocabulary
+versions. Missing introspection, an incomplete output component or a
+changed binding fails closed rather than silently weakening the request.
 
 Pooling never assumes that a missing or locally suppressed period is
 zero. Calendar counts align by the actual period key. Strict pooling
@@ -355,17 +347,49 @@ provider. The deprecated global legacy pseudonym key remains readable
 for historical in-memory objects but cannot be used to create this wider
 interoperability surface.
 
+## DP scope and the exclusive channel
+
+Core table loading and manipulation use the DataSHIELD publication
+controls, not DP. Explicit `ds.omop.dp.prepare()` is a separate path
+that seals eligible person-local inputs for a protected release.
+Matching descendants, unsealed workspace frames and persistent-cohort
+scopes cannot acquire that seal.
+
+Community tools are enabled by default. Their default `auto` mode routes
+the reviewed disclosive distributions, time summaries and effects
+through protected contracts. A known-disclosive exact fallback is
+unavailable. Standard mode retains endpoint controls and can include a
+labelled protected block for person-time-derived quantities; exclusive
+DP mode refuses standard statistics while allowing private preparation
+of eligible fixed releases. Each result carries its actual protection
+route in `meta$protection`.
+
 ## Limits of the current model
 
-Thresholds, omission, protected tails and banding are deterministic
-disclosure controls. A secure deployment must restrict methods, users
-and database privileges and should monitor query composition. The
-dedicated sticky endpoint adds authenticated person-local lineage,
-deterministic contribution bounds, sticky noise and a durable ledger. It
-exposes one descriptive contract,
-`privacy_guarantee = "sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting"`;
-there is no separate certification switch. The standard `nfilter.noise`
-option does not supply these properties on its own. Unlimited new
-informative measurements cannot retain both fixed utility and finite
-lifetime privacy loss; the bounded mode therefore degrades to a marked
-data-independent response instead of blocking.
+Since 2.10.3 the server advertises `privacy_contract =
+"protected_release_fixed_basis_or_realised_v1"`. Fixed-synopsis releases
+share complete public component bases; flexible scopes can use heuristic
+realised-contribution reuse. The latter reports no mechanism epsilon and
+is not a DP guarantee. Exact support admission remains a DataSHIELD
+control, and combining routes has no full-transcript DP guarantee.
+
+The server generates deterministic noise on demand. The noise root and
+pseudonymisation key are the only persistent service state: there is no
+answer store, query counter, budget, accountant or history-dependent
+admission. Fixed components bind to person membership within the request
+snapshot; clinical edits with unchanged membership retain the documented
+residual risk. A `snapshot_id` is display metadata, not an
+analyst-controlled reroll.
+
+Matching clients validate signed component payloads and derive pooled
+views once from compatible bases. They refuse unsupported mixed old/new
+contracts and duplicate logical source identities. Use per-site results
+during an incompatible transition; installing a new client does not
+repair an old server. Fixed-synopsis epsilon is scoped to its declared
+vectors, before exact support gates, not to an evolving API transcript.
+Neither repeats nor package upgrades erase earlier disclosures.
+
+See the server’s `DISCLOSURE_CONTROL.md` for mechanism allocation,
+utility costs, scope equality leakage, exact-support and evolving-data
+limitations. The ordinary deployment allowlist and each downstream
+package’s controls remain necessary.

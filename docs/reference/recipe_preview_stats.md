@@ -1,10 +1,9 @@
 # Preview aggregate stats for a recipe (without materializing)
 
-Runs aggregate-only queries via
-[`ds.omop.table.stats`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.table.stats.md)
-to show safe row and person counts for the tables referenced by the
-recipe's variables. This provides a quick sanity check without
-materializing any server-side datasets.
+Runs aggregate-only queries via `ds.omop.table.stats` to show safe row
+and person counts for the tables referenced by the recipe's variables.
+This provides a quick sanity check without materializing any server-side
+datasets.
 
 ## Usage
 
@@ -19,21 +18,21 @@ recipe_preview_stats(
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- scope:
+  - scope:
 
-  Character; `"per_site"`, `"pooled"`, or `"both"`.
+    Character; `"per_site"`, `"pooled"`, or `"both"`.
 
-- symbol:
+  - symbol:
 
-  Character; OMOP session symbol on the server (default `"omop"`).
+    Character; OMOP session symbol on the server (default `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connections or `NULL` (uses active connections).
+    DSI connections or `NULL` (uses active connections).
 
 ## Value
 
@@ -41,8 +40,7 @@ A `dsomop_result` with aggregate stats per table.
 
 ## See also
 
-[`recipe_execute`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_execute.md),
-[`recipe_preview_schema`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_preview_schema.md)
+`recipe_execute`, `recipe_preview_schema`
 
 ## Examples
 

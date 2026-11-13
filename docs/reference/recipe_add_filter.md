@@ -13,22 +13,18 @@ recipe_add_filter(recipe, filter, id = NULL)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- filter:
+  - filter:
 
-  An
-  [`omop_filter`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  or
-  [`omop_filter_group`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter_group.md)
-  object.
+    An `omop_filter` or `omop_filter_group` object.
 
-- id:
+  - id:
 
-  Character or `NULL`; filter ID (auto-generated from type and sequence
-  number if `NULL`).
+    Character or `NULL`; filter ID (auto-generated from type and
+    sequence number if `NULL`).
 
 ## Value
 
@@ -36,5 +32,4 @@ The modified `omop_recipe` object.
 
 ## See also
 
-[`omop_filter`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md),
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
+`omop_filter`, `omop_recipe`

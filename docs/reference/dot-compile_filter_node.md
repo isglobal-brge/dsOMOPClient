@@ -10,17 +10,18 @@ Compile a single filter or filter group into the server filter DSL
 
 ## Arguments
 
-- f:
+  - f:
 
-  An `omop_filter` or `omop_filter_group` object.
+    An `omop_filter` or `omop_filter_group` object.
 
-- level:
+  - level:
 
-  Character or `NULL`; if provided, filters at other levels are skipped.
+    Character or `NULL`; if provided, filters at other levels are
+    skipped.
 
-- table:
+  - table:
 
-  Character or `NULL`; source OMOP table.
+    Character or `NULL`; source OMOP table.
 
 ## Value
 

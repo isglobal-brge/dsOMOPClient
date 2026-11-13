@@ -1,7 +1,6 @@
 # Expand a concept set to a full list of concept IDs
 
-Takes an `omop_concept_set` object (built with
-[`ds.omop.concept.set`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.set.md))
+Takes an `omop_concept_set` object (built with `ds.omop.concept.set`)
 and resolves it on each connected server. Expansion applies descendant
 inclusion, mapped-concept inclusion, and exclusion rules, returning the
 final flat list of concept IDs that the set represents.
@@ -19,25 +18,24 @@ ds.omop.concept.expand(
 
 ## Arguments
 
-- concept_set:
+  - concept\_set:
 
-  An `omop_concept_set` object created by
-  [`ds.omop.concept.set`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.set.md).
+    An `omop_concept_set` object created by `ds.omop.concept.set`.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, returns a dry-run `dsomop_result` containing only
-  the reproducible R code without contacting the servers.
+    Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
+    only the reproducible R code without contacting the servers.
 
 ## Value
 

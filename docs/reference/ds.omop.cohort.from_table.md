@@ -1,16 +1,13 @@
 # Build a cohort from the persons in a server-side omop.table symbol
 
 Turns an existing server-side, token-keyed `omop.table` symbol – e.g.
-the symbol produced by
-[`ds.omop.plan.execute`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.execute.md)
-or one of the data-manipulation verbs
-([`ds.omop.merge`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.merge.md)
-etc.) – into a reusable cohort that can scope subsequent exploration
-queries and plan/recipe runs. The CLIENT sends only the symbol NAME; the
-server reads its distinct person tokens, reverses them to original ids
-with the per-resource key, gates the distinct count (fail-closed), and
-materialises a size-checked cohort temp table. No identifier ever leaves
-the server.
+the symbol produced by `ds.omop.plan.execute` or one of the
+data-manipulation verbs (`ds.omop.merge` etc.) – into a reusable cohort
+that can scope subsequent exploration queries and plan/recipe runs. The
+CLIENT sends only the symbol NAME; the server reads its distinct person
+tokens, reverses them to original ids with the per-resource key, gates
+the distinct count (fail-closed), and materialises a size-checked cohort
+temp table. No identifier ever leaves the server.
 
 ## Usage
 
@@ -20,32 +17,31 @@ ds.omop.cohort.from_table(x, new_name = NULL, symbol = "omop", conns = NULL)
 
 ## Arguments
 
-- x:
+  - x:
 
-  Character; the name of a server-side `omop.table` symbol.
+    Character; the name of a server-side `omop.table` symbol.
 
-- new_name:
+  - new\_name:
 
-  Character; TABLE name for the cohort. If `NULL` (the default), an
-  auto-generated name is used.
+    Character; TABLE name for the cohort. If `NULL` (the default), an
+    auto-generated name is used.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
 ## Value
 
 Invisibly; a `dsomop_cohort_handle` carrying the server-side TABLE name.
 Pass it straight into the `cohort` argument of the exploration wrappers
-(e.g. `ds.omop.concept.prevalence`), into
-[`ds.omop.cohort.combine()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.combine.md),
-or as a plan/recipe population scope.
+(e.g. `ds.omop.concept.prevalence`), into `ds.omop.cohort.combine()`, or
+as a plan/recipe population scope.
 
 ## Disclosure control
 
@@ -58,8 +54,7 @@ disclosure about any pre-existing cohort.
 
 ## See also
 
-[`ds.omop.cohort.create`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.create.md),
-[`ds.omop.cohort.combine`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.combine.md)
+`ds.omop.cohort.create`, `ds.omop.cohort.combine`
 
 ## Examples
 

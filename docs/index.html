@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>DataSHIELD Client for OMOP CDM Databases • dsOMOPClient</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,13 +39,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/v01_getting_started.html">Getting Started with dsOMOP v2</a></li>
     <li><a class="dropdown-item" href="articles/v02_exploration.html">Schema Exploration</a></li>
-    <li><a class="dropdown-item" href="articles/v03_cohorts.html">Cohort Management</a></li>
-    <li><a class="dropdown-item" href="articles/v04_extraction.html">Data Extraction with the Plan DSL</a></li>
+    <li><a class="dropdown-item" href="articles/v03_cohorts.html">Populations, index dates and study recipes</a></li>
+    <li><a class="dropdown-item" href="articles/v04_extraction.html">Events, reducers and analysis outputs</a></li>
     <li><a class="dropdown-item" href="articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
     <li><a class="dropdown-item" href="articles/v06_security.html">Security and Disclosure Controls</a></li>
     <li><a class="dropdown-item" href="articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -80,7 +81,7 @@
 <li>
 <strong>Staged execution:</strong> private server-local Parquet, or CSV fallback, validated package-neutral descriptors for bounded workflows that should not keep the final table in the DataSHIELD R session.</li>
 </ul>
-<p><code><a href="reference/ds.omop.connect.html">ds.omop.connect()</a></code> fails closed unless every server returns a complete AggregateMethods inventory, and rejects methods named <code>c</code>/<code>list</code> or aliases whose target is <code>c</code>, <code>list</code>, <code><a href="https://rdrr.io/r/base/c.html" class="external-link">base::c</a></code> or <code><a href="https://rdrr.io/r/base/list.html" class="external-link">base::list</a></code>. Those generic constructors can otherwise wrap and return a protected server object without a reviewed disclosure gate. This preflight is defence in depth: the controller must remove the methods from the complete global DataSHIELD profile, because a caller using DSI directly can bypass the client package.</p>
+<p><code><a href="reference/ds.omop.connect.html">ds.omop.connect()</a></code> fails closed unless every server returns a complete AggregateMethods inventory, and rejects methods named <code>c</code>/<code>list</code> or aliases whose target is <code>c</code>, <code>list</code>, <code><a href="https://rdrr.io/r/base/c.html" class="external-link">base::c</a></code> or <code><a href="https://rdrr.io/r/base/list.html" class="external-link">base::list</a></code>. Those generic constructors can otherwise wrap and return a protected server object without a reviewed disclosure gate. This preflight is defence in depth: these aliases are unsafe in the complete global DataSHIELD profile, and a caller using DSI directly can bypass the client package. dsOMOP does not publish them.</p>
 </div>
 <div class="section level2">
 <h2 id="structure">Structure<a class="anchor" aria-label="anchor" href="#structure"></a>
@@ -100,16 +101,103 @@
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span></code></pre></div>
 <p>You can then install the <code>dsOMOPClient</code> package using the following command in R:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">'isglobal-brge/dsOMOPClient'</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'isglobal-brge/dsOMOPClient'</span><span class="op">)</span></span></code></pre></div>
 <p>Once the package is installed, you can load it into your R environment using the following command:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">dsOMOPClient</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="checking-versions">Checking versions<a class="anchor" aria-label="anchor" href="#checking-versions"></a>
+</h3>
+<p>After <code><a href="https://datashield.github.io/DSI/reference/datashield.login.html" class="external-link">DSI::datashield.login()</a></code>, and before connecting to an OMOP resource, you can check what each server offers:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/ds.omop.client.version.html">ds.omop.client.version</a></span><span class="op">(</span><span class="op">)</span>          <span class="co"># this client</span></span>
+<span><span class="fu"><a href="reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span>     <span class="co"># dsOMOP on every server</span></span></code></pre></div>
+<p><code><a href="reference/ds.omop.server.version.html">ds.omop.server.version()</a></code> reports, per server, the dsOMOP version whose DataSHIELD methods the profile publishes, the version installed (the one that answers), the methods this client calls that the profile lacks, and what to change when a server is not ready. On Opal, upgrading dsOMOP does not publish the new version’s methods: an administrator publishes its settings again (Administration &gt; DataSHIELD &gt; Packages &gt; dsOMOP &gt; Publish). <code><a href="reference/ds.omop.connect.html">ds.omop.connect()</a></code> stops with the same explanation when a server cannot be used, and reports each server’s own error instead of DSI’s generic notice.</p>
+</div>
+<div class="section level3">
+<h3 id="upgrading-to-2104">Upgrading to 2.10.4<a class="anchor" aria-label="anchor" href="#upgrading-to-2104"></a>
+</h3>
+<p>The matching release is dsOMOP 2.10.4 plus dsOMOPClient 2.10.4. Automatic server protection needs no privacy settings, secret provisioning, epoch bump, ETL coordination or TLS change. Existing valid roots survive package upgrade. Opal’s installed-package and published-profile versions are distinct; the version check identifies an installed 2.10.4 whose profile still has older methods, so ordinary profile publication completes that package upgrade.</p>
+<p>Language-2 execution requires the publication methods at every site. Supported legacy recipes keep their v1 path; <a href="https://isglobal-brge.github.io/dsOMOPClient/news/index.html">release notes</a> describes corrected, newly permitted and newly refused cases and their migration paths. During a mixed-server upgrade, v1 execution uses the documented legacy path with a warning, while language-2 execution stops before assignment.</p>
+<p>Protected payloads from 2.10.3 and later pool only with compatible contracts. <code>type = "split"</code> keeps labelled per-site results when versions differ. Old typed clients receive an upgrade refusal, and a new client warns about old servers; installing the client alone does not repair server-side inference defects. Outputs can change under the repaired public grids and component contracts. Protection labels distinguish fixed-synopsis mechanisms from heuristic realised-contribution reuse; neither is a finite lifetime or full-transcript privacy guarantee.</p>
+</div>
+<div class="section level3">
+<h3 id="new-presentation-in-2104">New presentation in 2.10.4<a class="anchor" aria-label="anchor" href="#new-presentation-in-2104"></a>
+</h3>
+<p>Concept-valued outputs use shared labelled factors. <code>labels</code> can merge concept categories deliberately; <code>column_names</code> renames generated columns without merging them. <code><a href="reference/ds.omop.table.html">ds.omop.table()</a></code> retains unused public levels and exact labels when pooling. Native <code><a href="reference/omop_date_spec.html">omop_date_spec()</a></code>, <code><a href="reference/omop_date_spec.html">omop_date_parts()</a></code> and <code><a href="reference/omop_date_spec.html">omop_age_at()</a></code> provide calendar factors, numeric coordinates, Date bounds and anchored ages. No absolute-date permission is needed for assignment; final person support and aggregate controls remain. Re-run recipes after upgrading to recreate factors; use explicit numeric representations for date arithmetic. See <a href="https://isglobal-brge.github.io/dsOMOPClient/news/index.html">release notes</a> for migrations and the client extraction vignette for examples.</p>
+<p>Release verification: <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515122503" class="external-link">recipe/publication contract run 43515122503</a> passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3; <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515127555" class="external-link">full e2e run 43515127555</a> passed both fresh and upgrade jobs. Both tested harness commit <code>17e5df40f4718bdece091f68d3003c764f061854</code>. These are evidence for that candidate, not a claim of live execution on every supported SQL dialect.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="recipe-language-2-in-2104">Recipe language 2 in 2.10.4<a class="anchor" aria-label="anchor" href="#recipe-language-2-in-2104"></a>
+</h2>
+<p>Use <code><a href="reference/omop_study.html">omop_study()</a></code> for a study with explicit baseline and follow-up inputs, or compose <code><a href="reference/omop_event.html">omop_event()</a></code>, <code><a href="reference/omop_population.html">omop_population()</a></code>, <code><a href="reference/omop_reduce.html">omop_reduce()</a></code> and <code><a href="reference/omop_output.html">omop_output()</a></code> for the advanced layer. Both produce the same typed recipe language; <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> shows defaults and <code><a href="reference/recipe_to_code.html">recipe_to_code()</a></code> prints the advanced expansion. See <a href="https://isglobal-brge.github.io/dsOMOPClient/articles/v03_cohorts.html">populations and studies</a> and <a href="https://isglobal-brge.github.io/dsOMOPClient/articles/v04_extraction.html">events and outputs</a>, including coded education level and cause of death. Examples use <code>eval = FALSE</code> because they need authenticated connections and a study-specific CDM. The integrated compilers are exercised by the release runs below; advertised operations still determine what an installed server runs.</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th>Backend</th>
+<th>Required 2.10.4 verification</th>
+<th>Runtime release target</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>PostgreSQL</td>
+<td>Live typed SQL and recipe tests</td>
+<td>16 (development pod: 14)</td>
+</tr>
+<tr class="even">
+<td>SQLite / RSQLite</td>
+<td>Embedded tests and runtime window-frame probe</td>
+<td>Actual SQLite and RSQLite versions recorded</td>
+</tr>
+<tr class="odd">
+<td>DuckDB</td>
+<td>Optional embedded tests</td>
+<td>Actual engine/driver version recorded</td>
+</tr>
+<tr class="even">
+<td>MySQL / MariaDB</td>
+<td>Live vendor tests; floors 8.0 / 10.2</td>
+<td>8.4 / 11.4 (pod: 8.4.11 / 10.6)</td>
+</tr>
+<tr class="odd">
+<td>SQL Server / Synapse / PDW, Oracle, Redshift, BigQuery, Snowflake, Spark / Databricks</td>
+<td>Rendered SQL contracts only; no cross-statement temporary materialisation</td>
+<td>No live runtime claim</td>
+</tr>
+<tr class="even">
+<td>Opal / Rock</td>
+<td>O1–O12 on both pinned Opal versions</td>
+<td>Opal 6.1.3 and 5.7.6; R ≥4.2</td>
+</tr>
+</tbody>
+</table>
+<p>The server README contains the construct-by-construct matrix. A supported connector alone does not establish recipe support. Unsupported constructs refuse at preflight with <code>dialect_unsupported</code>. Check both installed and published package versions with <code><a href="reference/ds.omop.server.version.html">ds.omop.server.version()</a></code>; use matching 2.10.4 packages and republish methods and Options on Opal after upgrading.</p>
+<p>Small private inputs are allowed. Each independently accessible final patient component needs <code>nfilter.subset</code> distinct persons. Strict servers refuse the whole plan on a small root; non-strict servers with <code>on_small_site = "error"</code> return passing families and warn with <code>partial</code> status. With <code>"skip"</code>, either server mode commits nothing at a small site and returns NULL for it; passing sites remain. Only support failure is skippable. Technical failures roll back the federation. Keep the returned dynamic inventory rather than guessing names.</p>
+</div>
+<div class="section level2">
+<h2 id="federated-result-views">Federated result views<a class="anchor" aria-label="anchor" href="#federated-result-views"></a>
+</h2>
+<p>Aggregate APIs use the same result vocabulary as dsBaseClient:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">per_site</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ds.omop.analysis.run.html">ds.omop.analysis.run</a></span><span class="op">(</span><span class="st">"dsomop:incidence.rate"</span>, type <span class="op">=</span> <span class="st">"split"</span><span class="op">)</span></span>
+<span><span class="va">pooled</span>   <span class="op">&lt;-</span> <span class="fu"><a href="reference/ds.omop.analysis.run.html">ds.omop.analysis.run</a></span><span class="op">(</span><span class="st">"dsomop:incidence.rate"</span>, type <span class="op">=</span> <span class="st">"combine"</span><span class="op">)</span></span>
+<span><span class="va">both</span>     <span class="op">&lt;-</span> <span class="fu"><a href="reference/ds.omop.analysis.run.html">ds.omop.analysis.run</a></span><span class="op">(</span><span class="st">"dsomop:incidence.rate"</span>, type <span class="op">=</span> <span class="st">"both"</span><span class="op">)</span></span></code></pre></div>
+<p>The unified catalog covers QueryLibrary redesigns, Achilles, CohortDiagnostics, CohortIncidence, Characterization, CohortMethod, SCCS, PLP, EvidenceSynthesis, TreatmentPatterns and FeatureExtraction-style local ports. Every aggregate catalog entry publishes a server-owned pooling strategy: additive sufficient statistics, reconstructed ratios, weighted moments and pooled variance, inverse-variance effects, Kaplan-Meier risk sets, or an explicit <code>not_poolable</code> reason. The client never guesses the algebra from a column name. <code><a href="reference/ds.omop.ohdsi.results.html">ds.omop.ohdsi.results()</a></code> applies the same rule to reviewed physical OHDSI result tables and never substitutes a same-named live analysis.</p>
+<p>Pooled counts are sums of site contributions. Without privacy-preserving record linkage, a person represented in two databases contributes once in each; local distinct-person counts likewise cannot be turned into a global set union. Study/cohort identifiers and public bin definitions must describe the same estimand on every participating node.</p>
 </div>
 <div class="section level2">
 <h2 id="dedicated-sticky-privacy-releases">Dedicated sticky privacy releases<a class="anchor" aria-label="anchor" href="#dedicated-sticky-privacy-releases"></a>
 </h2>
-<p>Since server 2.6.0 the dedicated service is enabled by default; custodians may opt out with dsomop.dp.enabled = FALSE or DSOMOP_DP_ENABLED=0. Initialize the resource before inspecting its contract and request a typed person-bounded statistic from an eligible server-side plan or reviewed loader output:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>Protected releases concern the OHDSI community tools integrated in dsOMOP (Achilles, OHDSI results tables, the analysis catalogue and QueryLibrary). Connecting, loading, filtering, factors, merges, cohorts and core exploration continue under their standard DataSHIELD controls. Community tools default to <code>dsomop.tools.mode = "auto"</code>; the client cannot bypass the server’s policy.</p>
+<p>On dsOMOP 2.10.3 there are two protected routes. <code>fixed_synopsis</code> uses a declared bounded vector for one automatic dataset generation. Its finite epsilon and delta zero apply before the exact support gates. <code>realised_sticky</code> reuses secret fingerprints of bounded contributions; it is heuristic and claims no mechanism epsilon or delta. Neither route claims privacy for the whole API transcript. <code>meta$protection</code> and <code>meta$privacy</code> identify the applicable route. DP-only mode (<code>dsomop.tools.mode = "dp"</code> or <code>dsomop.dp.exclusive = TRUE</code>) admits only supported fixed-synopsis routes. Missing protected components never fall back to exact versions of those components.</p>
+<p>The service is enabled by default and needs no custodian configuration for correct operation. The server owns its persistent noise root and pseudonym key. For fixed-synopsis requests it recomputes the person-membership generation inside the request’s database snapshot; no per-session generation cache is used. Updates to clinical values without a membership change are not a new generation: contribution fingerprints still track changed components, and cross-version inference remains a stated residual. The public <code>snapshot_id</code> is optional display metadata with no effect on admission or noise. A privacy epoch is optional hardening, not an update workflow or transcript guarantee.</p>
+<p>Use <code><a href="reference/ds.omop.dp.prepare.html">ds.omop.dp.prepare()</a></code> to produce an authenticated person-local table from a reviewed plan/recipe, or use a supported community-tool loader. Then inspect the service and request a bounded statistic:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/ds.omop.dp.status.html">ds.omop.dp.status</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">privacy</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/omop_privacy.html">omop_privacy</a></span><span class="op">(</span></span>
@@ -121,9 +209,12 @@
 <span>  order_by <span class="op">=</span> <span class="st">"measurement_date"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ds.omop.dp.release.html">ds.omop.dp.release</a></span><span class="op">(</span></span>
-<span>  <span class="st">"measurement_events"</span>, <span class="va">privacy</span>, datasources <span class="op">=</span> <span class="va">conns</span>, format <span class="op">=</span> <span class="st">"long"</span></span>
+<span>  <span class="st">"tool_output"</span>, <span class="va">privacy</span>, datasources <span class="op">=</span> <span class="va">conns</span>, format <span class="op">=</span> <span class="st">"long"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The client cannot choose epsilon, a seed, nonce, epoch or reroll. Domains, date breaks, clipping bounds and longitudinal contribution caps are public parts of the request; noise allocation, sticky identity and the durable ledger remain server-owned. See <code><a href="reference/omop_privacy.html">?omop_privacy</a></code> and <code><a href="reference/ds.omop.dp.release.html">?ds.omop.dp.release</a></code> for the seven supported primitives and their reducers. Before any release, the client checks the server continuity identifiers and refuses a federated request through two connections that share a logical noise domain, a ledger, or the same domain-scoped ledger authentication key. These checks prevent duplicate-node pooling while replicas converge during a noise-root rotation and detect accidentally forked durable ledgers. Such a rotation changes <code>noise_key_id</code>, <code>noise_domain_id</code> and <code>privacy_instance_id</code>, while <code>ledger_id</code> and <code>ledger_key_id</code> remain stable; operators should refresh any monitoring pins after the coordinated rollout.</p>
+<p>The client cannot choose epsilon, a seed, nonce, epoch or reroll. Categorical requests select views of complete registered public domains; positive binary masks and nonmissing denominators select cells of the same protected basis. Numeric/date bins coarsen a common atom basis. Pooling sums compatible signed components once and applies the same complete-basis projection as the server. Crossed hierarchy and nested histogram displays preserve both parent margins. Their versioned Dykstra algorithm keeps converged results; after its iteration limit, a deterministic feasible repair preserves nonnegativity and margins without claiming an exact L2 projection. Grouped-time Cox cells share the pooled C6 event and non-event totals. Interaction C6/C8 pooling retains the complete signed atomic family, projects it against the arm parents, then derives each requested subgroup or age view. Pooled supplemental rows and cells carry <code>family</code>, <code>view</code> and <code>subgroup_kind</code> identifiers. C8 family cells use finite IPF with a feasible margin repair; this display is not claimed to be an exact KL or L2 projection. Missing or incompatible status mappings and family definitions are refused. Effect estimates continue to use inverse-variance meta-analysis of per-site fits. Weighted record histograms reconcile to a protected record total, never a person total. Unregistered record scales expose coarse histograms and interval quantiles with explicit tail-censoring flags instead of invented bounded means. Recurrent event-time <code>persons</code> counts distinct contributors among the same K-capped occurrences using a complete interval-presence vector (sensitivity 3K). Its static fractions are N/R .2 each, A/B/C .1 each and P .3. Pooling sums signed presence coordinates and applies the server’s radial feasibility projection; coarse persons are never sums of finer person counts. Retreat toward the projection’s event-mass anchor can add bias.</p>
+<p>Every server older than 2.10.3 receives a plain upgrade warning. Installing this client does not repair an old server’s inference defects. Legacy per-site results retain their server’s contract; mixed old/new protected pooling is refused. Use <code>type = "split"</code> while upgrading sites. A new server clearly refuses typed status/release preflight from clients 2.10.2 and earlier. The legacy v2 opt-in <code>options(dsomop.dp.allow_legacy_servers = TRUE)</code> remains available for inspecting old deployments; it never enables protected/legacy pooling or supplies the missing server fixes.</p>
+<p>There is no lifetime privacy budget, query quota, privacy accountant or history-based admission. Equivalent supported views reuse protected components; distinct overlapping scopes and changes in data/mechanism can still support inference. Exact support gates and other enabled DataSHIELD methods remain outside any fixed-vector guarantee. Protected pooling also requires distinct logical source identifiers: two connections to one logical node are refused, and coincidentally equal answers do not establish source independence.</p>
+<p>See <code><a href="reference/omop_privacy.html">?omop_privacy</a></code> and <code><a href="reference/ds.omop.dp.release.html">?ds.omop.dp.release</a></code> for the primitives and reducers, and the paired <a href="https://github.com/isglobal-brge/dsOMOP/blob/main/DISCLOSURE_CONTROL.md" class="external-link">disclosure-control contract</a> for guarantees, residuals and utility costs.</p>
 </div>
 <div class="section level2">
 <h2 id="current-boundaries">Current boundaries<a class="anchor" aria-label="anchor" href="#current-boundaries"></a>
@@ -134,9 +225,9 @@
 <li>federated <code>wide</code> output requires a closed integer <code>concept_set</code> and <code>translate_concepts = FALSE</code>; every declared concept has the same concept-ID-derived column on every node (filled with <code>NA</code> when locally absent), and no undeclared concept can enter the output. Wide output also requires at most one event per declared grain and concept, so the request must use deterministic event selection or an explicit reduction;</li>
 <li>
 <code>event_select</code> defaults to global selection within a person/episode and can use <code>by = "concept"</code> for independent first/last-N selection per concept;</li>
-<li>recurrent cohort episodes, regular episode-by-period panels, and named competing-risk, recurrent-event and counting-process outputs are first-class contracts; arbitrary multi-state transition models remain outside the reviewed output contracts;</li>
+<li>recurrent cohort episodes, regular episode-by-period panels, and named competing-risk, recurrent-event, counting-process and graph-declared multi-state outputs are first-class contracts. Multi-state plans accept an <code>mstate</code> transition matrix or an equivalent public adjacency graph, including cycles and repeated visits to a state; the graph cannot be inferred privately from site data and arbitrary SQL remains outside the contract;</li>
 <li>sparse output supports person or indexed episode grain and includes a complete <code>personRef</code>; absent covariate rows represent zero for roster members with no qualifying event;</li>
-<li>the local Query Library is curated and incomplete. The dedicated privacy path currently supports seven person-bounded sticky-noise primitives with a durable authenticated ledger. Its single public guarantee is <code>sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting</code>; there is no separate certification mode. Eligible inputs carry authenticated semantic lineage and deterministic person-level contribution bounds. The pinned upstream snapshot is exhaustively classified as 129 executable bounded redesigns, 54 vocabulary/reference metadata questions and 18 blocked shapes; none authorizes literal upstream SQL.</li>
+<li>the local Query Library is curated and incomplete. The dedicated privacy path supports seven person-bounded sticky-noise primitives under the current <code>protected_release_fixed_basis_or_realised_v1</code> contract. Guarantees are route-qualified: a calibrated fixed vector on unchanged source data before exact-support admission, or realised-sticky protection without a finite joint epsilon claim. Eligible inputs carry authenticated semantic lineage and deterministic person-level contribution bounds. The pinned upstream snapshot is exhaustively classified as 129 executable bounded redesigns, 54 vocabulary/reference metadata questions and 18 blocked shapes; none authorizes literal upstream SQL.</li>
 </ul>
 <p>Servers also impose configurable operational shape caps (by default 1,000 feature specifications, 1,000 pivoted concepts, 5,000 output columns and 10,000 temporal bins, 100 selected events per episode/source group, plus filter trees of depth 32, 1,024 nodes and 10,000 values, and 100 outputs per plan). Federated planning must respect the minimum compatible value across participating servers. These bounds limit memory/CPU amplification; they are separate from disclosure thresholds.</p>
 <p>Staged descriptors point to private server-local files. Successful local staging writes a version-2 manifest only after every file and descriptor is complete. Each component carries an exact semantic contract, while components of one composite output share a bundle contract and pseudonym-key identity. Consumers must use the server-side resolver to validate those contracts and the path rather than opening an embedded filename directly. Descriptors are not downloads and do not grant access to another service identity; cross-service consumption requires a separately reviewed broker. SQL-backed long-event, intervals, survival, temporal-covariate and person-period components stream without materialising the complete result in R; wide/features, baseline and person-level outputs still materialise before staging. Execution is all-or-none for DataSHIELD-visible symbols, not a distributed filesystem transaction: after a cross-node failure, already committed private files may remain until handle cleanup, disconnect or TTL cleanup. See the <em>Data Extraction</em>, <em>Multi-Server</em> and <em>Security</em> vignettes for the precise contracts and limits.</p>
@@ -222,7 +313,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
   </div></footer>

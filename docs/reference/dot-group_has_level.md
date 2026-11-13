@@ -10,13 +10,13 @@ Check if a filter group contains any filter at a given level
 
 ## Arguments
 
-- group:
+  - group:
 
-  An `omop_filter_group` object.
+    An `omop_filter_group` object.
 
-- level:
+  - level:
 
-  Character; the filter level to check for.
+    Character; the filter level to check for.
 
 ## Value
 

@@ -1,4 +1,4 @@
-# Map a human domain name (or code) to the catalog domain_code
+# Map a human domain name (or code) to the catalog domain\_code
 
 The covariate analyses select their event family with a `domain_code`
 ("0" condition, "1" drug, ...). Accept the friendly domain NAME as well
@@ -13,13 +13,13 @@ code; a code passed through unchanged.
 
 ## Arguments
 
-- domain:
+  - domain:
 
-  Character/numeric domain name or code, or `NULL`.
+    Character/numeric domain name or code, or `NULL`.
 
-- default:
+  - default:
 
-  Character; the code to use when `domain` is `NULL`.
+    Character; the code to use when `domain` is `NULL`.
 
 ## Value
 

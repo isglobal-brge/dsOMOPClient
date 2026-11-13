@@ -1,6 +1,6 @@
-# Print an omop_filter_group
+# Print an omop\_filter\_group
 
-Print an omop_filter_group
+Print an omop\_filter\_group
 
 ## Usage
 
@@ -11,13 +11,13 @@ print(x, ...)
 
 ## Arguments
 
-- x:
+  - x:
 
-  An `omop_filter_group` object.
+    An `omop_filter_group` object.
 
-- ...:
+  - ...:
 
-  Additional arguments (ignored).
+    Additional arguments (ignored).
 
 ## Value
 

@@ -19,13 +19,13 @@ ds.omop.disclosure.settings(symbol = "omop", conns = NULL)
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or `NULL` to use the session default.
+    DSI connection object(s) or `NULL` to use the session default.
 
 ## Value
 
@@ -36,7 +36,7 @@ their errors attached as a `ds_errors` attribute.
 
 ## See also
 
-[`ds.omop.status`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.status.md)
+`ds.omop.status`
 
 ## Examples
 

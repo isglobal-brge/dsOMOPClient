@@ -1,11 +1,10 @@
 # Add an outcome extraction (convenience wrapper)
 
-Convenience function that wraps
-[`ds.omop.plan.events`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.events.md)
-with `representation = list(format = "features")` to produce a
-person-level binary outcome indicator for the given concept set. This is
-a shorthand for defining an event-level features output focused on
-outcome identification.
+Convenience function that wraps `ds.omop.plan.events` with
+`representation = list(format = "features")` to produce a person-level
+binary outcome indicator for the given concept set. This is a shorthand
+for defining an event-level features output focused on outcome
+identification.
 
 ## Usage
 
@@ -15,21 +14,21 @@ ds.omop.plan.outcome(plan, name, concept_set, table = "condition_occurrence")
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- name:
+  - name:
 
-  Character; output name used as a key in the plan's outputs list.
+    Character; output name used as a key in the plan's outputs list.
 
-- concept_set:
+  - concept\_set:
 
-  Numeric vector; concept IDs that define the outcome event.
+    Numeric vector; concept IDs that define the outcome event.
 
-- table:
+  - table:
 
-  Character; source OMOP table containing the outcome events.
+    Character; source OMOP table containing the outcome events.
 
 ## Value
 
@@ -37,8 +36,7 @@ The modified `omop_plan` with the outcome output appended.
 
 ## See also
 
-[`ds.omop.plan.events`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.events.md),
-[`ds.omop.plan.survival`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.survival.md)
+`ds.omop.plan.events`, `ds.omop.plan.survival`
 
 ## Examples
 

@@ -13,13 +13,13 @@ print(x, ...)
 
 ## Arguments
 
-- x:
+  - x:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- ...:
+  - ...:
 
-  Additional arguments (ignored).
+    Additional arguments (ignored).
 
 ## Value
 

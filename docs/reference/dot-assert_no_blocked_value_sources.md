@@ -1,6 +1,6 @@
-# Reject variables whose value_source / raw column is a blocked column
+# Reject variables whose value\_source / raw column is a blocked column
 
-Reject variables whose value_source / raw column is a blocked column
+Reject variables whose value\_source / raw column is a blocked column
 
 ## Usage
 
@@ -10,9 +10,9 @@ Reject variables whose value_source / raw column is a blocked column
 
 ## Arguments
 
-- variables:
+  - variables:
 
-  Named list of `omop_variable` objects.
+    Named list of `omop_variable` objects.
 
 ## Value
 

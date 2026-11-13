@@ -1,13 +1,11 @@
 # Covariate prevalence over a cohort, in one call
 
-Thin wrapper over
-[`ds.omop.analysis.run`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.run.md)
-for the catalog's feature-prevalence analysis
-(`"dsomop:fe.prevalence"`): the per-covariate distinct-person count and
-proportion over a scoped cohort, for one clinical domain. It builds the
-analysis params and delegates, so cohort/table scoping, cross-server
-pooling, optional plotting, and the ONE per-patient disclosure gate are
-inherited unchanged.
+Thin wrapper over `ds.omop.analysis.run` for the catalog's
+feature-prevalence analysis (`"dsomop:fe.prevalence"`): the
+per-covariate distinct-person count and proportion over a scoped cohort,
+for one clinical domain. It builds the analysis params and delegates, so
+cohort/table scoping, cross-server pooling, optional plotting, and the
+ONE per-patient disclosure gate are inherited unchanged.
 
 ## Usage
 
@@ -20,57 +18,61 @@ ds.omop.prevalence(
   tables = NULL,
   plot = FALSE,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = "both"
 )
 ```
 
 ## Arguments
 
-- concept_id:
+  - concept\_id:
 
-  Integer vector or `NULL`; when supplied, the gated result is narrowed
-  to these covariate concept id(s) (a post-gate row subset). `NULL` (the
-  default) returns the domain's top covariates.
+    Integer vector or `NULL`; when supplied, the gated result is
+    narrowed to these covariate concept id(s) (a post-gate row subset).
+    `NULL` (the default) returns the domain's top covariates.
 
-- cohort:
+  - cohort:
 
-  Cohort reference to scope to: a `dsomop_cohort_handle`, a
-  `cohort_definition_id`, or a server-side cohort table name. Required
-  unless `tables` is given.
+    Cohort reference to scope to: a `dsomop_cohort_handle`, a
+    `cohort_definition_id`, or a server-side cohort table name. Required
+    unless `tables` is given.
 
-- domain:
+  - domain:
 
-  Character; clinical domain by name (`"condition"`, `"drug"`,
-  `"procedure"`, `"measurement"`, `"observation"`) or its code
-  (`"0"`-`"4"`). Default `"condition"`.
+    Character; clinical domain by name (`"condition"`, `"drug"`,
+    `"procedure"`, `"measurement"`, `"observation"`) or its code
+    (`"0"`-`"4"`). Default `"condition"`.
 
-- top_n:
+  - top\_n:
 
-  Integer; number of top covariates to return (default 50).
+    Integer; number of top covariates to return (default 50).
 
-- tables:
+  - tables:
 
-  Optional character vector of `omop.table` symbol names to scope to
-  (their distinct persons); may be combined with `cohort`.
+    Optional character vector of `omop.table` symbol names to scope to
+    (their distinct persons); may be combined with `cohort`.
 
-- plot:
+  - plot:
 
-  Logical; build the entry's client-side plot over the gated data
-  (default `FALSE`). See
-  [`ds.omop.analysis.run`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.run.md).
+    Logical; build the entry's client-side plot over the gated data
+    (default `FALSE`). See `ds.omop.analysis.run`.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default `"omop"`).
+    Character; the session symbol (default `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or `NULL` to use the session default.
+    DSI connection object(s) or `NULL` to use the session default.
+
+  - type:
+
+    Result view: `"both"` (default), `"split"`, or `"combine"`;
+    dsBaseClient-style aliases are accepted.
 
 ## Value
 
-A `dsomop_result` (see
-[`ds.omop.analysis.run`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.run.md)).
+A `dsomop_result` (see `ds.omop.analysis.run`).
 
 ## Details
 
@@ -80,9 +82,7 @@ from the server rather than returning an empty frame.
 
 ## See also
 
-[`ds.omop.analysis.run`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.run.md),
-[`ds.omop.distribution`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.distribution.md),
-[`ds.omop.cohort.create`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.create.md)
+`ds.omop.analysis.run`, `ds.omop.distribution`, `ds.omop.cohort.create`
 
 ## Examples
 

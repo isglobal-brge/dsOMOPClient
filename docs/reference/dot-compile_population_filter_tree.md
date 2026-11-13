@@ -10,13 +10,14 @@ Compile population filters into the server filter-tree DSL
 
 ## Arguments
 
-- filters:
+  - filters:
 
-  List of population-level `omop_filter` or `omop_filter_group` objects.
+    List of population-level `omop_filter` or `omop_filter_group`
+    objects.
 
-- default_operator:
+  - default\_operator:
 
-  Character; default Boolean operator (`"and"`).
+    Character; default Boolean operator (`"and"`).
 
 ## Value
 

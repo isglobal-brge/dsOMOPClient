@@ -13,15 +13,15 @@ ds.omop.disconnect(symbol = "omop", conns = NULL)
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol to disconnect (default: "omop").
+    Character; the session symbol to disconnect (default: "omop").
 
-- conns:
+  - conns:
 
-  DSI connections. `NULL` uses the session's stored connections. When
-  supplied, it must contain exactly the same named connection objects;
-  subsets and replacements are rejected before cleanup.
+    DSI connections. `NULL` uses the session's stored connections. When
+    supplied, it must contain exactly the same named connection objects;
+    subsets and replacements are rejected before cleanup.
 
 ## Value
 
@@ -29,7 +29,7 @@ Invisible TRUE on success.
 
 ## See also
 
-[`ds.omop.connect`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.connect.md)
+`ds.omop.connect`
 
 ## Examples
 

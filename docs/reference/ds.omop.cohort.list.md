@@ -13,15 +13,15 @@ ds.omop.cohort.list(symbol = "omop", conns = NULL)
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
 ## Value
 
@@ -37,15 +37,15 @@ cohort clears the threshold.
 Listing is gated server-side and is intentionally a partial, approximate
 view so that discovery is itself disclosure-safe:
 
-- Only cohorts whose distinct-subject count reaches the server's
-  per-subset threshold (`nfilter_subset`) appear. A cohort below that
-  threshold is OMITTED entirely – it never shows up in the listing,
-  exactly as if it did not exist. You therefore cannot use the listing
-  to learn that a small cohort exists.
+  - Only cohorts whose distinct-subject count reaches the server's
+    per-subset threshold (`nfilter_subset`) appear. A cohort below that
+    threshold is OMITTED entirely – it never shows up in the listing,
+    exactly as if it did not exist. You therefore cannot use the listing
+    to learn that a small cohort exists.
 
-- Each surviving cohort's size is BANDED (rounded down to a multiple of
-  `nfilter_band`), never the exact subject count, so the listing cannot
-  be differenced to recover an individual's membership.
+  - Each surviving cohort's size is BANDED (rounded down to a multiple
+    of `nfilter_band`), never the exact subject count, so the listing
+    cannot be differenced to recover an individual's membership.
 
 The net effect: you can discover the cohorts you can actually use and
 their approximate size, but never tiny cohorts and never an exact count.

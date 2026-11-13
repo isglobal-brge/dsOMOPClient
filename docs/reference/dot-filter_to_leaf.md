@@ -1,6 +1,6 @@
-# Convert an omop_filter to a leaf node matching the server's .compileFilter()
+# Convert an omop\_filter to a leaf node matching the server's .compileFilter()
 
-Convert an omop_filter to a leaf node matching the server's
+Convert an omop\_filter to a leaf node matching the server's
 .compileFilter()
 
 ## Usage
@@ -11,14 +11,14 @@ Convert an omop_filter to a leaf node matching the server's
 
 ## Arguments
 
-- f:
+  - f:
 
-  An `omop_filter` object.
+    An `omop_filter` object.
 
-- table:
+  - table:
 
-  Character or `NULL`; OMOP table used for standard date column
-  inference.
+    Character or `NULL`; OMOP table used for standard date column
+    inference.
 
 ## Value
 

@@ -11,13 +11,13 @@ existing names. Also escapes R reserved words by appending `_var`.
 
 ## Arguments
 
-- name:
+  - name:
 
-  Character; proposed name.
+    Character; proposed name.
 
-- existing:
+  - existing:
 
-  Character vector; existing names to check against.
+    Character vector; existing names to check against.
 
 ## Value
 

@@ -14,13 +14,13 @@ ds.omop.snapshot(symbol = "omop", conns = NULL)
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or NULL to use the session default.
+    DSI connection object(s) or NULL to use the session default.
 
 ## Value
 

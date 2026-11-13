@@ -11,9 +11,9 @@ ds.omop.status(symbol = "omop")
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; session symbol (default: "omop").
+    Character; session symbol (default: "omop").
 
 ## Value
 

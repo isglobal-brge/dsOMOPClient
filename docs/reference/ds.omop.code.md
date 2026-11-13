@@ -12,9 +12,9 @@ ds.omop.code(x)
 
 ## Arguments
 
-- x:
+  - x:
 
-  A `dsomop_result` object.
+    A `dsomop_result` object.
 
 ## Value
 

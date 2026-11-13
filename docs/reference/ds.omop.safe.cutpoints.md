@@ -17,51 +17,57 @@ ds.omop.safe.cutpoints(
   scope = c("per_site", "pooled"),
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 ```
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; the OMOP CDM table name (e.g., `"measurement"`,
-  `"observation"`).
+    Character; the OMOP CDM table name (e.g., `"measurement"`,
+    `"observation"`).
 
-- column:
+  - column:
 
-  Character; the numeric column to bin (e.g., `"value_as_number"`).
+    Character; the numeric column to bin (e.g., `"value_as_number"`).
 
-- concept_id:
+  - concept\_id:
 
-  Integer or NULL; optional concept ID to restrict rows before computing
-  bins (default: NULL for all rows).
+    Integer or NULL; optional concept ID to restrict rows before
+    computing bins (default: NULL for all rows).
 
-- n_bins:
+  - n\_bins:
 
-  Integer; exact number of bins in the controller-configured public grid
-  (default: 10). Unsupported or under-populated grids fail closed; bins
-  are never merged based on protected counts.
+    Integer; exact number of bins in the controller-configured public
+    grid (default: 10). Unsupported or under-populated grids fail
+    closed; bins are never merged based on protected counts.
 
-- scope:
+  - scope:
 
-  Character; `"per_site"` (default) or `"pooled"`. Cutpoints are
-  inherently per-site; pooled scope is accepted but the pooled slot will
-  be NULL.
+    Character; `"per_site"` (default) or `"pooled"`. Cutpoints are
+    inherently per-site; pooled scope is accepted but the pooled slot
+    will be NULL.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol identifying the OMOP connection
-  (default: `"omop"`).
+    Character; the session symbol identifying the OMOP connection
+    (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or NULL to use the session default.
+    DSI connection object(s) or NULL to use the session default.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, return a dry-run result containing only the
-  generated call code (default: `TRUE`).
+    Logical; if `FALSE`, return a dry-run result containing only the
+    generated call code (default: `TRUE`).
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. When
+    omitted, legacy `scope` behaviour is preserved.
 
 ## Value
 

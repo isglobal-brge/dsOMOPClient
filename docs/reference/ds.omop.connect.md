@@ -22,42 +22,42 @@ ds.omop.connect(
 
 ## Arguments
 
-- resource:
+  - resource:
 
-  Character or named list; resource name(s). A single string applies to
-  all servers; a named list maps server names to resource names.
+    Character or named list; resource name(s). A single string applies
+    to all servers; a named list maps server names to resource names.
 
-- symbol:
+  - symbol:
 
-  Character; server-side symbol name (default: "omop").
+    Character; server-side symbol name (default: "omop").
 
-- cdm_schema:
+  - cdm\_schema:
 
-  Character; CDM schema override (NULL uses server default).
+    Character; CDM schema override (NULL uses server default).
 
-- vocab_schema:
+  - vocab\_schema:
 
-  Character; vocabulary schema override (NULL uses server default).
+    Character; vocabulary schema override (NULL uses server default).
 
-- results_schema:
+  - results\_schema:
 
-  Character; results schema override (NULL uses server default).
+    Character; results schema override (NULL uses server default).
 
-- temp_schema:
+  - temp\_schema:
 
-  Character; temp schema override (NULL uses server default).
+    Character; temp schema override (NULL uses server default).
 
-- strict:
+  - strict:
 
-  Logical; whether unknown/missing names in a named resource map are
-  immediate mapping errors (`TRUE`) or warnings where possible.
-  Transactional connection still requires a valid resource and
-  successful initialization on every requested server regardless of this
-  value.
+    Logical; whether unknown/missing names in a named resource map are
+    immediate mapping errors (`TRUE`) or warnings where possible.
+    Transactional connection still requires a valid resource and
+    successful initialization on every requested server regardless of
+    this value.
 
-- conns:
+  - conns:
 
-  DSI connections object (NULL uses default connections).
+    DSI connections object (NULL uses default connections).
 
 ## Value
 
@@ -74,24 +74,20 @@ never parsed into code.
 
 Before assigning any resource, the client requires a complete
 AggregateMethods inventory from every node. A method named `c`/`list`,
-or an alias targeting
-[`base::c`](https://rdrr.io/r/base/c.html)/[`base::list`](https://rdrr.io/r/base/list.html),
-aborts connection because it can wrap and release an unreviewed
-protected object. This safety preflight is mandatory even when
-`strict = FALSE`.
+or an alias targeting `base::c`/`base::list`, aborts connection because
+it can wrap and release an unreviewed protected object. This safety
+preflight is mandatory even when `strict = FALSE`.
 
 The connection is self-healing: the server-side OMOP database connection
 auto-reconnects on demand, so a dropped or timed-out database connection
 is transparently re-established on the next call. There is therefore no
 need to keep the session warm with periodic pings during long idle
-periods. Use
-[`ds.omop.status`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.status.md)
-if you want to manually probe connectivity.
+periods. Use `ds.omop.status` if you want to manually probe
+connectivity.
 
 ## See also
 
-[`ds.omop.disconnect`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.disconnect.md),
-[`ds.omop.status`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.status.md)
+`ds.omop.disconnect`, `ds.omop.status`
 
 ## Examples
 

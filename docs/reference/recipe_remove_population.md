@@ -11,13 +11,13 @@ recipe_remove_population(recipe, id)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- id:
+  - id:
 
-  Character; population ID to remove (must not be `"base"`).
+    Character; population ID to remove (must not be `"base"`).
 
 ## Value
 
@@ -25,4 +25,4 @@ The modified `omop_recipe` object.
 
 ## See also
 
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
+`omop_recipe`

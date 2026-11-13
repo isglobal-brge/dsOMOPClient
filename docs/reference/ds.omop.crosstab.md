@@ -29,77 +29,83 @@ ds.omop.crosstab(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 ```
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; the CDM table name (e.g., `"person"`).
+    Character; the CDM table name (e.g., `"person"`).
 
-- row:
+  - row:
 
-  Character; the column for table rows (e.g., `"gender_concept_id"`).
+    Character; the column for table rows (e.g., `"gender_concept_id"`).
 
-- col:
+  - col:
 
-  Character; the column for table columns (e.g., `"race_concept_id"`).
+    Character; the column for table columns (e.g., `"race_concept_id"`).
 
-- by:
+  - by:
 
-  Character; `"persons"` (default, distinct person counts) or
-  `"records"` (row counts).
+    Character; `"persons"` (default, distinct person counts) or
+    `"records"` (row counts).
 
-- row_concept_id:
+  - row\_concept\_id:
 
-  Integer/vector or NULL; optional concept ID(s) to restrict the row
-  axis. Default: NULL.
+    Integer/vector or NULL; optional concept ID(s) to restrict the row
+    axis. Default: NULL.
 
-- col_concept_id:
+  - col\_concept\_id:
 
-  Integer/vector or NULL; optional concept ID(s) to restrict the column
-  axis. Default: NULL.
+    Integer/vector or NULL; optional concept ID(s) to restrict the
+    column axis. Default: NULL.
 
-- cohort_table:
+  - cohort\_table:
 
-  Character or NULL; optional cohort table to scope the population
-  (inner join on `subject_id`). Default: NULL.
+    Character or NULL; optional cohort table to scope the population
+    (inner join on `subject_id`). Default: NULL.
 
-- stratify_by:
+  - stratify\_by:
 
-  Character or NULL; optional third categorical column to produce a
-  named list of independent stratified 2-way slices. Default: NULL.
+    Character or NULL; optional third categorical column to produce a
+    named list of independent stratified 2-way slices. Default: NULL.
 
-- cohort:
+  - cohort:
 
-  Cohort reference (a `dsomop_cohort_handle`, a `cohort_definition_id`,
-  or a server-side cohort table name), or NULL. Takes precedence over
-  `cohort_table`.
+    Cohort reference (a `dsomop_cohort_handle`, a
+    `cohort_definition_id`, or a server-side cohort table name), or
+    NULL. Takes precedence over `cohort_table`.
 
-- scope:
+  - scope:
 
-  Character; `"per_site"` (default) or `"pooled"`.
+    Character; `"per_site"` (default) or `"pooled"`.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; `"strict"` (default) or `"pooled_only_ok"`. Under `strict`,
-  a cell absent or suppressed on any site is suppressed in the pooled
-  table.
+    Character; `"strict"` (default) or `"pooled_only_ok"`. Under
+    `strict`, a cell absent or suppressed on any site is suppressed in
+    the pooled table.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or NULL to use the session default.
+    DSI connection object(s) or NULL to use the session default.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, return a dry-run result containing only the
-  generated call code (default: `TRUE`).
+    Logical; if `FALSE`, return a dry-run result containing only the
+    generated call code (default: `TRUE`).
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. When
+    omitted, legacy `scope` behaviour is preserved.
 
 ## Value
 
@@ -113,9 +119,8 @@ A cross-tab answers "how do these two variables co-occur?". It is NOT a
 substitute for a multivariable model. For genuine multivariable
 questions (three or more interacting variables, continuous adjustment,
 or estimating an association while controlling for confounders), route
-to [`ds.glm`](https://rdrr.io/pkg/dsBaseClient/man/ds.glm.html) instead
-of building higher-dimensional cell tables, which are disclosure-unsafe
-and lose utility on small data.
+to `ds.glm` instead of building higher-dimensional cell tables, which
+are disclosure-unsafe and lose utility on small data.
 
 ## Examples
 

@@ -4,8 +4,8 @@ JSON parsing (`simplifyVector = FALSE`) turns atomic vectors into
 unnamed lists of scalars, and loses the integer/double distinction. This
 restores atomic vectors and re-applies the canonical storage types used
 by the `omop_filter_*` constructors so an export/import round-trip
-compares [`identical()`](https://rdrr.io/r/base/identical.html). Named
-lists (e.g. `window`, `value`) are kept intact.
+compares `identical()`. Named lists (e.g. `window`, `value`) are kept
+intact.
 
 ## Usage
 
@@ -15,9 +15,9 @@ lists (e.g. `window`, `value`) are kept intact.
 
 ## Arguments
 
-- params:
+  - params:
 
-  Named list of filter parameters.
+    Named list of filter parameters.
 
 ## Value
 

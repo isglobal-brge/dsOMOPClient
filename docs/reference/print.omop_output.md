@@ -1,6 +1,6 @@
-# Print an omop_output
+# Print an omop\_output
 
-Print an omop_output
+Print an omop\_output
 
 ## Usage
 
@@ -11,13 +11,13 @@ print(x, ...)
 
 ## Arguments
 
-- x:
+  - x:
 
-  An `omop_output` object.
+    An `omop_output` object.
 
-- ...:
+  - ...:
 
-  Additional arguments (ignored).
+    Additional arguments (ignored).
 
 ## Value
 

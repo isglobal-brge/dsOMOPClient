@@ -2,36 +2,39 @@
 
 ### All vignettes
 
-- [Getting Started with dsOMOP
-  v2](https://isglobal-brge.github.io/dsOMOPClient/articles/v01_getting_started.md):
+  - [Getting Started with dsOMOP
+    v2](https://isglobal-brge.github.io/dsOMOPClient/articles/v01_getting_started.md):
 
-  Connect to OMOP CDM resources and run a first reviewed workflow.
+    Connect to OMOP CDM resources and run a first reviewed workflow.
 
-- [Schema
-  Exploration](https://isglobal-brge.github.io/dsOMOPClient/articles/v02_exploration.md):
+  - [Schema
+    Exploration](https://isglobal-brge.github.io/dsOMOPClient/articles/v02_exploration.md):
 
-  Explore OMOP schemas, concepts and protected summaries.
+    Explore OMOP schemas, concepts and protected summaries.
 
-- [Cohort
-  Management](https://isglobal-brge.github.io/dsOMOPClient/articles/v03_cohorts.md):
+  - [Populations, index dates and study
+    recipes](https://isglobal-brge.github.io/dsOMOPClient/articles/v03_cohorts.md):
 
-  Define, combine and reuse person and recurrent episode cohorts.
+    Define a study with the simple layer, then make its population rules
+    explicit.
 
-- [Data Extraction with the Plan
-  DSL](https://isglobal-brge.github.io/dsOMOPClient/articles/v04_extraction.md):
+  - [Events, reducers and analysis
+    outputs](https://isglobal-brge.github.io/dsOMOPClient/articles/v04_extraction.md):
 
-  Build typed longitudinal extraction plans and output representations.
+    Build wide, longitudinal and survival outputs with the simple and
+    advanced recipe layers.
 
-- [Multi-Server Federated
-  Analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/v05_multi_server.md):
+  - [Multi-Server Federated
+    Analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/v05_multi_server.md):
 
-  Negotiate common schemas, age grids and operational limits across
-  sites.
+    Negotiate common schemas, age grids and operational limits across
+    sites.
 
-- [Security and Disclosure
-  Controls](https://isglobal-brge.github.io/dsOMOPClient/articles/v06_security.md):
+  - [Security and Disclosure
+    Controls](https://isglobal-brge.github.io/dsOMOPClient/articles/v06_security.md):
 
-  Understand disclosure gates, pseudonym keys and deployment boundaries.
+    Understand disclosure gates, pseudonym keys and deployment
+    boundaries.
 
-- [OHDSI QueryLibrary Sticky
-  Redesigns](https://isglobal-brge.github.io/dsOMOPClient/articles/v07_querylibrary_sticky.md):
+  - [OHDSI QueryLibrary Sticky
+    Redesigns](https://isglobal-brge.github.io/dsOMOPClient/articles/v07_querylibrary_sticky.md):

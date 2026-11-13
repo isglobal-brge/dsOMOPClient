@@ -15,13 +15,13 @@ omop_variable_prior_obs(name = "prior_obs", reference_date = NULL)
 
 ## Arguments
 
-- name:
+  - name:
 
-  Character; output column name (default `"prior_obs"`).
+    Character; output column name (default `"prior_obs"`).
 
-- reference_date:
+  - reference\_date:
 
-  Date or `NULL`; explicit reference date.
+    Date or `NULL`; explicit reference date.
 
 ## Value
 

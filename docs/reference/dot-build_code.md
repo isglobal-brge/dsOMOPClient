@@ -10,13 +10,13 @@ Build an R code string for a function call
 
 ## Arguments
 
-- fn_name:
+  - fn\_name:
 
-  Character; fully qualified function name
+    Character; fully qualified function name
 
-- ...:
+  - ...:
 
-  Named arguments to include in the call
+    Named arguments to include in the call
 
 ## Value
 

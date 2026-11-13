@@ -6,18 +6,17 @@ dsOMOP v2 is designed for federated analysis across multiple DataSHIELD
 servers, each hosting an OMOP CDM database. Servers may differ in CDM
 version, available tables and columns, vocabulary version, database
 engine, disclosure policy and data volume. dsOMOP exposes those
-differences through runtime introspection and negotiates a common
-age/date/capacity policy. Baseline age groups are computed on the
-intersection of public age boundaries, so sites with different but
-coarsenable grids emit the same labels. Schema comparison does **not**
-by itself make arbitrary heterogeneous plans portable: the analyst must
-still reconcile the requested tables, columns, concepts and output
-cardinality before execution.
+differences through runtime introspection and negotiates compatible
+aggregate policies and capacity limits. Assigned categories use their
+shared declared factor domains; aggregate age groups retain their
+public-grid rules. Schema comparison does **not** by itself make
+arbitrary heterogeneous plans portable: the analyst must still reconcile
+the requested tables, columns, concepts and output cardinality before
+execution.
 
 ## Connecting to Multiple Servers
 
 ``` r
-
 library(dsOMOPClient)
 library(DSI)
 library(DSOpal)
@@ -36,12 +35,10 @@ conns <- DSI::datashield.login(logins = login_data)
 
 ## Attaching Resources
 
-[`ds.omop.connect()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.connect.md)
-accepts a single resource name (applied to every server) or a named list
-mapping servers to resources:
+`ds.omop.connect()` accepts a single resource name (applied to every
+server) or a named list mapping servers to resources:
 
 ``` r
-
 # Same resource on all servers
 ds.omop.connect(resource = "project.omop_cdm", conns = conns, symbol = "omop")
 
@@ -65,10 +62,9 @@ an error.
 ## Schema Comparison
 
 Before building a plan, compare schemas across servers with
-[`ds.omop.compare()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.compare.md):
+`ds.omop.compare()`:
 
 ``` r
-
 comparison <- ds.omop.compare(symbol = "omop", conns = conns)
 
 comparison$common_tables   # tables available on ALL servers
@@ -83,8 +79,7 @@ comparison$column_errors   # must be empty before harmonization
 ## Plan Harmonization
 
 When schemas differ, inspect `comparison$column_diffs` and revise the
-plan to a contract every server can execute.
-[`ds.omop.plan.harmonize()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.harmonize.md)
+plan to a contract every server can execute. `ds.omop.plan.harmonize()`
 establishes that contract fail-closed: it refuses to claim harmonization
 if column introspection failed on any common table.
 
@@ -110,16 +105,13 @@ deliberately changes the requested output contract.
 The returned plan records the exact servers and relevant schema
 snapshot. `validate`, `preview` and `execute` recheck that binding;
 modifying the plan, changing the selected nodes or changing a relevant
-table/column/type requires calling
-[`ds.omop.plan.harmonize()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.harmonize.md)
-again.
+table/column/type requires calling `ds.omop.plan.harmonize()` again.
 
 With two or more servers, `validate`, `preview` and `execute`
 automatically run strict harmonization when an unbound plan reaches
-them. Calling
-[`ds.omop.plan.harmonize()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.harmonize.md)
-explicitly, as below, is still recommended when the analyst wants to
-inspect the negotiated contract before execution.
+them. Calling `ds.omop.plan.harmonize()` explicitly, as below, is still
+recommended when the analyst wants to inspect the negotiated contract
+before execution.
 
 A federated wide output is a closed schema contract. It must declare an
 integer `concept_set` and set `translate_concepts = FALSE`; every
@@ -130,7 +122,6 @@ reduce or deterministically select duplicate events so there is at most
 one value per grain/concept.
 
 ``` r
-
 plan <- ds.omop.plan()
 plan <- ds.omop.plan.person_level(plan,
   tables = list(
@@ -152,34 +143,33 @@ contract before this strategy can be offered.
 ## Status Checking
 
 ``` r
-
 status <- ds.omop.status(symbol = "omop")
 # Per-server connection/handle status
 ```
 
 ## Federation-Wide Concept Factors
 
-When a plan executes in memory mode with `factor_concepts = TRUE` (the
-default), dsOMOP runs a cross-server coordination step after extraction:
-it collects the permitted `_concept_id` levels, computes their union in
-deterministic order and broadcasts that ordering so every server uses
-the same codes. A value present on only some sites becomes an unused
-level on the others.
+In 2.10.4, concept-valued columns reconcile by semantic type, including
+renamed reducers and staged outputs. With translation enabled, retained
+sites share category labels and order by concept ID. Ordinary age bands
+and calendar categories reconcile even when concept translation is
+disabled. Public unused levels remain available; failed or unsafe level
+discovery aborts the federation.
 
-This removes one common source of inconsistent model matrices. It is not
-a blanket compatibility guarantee for `ds.glm`, `ds.glmSLMA`, `ds.table`
-or other packages: each downstream server method must be separately
-allowlisted and tested with `omop.table`/`dsomop_protected` objects and
-with empty local levels.
+Variable and recipe `labels` maps can combine concept categories
+deliberately. Automatic labels prefer comparable newer vocabulary
+releases, then deterministic UTF-8 order. Presentation-only differences
+in vocabulary versions are allowed. Descendant/mapped expansion and
+vocabulary-dependent scores still require the strict semantic checks for
+the concepts actually used by the analysis; equal labels alone do not
+establish equal meaning.
 
-Shared factor codes also do not harmonize vocabulary semantics. For
-plans that use concept-name translation, descendant or mapped expansion,
-dictionaries, or OHDSI vocabulary-dependent scores, strict harmonization
-requires one identical non-missing reported vocabulary version and
-rechecks that identity before execution. A matching version is necessary
-but is not proof of identical local mappings: pin the intended standard
-concept IDs or compare expansions whenever the study’s governance
-requires stronger semantic assurance.
+Use `ds.omop.table(data, column, conns)` for pooled concept counts with
+complete permitted levels and literal labels, including commas. Missing
+or suppressed site counts cause refusal. Other downstream methods must
+be separately allowlisted and checked with
+`omop.table`/`dsomop_protected` objects. An ordered age/calendar factor
+also has different model contrasts from a numeric trend.
 
 Extraction-size limits are site policy too. The defaults are 1,000
 feature specifications (`dsomop.max_feature_specs`), 1,000 pivoted
@@ -194,7 +184,6 @@ that exceeds it; choosing the largest site’s allowance is not portable.
 ## Federated Analysis Workflow
 
 ``` r
-
 # 1. Connect and attach
 conns <- DSI::datashield.login(logins = login_data)
 ds.omop.connect(resource = "project.omop_cdm", conns = conns, symbol = "omop")
@@ -252,16 +241,19 @@ disclosure-policy change.
 
 ## Common Age, Date and Count Policy
 
-For a multi-server session, dsOMOPClient rejects incompatible versions
-or semantics rather than silently accepting the first server’s
-configuration. It uses the largest minimum age/date range, accepts age
-bands only on boundaries common to every public server grid, and
-requires matching calendar semantics, day granularity, timezone and week
-start. Age is currently annual-resolution
-`reference_year - year_of_birth`, not birthday-aware completed age. This
-is the same definition used by OHDSI Circe cohort criteria; nullable
-OMOP birth month/day fields are not used to create site-dependent
-pseudo-precision.
+Assigned outputs and aggregate endpoints have different policies. Final
+assignment requires distinct-person support; private intermediates can
+be small, assigned age bands may use an increasing integer grid starting
+at zero, and native dates need no absolute-date permission. Shared date
+specifications and factor levels must agree across retained sites.
+`omop_age()` is annual reference-year minus birth-year; `omop_age_at()`
+explicitly requests completed age at an anchor, with missing partial
+births unless imputation is declared.
+
+Aggregate age/date queries retain their public grids, minimum ranges and
+calendar-policy compatibility checks. Those checks do not silently
+coarsen an explicit native assignment. See the extraction chapter for
+Date bounds, calendar factors and numeric representations.
 
 Count pooling additionally requires identical `dsomop.nfilter.band`
 widths. Already banded site counts cannot in general be re-binned

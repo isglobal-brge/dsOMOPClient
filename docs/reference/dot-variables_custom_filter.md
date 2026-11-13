@@ -15,13 +15,13 @@ fail-closed and ANDs them into the extraction WHERE.
 
 ## Arguments
 
-- vars:
+  - vars:
 
-  List of `omop_variable` objects (typically one table's).
+    List of `omop_variable` objects (typically one table's).
 
-- table:
+  - table:
 
-  Character or `NULL`; source OMOP table.
+    Character or `NULL`; source OMOP table.
 
 ## Value
 

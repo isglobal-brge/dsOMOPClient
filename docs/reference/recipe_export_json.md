@@ -2,8 +2,7 @@
 
 Serializes the recipe to a JSON string or file. All object classes are
 stripped for clean serialization. The JSON format includes a schema
-version tag (`"1"`) and can be re-imported with
-[`recipe_import_json`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_import_json.md).
+version tag (`"1"`) and can be re-imported with `recipe_import_json`.
 
 ## Usage
 
@@ -13,14 +12,14 @@ recipe_export_json(recipe, file = NULL)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- file:
+  - file:
 
-  Character or `NULL`; file path to write. If `NULL`, returns the JSON
-  string directly.
+    Character or `NULL`; file path to write. If `NULL`, returns the JSON
+    string directly.
 
 ## Value
 
@@ -29,8 +28,7 @@ to `file` and returns the file path invisibly.
 
 ## See also
 
-[`recipe_import_json`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_import_json.md),
-[`recipe_to_code`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_code.md)
+`recipe_import_json`, `recipe_to_code`
 
 ## Examples
 

@@ -10,9 +10,9 @@ Collect all population-level filters from a recipe, flattening groups
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
 ## Value
 

@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>OHDSI QueryLibrary Sticky Redesigns • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,13 +37,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/v01_getting_started.html">Getting Started with dsOMOP v2</a></li>
     <li><a class="dropdown-item" href="../articles/v02_exploration.html">Schema Exploration</a></li>
-    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Cohort Management</a></li>
-    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Data Extraction with the Plan DSL</a></li>
+    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Populations, index dates and study recipes</a></li>
+    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Events, reducers and analysis outputs</a></li>
     <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
     <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -59,8 +60,7 @@
 
 
 
-
-<div class="row">
+<script src="v07_querylibrary_sticky_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>OHDSI QueryLibrary Sticky Redesigns</h1>
@@ -72,27 +72,27 @@
 
 
 
-<p>The QueryLibrary integration distinguishes an upstream clinical
-question from its published SQL. The SQL is training/reference material
-and is never executed by the sticky redesign path. Instead, a typed
-Recipe or Plan prepares a server-side person-local
-<code>omop.table</code>, and a pinned mapping fixes one of the seven
-sticky primitives and its longitudinal reducer.</p>
-<p>This is deliberately not a QueryLibrary SQL runner or an arbitrary
-join/query gateway. An upstream ID selects only a reviewed semantic
-mapping; it neither submits the upstream SQL nor constructs a
-data-dependent query. Preparation and release remain two explicit, typed
-steps.</p>
-<p>There is also no <code>formal_dp</code> mode or certification flag.
-The client cannot choose epsilon, seed, nonce, privacy epoch or rerolls.
-Actual releases use the single server-owned sticky contract reported by
-<code><a href="../reference/ds.omop.dp.status.html">ds.omop.dp.status()</a></code>, currently
-<code>sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting</code>.
-That contract provides deterministic sticky replay, person-level
-contribution bounds and durable nominal accounting; it must not be
-described as a general formal-DP proof for unlimited distinct or
-semantically equivalent queries.</p>
+<p>The QueryLibrary integration distinguishes an upstream clinical question from its published SQL. The SQL is training/reference material and is never executed by the sticky redesign path. Instead, a typed recipe or plan defines the population and variables, the server prepares a person-local <code>omop.table</code> sealed for DP, and a pinned mapping fixes one of the seven sticky primitives and its longitudinal reducer.</p>
+<p>The roles are those of DataSHIELD: the analyst chooses the question (the population, the derived variables such as an age at a public reference year, and the public bins or levels); the data custodian owns every privacy setting (whether DP is available, epsilon, caps and the community tools’ protection mode). No client argument changes those.</p>
+<div class="section level2">
+<h2 id="automatic-questions-in-2-10-4">Automatic questions in 2.10.4<a class="anchor" aria-label="anchor" href="#automatic-questions-in-2-10-4"></a>
+</h2>
+<p>Common reviewed questions need no explicit preparation. With the default <code>dsomop.tools.mode = "auto"</code>, the catalog routes protected distributions, record summaries and effects through their registered component contracts. Record summaries such as <code>condition.duration_stats</code> use capped record-weighted components (up to ten records per person) and public scales; unregistered scales retain histograms while moments remain unavailable. Demographic partitions use a complete public domain. The protection label identifies fixed synopses, heuristic realised-contribution reuse, or a mixed frame. No known-disclosive exact fallback is used when the protected route is unavailable.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.analysis.run.html">ds.omop.analysis.run</a></span><span class="op">(</span><span class="st">"dsomop:condition.duration_stats"</span>,</span>
+<span>                            params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>concept_id <span class="op">=</span> <span class="fl">201820</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">res</span><span class="op">$</span><span class="va">pooled</span>             <span class="co"># views derived from compatible pooled signed components</span></span>
+<span><span class="va">res</span><span class="op">$</span><span class="va">meta</span><span class="op">$</span><span class="va">protection</span>    <span class="co"># per-site route, allocations and unavailable fields</span></span></code></pre></div>
+<p>Questions with an automatic equivalent list it in <code>omop_querylibrary_sticky_catalog()$automatic_equivalent</code> and when printed.</p>
+</div>
+<div class="section level2">
+<h2 id="sticky-redesigns">Sticky redesigns<a class="anchor" aria-label="anchor" href="#sticky-redesigns"></a>
+</h2>
+<p>The core never uses differential privacy (dsOMOP 2.8.0 and later): tables loaded with <code><a href="../reference/ds.omop.plan.execute.html">ds.omop.plan.execute()</a></code> or <code><a href="../reference/recipe_execute.html">recipe_execute()</a></code> carry no DP provenance, and the server refuses them as DP inputs. A sticky redesign is released on a table prepared for DP from a typed recipe or plan (<code><a href="../reference/ds.omop.dp.prepare.html">ds.omop.dp.prepare()</a></code>, dsOMOP 2.9.1 or later). The release prepares it for you when the redesign carries its recipe.</p>
+<p>This is deliberately not a QueryLibrary SQL runner or an arbitrary join/query gateway. An upstream ID selects only a reviewed semantic mapping; it neither submits the upstream SQL nor constructs a data-dependent query. Preparation and release remain two explicit, typed steps.</p>
+<p>The client cannot choose epsilon, seed, nonce, privacy epoch or rerolls. Servers 2.10.3 and 2.10.4 report <code>privacy_contract = "protected_release_fixed_basis_or_realised_v1"</code>. Fixed-synopsis releases share a registered public basis; realised-contribution reuse is heuristic and has no mechanism epsilon. Signed components are pooled only when the contracts and logical source identities are compatible. Old per-release payloads cannot be pooled with this contract; retain per-site results during an incompatible upgrade and upgrade both packages together.</p>
+<p>Noise is generated deterministically on demand, with no stored answers, lifetime budget, query quota or privacy accountant. Exact support gates, overlapping scopes and evolving data prevent a general full-transcript DP claim. See the security chapter and server disclosure documentation for the scope and utility of each protected route.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">catalog</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_querylibrary_sticky_catalog.html">omop_querylibrary_sticky_catalog</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">catalog</span><span class="op">$</span><span class="va">statistic</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -102,14 +102,9 @@ semantically equivalent queries.</p>
 <span><span class="co">#&gt;                     4                    31                     8 </span></span>
 <span><span class="co">#&gt;     numeric_histogram </span></span>
 <span><span class="co">#&gt;                    71</span></span></code></pre></div>
-<p>Every category domain, numeric/date break, bound, concept set, time
-window, ordering rule and record cap must be public and fixed before
-data access. Observed categories and data-dependent top-N selection are
-not valid inputs.</p>
-<p>For example, PE12 can be redesigned as a coarse
-age-at-a-fixed-public-year distribution. This avoids placing exact birth
-components in the prepared table and uses public decade breaks:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<p>Every category domain, numeric/date break, bound, concept set, time window, ordering rule and record cap must be public and fixed before data access. Observed categories and data-dependent top-N selection are not valid inputs.</p>
+<p>For example, PE12 can be redesigned as a coarse age-at-a-fixed-public-year distribution. This avoids placing exact birth components in the prepared table and uses public decade breaks:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">age_at_2025</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_querylibrary_sticky.html">omop_querylibrary_sticky</a></span><span class="op">(</span></span>
 <span>  <span class="st">"PE12"</span>,</span>
 <span>  variable <span class="op">=</span> <span class="st">"age_at_2025"</span>,</span>
@@ -119,22 +114,28 @@ components in the prepared table and uses public decade breaks:</p>
 <span><span class="co">#&gt; OHDSI QueryLibrary sticky redesign: PE12 </span></span>
 <span><span class="co">#&gt;   Primitive: numeric_histogram </span></span>
 <span><span class="co">#&gt;   Reducer: mean </span></span>
+<span><span class="co">#&gt;   Input: a table prepared with ds.omop.dp.prepare() </span></span>
+<span><span class="co">#&gt;   Automatic equivalent: ds.omop.analysis.run("dsomop:person.year_of_birth_distribution") (no preparation)</span></span>
 <span><span class="co">#&gt;   Upstream SQL authorized: no</span></span></code></pre></div>
-<p>Prepare one protected output explicitly and then release the
-mapping:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>Give the redesign its recipe and release it in one call; the input is prepared on every server, released, and removed:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span></span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable_age.html">omop_variable_age</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"age_at_2025"</span>, year <span class="op">=</span> <span class="fl">2025</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"ages"</span>, type <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ages <span class="op">=</span> <span class="st">"D_ages"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.querylibrary.sticky.release.html">ds.omop.querylibrary.sticky.release</a></span><span class="op">(</span></span>
-<span>  <span class="st">"D_ages"</span>, <span class="va">age_at_2025</span>, datasources <span class="op">=</span> <span class="va">conns</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>Longitudinal numeric and categorical record histograms use a
-deterministic declared order and a finite per-person record cap:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<span><span class="va">age_at_2025</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_querylibrary_sticky.html">omop_querylibrary_sticky</a></span><span class="op">(</span></span>
+<span>  <span class="st">"PE12"</span>, variable <span class="op">=</span> <span class="st">"age_at_2025"</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">120</span>, by <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>,</span>
+<span>  preparation <span class="op">=</span> <span class="va">recipe</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.querylibrary.sticky.release.html">ds.omop.querylibrary.sticky.release</a></span><span class="op">(</span><span class="va">age_at_2025</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<p>The same step can be explicit, for example to release several statistics on one prepared table:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.dp.prepare.html">ds.omop.dp.prepare</a></span><span class="op">(</span><span class="va">recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>ages <span class="op">=</span> <span class="st">"DP_ages"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.querylibrary.sticky.release.html">ds.omop.querylibrary.sticky.release</a></span><span class="op">(</span><span class="st">"DP_ages"</span>, <span class="va">age_at_2025</span>,</span>
+<span>                                              datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<p>The whole release population must be defined in the recipe or plan: filtering, merging or otherwise manipulating a prepared table drops its DP provenance. Preparation requires person-local lineage. Matching descendants and unsealed external frames are refused; an assigned age or date alone does not certify DP provenance. Use the explicit preparation route for the intended population.</p>
+<p>Longitudinal numeric and categorical record histograms use a deterministic declared order and a finite per-person record cap:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">monthly_conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_querylibrary_sticky.html">omop_querylibrary_sticky</a></span><span class="op">(</span></span>
 <span>  <span class="st">"CO19"</span>,</span>
 <span>  variable <span class="op">=</span> <span class="st">"month_number"</span>,</span>
@@ -142,11 +143,8 @@ deterministic declared order and a finite per-person record cap:</p>
 <span>  max_contributions <span class="op">=</span> <span class="fl">12</span>,</span>
 <span>  order_by <span class="op">=</span> <span class="st">"month_number"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Scalar record totals and site-local database-wide distinct drug
-cardinality are also available only as explicitly capped estimands. The
-latter uses a complete public vocabulary-derived concept domain and
-canonical server-owned ordering:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>Scalar record totals and site-local database-wide distinct drug cardinality are also available only as explicitly capped estimands. The latter uses a complete public vocabulary-derived concept domain and canonical server-owned ordering:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">condition_records</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_querylibrary_sticky.html">omop_querylibrary_sticky</a></span><span class="op">(</span></span>
 <span>  <span class="st">"CO10"</span>, max_contributions <span class="op">=</span> <span class="fl">25</span></span>
 <span><span class="op">)</span></span>
@@ -157,25 +155,16 @@ canonical server-owned ordering:</p>
 <span>  levels <span class="op">=</span> <span class="va">public_standard_rxnorm_ids</span>,</span>
 <span>  max_contributions <span class="op">=</span> <span class="fl">50</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>For one server, DEX06 estimates the distinct cardinality across that
-site’s database. Across multiple servers there is no privacy-safe
-cross-site entity linkage for computing a set union:
-<code>pool = TRUE</code> therefore returns the explicit sum of
-site-local bounded distinct counts and may count a concept once per
-site. Use <code>pool = FALSE</code> when site-specific cardinalities are
-the intended estimand; do not interpret the pooled sum as a global union
-cardinality.</p>
-<p>Exact ZIP, source/free-text labels and patient/event rows remain
-unavailable. They do not silently fall back to a different query:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p>DEX06 is a site-local bounded distinct cardinality. It is not pooled across sites: there is no privacy-safe cross-site linkage to compute the concept union from those counts. Use <code>pool = FALSE</code> to retain site-specific cardinalities.</p>
+<p>Exact ZIP, source/free-text labels and patient/event rows remain unavailable. They do not silently fall back to a different query:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/omop_querylibrary_sticky.html">omop_querylibrary_sticky</a></span><span class="op">(</span><span class="st">"PE08"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error: QueryLibrary PE08 is blocked: exact ZIP geography.</span></span></code></pre></div>
-<p>Use
-<code>omop_querylibrary_sticky_catalog(include_unavailable = TRUE)</code>
-to inspect the complete 201-ID partition: 129 executable bounded
-redesigns, 54 vocabulary/reference metadata questions, and 18 blocked
-result shapes.</p>
-  </main>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> QueryLibrary PE08 is blocked: exact ZIP geography.</span></span></code></pre></div>
+<p>Use <code>omop_querylibrary_sticky_catalog(include_unavailable = TRUE)</code> to inspect the complete 201-ID partition: 129 executable bounded redesigns, 54 vocabulary/reference metadata questions, and 18 blocked result shapes.</p>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
@@ -187,7 +176,7 @@ result shapes.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
   </div></footer>

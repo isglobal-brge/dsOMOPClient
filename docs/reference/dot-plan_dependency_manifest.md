@@ -14,9 +14,9 @@ harmonization.
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan`.
+    An `omop_plan`.
 
 ## Value
 

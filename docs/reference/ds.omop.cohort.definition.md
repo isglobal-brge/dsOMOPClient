@@ -12,23 +12,22 @@ ds.omop.cohort.definition(id, symbol = "omop", conns = NULL)
 
 ## Arguments
 
-- id:
+  - id:
 
-  Integer; the cohort definition ID to retrieve. An id that is unknown
-  or below the disclosure threshold returns the same not-available
-  result (see Disclosure control), so a usable definition requires a
-  cohort that appears in
-  [`ds.omop.cohort.list`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.list.md).
+    Integer; the cohort definition ID to retrieve. An id that is unknown
+    or below the disclosure threshold returns the same not-available
+    result (see Disclosure control), so a usable definition requires a
+    cohort that appears in `ds.omop.cohort.list`.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
 ## Value
 
@@ -49,13 +48,11 @@ hints that a small cohort exists, which would itself confirm its
 existence). The client surfaces the server's response as-is and adds no
 distinction of its own, so a caller cannot tell small-but-present from
 absent from either side. Only definitions of cohorts at or above the
-threshold (the ones that appear in
-[`ds.omop.cohort.list`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.list.md))
-are readable.
+threshold (the ones that appear in `ds.omop.cohort.list`) are readable.
 
 ## See also
 
-[`ds.omop.cohort.list`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.list.md)
+`ds.omop.cohort.list`
 
 ## Examples
 

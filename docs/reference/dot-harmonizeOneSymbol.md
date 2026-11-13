@@ -1,29 +1,32 @@
 # Harmonize the concept-id columns of one server-side symbol
 
-Implements the three-phase coordination for a single symbol: (1)
-aggregate each server's safe levels via `omopFactorLevelsDS`; (2) union
-them client-side into one deterministic ordering (numeric ids sorted
-numerically, character names sorted lexically), dropping any column
-flagged unsafe on *any* server and any union exceeding the smallest
-server cap; (3) broadcast the shared spec back via
-`omopAsFactorColumnsDS`.
+Collects only metadata admitted by the existing factor-level transport,
+reconciles A-27 identities and generated names, then applies a complete
+shared contract at every retained site in memory or staged execution.
+Unsafe or incomplete contracts fail publication. Changed vocabulary
+evidence is reconciled once more before assignment. Older untagged
+objects use the legacy level transport.
 
 ## Usage
 
 ``` r
-.harmonizeOneSymbol(sym, conns)
+.harmonizeOneSymbol(sym, conns, .retry = TRUE)
 ```
 
 ## Arguments
 
-- sym:
+  - sym:
 
-  Character; the server-side symbol to harmonize.
+    Character; per-site server symbols of one retained component.
 
-- conns:
+  - conns:
 
-  DSI connections object restricted to servers holding `sym`.
+    DSI connections restricted to that component's retained sites.
+
+  - .retry:
+
+    Internal flag allowing one evidence refresh.
 
 ## Value
 
-`NULL` invisibly.
+Permitted resolution text invisibly, for the client publication receipt.

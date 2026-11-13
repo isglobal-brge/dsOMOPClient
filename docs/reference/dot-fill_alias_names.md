@@ -25,9 +25,9 @@ alone.
 
 ## Arguments
 
-- x:
+  - x:
 
-  A character vector (possibly partially named) or a list.
+    A character vector (possibly partially named) or a list.
 
 ## Value
 

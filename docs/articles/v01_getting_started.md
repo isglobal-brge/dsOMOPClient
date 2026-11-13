@@ -8,30 +8,40 @@ endpoint-specific disclosure controls, but deployment safety also
 depends on its complete method allowlist, policy options, database role
 and downstream consumers. It consists of two packages:
 
-- **dsOMOP** (server-side): runs on each DataSHIELD node. Handles
-  database queries, disclosure control, and data preparation.
-- **dsOMOPClient** (client-side): runs on your local machine. Provides
-  an ergonomic API for schema exploration, cohort management, and data
-  extraction.
+  - **dsOMOP** (server-side): runs on each DataSHIELD node. Handles
+    database queries, disclosure control, and data preparation.
+  - **dsOMOPClient** (client-side): runs on your local machine. Provides
+    an ergonomic API for schema exploration, cohort management, and data
+    extraction.
+
+## Upgrading to 2.10.4
+
+Install matching dsOMOP and dsOMOPClient 2.10.4, publish the server
+package’s methods and Options on Opal, and call
+`ds.omop.server.version(conns)` to confirm both installed and published
+versions. Existing private roots are reused; no privacy settings, key
+provisioning, epoch bump or TLS change is needed. Re-run recipes to
+obtain the new categorical outputs. The extraction chapter covers
+concept labels, native calendar dates and anchored ages.
 
 ## Prerequisites
 
-- A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2
-  installed
-- An OMOP CDM database configured as a DataSHIELD resource
-- The `dsOMOPClient` package installed locally
+  - A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2
+    installed
+  - An OMOP CDM database configured as a DataSHIELD resource
+  - The `dsOMOPClient` package installed locally
+
+<!-- end list -->
 
 ``` r
-
 remotes::install_github("isglobal-brge/dsOMOPClient")
 ```
 
 ## Quick Start
 
-### 1. Connect to DataSHIELD
+### 1\. Connect to DataSHIELD
 
 ``` r
-
 library(dsOMOPClient)
 library(DSI)
 library(DSOpal)
@@ -49,10 +59,9 @@ login_data <- builder$build()
 conns <- DSI::datashield.login(logins = login_data)
 ```
 
-### 2. Attach the OMOP Resource
+### 2\. Attach the OMOP Resource
 
 ``` r
-
 ds.omop.connect(
   resource = "project.omop_cdm",
   conns = conns,
@@ -62,14 +71,12 @@ ds.omop.connect(
 
 This initializes a server-side handle that connects to the database,
 introspects the schema, and prepares for queries. The session is stored
-under `symbol` (default `"omop"`). Every later call defaults to
-`symbol = "omop"`, so in a single-session workflow you can omit it
-entirely.
+under `symbol` (default `"omop"`). Every later call defaults to `symbol
+= "omop"`, so in a single-session workflow you can omit it entirely.
 
-### 3. Explore the Schema
+### 3\. Explore the Schema
 
 ``` r
-
 ds.omop.tables(symbol = "omop", conns = conns)            # available tables
 ds.omop.columns("person", symbol = "omop", conns = conns)  # columns of a table
 ds.omop.table.stats("person", symbol = "omop", conns = conns)  # gated/banded counts
@@ -78,12 +85,11 @@ ds.omop.table.stats("person", symbol = "omop", conns = conns)  # gated/banded co
 See the *Schema Exploration* vignette for prevalence, statistics,
 missingness, and the disclosure-gated manipulation verbs.
 
-### 4. Extract Data with a Plan
+### 4\. Extract Data with a Plan
 
 The plan DSL specifies a reviewed extraction contract:
 
 ``` r
-
 plan <- ds.omop.plan()
 plan <- ds.omop.plan.cohort(plan,
   spec = list(type = "condition", concept_set = c(201826)))
@@ -98,15 +104,13 @@ plan <- ds.omop.plan.events(plan,
 print(plan)
 ```
 
-### 5. Preview and Execute
+### 5\. Preview and Execute
 
-[`ds.omop.plan.preview()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.preview.md)
-is a server-side structural/schema preview. It returns declared columns
-plus a banded support indicator from the referenced source table without
-creating assignment outputs.
+`ds.omop.plan.preview()` is a server-side structural/schema preview. It
+returns declared columns plus a banded support indicator from the
+referenced source table without creating assignment outputs.
 
 ``` r
-
 ds.omop.plan.preview(plan, symbol = "omop", conns = conns)
 ```
 
@@ -114,12 +118,11 @@ The preview is not an execution proof: its count does not model every
 cohort, filter, join or transformation. Full compilation, disclosure
 gating and DBMS compatibility are enforced again during execution.
 
-[`ds.omop.plan.execute()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.execute.md)
-assigns each output into the DataSHIELD session. The `out` argument is a
-**named** vector mapping plan output names to server-side symbols:
+`ds.omop.plan.execute()` assigns each output into the DataSHIELD
+session. The `out` argument is a **named** vector mapping plan output
+names to server-side symbols:
 
 ``` r
-
 ds.omop.plan.execute(plan,
   out = c(baseline = "D", conditions = "E"),
   symbol = "omop",
@@ -132,10 +135,9 @@ dsBaseClient::ds.summary("D")
 dsBaseClient::ds.dim("E")
 ```
 
-### 6. Clean Up
+### 6\. Clean Up
 
 ``` r
-
 ds.omop.disconnect(symbol = "omop", conns = conns)
 DSI::datashield.logout(conns)
 ```
@@ -147,12 +149,9 @@ DSI::datashield.logout(conns)
 For anything beyond a one-off plan, use the **recipe** API. A recipe is
 a named container of variables and outputs that compiles to a plan, and
 it can be saved to and loaded from disk. Author it as a single
-declarative
-[`omop_recipe()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
-call built from the leaf constructors:
+declarative `omop_recipe()` call built from the leaf constructors:
 
 ``` r
-
 rec <- omop_recipe(
   variables = omop_variable(table = "measurement", concept_id = 3004410,
                             format = "mean"),
@@ -178,12 +177,12 @@ longitudinal shapes.
 
 ## Where to Go Next
 
-- **Schema Exploration** – prevalence, statistics, and the manipulation
-  verbs.
-- **Cohort Management** – spec-based, workspace, and pre-existing
-  cohorts; the unified `cohort =` argument.
-- **Data Extraction** – the plan DSL, recipes, typed filters and output
-  grains.
-- **Multi-Server** – federated analysis and plan harmonization.
-- **Security** – the per-patient gate, the person token, and admin
-  configuration.
+  - **Schema Exploration** – prevalence, statistics, and the
+    manipulation verbs.
+  - **Cohort Management** – spec-based, workspace, and pre-existing
+    cohorts; the unified `cohort =` argument.
+  - **Data Extraction** – the plan DSL, recipes, typed filters and
+    output grains.
+  - **Multi-Server** – federated analysis and plan harmonization.
+  - **Security** – the per-patient gate, the person token, and admin
+    configuration.

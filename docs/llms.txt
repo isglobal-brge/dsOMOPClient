@@ -20,48 +20,47 @@ objects.
 
 Key features include:
 
-- **Typed plans and recipes:** selections, concept scopes, nested
-  reviewed filters, cohort scopes, visit links, event windows and
-  several output grains.
-- **Longitudinal outputs:** recurrent cohort episodes, event-long,
-  episode-grain wide/features, survival, interval-long, time-binned
-  sparse covariates and regular person-period panels linked by a stable
-  cohort-row key.
-- **Controlled exploration:** schema/vocabulary discovery and aggregate
-  profiling under endpoint-specific server disclosure policies.
-- **Federated checks:** automatic strict schema/semantic harmonization
-  for multi-server plans, common age/date/capacity negotiation and
-  deterministic concept-factor coordination. Heterogeneous DBMS
-  deployments still need live integration validation.
-- **Staged execution:** private server-local Parquet, or CSV fallback,
-  validated package-neutral descriptors for bounded workflows that
-  should not keep the final table in the DataSHIELD R session.
+  - **Typed plans and recipes:** selections, concept scopes, nested
+    reviewed filters, cohort scopes, visit links, event windows and
+    several output grains.
+  - **Longitudinal outputs:** recurrent cohort episodes, event-long,
+    episode-grain wide/features, survival, interval-long, time-binned
+    sparse covariates and regular person-period panels linked by a
+    stable cohort-row key.
+  - **Controlled exploration:** schema/vocabulary discovery and
+    aggregate profiling under endpoint-specific server disclosure
+    policies.
+  - **Federated checks:** automatic strict schema/semantic harmonization
+    for multi-server plans, common age/date/capacity negotiation and
+    deterministic concept-factor coordination. Heterogeneous DBMS
+    deployments still need live integration validation.
+  - **Staged execution:** private server-local Parquet, or CSV fallback,
+    validated package-neutral descriptors for bounded workflows that
+    should not keep the final table in the DataSHIELD R session.
 
-[`ds.omop.connect()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.connect.md)
-fails closed unless every server returns a complete AggregateMethods
-inventory, and rejects methods named `c`/`list` or aliases whose target
-is `c`, `list`, [`base::c`](https://rdrr.io/r/base/c.html) or
-[`base::list`](https://rdrr.io/r/base/list.html). Those generic
-constructors can otherwise wrap and return a protected server object
-without a reviewed disclosure gate. This preflight is defence in depth:
-the controller must remove the methods from the complete global
-DataSHIELD profile, because a caller using DSI directly can bypass the
-client package.
+`ds.omop.connect()` fails closed unless every server returns a complete
+AggregateMethods inventory, and rejects methods named `c`/`list` or
+aliases whose target is `c`, `list`, `base::c` or `base::list`. Those
+generic constructors can otherwise wrap and return a protected server
+object without a reviewed disclosure gate. This preflight is defence in
+depth: these aliases are unsafe in the complete global DataSHIELD
+profile, and a caller using DSI directly can bypass the client package.
+dsOMOP does not publish them.
 
 ## Structure
 
 The ecosystem has two components:
 
-- **Server-side `dsOMOP`:** owns database connections, schema policy,
-  pseudonymisation, extraction and disclosure gates. Its README contains
-  the actual DBMS matrix, deployment boundary and OHDSI integration
-  status:
-  [isglobal-brge/dsOMOP](https://github.com/isglobal-brge/dsOMOP).
+  - **Server-side `dsOMOP`:** owns database connections, schema policy,
+    pseudonymisation, extraction and disclosure gates. Its README
+    contains the actual DBMS matrix, deployment boundary and OHDSI
+    integration status:
+    [isglobal-brge/dsOMOP](https://github.com/isglobal-brge/dsOMOP).
 
-- **Client-side `dsOMOPClient`:** constructs and serializes typed
-  requests, negotiates selected federated contracts, and coordinates
-  returned server objects. It never receives database credentials or raw
-  person identifiers.
+  - **Client-side `dsOMOPClient`:** constructs and serializes typed
+    requests, negotiates selected federated contracts, and coordinates
+    returned server objects. It never receives database credentials or
+    raw person identifiers.
 
 ## Installation
 
@@ -74,7 +73,6 @@ the `devtools` package. If you do not have `devtools` installed, you can
 install it using the following command in R:
 
 ``` r
-
 install.packages("devtools")
 ```
 
@@ -82,7 +80,6 @@ You can then install the `dsOMOPClient` package using the following
 command in R:
 
 ``` r
-
 devtools::install_github('isglobal-brge/dsOMOPClient')
 ```
 
@@ -90,18 +87,183 @@ Once the package is installed, you can load it into your R environment
 using the following command:
 
 ``` r
-
 library(dsOMOPClient)
 ```
 
-## Dedicated sticky privacy releases
+### Checking versions
 
-Since server 2.6.0 the dedicated service is enabled by default; custodians may opt out with dsomop.dp.enabled = FALSE or DSOMOP_DP_ENABLED=0. Initialize the resource before inspecting its
-contract and request a typed person-bounded statistic from an eligible
-server-side plan or reviewed loader output:
+After `DSI::datashield.login()`, and before connecting to an OMOP
+resource, you can check what each server offers:
 
 ``` r
+ds.omop.client.version()          # this client
+ds.omop.server.version(conns)     # dsOMOP on every server
+```
 
+`ds.omop.server.version()` reports, per server, the dsOMOP version whose
+DataSHIELD methods the profile publishes, the version installed (the one
+that answers), the methods this client calls that the profile lacks, and
+what to change when a server is not ready. On Opal, upgrading dsOMOP
+does not publish the new version’s methods: an administrator publishes
+its settings again (Administration \> DataSHIELD \> Packages \> dsOMOP
+\> Publish). `ds.omop.connect()` stops with the same explanation when a
+server cannot be used, and reports each server’s own error instead of
+DSI’s generic notice.
+
+### Upgrading to 2.10.4
+
+The matching release is dsOMOP 2.10.4 plus dsOMOPClient 2.10.4.
+Automatic server protection needs no privacy settings, secret
+provisioning, epoch bump, ETL coordination or TLS change. Existing valid
+roots survive package upgrade. Opal’s installed-package and
+published-profile versions are distinct; the version check identifies an
+installed 2.10.4 whose profile still has older methods, so ordinary
+profile publication completes that package upgrade.
+
+Language-2 execution requires the publication methods at every site.
+Supported legacy recipes keep their v1 path; [release
+notes](https://isglobal-brge.github.io/dsOMOPClient/news/index.html)
+describes corrected, newly permitted and newly refused cases and their
+migration paths. During a mixed-server upgrade, v1 execution uses the
+documented legacy path with a warning, while language-2 execution stops
+before assignment.
+
+Protected payloads from 2.10.3 and later pool only with compatible
+contracts. `type = "split"` keeps labelled per-site results when
+versions differ. Old typed clients receive an upgrade refusal, and a new
+client warns about old servers; installing the client alone does not
+repair server-side inference defects. Outputs can change under the
+repaired public grids and component contracts. Protection labels
+distinguish fixed-synopsis mechanisms from heuristic
+realised-contribution reuse; neither is a finite lifetime or
+full-transcript privacy guarantee.
+
+### New presentation in 2.10.4
+
+Concept-valued outputs use shared labelled factors. `labels` can merge
+concept categories deliberately; `column_names` renames generated
+columns without merging them. `ds.omop.table()` retains unused public
+levels and exact labels when pooling. Native `omop_date_spec()`,
+`omop_date_parts()` and `omop_age_at()` provide calendar factors,
+numeric coordinates, Date bounds and anchored ages. No absolute-date
+permission is needed for assignment; final person support and aggregate
+controls remain. Re-run recipes after upgrading to recreate factors; use
+explicit numeric representations for date arithmetic. See [release
+notes](https://isglobal-brge.github.io/dsOMOPClient/news/index.html) for
+migrations and the client extraction vignette for examples.
+
+Release verification: [recipe/publication contract
+run 43515122503](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515122503)
+passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3; [full e2e
+run 43515127555](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515127555)
+passed both fresh and upgrade jobs. Both tested harness commit
+`17e5df40f4718bdece091f68d3003c764f061854`. These are evidence for that
+candidate, not a claim of live execution on every supported SQL dialect.
+
+## Recipe language 2 in 2.10.4
+
+Use `omop_study()` for a study with explicit baseline and follow-up
+inputs, or compose `omop_event()`, `omop_population()`, `omop_reduce()`
+and `omop_output()` for the advanced layer. Both produce the same typed
+recipe language; `print()` shows defaults and `recipe_to_code()` prints
+the advanced expansion. See [populations and
+studies](https://isglobal-brge.github.io/dsOMOPClient/articles/v03_cohorts.html)
+and [events and
+outputs](https://isglobal-brge.github.io/dsOMOPClient/articles/v04_extraction.html),
+including coded education level and cause of death. Examples use `eval =
+FALSE` because they need authenticated connections and a study-specific
+CDM. The integrated compilers are exercised by the release runs below;
+advertised operations still determine what an installed server runs.
+
+| Backend                                                                               | Required 2.10.4 verification                                              | Runtime release target                      |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------- |
+| PostgreSQL                                                                            | Live typed SQL and recipe tests                                           | 16 (development pod: 14)                    |
+| SQLite / RSQLite                                                                      | Embedded tests and runtime window-frame probe                             | Actual SQLite and RSQLite versions recorded |
+| DuckDB                                                                                | Optional embedded tests                                                   | Actual engine/driver version recorded       |
+| MySQL / MariaDB                                                                       | Live vendor tests; floors 8.0 / 10.2                                      | 8.4 / 11.4 (pod: 8.4.11 / 10.6)             |
+| SQL Server / Synapse / PDW, Oracle, Redshift, BigQuery, Snowflake, Spark / Databricks | Rendered SQL contracts only; no cross-statement temporary materialisation | No live runtime claim                       |
+| Opal / Rock                                                                           | O1–O12 on both pinned Opal versions                                       | Opal 6.1.3 and 5.7.6; R ≥4.2                |
+
+The server README contains the construct-by-construct matrix. A
+supported connector alone does not establish recipe support. Unsupported
+constructs refuse at preflight with `dialect_unsupported`. Check both
+installed and published package versions with
+`ds.omop.server.version()`; use matching 2.10.4 packages and republish
+methods and Options on Opal after upgrading.
+
+Small private inputs are allowed. Each independently accessible final
+patient component needs `nfilter.subset` distinct persons. Strict
+servers refuse the whole plan on a small root; non-strict servers with
+`on_small_site = "error"` return passing families and warn with
+`partial` status. With `"skip"`, either server mode commits nothing at a
+small site and returns NULL for it; passing sites remain. Only support
+failure is skippable. Technical failures roll back the federation. Keep
+the returned dynamic inventory rather than guessing names.
+
+## Federated result views
+
+Aggregate APIs use the same result vocabulary as dsBaseClient:
+
+``` r
+per_site <- ds.omop.analysis.run("dsomop:incidence.rate", type = "split")
+pooled   <- ds.omop.analysis.run("dsomop:incidence.rate", type = "combine")
+both     <- ds.omop.analysis.run("dsomop:incidence.rate", type = "both")
+```
+
+The unified catalog covers QueryLibrary redesigns, Achilles,
+CohortDiagnostics, CohortIncidence, Characterization, CohortMethod,
+SCCS, PLP, EvidenceSynthesis, TreatmentPatterns and
+FeatureExtraction-style local ports. Every aggregate catalog entry
+publishes a server-owned pooling strategy: additive sufficient
+statistics, reconstructed ratios, weighted moments and pooled variance,
+inverse-variance effects, Kaplan-Meier risk sets, or an explicit
+`not_poolable` reason. The client never guesses the algebra from a
+column name. `ds.omop.ohdsi.results()` applies the same rule to reviewed
+physical OHDSI result tables and never substitutes a same-named live
+analysis.
+
+Pooled counts are sums of site contributions. Without privacy-preserving
+record linkage, a person represented in two databases contributes once
+in each; local distinct-person counts likewise cannot be turned into a
+global set union. Study/cohort identifiers and public bin definitions
+must describe the same estimand on every participating node.
+
+## Dedicated sticky privacy releases
+
+Protected releases concern the OHDSI community tools integrated in
+dsOMOP (Achilles, OHDSI results tables, the analysis catalogue and
+QueryLibrary). Connecting, loading, filtering, factors, merges, cohorts
+and core exploration continue under their standard DataSHIELD controls.
+Community tools default to `dsomop.tools.mode = "auto"`; the client
+cannot bypass the server’s policy.
+
+On dsOMOP 2.10.3 there are two protected routes. `fixed_synopsis` uses a
+declared bounded vector for one automatic dataset generation. Its finite
+epsilon and delta zero apply before the exact support gates.
+`realised_sticky` reuses secret fingerprints of bounded contributions;
+it is heuristic and claims no mechanism epsilon or delta. Neither route
+claims privacy for the whole API transcript. `meta$protection` and
+`meta$privacy` identify the applicable route. DP-only mode
+(`dsomop.tools.mode = "dp"` or `dsomop.dp.exclusive = TRUE`) admits only
+supported fixed-synopsis routes. Missing protected components never fall
+back to exact versions of those components.
+
+The service is enabled by default and needs no custodian configuration
+for correct operation. The server owns its persistent noise root and
+pseudonym key. For fixed-synopsis requests it recomputes the
+person-membership generation inside the request’s database snapshot; no
+per-session generation cache is used. Updates to clinical values without
+a membership change are not a new generation: contribution fingerprints
+still track changed components, and cross-version inference remains a
+stated residual. The public `snapshot_id` is optional display metadata
+with no effect on admission or noise. A privacy epoch is optional
+hardening, not an update workflow or transcript guarantee.
+
+Use `ds.omop.dp.prepare()` to produce an authenticated person-local
+table from a reviewed plan/recipe, or use a supported community-tool
+loader. Then inspect the service and request a bounded statistic:
+
+``` r
 ds.omop.dp.status(conns)
 
 privacy <- omop_privacy(
@@ -113,62 +275,101 @@ privacy <- omop_privacy(
   order_by = "measurement_date"
 )
 result <- ds.omop.dp.release(
-  "measurement_events", privacy, datasources = conns, format = "long"
+  "tool_output", privacy, datasources = conns, format = "long"
 )
 ```
 
 The client cannot choose epsilon, a seed, nonce, epoch or reroll.
-Domains, date breaks, clipping bounds and longitudinal contribution caps
-are public parts of the request; noise allocation, sticky identity and
-the durable ledger remain server-owned. See
-[`?omop_privacy`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_privacy.md)
-and
-[`?ds.omop.dp.release`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.release.md)
-for the seven supported primitives and their reducers. Before any
-release, the client checks the server continuity identifiers and refuses
-a federated request through two connections that share a logical noise
-domain, a ledger, or the same domain-scoped ledger authentication key.
-These checks prevent duplicate-node pooling while replicas converge
-during a noise-root rotation and detect accidentally forked durable
-ledgers. Such a rotation changes `noise_key_id`, `noise_domain_id` and
-`privacy_instance_id`, while `ledger_id` and `ledger_key_id` remain
-stable; operators should refresh any monitoring pins after the
-coordinated rollout.
+Categorical requests select views of complete registered public domains;
+positive binary masks and nonmissing denominators select cells of the
+same protected basis. Numeric/date bins coarsen a common atom basis.
+Pooling sums compatible signed components once and applies the same
+complete-basis projection as the server. Crossed hierarchy and nested
+histogram displays preserve both parent margins. Their versioned Dykstra
+algorithm keeps converged results; after its iteration limit, a
+deterministic feasible repair preserves nonnegativity and margins
+without claiming an exact L2 projection. Grouped-time Cox cells share
+the pooled C6 event and non-event totals. Interaction C6/C8 pooling
+retains the complete signed atomic family, projects it against the arm
+parents, then derives each requested subgroup or age view. Pooled
+supplemental rows and cells carry `family`, `view` and `subgroup_kind`
+identifiers. C8 family cells use finite IPF with a feasible margin
+repair; this display is not claimed to be an exact KL or L2 projection.
+Missing or incompatible status mappings and family definitions are
+refused. Effect estimates continue to use inverse-variance meta-analysis
+of per-site fits. Weighted record histograms reconcile to a protected
+record total, never a person total. Unregistered record scales expose
+coarse histograms and interval quantiles with explicit tail-censoring
+flags instead of invented bounded means. Recurrent event-time `persons`
+counts distinct contributors among the same K-capped occurrences using a
+complete interval-presence vector (sensitivity 3K). Its static fractions
+are N/R .2 each, A/B/C .1 each and P .3. Pooling sums signed presence
+coordinates and applies the server’s radial feasibility projection;
+coarse persons are never sums of finer person counts. Retreat toward the
+projection’s event-mass anchor can add bias.
+
+Every server older than 2.10.3 receives a plain upgrade warning.
+Installing this client does not repair an old server’s inference
+defects. Legacy per-site results retain their server’s contract; mixed
+old/new protected pooling is refused. Use `type = "split"` while
+upgrading sites. A new server clearly refuses typed status/release
+preflight from clients 2.10.2 and earlier. The legacy v2 opt-in
+`options(dsomop.dp.allow_legacy_servers = TRUE)` remains available for
+inspecting old deployments; it never enables protected/legacy pooling or
+supplies the missing server fixes.
+
+There is no lifetime privacy budget, query quota, privacy accountant or
+history-based admission. Equivalent supported views reuse protected
+components; distinct overlapping scopes and changes in data/mechanism
+can still support inference. Exact support gates and other enabled
+DataSHIELD methods remain outside any fixed-vector guarantee. Protected
+pooling also requires distinct logical source identifiers: two
+connections to one logical node are refused, and coincidentally equal
+answers do not establish source independence.
+
+See `?omop_privacy` and `?ds.omop.dp.release` for the primitives and
+reducers, and the paired [disclosure-control
+contract](https://github.com/isglobal-brge/dsOMOP/blob/main/DISCLOSURE_CONTROL.md)
+for guarantees, residuals and utility costs.
 
 ## Current boundaries
 
 Plans and recipes cover common epidemiological extraction shapes, but
 not every possible relational or longitudinal estimand. In particular:
 
-- multi-table `long` recipes split into one output per source table;
-  there is no arbitrary cross-table joined-long output;
-- federated `wide` output requires a closed integer `concept_set` and
-  `translate_concepts = FALSE`; every declared concept has the same
-  concept-ID-derived column on every node (filled with `NA` when locally
-  absent), and no undeclared concept can enter the output. Wide output
-  also requires at most one event per declared grain and concept, so the
-  request must use deterministic event selection or an explicit
-  reduction;
-- `event_select` defaults to global selection within a person/episode
-  and can use `by = "concept"` for independent first/last-N selection
-  per concept;
-- recurrent cohort episodes, regular episode-by-period panels, and named
-  competing-risk, recurrent-event and counting-process outputs are
-  first-class contracts; arbitrary multi-state transition models remain
-  outside the reviewed output contracts;
-- sparse output supports person or indexed episode grain and includes a
-  complete `personRef`; absent covariate rows represent zero for roster
-  members with no qualifying event;
-- the local Query Library is curated and incomplete. The dedicated privacy
-  path currently supports seven person-bounded sticky-noise primitives
-  with a durable authenticated ledger. Its single public guarantee is
-  `sticky_person_bounded_noise_with_authenticated_lineage_and_nominal_accounting`;
-  there is no separate certification mode. Eligible inputs carry
-  authenticated semantic lineage and deterministic person-level
-  contribution bounds. The pinned upstream snapshot is exhaustively
-  classified as 129 executable bounded redesigns, 54
-  vocabulary/reference metadata questions and 18 blocked shapes; none
-  authorizes literal upstream SQL.
+  - multi-table `long` recipes split into one output per source table;
+    there is no arbitrary cross-table joined-long output;
+  - federated `wide` output requires a closed integer `concept_set` and
+    `translate_concepts = FALSE`; every declared concept has the same
+    concept-ID-derived column on every node (filled with `NA` when
+    locally absent), and no undeclared concept can enter the output.
+    Wide output also requires at most one event per declared grain and
+    concept, so the request must use deterministic event selection or an
+    explicit reduction;
+  - `event_select` defaults to global selection within a person/episode
+    and can use `by = "concept"` for independent first/last-N selection
+    per concept;
+  - recurrent cohort episodes, regular episode-by-period panels, and
+    named competing-risk, recurrent-event, counting-process and
+    graph-declared multi-state outputs are first-class contracts.
+    Multi-state plans accept an `mstate` transition matrix or an
+    equivalent public adjacency graph, including cycles and repeated
+    visits to a state; the graph cannot be inferred privately from site
+    data and arbitrary SQL remains outside the contract;
+  - sparse output supports person or indexed episode grain and includes
+    a complete `personRef`; absent covariate rows represent zero for
+    roster members with no qualifying event;
+  - the local Query Library is curated and incomplete. The dedicated
+    privacy path supports seven person-bounded sticky-noise primitives
+    under the current `protected_release_fixed_basis_or_realised_v1`
+    contract. Guarantees are route-qualified: a calibrated fixed vector
+    on unchanged source data before exact-support admission, or
+    realised-sticky protection without a finite joint epsilon claim.
+    Eligible inputs carry authenticated semantic lineage and
+    deterministic person-level contribution bounds. The pinned upstream
+    snapshot is exhaustively classified as 129 executable bounded
+    redesigns, 54 vocabulary/reference metadata questions and 18 blocked
+    shapes; none authorizes literal upstream SQL.
 
 Servers also impose configurable operational shape caps (by default
 1,000 feature specifications, 1,000 pivoted concepts, 5,000 output
@@ -212,44 +413,46 @@ compatibility with every dsOMOP output or deployment.
 
 ## Acknowledgements
 
-- The development of dsOMOP has been supported by the
-  **[RadGen4COPD](https://github.com/isglobal-brge/RadGen4COPD)**,
-  **[P4COPD](https://www.clinicbarcelona.org/en/projects-and-clinical-assays/detail/p4copd-prediction-prevention-personalized-and-precision-management-of-copd-in-young-adults)**,
-  **[CADSET](https://www.ersnet.org/science-and-research/clinical-research-collaboration-application-programme/cadset-chronic-airway-diseases-early-stratification/)**,
-  and **[DATOS-CAT](https://datos-cat.github.io/LandingPage)** projects.
-  These collaborations have not only provided essential financial
-  backing but have also affirmed the project’s relevance and application
-  in significant research endeavors.
-- This project has received funding from the **[Spanish Ministry of
-  Education, Innovation and
-  Universities](https://www.ciencia.gob.es/en/)**, the **[National
-  Agency for Research](https://www.aei.gob.es/en)**, and the **[Fund for
-  Regional
-  Development](https://ec.europa.eu/regional_policy/funding/erdf_en)**
-  **(PID2021-122855OB-I00)**. We also acknowledge support from the grant
-  **CEX2023-0001290-S** funded by **MCIN/AEI/10.13039/501100011033**,
-  and support from the **[Generalitat de
-  Catalunya](https://web.gencat.cat/en/inici/index.html)** through the
-  **[CERCA Program](https://cerca.cat/en/)** and the **Consolidated
-  Group on HEALTH ANALYTICS (2021 SGR 01563)**.
-- Additionally, this project has received funding from the **[Instituto
-  de Salud Carlos III (ISCIII)](https://www.isciii.es/)** through the
-  project **“PMP21/00090,”** co-funded by the **[European
-  Union’s](https://european-union.europa.eu/index_en)** **Resilience and
-  Recovery Facility**. It has also been partially funded by the
-  **“Complementary Plan for Biotechnology Applied to Health,”**
-  coordinated by the **[Institut de Bioenginyeria de Catalunya
-  (IBEC)](https://ibecbarcelona.eu/)** within the framework of the
-  **Recovery, Transformation, and Resilience Plan (C17.I1)** – Funded by
-  the **[European Union](https://european-union.europa.eu/index_en)** –
-  **[NextGenerationEU](https://next-generation-eu.europa.eu/index_en)**.
+  - The development of dsOMOP has been supported by the
+    **[RadGen4COPD](https://github.com/isglobal-brge/RadGen4COPD)**,
+    **[P4COPD](https://www.clinicbarcelona.org/en/projects-and-clinical-assays/detail/p4copd-prediction-prevention-personalized-and-precision-management-of-copd-in-young-adults)**,
+    **[CADSET](https://www.ersnet.org/science-and-research/clinical-research-collaboration-application-programme/cadset-chronic-airway-diseases-early-stratification/)**,
+    and **[DATOS-CAT](https://datos-cat.github.io/LandingPage)**
+    projects. These collaborations have not only provided essential
+    financial backing but have also affirmed the project’s relevance and
+    application in significant research endeavors.
+  - This project has received funding from the **[Spanish Ministry of
+    Education, Innovation and
+    Universities](https://www.ciencia.gob.es/en/)**, the **[National
+    Agency for Research](https://www.aei.gob.es/en)**, and the **[Fund
+    for Regional
+    Development](https://ec.europa.eu/regional_policy/funding/erdf_en)**
+    **(PID2021-122855OB-I00)**. We also acknowledge support from the
+    grant **CEX2023-0001290-S** funded by
+    **MCIN/AEI/10.13039/501100011033**, and support from the
+    **[Generalitat de
+    Catalunya](https://web.gencat.cat/en/inici/index.html)** through the
+    **[CERCA Program](https://cerca.cat/en/)** and the **Consolidated
+    Group on HEALTH ANALYTICS (2021 SGR 01563)**.
+  - Additionally, this project has received funding from the
+    **[Instituto de Salud Carlos III (ISCIII)](https://www.isciii.es/)**
+    through the project **“PMP21/00090,”** co-funded by the **[European
+    Union’s](https://european-union.europa.eu/index_en)** **Resilience
+    and Recovery Facility**. It has also been partially funded by the
+    **“Complementary Plan for Biotechnology Applied to Health,”**
+    coordinated by the **[Institut de Bioenginyeria de Catalunya
+    (IBEC)](https://ibecbarcelona.eu/)** within the framework of the
+    **Recovery, Transformation, and Resilience Plan (C17.I1)** – Funded
+    by the **[European
+    Union](https://european-union.europa.eu/index_en)** –
+    **[NextGenerationEU](https://next-generation-eu.europa.eu/index_en)**.
 
 ## Contact
 
 For further information or inquiries, please contact:
 
-- **Juan R González**: <juanr.gonzalez@isglobal.org>
-- **David Sarrat González**: <david.sarrat@isglobal.org>
+  - **Juan R González**: <juanr.gonzalez@isglobal.org>
+  - **David Sarrat González**: <david.sarrat@isglobal.org>
 
 For more details about **DataSHIELD**, visit
 <https://www.datashield.org>.
@@ -261,406 +464,375 @@ For more information about the **Barcelona Institute for Global Health
 
 ## All functions
 
-- [`as.data.frame(`*`<dsomop_result>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/as.data.frame.dsomop_result.md)
-  : Convert dsomop_result to data.frame
-- [`` `$`( ``*`<dsomop_result>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/cash-.dsomop_result.md)
-  : Access dsomop_result elements with backward compatibility
-- [`ds.omop.achilles.analyses()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.achilles.analyses.md)
-  : List available Achilles analyses
-- [`ds.omop.achilles.catalog()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.achilles.catalog.md)
-  : Get Achilles analysis catalog
-- [`ds.omop.achilles.distribution()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.achilles.distribution.md)
-  : Get Achilles distribution results
-- [`ds.omop.achilles.heel()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.achilles.heel.md)
-  : Get Achilles Heel data-quality warnings (per site)
-- [`ds.omop.achilles.results()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.achilles.results.md)
-  : Get Achilles count results
-- [`ds.omop.achilles.status()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.achilles.status.md)
-  : Check Achilles availability
-- [`ds.omop.analysis.get()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.get.md)
-  : Get unified analysis catalog entry metadata
-- [`ds.omop.analysis.list()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.list.md)
-  : List unified analysis catalog entries
-- [`ds.omop.analysis.run()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.run.md)
-  : Run a unified analysis catalog entry
-- [`ds.omop.bind_rows()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.bind_rows.md)
-  : Row-bind two schema-identical server-side omop.table data frames
-- [`ds.omop.cdm.source()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cdm.source.md)
-  : Get the CDM source description from each server
-- [`ds.omop.cdm.version()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cdm.version.md)
-  : Get the CDM version reported by each server
-- [`ds.omop.code()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.code.md)
-  : Get the R code that produced a result
-- [`ds.omop.cohort.combine()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.combine.md)
-  : Combine two cohorts with set operations
-- [`ds.omop.cohort.create()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.create.md)
-  : Create a cohort from a structured specification
-- [`ds.omop.cohort.definition()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.definition.md)
-  : Get a cohort definition by ID
-- [`ds.omop.cohort.from_table()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.from_table.md)
-  : Build a cohort from the persons in a server-side omop.table symbol
-- [`ds.omop.cohort.list()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.list.md)
-  : List available cohort definitions
-- [`ds.omop.cohort.ref()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.ref.md)
-  : Create a cohort reference for the plan DSL (client-only)
-- [`ds.omop.column.stats()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.column.stats.md)
-  : Get column-level statistics
-- [`ds.omop.columns()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.columns.md)
-  : List columns in a table
-- [`ds.omop.comorbidity()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.comorbidity.md)
-  : Disclosure-safe two-by-two comorbidity (person co-occurrence)
-- [`ds.omop.compare()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.compare.md)
-  : Compare schemas across servers
-- [`ds.omop.concept.ancestors()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.ancestors.md)
-  : Get a concept's ancestors and descendants (hierarchy)
-- [`ds.omop.concept.descendants()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.descendants.md)
-  : Get descendant concepts via the concept_ancestor table
-- [`ds.omop.concept.drilldown()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.drilldown.md)
-  : Get concept drilldown profile
-- [`ds.omop.concept.expand()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.expand.md)
-  : Expand a concept set to a full list of concept IDs
-- [`ds.omop.concept.list()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.list.md)
-  : Browse the concept catalog with pagination
-- [`ds.omop.concept.locate()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.locate.md)
-  : Locate concept across all CDM tables
-- [`ds.omop.concept.lookup()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.lookup.md)
-  : Look up OMOP concepts by ID
-- [`ds.omop.concept.prevalence()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.prevalence.md)
-  : Get concept prevalence for a table
-- [`ds.omop.concept.relationships()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.relationships.md)
-  : Get the relationships of one or more concepts
-- [`ds.omop.concept.search()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.search.md)
-  : Search for OMOP concepts by name
-- [`ds.omop.concept.set()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.set.md)
-  : Build a concept set specification (client-only)
-- [`ds.omop.concept.summary()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.summary.md)
-  : Summarise a value column scoped to one concept of one table
-- [`ds.omop.concept.synonyms()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.concept.synonyms.md)
-  : Get the synonyms of one or more concepts
-- [`ds.omop.connect()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.connect.md)
-  : Connect to an OMOP CDM resource on DataSHIELD servers
-- [`ds.omop.copy_code()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.copy_code.md)
-  : Copy reproducible R code to clipboard
-- [`ds.omop.crosstab()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.crosstab.md)
-  : Disclosure-safe two-way cross-tabulation
-- [`ds.omop.date.counts()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.date.counts.md)
-  : Get record counts by time period
-- [`ds.omop.disclosure.settings()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.disclosure.settings.md)
-  : Inspect the active disclosure thresholds on each server
-- [`ds.omop.disconnect()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.disconnect.md)
-  : Disconnect an OMOP session
-- [`ds.omop.distribution()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.distribution.md)
-  : Continuous-value distribution over a cohort, in one call
-- [`ds.omop.domain.coverage()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.domain.coverage.md)
-  : Get cross-table domain coverage
-- [`ds.omop.dp.release()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.release.md)
-  : Request a sticky privacy release
-- [`ds.omop.dp.status()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.dp.status.md)
-  : Inspect sticky privacy-release services
-- [`ds.omop.filter()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.filter.md)
-  : Filter the rows of a server-side omop.table data frame
-- [`ds.omop.joins()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.joins.md)
-  : Get the join relationship graph
-- [`ds.omop.login()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.login.md)
-  : Log in and open an OMOP CDM session in one call
-- [`ds.omop.merge()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.merge.md)
-  : Merge two server-side omop.table data frames on the person key
-- [`ds.omop.meta.effect_estimate()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.meta.effect_estimate.md)
-  : Meta-analyze a comparative effect estimate across databases
-  (evidence synthesis)
-- [`ds.omop.missingness()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.missingness.md)
-  : Get missingness rates for columns
-- [`ds.omop.ohdsi.results()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.ohdsi.results.md)
-  : Query an OHDSI result table
-- [`ds.omop.ohdsi.status()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.ohdsi.status.md)
-  : Check OHDSI result tool availability
-- [`ds.omop.ohdsi.summary()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.ohdsi.summary.md)
-  : Get OHDSI tool summary
-- [`ds.omop.ohdsi.tables()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.ohdsi.tables.md)
-  : List discovered OHDSI result tables
-- [`ds.omop.plan()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.md)
-  : Create a new extraction plan
-- [`ds.omop.plan.baseline()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.baseline.md)
-  : Add a baseline demographics output to the plan
-- [`ds.omop.plan.cohort()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.cohort.md)
-  : Set a cohort filter on the plan
-- [`ds.omop.plan.cohort_membership()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.cohort_membership.md)
-  : Add a cohort membership output to the plan
-- [`ds.omop.plan.concept_dictionary()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.concept_dictionary.md)
-  : Add a concept dictionary output to the plan
-- [`ds.omop.plan.events()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.events.md)
-  : Add an event-level extraction to the plan
-- [`ds.omop.plan.execute()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.execute.md)
-  : Execute a plan and create server-side tables
-- [`ds.omop.plan.features()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.features.md)
-  : Add feature extraction with feature specifications
-- [`ds.omop.plan.harmonize()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.harmonize.md)
-  : Harmonize a plan for multi-server execution
-- [`ds.omop.plan.intervals()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.intervals.md)
-  : Add an intervals (long) output to the plan
-- [`ds.omop.plan.load()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.load.md)
-  : Load an extraction plan from JSON or YAML
-- [`ds.omop.plan.options()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.options.md)
-  : Set plan-wide options
-- [`ds.omop.plan.outcome()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.outcome.md)
-  : Add an outcome extraction (convenience wrapper)
-- [`ds.omop.plan.person_level()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.person_level.md)
-  : Add cardinality-safe person-level tables to the plan
-- [`ds.omop.plan.person_period()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.person_period.md)
-  : Add a regular episode-by-period panel to an extraction plan
-- [`ds.omop.plan.preview()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.preview.md)
-  : Preview a plan (server-side dry run)
-- [`ds.omop.plan.save()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.save.md)
-  : Save an extraction plan to JSON or YAML
-- [`ds.omop.plan.survival()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.survival.md)
-  : Add a survival (time-to-event) output to the plan
-- [`ds.omop.plan.temporal_covariates()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.temporal_covariates.md)
-  : Add a temporal (time-binned) covariates output to the plan
-- [`ds.omop.plan.validate()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.validate.md)
-  : Validate an extraction plan
-- [`ds.omop.prevalence()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.prevalence.md)
-  : Covariate prevalence over a cohort, in one call
-- [`ds.omop.query.exec()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.query.exec.md)
-  : Execute a query template (DEPRECATED)
-- [`ds.omop.query.get()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.query.get.md)
-  : Get query template details (DEPRECATED)
-- [`ds.omop.query.list()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.query.list.md)
-  : List available query templates (DEPRECATED)
-- [`ds.omop.query.pool()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.query.pool.md)
-  : Pool query template results across servers
-- [`ds.omop.querylibrary.sticky.release()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.querylibrary.sticky.release.md)
-  : Release a pinned QueryLibrary sticky redesign
-- [`ds.omop.safe.cutpoints()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.safe.cutpoints.md)
-  : Get safe numeric cutpoints for a column
-- [`ds.omop.safe.filter.measurement()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.safe.filter.measurement.md)
-  : Create a safe population filter for a numeric measurement interval
-- [`ds.omop.safe.filter.value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.safe.filter.value.md)
-  : Create a safe numeric value filter using server-computed bins
-- [`ds.omop.select()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.select.md)
-  : Keep a subset of columns of a server-side omop.table data frame
-- [`ds.omop.snapshot()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.snapshot.md)
-  : Get a full schema snapshot
-- [`ds.omop.status()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.status.md)
-  : Get OMOP session status
-- [`ds.omop.table.stats()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.table.stats.md)
-  : Get table-level statistics
-- [`ds.omop.tables()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.tables.md)
-  : List tables in the OMOP CDM database
-- [`ds.omop.value.counts()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.value.counts.md)
-  : Get value frequencies for a column
-- [`ds.omop.value.histogram()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.value.histogram.md)
-  : Get a disclosure-safe numeric histogram
-- [`ds.omop.value.quantiles()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.value.quantiles.md)
-  : Get disclosure-safe numeric quantiles
-- [`ds.omop.vocab.classes()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.vocab.classes.md)
-  : List the concept classes available on each server
-- [`ds.omop.vocab.domains()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.vocab.domains.md)
-  : List the domains available on each server
-- [`ds.omop.vocab.vocabularies()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.vocab.vocabularies.md)
-  : List the vocabularies available on each server
-- [`omop.date_handling()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.date_handling.md)
-  : Build a date handling specification
-- [`omop.feature.abnormal_high()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.abnormal_high.md)
-  : Create an abnormal-high count feature specification
-- [`omop.feature.abnormal_low()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.abnormal_low.md)
-  : Create an abnormal-low count feature specification
-- [`omop.feature.boolean()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.boolean.md)
-  : Create a binary (presence/absence) feature specification
-- [`omop.feature.count()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.count.md)
-  : Create an event count feature specification
-- [`omop.feature.cv_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.cv_value.md)
-  : Create a coefficient of variation feature specification
-- [`omop.feature.drug_duration()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.drug_duration.md)
-  : Create a drug duration feature specification
-- [`omop.feature.duration_sum()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.duration_sum.md)
-  : Create a duration sum feature specification
-- [`omop.feature.first_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.first_value.md)
-  : Create a first-recorded-value feature specification
-- [`omop.feature.gap_max_days()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.gap_max_days.md)
-  : Create a maximum gap (days) feature specification
-- [`omop.feature.gap_mean_days()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.gap_mean_days.md)
-  : Create a mean gap (days) feature specification
-- [`omop.feature.latest_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.latest_value.md)
-  : Create a most-recent-value feature specification
-- [`omop.feature.max_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.max_value.md)
-  : Create a maximum value feature specification
-- [`omop.feature.mean_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.mean_value.md)
-  : Create a mean value feature specification
-- [`omop.feature.min_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.min_value.md)
-  : Create a minimum value feature specification
-- [`omop.feature.n_distinct()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.n_distinct.md)
-  : Create a distinct concept count feature specification
-- [`omop.feature.sd_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.sd_value.md)
-  : Create a standard deviation feature specification
-- [`omop.feature.slope_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.slope_value.md)
-  : Create a slope (linear trend) feature specification
-- [`omop.feature.sum_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.sum_value.md)
-  : Create a sum value feature specification
-- [`omop.feature.time_since()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.time_since.md)
-  : Create a time-since-event feature specification
-- [`omop.temporal()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.temporal.md)
-  : Build a temporal filtering specification
-- [`omop_filter()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_sex()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_age()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_age_group()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_cohort()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_has_concept()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_date_range()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_value_concept()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_not_has_concept()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_concept_count()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_prior_observation()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_followup()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_visit_count()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_has_measurement()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  [`omop_filter_missing_measurement()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  : Create a filter specification
-- [`omop_filter_group()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter_group.md)
-  : Create an AND/OR group of filters
-- [`omop_index_event()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_index_event.md)
-  : Define the OMOP event that anchors a longitudinal population
-- [`omop_output()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_output.md)
-  : Create an output specification
-- [`omop_population()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_population.md)
-  : Create a population node
-- [`omop_privacy()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_privacy.md)
-  : Define a server-owned sticky privacy release
-- [`omop_querylibrary_sticky()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_querylibrary_sticky.md)
-  : Build an executable sticky redesign of an OHDSI QueryLibrary
-  question
-- [`omop_querylibrary_sticky_catalog()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_querylibrary_sticky_catalog.md)
-  : List audited sticky redesign mappings for OHDSI QueryLibrary
-- [`omop_recipe()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
-  : Create an extraction recipe declaratively
-- [`omop_variable()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md)
-  : Create a variable specification
-- [`omop_variable_age()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_age.md)
-  : Create an age variable
-- [`omop_variable_block()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_block.md)
-  : Create a variable block
-- [`omop_variable_chads2()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_chads2.md)
-  : Create a CHADS2 score variable
-- [`omop_variable_chadsvasc()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_chadsvasc.md)
-  : Create a CHA2DS2-VASc score variable
-- [`omop_variable_charlson()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_charlson.md)
-  : Create a Charlson Comorbidity Index variable
-- [`omop_variable_cv()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_cv.md)
-  : Create a coefficient of variation variable
-- [`omop_variable_dcsi()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_dcsi.md)
-  : Create a DCSI score variable
-- [`omop_variable_demo_missingness()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_demo_missingness.md)
-  : Create a demographics missingness variable
-- [`omop_variable_drug_duration()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_drug_duration.md)
-  : Create a drug duration variable
-- [`omop_variable_followup()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_followup.md)
-  : Create a followup duration variable
-- [`omop_variable_hfrs()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_hfrs.md)
-  : Create an HFRS score variable
-- [`omop_variable_n_distinct()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_n_distinct.md)
-  : Create a distinct-concept-count variable
-- [`omop_variable_obs_duration()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_obs_duration.md)
-  : Create an observation duration variable
-- [`omop_variable_prior_obs()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_prior_obs.md)
-  : Create a prior observation duration variable
-- [`omop_variable_sd()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_sd.md)
-  : Create a standard deviation variable
-- [`omop_variable_sex()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_sex.md)
-  : Create a sex (M/F) variable
-- [`omop_variable_slope()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_slope.md)
-  : Create a slope (linear trend) variable
-- [`omop_variable_sum()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_sum.md)
-  : Create a sum variable
-- [`plot(`*`<omop_plan>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/plot.omop_plan.md)
-  : Plot an extraction plan as a dependency graph
-- [`print(`*`<dsomop_result>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/print.dsomop_result.md)
-  : Print a dsomop_result
-- [`print(`*`<omop_filter>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/print.omop_filter.md)
-  : Print an omop_filter
-- [`print(`*`<omop_filter_group>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/print.omop_filter_group.md)
-  : Print an omop_filter_group
-- [`print(`*`<omop_output>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/print.omop_output.md)
-  : Print an omop_output
-- [`print(`*`<omop_plan>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/print.omop_plan.md)
-  : Print method for extraction plans
-- [`print(`*`<omop_population>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/print.omop_population.md)
-  : Print an omop_population
-- [`print(`*`<omop_recipe>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/print.omop_recipe.md)
-  : Print an omop_recipe
-- [`print(`*`<omop_variable>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/print.omop_variable.md)
-  : Print an omop_variable
-- [`print(`*`<omop_variable_block>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/print.omop_variable_block.md)
-  : Print an omop_variable_block
-- [`recipe_execute()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_execute.md)
-  : Execute a recipe: compile to plan and run
-- [`recipe_export_circe()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_export_circe.md)
-  : Export a recipe population to an OHDSI Circe cohort expression
-- [`recipe_export_json()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_export_json.md)
-  : Export a recipe to JSON
-- [`recipe_export_yaml()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_export_yaml.md)
-  : Export a recipe to YAML
-- [`recipe_import_circe()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_import_circe.md)
-  : Import an OHDSI Circe cohort expression as a recipe population
-- [`recipe_import_json()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_import_json.md)
-  : Import a recipe from JSON
-- [`recipe_import_yaml()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_import_yaml.md)
-  : Import a recipe from YAML
-- [`recipe_lint()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_lint.md)
-  : Lint a recipe for common authoring mistakes (pure client-side)
-- [`recipe_load()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_load.md)
-  : Load a recipe from JSON or YAML
-- [`recipe_preview()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_preview.md)
-  : Preview a recipe on the server
-- [`recipe_preview_schema()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_preview_schema.md)
-  : Preview the output schema for a recipe
-- [`recipe_preview_stats()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_preview_stats.md)
-  : Preview aggregate stats for a recipe (without materializing)
-- [`recipe_save()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_save.md)
-  : Save a recipe to JSON or YAML
-- [`recipe_to_code()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_code.md)
-  : Generate reproducible R code from a recipe
-- [`recipe_to_plan()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_plan.md)
-  : Convert a recipe to an extraction plan
-- [`recipe_validate()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_validate.md)
-  : Validate a recipe on the server
-- [`summary(`*`<omop_plan>`*`)`](https://isglobal-brge.github.io/dsOMOPClient/reference/summary.omop_plan.md)
-  : Summarise an extraction plan
+<!-- end list -->
+
+  - `as.data.frame(<dsomop_result>)` : Convert dsomop\_result to
+    data.frame
+  - `` `$`(<dsomop_result>) `` : Access dsomop\_result elements with
+    backward compatibility
+  - `ds.omop.achilles.analyses()` : List available Achilles analyses
+  - `ds.omop.achilles.catalog()` : Get Achilles analysis catalog
+  - `ds.omop.achilles.distribution()` : Get Achilles distribution
+    results
+  - `ds.omop.achilles.heel()` : Get Achilles Heel data-quality warnings
+    (per site)
+  - `ds.omop.achilles.results()` : Get Achilles count results
+  - `ds.omop.achilles.status()` : Check Achilles availability
+  - `ds.omop.analysis.get()` : Get unified analysis catalog entry
+    metadata
+  - `ds.omop.analysis.list()` : List unified analysis catalog entries
+  - `ds.omop.analysis.run()` : Run a unified analysis catalog entry
+  - `ds.omop.bind_rows()` : Row-bind two schema-identical server-side
+    omop.table data frames
+  - `ds.omop.cdm.source()` : Get the CDM source description from each
+    server
+  - `ds.omop.cdm.version()` : Get the CDM version reported by each
+    server
+  - `ds.omop.client.version()` : dsOMOPClient version
+  - `ds.omop.code()` : Get the R code that produced a result
+  - `ds.omop.cohort.combine()` : Combine two cohorts with set operations
+  - `ds.omop.cohort.create()` : Create a cohort from a structured
+    specification
+  - `ds.omop.cohort.definition()` : Get a cohort definition by ID
+  - `ds.omop.cohort.from_table()` : Build a cohort from the persons in a
+    server-side omop.table symbol
+  - `ds.omop.cohort.list()` : List available cohort definitions
+  - `ds.omop.cohort.ref()` : Create a cohort reference for the plan DSL
+    (client-only)
+  - `ds.omop.column.stats()` : Get column-level statistics
+  - `ds.omop.columns()` : List columns in a table
+  - `ds.omop.comorbidity()` : Disclosure-safe two-by-two comorbidity
+    (person co-occurrence)
+  - `ds.omop.compare()` : Compare schemas across servers
+  - `ds.omop.concept.ancestors()` : Get a concept's ancestors and
+    descendants (hierarchy)
+  - `ds.omop.concept.descendants()` : Get descendant concepts via the
+    concept\_ancestor table
+  - `ds.omop.concept.drilldown()` : Get concept drilldown profile
+  - `ds.omop.concept.expand()` : Expand a concept set to a full list of
+    concept IDs
+  - `ds.omop.concept.list()` : Browse the concept catalog with
+    pagination
+  - `ds.omop.concept.locate()` : Locate concept across all CDM tables
+  - `ds.omop.concept.lookup()` : Look up OMOP concepts by ID
+  - `ds.omop.concept.prevalence()` : Get concept prevalence for a table
+  - `ds.omop.concept.relationships()` : Get the relationships of one or
+    more concepts
+  - `ds.omop.concept.search()` : Search for OMOP concepts by name
+  - `ds.omop.concept.set()` : Build a concept set specification
+    (client-only)
+  - `ds.omop.concept.summary()` : Summarise a value column scoped to one
+    concept of one table
+  - `ds.omop.concept.synonyms()` : Get the synonyms of one or more
+    concepts
+  - `ds.omop.connect()` : Connect to an OMOP CDM resource on DataSHIELD
+    servers
+  - `ds.omop.copy_code()` : Copy reproducible R code to clipboard
+  - `ds.omop.crosstab()` : Disclosure-safe two-way cross-tabulation
+  - `ds.omop.date.counts()` : Get record counts by time period
+  - `ds.omop.disclosure.settings()` : Inspect the active disclosure
+    thresholds on each server
+  - `ds.omop.disconnect()` : Disconnect an OMOP session
+  - `ds.omop.distribution()` : Continuous-value distribution over a
+    cohort, in one call
+  - `ds.omop.domain.coverage()` : Get cross-table domain coverage
+  - `ds.omop.dp.prepare()` : Prepare a person-local table for sticky DP
+    releases
+  - `ds.omop.dp.release()` : Request a sticky privacy release
+  - `ds.omop.dp.status()` : Inspect sticky privacy-release services
+  - `ds.omop.filter()` : Filter the rows of a server-side omop.table
+    data frame
+  - `ds.omop.joins()` : Get the join relationship graph
+  - `ds.omop.login()` : Log in and open an OMOP CDM session in one call
+  - `ds.omop.merge()` : Merge two server-side omop.table data frames on
+    the person key
+  - `ds.omop.meta.effect_estimate()` : Meta-analyze a comparative effect
+    estimate across databases (evidence synthesis)
+  - `ds.omop.missingness()` : Get missingness rates for columns
+  - `ds.omop.mutate()` : Derive columns of a server-side omop.table
+  - `ds.omop.ohdsi.results()` : Query an OHDSI result table
+  - `ds.omop.ohdsi.status()` : Check OHDSI result tool availability
+  - `ds.omop.ohdsi.summary()` : Get OHDSI tool summary
+  - `ds.omop.ohdsi.tables()` : List discovered OHDSI result tables
+  - `ds.omop.plan()` : Create a new extraction plan
+  - `ds.omop.plan.baseline()` : Add a baseline demographics output to
+    the plan
+  - `ds.omop.plan.cohort()` : Set a cohort filter on the plan
+  - `ds.omop.plan.cohort_membership()` : Add a cohort membership output
+    to the plan
+  - `ds.omop.plan.concept_dictionary()` : Add a concept dictionary
+    output to the plan
+  - `ds.omop.plan.events()` : Add an event-level extraction to the plan
+  - `ds.omop.plan.execute()` : Execute a plan and create server-side
+    tables
+  - `ds.omop.plan.features()` : Add feature extraction with feature
+    specifications
+  - `ds.omop.plan.harmonize()` : Harmonize a plan for multi-server
+    execution
+  - `ds.omop.plan.intervals()` : Add an intervals (long) output to the
+    plan
+  - `ds.omop.plan.load()` : Load an extraction plan from JSON or YAML
+  - `ds.omop.plan.options()` : Set plan-wide options
+  - `ds.omop.plan.outcome()` : Add an outcome extraction (convenience
+    wrapper)
+  - `ds.omop.plan.person_level()` : Add cardinality-safe person-level
+    tables to the plan
+  - `ds.omop.plan.person_period()` : Add a regular episode-by-period
+    panel to an extraction plan
+  - `ds.omop.plan.preview()` : Preview a plan (server-side dry run)
+  - `ds.omop.plan.save()` : Save an extraction plan to JSON or YAML
+  - `ds.omop.plan.survival()` : Add a survival (time-to-event) output to
+    the plan
+  - `ds.omop.plan.temporal_covariates()` : Add a temporal (time-binned)
+    covariates output to the plan
+  - `ds.omop.plan.validate()` : Validate an extraction plan
+  - `ds.omop.prevalence()` : Covariate prevalence over a cohort, in one
+    call
+  - `ds.omop.query.exec()` : Execute a query template (DEPRECATED)
+  - `ds.omop.query.get()` : Get query template details (DEPRECATED)
+  - `ds.omop.query.list()` : List available query templates (DEPRECATED)
+  - `ds.omop.query.pool()` : Pool query template results across servers
+  - `ds.omop.querylibrary.sticky.release()` : Release a pinned
+    QueryLibrary sticky redesign
+  - `ds.omop.safe.cutpoints()` : Get safe numeric cutpoints for a column
+  - `ds.omop.safe.filter.measurement()` : Create a safe population
+    filter for a numeric measurement interval
+  - `ds.omop.safe.filter.value()` : Create a safe numeric value filter
+    using server-computed bins
+  - `ds.omop.select()` : Keep a subset of columns of a server-side
+    omop.table data frame
+  - `ds.omop.server.version()` : dsOMOP version on each server
+  - `ds.omop.snapshot()` : Get a full schema snapshot
+  - `ds.omop.status()` : Get OMOP session status
+  - `ds.omop.table()` : Pool a published concept category with its
+    complete level contract
+  - `ds.omop.table.stats()` : Get table-level statistics
+  - `ds.omop.tables()` : List tables in the OMOP CDM database
+  - `ds.omop.value.counts()` : Get value frequencies for a column
+  - `ds.omop.value.histogram()` : Get a disclosure-safe numeric
+    histogram
+  - `ds.omop.value.quantiles()` : Get disclosure-safe numeric quantiles
+  - `ds.omop.vocab.classes()` : List the concept classes available on
+    each server
+  - `ds.omop.vocab.domains()` : List the domains available on each
+    server
+  - `ds.omop.vocab.vocabularies()` : List the vocabularies available on
+    each server
+  - `omop.date_handling()` : Build a date handling specification
+  - `omop.feature.abnormal_high()` : Create an abnormal-high count
+    feature specification
+  - `omop.feature.abnormal_low()` : Create an abnormal-low count feature
+    specification
+  - `omop.feature.boolean()` : Create a binary (presence/absence)
+    feature specification
+  - `omop.feature.count()` : Create an event count feature specification
+  - `omop.feature.cv_value()` : Create a coefficient of variation
+    feature specification
+  - `omop.feature.drug_duration()` : Create a drug duration feature
+    specification
+  - `omop.feature.duration_sum()` : Create a duration sum feature
+    specification
+  - `omop.feature.first_value()` : Create a first-recorded-value feature
+    specification
+  - `omop.feature.gap_max_days()` : Create a maximum gap (days) feature
+    specification
+  - `omop.feature.gap_mean_days()` : Create a mean gap (days) feature
+    specification
+  - `omop.feature.latest_value()` : Create a most-recent-value feature
+    specification
+  - `omop.feature.max_value()` : Create a maximum value feature
+    specification
+  - `omop.feature.mean_value()` : Create a mean value feature
+    specification
+  - `omop.feature.min_value()` : Create a minimum value feature
+    specification
+  - `omop.feature.n_distinct()` : Create a distinct concept count
+    feature specification
+  - `omop.feature.sd_value()` : Create a standard deviation feature
+    specification
+  - `omop.feature.slope_value()` : Create a slope (linear trend) feature
+    specification
+  - `omop.feature.sum_value()` : Create a sum value feature
+    specification
+  - `omop.feature.time_since()` : Create a time-since-event feature
+    specification
+  - `omop.temporal()` : Build a temporal filtering specification
+  - `omop_age()` `omop_sex()` `omop_race()` `omop_ethnicity()`
+    `omop_birth_year_band()` `omop_died()` `omop_days_to_death()`
+    `omop_n_observation_periods()` `omop_obs_duration()`
+    `omop_prior_obs()` `omop_followup()` `omop_observed_days()`
+    `omop_score()` `omop_population_column()` : Person-derived and
+    population-column variables
+  - `omop_censor()` : Censoring by an event or era
+  - `omop_concept_set()` : Define a concept set
+  - `omop_cost()` : Cost rows linked to an event
+  - `omop_date_spec()` `omop_date()` `omop_date_components()`
+    `omop_date_parts()` `omop_time_between()` `omop_age_at()` :
+    Composable calendar presentation and anchored ages
+  - `omop_episode_members()` : Events linked to oncology/treatment
+    episodes
+  - `omop_era()` : Eras (intervals) built from an event
+  - `omop_event()` : Define an event source
+  - `omop_ever()` `omop_count()` `omop_first_value()`
+    `omop_last_value()` `omop_mean_value()` `omop_min_value()`
+    `omop_max_value()` `omop_value_at_index()` `omop_days_since()`
+    `omop_days_until()` `omop_first_date()` `omop_last_date()` :
+    Simple-layer variables (shortcuts)
+  - `omop_filter()` `omop_filter_sex()` `omop_filter_age()`
+    `omop_filter_age_group()` `omop_filter_cohort()`
+    `omop_filter_has_concept()` `omop_filter_date_range()`
+    `omop_filter_value()` `omop_filter_value_concept()`
+    `omop_filter_concept_set()` `omop_filter_not_has_concept()`
+    `omop_filter_concept_count()` `omop_filter_prior_observation()`
+    `omop_filter_followup()` `omop_filter_visit_count()`
+    `omop_filter_has_measurement()` `omop_filter_missing_measurement()`
+    : Create a filter specification
+  - `omop_filter_group()` : Create an AND/OR group of filters
+  - `omop_has()` `omop_has_not()` `omop_count_is()` `omop_not()`
+    `omop_all()` `omop_any()` `omop_person()` `omop_age_is()`
+    `omop_observed()` `omop_in_cohort()` : Population criteria
+  - `omop_history()` : Medical history covariates (simple layer)
+  - `omop_index()` `omop_any_of()` `omop_end()` `omop_coverage()` :
+    Index definitions, episode ends and observation coverage
+  - `omop_index_event()` : Define the OMOP event that anchors a
+    longitudinal population
+  - `omop_match()` `omop_age_band()` `omop_strata()` : Matched and
+    nested case-control sampling
+  - `omop_new_users()` : New users of a drug (simple layer)
+  - `omop_output()` : Create an output specification
+  - `recipe_merge()` `omop_param()` `recipe_params()` `recipe_bind()` :
+    Recipe parameters: placeholders, binding and merging
+  - `omop_population()` : Create a population node
+  - `omop_privacy()` : Define a server-owned sticky privacy release
+  - `omop_querylibrary_sticky()` : Build an executable sticky redesign
+    of an OHDSI QueryLibrary question
+  - `omop_querylibrary_sticky_catalog()` : List audited sticky redesign
+    mappings for OHDSI QueryLibrary
+  - `omop_recipe()` : Create an extraction recipe declaratively
+  - `omop_reduce()` : Reducers: how an event stream becomes one value
+    per person or episode
+  - `omop_study()` : A study in one call (simple layer)
+  - `omop_unit()` : Unit normalisation for an event's numeric value
+  - `omop_variable()` : Create a variable specification
+  - `omop_variable_age()` : Create an age variable
+  - `omop_variable_block()` : Create a variable block
+  - `omop_variable_chads2()` : Create a CHADS2 score variable
+  - `omop_variable_chadsvasc()` : Create a CHA2DS2-VASc score variable
+  - `omop_variable_charlson()` : Create a Charlson Comorbidity Index
+    variable
+  - `omop_variable_cv()` : Create a coefficient of variation variable
+  - `omop_variable_dcsi()` : Create a DCSI score variable
+  - `omop_variable_demo_missingness()` : Create a demographics
+    missingness variable
+  - `omop_variable_drug_duration()` : Create a drug duration variable
+  - `omop_variable_followup()` : Create a followup duration variable
+  - `omop_variable_hfrs()` : Create an HFRS score variable
+  - `omop_variable_n_distinct()` : Create a distinct-concept-count
+    variable
+  - `omop_variable_obs_duration()` : Create an observation duration
+    variable
+  - `omop_variable_prior_obs()` : Create a prior observation duration
+    variable
+  - `omop_variable_sd()` : Create a standard deviation variable
+  - `omop_variable_sex()` : Create a sex (M/F) variable
+  - `omop_variable_slope()` : Create a slope (linear trend) variable
+  - `omop_variable_sum()` : Create a sum variable
+  - `omop_where()` `omop_where_tree()` : Row predicates over an event's
+    columns
+  - `omop_window()` `omop_bound()` `omop_anchor()` : Windows, bounds and
+    anchors
+  - `plot(<omop_plan>)` : Plot an extraction plan as a dependency graph
+  - `print(<dsomop_result>)` : Print a dsomop\_result
+  - `print(<omop_dp_status>)` : Print the release policy on each DP
+    server
+  - `print(<omop_filter>)` : Print an omop\_filter
+  - `print(<omop_filter_group>)` : Print an omop\_filter\_group
+  - `print(<omop_output>)` : Print an omop\_output
+  - `print(<omop_plan>)` : Print method for extraction plans
+  - `print(<omop_population>)` : Print an omop\_population
+  - `print(<omop_recipe>)` : Print an omop\_recipe
+  - `print(<omop_variable>)` : Print an omop\_variable
+  - `print(<omop_variable_block>)` : Print an omop\_variable\_block
+  - `recipe_add_block()` : Add a variable block to the recipe
+  - `recipe_add_concept_set()` `recipe_add_event()`
+    `recipe_add_interval()` `recipe_remove_concept_set()`
+    `recipe_remove_event()` `recipe_remove_interval()`
+    `recipe_set_publish()` : Language-2 recipe registries
+  - `recipe_add_filter()` : Add a filter to the recipe
+  - `recipe_add_output()` : Add an output specification to the recipe
+  - `recipe_add_population()` : Add a population to the recipe
+  - `recipe_add_variable()` : Add a variable to the recipe
+  - `recipe_concept_sets()` `recipe_export_concept_sets()`
+    `recipe_import_concept_sets()` : Concept sets of a recipe; OHDSI
+    concept-set exchange
+  - `recipe_execute()` : Execute a recipe: compile to plan and run
+  - `recipe_explain()` : Explain a recipe: its semantics and every
+    default it relies on
+  - `recipe_export_circe()` : Export a recipe population to an OHDSI
+    Circe cohort expression
+  - `recipe_export_json()` : Export a recipe to JSON
+  - `recipe_export_yaml()` : Export a recipe to YAML
+  - `recipe_import_circe()` : Import an OHDSI Circe cohort expression as
+    a recipe population
+  - `recipe_import_json()` : Import a recipe from JSON
+  - `recipe_import_yaml()` : Import a recipe from YAML
+  - `recipe_lint()` : Lint a recipe for common authoring mistakes (pure
+    client-side)
+  - `recipe_load()` : Load a recipe from JSON or YAML
+  - `recipe_preview()` : Preview a recipe on the server
+  - `recipe_preview_schema()` : Preview the output schema for a recipe
+  - `recipe_preview_stats()` : Preview aggregate stats for a recipe
+    (without materializing)
+  - `recipe_remove_filter()` : Remove a filter from the recipe
+  - `recipe_remove_output()` : Remove an output specification from the
+    recipe
+  - `recipe_remove_population()` : Remove a population from the recipe
+  - `recipe_remove_variable()` : Remove a variable from the recipe
+  - `recipe_save()` : Save a recipe to JSON or YAML
+  - `recipe_set_options()` : Set plan-wide options on a recipe
+  - `recipe_set_scope()` : Set the recipe-level population scope
+  - `recipe_to_code()` : Generate reproducible R code from a recipe
+  - `recipe_to_plan()` : Convert a recipe to an extraction plan
+  - `recipe_validate()` : Validate a recipe on the server
+  - `summary(<omop_plan>)` : Summarise an extraction plan
 
 # Articles
 
 ### All vignettes
 
-- [Getting Started with dsOMOP
-  v2](https://isglobal-brge.github.io/dsOMOPClient/articles/v01_getting_started.md):
+  - [Getting Started with dsOMOP
+    v2](https://isglobal-brge.github.io/dsOMOPClient/articles/v01_getting_started.md):
 
-  Connect to OMOP CDM resources and run a first reviewed workflow.
+    Connect to OMOP CDM resources and run a first reviewed workflow.
 
-- [Schema
-  Exploration](https://isglobal-brge.github.io/dsOMOPClient/articles/v02_exploration.md):
+  - [Schema
+    Exploration](https://isglobal-brge.github.io/dsOMOPClient/articles/v02_exploration.md):
 
-  Explore OMOP schemas, concepts and protected summaries.
+    Explore OMOP schemas, concepts and protected summaries.
 
-- [Cohort
-  Management](https://isglobal-brge.github.io/dsOMOPClient/articles/v03_cohorts.md):
+  - [Populations, index dates and study
+    recipes](https://isglobal-brge.github.io/dsOMOPClient/articles/v03_cohorts.md):
 
-  Define, combine and reuse person and recurrent episode cohorts.
+    Define a study with the simple layer, then make its population rules
+    explicit.
 
-- [Data Extraction with the Plan
-  DSL](https://isglobal-brge.github.io/dsOMOPClient/articles/v04_extraction.md):
+  - [Events, reducers and analysis
+    outputs](https://isglobal-brge.github.io/dsOMOPClient/articles/v04_extraction.md):
 
-  Build typed longitudinal extraction plans and output representations.
+    Build wide, longitudinal and survival outputs with the simple and
+    advanced recipe layers.
 
-- [Multi-Server Federated
-  Analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/v05_multi_server.md):
+  - [Multi-Server Federated
+    Analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/v05_multi_server.md):
 
-  Negotiate common schemas, age grids and operational limits across
-  sites.
+    Negotiate common schemas, age grids and operational limits across
+    sites.
 
-- [Security and Disclosure
-  Controls](https://isglobal-brge.github.io/dsOMOPClient/articles/v06_security.md):
+  - [Security and Disclosure
+    Controls](https://isglobal-brge.github.io/dsOMOPClient/articles/v06_security.md):
 
-  Understand disclosure gates, pseudonym keys and deployment boundaries.
+    Understand disclosure gates, pseudonym keys and deployment
+    boundaries.
 
-- [OHDSI QueryLibrary Sticky
-  Redesigns](https://isglobal-brge.github.io/dsOMOPClient/articles/v07_querylibrary_sticky.md):
+  - [OHDSI QueryLibrary Sticky
+    Redesigns](https://isglobal-brge.github.io/dsOMOPClient/articles/v07_querylibrary_sticky.md):

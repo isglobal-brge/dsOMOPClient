@@ -1,5 +1,5 @@
-pandoc: 3.8.3
-pkgdown: 2.2.0
+pandoc: 2.9.2.1
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   v01_getting_started: v01_getting_started.html
@@ -9,7 +9,7 @@ articles:
   v05_multi_server: v05_multi_server.html
   v06_security: v06_security.html
   v07_querylibrary_sticky: v07_querylibrary_sticky.html
-last_built: 2026-08-08T15:14Z
+last_built: 2026-11-13T22:59Z
 urls:
   reference: https://isglobal-brge.github.io/dsOMOPClient/reference
   article: https://isglobal-brge.github.io/dsOMOPClient/articles

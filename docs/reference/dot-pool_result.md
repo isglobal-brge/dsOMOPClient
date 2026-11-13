@@ -5,34 +5,23 @@ Dispatch pooling by result type
 ## Usage
 
 ``` r
-.pool_result(
-  per_site,
-  result_type,
-  policy = "strict",
-  harmonization = NULL,
-  output_contract = NULL
-)
+.pool_result(per_site, result_type, policy = "strict", harmonization = NULL)
 ```
 
 ## Arguments
 
-- per_site:
+  - per\_site:
 
-  Named list of per-server results
+    Named list of per-server results
 
-- result_type:
+  - result\_type:
 
-  Character; one of the recognized result types
+    Character; one of the recognized result types
 
-- policy:
+  - policy:
 
-  Character; "strict" or "pooled_only_ok"
-
-- output_contract:
-
-  Optional closed analysis output contract used instead of column-name
-  heuristics for generic OHDSI-style frames.
+    Character; "strict" or "pooled\_only\_ok"
 
 ## Value
 
-List with \$result and \$warnings
+List with $result and $warnings

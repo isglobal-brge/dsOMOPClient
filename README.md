@@ -100,7 +100,7 @@ version check identifies an installed 2.10.4 whose profile still has older
 methods, so ordinary profile publication completes that package upgrade.
 
 Language-2 execution requires the publication methods at every site. Supported
-legacy recipes keep their v1 path; [NEWS.md](NEWS.md) describes corrected,
+legacy recipes keep their v1 path; [release notes](https://isglobal-brge.github.io/dsOMOPClient/news/index.html) describes corrected,
 newly permitted and newly refused cases and their migration paths. During a
 mixed-server upgrade, v1 execution uses the documented legacy path with a
 warning, while language-2 execution stops before assignment.
@@ -124,7 +124,7 @@ provide calendar factors, numeric coordinates, Date bounds and anchored ages.
 No absolute-date permission is needed for assignment; final person support and
 aggregate controls remain. Re-run recipes after upgrading to recreate factors;
 use explicit numeric representations for date arithmetic. See
-[NEWS.md](NEWS.md) for migrations and the client extraction vignette for examples.
+[release notes](https://isglobal-brge.github.io/dsOMOPClient/news/index.html) for migrations and the client extraction vignette for examples.
 
 Release verification: [recipe/publication contract run 43515122503](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515122503)
 passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3;
@@ -139,8 +139,8 @@ Use `omop_study()` for a study with explicit baseline and follow-up inputs, or
 compose `omop_event()`, `omop_population()`, `omop_reduce()` and `omop_output()`
 for the advanced layer. Both produce the same typed recipe language;
 `print()` shows defaults and `recipe_to_code()` prints the advanced expansion.
-See [populations and studies](vignettes/v03_cohorts.Rmd) and
-[events and outputs](vignettes/v04_extraction.Rmd), including coded education
+See [populations and studies](https://isglobal-brge.github.io/dsOMOPClient/articles/v03_cohorts.html) and
+[events and outputs](https://isglobal-brge.github.io/dsOMOPClient/articles/v04_extraction.html), including coded education
 level and cause of death. Examples use `eval = FALSE` because they need authenticated connections and a
 study-specific CDM. The integrated compilers are exercised by the release runs
 below; advertised operations still determine what an installed server runs.

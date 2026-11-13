@@ -10,18 +10,18 @@ Pool means weighted by count
 
 ## Arguments
 
-- per_site_means:
+  - per\_site\_means:
 
-  Named numeric vector of means
+    Named numeric vector of means
 
-- per_site_counts:
+  - per\_site\_counts:
 
-  Named numeric vector of counts (same names)
+    Named numeric vector of counts (same names)
 
-- policy:
+  - policy:
 
-  Character; pooling policy
+    Character; pooling policy
 
 ## Value
 
-List with \$result and \$warnings
+List with $result and $warnings

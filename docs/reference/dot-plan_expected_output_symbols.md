@@ -13,13 +13,13 @@ current run.
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan`.
+    An `omop_plan`.
 
-- out:
+  - out:
 
-  Named output-to-symbol mapping.
+    Named output-to-symbol mapping.
 
 ## Value
 

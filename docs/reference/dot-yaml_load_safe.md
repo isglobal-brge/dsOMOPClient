@@ -1,6 +1,6 @@
 # Parse YAML without evaluating embedded R expressions
 
-The yaml package can be configured globally to evaluate \`!expr\` tags.
+The yaml package can be configured globally to evaluate \`\!expr\` tags.
 The client never accepts executable YAML, irrespective of that
 process-wide option. A sentinel handler lets us reject such tags
 explicitly while still relying on yaml's parser (instead of attempting
@@ -9,14 +9,14 @@ to recognise tags with a regular expression).
 ## Usage
 
 ``` r
-.yaml_load_safe(text)
+.yaml_load_safe(text, sequences_as_lists = FALSE)
 ```
 
 ## Arguments
 
-- text:
+  - text:
 
-  A length-one YAML document.
+    A length-one YAML document.
 
 ## Value
 

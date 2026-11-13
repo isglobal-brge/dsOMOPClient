@@ -18,13 +18,13 @@ ordering.
 
 ## Arguments
 
-- per_server:
+  - per\_server:
 
-  List of per-server results, each a list with `levels` (named list of
-  column -\> character levels), `unsafe` (character vector of disclosive
-  columns), and `nfilter_levels_max` (numeric server cap). `NULL`
-  entries are rejected because a federation cannot be harmonized from
-  partial results.
+    List of per-server results, each a list with `levels` (named list of
+    column -\> character levels), `unsafe` (character vector of
+    disclosive columns), and `nfilter_levels_max` (numeric server cap).
+    `NULL` entries are rejected because a federation cannot be
+    harmonized from partial results.
 
 ## Value
 

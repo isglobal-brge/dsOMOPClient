@@ -13,9 +13,9 @@ recipe_preview_schema(recipe)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
 ## Value
 
@@ -26,8 +26,7 @@ Attributes `"join_key"`, `"tables"`, `"output_type"`, and
 
 ## See also
 
-[`recipe_to_plan`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_plan.md),
-[`recipe_preview_stats`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_preview_stats.md)
+`recipe_to_plan`, `recipe_preview_stats`
 
 ## Examples
 

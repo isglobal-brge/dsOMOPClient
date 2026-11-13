@@ -23,43 +23,43 @@ ds.omop.plan.temporal_covariates(
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- table:
+  - table:
 
-  Character; source OMOP table to extract covariates from.
+    Character; source OMOP table to extract covariates from.
 
-- concept_set:
+  - concept\_set:
 
-  Optional concept IDs or an OHDSI-style concept-set spec with
-  `concepts`, `include_descendants`, `include_mapped`, and `exclude`.
-  When `NULL`, all concepts present in the bounded event stream are
-  retained, subject to the server concept cap.
+    Optional concept IDs or an OHDSI-style concept-set spec with
+    `concepts`, `include_descendants`, `include_mapped`, and `exclude`.
+    When `NULL`, all concepts present in the bounded event stream are
+    retained, subject to the server concept cap.
 
-- bin_width:
+  - bin\_width:
 
-  Integer; width of each time bin in days.
+    Integer; width of each time bin in days.
 
-- window_start:
+  - window\_start:
 
-  Integer; start of the observation window in days relative to the
-  cohort index date (negative = before index).
+    Integer; start of the observation window in days relative to the
+    cohort index date (negative = before index).
 
-- window_end:
+  - window\_end:
 
-  Integer; end of the observation window in days relative to the cohort
-  index date (0 = index date).
+    Integer; end of the observation window in days relative to the
+    cohort index date (0 = index date).
 
-- analyses:
+  - analyses:
 
-  Character vector; types of analyses to compute. Supported values
-  include `"binary"` and `"count"`.
+    Character vector; types of analyses to compute. Supported values
+    include `"binary"` and `"count"`.
 
-- name:
+  - name:
 
-  Character; output name used as a key in the plan's outputs list.
+    Character; output name used as a key in the plan's outputs list.
 
 ## Value
 
@@ -67,8 +67,7 @@ The modified `omop_plan` with the temporal covariates output appended.
 
 ## See also
 
-[`ds.omop.plan.intervals`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.intervals.md),
-[`ds.omop.plan.features`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.features.md)
+`ds.omop.plan.intervals`, `ds.omop.plan.features`
 
 ## Examples
 
