@@ -31,7 +31,8 @@ omop_variable(
   visit = NULL,
   broadcast = FALSE,
   labels = NULL,
-  column_names = NULL
+  column_names = NULL,
+  date_spec = NULL
 )
 }
 \arguments{
@@ -107,6 +108,8 @@ both is an error).}
 
 \item{column_names}{Named character map from stable untranslated generated
 column keys to complete, valid R names. Variable maps override recipe maps.}
+
+\item{date_spec}{Native date presentation; variable fields override recipe defaults.}
 }
 \value{
 An \code{omop_variable} object (a named list with class

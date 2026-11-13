@@ -14,7 +14,11 @@
   explanation <- character()
   result <- setNames(lapply(columns, function(col) {
     records <- unlist(lapply(per_server, function(x) x$concepts[[col]]), recursive = FALSE)
-    resolved <- .conceptResolve(records)
+    calendars <- lapply(per_server, function(x) x$calendars[[col]])
+    if (any(!vapply(calendars, is.null, logical(1)))) {
+      if (any(vapply(calendars, is.null, logical(1))) || length(unique(vapply(calendars, .jcsCanonical, ""))) != 1L) .dateReject("Calendar/policy mismatch across retained sites.")
+      resolved <- .dateResolveRecords(records, calendars[[1L]])
+    } else resolved <- .conceptResolve(records)
     if (length(resolved$ids) > cap || length(resolved$levels) > cap) {
       stop("Shared concept union exceeds the retained sites' factor-level cap.", call. = FALSE)
     }
@@ -25,7 +29,7 @@
         if (length(candidates)>1L) paste0("; vocabulary conflict: ",paste(candidates,collapse=" / ")),
         if (!is.null(decision$version)) paste0("; version ",decision$version), "; ",decision$rule))
     }
-    shared <- resolved[c("ids", "labels", "levels", "vocabulary")]
+    shared <- resolved[intersect(names(resolved), c("ids", "labels", "levels", "vocabulary", "kind", "calendar"))]
     naming_ids <- unique(unlist(lapply(per_server,function(x) x$reference_names[[col]]),use.names=FALSE))
     if (length(naming_ids)) shared$naming_ids <- naming_ids[.conceptIdOrder(naming_ids)]
     shared

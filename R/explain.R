@@ -86,7 +86,7 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     text <- v1$text
     defaults <- v1$defaults
   }
-  text <- c(text, .conceptExplain(if (v2) norm else recipe))
+  text <- c(text, .conceptExplain(if (v2) norm else recipe), if(v2) .dateExplain(norm))
   server <- NULL
   if (!is.null(conns)) {
     session <- .get_session(symbol)
@@ -467,7 +467,7 @@ print.omop_recipe_explain <- function(x, ...) {
   # endpoint's admission policy.
   for (vn in names(recipe$variables %||% list())) {
     v <- recipe$variables[[vn]]
-    cols <- character(0)
+    cols <- if (!is.null(v$date_spec) || (v$derived$kind %||% "") %in% .DATE_KINDS) "age" else character(0)
     if (.v2_is_v2_variable(v)) {
       if (identical(v$kind, "derived") && identical(v$derived$kind, "age")) {
         cols <- if (isTRUE(v$derived$bands)) "age_group" else "age"
@@ -484,7 +484,7 @@ print.omop_recipe_explain <- function(x, ...) {
       add("INFO", "quasi_identifier",
           paste0("Variable '", vn, "' requests a permitted quasi-identifier (",
                  paste(cols, collapse = ", "), "); publication support and the ",
-                 "absolute-date policy apply. Aggregate admission is unchanged."),
+                 "final release gate apply. Aggregate admission is unchanged."),
           paste0("variables$", vn))
     }
   }
