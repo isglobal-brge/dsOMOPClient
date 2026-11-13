@@ -34,6 +34,49 @@
 #' @param rounding none, floor, ceiling, trunc or nearest (ties to even).
 #' @param bands Return ordered age bands (years/annual_years only).
 #' @param age_breaks Integer lower bounds beginning at zero; default 0,5,...,100.
+#' @details
+#' Calendar precisions are day, year, semester, quarter, month, iso_week,
+#' cdc_week, epi_week, fiscal_year, fiscal_semester, fiscal_quarter,
+#' fiscal_month, relative_days and custom. ISO weeks start Monday with four
+#' new-year days in week 1; CDC weeks start Sunday with four. epi_week requires
+#' both week_start and week_min_days. Fiscal year labels name the starting year.
+#' Numeric periods count from the period containing origin (zero); year and
+#' fiscal_year instead return the year. decimal_year is a period coordinate,
+#' not an elapsed-year fraction. start/end return inclusive period bounds.
+#'
+#' Parts are year, semester, quarter, month, month_name, month_abbr, day,
+#' weekday, weekday_name, weekday_abbr, iso_week, iso_year, day_of_year,
+#' epi_week, epi_year, fiscal_year, fiscal_quarter, season, month_sin,
+#' month_cos, weekday_sin, weekday_cos, season_sin and season_cos.
+#' Month/weekday/season categories have full ordered public domains. Names
+#' use fixed English. Monday is weekday 1. Northern seasons are Winter,
+#' Spring, Summer, Autumn (December-February first); southern names are
+#' Summer, Autumn, Winter, Spring. Cyclic values use 2*pi*(k-1)/P with
+#' P=12, 7 or 4. Ordered factors use ordered-factor contrasts; request number
+#' for a trend coordinate. Shared unused periods are zero-count levels.
+#'
+#' Custom patterns accept only %Y, %m, %d, %j, %G, %V, %u, %b, %B, %a,
+#' %A, %% and ASCII letters, digits, space or -_/.,:(). ISO %G and %V must
+#' appear together without %Y. No locale, code or time-of-day directives are
+#' evaluated. Public labels must be unique and cannot merge date categories.
+#' level_range declares additional levels and never filters observed dates.
+#'
+#' Gregorian dates cover 0001-01-01 through 9999-12-31. Partial dates with
+#' partial=none retain only invariant coarsened periods/parts; exact age is NA.
+#' start/mid/end impute the first/middle/last possible day and produce estimated
+#' ages. Invalid components cannot be repaired. annual_years explicitly returns
+#' calendar-year age, including partial births. Negative age is NA. Elapsed
+#' months clamp the original day; elapsed years use completed anniversaries;
+#' decimal years divide the remainder by the next anniversary interval.
+#' A fixed as_of is required for future=na. Bind a fixed date instead of today
+#' to make the plan reproducible. Missing anchors retain all roster rows.
+#'
+#' An explicit empty spec selects native Date presentation for first_date and
+#' last_date reducers; an omitted spec preserves legacy offsets. Native helpers
+#' need language 2 at every selected site. Explicit overlapping date_handling
+#' refuses; use date_spec for that policy. No owner date permission is required
+#' on assignment. Existing publication, metadata support and aggregate gates
+#' still apply. Only symbols and disclosure-checked aggregates reach analysts.
 #' @return A date specification, source, variable or variable bundle.
 #' @examples
 #' omop_age_at("death")
@@ -73,7 +116,7 @@ omop_date <- function(reference,date_spec=NULL,broadcast=FALSE) .dateVariable(li
 omop_date_components <- function(year,month=NULL,day=NULL,event=NULL,which="first",n=1L,scope="person",search=NULL) {
   operand<-function(x) {
     if(is.null(x)) return(NULL)
-    if(is.numeric(x)&&length(x)==1L&&!is.na(x)&&is.finite(x)&&x==trunc(x)) return(list(kind="integer",value=as.integer(x)))
+    if(is.numeric(x)&&length(x)==1L&&!is.na(x)&&is.finite(x)&&x==trunc(x)) return(list(kind="integer",value=if(abs(x)<=.Machine$integer.max)as.integer(x) else x))
     if(is.character(x)&&length(x)==1L&&!is.na(x)&&grepl("^[A-Za-z][A-Za-z0-9_]*$",x)) return(list(kind="column",name=x))
     .dateReject("Components need an integer literal or source-column name.","date_source_invalid")
   }
@@ -120,7 +163,7 @@ omop_age_at <- function(reference="index",unit="years",bands=FALSE,age_breaks=NU
         if(is.null(name)||is.na(name)||!nzchar(name)) .dateReject("Unnamed bundles require named parts.","date_parts_names")
         nm<-paste0(name,"_",unname(x$parts[j]))
       }
-      if(!.conceptValidNames(nm)) .dateReject("Part names must be valid nonreserved R names.","date_parts_names")
+      if(!.conceptValidNames(nm)||nm %in% c("person_id","cohort_row_id","row_id","cohort_definition_id","cohort_start_date","cohort_end_date")) .dateReject("Part names must be valid nonreserved R names.","date_parts_names")
       out<-c(out,setNames(list(.dateVariable(list(kind="date_part",reference=x$reference,part=unname(x$parts[j])),x$date_spec,x$broadcast)),nm))
     }
   }
@@ -146,6 +189,12 @@ omop_age_at <- function(reference="index",unit="years",bands=FALSE,age_breaks=NU
 
 .dateExplain <- function(plan) {
   out<-character()
+  if(!is.null(plan$options$date_spec)) {
+    s<-.dateEffective(NULL,plan$options$date_spec)
+    out<-paste0("Registered output date roles: ",s$precision," / ",s$representation,
+      "; presentation follows selection, joins, censoring and interval arithmetic; class 2; partial=",s$partial,
+      "; invalid=",s$invalid,"; future=",s$future,"; date.presentation required.")
+  }
   for(n in names(plan$variables)) {
     v<-plan$variables[[n]];d<-v$derived;s<-v$date_spec
     if(is.null(s)&&!(d$kind %||% "") %in% .DATE_KINDS) next
@@ -160,6 +209,8 @@ omop_age_at <- function(reference="index",unit="years",bands=FALSE,age_breaks=NU
       paste0("Partial policy ",s$partial,"; ",if(s$partial=="none")"no imputation" else "values may be imputed; ages are estimated","; invalid values -> NA; future policy ",s$future,"."))
     if(kind %in% c("time_between","age_at")) out<-c(out,paste0("Unit ",d$unit,"; ",if(d$unit=="annual_years")"annual approximation; within-year ordering unresolved for incomplete birth" else "completed calendar anniversaries; Feb 29 -> March 1; months clamp from original day; decimal years divide by anniversary interval", "; absolute=",isTRUE(d$absolute),"; rounding=",d$rounding %||% "none","; date.elapsed required."))
     else out<-c(out,"date.presentation required; day -> R Date; coarsened periods -> ordered factor (polynomial contrasts), with factor/number/start/end alternatives. Numeric period indices use the period containing origin as zero; year numbers remain calendar/fiscal years. Cyclic terms use 2*pi*(k-1)/P, P=12/7/4.")
+    if(!is.null(s$origin)) out<-c(out,paste0("Numeric origin ",s$origin," lies in period starting ",as.character(.datePeriod(as.Date(s$origin),s)$start)," (index zero)."))
+    if(isTRUE(d$bands)) out<-c(out,paste0("Public age-band lower bounds: ",paste(unlist(d$age_breaks %||% seq(0L,100L,5L)),collapse=", "),"; left closed, right open, last band to infinity; all ordered levels retained."))
   }
   out
 }

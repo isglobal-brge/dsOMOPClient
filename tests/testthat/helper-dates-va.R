@@ -1,4 +1,4 @@
-dates_va_fixture <- function() {
+dates_va_fixture <- function(two_sites=FALSE, threshold=5L) {
 library(dsOMOP)
 library(dsOMOPClient)
 library(DSLite)
@@ -57,19 +57,28 @@ for (tab in c("person", "observation_period", "observation", "visit_occurrence",
 }
 DBI::dbDisconnect(db)
 
-config <- DSLite::defaultDSConfiguration(include = "dsOMOP")
-config$Options$nfilter.subset <- 5
-config$Options$default.nfilter.subset <- 5
+config <- DSLite::defaultDSConfiguration(include = c("dsOMOP","dsBase"))
+config$Options$nfilter.subset <- threshold
+config$Options$default.nfilter.subset <- threshold
 server <- DSLite::newDSLiteServer(
   resources = list(fixture = resourcer::newResource(name = "fixture",
     url = paste0("omop+dbi:sqlite://", fixture_path), format = "omop.dbi.db")),
   config = config)
+second_path<-NULL
+if(two_sites) {
+  second_path<-tempfile(fileext=".sqlite");file.copy(fixture_path,second_path)
+  db<-DBI::dbConnect(RSQLite::SQLite(),second_path)
+  DBI::dbExecute(db,"UPDATE visit_occurrence SET visit_start_date = '2020-06-15', visit_end_date = '2020-06-15' WHERE person_id % 4 = 2")
+  DBI::dbDisconnect(db)
+  server2<-DSLite::newDSLiteServer(resources=list(fixture=resourcer::newResource(name="fixture",url=paste0("omop+dbi:sqlite://",second_path),format="omop.dbi.db")),config=config)
+}
 options(datashield.env = environment())
 builder <- DSI::newDSLoginBuilder()
 builder$append(server = "site", url = "server", driver = "DSLiteDriver")
+if(two_sites) builder$append(server="site2",url="server2",driver="DSLiteDriver")
 conns <- DSI::datashield.login(builder$build(), assign = FALSE)
 ds.omop.connect(resource = "fixture", conns = conns)
 
 
- list(conns=conns, server=server, path=fixture_path)
+ list(conns=conns, server=server, path=c(fixture_path,second_path))
 }

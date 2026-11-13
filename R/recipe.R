@@ -168,6 +168,7 @@
 #' @param column_names Named character map from stable untranslated generated
 #'   column keys to complete, valid R names. Variable maps override recipe maps.
 #' @export
+#' @param date_spec Native date presentation; variable fields override recipe defaults.
 omop_variable <- function(name = NULL,
                           table = NULL,
                           column = NULL,
@@ -327,6 +328,7 @@ omop_variable <- function(name = NULL,
   if (isTRUE(broadcast)) obj$broadcast <- TRUE
   if (length(labels)) obj$labels <- labels
   if (length(column_names)) obj$column_names <- column_names
+  if (!is.null(date_spec)) obj$date_spec <- date_spec
   class(obj) <- c("omop_variable", "list")
   obj
 }
@@ -2655,6 +2657,7 @@ print.omop_output <- function(x, ...) {
 #' @param labels Recipe-wide concept-ID to category-label map; variable maps win.
 #' @param column_names Recipe-wide stable generated-column key to final-name map.
 #' @export
+#' @param date_spec Recipe-wide defaults created with omop_date_spec().
 omop_recipe <- function(variables = NULL,
                         filters = NULL,
                         outputs = NULL,
@@ -2745,6 +2748,12 @@ omop_recipe <- function(variables = NULL,
       factor_concepts    = options$factor_concepts)
   }
 
+  for (v in recipe$variables) {
+    kind <- v$derived$kind %||% "calendar_date"
+    if (!is.null(v$date_spec) || kind %in% .DATE_KINDS && !is.null(v$derived)) {
+      .dateEffective(v$date_spec, recipe$options$date_spec, kind, v$derived$part)
+    }
+  }
   recipe
 }
 
@@ -5926,6 +5935,8 @@ recipe_to_code <- function(recipe) {
       block_sensitive    = o$block_sensitive    %||% TRUE,
       factor_concepts    = o$factor_concepts    %||% TRUE)
   }
+
+  if (!is.null(o$date_spec)) slot_args$date_spec <- .codegen_raw(.v2_codegen(o$date_spec))
 
   # Language-2 recipe slots.
   if (length(recipe$concept_sets %||% list())) {

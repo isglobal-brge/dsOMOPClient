@@ -1279,7 +1279,7 @@
     wire$options <- .v2_legacy_source_output_options(ctx, out, format, recipe_vars[take], context)
     return(wire)
   }
-  if (format %in% c("wide", "long", "sparse")) {
+  if (format %in% c("wide", "long", "sparse", "survival", "person_period", "intervals", "membership", "joined")) {
     take <- if (is.null(columns)) {
       if (identical(format, "wide")) names(recipe_vars) else character(0)
     } else columns

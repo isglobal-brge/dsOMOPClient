@@ -21,7 +21,8 @@ omop_recipe(
   coverage = NULL,
   publish = NULL,
   labels = NULL,
-  column_names = NULL
+  column_names = NULL,
+  date_spec = NULL
 )
 }
 \arguments{
@@ -82,6 +83,8 @@ when another output depends on them and are never released.}
 \item{labels}{Recipe-wide concept-ID to category-label map; variable maps win.}
 
 \item{column_names}{Recipe-wide stable generated-column key to final-name map.}
+
+\item{date_spec}{Recipe-wide defaults created with omop_date_spec().}
 }
 \value{
 An \code{omop_recipe} object.

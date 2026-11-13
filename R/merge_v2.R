@@ -192,6 +192,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
   }
 
   out <- r
+  if (!is.null(r$options$date_spec)) out$options$date_spec <- rn$any(r$options$date_spec)
   out$populations <- list()
   for (id in names(r$populations)) {
     if (share_base && identical(id, "base")) next
@@ -351,6 +352,11 @@ recipe_merge <- function(a, b, prefix = NULL) {
       for (k in c("window", "criterion", "where")) x <- upd(x, k, self$any)
       return(upd(x, "criteria", function(cr) lapply(cr, self$any)))
     }
+    if (inherits(x, "omop_date_source")) {
+      x <- upd(x, "event", self$src)
+      return(upd(x, "search", self$any))
+    }
+    if (inherits(x, "omop_date_spec")) return(upd(x, "anchor", self$any))
     if (inherits(x, "omop_anchor")) {
       x <- upd(x, "event", self$src)
       return(upd(x, "search", self$any))
@@ -392,7 +398,8 @@ recipe_merge <- function(a, b, prefix = NULL) {
     }
     if (inherits(x, "omop_variable") && .v2_is_v2_variable(x)) {
       x <- upd(x, "event", self$src)
-      for (k in c("reducer", "where")) x <- upd(x, k, self$any)
+      for (k in c("reducer", "where", "date_spec")) x <- upd(x, k, self$any)
+      for (k in c("reference", "from", "to")) if (!is.null(x$derived[[k]])) x$derived[[k]] <- self$any(x$derived[[k]])
       if (!is.null(x$derived$window)) x$derived$window <- self$any(x$derived$window)
       return(x)
     }

@@ -1896,7 +1896,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   v2 <- .v2_is_plan_v2(plan)
   .conceptValidatePlan(plan, wire = v2)
   # Translation is one contract for memory, staged and protected executions.
-  harmonize_factors <- !isFALSE(plan$options$translate_concepts)
+  harmonize_factors <- !isFALSE(plan$options$translate_concepts) || .dateNeedsPresentation(plan)
   session <- .get_session(symbol)
   session$concept_presentation <- NULL
   assign(symbol, session, envir = .dsomop_client_env)
@@ -1906,7 +1906,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # assigned. The publication protocol needs it on every site; otherwise a v2
   # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
   harmonizes <- isTRUE(harmonize_factors) &&
-    isTRUE(plan$options$factor_concepts %||% TRUE) &&
+    (isTRUE(plan$options$factor_concepts %||% TRUE) || .dateNeedsPresentation(plan)) &&
     !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
   if (harmonizes && !v2) {
     language <- .v2_server_language(session, names(conns))
@@ -2096,7 +2096,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     .plan_verify_publication(conns, inventories)
     presentation <- list()
     if (isTRUE(harmonize_factors) &&
-        isTRUE(plan$options$factor_concepts %||% TRUE)) {
+        (isTRUE(plan$options$factor_concepts %||% TRUE) || .dateNeedsPresentation(plan))) {
       presentation <- .harmonizePublicationFactors(inventories, conns)
     }
     if (any(partial)) {
@@ -2171,7 +2171,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # code validation_error and one constant of the closed vocabulary (the
   # section 11 adapter refusals; A-20 (j): the interval helpers' row caps)
   reasons <- c("adapter_person_mismatch", "cost_currency_mixed",
-               "stockpile_row_cap", "reducer_row_cap")
+               "stockpile_row_cap", "reducer_row_cap", "date_spec_invalid", "date_source_invalid",
+               "date_pattern_invalid", "date_policy_conflict", "date_parts_names")
   for (rejection in x$rejected) {
     if (!is.list(rejection) || !length(rejection) %in% 2:3 ||
         !setequal(names(rejection), c("code", "message", "reason")[seq_along(rejection)]) ||
