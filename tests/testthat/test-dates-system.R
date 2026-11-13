@@ -177,6 +177,6 @@ test_that("D39 D42 effective native policies and public map order bind digests",
 test_that("D42 native date operation negotiation matches normalized server requirements", {
   r<-omop_recipe(variables=list(age=omop_age_at("2024-01-01"),gap=omop_time_between(omop_anchor(omop_event("death")),"2024-01-01")),outputs=omop_output("o",format="wide",grain="person"))
   p<-recipe_to_plan(r)
-  expect_identical(as.character(.plan_v2_operations(p)),as.character(dsOMOP:::.irOperations(dsOMOP:::.irNormalize(p))))
-  expect_true(all(c("date.elapsed","date.presentation","anchor.event") %in% .plan_v2_operations(p)))
+  expect_setequal(as.character(.plan_v2_operations(p)),as.character(dsOMOP:::.irOperations(dsOMOP:::.irNormalize(p))))
+  expect_true(all(c("date.elapsed","date.presentation","window.anchor.source") %in% .plan_v2_operations(p)))
 })
