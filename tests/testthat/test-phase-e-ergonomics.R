@@ -194,7 +194,7 @@ test_that("non-character / empty out is rejected", {
 test_that("execute with out=NULL sends the auto-derived mapping and returns it", {
   .ergo_with_session()
   p <- ds.omop.plan()
-  p <- ds.omop.plan.baseline(p, name = "baseline")
+  p <- ds.omop.plan.baseline(p, name = "baseline", derived = character())
   p <- ds.omop.plan.options(p, factor_concepts = FALSE, translate_concepts = FALSE)  # skip harmonization
 
   res <- .ergo_capture(function() ds.omop.plan.execute(p))
@@ -228,7 +228,7 @@ test_that("execute B64-encodes a multi-output mapping over the transport", {
 test_that("execute with bare out='D' binds the sole output", {
   .ergo_with_session()
   p <- ds.omop.plan()
-  p <- ds.omop.plan.baseline(p, name = "baseline")
+  p <- ds.omop.plan.baseline(p, name = "baseline", derived = character())
   p <- ds.omop.plan.options(p, factor_concepts = FALSE, translate_concepts = FALSE)
 
   res <- .ergo_capture(function() ds.omop.plan.execute(p, out = "D"))
@@ -544,7 +544,7 @@ test_that(".resolve_target_symbol errors clearly when nothing is recorded", {
 test_that("execute records last_output so a later manipulate verb defaults to it", {
   .ergo_with_session()
   p <- ds.omop.plan()
-  p <- ds.omop.plan.baseline(p, name = "baseline")
+  p <- ds.omop.plan.baseline(p, name = "baseline", derived = character())
   p <- ds.omop.plan.options(p, factor_concepts = FALSE, translate_concepts = FALSE)
 
   res <- .ergo_capture(function() {
