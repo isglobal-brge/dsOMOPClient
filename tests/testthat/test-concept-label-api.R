@@ -79,3 +79,11 @@ test_that('A27 explain uses only a matching successful-publication receipt', {
   expect_length(.conceptPublishedExplain(session,p,list(a=NULL,b=NULL)),0)
   expect_length(.conceptPublishedExplain(list(),p,list(a=NULL,b=NULL)),0)
 })
+
+ test_that('A27 public label constructors reject Unicode whitespace only', {
+  for (label in c('\f','\v','\u00a0','\u2003','\u0085')) {
+    expect_error(omop_variable('cause', table='death', column='cause_concept_id',
+      labels=setNames(label,'45000123')), 'nonempty UTF-8')
+    expect_error(omop_recipe(labels=setNames(label,'45000123')), 'nonempty UTF-8')
+  }
+})

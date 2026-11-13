@@ -136,3 +136,28 @@ test_that('A27 changed vocabulary evidence is reconciled again before final assi
   for(f in .clf_frames(ctx,'Renewed')) expect_identical(levels(f$education)[[1L]],'Renewed education')
 })
 
+
+ test_that('A27 memory and CSV preserve literal NA labels and genuine missing cells', {
+  testthat::local_mocked_bindings(.arrowAvailable=function() FALSE,.package='dsOMOP')
+  ctx <- .clf_setup()
+  # Six real missing values at site 1, while each observed category still meets support.
+  conn <- DBI::dbConnect(RSQLite::SQLite(),ctx$paths[[1L]])
+  DBI::dbExecute(conn,'UPDATE observation SET value_as_concept_id = NULL WHERE observation_id IN (1,2,7,8,13,14)')
+  DBI::dbDisconnect(conn)
+  for (label in c('NA','\\NA','quoted \"text\", comma\nnext line')) {
+    recipe <- .clf_recipe()
+    recipe$options$labels <- c('45000123'=label,'45000126'='declared only')
+    p <- recipe_to_plan(recipe)
+    ds.omop.plan.execute(p,out=c(output='CsvMemory'),symbol='labels',conns=ctx$conns)
+    ds.omop.plan.execute(p,out=c(output='CsvStaged'),symbol='labels',conns=ctx$conns,output_mode='staged')
+    mem <- .clf_frames(ctx,'CsvMemory'); staged <- .clf_frames(ctx,'CsvStaged')
+    for (site in names(mem)) {
+      expect_identical(as.character(staged[[site]]$education),as.character(mem[[site]]$education))
+      expect_identical(levels(staged[[site]]$education),levels(mem[[site]]$education))
+    }
+    pooled <- function(frames) Reduce('+',lapply(frames,function(x) table(x$education,useNA='always')))
+    expect_identical(pooled(staged),pooled(mem))
+    expect_equal(as.numeric(pooled(staged)),c(22,22,4,0,6))
+    expect_identical(dimnames(pooled(staged))[[1L]],c(label,'Same [45000124]','Same [45000125]','declared only',NA_character_))
+  }
+})
