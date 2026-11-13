@@ -25,7 +25,10 @@
         if (length(candidates)>1L) paste0("; vocabulary conflict: ",paste(candidates,collapse=" / ")),
         if (!is.null(decision$version)) paste0("; version ",decision$version), "; ",decision$rule))
     }
-    resolved[c("ids", "labels", "levels", "vocabulary")]
+    shared <- resolved[c("ids", "labels", "levels", "vocabulary")]
+    naming_ids <- unique(unlist(lapply(per_server,function(x) x$reference_names[[col]]),use.names=FALSE))
+    if (length(naming_ids)) shared$naming_ids <- naming_ids[.conceptIdOrder(naming_ids)]
+    shared
   }), columns)
   keys <- per_server[[1L]]$keys
   if (any(!vapply(per_server, function(x) setequal(x$keys, keys), logical(1)))) {
