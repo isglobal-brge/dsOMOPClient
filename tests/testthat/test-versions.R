@@ -153,9 +153,9 @@ test_that("recipe-language diagnostics report advertised capabilities independen
   caps <- list(stale = .caps(), empty = .caps(ops = character(0)))
   testthat::local_mocked_bindings(
     .dsomop_published_methods = function(...) inv,
-    .ds_safe_aggregate = function(...) stats::setNames(rep(list(list(version = "2.10.4")), 3L),
+    .ds_safe_aggregate = function(...) stats::setNames(rep(list(list(version = "2.10.3")), 3L),
                                                        names(conns)),
-    ds.omop.client.version = function() "2.10.4",
+    ds.omop.client.version = function() "2.10.3",
     .get_session = function(...) list(conns = conns[c("stale", "empty")], capabilities = caps),
     .package = "dsOMOPClient")
   got <- ds.omop.server.version(conns)

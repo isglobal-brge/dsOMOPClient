@@ -200,11 +200,12 @@ test_that("execute with out=NULL sends the auto-derived mapping and returns it",
   res <- .ergo_capture(function() ds.omop.plan.execute(p))
   expect_equal(res$ret, c(baseline = "D_baseline"))
   # the executeDS assign carries the resolved out mapping as its 3rd DS arg.
-  # A single-element named vector is under .ds_encode's multi-element threshold,
-  # so it travels bare (still carrying its name) rather than B64-wrapped.
+  # Even one named output uses scalar JSON transport, avoiding a c() call
+  # in DataSHIELD's restricted expression grammar.
   exec <- res$calls[[1]]$expr
   expect_equal(as.character(exec[[1]]), "omopPlanExecuteDS")
-  expect_equal(exec[[4]], c(baseline = "D_baseline"))
+  expect_null(names(exec[[4]]))
+  expect_equal(.ergo_b64_decode(exec[[4]]), list(baseline = "D_baseline"))
 })
 
 test_that("execute B64-encodes a multi-output mapping over the transport", {
