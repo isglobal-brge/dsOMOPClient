@@ -184,7 +184,7 @@
   do.call(paste, c(lapply(rows[keys], as.character), sep = "|"))
 }
 
-.ws7e_compare <- function(frame, expected, handle, info, episodes) {
+.ws7e_compare <- function(frame, expected, handle, info, episodes, recipe) {
   want <- .ws7e_expected(expected)
   keys <- setdiff(names(episodes), "cohort_row_id")
   at <- match(.ws7e_episode_key(want, keys), .ws7e_episode_key(episodes, keys))
@@ -195,7 +195,7 @@
   # A-27 changes only the four generated fallback names in recipe 07.
   # Keep the frozen identity/value oracle intact and assert this explicit
   # before/after presentation mapping, in memory and staged execution.
-  if (grepl("07-monthly-panel", info, fixed = TRUE)) {
+  if (identical(recipe, "07-monthly-panel")) {
     old <- c("vitals_3025315_count", "vitals_3025315_last",
              "vitals_3004249_count", "vitals_3004249_last")
     corrected <- c("vitals_concept_3025315_count", "vitals_concept_3025315_last",
@@ -344,7 +344,7 @@ test_that("staged recipe parity permits only fractional CSV rounding", {
       expect_identical(inherits(raw, "FlowerDatasetDescriptor"), identical(mode, "staged"))
       frame <- .ws7e_frame(ctx, published)
       episodes <- .ws7e_episode_catalog(ctx, recipe, frozen, expected, component)
-      .ws7e_compare(frame, expected[[component]], ctx$handle, paste(label, mode, component), episodes)
+      .ws7e_compare(frame, expected[[component]], ctx$handle, paste(label, mode, component), episodes, recipe)
       if (identical(mode, "memory")) frames[[component]] <- frame else {
         .ws7e_expect_parity(frame, frames[[component]], paste(label, component))
       }

@@ -545,6 +545,10 @@ test_that("vocabulary-dependent plans require one reported vocabulary version", 
   )
   # Presentation alone can reconcile different vocabulary versions (A-27).
   expect_silent(ds.omop.plan.harmonize(p))
+  comparison$common_columns$concept <- c(comparison$common_columns$concept,
+    "domain_id", "vocabulary_id")
+  comparison$common_column_types$concept <- c(comparison$common_column_types$concept,
+    domain_id = "character", vocabulary_id = "character")
   comparison$common_tables <- c(comparison$common_tables, "concept_ancestor")
   comparison$common_columns$concept_ancestor <- c("ancestor_concept_id",
     "descendant_concept_id", "min_levels_of_separation")
