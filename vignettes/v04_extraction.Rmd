@@ -65,11 +65,9 @@ coded answer through the index day, avoiding post-index education updates:
 ```{r}
 education_event <- omop_event("observation", concepts = education_question)
 education <- omop_variable(name = "education", event = education_event,
-  type = "categorical",
   reducer = omop_reduce("last_value", value = "value_as_concept_id",
                          window = omop_window(NULL, 0), missing = "skip"))
 cause <- omop_variable(name = "cause_of_death", event = omop_event("death"),
-  type = "categorical",
   reducer = omop_reduce("first_value", value = "cause_concept_id"))
 pop <- omop_population(id = "patients", index = omop_index(index))
 recipe <- omop_recipe(
