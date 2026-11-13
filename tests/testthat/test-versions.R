@@ -136,13 +136,13 @@ test_that("protocol advice distinguishes a current partial profile from an old i
                drop = dsOMOPClient:::.DSOMOP_PROTOCOL_METHODS)
   old <- ds.omop.server.version(list(site = "FAKE"))
   expect_match(old$advice, "dsOMOP 2.10.2 is installed but predates")
-  expect_match(old$advice, "installs dsOMOP 2.10.4 or later.*publishes its settings")
+  expect_match(old$advice, "installs dsOMOP 2.10.3 or later.*publishes its settings")
 
   .mock_server("2.10.2", ping_version = NA_character_,
                drop = dsOMOPClient:::.DSOMOP_PROTOCOL_METHODS)
   unknown <- ds.omop.server.version(list(site = "FAKE"))
   expect_match(unknown$advice, "installed dsOMOP version could not be verified")
-  expect_match(unknown$advice, "checks that dsOMOP 2.10.4 or later is installed")
+  expect_match(unknown$advice, "checks that dsOMOP 2.10.3 or later is installed")
   expect_false(grepl("predates", unknown$advice))
 })
 
