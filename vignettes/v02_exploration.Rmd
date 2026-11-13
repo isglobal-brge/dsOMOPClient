@@ -189,7 +189,7 @@ workspace `omop.table` into a reusable cohort with
 ## Disclosure-Gated Manipulation of Extracted Tables
 
 Once a plan or recipe has produced a server-side `omop.table` (see *Extraction*),
-you can reshape it **without** pulling any row-level data using four
+you can reshape it **without** pulling any row-level data using
 disclosure-aware verbs. Each verb takes the *name(s)* of server-side `omop.table`
 symbols, computes the new frame on every server, and stores it under `newobj`.
 Only `omop.table` inputs are accepted; the result is re-gated on the number of
@@ -203,7 +203,7 @@ reapplied and the verbs fail closed when support is insufficient.
 joined <- ds.omop.merge("baseline", "labs", by = "person_id", type = "left",
   symbol = "omop", conns = conns)
 
-# Keep broad categories; numeric/date ranges belong in the recipe filter DSL
+# Filter a category; typed expression filters also support numeric/date predicates
 women <- ds.omop.filter("baseline", var = "sex", op = "==", value = "F",
   symbol = "omop", conns = conns)
 

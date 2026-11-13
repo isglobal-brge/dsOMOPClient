@@ -25,24 +25,23 @@ and the public bins or levels); the data custodian owns every privacy setting
 (whether DP is available, epsilon, caps and the community tools' protection
 mode). No client argument changes those.
 
-## Automatic questions (dsOMOP 2.9.0)
+## Automatic questions in 2.10.4
 
-The common person-level questions need no preparation at all. With the
-server's default `dsomop.tools.mode = "auto"`, the analysis catalog answers the
-per-person durations and counts (for example `condition.duration_stats`,
-`drug.days_supply_stats`, `condition_era.eras_per_person_stats`) with a
-histogram of one value per person over fixed public bins, and the demographic
-distributions (`person.year_of_birth_distribution`,
-`person.gender_by_age_decade`) with a complete public partition, both with
-sticky DP noise of sensitivity one person. A server whose DP service is not
-available answers the same table under the standard DataSHIELD controls.
-Every result says how it was protected:
+Common reviewed questions need no explicit preparation. With the default
+`dsomop.tools.mode = "auto"`, the catalog routes protected distributions,
+record summaries and effects through their registered component contracts.
+Record summaries such as `condition.duration_stats` use capped record-weighted
+components (up to ten records per person) and public scales; unregistered
+scales retain histograms while moments remain unavailable. Demographic
+partitions use a complete public domain. The protection label identifies fixed
+synopses, heuristic realised-contribution reuse, or a mixed frame. No
+known-disclosive exact fallback is used when the protected route is unavailable.
 
 ```{r automatic, eval=FALSE}
 res <- ds.omop.analysis.run("dsomop:condition.duration_stats",
                             params = list(concept_id = 201820))
-res$pooled             # persons per duration bin, summed across servers
-res$meta$protection    # per server: "dp" (epsilon, noise SD) or a fallback
+res$pooled             # views derived from compatible pooled signed components
+res$meta$protection    # per-site route, allocations and unavailable fields
 ```
 
 Questions with an automatic equivalent list it in
@@ -62,29 +61,20 @@ gateway. An upstream ID selects only a reviewed semantic mapping; it neither
 submits the upstream SQL nor constructs a data-dependent query. Preparation and
 release remain two explicit, typed steps.
 
-The client cannot choose epsilon, seed, nonce, privacy epoch or rerolls. Actual
-releases use the server-owned contract reported by `ds.omop.dp.status()`:
-`sticky_person_bounded_discrete_laplace_per_release_v1` under
-`fixed_per_release_seed_data_versioned_v1` (server 2.10.0, client 2.10.0) or
-`fixed_per_release_snapshot_first_answer_v1` (servers 2.7.1 to 2.9.x). A 2.10.0
-server derives each answer deterministically from its secret root, the
-question, the protected statistic and a private automatic database version, so
-a repeated question returns the same answer and a reload that adds rows
-re-draws every answer; older v3 servers retain one first answer per public
-request, snapshot and epoch until custodian rotation. Person-level contribution
-bounds and calibration are unchanged. There is no lifetime privacy budget or
-privacy call quota. Legacy v2 services remain inspectable and are refused for
-release by default. During site-by-site upgrades,
-`options(dsomop.dp.allow_legacy_servers = TRUE)` permits legacy and mixed v2/v3
-releases, including through `ds.omop.querylibrary.sticky.release()`. Every
-legacy server produces a warning: no first-answer binding: an unrotated data
-refresh can reveal whether a released statistic changed; see
-isglobal-brge/dsOMOP#20.
-Results retain each site's protocol and contract in
-`meta$privacy$per_site_contract`, identify `legacy_servers` and
-`mixed_contracts`, and retain warnings in `meta$warnings`, even for pooled-only
-output. Shared contract fields that differ across sites are `NULL`. Return
-the option to its default `FALSE` after the federation upgrades.
+The client cannot choose epsilon, seed, nonce, privacy epoch or rerolls.
+Servers 2.10.3 and 2.10.4 report
+`privacy_contract = "protected_release_fixed_basis_or_realised_v1"`.
+Fixed-synopsis releases share a registered public basis; realised-contribution
+reuse is heuristic and has no mechanism epsilon. Signed components are pooled
+only when the contracts and logical source identities are compatible. Old
+per-release payloads cannot be pooled with this contract; retain per-site
+results during an incompatible upgrade and upgrade both packages together.
+
+Noise is generated deterministically on demand, with no stored answers,
+lifetime budget, query quota or privacy accountant. Exact support gates,
+overlapping scopes and evolving data prevent a general full-transcript DP
+claim. See the security chapter and server disclosure documentation for the
+scope and utility of each protected route.
 
 ```{r catalog}
 catalog <- omop_querylibrary_sticky_catalog()
@@ -134,9 +124,9 @@ result <- ds.omop.querylibrary.sticky.release("DP_ages", age_at_2025,
 
 The whole release population must be defined in the recipe or plan: filtering,
 merging or otherwise manipulating a prepared table drops its DP provenance.
-Variables whose protection depends on other persons cannot be prepared; for
-example a baseline `age_at_index` (protected with cross-person age banding) is
-refused in favour of an age at a public reference year.
+Preparation requires person-local lineage. Matching descendants and unsealed
+external frames are refused; an assigned age or date alone does not certify
+DP provenance. Use the explicit preparation route for the intended population.
 
 Longitudinal numeric and categorical record histograms use a deterministic
 declared order and a finite per-person record cap:
@@ -168,12 +158,9 @@ distinct_rxnorm <- omop_querylibrary_sticky(
 )
 ```
 
-For one server, DEX06 estimates the distinct cardinality across that site's
-database. Across multiple servers there is no privacy-safe cross-site entity
-linkage for computing a set union: `pool = TRUE` therefore returns the explicit
-sum of site-local bounded distinct counts and may count a concept once per site.
-Use `pool = FALSE` when site-specific cardinalities are the intended estimand;
-do not interpret the pooled sum as a global union cardinality.
+DEX06 is a site-local bounded distinct cardinality. It is not pooled across
+sites: there is no privacy-safe cross-site linkage to compute the concept union
+from those counts. Use `pool = FALSE` to retain site-specific cardinalities.
 
 Exact ZIP, source/free-text labels and patient/event rows remain unavailable.
 They do not silently fall back to a different query:

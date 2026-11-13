@@ -90,13 +90,13 @@ the new version's methods: an administrator publishes its settings again
 `ds.omop.connect()` stops with the same explanation when a server cannot be
 used, and reports each server's own error instead of DSI's generic notice.
 
-### Upgrading to 2.10.3
+### Upgrading to 2.10.4
 
-The matching release is dsOMOP 2.10.3 plus dsOMOPClient 2.10.3. Automatic
+The matching release is dsOMOP 2.10.4 plus dsOMOPClient 2.10.4. Automatic
 server protection needs no privacy settings, secret provisioning, epoch bump,
 ETL coordination or TLS change. Existing valid roots survive package upgrade.
 Opal's installed-package and published-profile versions are distinct; the
-version check identifies an installed 2.10.3 whose profile still has older
+version check identifies an installed 2.10.4 whose profile still has older
 methods, so ordinary profile publication completes that package upgrade.
 
 Language-2 execution requires the publication methods at every site. Supported
@@ -105,7 +105,7 @@ newly permitted and newly refused cases and their migration paths. During a
 mixed-server upgrade, v1 execution uses the documented legacy path with a
 warning, while language-2 execution stops before assignment.
 
-Protected 2.10.3 payloads pool only with compatible 2.10.3 contracts.
+Protected payloads from 2.10.3 and later pool only with compatible contracts.
 `type = "split"` keeps labelled per-site results when versions differ. Old typed
 clients receive an upgrade refusal, and a new client warns about old servers;
 installing the client alone does not repair server-side inference defects.
@@ -114,7 +114,26 @@ Protection labels distinguish fixed-synopsis mechanisms from heuristic
 realised-contribution reuse; neither is a finite lifetime or full-transcript
 privacy guarantee.
 
-## Recipe language 2 in 2.10.3
+### New presentation in 2.10.4
+
+Concept-valued outputs use shared labelled factors. `labels` can merge concept
+categories deliberately; `column_names` renames generated columns without
+merging them. `ds.omop.table()` retains unused public levels and exact labels
+when pooling. Native `omop_date_spec()`, `omop_date_parts()` and `omop_age_at()`
+provide calendar factors, numeric coordinates, Date bounds and anchored ages.
+No absolute-date permission is needed for assignment; final person support and
+aggregate controls remain. Re-run recipes after upgrading to recreate factors;
+use explicit numeric representations for date arithmetic. See
+[NEWS.md](NEWS.md) for migrations and the client extraction vignette for examples.
+
+Release verification: [recipe/publication contract run 43515122503](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515122503)
+passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3;
+[full e2e run 43515127555](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515127555)
+passed both fresh and upgrade jobs. Both tested harness commit
+`17e5df40f4718bdece091f68d3003c764f061854`. These are evidence for that
+candidate, not a claim of live execution on every supported SQL dialect.
+
+## Recipe language 2 in 2.10.4
 
 Use `omop_study()` for a study with explicit baseline and follow-up inputs, or
 compose `omop_event()`, `omop_population()`, `omop_reduce()` and `omop_output()`
@@ -122,10 +141,11 @@ for the advanced layer. Both produce the same typed recipe language;
 `print()` shows defaults and `recipe_to_code()` prints the advanced expansion.
 See [populations and studies](vignettes/v03_cohorts.Rmd) and
 [events and outputs](vignettes/v04_extraction.Rmd), including coded education
-level and cause of death. Examples remain `eval = FALSE` until the integrated
-compilers pass acceptance; advertised operations determine what a build runs.
+level and cause of death. Examples use `eval = FALSE` because they need authenticated connections and a
+study-specific CDM. The integrated compilers are exercised by the release runs
+below; advertised operations still determine what an installed server runs.
 
-| Backend | Required 2.10.3 verification | Runtime release target |
+| Backend | Required 2.10.4 verification | Runtime release target |
 |---|---|---|
 | PostgreSQL | Live typed SQL and recipe tests | 16 (development pod: 14) |
 | SQLite / RSQLite | Embedded tests and runtime window-frame probe | Actual SQLite and RSQLite versions recorded |
@@ -138,7 +158,7 @@ The server README contains the construct-by-construct matrix. A supported
 connector alone does not establish recipe support. Unsupported constructs
 refuse at preflight with `dialect_unsupported`. Check both installed and
 published package versions with `ds.omop.server.version()`; use matching
-2.10.3 packages and republish methods and Options on Opal after upgrading.
+2.10.4 packages and republish methods and Options on Opal after upgrading.
 
 Small private inputs are allowed. Each independently accessible final patient
 component needs `nfilter.subset` distinct persons. Strict servers refuse the

@@ -12,8 +12,9 @@ vignette: >
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
-These 2.10.3 examples follow the frozen recipe-language-2 contract and stay
-unevaluated until compiler integration. Patient tables are assigned beside the
+These 2.10.4 examples use the integrated recipe-language-2 implementation.
+They are not evaluated during documentation builds because they need live
+DataSHIELD connections and study-specific vocabulary inputs. Patient tables are assigned beside the
 data; use reviewed DataSHIELD methods to analyse them. The previous chapter
 explains populations and index dates.
 
@@ -58,7 +59,7 @@ cause <- omop_variable(name = "cause_of_death", table = "death",
   column = "cause_concept_id", type = "categorical", format = "first_value")
 ```
 
-The 2.10.3 advanced spelling names an event and reducer. This selects the last
+The advanced spelling names an event and reducer. This selects the last
 coded answer through the index day, avoiding post-index education updates:
 
 ```{r}
@@ -83,8 +84,10 @@ result <- recipe_execute(recipe, out = c(profile = "D_profile"), conns = conns)
 ```
 
 Translation follows the declared concept type, including renamed wide columns;
-it must not depend on an `_concept_id` suffix. This is a 2.10.3 integration
-requirement: verify translated names and retained IDs on your integrated build.
+it does not depend on an `_concept_id` suffix. The assigned columns are unordered
+factors with shared permitted levels. Joins and computations use internal IDs;
+the published labels are presentation. To retain numeric concept IDs instead,
+set `options = list(translate_concepts = FALSE)` on the recipe.
 `cause_of_death` is the coded cause, not proof that everyone has died; missing
 cause stays NA. It is an outcome description and may use future information,
 so do not treat it as a pre-index predictor.
@@ -104,6 +107,87 @@ Selecting a categorical type or renaming the column does not make them safe.
 Use coded `value_as_concept_id` and `cause_concept_id` for the portable recipe.
 An administrator's existing sensitive-column override is not permission to
 use text predicates or to alias protected source columns through mutation.
+
+## Declare labels and keep complete categories
+
+Use study-reviewed concept IDs as the names of a public `labels` map. Variable
+maps override recipe maps; equal labels deliberately combine categories. This
+example uses illustrative gender IDs, which must be checked for your CDM:
+
+```{r}
+gender <- omop_variable(name = "gender", table = "person",
+  column = "gender_concept_id", type = "categorical", format = "raw",
+  labels = c(`8507` = "Male", `8532` = "Female"))
+```
+
+`column_names` maps stable untranslated generated column keys to complete R
+names. It renames columns without combining them; duplicate target names are
+refused. Automatic duplicate concept names are disambiguated by ID. Empty
+labels are refused, while a literal `"NA"` is a category distinct from missing.
+Keep the default `factor_concepts = TRUE` when translation is enabled.
+
+After publishing the education recipe above, use its committed symbol for a
+pooled table that retains every permitted category, including unused levels:
+
+```{r}
+ds.omop.table("D_profile", "education", conns = conns)
+```
+
+This helper preserves commas and other literal label text and excludes actual
+missing values. A failed or suppressed site count causes refusal, never a zero
+substitution. Direct `dsBaseClient::ds.table()` can omit globally unused levels.
+Concept factors keep their shared levels during model-frame subsetting; other
+packages still need their own reviewed methods and model compatibility checks.
+
+Derived sex uses the public `F`, `M` factor domain. Age bands, birth-year bands
+and calendar categories are ordered factors, including unused declared levels.
+Ordered factors use ordered contrasts in R models; choose your model coding
+explicitly. Use `as.character()` for labels, not integer factor codes as values.
+CSV and Parquet staging preserve levels and order; read them through the staged
+descriptor contract rather than treating the CSV file as an ordinary download.
+
+## Dates, calendar periods and age at an event
+
+Native date helpers separate the date source from its presentation. A recipe
+`date_spec` supplies defaults; each variable overrides the fields it declares.
+These are variables that can be included in a wide output like education above:
+
+```{r}
+visit_quarter <- omop_date("first_visit",
+  omop_date_spec(precision = "quarter",
+    level_range = c("2010-01-01", "2030-12-31")))
+visit_trend <- omop_date("first_visit",
+  omop_date_spec(precision = "month", representation = "number",
+    origin = "2010-01-01"))
+visit_start <- omop_date("first_visit",
+  omop_date_spec(precision = "quarter", representation = "start"))
+visit_parts <- omop_date_parts("first_visit",
+  c(visit_year = "year", visit_month = "month", weekday = "weekday"))
+age_at_death <- omop_age_at("death")
+followup_days <- omop_time_between("index", "observation_end", unit = "days")
+```
+
+Calendar periods default to ordered factors. `number` provides a trend coordinate;
+`start` and `end` provide inclusive Date bounds. `level_range` declares additional
+public levels, including unused middle years; it never filters observed dates.
+Names use fixed English. ISO week labels use `%G-W%V`, not `%Y-W%V`; custom
+patterns use a closed directive set. Fiscal calendars and explicitly profiled
+epidemiological weeks are available in `omop_date_spec()`.
+
+`omop_age_at()` counts completed anniversaries at its own reference date;
+February 29 birthdays use March 1 in non-leap years. Incomplete birth dates
+return NA unless an explicit imputation is chosen. `unit = "annual_years"`
+requests calendar-year age instead. Legacy `omop_age()` remains annual age,
+and omitted native specifications preserve legacy first/last-date offsets.
+An explicit `omop_date_spec()` on a first/last-date reducer selects native Date
+presentation. Do not overlap a native specification with legacy `date_handling`.
+
+For a reproducible future-date policy, use
+`omop_date_spec(future = "na", as_of = "2026-01-01")`. The policy applies after
+row selection: a selected later date becomes NA; it does not substitute an
+earlier event. Invalid dates remain missing. Exact-date assignment needs no
+`dsomop.allow_absolute_dates` opt-in. Date-derived columns retain class-2
+provenance, final person support and all downstream aggregate controls.
 
 ## Understand the reducer
 

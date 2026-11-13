@@ -12,8 +12,9 @@ vignette: >
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
-This chapter follows the 2.10.3 recipe-language-2 contract. Examples are
-intentionally not evaluated while the native compilers are being integrated.
+This chapter follows the 2.10.4 recipe-language-2 contract. Examples are
+not evaluated during documentation builds because they need authenticated
+connections and study-specific concept definitions.
 Use matching client and server packages and check the server's advertised
 operations before execution. A recipe describes work beside the database;
 patient rows stay on the DataSHIELD server.
