@@ -5,6 +5,14 @@ workstream fills its entries.
 
 ## Corrected
 
+- (A-27 review F2/P1) `ds.omop.table()` preserves arbitrary permitted labels,
+  including commas, through temporary protected analysis copies with lossless
+  category tokens. Counts map back to the exact public level contract, including
+  unused declarations and deliberate merges; actual missing values stay missing.
+  Existing disclosure checks remain in force. Use matching server/client builds
+  and this helper for free-text pooled tables; direct dsBase label transport
+  remains comma-delimited. No recipe changes are needed.
+
 - (A-27 review fixes) CSV staging preserves literal `"NA"` labels separately
   from actual missing cells, including reconciliation rewrites. New CSV
   descriptors declare `csv_encoding = "backslash-v1"`; server-side readers

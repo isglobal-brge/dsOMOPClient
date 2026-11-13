@@ -20,9 +20,10 @@ A one-dimensional \code{table} of pooled counts, including unused
 }
 \description{
 Calls the real \code{dsBaseClient::ds.table} on a published in-memory
-concept factor. Uses the existing disclosure-checked factor harmonisation
-transport to restore declared categories absent from every site as zero
-cells, in federation level order. No rows are added or changed. All sites
+concept factor through a temporary protected copy with lossless category
+tokens. Uses the existing disclosure-checked factor harmonisation transport
+and maps counts back to the exact public labels, restoring unused declared
+categories as zero cells in federation level order. All sites
 must return valid counts; failed or suppressed tables are never zero-filled.
 }
 \details{
@@ -30,4 +31,7 @@ dsBase rebuilds factors from observed values, so a direct \code{ds.table}
 call can omit globally unused levels. Use this integration when the pooled
 table must retain the complete declared category contract. Counts exclude
 actual missing values; a literal label \code{"NA"} remains a category.
+Commas and other free text are preserved. The temporary copy is removed
+after analysis, including on failure; the published object is unchanged.
+Requires the matching server implementation of the table analysis transport.
 }

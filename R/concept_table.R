@@ -1,15 +1,19 @@
 #' Pool a published concept category with its complete level contract
 #'
 #' Calls the real \code{dsBaseClient::ds.table} on a published in-memory
-#' concept factor. Uses the existing disclosure-checked factor harmonisation
-#' transport to restore declared categories absent from every site as zero
-#' cells, in federation level order. No rows are added or changed. All sites
+#' concept factor through a temporary protected copy with lossless category
+#' tokens. Uses the existing disclosure-checked factor harmonisation transport
+#' and maps counts back to the exact public labels, restoring unused declared
+#' categories as zero cells in federation level order. All sites
 #' must return valid counts; failed or suppressed tables are never zero-filled.
 #'
 #' dsBase rebuilds factors from observed values, so a direct \code{ds.table}
 #' call can omit globally unused levels. Use this integration when the pooled
 #' table must retain the complete declared category contract. Counts exclude
 #' actual missing values; a literal label \code{"NA"} remains a category.
+#' Commas and other free text are preserved. The temporary copy is removed
+#' after analysis, including on failure; the published object is unchanged.
+#' Requires the matching server implementation of the table analysis transport.
 #'
 #' @param data Character; published server-side data frame symbol.
 #' @param column Character; concept factor column in that data frame.
@@ -45,9 +49,42 @@ ds.omop.table <- function(data, column, conns = NULL) {
     stop("column must have a published concept level contract.", call. = FALSE)
   }
   levels <- as.character(unlist(spec$columns[[key]]$levels, use.names = FALSE))
-  result <- dsBaseClient::ds.table(rvar = paste0(data, "$", column),
+  # Reserve a fresh symbol on every site; never overwrite the publication.
+  inventory <- .plan_symbol_inventory(conns, "concept table analysis")
+  temporary <- NULL
+  for (attempt in seq_len(10L)) {
+    candidate <- .generate_symbol("dsOtable")
+    if (candidate != data && !candidate %in% unlist(inventory, use.names = FALSE)) {
+      temporary <- candidate
+      break
+    }
+  }
+  if (is.null(temporary)) stop("Could not reserve a table analysis symbol.", call. = FALSE)
+  on.exit({
+    for (site in names(conns)) {
+      tryCatch(DSI::datashield.rm(conns[site], temporary),
+        error = function(e) warning("Could not remove table analysis copy on ", site,
+                                    ": ", conditionMessage(e), call. = FALSE))
+    }
+  }, add = TRUE)
+  succeeded <- character()
+  failed <- character()
+  DSI::datashield.assign.expr(conns, temporary,
+    # The appended formal also makes older servers refuse instead of silently
+    # ignoring the request and passing public labels to the lossy dsBase codec.
+    call("omopAsFactorColumnsDS", as.symbol(data), .ds_encode(spec), key),
+    success = function(server) succeeded <<- c(succeeded, server),
+    error = function(server, message) failed[[server]] <<- message)
+  if (length(failed) || !setequal(succeeded, names(conns))) {
+    stop("Concept table analysis copy failed; matching servers are required. ",
+         paste(failed, collapse = "; "), call. = FALSE)
+  }
+  tokens <- paste0("C", seq_along(levels))
+  result <- dsBaseClient::ds.table(rvar = paste0(temporary, "$", column),
                                   useNA = "no", datasources = conns)
-  .conceptCompleteTable(result, levels, paste0(data, "$", column))
+  complete <- .conceptCompleteTable(result, tokens, paste0(data, "$", column))
+  dimnames(complete)[[1L]] <- levels
+  complete
 }
 
 .conceptCompleteTable <- function(result, levels, variable) {
