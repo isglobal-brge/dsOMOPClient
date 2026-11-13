@@ -184,7 +184,7 @@ test_that("A-24 indexed per-variable windows execute through ordinary capability
       omop_variable(name = "recent_a1c", table = "measurement", concept_id = 3004410,
                     format = "binary", time_window = list(start = -30L, end = -1L))),
     outputs = omop_output("features", type = "features", population_id = "indexed"),
-    options = list(factor_concepts = FALSE))
+    options = list(translate_concepts = FALSE, factor_concepts = FALSE))
   selected <- dsOMOPClient:::.recipe_plan_for_session(r, "omop_ws8_features", conns)
   expect_s3_class(selected, "omop_plan_v2")
   expect_identical(selected$outputs$features$grain, "episode")
