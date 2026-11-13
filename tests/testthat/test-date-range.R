@@ -29,7 +29,9 @@ test_that("B4 custom public ranges order all years independently of observed dat
 })
 
 test_that("B4 custom ranges retain shared unused levels through final publication", {
-  f <- dates_va_fixture(two_sites=TRUE); conns <- f$conns
+  # This synthetic test declares hundreds of public month/week categories.
+  # Give its servers enough capacity without changing the default-cap fixtures.
+  f <- dates_va_fixture(two_sites=TRUE,levels_max=1000L); conns <- f$conns
   on.exit({ds.omop.disconnect(conns=conns);DSI::datashield.logout(conns);unlink(f$path)},add=TRUE)
   range <- c("2000-01-01", "2010-12-31")
   days <- seq(as.Date(range[1]), as.Date(range[2]), by="day")

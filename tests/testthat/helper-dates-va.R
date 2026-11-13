@@ -1,4 +1,4 @@
-dates_va_fixture <- function(two_sites=FALSE, threshold=5L) {
+dates_va_fixture <- function(two_sites=FALSE, threshold=5L, levels_max=NULL) {
 library(dsOMOP)
 library(dsOMOPClient)
 library(DSLite)
@@ -60,6 +60,7 @@ DBI::dbDisconnect(db)
 config <- DSLite::defaultDSConfiguration(include = c("dsOMOP","dsBase"))
 config$Options$nfilter.subset <- threshold
 config$Options$default.nfilter.subset <- threshold
+if(!is.null(levels_max)) config$Options$nfilter.levels.max <- levels_max
 server <- DSLite::newDSLiteServer(
   resources = list(fixture = resourcer::newResource(name = "fixture",
     url = paste0("omop+dbi:sqlite://", fixture_path), format = "omop.dbi.db")),
