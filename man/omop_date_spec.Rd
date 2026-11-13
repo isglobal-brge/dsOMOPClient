@@ -78,7 +78,7 @@ omop_age_at(
 
 \item{anchor}{Relative-days anchor.}
 
-\item{pattern}{Closed calendar pattern; ISO weeks require %G-W%V.}
+\item{pattern}{Closed calendar pattern; ISO weeks require \%G-W\%V.}
 
 \item{labels}{Named public calendar label map; labels must remain unique.}
 
@@ -155,9 +155,9 @@ Summer, Autumn, Winter, Spring. Cyclic values use 2*pi*(k-1)/P with
 P=12, 7 or 4. Ordered factors use ordered-factor contrasts; request number
 for a trend coordinate. Shared unused periods are zero-count levels.
 
-Custom patterns accept only %Y, %m, %d, %j, %G, %V, %u, %b, %B, %a,
-%A, %% and ASCII letters, digits, space or -_/.,:(). ISO %G and %V must
-appear together without %Y. No locale, code or time-of-day directives are
+Custom patterns accept only \%Y, \%m, \%d, \%j, \%G, \%V, \%u, \%b, \%B, \%a,
+\%A, \%\% and ASCII letters, digits, space or -_/.,:(). ISO \%G and \%V must
+appear together without \%Y. No locale, code or time-of-day directives are
 evaluated. Public labels must be unique and cannot merge date categories.
 level_range declares additional levels and never filters observed dates.
 

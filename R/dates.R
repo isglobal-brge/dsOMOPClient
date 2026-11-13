@@ -11,7 +11,7 @@
 #' @param numeric index or decimal_year period coordinate.
 #' @param origin Fixed ISO origin for numeric period indices (default 1970-01-01).
 #' @param anchor Relative-days anchor.
-#' @param pattern Closed calendar pattern; ISO weeks require %G-W%V.
+#' @param pattern Closed calendar pattern; ISO weeks require \%G-W\%V.
 #' @param labels Named public calendar label map; labels must remain unique.
 #' @param level_range Two inclusive public ISO dates declaring factor periods.
 #' @param fiscal_start Fiscal starting month (1..12).
@@ -55,9 +55,9 @@
 #' P=12, 7 or 4. Ordered factors use ordered-factor contrasts; request number
 #' for a trend coordinate. Shared unused periods are zero-count levels.
 #'
-#' Custom patterns accept only %Y, %m, %d, %j, %G, %V, %u, %b, %B, %a,
-#' %A, %% and ASCII letters, digits, space or -_/.,:(). ISO %G and %V must
-#' appear together without %Y. No locale, code or time-of-day directives are
+#' Custom patterns accept only \%Y, \%m, \%d, \%j, \%G, \%V, \%u, \%b, \%B, \%a,
+#' \%A, \%\% and ASCII letters, digits, space or -_/.,:(). ISO \%G and \%V must
+#' appear together without \%Y. No locale, code or time-of-day directives are
 #' evaluated. Public labels must be unique and cannot merge date categories.
 #' level_range declares additional levels and never filters observed dates.
 #'
