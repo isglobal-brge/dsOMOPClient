@@ -7,7 +7,8 @@
 
 .legacy_recipe_b1 <- function() omop_recipe(
   variables = omop_variable_age(name = "age_at_2025", year = 2025),
-  outputs = omop_output("ages", type = "wide"))
+  outputs = omop_output("ages", type = "wide"),
+  options = list(translate_concepts = FALSE))
 .v2_recipe_b1 <- function() omop_recipe(variables = list(age = omop_age()),
                                         outputs = omop_output("o", format = "wide"))
 
@@ -35,7 +36,8 @@ test_that("v1 singleton, multiple and subset mappings survive strict current and
   single <- .legacy_recipe_b1()
   multiple <- omop_recipe(
     variables = omop_variable_age(name = "age_at_2025", year = 2025),
-    outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")))
+    outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")),
+    options = list(translate_concepts = FALSE))
   cases <- list(
     list(recipe = single, out = c(ages = "D_single")),
     list(recipe = multiple, out = c(a = "D_first", b = "D_second")),
@@ -137,7 +139,8 @@ test_that("a mixed federation sends the legacy call to every site, with one warn
 test_that("the legacy route checks the out mapping as 2.10.2 did, before any assignment", {
   state <- .legacy_federation(old = "old", new = "new")
   r <- omop_recipe(variables = omop_variable_age(name = "age_at_2025", year = 2025),
-                   outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")))
+                   outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")),
+    options = list(translate_concepts = FALSE))
   expect_error(suppressWarnings(recipe_execute(r, out = c(a = "X", b = "X.covariates"))),
                "overlapping reserved component families")
   expect_error(suppressWarnings(recipe_execute(r, out = c(a = "X", c = "Y"))),
@@ -216,7 +219,8 @@ test_that("preflight checks methods on the final site before any assignment", {
     methods$last$aggregate <- setdiff(methods$last$aggregate, method)
     local_mocked_bindings(.dsomop_published_methods = function(...) methods,
                           .package = "dsOMOPClient")
-    expect_error(recipe_execute(.legacy_recipe_b1()), paste0("last lacks ", method))
+    expect_error(recipe_execute(recipe_set_options(.legacy_recipe_b1(),
+      translate_concepts = TRUE)), paste0("last lacks ", method))
     expect_identical(state$assigns, c(first = 0L, last = 0L))
   }
 })
@@ -232,7 +236,7 @@ test_that("an unlistable site's profile stops all assignments", {
   expect_identical(state$assigns, c(first = 0L, last = 0L))
 })
 
-test_that("DP preflight needs its assign method but no factor recoding methods", {
+test_that("numeric DP preflight needs its assign method but no factor recoding methods", {
   state <- .legacy_federation(new = c("first", "last"),
                               unpublished = "omopDpPlanExecuteDS")
   expect_error(ds.omop.dp.prepare(.legacy_recipe_b1()), "lacks omopDpPlanExecuteDS")

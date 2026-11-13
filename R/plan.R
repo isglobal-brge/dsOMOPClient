@@ -1881,8 +1881,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 
 # Shared plan executor. Loading tables uses the core method
 # omopPlanExecuteDS; ds.omop.dp.prepare() uses the community-tool method
-# omopDpPlanExecuteDS, which seals the outputs for DP releases and must not be
-# followed by concept-factor harmonization (a core recode drops the seal).
+# omopDpPlanExecuteDS, which seals the outputs for DP releases. Translated
+# outputs use the authenticated, seal-preserving A-27 reconciliation route.
 .plan_execute_impl <- function(plan, out = NULL, symbol = "omop", conns = NULL,
                                output_mode = "memory",
                                server_method = "omopPlanExecuteDS",

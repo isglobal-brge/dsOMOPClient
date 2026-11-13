@@ -192,6 +192,18 @@
   want$cohort_row_id <- episodes$cohort_row_id[at]
   expect_identical(as.character(frame$row_id), as.character(frame$cohort_row_id), info = info)
   released <- as.character(unlist(expected$released_columns))
+  # A-27 changes only the four generated fallback names in recipe 07.
+  # Keep the frozen identity/value oracle intact and assert this explicit
+  # before/after presentation mapping, in memory and staged execution.
+  if (grepl("07-monthly-panel", info, fixed = TRUE)) {
+    old <- c("vitals_3025315_count", "vitals_3025315_last",
+             "vitals_3004249_count", "vitals_3004249_last")
+    corrected <- c("vitals_concept_3025315_count", "vitals_concept_3025315_last",
+                   "vitals_concept_3004249_count", "vitals_concept_3004249_last")
+    rename <- function(x) { at <- match(x, old); x[!is.na(at)] <- corrected[at[!is.na(at)]]; x }
+    released <- rename(released)
+    names(want) <- rename(names(want))
+  }
   expect_setequal(names(frame), released)
   expect_identical(nrow(frame), nrow(want), info = info)
   cols <- intersect(names(want), released)

@@ -361,7 +361,7 @@ test_that("concept-set registries exchange OHDSI concept-set JSON", {
 
 test_that("DP preparation of a language-2 recipe sends the negotiated v2 plan", {
   state <- .publication_backend(list(srv1 = .publication_status(c(w = "D_w"))))
-  .with_caps(list(srv1 = .caps(c("concept_set", "event", "variable.reducer", "variable.derived",
+  .with_caps(list(srv1 = .caps(c("output.concept_labels", "concept_set", "event", "variable.reducer", "variable.derived",
                                  "output.wide", "population.criteria"), reducers = "binary")))
   log <- .capture_exec()
   r <- omop_recipe(variables = list(x = omop_variable(event = omop_event("drug_exposure", 1),

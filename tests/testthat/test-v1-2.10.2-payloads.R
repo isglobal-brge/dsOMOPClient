@@ -25,6 +25,12 @@ test_that("execute, DP and sticky send the full selected v1 payload on both prot
   r <- .fixture_recipe(f)
   for (old in list(character(0), "old")) {
     state <- .legacy_federation(old = old, new = "new")
+    if (length(old)) {
+      expect_error(recipe_execute(r), "Concept presentation requires output.concept_labels")
+      expect_error(ds.omop.dp.prepare(r), "Concept presentation requires output.concept_labels")
+      expect_identical(sum(state$assigns), 0L)
+      next
+    }
     suppressWarnings(recipe_execute(r))
     for (s in names(state$sent)) expect_identical(state$sent[[s]][[3L]], f$payload, info = s)
     state <- .legacy_federation(old = old, new = "new")
@@ -42,6 +48,12 @@ test_that("execute, DP and sticky send the full selected v1 payload on both prot
                                      preparation = r)
     sites <- c(old, "new")
     conns <- stats::setNames(as.list(sites), sites)
+    if (length(old)) {
+      expect_error(dsOMOPClient:::.querylibrary_sticky_prepare(spec, conns, "omop"),
+                   "Concept presentation requires output.concept_labels")
+      expect_identical(sum(state$assigns), 0L)
+      next
+    }
     suppressWarnings(dsOMOPClient:::.querylibrary_sticky_prepare(spec, conns, "omop"))
     expect_identical(unname(state$assigns), rep(1L, length(sites)))
     for (s in sites) {
