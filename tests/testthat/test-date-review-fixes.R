@@ -25,11 +25,11 @@ test_that("B2 reference calendar order survives federation, contrasts and stagin
   withr::local_options(list(dsstaging.base_dir=directory))
   f <- dates_va_fixture(two_sites=TRUE);conns <- f$conns
   on.exit({ds.omop.disconnect(conns=conns);DSI::datashield.logout(conns);unlink(f$path)},add=TRUE)
-  expected <- list(a=c("Sat","Sun","Mon","Tue","Wed","Thu","Fri"),
-    A=c("Saturday","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"),
-    u=c("6","7","1","2","3","4","5"),
+  expected <- list(abbr=c("Sat","Sun","Mon","Tue","Wed","Thu","Fri"),
+    full=c("Saturday","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"),
+    weekday=c("6","7","1","2","3","4","5"),
     escaped=paste("%Y",c("Sat","Sun","Mon","Tue","Wed","Thu","Fri")))
-  patterns <- c(a="%a",A="%A",u="%u",escaped="%%Y %a")
+  patterns <- c(abbr="%a",full="%A",weekday="%u",escaped="%%Y %a")
   vars <- lapply(patterns,function(pattern) omop_date("2020-01-01",
     omop_date_spec(precision="custom",pattern=pattern,level_range=c("2020-01-01","2020-01-07"))))
   r <- omop_recipe(variables=vars,outputs=omop_output("o",format="wide",grain="person"))
@@ -47,7 +47,7 @@ test_that("B2 reference calendar order survives federation, contrasts and stagin
       expect_identical(contrasts(memory[[site]][[col]]),contrasts(ordered(expected[[col]],levels=expected[[col]])))
       expect_equal(restored[[col]],memory[[site]][[col]])
     }
-    expect_identical(as.character(memory[[site]]$a),rep("Wed",24))
+    expect_identical(as.character(memory[[site]]$abbr),rep("Wed",24))
   }
   # Exercise the client's shared calendar implementation independently as well.
   for (col in names(patterns)) {
