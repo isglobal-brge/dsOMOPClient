@@ -57,6 +57,9 @@ test_that("D40 date factors pool through real ds.table with missing public perio
   expect_equal(as.numeric(pooled),c(6,0,0,18,12))
   expect_identical(dimnames(pooled)[[1L]],levels(d$site$month))
   expect_identical(contrasts(d$site$month),contrasts(d$site2$month))
+  recipe_execute(r,out=c(o="D_reverse"),conns=rev(conns))
+  reversed<-DSLite::getDSLiteData(conns,"D_reverse")
+  expect_identical(lapply(reversed,function(x)levels(x$month)),lapply(d,function(x)levels(x$month)))
 })
 
 test_that("D43 final threshold still refuses and rolls back the VA population", {
@@ -95,7 +98,7 @@ test_that("D31 D32 D36 date age policies and public bands use real assignment", 
   expect_true(all(is.na(d$negative)))
 })
 
-test_that("D42 date recipe JSON YAML code and slicing preserve native semantics", {
+test_that("D42 date recipe JSON YAML and code preserve native semantics", {
   r<-omop_recipe(variables=list(day=omop_date(omop_date_components(2024L,2L,29L)),parts=omop_date_parts("first_visit",c("year","month")),age=omop_age_at("death")),outputs=omop_output("o",format="wide",grain="person"),date_spec=omop_date_spec(partial="none"))
   expected<-recipe_to_plan(r)
   restored<-list(recipe_import_json(recipe_export_json(r)))
@@ -156,4 +159,16 @@ test_that("D40 exact custom factors cannot bypass metadata support or rollback",
   r$variables$day$date_spec<-omop_date_spec(precision="day")
   expect_identical(recipe_execute(r,out=c(o="D_exact"),conns=conns),c(o="D_exact"))
   expect_s3_class(DSLite::getDSLiteData(conns,"D_exact")$site$day,"Date")
+})
+
+
+test_that("D39 D42 effective native policies and public map order bind digests", {
+  r<-omop_recipe(variables=list(d=omop_date("2024-01-01")),outputs=omop_output("o",format="wide",grain="person"),date_spec=omop_date_spec(precision="month",labels=c("2024-01"="Jan","2024-02"="Feb")))
+  a<-recipe_to_plan(r);b<-a
+  b$options$date_spec$labels<-rev(b$options$date_spec$labels)
+  expect_identical(.planNormalizedDigest(a)$sha256,.planNormalizedDigest(b)$sha256)
+  b$variables$d$date_spec<-list(precision="month")
+  expect_identical(.planNormalizeV2(a),.planNormalizeV2(b))
+  b$variables$d$date_spec$partial<-"mid"
+  expect_false(identical(.planNormalizedDigest(a)$sha256,.planNormalizedDigest(b)$sha256))
 })
