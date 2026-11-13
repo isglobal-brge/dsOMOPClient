@@ -5,6 +5,20 @@ workstream fills its entries.
 
 ## Corrected
 
+- (A-27 review fixes) CSV staging preserves literal `"NA"` labels separately
+  from actual missing cells, including reconciliation rewrites. New CSV
+  descriptors declare `csv_encoding = "backslash-v1"`; server-side readers
+  must decode through `.publishReadChunks()` (a leading backslash escapes
+  literal `NA` and leading backslashes). Existing descriptors retain their
+  legacy decoding. Unicode whitespace-only recodes are now rejected on both
+  boundaries; replace them with a nonempty label. Valid text is unchanged.
+
+- Use `ds.omop.table(data, column, conns)` for a complete pooled concept table.
+  It integrates the real `dsBaseClient::ds.table()` counts with the existing
+  permitted level contract, restoring globally unused declarations as zero
+  cells. Direct dsBase calls still omit those categories. Actual missing
+  values are excluded; failed or suppressed site counts cause refusal.
+
 - (A-27) Concept factors preserve their federation level contract during
   model-frame subsetting, including locally absent categories in `ds.glm`.
   Translated legacy dictionaries use the declared concept schema in both

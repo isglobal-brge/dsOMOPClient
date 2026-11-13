@@ -23,11 +23,13 @@ test_that('A27 pooled ds.table and protected-object ds.glm use aligned categorie
         paste(capture.output(print(DSI::datashield.errors())),collapse='; ')))
     })
   },.package='DSI')
-  tables <- tryCatch(dsBaseClient::ds.table(rvar='Analysis$education',useNA='no',datasources=ctx$conns),error=function(e) stop(paste(c(conditionMessage(e),capture.output(print(DSI::datashield.errors()))),collapse='; ')))
-  expect_true(is.list(tables))
-  pooled <- tables$output.list$TABLES.COMBINED_all.sources_counts
-  expect_equal(as.numeric(pooled),c(24,24,6))
-  expect_identical(dimnames(pooled)[[1L]],levels(frames[[1L]]$education)[1:3])
+  pooled <- ds.omop.table('Analysis','education',conns=ctx$conns)
+  expected <- Reduce('+',lapply(frames,function(x) table(x$education)))
+  names(dimnames(expected)) <- 'Analysis$education'
+  expect_equal(pooled,expected)
+  expect_equal(as.numeric(pooled),c(24,24,6,0))
+  expect_identical(dimnames(pooled)[[1L]],levels(frames[[1L]]$education))
+  expect_equal(ds.omop.table('Analysis','education',conns=rev(ctx$conns)),pooled)
   # No key extraction or class/seal stripping: dsBase receives the published
   # protected table through its normal data= route.
   # A category absent globally is not estimable. The declared recode can
@@ -42,3 +44,17 @@ test_that('A27 pooled ds.table and protected-object ds.glm use aligned categorie
   expect_equal(unname(fit$coefficients[,1L]),unname(stats::coef(reference)),tolerance=1e-6)
 })
 
+
+ test_that('A27 table completion refuses partial and suppressed dsBase results', {
+  counts <- array(c(24,24,6),dim=3,dimnames=list(c('a','b','c')))
+  result <- list(validity.message='Data in all studies were valid',
+    output.list=list(TABLES.COMBINED_all.sources_counts=counts))
+  complete <- .conceptCompleteTable(result,c('a','b','c','declared'),'x')
+  expect_identical(as.numeric(complete),c(24,24,6,0))
+  expect_identical(dimnames(complete)[[1L]],c('a','b','c','declared'))
+  partial <- result; partial$validity.message <- 'At least one study failed'
+  expect_error(.conceptCompleteTable(partial,c('a','b','c','declared'),'x'),'Every retained site')
+  suppressed <- result; suppressed$output.list[[1L]][1L] <- NA_real_
+  expect_error(.conceptCompleteTable(suppressed,c('a','b','c','declared'),'x'),'do not match')
+  expect_error(.conceptCompleteTable(result,c('a','b','declared'),'x'),'do not match')
+})
