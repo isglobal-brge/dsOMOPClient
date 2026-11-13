@@ -3,6 +3,11 @@
 Recipe language 2.0 (design-2.10.3). This section is the WS-0 skeleton; each
 workstream fills its entries.
 
+## Corrected
+- Single-output mappings now use the existing JSON transport on current and
+  2.10.2 servers, preserving output names through strict DataSHIELD parsing.
+  Existing `out` declarations work unchanged; no method-profile changes are needed.
+
 ## Recipe language 2.0 (WS-8)
 - New language-2 constructors (design section 2): `omop_concept_set()`,
   `omop_event()` with `omop_where()` / `omop_where_tree()` row predicates and

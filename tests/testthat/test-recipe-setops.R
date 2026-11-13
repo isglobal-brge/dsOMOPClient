@@ -251,7 +251,7 @@ test_that("a scalar cohort to omop_recipe is scope, not the base cohort", {
       if (is.call(expr) && identical(as.character(expr[[1L]]),
                                      "omopPlanExecuteDS")) {
         captured <<- expr
-        symbols <<- union(symbols, as.character(unlist(.decode_ds(expr[[4L]]))))
+        symbols <<- union(symbols, as.character(unlist(.decode_ds(expr[[4L]]), use.names = FALSE)))
       }
       if (is.function(success)) success("srv")
       invisible(NULL)
@@ -378,7 +378,7 @@ test_that("recipe_execute applies an execution-time scope override", {
       if (is.call(expr) && identical(as.character(expr[[1L]]),
                                      "omopPlanExecuteDS")) {
         captured <<- expr
-        symbols <<- union(symbols, as.character(unlist(.decode_ds(expr[[4L]]))))
+        symbols <<- union(symbols, as.character(unlist(.decode_ds(expr[[4L]]), use.names = FALSE)))
       }
       if (is.function(success)) success("srv")
       invisible(NULL)
