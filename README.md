@@ -90,6 +90,40 @@ the new version's methods: an administrator publishes its settings again
 `ds.omop.connect()` stops with the same explanation when a server cannot be
 used, and reports each server's own error instead of DSI's generic notice.
 
+## Recipe language 2 in 2.10.4
+
+Use `omop_study()` for a study with explicit baseline and follow-up inputs, or
+compose `omop_event()`, `omop_population()`, `omop_reduce()` and `omop_output()`
+for the advanced layer. Both produce the same typed recipe language;
+`print()` shows defaults and `recipe_to_code()` prints the advanced expansion.
+See [populations and studies](vignettes/v03_cohorts.Rmd) and
+[events and outputs](vignettes/v04_extraction.Rmd), including coded education
+level and cause of death. Examples remain `eval = FALSE` until the integrated
+compilers pass acceptance; advertised operations determine what a build runs.
+
+| Backend | Required 2.10.4 verification | Runtime release target |
+|---|---|---|
+| PostgreSQL | Live typed SQL and recipe tests | 16 (development pod: 14) |
+| SQLite / RSQLite | Embedded tests and runtime window-frame probe | Actual SQLite and RSQLite versions recorded |
+| DuckDB | Optional embedded tests | Actual engine/driver version recorded |
+| MySQL / MariaDB | Live vendor tests; floors 8.0 / 10.2 | 8.4 / 11.4 (pod: 8.4.11 / 10.6) |
+| SQL Server / Synapse / PDW, Oracle, Redshift, BigQuery, Snowflake, Spark / Databricks | Rendered SQL contracts only; no cross-statement temporary materialisation | No live runtime claim |
+| Opal / Rock | O1–O12 on both pinned Opal versions | Opal 6.1.3 and 5.7.6; R ≥4.2 |
+
+The server README contains the construct-by-construct matrix. A supported
+connector alone does not establish recipe support. Unsupported constructs
+refuse at preflight with `dialect_unsupported`. Check both installed and
+published package versions with `ds.omop.server.version()`; use matching
+2.10.4 packages and republish methods and Options on Opal after upgrading.
+
+Small private inputs are allowed. Each independently accessible final patient
+component needs `nfilter.subset` distinct persons. Strict servers refuse the
+whole plan on a small root; non-strict servers with `on_small_site = "error"`
+return passing families and warn with `partial` status. With `"skip"`, either
+server mode commits nothing at a small site and returns NULL for it; passing
+sites remain. Only support failure is skippable. Technical failures roll back
+the federation. Keep the returned dynamic inventory rather than guessing names.
+
 ## Federated result views
 
 Aggregate APIs use the same result vocabulary as dsBaseClient:
