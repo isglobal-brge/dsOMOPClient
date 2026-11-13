@@ -24,7 +24,8 @@ test_that("B2 reference calendar order survives federation, contrasts and stagin
   directory <- withr::local_tempdir();Sys.chmod(directory,"0700")
   withr::local_options(list(dsstaging.base_dir=directory))
   f <- dates_va_fixture(two_sites=TRUE);conns <- f$conns
-  on.exit({ds.omop.disconnect(conns=conns);DSI::datashield.logout(conns);unlink(f$path)},add=TRUE)
+  # Disconnect while the staging directory still exists so cleanup can be proved.
+  withr::defer({ds.omop.disconnect(conns=conns);DSI::datashield.logout(conns);unlink(f$path)})
   expected <- list(abbr=c("Sat","Sun","Mon","Tue","Wed","Thu","Fri"),
     full=c("Saturday","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"),
     weekday=c("6","7","1","2","3","4","5"),
