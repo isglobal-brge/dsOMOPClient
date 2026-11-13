@@ -143,3 +143,17 @@ test_that("D42 merge rewrites dates' event references and component sources", {
   expect_identical(p$variables$b_gap$derived$from$source$event,"b_e")
   expect_identical(p$variables$b_comp$derived$reference$event$event,"b_e")
 })
+
+test_that("D40 exact custom factors cannot bypass metadata support or rollback", {
+  f<-dates_va_fixture();conns<-f$conns
+  on.exit({ds.omop.disconnect(conns=conns);DSI::datashield.logout(conns);unlink(f$path)},add=TRUE)
+  db<-DBI::dbConnect(RSQLite::SQLite(),f$path)
+  DBI::dbExecute(db,"UPDATE visit_occurrence SET visit_start_date=printf('2020-01-%02d',person_id),visit_end_date=printf('2020-01-%02d',person_id)")
+  DBI::dbDisconnect(db)
+  r<-omop_recipe(variables=list(day=omop_date("first_visit",omop_date_spec(precision="custom",pattern="%Y-%m-%d"))),outputs=omop_output("o",format="wide",grain="person"))
+  expect_error(recipe_execute(r,out=c(o="D_unsafe"),conns=conns),"factor-level disclosure policy|certify complete")
+  expect_false("D_unsafe" %in% DSI::datashield.symbols(conns)$site)
+  r$variables$day$date_spec<-omop_date_spec(precision="day")
+  expect_identical(recipe_execute(r,out=c(o="D_exact"),conns=conns),c(o="D_exact"))
+  expect_s3_class(DSLite::getDSLiteData(conns,"D_exact")$site$day,"Date")
+})
