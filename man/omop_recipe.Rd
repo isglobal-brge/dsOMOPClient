@@ -14,7 +14,12 @@ omop_recipe(
   tables = NULL,
   combine = "union",
   options = NULL,
-  output = NULL
+  output = NULL,
+  concept_sets = NULL,
+  events = NULL,
+  intervals = NULL,
+  coverage = NULL,
+  publish = NULL
 )
 }
 \arguments{
@@ -56,6 +61,21 @@ override the defaults.}
 
 \item{output}{Convenience alias for a single \code{\link{omop_output}}; use it
 instead of \code{outputs} when the recipe has just one output.}
+
+\item{concept_sets}{(2.10.3) Named concept sets
+(\code{\link{omop_concept_set}}) referenced by name from events.}
+
+\item{events}{(2.10.3) Declared \code{\link{omop_event}}s (events used
+inline elsewhere are declared automatically).}
+
+\item{intervals}{(2.10.3) Declared \code{\link{omop_era}}s.}
+
+\item{coverage}{(2.10.3) Default \code{\link{omop_coverage}} for the
+recipe's populations.}
+
+\item{publish}{(2.10.3) \code{NULL} (every output is published) or the
+names of the outputs to publish; other outputs are computed privately
+when another output depends on them and are never released.}
 }
 \value{
 An \code{omop_recipe} object.

@@ -27,4 +27,3 @@ deduplicated if it conflicts with existing names.
 \seealso{
 \code{\link{omop_variable}}, \code{\link{omop_recipe}}
 }
-\keyword{internal}

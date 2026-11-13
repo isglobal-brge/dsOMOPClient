@@ -37,9 +37,9 @@ Key features include:
 AggregateMethods inventory, and rejects methods named `c`/`list` or aliases
 whose target is `c`, `list`, `base::c` or `base::list`. Those generic
 constructors can otherwise wrap and return a protected server object without a
-reviewed disclosure gate. This preflight is defence in depth: the controller
-must remove the methods from the complete global DataSHIELD profile, because a
-caller using DSI directly can bypass the client package.
+reviewed disclosure gate. This preflight is defence in depth: these aliases are
+unsafe in the complete global DataSHIELD profile, and a caller using DSI directly can bypass the client
+package. dsOMOP does not publish them.
 
 ## Structure
 
@@ -90,6 +90,30 @@ the new version's methods: an administrator publishes its settings again
 `ds.omop.connect()` stops with the same explanation when a server cannot be
 used, and reports each server's own error instead of DSI's generic notice.
 
+### Upgrading to 2.10.3
+
+The matching release is dsOMOP 2.10.3 plus dsOMOPClient 2.10.3. Automatic
+server protection needs no privacy settings, secret provisioning, epoch bump,
+ETL coordination or TLS change. Existing valid roots survive package upgrade.
+Opal's installed-package and published-profile versions are distinct; the
+version check identifies an installed 2.10.3 whose profile still has older
+methods, so ordinary profile publication completes that package upgrade.
+
+Language-2 execution requires the publication methods at every site. Supported
+legacy recipes keep their v1 path; [NEWS.md](NEWS.md) describes corrected,
+newly permitted and newly refused cases and their migration paths. During a
+mixed-server upgrade, v1 execution uses the documented legacy path with a
+warning, while language-2 execution stops before assignment.
+
+Protected 2.10.3 payloads pool only with compatible 2.10.3 contracts.
+`type = "split"` keeps labelled per-site results when versions differ. Old typed
+clients receive an upgrade refusal, and a new client warns about old servers;
+installing the client alone does not repair server-side inference defects.
+Outputs can change under the repaired public grids and component contracts.
+Protection labels distinguish fixed-synopsis mechanisms from heuristic
+realised-contribution reuse; neither is a finite lifetime or full-transcript
+privacy guarantee.
+
 ## Federated result views
 
 Aggregate APIs use the same result vocabulary as dsBaseClient:
@@ -118,42 +142,35 @@ estimand on every participating node.
 
 ## Dedicated sticky privacy releases
 
-Differential privacy (DP) concerns only the OHDSI community tools integrated in
-dsOMOP (Achilles results, OHDSI results tables, the analysis catalog and the
-query library). Connecting, loading tables, filters, concept factors, merges,
-cohorts and dsOMOP's own exploration never use it: since server 2.8.0 they run
-under the standard DataSHIELD disclosure controls only, as before DP was added.
-The community tools are enabled by default; a custodian can disable them with
-`dsomop.tools.enabled = FALSE`. Since server 2.9.0 their protection is
-automatic (`dsomop.tools.mode = "auto"`, nothing to configure): outputs that
-the standard DataSHIELD controls protect adequately stay under those controls,
-and the query-library questions about per-person durations, per-person counts
-and demographic distributions are answered as histograms of one value per
-person (or complete public partitions) with sticky DP noise, or under the
-standard controls when a server's DP service is unavailable.
-`ds.omop.analysis.run()` reports each server's protection in
-`meta$protection` and prints it. Other questions use the typed sticky
-channel: `ds.omop.dp.prepare()` prepares a DP-sealed person-local table from a
-recipe or plan (the analyst picks the population and variables, such as an
-age at a public reference year), and `ds.omop.querylibrary.sticky.release()`
-does that preparation itself when the redesign carries its recipe. A custodian can choose `"standard"` (no DP)
-or `"dp"` (DP only; `dsomop.dp.exclusive = TRUE` selects it), in which case
-the tools refuse every standard statistic; no client option bypasses the
-policy or noise. `ds.omop.dp.status()` prints each server's exclusivity and
-tools mode. (Servers 2.7.x applied exclusivity to standard statistics and
-refused factor discovery; with them, set `factor_concepts = FALSE` or upgrade
-the server.)
+Protected releases concern the OHDSI community tools integrated in dsOMOP
+(Achilles, OHDSI results tables, the analysis catalogue and QueryLibrary).
+Connecting, loading, filtering, factors, merges, cohorts and core exploration
+continue under their standard DataSHIELD controls. Community tools default to
+`dsomop.tools.mode = "auto"`; the client cannot bypass the server's policy.
 
-The dedicated release service is enabled by default on dsOMOP servers since
-2.6.0; custodians can opt out with `dsomop.dp.enabled = FALSE` or
-`DSOMOP_DP_ENABLED=0`. Unconfigured servers derive domain and snapshot
-identifiers from the resource and CDM source metadata and require persistent
-private state storage. Custodians advance the public snapshot or
-`dsomop.dp.privacy_epoch` and restart sessions for each planned publication,
-including no-op refreshes. Inspect the contract and request a typed
-person-bounded statistic from an output of a community tool (for example an
-analysis-catalog loader); tables loaded through plans or recipes carry no DP
-provenance:
+On dsOMOP 2.10.3 there are two protected routes. `fixed_synopsis` uses a declared
+bounded vector for one automatic dataset generation. Its finite epsilon and
+delta zero apply before the exact support gates. `realised_sticky` reuses
+secret fingerprints of bounded contributions; it is heuristic and claims no
+mechanism epsilon or delta. Neither route claims privacy for the whole API
+transcript. `meta$protection` and `meta$privacy` identify the applicable route.
+DP-only mode (`dsomop.tools.mode = "dp"` or `dsomop.dp.exclusive = TRUE`) admits
+only supported fixed-synopsis routes. Missing protected components never fall
+back to exact versions of those components.
+
+The service is enabled by default and needs no custodian configuration for
+correct operation. The server owns its persistent noise root and pseudonym key.
+For fixed-synopsis requests it recomputes the person-membership generation
+inside the request's database snapshot; no per-session generation cache is
+used. Updates to clinical values without a membership change are not a new
+generation: contribution fingerprints still track changed components, and
+cross-version inference remains a stated residual. The public `snapshot_id`
+is optional display metadata with no effect on admission or noise. A privacy
+epoch is optional hardening, not an update workflow or transcript guarantee.
+
+Use `ds.omop.dp.prepare()` to produce an authenticated person-local table from
+a reviewed plan/recipe, or use a supported community-tool loader. Then inspect
+the service and request a bounded statistic:
 
 ```R
 ds.omop.dp.status(conns)
@@ -171,63 +188,53 @@ result <- ds.omop.dp.release(
 )
 ```
 
-The client cannot choose epsilon, a seed, nonce, epoch or reroll. Domains,
-date breaks, clipping bounds and longitudinal contribution caps are public
-parts of the request; fixed per-release epsilon and sticky identity remain
-server-owned. Since server 2.10.0, every answer is a deterministic function of
-the server's secret noise root, the question, the protected statistic and a
-private automatic database version: the same question on the same data returns
-the same complete response, also after restarts, and nothing but the root is
-stored. A database reload that adds rows re-draws every answer at once. Servers
-2.7.1 to 2.9.x instead stored one permanent first answer per public request,
-snapshot and privacy epoch, stale until the custodian rotated the snapshot or
-epoch.
+The client cannot choose epsilon, a seed, nonce, epoch or reroll. Categorical
+requests select views of complete registered public domains; positive binary
+masks and nonmissing denominators select cells of the same protected basis.
+Numeric/date bins coarsen a common atom basis. Pooling sums compatible signed
+components once and applies the same complete-basis projection as the server.
+Crossed hierarchy and nested histogram displays preserve both parent margins.
+Their versioned Dykstra algorithm keeps converged results; after its iteration
+limit, a deterministic feasible repair preserves nonnegativity and margins
+without claiming an exact L2 projection.
+Grouped-time Cox cells share the pooled C6 event and non-event totals.
+Interaction C6/C8 pooling retains the complete signed atomic family, projects
+it against the arm parents, then derives each requested subgroup or age view.
+Pooled supplemental rows and cells carry `family`, `view` and `subgroup_kind`
+identifiers. C8 family cells use finite IPF with a feasible margin repair;
+this display is not claimed to be an exact KL or L2 projection. Missing or
+incompatible status mappings and family definitions are refused. Effect
+estimates continue to use inverse-variance meta-analysis of per-site fits.
+Weighted record histograms reconcile to a protected record total, never a
+person total. Unregistered record scales expose coarse histograms and interval
+quantiles with explicit tail-censoring flags instead of invented bounded means.
+Recurrent event-time `persons` counts distinct contributors among the same
+K-capped occurrences using a complete interval-presence vector (sensitivity 3K).
+Its static fractions are N/R .2 each, A/B/C .1 each and P .3. Pooling sums signed
+presence coordinates and applies the server's radial feasibility projection;
+coarse persons are never sums of finer person counts. Retreat toward the
+projection's event-mass anchor can add bias.
 
-Client 2.10.0 accepts both v3 contracts for releases, alone or mixed in one
-federation: the seed-only `fixed_per_release_seed_data_versioned_v1` (status
-`history_dependent = FALSE`, `persistent_state = "noise_root_only"`,
-`release_binding = "seed_data_versioned_v1"`, `service_capacity = "none"`) and
-the first-answer `fixed_per_release_snapshot_first_answer_v1`
-(`history_dependent = TRUE`,
-`persistent_state = "noise_root_and_release_bindings"`,
-`release_binding = "snapshot_first_answer_v1"`,
-`service_capacity = "public_identity_reservations_v1"`). Both report
-`privacy_call_quota = "none"`. Older v2 status remains inspectable and is
-printed as legacy. Releases from legacy sites are refused
-with an upgrade message unless the analyst explicitly sets:
+Every server older than 2.10.3 receives a plain upgrade warning. Installing
+this client does not repair an old server's inference defects. Legacy per-site
+results retain their server's contract; mixed old/new protected pooling is
+refused. Use `type = "split"` while upgrading sites. A new server clearly
+refuses typed status/release preflight from clients 2.10.2 and earlier. The
+legacy v2 opt-in `options(dsomop.dp.allow_legacy_servers = TRUE)` remains
+available for inspecting old deployments; it never enables protected/legacy
+pooling or supplies the missing server fixes.
 
-```r
-options(dsomop.dp.allow_legacy_servers = TRUE) # default FALSE
-```
+There is no lifetime privacy budget, query quota, privacy accountant or
+history-based admission. Equivalent supported views reuse protected components;
+distinct overlapping scopes and changes in data/mechanism can still support
+inference. Exact support gates and other enabled DataSHIELD methods remain
+outside any fixed-vector guarantee. Protected pooling also requires distinct
+logical source identifiers: two connections to one logical node are refused,
+and coincidentally equal answers do not establish source independence.
 
-This transition option supports federations upgrading site by site, including
-mixed v2/v3 releases. Each legacy server produces a warning: **no first-answer
-binding: an unrotated data refresh can reveal whether a released statistic
-changed; see isglobal-brge/dsOMOP#20**. Shared mechanism, provenance, public
-harmonization and payload checks still apply. Every result records each site's
-protocol and contract in `result$meta$privacy$per_site_contract`, plus
-`legacy_servers` and `mixed_contracts`, even with `type = "combine"`. Contract
-fields that differ across sites are `NULL` in the shared privacy metadata;
-consult the per-site map. The warnings are also saved in `result$meta$warnings`.
-Return the option to `FALSE` once every site has upgraded.
-
-The server derives each answer from its persistent root, the private
-bounded-statistic fingerprint and the calibrated mechanism, so repeating a
-question adds no observation. This is no full temporal transcript DP guarantee:
-distinct requests, database versions and epochs, validation failures and timing
-remain separate.
-There is no lifetime privacy budget or call counter. See `?omop_privacy` and
-`?ds.omop.dp.release` for the seven supported primitives and their reducers. Before any release, the client
-refuses a federated request through two connections that report either the same
-`noise_domain_id` or the same server-owned logical `domain`. This prevents one
-logical privacy node from being pooled twice, including through connections
-that expose different noise material.
-
-Server-side DP state belongs to the custodian. Since dsOMOP 2.10.0 it is only
-the noise root, created on first use or injected by the custodian; see the
-paired [dsOMOP README](https://github.com/isglobal-brge/dsOMOP#sticky-noise). A
-damaged root makes the server refuse DP releases with one generic error;
-dsOMOP's core functions never use DP.
+See `?omop_privacy` and `?ds.omop.dp.release` for the primitives and reducers,
+and the paired [disclosure-control contract](https://github.com/isglobal-brge/dsOMOP/blob/main/DISCLOSURE_CONTROL.md)
+for guarantees, residuals and utility costs.
 
 ## Current boundaries
 
@@ -255,11 +262,12 @@ possible relational or longitudinal estimand. In particular:
   `personRef`; absent covariate rows represent zero for roster members with no
   qualifying event;
 - the local Query Library is curated and incomplete. The dedicated privacy path
-  currently supports seven person-bounded sticky-noise primitives. Its public
-  guarantee is `sticky_person_bounded_discrete_laplace_per_release_v1`, under
-  the `fixed_per_release_snapshot_first_answer_v1` contract. Eligible inputs carry
-  authenticated semantic lineage and deterministic person-level contribution
-  bounds. The
+  supports seven person-bounded sticky-noise primitives under the current
+  `protected_release_fixed_basis_or_realised_v1` contract. Guarantees are
+  route-qualified: a calibrated fixed vector on unchanged source data before
+  exact-support admission, or realised-sticky protection without a finite joint
+  epsilon claim. Eligible inputs carry authenticated semantic lineage and
+  deterministic person-level contribution bounds. The
   pinned upstream snapshot is exhaustively classified as 129 executable bounded
   redesigns, 54 vocabulary/reference metadata questions and 18 blocked shapes;
   none authorizes literal upstream SQL.

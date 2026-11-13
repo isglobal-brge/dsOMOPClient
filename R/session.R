@@ -30,13 +30,14 @@
 #' DataSHIELD whitelist. This helper wraps them as JSON strings.
 #' The server-side .ds_arg() transparently deserializes them.
 #' In DSLite, call() handles native R objects directly, so this
-#' function only encodes lists/complex objects — scalars pass through.
+#' function encodes lists, vectors and named scalars; unnamed scalars pass through.
 #'
 #' @param x An R object to encode.
-#' @return A JSON string if x is a list, or x unchanged if scalar.
+#' @return A base64 JSON string for complex or named input; unnamed scalars unchanged.
 #' @keywords internal
 .ds_encode <- function(x) {
-  if (is.list(x) || (is.vector(x) && length(x) > 1)) {
+  if (is.list(x) || (is.atomic(x) && !is.null(names(x))) ||
+      (is.vector(x) && length(x) > 1)) {
     # jsonlite::toJSON serializes a named ATOMIC vector as a bare JSON array,
     # silently dropping its names (a named LIST keeps them as object keys).
     # This bites the execute out-mapping c(demo = "D", drugs = "X") and any
@@ -931,6 +932,15 @@ ds.omop.connect <- function(resource,
     stop("dsOMOP is not ready on ", paste(not_ready, collapse = ", "), ":\n",
          .ds_failure_detail(ping_errors, servers = not_ready), call. = FALSE)
   }
+  # Servers older than dsOMOP 2.10.3 lack its security fixes: say so plainly
+  # (once here, and in every analysis result of this session).
+  server_versions <- vapply(server_names, function(server) {
+    v <- tryCatch(as.character(ping[[server]]$version), error = function(e) "")
+    if (length(v) == 1L && !is.na(v)) v else NA_character_
+  }, character(1L))
+  for (message in .dsomop_unpatched_server_warnings(server_versions)) {
+    warning(message, call. = FALSE)
+  }
 
   remove_symbol <- function(servers, target) {
     failures <- character(0)
@@ -1093,6 +1103,7 @@ ds.omop.connect <- function(resource,
     capabilities = caps,
     harmonization = harmonization,
     server_names = server_names,
+    server_versions = server_versions,
     errors = errors
   )
   class(session) <- "omop_session"

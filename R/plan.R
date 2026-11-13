@@ -113,6 +113,22 @@ ds.omop.plan <- function() {
   value
 }
 
+# A window endpoint: an exact integer offset, or an infinite bound meaning
+# "unbounded" (A-E5) -- -Inf only as a start and Inf only as an end; a reversed
+# infinity is an error. Returns NULL for an unbounded endpoint.
+.plan_window_endpoint <- function(value, field, side = c("start", "end")) {
+  side <- match.arg(side)
+  if (is.numeric(value) && length(value) == 1L && !is.na(value) &&
+      is.infinite(value)) {
+    if ((side == "start" && value < 0) || (side == "end" && value > 0)) {
+      return(NULL)
+    }
+    stop(field, ": ", format(value), " is not an unbounded ", side,
+         " (only -Inf starts and Inf ends are unbounded).", call. = FALSE)
+  }
+  .plan_integer_scalar(value, field)
+}
+
 .plan_day_window <- function(window, field, strict = FALSE) {
   if (!is.list(window) || is.null(names(window)) ||
       any(!nzchar(names(window))) || anyDuplicated(names(window)) ||
@@ -123,12 +139,15 @@ ds.omop.plan <- function() {
   }
   result <- list()
   if (!is.null(window$start)) {
-    result$start <- .plan_integer_scalar(window$start,
-                                         paste0(field, "$start"))
+    result$start <- .plan_window_endpoint(window$start,
+                                          paste0(field, "$start"), "start")
   }
   if (!is.null(window$end)) {
-    result$end <- .plan_integer_scalar(window$end,
-                                       paste0(field, "$end"))
+    result$end <- .plan_window_endpoint(window$end,
+                                        paste0(field, "$end"), "end")
+  }
+  if (length(result) == 0L) {
+    stop(field, " is unbounded on both sides; omit it instead.", call. = FALSE)
   }
   invalid_order <- !is.null(result$start) && !is.null(result$end) &&
     (if (strict) result$start >= result$end else result$start > result$end)
@@ -661,7 +680,7 @@ ds.omop.plan.survival <- function(plan,
   start_offset <- if (is.null(tar$start_offset)) 0L else
     .plan_integer_scalar(tar$start_offset, "tar$start_offset")
   end_offset <- if (is.null(tar$end_offset)) NULL else
-    .plan_integer_scalar(tar$end_offset, "tar$end_offset")
+    .plan_window_endpoint(tar$end_offset, "tar$end_offset", "end")
   if (!is.null(end_offset) && start_offset > end_offset) {
     stop("tar$start_offset must not be after tar$end_offset.", call. = FALSE)
   }
@@ -1652,6 +1671,7 @@ omop.date_handling <- function(mode = "remove", reference = "index",
 #' @export
 ds.omop.plan.validate <- function(plan, symbol = "omop",
                                   conns = NULL) {
+  if (.v2_is_plan_v2(plan)) return(.plan_v2_preview(plan, symbol, conns))
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   plan <- .prepare_plan_for_federation(plan, symbol, conns)
@@ -1716,6 +1736,7 @@ ds.omop.plan.validate <- function(plan, symbol = "omop",
 #' @export
 ds.omop.plan.preview <- function(plan, symbol = "omop",
                                  conns = NULL) {
+  if (.v2_is_plan_v2(plan)) return(.plan_v2_preview(plan, symbol, conns))
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   plan <- .prepare_plan_for_federation(plan, symbol, conns)
@@ -1763,24 +1784,19 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' require a separately reviewed broker. They are not client download URLs and
 #' do not by themselves establish compatibility with a particular external
 #' package.
-#' Cleanup is all-or-none for DataSHIELD-visible symbols, not a distributed
-#' filesystem transaction: after a cross-node staged failure, private files may
-#' remain registered with a successful server handle until its cleanup or
-#' disconnect path runs.
+#' Publication status is read before the temporary execution symbol is removed.
+#' The server reports the actual output inventory and allocates fresh names for
+#' occupied destinations. A technical or transport failure revokes and removes
+#' this execution's symbols and staged files across all participating sites.
 #'
 #' With two or more servers, execution first establishes (or revalidates) a
-#' strict schema/semantic harmonization contract. This binds the plan to the
-#' exact participating nodes, required OMOP columns and compatible type
-#' families; vocabulary-dependent plans additionally require one reported
-#' vocabulary version. All expected output components must land on every node.
-#' A node failure, incomplete composite output, or factor-harmonization failure
-#' removes the exact symbols owned by the attempted execution and fails closed.
-#' Every requested output family must be absent on every server before execution;
-#' existing workspace objects are never deleted or overwritten speculatively.
-#' Choose fresh \code{out} names (or explicitly remove obsolete objects through
-#' the ordinary DataSHIELD workspace API) when rerunning a plan.
+#' strict schema/semantic harmonization contract. Concept factors are harmonized
+#' only over the retained sites and their published components.
 #'
-#' @param plan An \code{omop_plan} object.
+#' @param plan An \code{omop_plan} object, or a language-2 plan
+#'   (\code{omop_plan_v2}, from \code{\link{recipe_to_plan}}). A v2 plan needs
+#'   every server to advertise recipe language 2 and every operation it uses;
+#'   it is sent losslessly and published through the same status protocol.
 #' @param out Optional output-to-symbol mapping. Three forms are accepted:
 #'   \itemize{
 #'     \item \strong{Missing or \code{NULL} (default):} symbol names are
@@ -1805,10 +1821,23 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 #' @param output_mode Character; \code{"memory"} (default, backwards
 #'   compatible) or \code{"staged"} (writes server-local files and returns
 #'   descriptors). Arrow provides Parquet; without it the server uses CSV.
+#' @param on_small_site Character; \code{"error"} (default) or \code{"skip"}.
+#'   Only insufficient final person support is skippable. Skip requests an
+#'   all-or-none server commit: a rejected site publishes nothing and returns
+#'   \code{NULL}. With the default, a non-strict server may publish complete
+#'   passing output families and warn about rejected families. A strict refusal
+#'   rolls back the federation. Other failures always roll back and error.
+#'   These policies require the publication protocol on every site. If any
+#'   site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere with one
+#'   warning, and \code{on_small_site} does not change that call; a language-2
+#'   plan is refused before assignment.
 #' @details Loading tables never depends on differential privacy. After a
 #'   memory execution, concept columns are converted to factors harmonized
 #'   across servers (see \code{ds.omop.plan.options}).
-#' @return Invisible; the resolved \code{out} symbol mapping (for chaining).
+#' @return Invisibly, the resolved \code{out} symbol mapping for a complete
+#'   ordinary execution. When sites publish different outputs or fresh names,
+#'   a named per-site list of actual publication inventories; skipped sites
+#'   have \code{NULL} entries.
 #'   The produced symbols are also recorded on the session so subsequent
 #'   manipulation wrappers (\code{\link{ds.omop.merge}},
 #'   \code{\link{ds.omop.filter}}, \code{\link{ds.omop.select}},
@@ -1844,9 +1873,10 @@ ds.omop.plan.preview <- function(plan, symbol = "omop",
 ds.omop.plan.execute <- function(plan, out = NULL,
                                  symbol = "omop",
                                  conns = NULL,
-                                 output_mode = "memory") {
+                                 output_mode = "memory",
+                                 on_small_site = c("error", "skip")) {
   .plan_execute_impl(plan, out = out, symbol = symbol, conns = conns,
-                     output_mode = output_mode)
+                     output_mode = output_mode, on_small_site = on_small_site)
 }
 
 # Shared plan executor. Loading tables uses the core method
@@ -1856,8 +1886,14 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 .plan_execute_impl <- function(plan, out = NULL, symbol = "omop", conns = NULL,
                                output_mode = "memory",
                                server_method = "omopPlanExecuteDS",
-                               harmonize_factors = TRUE) {
+                               harmonize_factors = TRUE,
+                               on_small_site = c("error", "skip")) {
+  on_small_site <- match.arg(on_small_site)
   output_mode <- match.arg(output_mode, c("memory", "staged"))
+  # A language-2 plan (recipe_to_plan(), version 2) runs through the same
+  # publication protocol as a v1 plan; only its preparation and its lossless
+  # wire encoding differ.
+  v2 <- .v2_is_plan_v2(plan)
   if (identical(output_mode, "staged")) {
     # Standard concept identifiers are the stable OHDSI interchange encoding
     # and allow the server to stream fact tables without per-chunk vocabulary
@@ -1868,43 +1904,95 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       # federation signature. Force the normal preparation path to rebuild the
       # contract for the staged representation instead of rejecting it as a
       # post-harmonization mutation or, worse, reusing stale schema evidence.
-      plan$harmonization <- NULL
+      if (v2) {
+        attr(plan, "harmonization") <- NULL
+        .v2_assert_schema(plan)
+      } else {
+        plan$harmonization <- NULL
+      }
     }
   }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
-  plan <- .prepare_plan_for_federation(plan, symbol, conns)
-  contract <- .session_harmonization_for_connections(session, conns)
-  if (!is.null(contract)) {
-    plan <- .apply_plan_harmonization(plan, contract)
-    .validate_plan_harmonization(plan, contract)
+  # B1: which protocol every participating site supports, before anything is
+  # assigned. The publication protocol needs it on every site; otherwise a v2
+  # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
+  harmonizes <- isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
+    isTRUE(plan$options$factor_concepts %||% TRUE) &&
+    !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
+  route <- .plan_protocol_route(conns, server_method, harmonizes)
+  if (!route$protocol) {
+    if (v2) {
+      v1_refusal <- attr(plan, "v1_refusal")
+      stop(.plan_protocol_refusal(route, v1_refusal = v1_refusal), call. = FALSE)
+    }
+    warning(.plan_legacy_warning(route), call. = FALSE)
+    return(.plan_execute_legacy(plan, out, symbol, session, conns, output_mode,
+                                server_method, harmonize_factors))
   }
+  if (v2) {
+    # Every server must speak the recipe language and every operation the
+    # plan needs: a construct is never dropped to fit an older server
+    # (design 5). A multi-server execution binds the plan's semantic digest,
+    # the participating servers and their schemas (section 4.4); the
+    # contract travels as a plan attribute, never on the wire.
+    roots <- if (is.null(plan$publish)) names(plan$outputs) else
+      as.character(unlist(plan$publish))
+    if (length(roots) == 0L) {
+      # An explicitly empty publish list releases nothing: the execution
+      # still runs (capabilities, digest, status), with zero roots.
+      if (length(out)) {
+        stop("The plan publishes no outputs (publish = []); out must be empty.",
+             call. = FALSE)
+      }
+      out <- stats::setNames(character(0), character(0))
+    } else {
+      out <- .resolve_plan_out(
+        list(outputs = plan$outputs[roots]), out,
+        reserved_symbols = c(symbol, session$res_symbol)
+      )
+    }
+    # The roots sent are exactly the requested ones: a partial out mapping
+    # leaves the other outputs private (B1), so publish names the mapped roots
+    # before the capability check and the federation contract bind the plan.
+    if (is.null(plan$publish) || !setequal(names(out), roots)) {
+      plan$publish <- .v2_array(roots[roots %in% names(out)])
+      attr(plan, "harmonization") <- NULL
+      .v2_assert_schema(plan)
+    }
+    .v2_assert_supported(plan, session, names(conns))
+    plan <- .plan_v2_federation(plan, symbol, conns)
+  } else {
+    plan <- .prepare_plan_for_federation(plan, symbol, conns)
+    contract <- .session_harmonization_for_connections(session, conns)
+    if (!is.null(contract)) {
+      plan <- .apply_plan_harmonization(plan, contract)
+      .validate_plan_harmonization(plan, contract)
+    }
 
-  # Resolve the out mapping: NULL -> auto-derive D_<name> for every output;
-  # a bare unnamed string -> bind the single output; a named vector -> as-is.
-  out <- .resolve_plan_out(
-    plan, out,
-    reserved_symbols = c(symbol, session$res_symbol)
-  )
-  owned <- .plan_expected_output_symbols(plan, out)
-  cleanup_family <- .plan_output_symbol_families(out)
-  reserved_targets <- unique(unlist(cleanup_family, use.names = FALSE))
+    # Resolve the out mapping: NULL -> auto-derive D_<name> for every output;
+    # a bare unnamed string -> bind the single output; a named vector -> as-is.
+    out <- .resolve_plan_out(
+      plan, out,
+      reserved_symbols = c(symbol, session$res_symbol)
+    )
+  }
+  reserved_targets <- unname(out)
 
   # Recipe-level scope: a cohort reference and/or omop.table symbol(s) the server
   # folds into ONE cohort and intersects into every population. Validate symbol
   # collisions locally before asking any server for its workspace inventory.
-  scope_args <- NULL
-  combine <- "union"
-  if (!is.null(plan$scope) &&
-      (!is.null(plan$scope$cohort) || length(plan$scope$tables) > 0)) {
-    scope_args <- .analysis_scope_expr(cohort = plan$scope$cohort,
-                                       tables = plan$scope$tables)
-    combine <- plan$scope$combine %||% "union"
-  }
-
   scope_tables <- as.character(unlist(
     plan$scope$tables %||% character(0), use.names = FALSE
   ))
+  scope_args <- NULL
+  combine <- "union"
+  if (!is.null(plan$scope) &&
+      (!is.null(plan$scope$cohort) || length(scope_tables) > 0)) {
+    scope_args <- .analysis_scope_expr(cohort = plan$scope$cohort,
+                                       tables = if (length(scope_tables)) scope_tables)
+    combine <- plan$scope$combine %||% "union"
+  }
   collisions <- intersect(reserved_targets, scope_tables)
   if (length(collisions) > 0L) {
     stop("Output symbols collide with execution-scope input symbol(s): ",
@@ -1912,23 +2000,11 @@ ds.omop.plan.execute <- function(plan, out = NULL,
          call. = FALSE)
   }
 
-  # A distributed overwrite cannot be rolled back if one node fails after old
-  # objects have been removed. Require fresh destinations instead, including
-  # every reserved composite sibling, and prove absence federation-wide before
-  # the server is allowed to create anything.
+  # Only the temporary status symbol is reserved client-side. The publisher
+  # allocates every destination against the actual server workspace inventory.
   preflight_inventory <- .plan_symbol_inventory(
     conns, "plan output reservation"
   )
-  occupied <- unlist(lapply(names(preflight_inventory), function(server) {
-    found <- intersect(reserved_targets, preflight_inventory[[server]])
-    if (length(found) == 0L) character(0) else paste0(server, ":", found)
-  }), use.names = FALSE)
-  if (length(occupied) > 0L) {
-    stop("Plan output destinations must be fresh on every server; occupied: ",
-         paste(occupied, collapse = ", "),
-         ". Choose different out names or explicitly remove obsolete objects.",
-         call. = FALSE)
-  }
 
   # Single assign call: server assigns each output directly into session
   exec_symbol <- NULL
@@ -1948,8 +2024,16 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 
   exec_args <- list(
     as.name(server_method),
-    session$res_symbol, .ds_encode(plan), .ds_encode(out),
-    output_mode)
+    session$res_symbol,
+    # v2 plans keep every digit, explicit nulls and empty objects, so the
+    # server parses exactly the plan whose semantic digest was computed.
+    if (v2) .ds_encode_lossless(plan) else .ds_encode(plan),
+    # zero publication roots (publish = []): an empty JSON object, never a
+    # bare character(0) that a DataSHIELD expression parser would refuse
+    if (length(out)) .ds_encode(out) else .ds_encode(stats::setNames(list(), character(0))),
+    output_mode, commit_policy = if (on_small_site == "skip") {
+      "all_or_none"
+    } else "server")
   if (!is.null(scope_args)) {
     # Splice the closed named scope arguments. Cohorts remain literal `scope`;
     # tables are bare `scope_table_<n>` symbols, never nested list()/c() calls.
@@ -1974,56 +2058,227 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     NULL
   }, error = identity)
 
-  # exec_symbol holds TRUE (return value); clean up
-  tryCatch(
-    DSI::datashield.rm(conns, exec_symbol),
-    error = function(e) NULL
-  )
-
-  failed_servers <- unique(c(
-    names(assign_errors), setdiff(expected_servers, assign_success)
-  ))
-  if (!is.null(assign_condition) || length(failed_servers) > 0L) {
-    # Report each server's own reason (DSI keeps them after a failed call).
-    reasons <- if (length(assign_errors) > 0L) as.list(assign_errors) else
-      tryCatch(DSI::datashield.errors(), error = function(e) NULL)
-    reasons <- reasons[vapply(reasons, function(x) {
-      is.character(x) && length(x) >= 1L && nzchar(x[[1L]])
-    }, logical(1))]
-    .plan_remove_output_symbols(conns, cleanup_family, verify = TRUE)
-    detail <- if (length(reasons) > 0L) {
-      paste(names(reasons), vapply(reasons, `[[`, "", 1L), sep = ": ",
-            collapse = "; ")
-    } else if (!is.null(assign_condition)) {
-      conditionMessage(assign_condition)
-    } else {
-      paste(failed_servers, collapse = ", ")
+  # Keep the authenticated server status until verification and harmonization
+  # finish: it is also the rollback capability if transport fails at any site.
+  statuses <- NULL
+  result <- tryCatch({
+    failed_servers <- unique(c(
+      names(assign_errors), setdiff(expected_servers, assign_success)
+    ))
+    if (!is.null(assign_condition) || length(failed_servers) > 0L) {
+      reasons <- if (length(assign_errors)) {
+        paste(names(assign_errors), assign_errors, sep = ": ", collapse = "; ")
+      } else if (!is.null(assign_condition)) {
+        conditionMessage(assign_condition)
+      } else paste(failed_servers, collapse = ", ")
+      stop("Plan execution failed or was incomplete: ", reasons, ".",
+           call. = FALSE)
     }
-    stop("Plan execution failed or was incomplete; freshly assigned outputs ",
-         "were removed. Affected server(s): ", detail, ".", call. = FALSE)
-  }
+    statuses <- .plan_read_status(conns, exec_symbol, plan, out)
+    rejected <- unlist(lapply(names(statuses), function(server) {
+      x <- statuses[[server]]$rejected
+      if (!length(x)) return(character(0))
+      # A-18: the validated reason, when present, names the refused construct
+      paste0(server, ":", names(x), " [",
+             vapply(x, `[[`, "", "code"), "]",
+             vapply(x, function(r) {
+               if (is.null(r$reason)) "" else paste0(" (", r$reason, ")")
+             }, ""))
+    }), use.names = FALSE)
+    codes <- unlist(lapply(statuses, function(x) {
+      vapply(x$rejected, `[[`, "", "code")
+    }), use.names = FALSE)
+    refused <- vapply(statuses, function(x) x$status == "refused", logical(1))
+    partial <- vapply(statuses, function(x) x$status == "partial", logical(1))
+    if (any(codes != "insufficient_support") ||
+        (on_small_site == "error" && any(refused)) ||
+        (on_small_site == "skip" && any(partial))) {
+      stop("Plan publication refused: ", paste(rejected, collapse = "; "),
+           ".", call. = FALSE)
+    }
+    inventories <- lapply(statuses, function(x) {
+      if (x$status == "refused") NULL else x$published
+    })
+    .plan_verify_publication(conns, inventories)
+    if (isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
+        isTRUE(plan$options$factor_concepts %||% TRUE)) {
+      .harmonizePublicationFactors(inventories, conns)
+    }
+    if (any(partial)) {
+      warning("Plan publication is partial: ", paste(rejected, collapse = "; "),
+              ".", call. = FALSE)
+    }
+    # Preserve the v1 return for an ordinary successful run. When publication
+    # differs by site, expose the actual inventory and retain NULL skip entries.
+    standard <- !any(refused | partial) && all(vapply(inventories, function(x) {
+      identical(as.character(names(x)), as.character(names(out))) &&
+        all(vapply(names(x), function(root) {
+        symbols <- .plan_inventory_symbols(x[root])[[root]]
+        components <- names(x[[root]])
+        aliases <- c(risk_sets = "riskSets", transition_ref = "transitionRef")
+        legacy <- components %in% names(aliases)
+        components[legacy] <- aliases[components[legacy]]
+        expected <- if (length(symbols) == 1L && symbols[[1L]] == out[[root]]) {
+          out[[root]]
+        } else paste0(out[[root]], ".", components)
+        length(symbols) > 0L && identical(unname(symbols), unname(expected))
+      }, logical(1)))
+    }, logical(1)))
+    .plan_remove_status(conns, exec_symbol)
+    owned <- lapply(inventories, .plan_inventory_symbols)
+    .record_session_outputs(symbol, unlist(owned, recursive = FALSE))
+    if (standard) out else inventories
+  }, error = function(e) {
+    cleanup <- tryCatch({
+      .plan_revoke_execution(conns, exec_symbol)
+      .plan_remove_status(conns, exec_symbol)
+      NULL
+    }, error = identity)
+    if (!is.null(cleanup)) {
+      stop(conditionMessage(e), " Cleanup failed: ", conditionMessage(cleanup),
+           call. = FALSE)
+    }
+    stop(conditionMessage(e), " Execution-owned artifacts were revoked and removed.",
+         call. = FALSE)
+  })
+  invisible(result)
+}
 
-  missing <- .plan_missing_output_symbols(conns, owned)
-  if (length(missing) > 0L) {
-    .plan_remove_output_symbols(conns, cleanup_family, verify = TRUE)
-    stop("Plan execution did not materialize every requested output ",
-         "component; freshly assigned outputs were removed: ",
+# Fixed-schema validation is repeated at the transport boundary. This is not a
+# trust mechanism: the server accepts only its authenticated status object.
+.plan_validate_status <- function(x, roots) {
+  invalid <- function() stop("Invalid plan publication status.", call. = FALSE)
+  named_list <- function(x) {
+    is.list(x) && (length(x) == 0L || (!is.null(names(x)) &&
+      !anyNA(names(x)) && all(nzchar(names(x))) && !anyDuplicated(names(x))))
+  }
+  if (!is.list(x) || !setequal(names(x), c("status", "published", "rejected",
+                                         "unavailable")) || length(x) != 4L ||
+      !is.character(x$status) || length(x$status) != 1L ||
+      is.na(x$status) || !x$status %in% c("ok", "partial", "refused") ||
+      !named_list(x$published) || !named_list(x$rejected) ||
+      !is.character(x$unavailable) || anyNA(x$unavailable) ||
+      anyDuplicated(x$unavailable)) invalid()
+  reported <- c(names(x$published), names(x$rejected), x$unavailable)
+  if (length(setdiff(reported, roots)) ||
+      length(intersect(names(x$published), names(x$rejected)))) invalid()
+  if (x$status != "refused" && !setequal(reported, roots)) invalid()
+  if ((x$status == "ok" && length(x$rejected)) ||
+      (x$status == "refused" && length(x$published)) ||
+      (x$status != "ok" && !length(x$rejected))) invalid()
+  codes <- c("insufficient_support", "coverage_ambiguous", "join_cardinality",
+             "match_candidates_exceeded", "dialect_unsupported",
+             "unavailable_table", "validation_error")
+  # A-18: a rejected entry may carry a third closed field `reason`, only with
+  # code validation_error and one constant of the closed vocabulary (the
+  # section 11 adapter refusals; A-20 (j): the interval helpers' row caps)
+  reasons <- c("adapter_person_mismatch", "cost_currency_mixed",
+               "stockpile_row_cap", "reducer_row_cap")
+  for (rejection in x$rejected) {
+    if (!is.list(rejection) || !length(rejection) %in% 2:3 ||
+        !setequal(names(rejection), c("code", "message", "reason")[seq_along(rejection)]) ||
+        !is.character(rejection$code) || length(rejection$code) != 1L ||
+        is.na(rejection$code) || !rejection$code %in% codes ||
+        !is.character(rejection$message) || length(rejection$message) != 1L ||
+        is.na(rejection$message)) invalid()
+    if (length(rejection) == 3L && (!identical(rejection$code, "validation_error") ||
+        !is.character(rejection$reason) || length(rejection$reason) != 1L ||
+        is.na(rejection$reason) || !rejection$reason %in% reasons)) invalid()
+  }
+  symbols <- character(0)
+  for (root in x$published) {
+    if (!named_list(root) || !length(root)) invalid()
+    for (component in root) {
+      if (!is.list(component) || length(component) != 3L ||
+          !setequal(names(component), c("symbol", "grain", "n_columns")) ||
+          !is.character(component$symbol) || length(component$symbol) != 1L ||
+          is.na(component$symbol) ||
+          !grepl("^[A-Za-z][A-Za-z0-9._]*$", component$symbol) ||
+          !is.character(component$grain) || length(component$grain) != 1L ||
+          is.na(component$grain) ||
+          !component$grain %in% c("person", "episode", "none") ||
+          !is.numeric(component$n_columns) || length(component$n_columns) != 1L ||
+          is.na(component$n_columns) || !is.finite(component$n_columns) ||
+          component$n_columns < 0 || component$n_columns %% 1 != 0) invalid()
+      symbols <- c(symbols, component$symbol)
+    }
+  }
+  if (anyDuplicated(symbols)) invalid()
+  invisible(x)
+}
+
+.plan_read_status <- function(conns, exec_symbol, plan, out) {
+  statuses <- DSI::datashield.aggregate(
+    conns, call("omopPlanStatusDS", exec_symbol)
+  )
+  if (!is.list(statuses) || !setequal(names(statuses), names(conns)) ||
+      anyDuplicated(names(statuses))) {
+    stop("Plan status retrieval was incomplete.", call. = FALSE)
+  }
+  # B1: the publication roots are the plan's publish list, else the requested
+  # outputs (names(out)); an explicit empty publish list releases nothing.
+  roots <- if (is.null(plan$publish)) names(out) else as.character(unlist(plan$publish))
+  for (server in names(conns)) .plan_validate_status(statuses[[server]], roots)
+  statuses[names(conns)]
+}
+
+.plan_inventory_symbols <- function(inventory) {
+  lapply(inventory, function(root) vapply(root, `[[`, "", "symbol"))
+}
+
+.plan_verify_publication <- function(conns, inventories) {
+  existing <- .plan_symbol_inventory(conns, "publication verification")
+  missing <- unlist(lapply(names(conns), function(server) {
+    symbols <- unlist(.plan_inventory_symbols(inventories[[server]]),
+                      use.names = FALSE)
+    absent <- setdiff(symbols, existing[[server]])
+    if (length(absent)) paste0(server, ":", absent) else character(0)
+  }), use.names = FALSE)
+  if (length(missing)) {
+    stop("Plan execution did not materialize every published output component: ",
          paste(missing, collapse = ", "), ".", call. = FALSE)
   }
+  invisible(NULL)
+}
 
-  # Coordination layer: harmonize concept-id columns into factors with one
-  # shared level ordering across the federation. Only meaningful in memory
-  # mode (staged outputs are Parquet descriptors, not in-R data frames).
-  if (isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
-        isTRUE(plan$options$factor_concepts %||% TRUE)) {
-    .harmonizeConceptFactors(owned, conns)
+.plan_revoke_execution <- function(conns, exec_symbol) {
+  failed <- character(0)
+  for (server in names(conns)) {
+    result <- tryCatch(DSI::datashield.aggregate(
+      conns[server], call("omopStagedRevokeDS", exec_symbol)
+    ), error = function(e) NULL)
+    if (!is.list(result) || !identical(result[[server]], TRUE)) {
+      failed <- c(failed, server)
+    }
   }
+  if (length(failed)) {
+    stop("Execution revocation could not be proven on: ",
+         paste(failed, collapse = ", "), ".", call. = FALSE)
+  }
+  invisible(NULL)
+}
 
-  # Record the produced symbols on the session so manipulation wrappers can
-  # default to the most recently created one (no need to re-type symbols).
-  .record_session_outputs(symbol, owned)
+.plan_remove_status <- function(conns, exec_symbol) {
+  for (server in names(conns)) DSI::datashield.rm(conns[server], exec_symbol)
+  remaining <- .plan_symbol_inventory(conns, "execution status cleanup")
+  if (any(vapply(remaining, function(x) exec_symbol %in% x, logical(1)))) {
+    stop("Execution status cleanup could not be proven.", call. = FALSE)
+  }
+  invisible(NULL)
+}
 
-  invisible(out)
+.harmonizePublicationFactors <- function(inventories, conns) {
+  roots <- unique(unlist(lapply(inventories, names), use.names = FALSE))
+  for (root in roots) {
+    components <- unique(unlist(lapply(inventories, function(x) names(x[[root]])),
+                                use.names = FALSE))
+    for (component in components) {
+      symbols <- lapply(inventories, function(x) x[[root]][[component]]$symbol)
+      symbols <- unlist(symbols, use.names = TRUE)
+      if (length(symbols)) .harmonizeOneSymbol(symbols, conns[names(symbols)])
+    }
+  }
+  invisible(NULL)
 }
 
 #' Resolve the out argument of ds.omop.plan.execute into a named mapping
@@ -2099,7 +2354,6 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     stop("Output symbols must be unique and cannot target OMOP resources or ",
          "reserved handle names.", call. = FALSE)
   }
-  .plan_output_symbol_families(out)
   out
 }
 
@@ -2381,19 +2635,30 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   aggregate_success <- character(0)
   aggregate_errors <- character(0)
   aggregate_condition <- NULL
-  per_server <- tryCatch(DSI::datashield.aggregate(
-    conns,
-    call("omopFactorLevelsDS", as.symbol(sym)),
-    success = function(server, value) {
-      aggregate_success <<- c(aggregate_success, server)
-    },
-    error = function(server, message) {
-      aggregate_errors[[server]] <<- message
-    }
-  ), error = function(e) {
-    aggregate_condition <<- e
-    list()
-  })
+  # The same logical component may have a different fresh symbol on each site.
+  if (length(sym) == 1L && is.null(names(sym))) {
+    sym <- stats::setNames(rep(sym, length(conns)), names(conns))
+  }
+  if (!is.character(sym) || !setequal(names(sym), expected_servers)) {
+    stop("Invalid per-site factor component inventory.", call. = FALSE)
+  }
+  per_server <- list()
+  for (target in unique(unname(sym))) {
+    sites <- names(sym)[sym == target]
+    values <- tryCatch(DSI::datashield.aggregate(
+      conns[sites], call("omopFactorLevelsDS", as.symbol(target)),
+      success = function(server, value) {
+        aggregate_success <<- c(aggregate_success, server)
+      },
+      error = function(server, message) {
+        aggregate_errors[[server]] <<- message
+      }
+    ), error = function(e) {
+      aggregate_condition <<- e
+      list()
+    })
+    per_server <- c(per_server, values)
+  }
   returned <- intersect(expected_servers, names(per_server))
   missing_results <- setdiff(expected_servers, names(per_server))
   null_results <- returned[vapply(per_server[returned], is.null, logical(1))]
@@ -2426,17 +2691,19 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   }
   assign_success <- character(0)
   assign_errors <- character(0)
-  DSI::datashield.assign.expr(
-    conns,
-    symbol = sym,
-    expr = call("omopAsFactorColumnsDS", as.symbol(sym), .ds_encode(spec)),
-    success = function(server) {
-      assign_success <<- c(assign_success, server)
-    },
-    error = function(server, message) {
-      assign_errors[[server]] <<- message
-    }
-  )
+  for (target in unique(unname(sym))) {
+    sites <- names(sym)[sym == target]
+    DSI::datashield.assign.expr(
+      conns[sites], symbol = target,
+      expr = call("omopAsFactorColumnsDS", as.symbol(target), .ds_encode(spec)),
+      success = function(server) {
+        assign_success <<- c(assign_success, server)
+      },
+      error = function(server, message) {
+        assign_errors[[server]] <<- message
+      }
+    )
+  }
   failed <- unique(c(names(assign_errors),
                      setdiff(expected_servers, assign_success)))
   if (length(failed) > 0L) {
@@ -3829,7 +4096,8 @@ ds.omop.plan.harmonize <- function(plan,
 #' \code{\link{ds.omop.plan.load}} executes identically to the original
 #' (the round-trip is lossless with respect to what is sent to the server).
 #'
-#' @param plan An \code{omop_plan} object.
+#' @param plan An \code{omop_plan} object, or a language-2 plan
+#'   (\code{omop_plan_v2}, saved as its wire plan).
 #' @param file Character; destination path ending in \code{.json},
 #'   \code{.yml}, or \code{.yaml}.
 #' @param format Character or \code{NULL}; optional explicit format
@@ -3848,22 +4116,25 @@ ds.omop.plan.harmonize <- function(plan,
 #' @seealso \code{\link{ds.omop.plan.load}}, \code{\link{ds.omop.plan.execute}}
 #' @export
 ds.omop.plan.save <- function(plan, file, format = NULL) {
-  if (!inherits(plan, "omop_plan"))
+  v2 <- .v2_is_plan_v2(plan)
+  if (!inherits(plan, "omop_plan") && !v2)
     stop("plan must be an omop_plan object", call. = FALSE)
   if (missing(file) || length(file) != 1L || !nzchar(file)) {
     stop("file must be a single non-empty path.", call. = FALSE)
   }
   fmt <- .plan_file_format(file, format)
-  plain <- .plan_plain(plan)
+  # A v2 plan is saved as its wire plan (plan-v2.json), unchanged.
+  plain <- if (v2) .v2_plain(plan) else .plan_plain(plan)
   if (fmt == "json") {
+    # digits = NA: numbers keep their full precision (lossless round-trip).
     json <- jsonlite::toJSON(plain, auto_unbox = TRUE, pretty = TRUE,
-                             null = "null")
+                             null = "null", digits = NA)
     writeLines(as.character(json), file)
   } else {
     if (!requireNamespace("yaml", quietly = TRUE))
       stop("Package 'yaml' is required for YAML plans. Install it with ",
            "install.packages(\"yaml\").", call. = FALSE)
-    writeLines(yaml::as.yaml(plain), file)
+    writeLines(yaml::as.yaml(plain, precision = 15L), file)
   }
   invisible(file)
 }
@@ -3905,7 +4176,32 @@ ds.omop.plan.load <- function(file) {
     text <- paste(readLines(file, warn = FALSE), collapse = "\n")
     data <- .yaml_load_safe(text)
   }
+  if (identical(suppressWarnings(as.integer(data$version %||% NA)), 2L) &&
+      is.numeric(data$version)) {
+    if (fmt == "yaml") data <- .yaml_load_safe(text, sequences_as_lists = TRUE)
+    return(.plan_v2_from_plain(data))
+  }
   .plan_from_plain(data)
+}
+
+# A saved v2 wire plan, validated against plan-v2.json on load.
+.plan_v2_from_plain <- function(data) {
+  fix_objects <- function(x, key = NULL) {
+    if (!is.list(x)) return(x)
+    if (length(x) == 0L && !is.null(key) &&
+        key %in% c("convert", "tars", "anchors", "relations", "outcomes", "exposures",
+                   "carry_forward", "partition", "options", "concept_sets", "events",
+                   "intervals", "populations", "variables", "age")) {
+      return(.v2_empty_object())
+    }
+    nms <- names(x)
+    out <- lapply(seq_along(x), function(i) fix_objects(x[[i]], if (!is.null(nms)) nms[[i]]))
+    names(out) <- nms
+    out
+  }
+  plan <- fix_objects(data)
+  .v2_assert_schema(plan)
+  structure(plan, class = c("omop_plan_v2", "list"))
 }
 
 #' Print method for extraction plans

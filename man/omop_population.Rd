@@ -14,7 +14,10 @@ omop_population(
   union = NULL,
   intersect = NULL,
   setdiff = NULL,
-  index_event = NULL
+  index_event = NULL,
+  index = NULL,
+  match = NULL,
+  coverage = NULL
 )
 }
 \arguments{
@@ -46,6 +49,17 @@ exclusive with \code{filters} / \code{cohort_definition_id}).}
 \item{index_event}{An \code{omop_index_event} or \code{NULL}.  When present,
 population filters are evaluated for each retained event episode and the
 event's start/end dates are preserved.}
+
+\item{index}{(2.10.3) An \code{\link{omop_index}}: an indexed population
+whose episodes are the selected index events; \code{filters} may then
+hold language-2 criteria (\code{\link{omop_has}}, ...), evaluated per
+episode.}
+
+\item{match}{(2.10.3) An \code{\link{omop_match}}: a matched / nested
+case-control population.}
+
+\item{coverage}{(2.10.3) An \code{\link{omop_coverage}} observation policy
+(default for indexed populations: unique/drop/drop).}
 }
 \value{
 An \code{omop_population} object. A set-op population carries a
@@ -74,6 +88,12 @@ A population is one of two kinds, which are mutually exclusive:
     algebra (\code{\link{ds.omop.cohort.combine}}'s \code{.cohortCombine}).
     \code{setdiff} keeps persons in the first member and not in the rest.
 }
+
+\code{parent_id} restricts membership from 2.10.3: a child without
+  its own index inherits the parent's episodes before its criteria are
+  evaluated; a child with its own index keeps its episodes for the parent's
+  persons. Before 2.10.3 it was recorded but not compiled. A recipe with a
+  \code{parent_id} is refused on servers that cannot apply it.
 }
 \examples{
 \dontrun{

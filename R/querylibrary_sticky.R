@@ -365,8 +365,8 @@ omop_querylibrary_sticky <- function(
 
   if (!is.null(preparation)) {
     if (inherits(preparation, "omop_recipe")) {
-      plan <- recipe_to_plan(preparation)
-    } else if (inherits(preparation, "omop_plan")) {
+      plan <- .recipe_plan_auto(preparation)
+    } else if (inherits(preparation, c("omop_plan", "omop_plan_v2"))) {
       plan <- preparation
     } else {
       stop("preparation must be an omop_recipe or omop_plan.",
@@ -729,23 +729,38 @@ ds.omop.querylibrary.sticky.release <- function(
            automatic, "\")."), call. = FALSE)
   }
   plan <- if (inherits(preparation, "omop_recipe")) {
-    recipe_to_plan(preparation)
+    .recipe_plan_auto(preparation)
   } else preparation
   if (!is.list(plan$outputs) || length(plan$outputs) != 1L) {
     stop("The redesign preparation must have exactly one output.",
          call. = FALSE)
   }
   temporary <- .generate_symbol("dsOdp")
-  ds.omop.dp.prepare(
+  published <- ds.omop.dp.prepare(
     preparation, out = stats::setNames(temporary, names(plan$outputs)),
     symbol = symbol, conns = datasources
   )
-  temporary
+  if (is.character(published) && length(published) == 1L) {
+    return(unname(published[[1L]]))
+  }
+  # Fresh destination allocation can differ across sites. A DP release accepts
+  # one shared input symbol, so inspect the returned inventory before releasing.
+  owned <- lapply(published, function(x) {
+    unlist(.plan_inventory_symbols(x), use.names = FALSE)
+  })
+  if (setequal(names(owned), names(datasources)) &&
+      all(lengths(owned) == 1L) && length(unique(unlist(owned))) == 1L) {
+    return(unname(owned[[1L]][[1L]]))
+  }
+  for (site in names(owned)) {
+    .plan_remove_output_symbols(datasources[site], list(prepared = owned[[site]]),
+                                verify = TRUE)
+  }
+  stop("Sticky preparation did not publish one common input symbol across sites.",
+       call. = FALSE)
 }
 
 .querylibrary_sticky_remove <- function(datasources, symbol) {
-  .plan_remove_output_symbols(
-    datasources, .plan_output_symbol_families(c(prepared = symbol))
-  )
+  .plan_remove_output_symbols(datasources, list(prepared = symbol))
   invisible(NULL)
 }

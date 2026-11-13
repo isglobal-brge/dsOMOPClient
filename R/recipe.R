@@ -133,6 +133,17 @@
 #' @param unit Character or \code{NULL}; \code{"day"} (default for
 #'   \code{time_since}) or \code{"month"}. Months are complete calendar months,
 #'   not fixed 30-day intervals.
+#' @param event (2.10.3) An \code{\link{omop_event}} or \code{\link{omop_era}}
+#'   (or a registry name): the language-2 spelling of the source. Give either
+#'   \code{table}/\code{format} or \code{event}/\code{reducer}, never both.
+#' @param reducer (2.10.3) An \code{\link{omop_reduce}} reducer.
+#' @param where (2.10.3) A row predicate from \code{\link{omop_where}} that
+#'   narrows this variable's rows.
+#' @param visit (2.10.3) \code{NULL}, \code{list(type = <visit_concept_ids>)} or
+#'   \code{"index"}; \code{visit_filter} is kept as its legacy alias (giving
+#'   both is an error).
+#' @param broadcast (2.10.3) Logical; allow this reducer column in a
+#'   \code{long} output (broadcast per episode).
 #' @return An \code{omop_variable} object (a named list with class
 #'   \code{"omop_variable"}).
 #' @examples
@@ -146,11 +157,16 @@
 #'   ),
 #'   outputs = omop_output(type = "wide")
 #' )
+#' # Language 2: an event and a reducer
+#' hba1c <- omop_event("measurement", 3004410, name = "hba1c")
+#' omop_variable(name = "hba1c_last", event = hba1c,
+#'               reducer = omop_reduce("last_value", window = omop_window(-365, 0)))
 #' }
-#' @seealso \code{\link{omop_recipe}}, \code{\link{omop_variable_block}}
+#' @seealso \code{\link{omop_recipe}}, \code{\link{omop_variable_block}},
+#'   \code{\link{omop_reduce}}
 #' @export
 omop_variable <- function(name = NULL,
-                          table,
+                          table = NULL,
                           column = NULL,
                           concept_id = NULL,
                           concept_name = NULL,
@@ -179,7 +195,59 @@ omop_variable <- function(name = NULL,
                           concept_col = NULL,
                           expand = FALSE,
                           reference_date = NULL,
-                          unit = NULL) {
+                          unit = NULL,
+                          event = NULL,
+                          reducer = NULL,
+                          where = NULL,
+                          visit = NULL,
+                          broadcast = FALSE) {
+  if (!is.null(event) || !is.null(reducer)) {
+    legacy_given <- c(
+      table = !is.null(table), column = !is.null(column),
+      concept_id = !is.null(concept_id), concept_name = !is.null(concept_name),
+      type = !missing(type), format = !missing(format),
+      value_source = !is.null(value_source), time_window = !is.null(time_window),
+      suffix_mode = !missing(suffix_mode), filters = length(filters) > 0L,
+      visit_filter = !is.null(visit_filter), concept_col = !is.null(concept_col),
+      expand = !isFALSE(expand), reference_date = !is.null(reference_date),
+      unit = !is.null(unit))
+    if (any(legacy_given)) {
+      stop("omop_variable(): table/format and event/reducer are two spellings; ",
+           "do not combine event/reducer with ",
+           paste(names(legacy_given)[legacy_given], collapse = ", "), ".",
+           call. = FALSE)
+    }
+    if (is.null(event) || is.null(reducer)) {
+      stop("omop_variable(): the event/reducer spelling needs both event and ",
+           "reducer.", call. = FALSE)
+    }
+    event <- .v2_source(event, "omop_variable(): event")
+    if (!inherits(reducer, "omop_reducer") && !.v2_is_param(reducer)) {
+      stop("omop_variable(): reducer must be created with omop_reduce().",
+           call. = FALSE)
+    }
+    return(.v2_variable("reducer", event = event, reducer = reducer,
+                        where = .v2_predicate_arg(where, "omop_variable(): where"),
+                        visit = .v2_visit(visit, "omop_variable(): visit"),
+                        broadcast = .v2_flag(broadcast, "omop_variable(): broadcast"),
+                        name = .v2_name(name, "omop_variable(): name")))
+  }
+  if (is.null(table)) {
+    stop("omop_variable(): table is required (or give event = and reducer =).",
+         call. = FALSE)
+  }
+  if (!is.null(visit) && !is.null(visit_filter)) {
+    stop("omop_variable(): visit_filter is the legacy alias of visit; give one.",
+         call. = FALSE)
+  }
+  if (!is.null(visit)) {
+    visit <- .v2_visit(visit, "omop_variable(): visit")
+    if (is.list(visit)) {
+      # visit = list(type = ids) is exactly the legacy visit_filter.
+      visit_filter <- list(concept_ids = visit$type)
+      visit <- NULL
+    }
+  }
   type <- match.arg(type)
   format <- match.arg(format)
   if (identical(format, "binned")) {
@@ -244,6 +312,10 @@ omop_variable <- function(name = NULL,
   if (!is.null(concept_col)) obj$concept_col <- concept_col
   if (!is.null(time_since_derived)) obj$derived <- time_since_derived
   if (isTRUE(expand)) obj$expand <- TRUE
+  # Language-2 narrowing of a legacy-spelled variable (v2 plans only).
+  if (!is.null(where)) obj$where <- .v2_predicate_arg(where, "omop_variable(): where")
+  if (!is.null(visit)) obj$visit <- visit
+  if (isTRUE(broadcast)) obj$broadcast <- TRUE
   class(obj) <- c("omop_variable", "list")
   obj
 }
@@ -256,6 +328,19 @@ omop_variable <- function(name = NULL,
 #' @export
 #' @method print omop_variable
 print.omop_variable <- function(x, ...) {
+  if (.v2_is_v2_variable(x)) {
+    cat("omop_variable:", x$name %||% "<unnamed>", "\n")
+    switch(x$kind,
+      reducer = cat("  ", x$reducer$fn, "of", .v2_source_label(x$event),
+                    if (!is.null(x$reducer$window))
+                      paste("over", .v2_window_text(x$reducer$window)), "\n"),
+      derived = cat("  derived:", x$derived$kind,
+                    if (identical(x$derived$kind, "age"))
+                      if (isTRUE(x$derived$bands)) "(age_group bands)" else "(exact annual age)",
+                    "\n"),
+      population_column = cat("  population column:", x$population_column, "\n"))
+    return(invisible(x))
+  }
   cat("omop_variable:", x$name, "\n")
   cat("  Table:   ", x$table, "\n")
   if (!is.null(x$concept_id))
@@ -942,16 +1027,29 @@ omop_filter <- function(type = c("sex", "age_range", "age_group", "cohort",
       stop("Custom row predicates require one valid column name in params$var.",
            call. = FALSE)
     }
-    allowed_ops <- c("in", "not_in", "is_null", "not_null", "between")
+    comparison_ops <- c("==", "eq", "!=", "ne", ">=", "gte", "<=", "lte",
+                        ">", "gt", "<", "lt")
+    allowed_ops <- c("in", "not_in", "is_null", "not_null", "between",
+                     comparison_ops)
     if (!op %in% allowed_ops) {
       stop("Custom row predicate op must be one of: ",
            paste(allowed_ops, collapse = ", "),
-           ". Exact and ordered client-authored thresholds are not executable.",
+           ".",
            call. = FALSE)
     }
     if (!op %in% c("is_null", "not_null") && is.null(params$value)) {
       stop("Custom row predicate op '", op, "' requires params$value.",
            call. = FALSE)
+    }
+    if (op %in% comparison_ops) {
+      value <- params$value
+      if (length(value) != 1L || anyNA(value) ||
+          !(is.numeric(value) && is.finite(value) ||
+            is.character(value) &&
+              grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", value))) {
+        stop("Comparison predicates require one finite numeric or ISO date value.",
+             call. = FALSE)
+      }
     }
     if (op %in% c("in", "not_in")) {
       values <- unlist(params$value, use.names = FALSE)
@@ -990,7 +1088,10 @@ print.omop_filter <- function(x, ...) {
 #' filter DSL.
 #'
 #' @param ... \code{omop_filter} or \code{omop_filter_group} objects to combine.
-#' @param operator Character; \code{"AND"} or \code{"OR"}.
+#' @param operator Character; \code{"AND"}, \code{"OR"} or (2.10.3)
+#'   \code{"NOT"}, which negates the conjunction of its children: the legacy
+#'   spelling of \code{\link{omop_not}()}. A NOT group has no v1 rendering; it
+#'   runs as a language-2 plan on dsOMOP 2.10.3 servers.
 #' @param label Character or \code{NULL}; human-readable description
 #'   (auto-generated from children if \code{NULL}).
 #' @return An \code{omop_filter_group} object.
@@ -1004,9 +1105,12 @@ print.omop_filter <- function(x, ...) {
 #' }
 #' @seealso \code{\link{omop_filter}}, \code{\link{omop_recipe}}
 #' @export
-omop_filter_group <- function(..., operator = c("AND", "OR"), label = NULL) {
+omop_filter_group <- function(..., operator = c("AND", "OR", "NOT"), label = NULL) {
   operator <- match.arg(operator)
   children <- list(...)
+  if (identical(operator, "NOT") && length(children) == 0L) {
+    stop("A NOT filter group needs at least one filter to negate.", call. = FALSE)
+  }
   # Validate children
   for (ch in children) {
     if (!inherits(ch, "omop_filter") && !inherits(ch, "omop_filter_group"))
@@ -1022,7 +1126,11 @@ omop_filter_group <- function(..., operator = c("AND", "OR"), label = NULL) {
         ch$label
       }
     }, character(1))
-    label <- paste(child_labels, collapse = paste0(" ", operator, " "))
+    label <- if (identical(operator, "NOT")) {
+      paste0("NOT (", paste(child_labels, collapse = " AND "), ")")
+    } else {
+      paste(child_labels, collapse = paste0(" ", operator, " "))
+    }
   }
 
   obj <- list(
@@ -1196,10 +1304,13 @@ omop_filter_has_concept <- function(concept_id, table, concept_name = NULL,
 }
 
 #' @rdname omop_filter
-#' @param start Character; inclusive start date in ISO \code{YYYY-MM-DD} form.
-#' @param end Character; inclusive end date in ISO \code{YYYY-MM-DD} form and
-#'   not before \code{start}. The server applies the authoritative minimum
-#'   disclosure-safe width configured by the data controller.
+#' @param start Character or \code{NULL}; inclusive start date in ISO
+#'   \code{YYYY-MM-DD} form. A one-sided range (only \code{start} or only
+#'   \code{end}) compiles to a single \code{>=} / \code{<=} comparison.
+#' @param end Character or \code{NULL}; inclusive end date in ISO
+#'   \code{YYYY-MM-DD} form and not before \code{start}. No minimum calendar
+#'   width is imposed on private assignment filters; publication applies final
+#'   support.
 #' @param date_column Character or \code{NULL}; explicit OMOP date column. When
 #'   \code{NULL}, \code{\link{recipe_to_plan}} infers the standard date column
 #'   from the output's OMOP table.
@@ -1220,9 +1331,7 @@ omop_filter_date_range <- function(start = NULL, end = NULL,
   )
 }
 
-# Validate syntax and ordering client-side. The server remains authoritative
-# for the minimum disclosure-safe width (derived from its DataSHIELD options),
-# so the client must not hard-code a second policy value.
+# Validate syntax and ordering only; publication enforces final support.
 .validate_recipe_date_range <- function(start, end) {
   normalize <- function(x, name) {
     if (inherits(x, "Date")) x <- format(x, "%Y-%m-%d")
@@ -1239,13 +1348,12 @@ omop_filter_date_range <- function(start = NULL, end = NULL,
     list(text = x, date = parsed)
   }
 
-  if (is.null(start) || is.null(end)) {
-    stop("date_range requires both start and end; use an explicitly validated ",
-         "time_window for a one-sided bound.", call. = FALSE)
+  if (is.null(start) && is.null(end)) {
+    stop("date_range needs start and/or end.", call. = FALSE)
   }
-  start <- normalize(start, "start")
-  end <- normalize(end, "end")
-  if (end$date < start$date) {
+  start <- if (is.null(start)) NULL else normalize(start, "start")
+  end <- if (is.null(end)) NULL else normalize(end, "end")
+  if (!is.null(start) && !is.null(end) && end$date < start$date) {
     stop("date_range start must not be after end.", call. = FALSE)
   }
   list(start = start$text, end = end$text)
@@ -1256,14 +1364,25 @@ omop_filter_date_range <- function(start = NULL, end = NULL,
 #' @param threshold Numeric; threshold value
 #' @param direction Character; "above" or "below"
 #' @param safe_bins Per-site list with \code{$breaks} and the server-issued
-#'   \code{$contract} returned by \code{ds.omop.safe.cutpoints()}. A bare list of
-#'   client-authored edges is deliberately rejected.
+#'   \code{$contract} returned by \code{ds.omop.safe.cutpoints()}. Optional:
+#'   when absent, compile an exact comparison (above: >=; below: <). When
+#'   supplied, preserve the issued binning and its authenticated scope.
 #' @export
 omop_filter_value <- function(column = "value_as_number", threshold,
                                direction = c("above", "below"),
                                safe_bins = NULL) {
   direction <- match.arg(direction)
-  if (is.null(safe_bins) || is.null(safe_bins$breaks) ||
+  if (!is.numeric(threshold) || length(threshold) != 1L ||
+      is.na(threshold) || !is.finite(threshold)) {
+    stop("threshold must be one finite numeric value.", call. = FALSE)
+  }
+  if (is.null(safe_bins)) {
+    op <- if (identical(direction, "above")) ">=" else "<"
+    return(omop_filter(type = "custom", level = "row",
+      params = list(var = column, op = op, value = threshold),
+      label = paste(column, op, threshold)))
+  }
+  if (is.null(safe_bins$breaks) ||
       !is.list(safe_bins$contract)) {
     stop("omop_filter_value() needs server-issued disclosure-safe bin edges. ",
          "Either call ",
@@ -1301,8 +1420,10 @@ omop_filter_value <- function(column = "value_as_number", threshold,
 }
 
 #' @rdname omop_filter
-#' @param concept_ids Integer scalar or vector; the value concept(s) to keep
-#'   (a record matches if its value concept is any of them)
+#' @param concept_ids Integer scalar or vector; the concept(s) to keep (a
+#'   record matches if its concept is any of them: the value concept for
+#'   \code{omop_filter_value_concept()}; the table's domain concept, or
+#'   \code{concept_col}, for \code{omop_filter_concept_set()})
 #' @param column Character; the value-concept column (default
 #'   \code{"value_as_concept_id"})
 #' @param concept_name Character or NULL; human-readable name(s)
@@ -1317,6 +1438,36 @@ omop_filter_value_concept <- function(concept_ids,
     params = list(var = column, op = "in", value = ids,
                   concept_name = concept_name),
     label = label
+  )
+}
+
+#' @rdname omop_filter
+#' @param concept_col Character or \code{NULL}; the concept column the set is
+#'   matched on. \code{NULL} (default) uses the output table's domain concept
+#'   column from the role registry (\code{condition_concept_id} for
+#'   \code{condition_occurrence}, \code{drug_concept_id} for
+#'   \code{drug_exposure}, ...).
+#' @export
+omop_filter_concept_set <- function(concept_ids, concept_col = NULL) {
+  ids <- unlist(concept_ids, use.names = FALSE)
+  numeric_ids <- suppressWarnings(as.numeric(ids))
+  if (length(ids) == 0L || anyNA(numeric_ids) || any(!is.finite(numeric_ids)) ||
+      any(numeric_ids != round(numeric_ids)) || any(numeric_ids < 0)) {
+    stop("omop_filter_concept_set() needs one or more non-negative integer ",
+         "concept ids.", call. = FALSE)
+  }
+  if (!is.null(concept_col) &&
+      (!is.character(concept_col) || length(concept_col) != 1L ||
+       is.na(concept_col) || !grepl("^[a-z][a-z0-9_]{0,63}$", concept_col))) {
+    stop("concept_col must be NULL or one lower-case column name.",
+         call. = FALSE)
+  }
+  ids <- unique(as.integer(numeric_ids))
+  omop_filter(
+    type = "concept_set", level = "row",
+    params = list(concept_ids = ids, concept_col = concept_col),
+    label = paste0(length(ids), " concepts",
+                   if (!is.null(concept_col)) paste0(" in ", concept_col))
   )
 }
 
@@ -1445,11 +1596,11 @@ omop_filter_visit_count <- function(min_count = 1L,
 #' @rdname omop_filter
 #' @param concept_id Integer scalar or vector; measurement concept ID(s)
 #'   (a vector matches if any measurement is present)
-#' @param min_value Numeric or NULL; minimum value
-#' @param max_value Numeric or NULL; maximum value
+#' @param min_value Numeric or NULL; inclusive minimum value
+#' @param max_value Numeric or NULL; exclusive maximum value
 #' @param safe_bins Server-issued result for the same measurement concept from
-#'   \code{ds.omop.safe.cutpoints()}. Required whenever a numeric range is
-#'   supplied; client-authored thresholds are not executable.
+#'   \code{ds.omop.safe.cutpoints()}. Optional for numeric criteria. If
+#'   supplied, both bounds must be issued edges and the scope must match.
 #' @export
 omop_filter_has_measurement <- function(concept_id,
                                          min_value = NULL,
@@ -1460,44 +1611,41 @@ omop_filter_has_measurement <- function(concept_id,
   concept_id <- as.integer(concept_id)
   has_range <- !is.null(min_value) || !is.null(max_value)
   if (has_range) {
-    if (is.null(min_value) || is.null(max_value)) {
-      stop("Numeric measurement filters require both min_value and max_value; ",
-           "one-sided exact thresholds are not disclosure-safe.", call. = FALSE)
-    }
     if (length(concept_id) != 1L || is.na(concept_id)) {
       stop("Numeric measurement filters require exactly one concept_id.",
            call. = FALSE)
     }
-    if (is.null(safe_bins) || !is.list(safe_bins$contract) ||
-        length(safe_bins$breaks) < 2L) {
-      stop("Numeric measurement filters need server-issued safe_bins from ",
-           "ds.omop.safe.cutpoints() for the same concept.", call. = FALSE)
+    valid_bound <- function(x) is.null(x) ||
+      is.numeric(x) && length(x) == 1L && !is.na(x) && is.finite(x)
+    if (!valid_bound(min_value) || !valid_bound(max_value) ||
+        !is.null(min_value) && !is.null(max_value) && min_value >= max_value) {
+      stop("min_value and max_value must be finite numeric bounds with ",
+           "min_value < max_value when both are supplied.", call. = FALSE)
     }
-    min_value <- suppressWarnings(as.numeric(min_value))
-    max_value <- suppressWarnings(as.numeric(max_value))
-    edges <- suppressWarnings(as.numeric(safe_bins$breaks))
-    if (length(min_value) != 1L || length(max_value) != 1L ||
-        !is.finite(min_value) || !is.finite(max_value) ||
-        min_value >= max_value || any(!is.finite(edges))) {
-      stop("min_value and max_value must be finite safe-bin edges with ",
-           "min_value < max_value.", call. = FALSE)
-    }
-    near <- function(edge) {
-      any(abs(edges - edge) <= 1e-10 * pmax(1, abs(edge)))
-    }
-    scope <- safe_bins$contract
-    scope_concept <- suppressWarnings(as.integer(scope$concept_id))
-    scope_concept_col <- tolower(scope$concept_col %||%
-                                   "measurement_concept_id")
-    if (!near(min_value) || !near(max_value) ||
-        !identical(tolower(scope$table %||% ""), "measurement") ||
-        !identical(tolower(scope$column %||% ""), "value_as_number") ||
-        length(scope_concept) != 1L || is.na(scope_concept) ||
-        scope_concept != concept_id ||
-        !identical(scope_concept_col, "measurement_concept_id")) {
-      stop("safe_bins must match measurement.value_as_number and the requested ",
-           "measurement concept, and both range limits must be issued edges.",
-           call. = FALSE)
+    if (!is.null(safe_bins)) {
+      if (is.null(min_value) || is.null(max_value)) {
+        stop("A supplied safe_bins contract requires both min_value and max_value.",
+             call. = FALSE)
+      }
+      if (!is.list(safe_bins$contract) || length(safe_bins$breaks) < 2L) {
+        stop("Supplied safe_bins must contain server-issued bin edges and a contract.",
+             call. = FALSE)
+      }
+      edges <- suppressWarnings(as.numeric(safe_bins$breaks))
+      near <- function(edge) any(abs(edges - edge) <= 1e-10 * pmax(1, abs(edge)))
+      scope <- safe_bins$contract
+      scope_concept <- suppressWarnings(as.integer(scope$concept_id))
+      scope_concept_col <- tolower(scope$concept_col %||% "measurement_concept_id")
+      if (any(!is.finite(edges)) || !near(min_value) || !near(max_value) ||
+          !identical(tolower(scope$table %||% ""), "measurement") ||
+          !identical(tolower(scope$column %||% ""), "value_as_number") ||
+          length(scope_concept) != 1L || is.na(scope_concept) ||
+          scope_concept != concept_id ||
+          !identical(scope_concept_col, "measurement_concept_id")) {
+        stop("safe_bins must match measurement.value_as_number and the requested ",
+             "measurement concept, and both range limits must be issued edges.",
+             call. = FALSE)
+      }
     }
   } else if (!is.null(safe_bins)) {
     stop("safe_bins is only used with a numeric min_value/max_value range.",
@@ -1535,6 +1683,15 @@ omop_filter_has_measurement <- function(concept_id,
 #'   check absence of (a vector requires all of them to be absent)
 #' @param window Named list with start/end index-relative day offsets, or NULL;
 #'   restricts absence to that window (e.g. "no HbA1c in the prior year")
+#' @section has_measurement and missing_measurement are not complements:
+#'   \code{omop_filter_has_measurement()} keeps persons with at least one
+#'   measurement row of the concept (in the value range when one is given);
+#'   \code{omop_filter_missing_measurement()} keeps persons with \emph{no row
+#'   with a non-null value}, so a person whose only rows have a NULL value
+#'   satisfies both. Both keep this 2.10.1 meaning. In language 2 the two
+#'   absences are explicit: \code{omop_has_not(event)} (no row) and
+#'   \code{omop_has_not(event, nonmissing = "value_as_number")} (no non-null
+#'   value); \code{recipe_lint()} reports the legacy pair (INFO).
 #' @export
 omop_filter_missing_measurement <- function(concept_id, window = NULL,
                                              reference_date = NULL) {
@@ -1551,34 +1708,6 @@ omop_filter_missing_measurement <- function(concept_id, window = NULL,
   )
 }
 
-#' Client-side filter safety classification (informational only)
-#'
-#' Mirrors the server-side classification for UI display purposes.
-#' The server performs the authoritative check.
-#'
-#' @param filter_type Character; filter type
-#' @param params List; filter parameters (unused for now)
-#' @return Character; "allowed", "constrained", or "blocked"
-#' @keywords internal
-.classifyFilterClient <- function(filter_type, params = list()) {
-  always_allowed <- c("sex", "cohort", "concept_set", "value_bin",
-                      "value_concept")
-  constrained <- c("age_range", "age_group", "has_concept", "date_range",
-                    "not_has_concept", "concept_count", "prior_observation",
-                    "followup", "visit_count", "has_measurement",
-                    "missing_measurement")
-
-  if (filter_type %in% always_allowed) return("allowed")
-  if (filter_type %in% constrained) return("constrained")
-  if (identical(filter_type, "custom")) {
-    op <- tolower(params$op %||% "")
-    if (op %in% c("in", "not_in", "is_null", "not_null", "between")) {
-      return("constrained")
-    }
-  }
-  "blocked"
-}
-
 # --- omop_population: DAG of subpopulations ---
 
 #' Define the OMOP event that anchors a longitudinal population
@@ -1590,9 +1719,12 @@ omop_filter_missing_measurement <- function(concept_id, window = NULL,
 #'
 #' @param concept_id Integer concept ID(s), or \code{NULL} for any event in the
 #'   selected table.
-#' @param table Character OMOP event table.  The currently executable portable
-#'   subset is condition_occurrence, drug_exposure, measurement, observation,
-#'   procedure_occurrence, device_exposure, and visit_occurrence.
+#' @param table Character OMOP event table: any table with an event role
+#'   record in the role registry (condition_occurrence, drug_exposure,
+#'   procedure_occurrence, device_exposure, measurement, observation,
+#'   visit_occurrence, visit_detail, observation_period, death, specimen, note,
+#'   payer_plan_period, the era tables and, in CDM 5.4, episode). The server
+#'   checks it against its own CDM version.
 #' @param concept_name Optional human-readable concept-set name.
 #' @param primary_limit Character; \code{"first"}, \code{"last"}, or
 #'   \code{"all"} candidate events per person.
@@ -1612,10 +1744,10 @@ omop_index_event <- function(concept_id = NULL,
                              include_descendants = FALSE,
                              include_mapped = FALSE,
                              end_strategy = NULL) {
-  allowed_tables <- c(
-    "condition_occurrence", "drug_exposure", "measurement", "observation",
-    "procedure_occurrence", "device_exposure", "visit_occurrence"
-  )
+  # Defect B-20: the event tables of the server's role registry (design-2.10.3
+  # section 6.2, vendored inst/ohdsi/roles-*.csv), not a fixed allowlist. The
+  # server checks the table against its own CDM version.
+  allowed_tables <- .role_event_tables()
   if (!is.character(table) || length(table) != 1L || is.na(table) ||
       !nzchar(table)) {
     stop("omop_index_event(): table must be one non-empty string.",
@@ -1760,6 +1892,20 @@ omop_index_event <- function(concept_id = NULL,
 #'   to derive this population from by the named set operation on the person key.
 #'   Exactly one may be supplied, and only for a set-op population (mutually
 #'   exclusive with \code{filters} / \code{cohort_definition_id}).
+#' @param index (2.10.3) An \code{\link{omop_index}}: an indexed population
+#'   whose episodes are the selected index events; \code{filters} may then
+#'   hold language-2 criteria (\code{\link{omop_has}}, ...), evaluated per
+#'   episode.
+#' @param match (2.10.3) An \code{\link{omop_match}}: a matched / nested
+#'   case-control population.
+#' @param coverage (2.10.3) An \code{\link{omop_coverage}} observation policy
+#'   (default for indexed populations: unique/drop/drop).
+#'
+#' @details \code{parent_id} restricts membership from 2.10.3: a child without
+#'   its own index inherits the parent's episodes before its criteria are
+#'   evaluated; a child with its own index keeps its episodes for the parent's
+#'   persons. Before 2.10.3 it was recorded but not compiled. A recipe with a
+#'   \code{parent_id} is refused on servers that cannot apply it.
 #' @return An \code{omop_population} object. A set-op population carries a
 #'   \code{$setop = list(op, members)} field; a criteria population carries
 #'   \code{$filters} (and optionally \code{$cohort_definition_id} and
@@ -1786,7 +1932,40 @@ omop_population <- function(id = "base",
                             union = NULL,
                             intersect = NULL,
                             setdiff = NULL,
-                            index_event = NULL) {
+                            index_event = NULL,
+                            index = NULL,
+                            match = NULL,
+                            coverage = NULL) {
+  if (!is.null(index) && !inherits(index, "omop_index") && !.v2_is_param(index)) {
+    stop("omop_population(): index must be created with omop_index().", call. = FALSE)
+  }
+  if (!is.null(match) && !inherits(match, "omop_match")) {
+    stop("omop_population(): match must be created with omop_match().", call. = FALSE)
+  }
+  if (!is.null(coverage) && !inherits(coverage, "omop_coverage")) {
+    stop("omop_population(): coverage must be created with omop_coverage().",
+         call. = FALSE)
+  }
+  if (!is.null(index) && !is.null(index_event)) {
+    stop("omop_population(): give index (language 2) or index_event (legacy), ",
+         "not both.", call. = FALSE)
+  }
+  if (!is.null(index) && !is.null(cohort_definition_id)) {
+    stop("omop_population(): an indexed population takes its cohort through ",
+         "omop_index(list(cohort_definition_id = ...)).", call. = FALSE)
+  }
+  if (!is.null(index) && !is.null(episode_policy)) {
+    stop("omop_population(): episode_policy applies to criteria populations; ",
+         "an index population selects with omop_index(select =).", call. = FALSE)
+  }
+  if (!is.null(match) &&
+      (length(.recipe_arg_list(filters)) > 0L || !is.null(cohort_definition_id) ||
+       !is.null(episode_policy) || !is.null(index_event) || !is.null(index) ||
+       !is.null(union) || !is.null(intersect) || !is.null(setdiff) ||
+       !is.null(coverage) || !is.null(parent_id))) {
+    stop("omop_population(): a match population is defined by omop_match() alone.",
+         call. = FALSE)
+  }
   allowed_episode_policies <- c(
     "any_episode", "all_episodes", "first_episode", "last_episode"
   )
@@ -1821,15 +2000,23 @@ omop_population <- function(id = "base",
            call. = FALSE)
     }
     if (length(filters) > 0 || !is.null(cohort_definition_id) ||
-        !is.null(episode_policy) || !is.null(index_event)) {
+        !is.null(episode_policy) || !is.null(index_event) || !is.null(index) ||
+        !is.null(coverage)) {
       stop("omop_population(): a set-op population (union / intersect / ",
            "setdiff) cannot also take filters or cohort_definition_id; ",
-           "episode_policy and index_event are also criteria-only.",
+           "episode_policy, index_event, index and coverage are also ",
+           "criteria/index-only.",
            call. = FALSE)
     }
     op <- names(setops)[1]
-    members <- as.character(setops[[1]])
-    members <- members[nzchar(members)]
+    members <- setops[[1]]
+    if (.v2_is_param(members)) members <- list(members)
+    if (is.list(members) && any(vapply(members, .v2_is_param, logical(1)))) {
+      members <- lapply(members, function(x) .v2_name(x, "omop_population(): member", allow_null = FALSE))
+    } else {
+      members <- as.character(members)
+      members <- members[nzchar(members)]
+    }
     if (length(members) < 2) {
       stop("omop_population(): ", op, " needs at least two member population ",
            "IDs.", call. = FALSE)
@@ -1861,6 +2048,9 @@ omop_population <- function(id = "base",
   # Only set when supplied so the plain (exported) form of a criteria
   # population stays byte-stable for the JSON/YAML round-trip.
   if (!is.null(setop)) obj$setop <- setop
+  if (!is.null(index)) obj$index <- index
+  if (!is.null(match)) obj$match <- match
+  if (!is.null(coverage)) obj$coverage <- coverage
   class(obj) <- c("omop_population", "list")
   obj
 }
@@ -1882,8 +2072,21 @@ print.omop_population <- function(x, ...) {
     cat("  Cohort ID:", x$cohort_definition_id, "\n")
   if (!is.null(x$episode_policy))
     cat("  Episode policy:", x$episode_policy, "\n")
+  if (!is.null(x[["index"]])) {
+    cat("  Index:", .v2_source_label_any(x[["index"]]$source), "- select", x[["index"]]$select,
+        "- end", x[["index"]]$end$strategy, "\n")
+  }
+  if (!is.null(x$match)) {
+    cat("  Matched:", x$match$controls_per_case, "controls per case of",
+        x$match$cases, "from", x$match$controls, "\n")
+  }
+  if (!is.null(x$coverage)) {
+    cat("  Coverage:", x$coverage$policy, "/", x$coverage$on_ambiguous, "/",
+        x$coverage$on_missing, "\n")
+  }
   if (length(x$filters) > 0)
     cat("  Filters:", length(x$filters), "\n")
+  for (line in .simple_new_users_text(x)) cat("  ", line, "\n", sep = "")
   invisible(x)
 }
 
@@ -1922,6 +2125,15 @@ print.omop_population <- function(x, ...) {
 #'   required for a \code{"time_since"} block.
 #' @param unit Character or \code{NULL}; \code{"day"} (default for
 #'   \code{time_since}) or complete calendar \code{"month"} units.
+#' @param where (2.10.3) A row predicate from \code{\link{omop_where}} applied
+#'   to every variable of the block.
+#' @param visit (2.10.3) \code{NULL}, \code{list(type = <visit_concept_ids>)}
+#'   or \code{"index"}, for every variable of the block.
+#' @param concept_col (2.10.3) Concept column the block's concepts scope.
+#' @param visit_filter (2.10.3) Legacy alias of \code{visit}, spelled as in
+#'   \code{\link{omop_variable}}: \code{list(concept_ids = <visit_concept_ids>)}
+#'   is \code{visit = list(type = <visit_concept_ids>)}. Giving both is an
+#'   error.
 #' @return An \code{omop_variable_block} object.
 #' @examples
 #' \dontrun{
@@ -1949,9 +2161,30 @@ omop_variable_block <- function(id = NULL,
                                 population_id = "base",
                                 expand = FALSE,
                                 reference_date = NULL,
-                                unit = NULL) {
+                                unit = NULL,
+                                where = NULL,
+                                visit = NULL,
+                                concept_col = NULL,
+                                visit_filter = NULL) {
   concept_ids <- .plan_integer_vector(
     concept_ids, "concept_ids", allow_empty = TRUE)
+  where <- .v2_predicate_arg(where, "omop_variable_block(): where")
+  if (!is.null(visit) && !is.null(visit_filter)) {
+    stop("omop_variable_block(): visit_filter is the legacy alias of visit; give one.",
+         call. = FALSE)
+  }
+  if (!is.null(visit_filter)) {
+    # F-24: the legacy omop_variable() spelling list(concept_ids = ids) is
+    # exactly visit = list(type = ids).
+    if (!is.list(visit_filter) || !identical(names(visit_filter), "concept_ids")) {
+      stop("omop_variable_block(): visit_filter must be NULL or ",
+           "list(concept_ids = <visit_concept_ids>).", call. = FALSE)
+    }
+    visit <- list(type = .v2_ids(visit_filter$concept_ids,
+                                 "omop_variable_block(): visit_filter$concept_ids"))
+  }
+  visit <- .v2_visit(visit, "omop_variable_block(): visit")
+  concept_col <- .v2_column(concept_col, "omop_variable_block(): concept_col")
   time_since <- identical(format, "time_since")
   if (time_since) {
     if (is.null(reference_date)) {
@@ -1994,6 +2227,9 @@ omop_variable_block <- function(id = NULL,
     obj$reference_date <- reference_date
     obj$unit <- unit
   }
+  if (!is.null(where)) obj$where <- where
+  if (!is.null(visit)) obj$visit <- visit
+  if (!is.null(concept_col)) obj$concept_col <- concept_col
   class(obj) <- c("omop_variable_block", "list")
   obj
 }
@@ -2036,9 +2272,11 @@ print.omop_variable_block <- function(x, ...) {
 #'   \code{"person_period"}. A \code{"long"} output that
 #'   spans multiple source tables always splits into one per-table output
 #'   (named \code{<name>_<table>}); there is no single cross-table joined frame.
-#'   The former \code{"joined_long"} and \code{"covariates_sparse"} recipe
-#'   labels are rejected because they had no faithful executable mapping; use
-#'   split \code{"long"} outputs or the lower-level temporal-covariates plan API.
+#'   The former \code{"joined_long"} label is rejected because it had no
+#'   faithful executable mapping; use split \code{"long"} outputs. The
+#'   \code{"covariates_sparse"} label (2.10.3, B-22) is the language-2
+#'   \code{format = "sparse"} over the output's variables as sources; it has
+#'   no v1 rendering and runs on dsOMOP 2.10.3 servers.
 #' @param variables Character vector or \code{NULL}; variable names to include
 #'   (\code{NULL} means all variables in the recipe).
 #' @param population_id Character; which population to use (default
@@ -2047,6 +2285,32 @@ print.omop_variable_block <- function(x, ...) {
 #'   survival outputs).
 #' @param result_symbol Character or \code{NULL}; R symbol name for the result
 #'   on the server (auto-generated as \code{D_<name>} if \code{NULL}).
+#' @param rows (2.10.3) Alias of \code{population_id} (give one).
+#' @param grain (2.10.3) \code{"episode"} or \code{"person"}; default episode
+#'   over an indexed population, person otherwise. Person grain over an indexed
+#'   population needs \code{collapse}.
+#' @param columns (2.10.3) Alias of \code{variables} (give one).
+#' @param format (2.10.3) Language-2 format: \code{"wide"}, \code{"long"},
+#'   \code{"survival"}, \code{"intervals"}, \code{"temporal_covariates"},
+#'   \code{"person_period"}, \code{"sparse"}, \code{"membership"},
+#'   \code{"dictionary"} or \code{"joined"}. \code{type} (the legacy presets)
+#'   and \code{format} are alternatives; giving neither keeps the legacy
+#'   \code{type = "wide"}.
+#' @param sources (2.10.3) Event/era sources of a \code{long} output.
+#' @param collapse (2.10.3) \code{"first_episode"}, \code{"last_episode"} or
+#'   \code{"any"}: person grain over an indexed population.
+#' @details The \code{baseline} preset reports age as the banded legacy
+#'   \code{age_group} (the server's default grid), while a \code{wide} output
+#'   with \code{omop_age()} reports exact annual age; \code{omop_age(bands =
+#'   TRUE/FALSE, age_breaks =)} chooses explicitly in every format, and
+#'   \code{recipe_explain()} states the choice.
+#'
+#'   Survival outputs keep the legacy 730-day time-at-risk default when
+#'   no \code{tar}/\code{tars} is given (\code{print()},
+#'   \code{recipe_explain()} and \code{recipe_lint()} state it); give
+#'   \code{tar = omop_window(1, NULL)} for unbounded follow-up. A language-2
+#'   survival output needs an explicit \code{censor} list: only listed sources
+#'   cap follow-up.
 #' @return An \code{omop_output} object.
 #' @examples
 #' \dontrun{
@@ -2059,22 +2323,69 @@ print.omop_variable_block <- function(x, ...) {
 #' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_to_plan}}
 #' @export
 omop_output <- function(name = "output_1",
-                        type = c("wide", "long", "features",
-                                 "survival", "intervals",
-                                 "baseline", "temporal_covariates",
-                                 "person_period"),
+                        type = NULL,
                         variables = NULL,
                         population_id = "base",
                         options = list(),
-                        result_symbol = NULL) {
-  if (length(type) == 1L &&
-      type %in% c("joined_long", "covariates_sparse")) {
-    stop("Recipe output type '", type,
-         "' has no faithful executable mapping. Use split 'long'/'features' ",
-         "outputs, or ds.omop.plan.temporal_covariates() for sparse temporal ",
-         "covariates.", call. = FALSE)
+                        result_symbol = NULL,
+                        rows = NULL,
+                        grain = NULL,
+                        columns = NULL,
+                        format = NULL,
+                        sources = NULL,
+                        collapse = NULL) {
+  if (!is.null(type) && !is.null(format)) {
+    stop("omop_output(): type (legacy preset) and format are alternatives; ",
+         "give one.", call. = FALSE)
   }
-  type <- match.arg(type)
+  if (!is.null(rows)) {
+    if (!missing(population_id) && !identical(rows, population_id)) {
+      stop("omop_output(): rows is an alias of population_id; give one.",
+           call. = FALSE)
+    }
+    population_id <- .v2_name(rows, "omop_output(): rows")
+  }
+  if (!is.null(columns)) {
+    if (!is.null(variables)) {
+      stop("omop_output(): columns is an alias of variables; give one.",
+           call. = FALSE)
+    }
+    variables <- columns
+  }
+  if (!is.null(format)) {
+    format <- .v2_choice(format, c("wide", "long", "survival", "intervals",
+                                   "temporal_covariates", "person_period", "sparse",
+                                   "membership", "dictionary", "joined"),
+                         "omop_output(): format")
+  }
+  if (!is.null(grain)) grain <- .v2_choice(grain, c("episode", "person"), "omop_output(): grain")
+  if (!is.null(collapse)) {
+    collapse <- .v2_choice(collapse, c("first_episode", "last_episode", "any"),
+                           "omop_output(): collapse")
+  }
+  if (!is.null(sources) && is.null(format)) {
+    stop("omop_output(): sources need a language-2 format (e.g. format = \"long\").",
+         call. = FALSE)
+  }
+  if (is.null(type) && is.null(format)) type <- "wide"
+  if (!is.null(type) && !is.null(grain) && type %in% c("wide", "features")) {
+    # The legacy presets carry grain as an option; keep one representation.
+    if (!is.null(options$grain) && !identical(options$grain, grain)) {
+      stop("omop_output(): grain conflicts with options$grain.", call. = FALSE)
+    }
+    options$grain <- grain
+    grain <- NULL
+  }
+  if (!is.null(type)) {
+    if (length(type) == 1L && identical(type, "joined_long")) {
+      stop("Recipe output type '", type,
+           "' has no faithful executable mapping. Use split 'long'/'features' ",
+           "outputs.", call. = FALSE)
+    }
+    type <- match.arg(type, c("wide", "long", "features", "survival", "intervals",
+                              "baseline", "temporal_covariates", "person_period",
+                              "covariates_sparse"))
+  }
   if (is.null(result_symbol)) {
     result_symbol <- paste0("D_", name)
   }
@@ -2109,12 +2420,19 @@ omop_output <- function(name = "output_1",
     type          = type,
     # as.character(unlist(...)) so JSON-imported lists of names behave the
     # same as character vectors in recipe_to_plan()'s subsetting.
-    variables     = if (!is.null(variables))
-      as.character(unlist(variables)) else NULL,
+    variables     = if (is.null(variables) || .v2_is_param(variables) ||
+                        (is.list(variables) && any(vapply(variables, .v2_is_param, logical(1))))) {
+      variables
+    } else as.character(unlist(variables)),
     population_id = population_id,
     options       = options,
     result_symbol = result_symbol
   )
+  # Language-2 fields only when used, so legacy outputs keep their plain form.
+  if (!is.null(format)) obj$format <- format
+  if (!is.null(grain)) obj$grain <- grain
+  if (!is.null(collapse)) obj$collapse <- collapse
+  if (!is.null(sources)) obj$sources <- sources
   class(obj) <- c("omop_output", "list")
   obj
 }
@@ -2127,11 +2445,19 @@ omop_output <- function(name = "output_1",
 #' @export
 #' @method print omop_output
 print.omop_output <- function(x, ...) {
-  cat("omop_output:", x$name, "[", x$type, "]",
+  cat("omop_output:", x$name, "[", x$format %||% x$type, "]",
       "pop:", x$population_id,
       "-> ", x$result_symbol %||% paste0("D_", x$name), "\n")
+  if (!is.null(x$grain)) cat("  Grain:", x$grain,
+                             if (!is.null(x$collapse)) paste0("(collapse ", x$collapse, ")"), "\n")
   if (!is.null(x$variables))
     cat("  Variables:", paste(x$variables, collapse = ", "), "\n")
+  if (identical(x$type, "survival") || identical(x$format, "survival")) {
+    if (is.null(x$options[["tar"]]) && is.null(x$options[["tars"]])) {
+      cat("  Follow-up: ends 730 days after index (default TAR; give tar = ",
+          "omop_window(1, NULL) for unbounded follow-up)\n", sep = "")
+    }
+  }
   invisible(x)
 }
 
@@ -2184,7 +2510,9 @@ print.omop_output <- function(x, ...) {
 .recipe_arg_list <- function(x) {
   if (is.null(x)) return(list())
   leaf_classes <- c("omop_population", "omop_variable_block", "omop_variable",
-                    "omop_filter", "omop_filter_group", "omop_output")
+                    "omop_filter", "omop_filter_group", "omop_output",
+                    "omop_criterion", "omop_concept_set", "omop_event",
+                    "omop_interval", "omop_coverage")
   if (inherits(x, leaf_classes)) return(list(x))
   if (is.list(x)) return(x)
   list(x)
@@ -2239,6 +2567,16 @@ print.omop_output <- function(x, ...) {
 #' @param options Named list of plan-wide options (\code{translate_concepts},
 #'   \code{block_sensitive}, \code{factor_concepts}); only supplied keys
 #'   override the defaults.
+#' @param concept_sets (2.10.3) Named concept sets
+#'   (\code{\link{omop_concept_set}}) referenced by name from events.
+#' @param events (2.10.3) Declared \code{\link{omop_event}}s (events used
+#'   inline elsewhere are declared automatically).
+#' @param intervals (2.10.3) Declared \code{\link{omop_era}}s.
+#' @param coverage (2.10.3) Default \code{\link{omop_coverage}} for the
+#'   recipe's populations.
+#' @param publish (2.10.3) \code{NULL} (every output is published) or the
+#'   names of the outputs to publish; other outputs are computed privately
+#'   when another output depends on them and are never released.
 #' @return An \code{omop_recipe} object.
 #' @examples
 #' \dontrun{
@@ -2311,8 +2649,29 @@ omop_recipe <- function(variables = NULL,
                         tables = NULL,
                         combine = "union",
                         options = NULL,
-                        output = NULL) {
+                        output = NULL,
+                        concept_sets = NULL,
+                        events = NULL,
+                        intervals = NULL,
+                        coverage = NULL,
+                        publish = NULL) {
   recipe <- .omop_recipe_empty()
+
+  # Language-2 registries (stored only when used, so legacy recipes keep their
+  # exact plain form).
+  for (cs_item in .v2_named_items(concept_sets, "omop_concept_set", "concept_sets")) {
+    recipe <- recipe_add_concept_set(recipe, cs_item)
+  }
+  for (ev in .recipe_arg_list(events)) recipe <- recipe_add_event(recipe, ev)
+  for (iv in .recipe_arg_list(intervals)) recipe <- recipe_add_interval(recipe, iv)
+  if (!is.null(coverage)) {
+    if (!inherits(coverage, "omop_coverage")) {
+      stop("omop_recipe(): coverage must be created with omop_coverage().",
+           call. = FALSE)
+    }
+    recipe$coverage <- coverage
+  }
+  if (!is.null(publish)) recipe <- recipe_set_publish(recipe, publish)
 
   # Delegate to the internal slot-filling setters in dependency order so the
   # declarative form is identical by construction to step-by-step building.
@@ -2322,7 +2681,19 @@ omop_recipe <- function(variables = NULL,
   for (b in .recipe_arg_list(blocks)) {
     recipe <- recipe_add_block(recipe, b)
   }
-  for (v in .recipe_arg_list(variables)) {
+  var_items <- .recipe_arg_list(variables)
+  var_names <- names(var_items)
+  for (i in seq_along(var_items)) {
+    v <- var_items[[i]]
+    list_name <- if (!is.null(var_names) && nzchar(var_names[[i]])) var_names[[i]] else NULL
+    if (.v2_is_v2_variable(v) && !is.null(list_name)) {
+      if (is.null(v$name)) {
+        v$name <- .v2_name(list_name, "omop_recipe(): variable name")
+      } else if (!identical(v$name, list_name)) {
+        stop("omop_recipe(): variable '", list_name, "' is named '", v$name,
+             "' by its constructor; use one name.", call. = FALSE)
+      }
+    }
     recipe <- recipe_add_variable(recipe, v)
   }
   filter_items <- .recipe_arg_list(filters)
@@ -2365,14 +2736,14 @@ omop_recipe <- function(variables = NULL,
 #' @param population An \code{\link{omop_population}} object to add.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_population}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_population <- function(recipe, population) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
   if (!inherits(population, "omop_population"))
     stop("population must be an omop_population object", call. = FALSE)
   # Validate parent exists
-  if (!is.null(population$parent_id) &&
+  if (!is.null(population$parent_id) && !.v2_is_param(population$parent_id) &&
       !population$parent_id %in% names(recipe$populations)) {
     stop("Parent population '", population$parent_id, "' not found in recipe",
          call. = FALSE)
@@ -2381,13 +2752,24 @@ recipe_add_population <- function(recipe, population) {
   # in dependency order, exactly like parents). A member may itself be a set-op
   # population, which lets set operations nest.
   if (!is.null(population$setop)) {
-    missing <- setdiff(population$setop$members, names(recipe$populations))
+    members <- Filter(function(x) !.v2_is_param(x), as.list(population$setop$members))
+    missing <- setdiff(unlist(members, use.names = FALSE), names(recipe$populations))
     if (length(missing) > 0) {
       stop("Set-op population '", population$id, "' references unknown member",
            if (length(missing) > 1) "s" else "", " '",
            paste(missing, collapse = "', '"),
            "'; declare member populations before the set-op that combines them.",
            call. = FALSE)
+    }
+  }
+  if (!is.null(population$match)) {
+    sources <- Filter(function(x) !.v2_is_param(x),
+                      list(population$match$cases, population$match$controls))
+    missing <- setdiff(unlist(sources, use.names = FALSE), names(recipe$populations))
+    if (length(missing) > 0) {
+      stop("Match population '", population$id, "' references undeclared ",
+           "population(s) '", paste(missing, collapse = "', '"),
+           "'; declare cases and controls first.", call. = FALSE)
     }
   }
   recipe$populations[[population$id]] <- population
@@ -2442,7 +2824,7 @@ recipe_set_cohort <- function(recipe, cohort_definition_id) {
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_execute}},
 #'   \code{\link{recipe_to_plan}}, \code{\link{.cohort_scope_arg}}
-#' @keywords internal
+#' @export
 recipe_set_scope <- function(recipe, cohort = NULL, tables = NULL,
                              combine = "union") {
   if (!inherits(recipe, "omop_recipe"))
@@ -2486,7 +2868,7 @@ recipe_set_scope <- function(recipe, cohort = NULL, tables = NULL,
 #' @param id Character; population ID to remove (must not be \code{"base"}).
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_remove_population <- function(recipe, id) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2501,19 +2883,29 @@ recipe_remove_population <- function(recipe, id) {
 #' Registers the block and expands its \code{concept_ids} into individual
 #' \code{\link{omop_variable}} objects using the block's default settings
 #' (table, format, time window, filters). Variable names are auto-generated
-#' from concept names or IDs with uniqueness enforcement.
+#' from concept names or IDs with uniqueness enforcement. Adding an identical
+#' block again leaves the recipe unchanged; a conflicting definition with an
+#' existing block ID is refused.
 #'
 #' @param recipe An \code{omop_recipe} object.
 #' @param block An \code{\link{omop_variable_block}} object.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_variable_block}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_block <- function(recipe, block) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
   if (!inherits(block, "omop_variable_block"))
     stop("block must be an omop_variable_block object", call. = FALSE)
 
+  existing_block <- recipe$blocks[[block$id]]
+  if (!is.null(existing_block)) {
+    if (!identical(existing_block, block)) {
+      stop("Block ID '", block$id, "' already has a conflicting definition.",
+           call. = FALSE)
+    }
+    return(recipe)
+  }
   recipe$blocks[[block$id]] <- block
 
   # Expand concepts into variables
@@ -2525,6 +2917,8 @@ recipe_add_block <- function(recipe, block) {
 
     base_name <- if (!is.null(cname)) .sanitize_name(cname)
                  else paste0(block$table, "_c", cid)
+    # A block renamed by recipe_merge(prefix =) expands to the prefixed names.
+    if (!is.null(block$name_prefix)) base_name <- paste0(block$name_prefix, "_", base_name)
     var_name <- .ensure_unique_name(base_name, existing_names)
 
     v <- omop_variable(
@@ -2535,11 +2929,15 @@ recipe_add_block <- function(recipe, block) {
       suffix_mode = block$suffix_mode,
       filters = block$filters,
       reference_date = block$reference_date,
-      unit = block$unit
+      unit = block$unit,
+      concept_col = block$concept_col,
+      where = block$where,
+      visit = block$visit
     )
-    # Provenance marker so recipe_to_code() can skip block-derived variables
-    # without guessing by name.
+    # Provenance is retained even when an exported editor changes this member;
+    # code generation separately checks whether the block still reproduces it.
     v$block_id <- block$id
+    if (!is.null(block$block_version)) v$block_version <- block$block_version
     if (isTRUE(block$expand)) v$expand <- TRUE
     recipe$variables[[var_name]] <- v
     existing_names <- c(existing_names, var_name)
@@ -2563,7 +2961,7 @@ recipe_add_block <- function(recipe, block) {
 #'   \code{\link{omop_variable}()}.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_variable}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_variable <- function(recipe, variable = NULL, ...) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2572,6 +2970,21 @@ recipe_add_variable <- function(recipe, variable = NULL, ...) {
     variable <- omop_variable(...)
   } else if (!inherits(variable, "omop_variable")) {
     stop("variable must be an omop_variable object", call. = FALSE)
+  }
+
+  if (.v2_is_v2_variable(variable)) {
+    # Language-2 variables are referenced by name from outputs: an explicit
+    # name is never silently changed.
+    if (is.null(variable$name)) {
+      variable$name <- .ensure_unique_name(.v2_variable_default_name(variable),
+                                           names(recipe$variables))
+    } else if (variable$name %in% names(recipe$variables)) {
+      stop("Variable name '", variable$name, "' is already used in the recipe.",
+           call. = FALSE)
+    }
+    recipe$variables[[variable$name]] <- variable
+    recipe$meta$modified <- Sys.time()
+    return(recipe)
   }
 
   # Ensure unique name
@@ -2590,7 +3003,7 @@ recipe_add_variable <- function(recipe, variable = NULL, ...) {
 #' @param name Character; variable name to remove.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_remove_variable <- function(recipe, name) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2613,16 +3026,18 @@ recipe_remove_variable <- function(recipe, name) {
 #'   sequence number if \code{NULL}).
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_filter}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_filter <- function(recipe, filter, id = NULL) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
-  if (!inherits(filter, "omop_filter") && !inherits(filter, "omop_filter_group"))
-    stop("filter must be an omop_filter or omop_filter_group object",
+  if (!inherits(filter, "omop_filter") && !inherits(filter, "omop_filter_group") &&
+      !inherits(filter, "omop_criterion"))
+    stop("filter must be an omop_filter, omop_filter_group or criterion object",
          call. = FALSE)
 
   if (is.null(id)) {
     ftype <- if (inherits(filter, "omop_filter_group")) filter$operator
+             else if (inherits(filter, "omop_criterion")) filter$kind
              else filter$type
     id <- paste0("f", length(recipe$filters) + 1L, "_", ftype)
   }
@@ -2639,7 +3054,7 @@ recipe_add_filter <- function(recipe, filter, id = NULL) {
 #' @param id Character; filter ID to remove.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_remove_filter <- function(recipe, id) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2658,7 +3073,7 @@ recipe_remove_filter <- function(recipe, id) {
 #' @param output An \code{\link{omop_output}} object.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_output}}, \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_add_output <- function(recipe, output) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2678,7 +3093,7 @@ recipe_add_output <- function(recipe, output) {
 #' @param name Character; output name to remove.
 #' @return The modified \code{omop_recipe} object.
 #' @seealso \code{\link{omop_recipe}}
-#' @keywords internal
+#' @export
 recipe_remove_output <- function(recipe, name) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
@@ -2717,6 +3132,7 @@ print.omop_recipe <- function(x, ...) {
     p <- x$populations[[pid]]
     parent_txt <- if (!is.null(p$parent_id)) paste("->", p$parent_id) else ""
     cat("  ", pid, parent_txt, ": ", p$label, "\n")
+    for (line in .simple_new_users_text(p)) cat("    ", line, "\n", sep = "")
   }
 
   if (length(x$blocks) > 0) {
@@ -2728,9 +3144,29 @@ print.omop_recipe <- function(x, ...) {
     }
   }
 
+  for (slot in c("concept_sets", "events", "intervals")) {
+    reg <- x[[slot]] %||% list()
+    if (length(reg)) {
+      labels <- vapply(seq_along(reg), function(i) {
+        names(reg)[[i]] %||% reg[[i]]$name %||% "<unnamed>"
+      }, "")
+      cat(sub("_", " ", tools::toTitleCase(slot)), " (", length(reg), "): ",
+          paste(labels, collapse = ", "), "\n", sep = "")
+    }
+  }
   cat("Variables (", length(x$variables), "):\n")
   for (nm in names(x$variables)) {
     v <- x$variables[[nm]]
+    if (.v2_is_v2_variable(v)) {
+      desc <- switch(v$kind,
+        reducer = paste0(v$reducer$fn, " of ", .v2_source_label(v$event)),
+        derived = paste0("derived ", v$derived$kind,
+                         if (identical(v$derived$kind, "age"))
+                           if (isTRUE(v$derived$bands)) " (age_group bands)" else " (exact annual age)"),
+        population_column = paste0("population column ", v$population_column))
+      cat("  ", nm, ": ", desc, "\n")
+      next
+    }
     concept_info <- if (!is.null(v$concept_id))
       paste0(" [", v$concept_id,
              if (!is.null(v$concept_name)) paste0(": ", v$concept_name) else "",
@@ -2751,7 +3187,26 @@ print.omop_recipe <- function(x, ...) {
   cat("Outputs (", length(x$outputs), "):\n")
   for (nm in names(x$outputs)) {
     o <- x$outputs[[nm]]
-    cat("  ", nm, " [", o$type, "] pop:", o$population_id, "\n")
+    cat("  ", nm, " [", o$format %||% o$type, "] pop:", o$population_id, "\n")
+    if ((identical(o$type, "survival") || identical(o$format, "survival")) &&
+        is.null(o$options[["tar"]]) && is.null(o$options[["tars"]])) {
+      cat("     follow-up ends 730 days after index (default TAR)\n")
+    }
+  }
+  if (!is.null(x$publish)) cat("Published:", paste(x$publish, collapse = ", "), "\n")
+  params <- tryCatch(recipe_params(x), error = function(e) NULL)
+  if (length(params)) {
+    cat("Parameters (", length(params), "): ",
+        paste(vapply(params, function(p) {
+          paste0(p$name, " <", p$type, ">",
+                 if (!is.null(p$default)) paste0(" = ", .v2_param_value_text(p$default)) else
+                   " (unbound)")
+        }, ""), collapse = ", "), "\n", sep = "")
+  }
+  study <- x$meta$study
+  if (!is.null(study)) {
+    cat("Study '", study$name, "' (omop_study()) defaults chosen:\n", sep = "")
+    for (d in unlist(study$defaults)) cat("  - ", d, "\n", sep = "")
   }
   invisible(x)
 }
@@ -2846,11 +3301,15 @@ print.omop_recipe <- function(x, ...) {
     stop("Invalid filter node in ", context, ".", call. = FALSE)
   }
   op <- toupper(node$operator %||% "")
+  if (identical(op, "NOT")) {
+    stop(.v1_newly_permitted(
+      "A NOT filter group in ", context, " has no v1 rendering (a pre-2.10.3 ",
+      "server cannot negate a group); it is omop_not() of the language-2 plan ",
+      "and runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers (recipe_to_plan(version = 2))."))
+  }
   if (!op %in% c("AND", "OR")) {
     stop("Filter operator '", op %||% "?",
-         "' is not executable. NOT groups are rejected fail-closed; express ",
-         "absence with a supported population filter such as ",
-         "omop_filter_not_has_concept().", call. = FALSE)
+         "' is not executable.", call. = FALSE)
   }
   if (length(node$children %||% list()) == 0L) {
     stop("Empty filter group in ", context, " is not executable.",
@@ -3254,6 +3713,24 @@ print.omop_recipe <- function(x, ...) {
 
 #' Convert a recipe to an extraction plan
 #'
+#' Compiles the recipe into the plan sent to the server. \code{version = 2}
+#' (the default) emits a recipe-language 2.0 plan (\code{omop_plan_v2}),
+#' validated against the vendored \code{plan-v2.json} schema: named concept
+#' sets, events, intervals, populations, variables and outputs with typed
+#' references, inline objects interned under deterministic names, legacy
+#' constructors lowered to their native equivalents (or refused, naming the
+#' construct, when no faithful equivalent exists). \code{version = 1} emits
+#' the 2.10.1 plan unchanged for recipes built from 2.10.1 constructors; it
+#' refuses language-2 constructs, which have no v1 equivalent.
+#'
+#' \code{\link{recipe_execute}} chooses the version per execution: a recipe
+#' built only from 2.10.1 constructors (and without \code{parent_id}) runs as
+#' its v1 plan, so its results stay identical; any other recipe
+#' runs as a v2 plan on servers advertising \code{recipe_language} 2 and every
+#' operation it needs, and is refused (naming the operation) otherwise.
+#'
+#' The legacy (version 1) compilation:
+#'
 #' Compiles the recipe into an \code{omop_plan} suitable for server-side
 #' execution via \code{\link{ds.omop.plan.execute}}. The conversion maps
 #' population-level filters to cohort specifications, groups variables by
@@ -3284,7 +3761,9 @@ print.omop_recipe <- function(x, ...) {
 #' the server can inspect the exact payload before it is executed.
 #'
 #' @param recipe An \code{omop_recipe} object.
-#' @return An \code{omop_plan} object ready for execution.
+#' @param version Plan version: \code{2} (default) or \code{1}.
+#' @return An \code{omop_plan_v2} (version 2) or \code{omop_plan} (version 1)
+#'   object ready for execution.
 #' @examples
 #' \dontrun{
 #' recipe <- omop_recipe(
@@ -3298,7 +3777,28 @@ print.omop_recipe <- function(x, ...) {
 #' @seealso \code{\link{recipe_execute}}, \code{\link{omop_recipe}},
 #'   \code{\link{ds.omop.plan}}
 #' @export
-recipe_to_plan <- function(recipe) {
+recipe_to_plan <- function(recipe, version = 2L) {
+  if (!inherits(recipe, "omop_recipe"))
+    stop("recipe must be an omop_recipe object", call. = FALSE)
+  version <- .v2_int(version, "recipe_to_plan(): version")
+  if (identical(version, 1L)) {
+    constructs <- .recipe_v2_constructs(recipe)
+    if (length(constructs) > 0L) {
+      stop("recipe_to_plan(version = 1): the recipe uses language-2 construct(s) ",
+           "with no v1 equivalent: ", paste(constructs, collapse = "; "), ".",
+           call. = FALSE)
+    }
+    return(.recipe_to_plan_v1(recipe))
+  }
+  if (!identical(version, 2L)) {
+    stop("recipe_to_plan(): version must be 1 or 2.", call. = FALSE)
+  }
+  .recipe_to_plan_v2(recipe)
+}
+
+#' Legacy (2.10.1) recipe compiler: the version 1 plan
+#' @keywords internal
+.recipe_to_plan_v1 <- function(recipe) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
 
@@ -3418,7 +3918,13 @@ recipe_to_plan <- function(recipe) {
   # Group variables by output
   for (out_name in names(recipe$outputs)) {
     out <- recipe$outputs[[out_name]]
-    if (out$type %in% c("joined_long", "covariates_sparse")) {
+    if (identical(out$type, "covariates_sparse")) {
+      stop(.v1_newly_permitted(
+        "Recipe output '", out_name, "' (covariates_sparse) has no v1 rendering; ",
+        "it is the language-2 format = \"sparse\" and runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " ",
+        "servers (recipe_to_plan(version = 2))."))
+    }
+    if (identical(out$type, "joined_long")) {
       stop("Recipe output '", out_name, "' uses unsupported type '",
            out$type, "'. No executable Recipe-to-Plan mapping preserves ",
            "that contract.", call. = FALSE)
@@ -3758,6 +4264,17 @@ recipe_to_plan <- function(recipe) {
               is.null(feature_temporal$index_window)) {
             feature_temporal$index_window <- feature_window
           }
+          if (!is.null(feature_temporal$index_window) && is.null(out$options$grain)) {
+            # A-24: omitted grain on windowed features permits an attempted
+            # native rendering, which still requires an indexed population.
+            # An explicit incompatible grain keeps the ordinary v1 refusal.
+            stop(.v1_newly_permitted(
+              "Index-relative wide/features/sparse require ",
+              "representation$grain='episode'. Language 2 takes grain = \"episode\" ",
+              "for a windowed features output over an indexed population ",
+              "(recipe_to_plan(version = 2)); the complete recipe must admit ",
+              "native rendering and requires dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers."))
+          }
           plan <- ds.omop.plan.features(
             plan, name = nm, table = tbl, specs = specs,
             grain = out$options$grain %||% "person",
@@ -3804,14 +4321,21 @@ recipe_to_plan <- function(recipe) {
         }
         unsupported <- Filter(function(v) {
           !v$format %in% c("raw", "binary", "count") ||
-            !is.null(v$column) || !is.null(v$value_source) ||
-            !is.null(v$visit_filter) || !is.null(v$concept_col)
+            !is.null(v$column) || !is.null(v$value_source)
         }, vs)
         if (length(unsupported) > 0L) {
           stop("Temporal-covariates output '", out_name,
                "' supports concept presence/count variables only (formats ",
-               "raw, binary, count), without raw columns, visit/concept-column ",
-               "overrides.", call. = FALSE)
+               "raw, binary, count), without raw columns.", call. = FALSE)
+        }
+        if (any(vapply(vs, function(v) {
+          !is.null(v$visit_filter) || !is.null(v$concept_col)
+        }, logical(1)))) {
+          stop(.v1_newly_permitted(
+            "Temporal-covariates output '", out_name, "' has variables with ",
+            "visit/concept-column overrides, which a v1 temporal source cannot ",
+            "carry; its language-2 sources carry them on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers ",
+            "(recipe_to_plan(version = 2))."))
         }
 
         # The server computes the Cartesian product concept_set x analyses.
@@ -3834,10 +4358,12 @@ recipe_to_plan <- function(recipe) {
           )
           pair_key <- function(x) paste(x$concept, x$analysis, sep = "\r")
           if (!setequal(pair_key(requested_pairs), pair_key(emitted_pairs))) {
-            stop("Temporal-covariates output '", out_name,
-                 "' mixes analyses by concept in a way the server would expand ",
-                 "to an undeclared concept-by-analysis Cartesian product. Split ",
-                 "the variables into separate outputs.", call. = FALSE)
+            stop(.v1_newly_permitted(
+              "Temporal-covariates output '", out_name,
+              "' mixes analyses by concept in a way a v1 server would expand ",
+              "to an undeclared concept-by-analysis Cartesian product; the ",
+              "language-2 plan names every (source, concept, analysis) covariate ",
+              "identity on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers (recipe_to_plan(version = 2))."))
           }
         }
 
@@ -3906,16 +4432,23 @@ recipe_to_plan <- function(recipe) {
       unsupported <- Filter(function(v) {
         !v$format %in% c("raw", "binary") ||
           !is.null(v$column) || !is.null(v$value_source) ||
-          !is.null(v$visit_filter) || !is.null(v$concept_col) ||
           !is.null(v$time_window)
       }, vars)
       if (length(unsupported) > 0L) {
         stop("Survival output '", out_name,
              "' accepts outcome concept variables only (raw/binary); value ",
-             "columns, visit/concept-column overrides, ",
-             "variable-specific time windows, and aggregation formats cannot ",
-             "be represented. Use the output TAR for the common risk window.",
+             "columns, variable-specific time windows, and aggregation formats ",
+             "cannot be represented. Use the output TAR for the common risk window.",
              call. = FALSE)
+      }
+      if (any(vapply(vars, function(v) {
+        !is.null(v$visit_filter) || !is.null(v$concept_col)
+      }, logical(1)))) {
+        stop(.v1_newly_permitted(
+          "Survival output '", out_name, "' has outcome variables with ",
+          "visit/concept-column overrides, which a v1 survival endpoint cannot ",
+          "carry; its outcome events carry them in the language-2 plan, which ",
+          "runs on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers (recipe_to_plan(version = 2))."))
       }
       if (any(vapply(vars, function(v) {
         length(v$concept_id %||% integer(0)) == 0L
@@ -4011,15 +4544,22 @@ recipe_to_plan <- function(recipe) {
       tables <- names(by_table)
       invalid <- Filter(function(v) {
         !identical(v$format %||% "raw", "raw") ||
-          !is.null(v$column) || !is.null(v$value_source) ||
-          !is.null(v$visit_filter) || !is.null(v$concept_col)
+          !is.null(v$column) || !is.null(v$value_source)
       }, vars)
       if (length(invalid) > 0L) {
         stop("Intervals output '", out_name,
              "' only accepts raw concept variables; explicit columns and ",
-             "aggregated formats, visit/concept-column overrides, and ",
-             "unsupported value projections cannot be represented.",
-             call. = FALSE)
+             "aggregated formats and unsupported value projections cannot be ",
+             "represented.", call. = FALSE)
+      }
+      if (any(vapply(vars, function(v) {
+        !is.null(v$visit_filter) || !is.null(v$concept_col)
+      }, logical(1)))) {
+        stop(.v1_newly_permitted(
+          "Intervals output '", out_name, "' has variables with ",
+          "visit/concept-column overrides, which v1 interval sources cannot ",
+          "carry; its language-2 sources carry them on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers ",
+          "(recipe_to_plan(version = 2))."))
       }
       mixed_scope <- vapply(by_table, function(vs) {
         scoped <- vapply(vs, function(v) {
@@ -4028,10 +4568,13 @@ recipe_to_plan <- function(recipe) {
         any(scoped) && !all(scoped)
       }, logical(1))
       if (any(mixed_scope)) {
-        stop("Intervals output '", out_name,
-             "' mixes concept-scoped and unscoped variables in table(s): ",
-             paste(names(mixed_scope)[mixed_scope], collapse = ", "),
-             ". Split them into separate outputs.", call. = FALSE)
+        stop(.v1_newly_permitted(
+          "Intervals output '", out_name,
+          "' mixes concept-scoped and unscoped variables in table(s): ",
+          paste(names(mixed_scope)[mixed_scope], collapse = ", "),
+          ", which one v1 source per table cannot carry; the language-2 plan ",
+          "keeps one source per scope on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers ",
+          "(recipe_to_plan(version = 2))."))
       }
       concept_filter <- lapply(by_table, function(vs) {
         ids <- unique(unlist(lapply(vs, function(v) v$concept_id)))
@@ -4113,6 +4656,7 @@ recipe_to_plan <- function(recipe) {
             filter_tree <- .compile_filter_tree(
               row_filter_items, level = "row", table = endpoint$table
             )
+            .assert_row_filter_columns(filter_tree, endpoint$table, out_name)
             endpoint$filters <- .combine_filter_trees(
               endpoint$filters, filter_tree
             )
@@ -4129,6 +4673,7 @@ recipe_to_plan <- function(recipe) {
           filter_tree <- .compile_filter_tree(
             row_filter_items, level = "row", table = table
           )
+          .assert_row_filter_columns(filter_tree, table, out_name)
           index <- match(tolower(table), source_names)
           current <- if (is.na(index)) NULL else source_filters[[index]]
           source_filters[[tolower(table)]] <- .combine_filter_trees(
@@ -4141,6 +4686,8 @@ recipe_to_plan <- function(recipe) {
       table <- .plan_output_filter_table(plan$outputs[[out_name]], out_name)
       filter_tree <- .compile_filter_tree(row_filter_items, level = "row",
                                           table = table)
+      # Defect F-2: never attach a filter to a table lacking its columns.
+      .assert_row_filter_columns(filter_tree, table, out_name)
       plan$outputs[[out_name]]$filters <-
         plan$outputs[[out_name]]$filters %||% list()
       plan$outputs[[out_name]]$filters$custom <- .combine_filter_trees(
@@ -4198,11 +4745,15 @@ recipe_to_plan <- function(recipe) {
   }
   normalize_bound <- function(x, name) {
     if (is.null(x)) return(NULL)
-    .plan_integer_scalar(x, paste0("time_window ", name, " for '",
-                                   context, "'"))
+    .plan_window_endpoint(x, paste0("time_window ", name, " for '",
+                                    context, "'"), name)
   }
   start <- normalize_bound(start, "start")
   end <- normalize_bound(end, "end")
+  if (is.null(start) && is.null(end)) {
+    stop("time_window for '", context, "' is unbounded on both sides; use ",
+         "time_window = NULL.", call. = FALSE)
+  }
   if (!is.null(start) && !is.null(end) && start > end) {
     stop("time_window start must be <= end for '", context, "'.",
          call. = FALSE)
@@ -4238,10 +4789,12 @@ recipe_to_plan <- function(recipe) {
   present <- !vapply(windows, is.null, logical(1))
   if (!any(present)) return(NULL)
   if (!all(present)) {
-    stop("Recipe feature output '", output_name,
-         "' mixes variables with and without an index-relative time_window. ",
-         "Split them so each cohort episode has an unambiguous event scope.",
-         call. = FALSE)
+    stop(.v1_newly_permitted(
+      "Recipe feature output '", output_name,
+      "' mixes variables with and without an index-relative time_window, which ",
+      "a v1 feature output cannot scope per variable; it runs as one language-2 ",
+      "roster (one reducer window per variable) on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers ",
+      "(recipe_to_plan(version = 2))."))
   }
   normalized <- lapply(seq_along(windows), function(i) {
     .normalize_recipe_time_window(
@@ -4353,9 +4906,18 @@ recipe_to_plan <- function(recipe) {
       grain <- output$representation$grain %||% options$grain %||% "person"
       has_index <- !is.null(temporal$index_window)
       if (has_index && !identical(grain, "episode")) {
-        stop("Recipe feature output '", output_name,
-             "' is index-relative; set options = list(grain = 'episode') to ",
-             "preserve recurrent cohort entries.", call. = FALSE)
+        msg <- paste0("Recipe feature output '", output_name,
+                      "' is index-relative; set options = list(grain = 'episode') to ",
+                      "preserve recurrent cohort entries.")
+        # A-24: this grain refusal permits an attempted native rendering;
+        # the complete recipe must still satisfy indexedness and other rules.
+        if (identical(recipe_output$type, "features") && is.null(recipe_output$options$grain)) {
+          stop(.v1_newly_permitted(msg, " Language 2 takes grain = \"episode\" for a ",
+                                   "windowed features output over an indexed population ",
+                                   "(recipe_to_plan(version = 2)); the complete recipe must admit ",
+                                   "native rendering and requires dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers."))
+        }
+        stop(msg, call. = FALSE)
       }
       if (!has_index && identical(grain, "episode")) {
         stop("Recipe feature output '", output_name,
@@ -4464,7 +5026,7 @@ recipe_to_plan <- function(recipe) {
 #' @return The modified \code{omop_recipe} with updated options.
 #' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_to_plan}},
 #'   \code{\link{ds.omop.plan.options}}
-#' @keywords internal
+#' @export
 recipe_set_options <- function(recipe,
                                translate_concepts = NULL,
                                block_sensitive = NULL,
@@ -4502,25 +5064,6 @@ recipe_set_options <- function(recipe,
   ids
 }
 
-#' Is a column name a server-blocked free-text / source-value column?
-#'
-#' Mirrors the server's blocked-column patterns (dsOMOP blueprint:
-#' \code{*_source_value}, \code{value_as_string}, \code{value_source_value},
-#' \code{sig}, \code{*_source_concept_value}, note text). These are never
-#' releasable, so a recipe that requests one as a variable's \code{value_source}
-#' or raw \code{column} is rejected at compile time rather than silently dropped.
-#'
-#' @param col Character; a column name (case-insensitive).
-#' @return Logical scalar.
-#' @keywords internal
-.is_blocked_column <- function(col) {
-  if (is.null(col) || !nzchar(col)) return(FALSE)
-  col <- tolower(col)
-  patterns <- c("_source_value$", "^value_as_string$", "^value_source_value$",
-                "^sig$", "^note_text$", "^note_source_value$")
-  any(vapply(patterns, function(p) grepl(p, col), logical(1)))
-}
-
 #' Reject variables whose value_source / raw column is a blocked column
 #'
 #' @param variables Named list of \code{omop_variable} objects.
@@ -4532,7 +5075,7 @@ recipe_set_options <- function(recipe,
     for (col in c(v$value_source, v$column)) {
       if (.is_blocked_column(col)) {
         stop("Disclosive: variable '", nm %||% v$name %||% "?",
-             "' requests blocked free-text/source column '", col,
+             "' requests blocked class-1 column '", col,
              "', which the server cannot release.", call. = FALSE)
       }
     }
@@ -4854,11 +5397,21 @@ recipe_set_options <- function(recipe,
              "' because no standard date column can be inferred.",
              call. = FALSE)
       }
-      list(var = date_column, op = "between",
-           value = c(bounds$start, bounds$end))
+      if (is.null(bounds$start)) {
+        list(var = date_column, op = "<=", value = bounds$end)
+      } else if (is.null(bounds$end)) {
+        list(var = date_column, op = ">=", value = bounds$start)
+      } else {
+        list(var = date_column, op = "between",
+             value = c(bounds$start, bounds$end))
+      }
     },
+    # Defect F-1: the set matches the table's domain concept column from the
+    # role registry; the table-agnostic sentinel "concept_id" remains only when
+    # the table is unknown here (the server resolves it the same way).
     "has_concept" =, "concept_set" = list(
-      var = f$params$concept_col %||% "concept_id",
+      var = f$params$concept_col %||% .role_domain_concept(table) %||%
+        "concept_id",
       op = "in", value = f$params$concept_id %||% f$params$concept_ids),
     "value_bin" = list(var = f$params$var, op = "value_bin",
                        value = f$params$value,
@@ -5021,20 +5574,34 @@ recipe_set_options <- function(recipe,
 .codegen_filter_list <- function(filters) {
   if (is.null(filters) || length(filters) == 0) return(NULL)
   code <- vapply(filters, function(f) {
-    if (inherits(f, "omop_filter_group")) .codegen_filter_group(f)
+    if (inherits(f, "omop_criterion")) .v2_codegen(f)
+    else if (inherits(f, "omop_filter_group")) .codegen_filter_group(f)
     else .codegen_filter(f)
   }, character(1))
   .codegen_raw(paste0("list(", paste(code, collapse = ", "), ")"))
 }
 
+# Block provenance has no constructor arguments. Restore it after constructing
+# an edited variable, keeping the stored field order as well as its values.
+.codegen_variable_provenance <- function(code, variable) {
+  fields <- intersect(c("block_id", "block_version", "name_prefix"), names(variable))
+  if (!length(fields)) return(code)
+  fix <- vapply(fields, function(field) paste0(
+    "v$", field, " <- ", .codegen_value(variable[[field]])), "")
+  paste0("(function(v) { ", paste(fix, collapse = "; "),
+         "; structure(v[", .codegen_value(names(variable)),
+         "], class = class(v)) })(", code, ")")
+}
+
 #' Generate reproducible R code from a recipe
 #'
 #' Produces a minimal R script that, when executed, recreates the recipe from
-#' scratch. The output is a single declarative \code{\link{omop_recipe}(...)}
+#' scratch. The output starts with a declarative \code{\link{omop_recipe}(...)}
 #' expression whose arguments are nested calls to the leaf constructors
 #' (\code{omop_variable*}, \code{omop_filter*}, \code{omop_output},
-#' \code{omop_population}, \code{omop_variable_block}). Does not include
-#' \code{library()} calls or header comments.
+#' \code{omop_population}, \code{omop_variable_block}). When block members have
+#' been edited, explicit corrections preserve their names, order, definitions
+#' and provenance. Does not include \code{library()} calls or header comments.
 #'
 #' @param recipe An \code{omop_recipe} object.
 #' @return Character string containing executable R code.
@@ -5064,14 +5631,21 @@ recipe_to_code <- function(recipe) {
         is.null(recipe$populations$base$cohort_definition_id) &&
         is.null(recipe$populations$base$episode_policy) &&
         is.null(recipe$populations$base$index_event) &&
+        is.null(recipe$populations$base[["index"]]) &&
+        is.null(recipe$populations$base$match) &&
+        is.null(recipe$populations$base$coverage) &&
+        is.null(recipe$populations$base$simple) &&
         length(recipe$populations$base$filters %||% list()) == 0L) next
     p <- recipe$populations[[pid]]
     if (!is.null(p$setop)) {
       # Set-op population: emit the matching named set arg (union/intersect/
       # setdiff = c(members)), never filters/cohort_definition_id.
       pop_args <- list("omop_population",
-                       id = p$id, label = p$label, parent_id = p$parent_id)
-      pop_args[[p$setop$op]] <- as.character(p$setop$members)
+                       id = p$id, label = p$label, parent_id = if (.v2_is_tagged(p$parent_id))
+                         .codegen_raw(.v2_codegen(p$parent_id)) else p$parent_id)
+      pop_args[[p$setop$op]] <- if (.v2_has_tagged(p$setop$members)) {
+        .codegen_raw(.v2_codegen_list(p$setop$members))
+      } else as.character(p$setop$members)
       pop_code <- c(pop_code, do.call(.codegen_call, pop_args))
     } else {
       index_code <- NULL
@@ -5087,11 +5661,30 @@ recipe_to_code <- function(recipe) {
           end_strategy = ie$end_strategy))
       }
       pop_code <- c(pop_code, .codegen_call("omop_population",
-        id = p$id, label = p$label, parent_id = p$parent_id,
+        id = p$id, label = p$label, parent_id = if (.v2_is_tagged(p$parent_id))
+                         .codegen_raw(.v2_codegen(p$parent_id)) else p$parent_id,
         filters = .codegen_filter_list(p$filters),
         cohort_definition_id = p$cohort_definition_id,
         episode_policy = p$episode_policy,
-        index_event = index_code))
+        index_event = index_code,
+        index = if (!is.null(p[["index"]])) .codegen_raw(.v2_codegen(p[["index"]])),
+        match = if (!is.null(p$match)) .codegen_raw(.v2_codegen(p$match)),
+        coverage = if (!is.null(p$coverage)) .codegen_raw(.v2_codegen(p$coverage))))
+      if (!is.null(p$circe_v2)) {
+        # The language-2 form of a Circe import has no constructor argument;
+        # the generated code re-imports it explicitly.
+        pop_code[[length(pop_code)]] <- paste0(
+          "(function(p) { p$circe_v2 <- list(index = ", .v2_codegen(p$circe_v2$index),
+          ", filters = list(", paste(vapply(p$circe_v2$filters, .v2_codegen, ""), collapse = ", "),
+          "), coverage = ", .v2_codegen(p$circe_v2$coverage), "); p })(",
+          pop_code[[length(pop_code)]], ")")
+      }
+    }
+    if (!is.null(p$simple)) {
+      pop_code[[length(pop_code)]] <- paste0(
+        "(function(p) { p$simple <- ", .v2_codegen_list(p$simple),
+        "; structure(p[", .codegen_value(names(p)), "], class = class(p)) })(",
+        pop_code[[length(pop_code)]], ")")
     }
   }
   if (length(pop_code) > 0)
@@ -5114,19 +5707,45 @@ recipe_to_code <- function(recipe) {
       population_id = b$population_id,
       expand = if (isTRUE(b$expand)) TRUE else NULL,
       reference_date = b$reference_date,
-      unit = b$unit))
+      unit = b$unit,
+      where = if (!is.null(b$where)) .codegen_raw(.v2_codegen(b$where)),
+      visit = b$visit,
+      concept_col = b$concept_col))
+    if (!is.null(b$name_prefix) || !is.null(b$block_version)) {
+      # Block metadata without a constructor argument (recipe_merge(prefix =)
+      # records the variable prefix; library blocks carry a version).
+      fix <- c(if (!is.null(b$name_prefix)) paste0("b$name_prefix <- ", .codegen_value(b$name_prefix)),
+               if (!is.null(b$block_version)) paste0("b$block_version <- ", .codegen_value(b$block_version)))
+      block_code[[length(block_code)]] <- paste0("(function(b) { ", paste(fix, collapse = "; "),
+        "; structure(b[", .codegen_value(names(b)), "], class = class(b)) })(",
+        block_code[[length(block_code)]], ")")
+    }
   }
   if (length(block_code) > 0)
     slot_args$blocks <- .codegen_list_arg(block_code)
 
-  # Standalone variables (those not produced by a block). Every block-expanded
-  # variable carries a `block_id` provenance marker (stamped by
-  # recipe_add_block and preserved across the JSON/YAML round-trip), so
-  # block-derived variables are identified by that marker alone.
+  # Reproduce the current blocks before deciding which stored variables they
+  # actually reconstruct. A provenance marker alone cannot prove equality:
+  # exported editors can remove a member, replace it, or change insertion order.
+  expanded <- omop_recipe(blocks = unname(recipe$blocks))$variables
   var_code <- character(0)
+  variable_fixes <- character(0)
+  named_vars <- FALSE
   for (nm in names(recipe$variables)) {
     v <- recipe$variables[[nm]]
-    if (!is.null(v$block_id)) next
+    if (identical(expanded[[nm]], v)) next
+    needs_fix <- !is.null(v$block_id) || nm %in% names(expanded)
+    if (.v2_is_v2_variable(v)) {
+      if (needs_fix) {
+        variable_fixes <- c(variable_fixes, paste0(
+          "recipe$variables[[", .codegen_value(nm), "]] <- ",
+          .codegen_variable_provenance(.v2_codegen(v), v)))
+      } else {
+        var_code <- c(var_code, paste0(.codegen_name(nm), " = ", .v2_codegen(v)))
+        named_vars <- TRUE
+      }
+      next
+    }
 
     # Use convenience constructors for derived variables
     code <- NULL
@@ -5201,18 +5820,31 @@ recipe_to_code <- function(recipe) {
         reference_date = if (identical(v$format, "time_since"))
           v$derived$reference_date else NULL,
         unit = if (identical(v$format, "time_since"))
-          v$derived$unit else NULL)
+          v$derived$unit else NULL,
+        where = if (!is.null(v[["where"]])) .codegen_raw(.v2_codegen(v[["where"]])),
+        visit = v[["visit"]],
+        broadcast = if (isTRUE(v[["broadcast"]])) TRUE)
     }
-    var_code <- c(var_code, code)
+    code <- .codegen_variable_provenance(code, v)
+    if (needs_fix) {
+      variable_fixes <- c(variable_fixes, paste0(
+        "recipe$variables[[", .codegen_value(nm), "]] <- ", code))
+    } else var_code <- c(var_code, code)
   }
-  if (length(var_code) > 0)
-    slot_args$variables <- .codegen_list_arg(var_code)
+  if (length(var_code) > 0) {
+    # A language-2 variable is named by its list element, so the list stays
+    # even when it has one element.
+    slot_args$variables <- if (named_vars) {
+      .codegen_raw(paste0("list(", paste(var_code, collapse = ", "), ")"))
+    } else .codegen_list_arg(var_code)
+  }
 
   # Filters (preserve their IDs as the list element names).
   filt_code <- character(0)
   for (id in names(recipe$filters)) {
     f <- recipe$filters[[id]]
-    one <- if (inherits(f, "omop_filter_group")) .codegen_filter_group(f)
+    one <- if (inherits(f, "omop_criterion")) .v2_codegen(f)
+           else if (inherits(f, "omop_filter_group")) .codegen_filter_group(f)
            else .codegen_filter(f)
     filt_code <- c(filt_code, paste0(.codegen_name(id), " = ", one))
   }
@@ -5224,12 +5856,22 @@ recipe_to_code <- function(recipe) {
   out_code <- character(0)
   for (nm in names(recipe$outputs)) {
     o <- recipe$outputs[[nm]]
+    opts <- if (length(o$options %||% list()) > 0) o$options else NULL
     out_code <- c(out_code, .codegen_call("omop_output",
       name = o$name, type = o$type,
-      variables = o$variables,
-      population_id = o$population_id,
-      options = if (length(o$options %||% list()) > 0) o$options else NULL,
-      result_symbol = o$result_symbol))
+      variables = if (.v2_has_tagged(o$variables)) .codegen_raw(
+        if (.v2_is_tagged(o$variables)) .v2_codegen(o$variables) else .v2_codegen_list(o$variables))
+        else o$variables,
+      population_id = if (.v2_is_tagged(o$population_id))
+        .codegen_raw(.v2_codegen(o$population_id)) else o$population_id,
+      options = if (!is.null(opts) && .v2_has_tagged(opts))
+        .codegen_raw(.v2_codegen_list(opts)) else opts,
+      result_symbol = o$result_symbol,
+      grain = o$grain,
+      format = o$format,
+      sources = if (!is.null(o$sources)) .codegen_raw(
+        if (.v2_is_tagged(o$sources)) .v2_codegen(o$sources) else .v2_codegen_list(o$sources)),
+      collapse = o$collapse))
   }
   if (length(out_code) > 0)
     slot_args$outputs <- .codegen_list_arg(out_code)
@@ -5261,30 +5903,37 @@ recipe_to_code <- function(recipe) {
       factor_concepts    = o$factor_concepts    %||% TRUE)
   }
 
+  # Language-2 recipe slots.
+  if (length(recipe$concept_sets %||% list())) {
+    slot_args$concept_sets <- .codegen_raw(.v2_codegen_list(unname(recipe$concept_sets)))
+  }
+  if (length(recipe$events %||% list())) {
+    slot_args$events <- .codegen_raw(.v2_codegen_list(unname(recipe$events)))
+  }
+  if (length(recipe$intervals %||% list())) {
+    slot_args$intervals <- .codegen_raw(.v2_codegen_list(unname(recipe$intervals)))
+  }
+  if (!is.null(recipe$coverage)) slot_args$coverage <- .codegen_raw(.v2_codegen(recipe$coverage))
+  if (!is.null(recipe$publish)) slot_args$publish <- if (.v2_is_tagged(recipe$publish)) {
+    .codegen_raw(.v2_codegen(recipe$publish))
+  } else if (.v2_has_tagged(recipe$publish)) {
+    .codegen_raw(.v2_codegen_list(recipe$publish))
+  } else recipe$publish
+
   lines <- paste0("recipe <- ",
                   do.call(.codegen_call, c("omop_recipe", slot_args)))
 
-  # The block re-expansion order (blocks first, then standalone variables)
-  # may differ from the recipe's insertion order; restore it so column
-  # ordering in outputs is preserved. This is the one piece the declarative
-  # call cannot express, so it trails as a fixup.
-  is_block_var <- vapply(recipe$variables,
-                         function(v) !is.null(v$block_id), logical(1))
-  if (any(is_block_var) && length(recipe$variables) > 0) {
-    rebuilt_order <- c(
-      unlist(lapply(names(recipe$blocks), function(bid) {
-        names(recipe$variables)[vapply(recipe$variables, function(v)
-          identical(v$block_id, bid), logical(1))]
-      })),
-      names(recipe$variables)[!is_block_var]
-    )
-    if (!identical(unname(rebuilt_order), names(recipe$variables)) &&
-        setequal(rebuilt_order, names(recipe$variables))) {
-      lines <- c(lines, paste0(
-        "recipe$variables <- recipe$variables[",
-        .codegen_value(names(recipe$variables)), "]"
-      ))
-    }
+  # Corrections happen after expansion, so names cannot be deduplicated against
+  # stale generated members. Removing extras also covers a fully emptied block.
+  for (nm in setdiff(names(expanded), names(recipe$variables))) {
+    lines <- c(lines, paste0("recipe <- recipe_remove_variable(recipe, ",
+                             .codegen_value(nm), ")"))
+  }
+  lines <- c(lines, variable_fixes)
+  if (length(recipe$blocks) || length(variable_fixes)) {
+    lines <- c(lines, paste0(
+      "recipe$variables <- recipe$variables[",
+      .codegen_value(names(recipe$variables)), "]"))
   }
 
   paste(lines, collapse = "\n")
@@ -5364,10 +6013,8 @@ recipe_to_code <- function(recipe) {
     has_numeric <- !is.null(f$params$min_value) ||
       !is.null(f$params$max_value)
     if (has_numeric && is.null(f$params$safe_scope)) {
-      # Circe can carry exact ValueAsNumber criteria but cannot carry a
-      # DataSHIELD resource-session contract. Preserve such imports faithfully
-      # as explicitly non-executable generic filters; recipe_lint() and the
-      # server both fail closed until the analyst binds server-issued bins.
+      # Preserve unbound numeric criteria and their exact supplied bounds.
+      # Publication, not a private-predicate gate, enforces support.
       .codegen_call("omop_filter", type = "has_measurement",
         level = "population", params = f$params, label = f$label)
     } else {
@@ -5412,6 +6059,8 @@ recipe_to_code <- function(recipe) {
 # --- Recipe import/export ---
 
 .recipe_strip_classes <- function(x) {
+  # Language-2 objects serialise as their tagged constructor arguments.
+  if (.v2_is_tagged(x)) return(.v2_plain_value(x))
   if (is.list(x) && !is.data.frame(x)) {
     x <- lapply(x, .recipe_strip_classes)
     class(x) <- "list"
@@ -5439,11 +6088,20 @@ recipe_to_code <- function(recipe) {
   # byte-for-byte (no spurious `scope: null` key). Population set-op fields are
   # plain lists and survive .recipe_strip_classes above unchanged.
   if (!is.null(recipe$scope)) out$scope <- recipe$scope
+  # Language-2 recipe slots, only when used.
+  for (slot in c("concept_sets", "events", "intervals")) {
+    if (length(recipe[[slot]] %||% list())) out[[slot]] <- .recipe_strip_classes(recipe[[slot]])
+  }
+  if (!is.null(recipe$coverage)) out$coverage <- .v2_plain_value(recipe$coverage)
+  if (!is.null(recipe$publish)) out$publish <- if (.v2_is_tagged(recipe$publish)) {
+    .recipe_strip_classes(recipe$publish)
+  } else .recipe_strip_classes(as.list(recipe$publish))
   out
 }
 
 .recipe_restore_filter <- function(f) {
   if (is.null(f)) return(NULL)
+  if (!is.null(f[[.V2_CTOR_TAG]])) return(.v2_restore(f))
 
   if (!is.null(f$operator) || !is.null(f$children)) {
     children <- .recipe_restore_filter_list(f$children %||% list())
@@ -5602,11 +6260,11 @@ recipe_to_code <- function(recipe) {
       if (!is.null(p$setop)) {
         # Set-op population: rebuild through the matching named argument so the
         # constructor re-validates (one op, >= 2 members) on import.
-        members <- as.character(unlist(p$setop$members))
+        members <- .v2_restore(p$setop$members)
         setop_args <- stats::setNames(list(members), p$setop$op)
         recipe$populations[[pid]] <- do.call(omop_population, c(
           list(id = p$id %||% pid, label = p$label %||% pid,
-               parent_id = p$parent_id,
+               parent_id = .v2_restore(p$parent_id),
                episode_policy = p$episode_policy),
           setop_args))
       } else {
@@ -5626,12 +6284,21 @@ recipe_to_code <- function(recipe) {
         recipe$populations[[pid]] <- omop_population(
           id = p$id %||% pid,
           label = p$label %||% pid,
-          parent_id = p$parent_id,
+          parent_id = .v2_restore(p$parent_id),
           filters = .recipe_restore_filter_list(p$filters),
           cohort_definition_id = p$cohort_definition_id,
           episode_policy = p$episode_policy,
-          index_event = index_event
+          index_event = index_event,
+          index = .v2_restore(p[["index"]]),
+          match = .v2_restore(p$match),
+          coverage = .v2_restore(p$coverage)
         )
+        if (!is.null(p$circe_v2)) {
+          recipe$populations[[pid]]$circe_v2 <- .v2_restore(p$circe_v2)
+        }
+      }
+      if (!is.null(p$simple)) {
+        recipe$populations[[pid]]$simple <- .v2_restore(p$simple)
       }
     }
   }
@@ -5651,10 +6318,15 @@ recipe_to_code <- function(recipe) {
         suffix_mode = b$suffix_mode %||% "index",
         filters = .recipe_restore_filter_list(b$filters),
         population_id = b$population_id %||% "base",
+        expand = isTRUE(b$expand),
         reference_date = b$reference_date,
-        unit = b$unit
+        unit = b$unit,
+        where = .v2_restore(b$where),
+        visit = .v2_restore_visit(b$visit),
+        concept_col = b$concept_col
       )
-      if (isTRUE(b$expand)) blk$expand <- TRUE
+      if (!is.null(b$name_prefix)) blk$name_prefix <- as.character(b$name_prefix)
+      if (!is.null(b$block_version)) blk$block_version <- b$block_version
       recipe$blocks[[bid]] <- blk
     }
   }
@@ -5663,6 +6335,12 @@ recipe_to_code <- function(recipe) {
     recipe$variables <- list()
     for (nm in names(data$variables)) {
       v <- data$variables[[nm]]
+      if (!is.null(v[[.V2_CTOR_TAG]])) {
+        var <- .v2_restore(v)
+        var$name <- var$name %||% nm
+        recipe$variables[[nm]] <- var
+        next
+      }
       var <- omop_variable(
         name = v$name %||% nm,
         table = v$table,
@@ -5684,7 +6362,12 @@ recipe_to_code <- function(recipe) {
       )
       if (!is.null(v$derived)) var$derived <- v$derived
       if (!is.null(v$block_id)) var$block_id <- v$block_id
+      if (!is.null(v$block_version)) var$block_version <- v$block_version
+      if (!is.null(v$name_prefix)) var$name_prefix <- as.character(v$name_prefix)
       if (isTRUE(v$expand)) var$expand <- TRUE
+      if (!is.null(v[["where"]])) var$where <- .v2_restore(v[["where"]])
+      if (!is.null(v[["visit"]])) var$visit <- .v2_restore_visit(v[["visit"]])
+      if (isTRUE(v[["broadcast"]])) var$broadcast <- TRUE
       recipe$variables[[nm]] <- var
     }
   }
@@ -5703,14 +6386,22 @@ recipe_to_code <- function(recipe) {
           output_options$analyses, use.names = FALSE
         ))
       }
-      output_options <- .recipe_restore_multistate_options(output_options)
+      if (is.null(o$format)) {
+        output_options <- .recipe_restore_multistate_options(output_options)
+      } else {
+        output_options <- .v2_restore(output_options)
+      }
       recipe$outputs[[nm]] <- omop_output(
         name = o$name %||% nm,
-        type = o$type %||% "wide",
-        variables = o$variables,
-        population_id = o$population_id %||% "base",
+        type = if (is.null(o$format)) o$type %||% "wide" else NULL,
+        variables = .v2_restore(o$variables),
+        population_id = .v2_restore(o$population_id) %||% "base",
         options = output_options,
-        result_symbol = o$result_symbol
+        result_symbol = o$result_symbol,
+        grain = o$grain,
+        format = o$format,
+        sources = .v2_restore(o$sources),
+        collapse = o$collapse
       )
     }
   }
@@ -5722,6 +6413,16 @@ recipe_to_code <- function(recipe) {
     # removed option such as min_persons imports without error, simply ignored).
     recipe$options <- utils::modifyList(recipe$options %||% list(),
                                         data$options, keep.null = TRUE)
+  }
+
+  for (cs in .v2_restore(data$concept_sets %||% list())) {
+    recipe <- recipe_add_concept_set(recipe, cs)
+  }
+  for (ev in .v2_restore(data$events %||% list())) recipe <- recipe_add_event(recipe, ev)
+  for (iv in .v2_restore(data$intervals %||% list())) recipe <- recipe_add_interval(recipe, iv)
+  if (!is.null(data$coverage)) recipe$coverage <- .v2_restore(data$coverage)
+  if (!is.null(data$publish)) {
+    recipe <- recipe_set_publish(recipe, .v2_restore(data$publish))
   }
 
   if (!is.null(data$scope)) {
@@ -5770,8 +6471,10 @@ recipe_to_code <- function(recipe) {
 #' @seealso \code{\link{recipe_import_json}}, \code{\link{recipe_to_code}}
 #' @export
 recipe_export_json <- function(recipe, file = NULL) {
+  # digits = NA: every number keeps its full precision (unit conversion
+  # factors and value thresholds must round-trip exactly).
   json <- jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
-                            null = "null")
+                            null = "null", digits = NA)
   if (is.null(file)) return(as.character(json))
   writeLines(as.character(json), file)
   invisible(file)
@@ -5822,7 +6525,7 @@ recipe_import_json <- function(json) {
 recipe_export_yaml <- function(recipe, file = NULL) {
   if (!requireNamespace("yaml", quietly = TRUE))
     stop("Package 'yaml' is required for YAML export.", call. = FALSE)
-  text <- yaml::as.yaml(.recipe_plain(recipe))
+  text <- yaml::as.yaml(.recipe_plain(recipe), precision = 15L)
   if (is.null(file)) return(text)
   writeLines(text, file)
   invisible(file)
@@ -6011,9 +6714,13 @@ recipe_import_yaml <- function(yaml) {
 #' @keywords internal
 .circe_measurement_from_filter <- function(f, sets) {
   p <- f$params
-  if (!is.null(p$min_value) || !is.null(p$max_value)) {
-    stop("Circe export: numeric measurement bounds do not carry dsOMOP's ",
-         "issued safe-bin contract and cannot be exported equivalently.",
+  if (!is.null(p$safe_scope)) {
+    stop("Circe export cannot preserve an authenticated safe-bin contract.",
+         call. = FALSE)
+  }
+  if (!is.null(p$min_value) && !is.null(p$max_value)) {
+    stop("Circe export cannot represent dsOMOP's half-open numeric range ",
+         "with one ValueAsNumber predicate (Circe BETWEEN includes both ends).",
          call. = FALSE)
   }
   if (!is.null(p$reference_date)) {
@@ -6022,6 +6729,11 @@ recipe_import_yaml <- function(yaml) {
   }
   cs <- .circe_codeset(sets, p$concept_id)
   meas <- list(CodesetId = cs$id)
+  if (!is.null(p$min_value)) {
+    meas$ValueAsNumber <- list(Value = p$min_value, Op = "gte")
+  } else if (!is.null(p$max_value)) {
+    meas$ValueAsNumber <- list(Value = p$max_value, Op = "lt")
+  }
   criteria <- list(
     Criteria = list(Measurement = meas),
     StartWindow = .circe_window_from_recipe(p$window),
@@ -6191,9 +6903,10 @@ recipe_import_yaml <- function(yaml) {
 #'     "exactly 0" criteria.
 #'   \item \code{omop_filter_concept_count} -> InclusionRule occurrence "at
 #'     least N" criteria.
-#'   \item Presence-only \code{omop_filter_has_measurement} -> Measurement
-#'     criteria. Numeric bounds are rejected because Circe cannot carry the
-#'     DataSHIELD-issued safe-bin contract.
+#'   \item \code{omop_filter_has_measurement} -> Measurement criteria,
+#'     including one-sided numeric bounds (inclusive minimum or exclusive
+#'     maximum). Two-sided half-open ranges and authenticated safe-bin
+#'     contracts cannot be represented equivalently and are rejected.
 #'   \item \code{omop_filter_sex} / \code{omop_filter_age} -> DemographicCriteria
 #'     Gender / Age.
 #'   \item Filter \code{window = list(start, end)} day offsets -> criteria
@@ -6434,7 +7147,8 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   }
   domain <- domain[[1]]
   spec <- inner[[domain]]
-  unknown_spec <- setdiff(names(spec) %||% character(0), "CodesetId")
+  allowed_spec <- c("CodesetId", if (identical(domain, "Measurement")) "ValueAsNumber")
+  unknown_spec <- setdiff(names(spec) %||% character(0), allowed_spec)
   if (length(unknown_spec) > 0L) {
     stop("Circe import: unsupported ", domain, " field(s): ",
          paste(unknown_spec, collapse = ", "), ".", call. = FALSE)
@@ -6463,6 +7177,11 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
     stop("Circe import: Occurrence Type/Count must be non-negative integers.",
          call. = FALSE)
   }
+  if (!is.null(spec$ValueAsNumber) &&
+      (!identical(occurrence_type, 2L) || count != 1L)) {
+    stop("Circe import: numeric measurement criteria require occurrence at least one.",
+         call. = FALSE)
+  }
   if (identical(occurrence_type, 0L) && identical(count, 0L)) {
     return(omop_filter_not_has_concept(concept_id = ids, table = table,
                                        window = window))
@@ -6476,7 +7195,24 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
       stop("Circe import: measurement occurrence counts above one are not ",
            "supported by the executable subset.", call. = FALSE)
     }
-    return(omop_filter_has_measurement(concept_id = ids, window = window))
+    bounds <- spec$ValueAsNumber
+    lower <- upper <- NULL
+    if (!is.null(bounds)) {
+      if (!is.list(bounds) || is.null(names(bounds)) ||
+          anyDuplicated(names(bounds)) ||
+          length(setdiff(names(bounds), c("Value", "Op"))) > 0L ||
+          !is.numeric(bounds$Value) || length(bounds$Value) != 1L ||
+          is.na(bounds$Value) || !is.finite(bounds$Value) ||
+          !is.character(bounds$Op) || length(bounds$Op) != 1L ||
+          is.na(bounds$Op) || !bounds$Op %in% c("gte", "lt")) {
+        stop("Circe import: ValueAsNumber supports only finite one-sided ",
+             "'gte' or 'lt' bounds; other endpoint semantics cannot be ",
+             "represented equivalently.", call. = FALSE)
+      }
+      if (identical(bounds$Op, "gte")) lower <- bounds$Value else upper <- bounds$Value
+    }
+    return(omop_filter_has_measurement(concept_id = ids, min_value = lower,
+                                       max_value = upper, window = window))
   }
   if (count > 1L) {
     return(omop_filter_concept_count(concept_id = ids, table = table,
@@ -6571,10 +7307,14 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   } else {
     .circe_codeset_details(spec$CodesetId, concept_sets)
   }
+  # An unnamed (empty-named) Circe concept set has no label (A-9: its language-2
+  # name is concept_set_<CodesetId>).
+  label <- details$name
+  if (!is.null(label) && (length(label) != 1L || is.na(label) || !nzchar(label))) label <- NULL
   omop_index_event(
     concept_id = details$ids,
     table = .circe_table_from_domain(domain),
-    concept_name = details$name,
+    concept_name = label,
     primary_limit = primary_limit,
     include_descendants = details$include_descendants,
     include_mapped = details$include_mapped,
@@ -6769,11 +7509,60 @@ recipe_import_circe <- function(file_or_json, id = NULL, label = NULL) {
   }
 
   hint <- expr$.dsomop %||% list()
-  omop_population(
+  pop <- omop_population(
     id = id %||% hint$population_id %||% "imported",
     label = label %||% hint$label %||% "Imported from Circe",
     filters = filters,
     index_event = index_event)
+  # Language-2 form (used by recipe_to_plan(version = 2)): Circe qualifies
+  # primary events by the observation window and then keeps the FIRST
+  # qualifying event per person, i.e. select = "first_eligible" over
+  # omop_observed(before = PriorDays, after = PostDays) on the unique
+  # covering observation period. Inclusion rules are applied after that limit
+  # in Circe, which a single first_eligible population cannot express, so an
+  # expression with inclusion rules keeps the legacy (select-then-filter) form.
+  if (identical(primary_type, "first") &&
+      length(expr$InclusionRules %||% list()) == 0L) {
+    pop$circe_v2 <- .circe_v2_population(primary[[1L]], concept_sets,
+                                         end_strategy, prior_days, post_days)
+  }
+  pop
+}
+
+# The language-2 index population of a Circe expression without inclusion
+# rules (see recipe_import_circe()).
+.circe_v2_population <- function(primary, concept_sets, end_strategy,
+                                  prior_days, post_days) {
+  domain <- intersect(names(primary), unlist(.circe_domain_map))[[1L]]
+  spec <- primary[[domain]]
+  cs <- NULL
+  if (!is.null(spec$CodesetId)) {
+    d <- .circe_codeset_details(spec$CodesetId, concept_sets)
+    # A-9: the Circe concept-set name through .sanitize_name(), else
+    # concept_set_<CodesetId> for an empty name.
+    cs_name <- if (!is.null(d$name) && nzchar(d$name)) {
+      .sanitize_name(d$name)
+    } else {
+      paste0("concept_set_", as.integer(spec$CodesetId))
+    }
+    cs <- omop_concept_set(d$ids, descendants = isTRUE(d$include_descendants),
+                           mapped = isTRUE(d$include_mapped), name = cs_name)
+  }
+  end <- omop_end("observation_end")
+  if (!is.null(end_strategy)) {
+    off <- end_strategy$DateOffset
+    end <- if (identical(off$DateField, "StartDate")) {
+      omop_end("fixed", days = as.integer(off$Offset))
+    } else if (off$Offset >= 0L) {
+      omop_end("event_end", pad = as.integer(off$Offset))
+    } else {
+      return(NULL)
+    }
+  }
+  list(index = omop_index(omop_event(.circe_table_from_domain(domain), cs),
+                          select = "first_eligible", end = end),
+       filters = list(omop_observed(before = prior_days, after = post_days)),
+       coverage = omop_coverage("unique"))
 }
 
 #' Save a recipe to JSON or YAML
@@ -6935,8 +7724,13 @@ recipe_preview_schema <- function(recipe) {
 
   # Preview only contracts that actually compile. This prevents the schema
   # helper from advertising aliases, joins, or output types the plan will not
-  # materialize.
-  plan <- recipe_to_plan(recipe)
+  # materialize. The preview describes the 2.10.1 (version 1) output shapes;
+  # recipe_explain() describes language-2 recipes.
+  if (length(.recipe_v2_constructs(recipe))) {
+    stop("recipe_preview_schema() previews 2.10.1 output shapes; use ",
+         "recipe_explain() for a recipe with language-2 constructs.", call. = FALSE)
+  }
+  plan <- recipe_to_plan(recipe, version = 1L)
 
   empty_schema <- function() data.frame(
     output = character(0), column = character(0), source = character(0),
@@ -7286,7 +8080,26 @@ recipe_preview_schema <- function(recipe) {
 recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
-  ds.omop.plan.preview(recipe_to_plan(recipe), symbol = symbol, conns = conns)
+  plan <- .recipe_plan_for_session(recipe, symbol, conns)
+  ds.omop.plan.preview(plan, symbol = symbol, conns = conns)
+}
+
+# The plan a recipe compiles to without a session (A-14 selection, no
+# capability check): v1 for recipes built only from 2.10.1 constructors, v2
+# for recipes with language-2 constructs or a newly permitted shape.
+.recipe_plan_auto <- function(recipe) {
+  plan <- .recipe_select_plan(recipe)
+  attr(plan, "v1_refusal") <- NULL
+  plan
+}
+
+# The plan a recipe executes as: the v1 plan needs no session; a v2 plan is
+# checked against the servers' capabilities.
+.recipe_plan_for_session <- function(recipe, symbol, conns) {
+  plan <- .recipe_select_plan(recipe)
+  if (!.v2_is_plan_v2(plan)) return(plan)
+  session <- .get_session(symbol)
+  .recipe_plan_for_execution(recipe, session, conns %||% session$conns, plan = plan)
 }
 
 #' Validate a recipe on the server
@@ -7308,7 +8121,8 @@ recipe_preview <- function(recipe, symbol = "omop", conns = NULL) {
 recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
-  ds.omop.plan.validate(recipe_to_plan(recipe), symbol = symbol, conns = conns)
+  plan <- .recipe_plan_for_session(recipe, symbol, conns)
+  ds.omop.plan.validate(plan, symbol = symbol, conns = conns)
 }
 
 # Formats that are computed from the person table (no concept extraction), so
@@ -7365,9 +8179,6 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'     fixed ISO \code{derived$reference_date} or \code{derived$unit}.}
 #'   \item{age_no_index (WARNING)}{\code{format = "age"} with index reference
 #'     but the base population has neither a cohort nor a date filter.}
-#'   \item{narrow_filter (WARNING)}{population \code{age_range} width < 5 years
-#'     (server rejects). Calendar-window width is server policy and is therefore
-#'     not hard-coded by this client lint.}
 #'   \item{highcard_factor (WARNING)}{a raw \code{_concept_id} column with
 #'     \code{factor_concepts = TRUE}, or a categorical format on a
 #'     high-cardinality domain.}
@@ -7376,7 +8187,24 @@ recipe_validate <- function(recipe, symbol = "omop", conns = NULL) {
 #'   \item{long_split (INFO)}{a \code{"long"} output spanning > 1 table.}
 #'   \item{no_value_source (INFO)}{an aggregate format with no
 #'     \code{value_source}.}
+#'   \item{tar_default, censoring_default, age_group_default, coverage,
+#'     collapse, representation, missing_skip (INFO)}{a default the recipe
+#'     relies on, stated (e.g. "follow-up ends 730 days after index").}
+#'   \item{quasi_identifier (INFO)}{a permitted birth component, age, age band,
+#'     birth-year band or date column, one row per variable; final publication
+#'     support and the absolute-date policy still apply. Aggregate admission
+#'     is unchanged.}
+#'   \item{measurement_pair (INFO)}{\code{has_measurement} /
+#'     \code{missing_measurement} are not complements.}
+#'   \item{parent_inheritance (INFO)}{a \code{parent_id} now restricts the
+#'     child population.}
+#'   \item{language_2_only (INFO)}{a recipe of 2.10.1 constructors whose
+#'     shape 2.10.3 newly permits (e.g. a NOT group) has no v1 plan and runs
+#'     as its language-2 plan on dsOMOP 2.10.3 servers only.}
 #' }
+#' The lint has no mirror of server disclosure gates (no width floors, no
+#' mandatory bins): from 2.10.3 the server's final publication rule is the
+#' only release criterion on assign paths.
 #' Edge cases: a \code{NULL} recipe returns a single \code{empty_recipe} info
 #' row; a recipe with no outputs adds a \code{no_output} warning.
 #'
@@ -7404,14 +8232,21 @@ recipe_lint <- function(recipe) {
     rows[[length(rows) + 1L]] <<- .lint_row(severity, code, message, locus)
   }
 
-  # ERROR no_compile: the compile error IS the first lint.
+  # ERROR no_compile: the compile error IS the first lint. The recipe compiles
+  # as it executes: a 2.10.1-style recipe as its v1 plan, or as v2 when the v1
+  # compiler refuses a newly permitted shape (INFO language_2_only).
+  v1_refusal <- NULL
   compile_err <- tryCatch({
-    recipe_to_plan(recipe)
+    v1_refusal <- attr(.recipe_select_plan(recipe), "v1_refusal")
     NULL
   }, error = function(e) conditionMessage(e))
   if (!is.null(compile_err)) {
     add("ERROR", "no_compile",
         paste0("recipe_to_plan() failed: ", compile_err), "recipe")
+  } else if (!is.null(v1_refusal)) {
+    add("INFO", "language_2_only",
+        paste0("No v1 plan (", v1_refusal, ") The recipe runs as its language-2 ",
+               "plan on dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " servers only."), "recipe")
   }
 
   outputs <- recipe$outputs %||% list()
@@ -7438,7 +8273,8 @@ recipe_lint <- function(recipe) {
     resolved <- out$variables %||% names(vars)
     resolved_vars <- Filter(Negate(is.null), vars[resolved])
 
-    if (length(resolved_vars) == 0) {
+    if (length(resolved_vars) == 0 &&
+        (is.null(out$format) || identical(out$format, "wide"))) {
       add("ERROR", "empty_output",
           paste0("Output '", onm, "' resolves to zero variables."),
           paste0("outputs$", onm))
@@ -7560,36 +8396,11 @@ recipe_lint <- function(recipe) {
     }
   }
 
-  # WARNING narrow_filter: age bands have a fixed public contract. Calendar
-  # window width is intentionally absent: the server derives its authoritative
-  # minimum from the data controller's DataSHIELD disclosure options.
-  population_filters <- unlist(lapply(recipe$populations %||% list(),
-    function(pop) .flatten_filters(pop$filters %||% list(),
-                                    level = "population")),
-    recursive = FALSE)
-  pop_filters <- c(
-    .flatten_filters(recipe$filters %||% list(), level = "population"),
-    population_filters
-  )
-  for (f in pop_filters) {
-    if (identical(f$type, "has_measurement") &&
-        (!is.null(f$params$min_value) || !is.null(f$params$max_value)) &&
-        is.null(f$params$safe_scope)) {
-      add("ERROR", "unbound_numeric_filter",
-          paste0(
-            "Numeric measurement criterion '", f$label %||% "<unnamed>",
-            "' has no server-issued safe-bin contract and cannot execute."
-          ),
-          "filters")
-    }
-    if (identical(f$type, "age_range")) {
-      lo <- f$params$min; hi <- f$params$max
-      if (!is.null(lo) && !is.null(hi) && (hi - lo) < 5) {
-        add("WARNING", "narrow_filter",
-            paste0("age_range filter width (", hi - lo,
-                   ") < 5 years; server will reject."), "filters")
-      }
-    }
+  # 2.10.3: defaults made visible, column classes, legacy pairs (no mirror of
+  # server disclosure gates -- publication is the only release criterion).
+  v2_rows <- .lint_v2_rows(recipe)
+  if (!is.null(v2_rows)) {
+    for (i in seq_len(nrow(v2_rows))) rows[[length(rows) + 1L]] <- v2_rows[i, , drop = FALSE]
   }
 
   if (length(rows) == 0) return(empty)
@@ -7680,8 +8491,16 @@ recipe_preview_stats <- function(recipe,
 #'   with \code{cohort}.
 #' @param combine Character; how to fold the scope sources together:
 #'   \code{"union"} (the default) or \code{"intersect"}.
-#' @return Invisibly, the output symbol mapping (a named character vector).
-#'   As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
+#' @param on_small_site Character; \code{"error"} (default) or \code{"skip"},
+#'   passed to \code{\link{ds.omop.plan.execute}}. Only insufficient final
+#'   person support is skippable: skip keeps successful sites and returns
+#'   \code{NULL} for sites whose publication fails final person support.
+#' @return Invisibly, the output symbol mapping (a named character vector)
+#'   for a complete ordinary execution. When sites publish different outputs
+#'   or fresh names (the server allocates fresh names for occupied
+#'   destinations; a survival output publishes one symbol per TAR), a named
+#'   per-site list of the actual publication inventories; skipped sites have
+#'   \code{NULL} entries. As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
 #'   recorded on the session so the manipulation wrappers can default to the
 #'   last one.
 #' @examples
@@ -7698,9 +8517,11 @@ recipe_preview_stats <- function(recipe,
 #' @export
 recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
                            output_mode = "memory", cohort = NULL,
-                           tables = NULL, combine = "union") {
+                           tables = NULL, combine = "union",
+                           on_small_site = c("error", "skip")) {
   if (!inherits(recipe, "omop_recipe"))
     stop("recipe must be an omop_recipe object", call. = FALSE)
+  on_small_site <- match.arg(on_small_site)
 
   # Execution-time scope overrides the recipe's stored scope when given. A scalar
   # cohort_definition_id here is a SCOPE (unlike omop_recipe(cohort=), where a
@@ -7711,10 +8532,12 @@ recipe_execute <- function(recipe, out = NULL, symbol = "omop", conns = NULL,
                                combine = combine)
   }
 
-  plan <- recipe_to_plan(recipe)
-  out <- .recipe_out_symbols(recipe, plan, out)
+  # 2.10.1-style recipes run as their v1 plan, others as their negotiated v2
+  # plan (design 5, CR-14); both go through the same publication protocol.
+  plan <- .recipe_plan_for_session(recipe, symbol, conns)
+  if (!.v2_is_plan_v2(plan)) out <- .recipe_out_symbols(recipe, plan, out)
   ds.omop.plan.execute(plan, out = out, symbol = symbol, conns = conns,
-                       output_mode = output_mode)
+                       output_mode = output_mode, on_small_site = on_small_site)
 }
 
 # Default server symbols for the plan outputs of a recipe (an output's

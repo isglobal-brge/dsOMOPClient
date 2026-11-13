@@ -86,20 +86,28 @@ ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
 
 #' Filter the rows of a server-side omop.table data frame
 #'
-#' Applies a categorical equality/membership filter to a server-side,
-#' token-keyed data frame.
+#' Keeps the rows of a server-side, token-keyed data frame that satisfy an
+#' equality/membership condition (\code{var}, \code{op}, \code{value}) or,
+#' from 2.10.3, a language-2 predicate (\code{expr = omop_where(...)}): the
+#' closed grammar \code{== != < <= > >= \%in\% is.na() ! & |} over the frame's
+#' columns, three-valued (a row whose condition is unknown is dropped), sent
+#' as data and validated and type-checked by the server before any row is
+#' read (servers advertise it as \code{verb.filter_expr}, dsOMOP 2.10.3).
+#' The predicate form checks that every participating server publishes the
+#' dsOMOP 2.10.3 publication protocol and \code{omopFilterDS}, and advertises
+#' \code{verb.filter_expr}, before any assignment. An old server or an
+#' incomplete published profile refuses the whole call.
 #' Filtering on a protected/identifier column (the person token or any
-#' \code{dsomop_protected} column) is rejected server-side. The server re-gates
-#' the filtered result on its distinct-person count and fails closed if the
-#' filter narrows the population below the disclosure threshold.
+#' \code{dsomop_protected} column) is rejected server-side. The filtered
+#' result is a released object: its distinct persons must reach the server's
+#' \code{nfilter.subset}; the excluded rows stay private.
 #'
 #' @param x Character; name of the server-side \code{omop.table} symbol. If
 #'   \code{NULL} (the default), the session's most recently produced output
 #'   symbol is used.
 #' @param var Character; the (non-protected) column to filter on.
 #' @param op Character; one of \code{"=="}, \code{"!="}, \code{"in"}, or
-#'   \code{"not_in"}. Numeric/date thresholds belong in recipe filters with
-#'   disclosure-safe bins/ranges.
+#'   \code{"not_in"} (other comparisons: \code{expr}).
 #' @param value Category value(s).
 #' @param newobj Character; name of the server-side symbol to create. If
 #'   \code{NULL} (default), a unique name is generated.
@@ -107,15 +115,41 @@ ds.omop.merge <- function(x = NULL, y, by = "person_id", type = "inner",
 #'   initialised (default: \code{"omop"}).
 #' @param conns DSI connection object(s). If \code{NULL} (the default), the
 #'   connections stored in the active session are used.
+#' @param expr (2.10.3) A predicate from \code{\link{omop_where}} (instead of
+#'   \code{var}/\code{op}/\code{value}).
 #' @return Invisibly, the name of the created server-side symbol (\code{newobj}).
 #' @examples
 #' \dontrun{
 #' women <- ds.omop.filter("features", var = "sex", op = "==", value = "F")
+#' adults <- ds.omop.filter("features", expr = omop_where(age >= 18, !is.na(bmi)))
 #' }
-#' @seealso \code{\link{ds.omop.select}}, \code{\link{ds.omop.merge}}
+#' @seealso \code{\link{ds.omop.select}}, \code{\link{ds.omop.merge}},
+#'   \code{\link{ds.omop.mutate}}
 #' @export
-ds.omop.filter <- function(x = NULL, var, op, value,
-                           newobj = NULL, symbol = "omop", conns = NULL) {
+ds.omop.filter <- function(x = NULL, var = NULL, op = NULL, value = NULL,
+                           newobj = NULL, symbol = "omop", conns = NULL, expr = NULL) {
+  if (!is.null(expr)) {
+    if (!is.null(var) || !is.null(op) || !is.null(value)) {
+      stop("ds.omop.filter(): give expr or var/op/value, not both.", call. = FALSE)
+    }
+    tree <- .verb_predicate_tree(expr)
+    session <- .get_session(symbol)
+    conns <- conns %||% session$conns
+    .verb_assert_supported(session, conns, "verb.filter_expr",
+                           "ds.omop.filter(expr = )", "omopFilterDS")
+    x <- .resolve_target_symbol(x, session, "x")
+    newobj <- newobj %||% .generate_symbol("omop.filter")
+    .assign_expr_atomic(
+      conns, newobj,
+      expr = call("omopFilterDS", as.name(x), expr = .ds_encode_lossless(tree)),
+      context = "OMOP filter", session_symbol = symbol,
+      required_symbols = x
+    )
+    return(invisible(newobj))
+  }
+  if (is.null(var) || is.null(op) || missing(value)) {
+    stop("ds.omop.filter() needs var, op and value.", call. = FALSE)
+  }
   session <- .get_session(symbol)
   conns <- conns %||% session$conns
   op <- match.arg(op, c("==", "!=", "in", "not_in"))

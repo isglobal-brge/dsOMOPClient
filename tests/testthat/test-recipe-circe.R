@@ -195,7 +195,7 @@ test_that("the supported Circe subset round-trips to an equivalent recipe popula
   r2 <- omop_recipe(populations = pop,
                     variables = omop_variable_age(),
                     outputs = omop_output(type = "wide", population_id = "t2d"))
-  expect_silent(plan <- dsOMOPClient:::recipe_to_plan(r2))
+  expect_silent(plan <- dsOMOPClient:::recipe_to_plan(r2, version = 1))
 })
 
 test_that("multi-concept codesets round-trip and dedup shared concept sets", {
@@ -217,7 +217,7 @@ test_that("multi-concept codesets round-trip and dedup shared concept sets", {
                c(201820L, 201826L))
 })
 
-test_that("numeric measurement bounds fail closed on Circe export", {
+test_that("one-sided numeric measurement bounds round-trip without private gates", {
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
       index_event = omop_index_event(201820, "condition_occurrence"),
@@ -229,8 +229,34 @@ test_that("numeric measurement bounds fail closed on Circe export", {
           params = list(concept_id = 3013682L, min_value = NULL,
                         max_value = 140, safe_scope = NULL)))),  # lte
     outputs = omop_output(type = "wide", population_id = "p"))
-  expect_true("unbound_numeric_filter" %in% recipe_lint(r)$code)
-  expect_error(recipe_export_circe(r, "p"), "safe-bin contract")
+  expect_false("unbound_numeric_filter" %in% recipe_lint(r)$code)
+  exported <- recipe_export_circe(r, "p")
+  imported <- recipe_import_circe(exported)
+  measurements <- Filter(function(f) identical(f$type, "has_measurement"), imported$filters)
+  expect_length(measurements, 2L)
+  expect_identical(measurements[[1]]$params$min_value, 6.5)
+  expect_null(measurements[[1]]$params$max_value)
+  expect_null(measurements[[2]]$params$min_value)
+  expect_equal(measurements[[2]]$params$max_value, 140)
+  expect_null(measurements[[1]]$params$safe_scope)
+  expect_null(measurements[[2]]$params$safe_scope)
+  # The dsOMOP range is [min_value, max_value): a lower limit is Circe 'gte',
+  # an upper limit 'lt'; a two-sided range and other operators have no exact
+  # Circe form.
+  js <- jsonlite::fromJSON(exported, simplifyVector = FALSE)
+  ranges <- lapply(js$InclusionRules, function(rule) {
+    rule$expression$CriteriaList[[1]]$Criteria$Measurement$ValueAsNumber
+  })
+  expect_identical(ranges, list(list(Value = 6.5, Op = "gte"), list(Value = 140L, Op = "lt")))
+  two <- r
+  two$populations$p$filters <- list(omop_filter_has_measurement(3004410, min_value = 4,
+                                                                max_value = 6))
+  expect_error(recipe_export_circe(two, "p"), "half-open")
+  bad <- js
+  bad$InclusionRules[[1]]$expression$CriteriaList[[1]]$Criteria$Measurement$ValueAsNumber$Op <- "gt"
+  expect_error(recipe_import_circe(as.character(jsonlite::toJSON(bad, auto_unbox = TRUE,
+                                                                 null = "null", digits = NA))),
+               "one-sided")
 })
 
 test_that("non-anchor not_has_concept windows round-trip", {
@@ -420,7 +446,7 @@ test_that("an externally-authored minimal Circe JSON imports to a runnable recip
   r <- omop_recipe(populations = pop,
                    variables = omop_variable_age(),
                    outputs = omop_output(type = "wide", population_id = "ext"))
-  expect_silent(dsOMOPClient:::recipe_to_plan(r))
+  expect_silent(dsOMOPClient:::recipe_to_plan(r, version = 1))
 })
 
 test_that("recipe_export_circe errors for an unknown population_id", {
@@ -438,7 +464,7 @@ test_that("typed index events compile and survive recipe round-trips", {
   expect_s3_class(idx, "omop_index_event")
   expect_equal(idx$table, "condition_occurrence")
   expect_equal(idx$primary_limit, "last")
-  expect_error(omop_index_event(201820L, "death"), "must be one of")
+  expect_error(omop_index_event(201820L, "episode_event"), "must be one of")
   expect_error(omop_index_event(1.5, "condition_occurrence"),
                "non-negative integers")
   expect_error(omop_index_event(
@@ -472,7 +498,7 @@ test_that("typed index events compile and survive recipe round-trips", {
                    variables = omop_variable_age(),
                    outputs = omop_output(type = "wide",
                                         population_id = "study"))
-  plan <- recipe_to_plan(r)
+  plan <- recipe_to_plan(r, version = 1)
   expect_equal(plan$populations$study$index_event,
                list(table = "condition_occurrence", concept_set = 201820L,
                     primary_limit = "last", end_strategy = physical_end))

@@ -19,7 +19,15 @@ helpers, this function never returns a partial federation: each requested
 node must provide a well-formed status.
 }
 \details{
-Since dsOMOP 2.10.0 the v3 service is seed-only:
+dsOMOP 2.10.3 uses the protected-release contract: canonical fixed-basis
+or realised-contribution components, without history-based admission or
+stored answers. This client declares that contract in its status request;
+the new server refuses clients 2.10.2 and earlier with an upgrade message.
+Every older server is explicitly warned as unpatched. Installing the new
+client cannot repair server-side disclosure defects. Mixed old/new
+protected pooling is refused; per-site results remain labelled by contract.
+
+On servers 2.10.0 to 2.10.2 the v3 service is seed-only:
 \code{release_binding = "seed_data_versioned_v1"},
 \code{persistent_state = "noise_root_only"},
 \code{service_capacity = "none"} and \code{history_dependent = FALSE}. Every
@@ -52,12 +60,20 @@ standard statistics). A missing \code{exclusive} field on older servers is
 treated as \code{FALSE}. Servers 2.9.0 and later also report
 \code{tools_mode}, the community tools' protection mode (\code{"auto"} by
 default, \code{"standard"} or \code{"dp"}).
-Each status contains the custodian's public \code{snapshot_id}. Federated
-sites may legitimately report different snapshot identifiers.
-Release preflight rejects either a repeated \code{noise_domain_id} or a
-repeated server-owned logical \code{domain}. The second check also prevents
-one logical privacy node from being pooled twice when its connections expose
-different noise material.
+Status may contain a public \code{snapshot_id} label. Federated sites may
+report different labels. On 2.10.3 servers it is optional display metadata
+with no effect on admission or noise. Fixed synopses are keyed on a private
+person-membership generation recomputed within each request's database
+snapshot, without a per-session cache. Clinical-value updates that leave
+person membership unchanged do not change that generation; cross-version
+inference remains a residual. The public \code{data_generation},
+\code{data_generation_basis} and \code{data_generation_residual} fields
+describe the policy without revealing the private generation.
+Protected pooling across multiple sites requires distinct payload identifiers
+\code{source$logical_source_id}; missing or repeated identifiers are
+refused, while per-site results remain available. On legacy servers only,
+release preflight rejects repeated \code{noise_domain_id} or server-owned
+logical \code{domain} values.
 }
 \examples{
 \dontrun{ds.omop.dp.status()}

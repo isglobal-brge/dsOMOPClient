@@ -144,6 +144,12 @@
   )
 }
 
+# dsOMOPClient 2.10.3 warns plainly that a pre-2.10.3 server lacks the
+# security fixes of dsOMOP 2.10.3 (R08); these fixtures are such servers.
+.dp_unpatched_pattern <- "without the dsOMOP 2.10.3 security fixes"
+.dp_without_unpatched <- function(x) x[!grepl(.dp_unpatched_pattern, x,
+                                              fixed = TRUE)]
+
 .with_dp_backend <- function(statuses, releases, code, disclosures = NULL) {
   for (index in seq_along(statuses)) {
     digit <- c(as.character(0:9), letters[1:6])[[index + 1L]]
@@ -708,7 +714,9 @@ test_that("DP count and histograms pool only noisy cells", {
       value$meta$privacy$privacy_guarantee,
       .DP_PRIVACY_GUARANTEE
     )
-    expect_length(value$meta$warnings, 0L)
+    # Only the plain unpatched-server warnings (R08), one per old server.
+    expect_length(value$meta$warnings, length(statuses))
+    expect_length(.dp_without_unpatched(value$meta$warnings), 0L)
     expect_identical(value$meta$privacy$per_site_epsilon[["b"]], 0.05)
     expect_null(value$meta$harmonization)
     heads <- vapply(sent$expressions, function(expr) as.character(expr[[1L]]),
@@ -1098,7 +1106,8 @@ test_that("federated releases always use parallel cross-site composition", {
     expect_identical(value$meta$privacy$conservative_epsilon, 0.1)
     expect_identical(value$meta$privacy$composition,
                      "parallel_across_sites")
-    expect_length(value$meta$warnings, 0L)
+    expect_length(.dp_without_unpatched(value$meta$warnings), 0L)
+    expect_setequal(value$meta$privacy$unpatched_servers, names(statuses))
   })
 })
 
@@ -1231,14 +1240,21 @@ test_that("legacy opt-in warns for every old site and retains its contract", {
         invokeRestart("muffleWarning")
       }
     )
-    expect_length(warnings, 2L)
+    # One plain unpatched-server warning (R08) and one legacy-contract
+    # residual per old site.
+    expect_length(warnings, 4L)
+    unpatched <- warnings[grepl(.dp_unpatched_pattern, warnings, fixed = TRUE)]
+    residuals <- .dp_without_unpatched(warnings)
+    expect_length(unpatched, 2L)
+    expect_length(residuals, 2L)
     residual <- paste0(
       "no first-answer binding: an unrotated data refresh can reveal whether ",
       "a released statistic changed; see isglobal-brge/dsOMOP#20"
     )
     for (index in seq_along(statuses)) {
-      expect_match(warnings[[index]], names(statuses)[[index]], fixed = TRUE)
-      expect_match(warnings[[index]], residual, fixed = TRUE)
+      expect_match(unpatched[[index]], names(statuses)[[index]], fixed = TRUE)
+      expect_match(residuals[[index]], names(statuses)[[index]], fixed = TRUE)
+      expect_match(residuals[[index]], residual, fixed = TRUE)
     }
     expect_identical(value$meta$warnings, warnings)
     expect_identical(value$pooled$noisy_count, 30)
@@ -1275,8 +1291,9 @@ test_that("mixed releases record each contract in every result view and order", 
           ), "Legacy DP server 'old': no first-answer binding")
           expect_true(value$meta$privacy$mixed_contracts)
           expect_identical(value$meta$privacy$legacy_servers, "old")
-          expect_length(value$meta$warnings, 1L)
-          expect_match(value$meta$warnings[[1L]], "isglobal-brge/dsOMOP#20",
+          residuals <- .dp_without_unpatched(value$meta$warnings)
+          expect_length(residuals, 1L)
+          expect_match(residuals[[1L]], "isglobal-brge/dsOMOP#20",
                        fixed = TRUE)
           contracts <- value$meta$privacy$per_site_contract
           expect_named(contracts, order)
@@ -1479,5 +1496,75 @@ test_that("an incoherent seed-only contract is refused", {
                                                           noisy_count = 1)),
                    function(datasources, sent) {
     expect_error(ds.omop.dp.status(datasources), "incoherent")
+  })
+})
+
+test_that("Astra: new client old server remains explicitly legacy in metadata", {
+  statuses <- list(old = .dp_stateless_status())
+  releases <- list(old = .dp_release("count", noisy_count=2000))
+  releases$old$privacy_contract <- .DP_STATELESS_PRIVACY_CONTRACT
+  .with_dp_backend(statuses,releases,function(datasources,sent) {
+    # dsOMOPClient 2.10.3 says plainly that the server is unpatched (R08).
+    expect_warning(
+      out <- ds.omop.dp.release("analysis_table",omop_privacy("count"),datasources),
+      "Server 'old' runs dsOMOP 2.10.2 or older")
+    expect_identical(out$meta$privacy$privacy_contract,.DP_STATELESS_PRIVACY_CONTRACT)
+    expect_identical(out$pooled$noisy_count,2000)
+    expect_identical(out$meta$privacy$unpatched_servers, "old")
+    expect_match(paste(out$meta$warnings, collapse = " "),
+                 "cannot repair them")
+    message("ASTRA new-client/old-server warnings: ",paste(out$meta$warnings,collapse=" | "))
+    message("ASTRA new-client/old-server contract: ",out$meta$privacy$privacy_contract)
+  })
+})
+
+test_that("a mixed old/new federation answers per site under each contract (R08)", {
+  protected_status <- utils::modifyList(.dp_stateless_status(), list(
+    mechanism = "dsomop-sticky-discrete-laplace-prf-v2",
+    sampler = "dsomop-dp-exact-discrete-laplace-v1",
+    privacy_guarantee =
+      "fixed_synopsis_or_heuristic_realised_contribution_reuse_v1",
+    privacy_contract = "protected_release_fixed_basis_or_realised_v1",
+    release_protocol = "dsomop-protected-release-v1",
+    release_binding = "fixed_basis_or_realised_contributions_v1",
+    history_based_admission = FALSE))
+  protected_release <- list(
+    protocol = "dsomop-protected-release-v1",
+    release_contract = "dsomop-release-contract-v1",
+    statistic = "count", protection = "realised_sticky",
+    guarantee_scope = "heuristic_realised_contribution_reuse",
+    noise_reference_epsilon = 0.1, mechanism_epsilon = NA_real_,
+    api_transcript_epsilon = NA_real_, adjacency = "add_remove_person",
+    mechanism = "dsomop-sticky-discrete-laplace-prf-v2",
+    sampler = "dsomop-dp-exact-discrete-laplace-v1", sticky = TRUE,
+    allocation = list(N = 0.02), sensitivity = list(N = 1),
+    noise_sd = list(N = 70.7), privacy_call_quota = "none",
+    history_based_admission = FALSE, noisy_count = 120,
+    source = list(logical_source_id = paste0("dsl_", strrep("4", 40L))),
+    components = list(owner = "count", family = "N",
+                      coordinates = "stratum=root", families = "N",
+                      reconciliation = "none", projection = "none",
+                      view_kind = "basis", signed = 120,
+                      basis = list(id = "count", coordinates = "stratum=root",
+                                   families = "N", signed = 120)))
+  statuses <- list(new = protected_status, old = .dp_stateless_status())
+  releases <- list(new = protected_release,
+                   old = .dp_release("count", noisy_count = 80))
+  releases$old$privacy_contract <- .DP_STATELESS_PRIVACY_CONTRACT
+  .with_dp_backend(statuses, releases, function(datasources, sent) {
+    expect_error(suppressWarnings(ds.omop.dp.release(
+      "analysis_table", omop_privacy("count"), datasources)),
+      "cannot be combined")
+    expect_warning(value <- ds.omop.dp.release(
+      "analysis_table", omop_privacy("count"), datasources, type = "split"),
+      "Server 'old' runs dsOMOP 2.10.2 or older")
+    expect_null(value$pooled)
+    expect_identical(names(value$per_site), c("new", "old"))
+    expect_identical(value$per_site$new$noisy_count, 120)
+    expect_identical(value$per_site$old$noisy_count, 80)
+    expect_true(value$meta$privacy$mixed_contracts)
+    expect_identical(value$meta$privacy$unpatched_servers, "old")
+    expect_match(paste(value$meta$warnings, collapse = " "),
+                 "nothing was pooled")
   })
 })

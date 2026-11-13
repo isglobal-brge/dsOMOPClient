@@ -28,7 +28,8 @@ omop_privacy(
 \item{variable}{Bare column name except for \code{"count"} and
 \code{"bounded_record_count"}.}
 
-\item{levels}{Public, fixed character domain for a categorical histogram.
+\item{levels}{Public character labels for a categorical histogram. On
+2.10.3 these must be a view of the server's complete registered domain.
 The server returns every requested level, including zero-count levels.}
 
 \item{breaks}{Public, fixed, strictly increasing finite numbers, canonical
@@ -74,9 +75,12 @@ A strictly validated \code{omop_privacy} specification.
 Constructs the public semantic specification for a dedicated dsOMOP
 sticky-noise release. Noise parameters and state are deliberately
 absent: epsilon, seeds, nonces, and privacy epochs are owned by each data
-custodian and cannot be supplied by the analyst. Every accepted semantic
-release uses the server's fixed per-release epsilon and deterministic sticky
-noise. Since dsOMOP 2.10.0, each answer is a deterministic function of the
+custodian and cannot be supplied by the analyst. On dsOMOP 2.10.3,
+supported views share canonical protected components. A fixed synopsis
+declares its bounded-vector epsilon before exact support gates; a realised
+contribution release is heuristic and claims no mechanism epsilon or delta.
+Neither route claims differential privacy for the whole API transcript.
+Servers 2.10.0 to 2.10.2 instead derive each answer from the
 server's secret root, the question, the protected statistic and a private
 automatic database version: valid repeats return the same answer, and a
 database reload that adds rows re-draws every answer. Servers 2.7.1 to 2.9.x

@@ -3,7 +3,12 @@
 # publishes, and readable reasons when a server is not ready for dsOMOP.
 
 # The dsOMOP server methods this client calls, by DataSHIELD type. A test keeps
-# this list equal to the methods named in the client's code.
+# this list equal to the methods named in the client's code. Plan execution
+# requires the publication status and revocation methods; ds.omop.mutate()
+# also requires omopMutateDS (backported with the 2.10.3 publication protocol).
+# Methods under `optional` are called only on servers that advertise them
+# (omopPlanExplainDS, for a language-2 plan's server explain); a server without
+# them is still ready for the methods above.
 .DSOMOP_SERVER_METHODS <- list(
   aggregate = c(
     "omopPingDS", "omopGetCapabilitiesDS", "omopDisclosureSettingsDS",
@@ -15,7 +20,8 @@
     "omopConceptSynonymsDS", "omopConceptRelationshipsDS",
     "omopListConceptsDS", "omopVocabulariesDS", "omopDomainsDS",
     "omopConceptClassesDS", "omopCdmSourceDS", "omopCdmVersionDS",
-    "omopPlanPreviewDS", "omopCohortListDS",
+    "omopPlanPreviewDS", "omopPlanStatusDS", "omopStagedRevokeDS",
+    "omopCohortListDS",
     "omopCohortGetDefinitionDS", "omopConceptPrevalenceDS",
     "omopCrossTabDS", "omopNumericRangeDS", "omopNumericHistogramDS",
     "omopNumericQuantilesDS", "omopDateCountsDS",
@@ -33,18 +39,55 @@
     "omopInitDS", "omopPlanExecuteDS", "omopCohortCreateDS",
     "omopCohortCombineDS", "omopCohortFromTableDS", "omopCleanupDS",
     "omopAsFactorColumnsDS", "omopMergeDS", "omopFilterDS",
-    "omopSelectDS", "omopBindRowsDS", "omopAnalysisRunAssignDS",
+    "omopSelectDS", "omopBindRowsDS", "omopMutateDS", "omopAnalysisRunAssignDS",
     "omopDpPlanExecuteDS"
-  )
+  ),
+  optional = c("omopPlanExplainDS")
 )
+
+# The dsOMOP release whose methods this client's execution protocol needs
+# (publication status, revocation and commit_policy, design section 7.3).
+.DSOMOP_PROTOCOL_RELEASE <- "2.10.3"
 
 # What an administrator does when the profile lacks dsOMOP's methods.
 .DSOMOP_PUBLISH_ADVICE <- paste0(
-  "An Opal administrator installs dsOMOP 2.x and publishes its settings in ",
-  "the profile the analysts use (Administration > DataSHIELD > Packages > ",
-  "dsOMOP > Publish); Opal does not publish the methods of an upgraded ",
-  "package by itself."
+  "An Opal administrator installs dsOMOP ", .DSOMOP_PROTOCOL_RELEASE,
+  " and publishes its settings in the profile the analysts use ",
+  "(Administration > DataSHIELD > Packages > dsOMOP > Publish); Opal does not ",
+  "publish the methods of an upgraded package by itself."
 )
+
+# The first dsOMOP release with the security fixes of the OHDSI community
+# tools (protected releases, support and window fixes).
+.DSOMOP_PATCHED_SERVER_VERSION <- "2.10.3"
+
+#' Plain warnings for servers older than dsOMOP 2.10.3
+#'
+#' Such a server lacks the dsOMOP 2.10.3 security fixes of its OHDSI community
+#' tools (analysis catalogue, Achilles and OHDSI readers, DP releases); a
+#' newer client cannot repair a server, and never claims to.
+#'
+#' @param versions Named character vector of server dsOMOP versions (NA when
+#'   unknown).
+#' @return Character vector of warnings, one per server older than 2.10.3.
+#' @keywords internal
+.dsomop_unpatched_server_warnings <- function(versions) {
+  old <- names(versions)[vapply(versions, function(v) {
+    !is.na(v) && nzchar(v) && !inherits(try(numeric_version(v), silent = TRUE),
+                                        "try-error") &&
+      numeric_version(v) < numeric_version(.DSOMOP_PATCHED_SERVER_VERSION)
+  }, logical(1L))]
+  vapply(old, function(server) {
+    paste0(
+      "Server '", server, "' runs dsOMOP ", versions[[server]], ", older than ",
+      .DSOMOP_PATCHED_SERVER_VERSION, ": its OHDSI community-tool results ",
+      "(analysis catalogue, Achilles and OHDSI readers, DP releases) lack the ",
+      "dsOMOP ", .DSOMOP_PATCHED_SERVER_VERSION, " security fixes, and this ",
+      "dsOMOPClient cannot repair them. They are reported under that server's ",
+      "own legacy contract; upgrade the server to dsOMOP ",
+      .DSOMOP_PATCHED_SERVER_VERSION, ".")
+  }, character(1L), USE.NAMES = FALSE)
+}
 
 #' dsOMOPClient version
 #'
@@ -69,20 +112,38 @@ ds.omop.client.version <- function() {
 #' an installed package is upgraded: after an upgrade the profile keeps the old
 #' list until an administrator publishes the package's settings again.
 #'
+#' A server whose profile lacks the publication protocol
+#' (\code{omopPlanStatusDS}, \code{omopStagedRevokeDS}) runs v1 plans only
+#' through the legacy call and refuses language-2 plans; the advice says
+#' whether the installed dsOMOP predates the protocol (install the release
+#' that has it, then publish) or its upgraded methods are not published yet
+#' (publish again). \code{ready} concerns the published methods only: whether
+#' a server executes a language-2 plan is its \code{recipe_language} block.
+#'
 #' @param conns DSI connections (default: the DSI default connections).
+#' @param symbol OMOP session symbol whose capability blocks (read by
+#'   \code{\link{ds.omop.connect}}) are reported.
 #' @return A data frame with one row per server: \code{server},
 #'   \code{published} (version of the published dsOMOP methods, NA when none),
 #'   \code{running} (version answering \code{omopPingDS}, NA when it cannot be
 #'   called), \code{missing} (methods this client calls that the profile lacks),
-#'   \code{ready} and \code{advice}. The client version is in its
-#'   \code{"client"} attribute.
+#'   \code{ready}, \code{advice} and the list column \code{recipe_language}:
+#'   per server the recipe-language capability block of its OMOP session
+#'   (\code{version}, \code{semantic_version}, \code{operations},
+#'   \code{reducers}, \code{dialect}), independently of method readiness. The
+#'   string \code{"unavailable"} means the connected site supplied no block,
+#'   or an unconnected site's profile lacks the publication protocol;
+#'   \code{"not connected"} means no OMOP session \code{symbol} is connected
+#'   to a site publishing that protocol. No language capability is inferred
+#'   from a package version or from \code{ready}. The client version is in
+#'   its \code{"client"} attribute.
 #' @examples
 #' \dontrun{
 #' ds.omop.client.version()
 #' ds.omop.server.version(conns)
 #' }
 #' @export
-ds.omop.server.version <- function(conns = NULL) {
+ds.omop.server.version <- function(conns = NULL, symbol = "omop") {
   conns <- conns %||% DSI::datashield.connections_default()
   if (is.null(conns) || length(conns) == 0L || is.null(names(conns))) {
     stop("No DataSHIELD connections available.", call. = FALSE)
@@ -92,6 +153,7 @@ ds.omop.server.version <- function(conns = NULL) {
   ping <- .ds_safe_aggregate(conns, call("omopPingDS"))
   ping_errors <- attr(ping, "ds_errors") %||% list()
   client <- ds.omop.client.version()
+  session <- tryCatch(.get_session(symbol), error = function(e) NULL)
 
   rows <- lapply(servers, function(server) {
     pub <- published[[server]]
@@ -113,10 +175,34 @@ ds.omop.server.version <- function(conns = NULL) {
     } else if (any(grepl("^1\\.", pub$version))) {
       paste0("The profile publishes the methods of dsOMOP ", version,
              ", which this client cannot use. ", .DSOMOP_PUBLISH_ADVICE)
+    } else if (any(.DSOMOP_PROTOCOL_METHODS %in% missing) &&
+               !is.na(running) &&
+               utils::compareVersion(running, .DSOMOP_PROTOCOL_RELEASE) < 0L) {
+      paste0("dsOMOP ", running, " is installed",
+             if (identical(version, running)) " and published" else "",
+             " but predates the publication protocol (",
+             paste(intersect(.DSOMOP_PROTOCOL_METHODS, missing), collapse = ", "),
+             "): v1 plans run only through the legacy call and language-2 plans are ",
+             "refused. Publishing again cannot add these methods: an administrator ",
+             "installs dsOMOP ", .DSOMOP_PROTOCOL_RELEASE, " or later on the server and then ",
+             "publishes its settings (Administration > DataSHIELD > Packages > dsOMOP > ",
+             "Publish).")
     } else if (!is.na(running) && !identical(version, running)) {
       paste0("dsOMOP ", running, " is installed but the profile publishes ",
              "the methods of ", version, ": an administrator publishes ",
              "dsOMOP's settings again (Administration > DataSHIELD > ",
+             "Packages > dsOMOP > Publish).")
+    } else if (any(.DSOMOP_PROTOCOL_METHODS %in% missing)) {
+      paste0(if (is.na(running)) {
+               "The installed dsOMOP version could not be verified. The profile lacks "
+             } else paste0("dsOMOP ", running, " is installed but the profile lacks "),
+             "publication protocol methods (",
+             paste(intersect(.DSOMOP_PROTOCOL_METHODS, missing), collapse = ", "),
+             "): v1 plans run only through the legacy call and language-2 plans are ",
+             "refused. An administrator ",
+             if (is.na(running)) paste0("checks that dsOMOP ", .DSOMOP_PROTOCOL_RELEASE,
+                                        " or later is installed, upgrades if needed, then ") else "",
+             "publishes dsOMOP's settings again (Administration > DataSHIELD > ",
              "Packages > dsOMOP > Publish).")
     } else if (length(missing) > 0L) {
       paste0("The profile lacks ", length(missing), " dsOMOP method(s) this ",
@@ -130,12 +216,20 @@ ds.omop.server.version <- function(conns = NULL) {
     } else {
       ""
     }
-    data.frame(
+    row <- data.frame(
       server = server, published = version, running = running,
       missing = paste(missing, collapse = ", "),
       ready = !nzchar(advice), advice = advice,
       stringsAsFactors = FALSE
     )
+    old <- is.null(pub$error) && any(.DSOMOP_PROTOCOL_METHODS %in% missing)
+    block <- session$capabilities[[server]]$recipe_language
+    row$recipe_language <- I(list(
+      if (!is.null(block)) block[intersect(c("version", "semantic_version", "operations",
+                                                   "reducers", "dialect"), names(block))]
+      else if (old || (!is.null(session) && server %in% names(session$conns))) "unavailable"
+      else "not connected"))
+    row
   })
   out <- do.call(rbind, rows)
   attr(out, "client") <- client

@@ -12,7 +12,8 @@ recipe_execute(
   output_mode = "memory",
   cohort = NULL,
   tables = NULL,
-  combine = "union"
+  combine = "union",
+  on_small_site = c("error", "skip")
 )
 }
 \arguments{
@@ -43,10 +44,19 @@ with \code{cohort}.}
 
 \item{combine}{Character; how to fold the scope sources together:
 \code{"union"} (the default) or \code{"intersect"}.}
+
+\item{on_small_site}{Character; \code{"error"} (default) or \code{"skip"},
+passed to \code{\link{ds.omop.plan.execute}}. Only insufficient final
+person support is skippable: skip keeps successful sites and returns
+\code{NULL} for sites whose publication fails final person support.}
 }
 \value{
-Invisibly, the output symbol mapping (a named character vector).
-  As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
+Invisibly, the output symbol mapping (a named character vector)
+  for a complete ordinary execution. When sites publish different outputs
+  or fresh names (the server allocates fresh names for occupied
+  destinations; a survival output publishes one symbol per TAR), a named
+  per-site list of the actual publication inventories; skipped sites have
+  \code{NULL} entries. As with \code{\link{ds.omop.plan.execute}}, the produced symbols are
   recorded on the session so the manipulation wrappers can default to the
   last one.
 }

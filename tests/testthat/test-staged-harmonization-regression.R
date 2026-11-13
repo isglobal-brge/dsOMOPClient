@@ -1,3 +1,7 @@
+# Every site publishes the current methods, so the execution preflight (review
+# B1) selects the publication protocol; test-v2-protocol.R covers old sites.
+.mock_current_methods()
+
 test_that("staged execution invalidates harmonization before preparation", {
   captured <- NULL
   conns <- list(site_a = "A", site_b = "B")

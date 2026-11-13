@@ -10,6 +10,7 @@
 \alias{omop_filter_date_range}
 \alias{omop_filter_value}
 \alias{omop_filter_value_concept}
+\alias{omop_filter_concept_set}
 \alias{omop_filter_not_has_concept}
 \alias{omop_filter_concept_count}
 \alias{omop_filter_prior_observation}
@@ -60,6 +61,8 @@ omop_filter_value_concept(
   column = "value_as_concept_id",
   concept_name = NULL
 )
+
+omop_filter_concept_set(concept_ids, concept_col = NULL)
 
 omop_filter_not_has_concept(
   concept_id,
@@ -155,11 +158,14 @@ restricts absence to that window (e.g. "no HbA1c in the prior year")}
 
 \item{min_count}{Integer; minimum number of visits}
 
-\item{start}{Character; inclusive start date in ISO \code{YYYY-MM-DD} form.}
+\item{start}{Character or \code{NULL}; inclusive start date in ISO
+\code{YYYY-MM-DD} form. A one-sided range (only \code{start} or only
+\code{end}) compiles to a single \code{>=} / \code{<=} comparison.}
 
-\item{end}{Character; inclusive end date in ISO \code{YYYY-MM-DD} form and
-not before \code{start}. The server applies the authoritative minimum
-disclosure-safe width configured by the data controller.}
+\item{end}{Character or \code{NULL}; inclusive end date in ISO
+\code{YYYY-MM-DD} form and not before \code{start}. No minimum calendar
+width is imposed on private assignment filters; publication applies final
+support.}
 
 \item{date_column}{Character or \code{NULL}; explicit OMOP date column. When
 \code{NULL}, \code{\link{recipe_to_plan}} infers the standard date column
@@ -173,20 +179,28 @@ from the output's OMOP table.}
 \item{direction}{Character; "above" or "below"}
 
 \item{safe_bins}{Server-issued result for the same measurement concept from
-\code{ds.omop.safe.cutpoints()}. Required whenever a numeric range is
-supplied; client-authored thresholds are not executable.}
+\code{ds.omop.safe.cutpoints()}. Optional for numeric criteria. If
+supplied, both bounds must be issued edges and the scope must match.}
 
-\item{concept_ids}{Integer scalar or vector; the value concept(s) to keep
-(a record matches if its value concept is any of them)}
+\item{concept_ids}{Integer scalar or vector; the concept(s) to keep (a
+record matches if its concept is any of them: the value concept for
+\code{omop_filter_value_concept()}; the table's domain concept, or
+\code{concept_col}, for \code{omop_filter_concept_set()})}
+
+\item{concept_col}{Character or \code{NULL}; the concept column the set is
+matched on. \code{NULL} (default) uses the output table's domain concept
+column from the role registry (\code{condition_concept_id} for
+\code{condition_occurrence}, \code{drug_concept_id} for
+\code{drug_exposure}, ...).}
 
 \item{min_days}{Integer; minimum days of followup}
 
 \item{visit_concept_id}{Integer scalar or vector, or NULL; visit type
 filter (a vector counts visits of any of the given types)}
 
-\item{min_value}{Numeric or NULL; minimum value}
+\item{min_value}{Numeric or NULL; inclusive minimum value}
 
-\item{max_value}{Numeric or NULL; maximum value}
+\item{max_value}{Numeric or NULL; exclusive maximum value}
 }
 \value{
 An \code{omop_filter} object (a named list with class
@@ -208,6 +222,18 @@ Convenience constructors are provided for common filter types:
 \code{\link{omop_filter_age_group}}, \code{\link{omop_filter_has_concept}},
 \code{\link{omop_filter_date_range}}, \code{\link{omop_filter_value}}.
 }
+\section{has_measurement and missing_measurement are not complements}{
+
+  \code{omop_filter_has_measurement()} keeps persons with at least one
+  measurement row of the concept (in the value range when one is given);
+  \code{omop_filter_missing_measurement()} keeps persons with \emph{no row
+  with a non-null value}, so a person whose only rows have a NULL value
+  satisfies both. Both keep this 2.10.1 meaning. In language 2 the two
+  absences are explicit: \code{omop_has_not(event)} (no row) and
+  \code{omop_has_not(event, nonmissing = "value_as_number")} (no non-null
+  value); \code{recipe_lint()} reports the legacy pair (INFO).
+}
+
 \examples{
 \dontrun{
 f <- omop_filter(type = "sex", level = "population",

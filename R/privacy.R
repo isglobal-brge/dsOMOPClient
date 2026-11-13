@@ -16,6 +16,16 @@
 # the root is stored.
 .DP_STATELESS_PRIVACY_CONTRACT <- "fixed_per_release_seed_data_versioned_v1"
 .DP_STATELESS_BINDING <- "seed_data_versioned_v1"
+# Protected releases (dsOMOP 2.10.3): answers are deterministic in a fixed
+# public basis (fixed_synopsis) or in secret fingerprints of the realised
+# bounded contributions (realised_sticky, a heuristic without a joint DP
+# guarantee). Not poolable with per-release (2.7.1-2.10.2) servers.
+.DP_PROTECTED_PRIVACY_CONTRACT <- "protected_release_fixed_basis_or_realised_v1"
+.DP_PROTECTED_BINDING <- "fixed_basis_or_realised_contributions_v1"
+.DP_PROTECTED_GUARANTEE <-
+  "fixed_synopsis_or_heuristic_realised_contribution_reuse_v1"
+.DP_PROTECTED_RELEASE_PROTOCOL <- "dsomop-protected-release-v1"
+.DP_PROTECTED_ROUTES <- c("fixed_synopsis", "realised_sticky")
 .DP_VERSIONED_CONTRACT_FIELDS <- c(
   "protocol", "privacy_contract", "history_dependent", "persistent_state",
   "release_binding", "service_capacity"
@@ -144,9 +154,12 @@
 #' Constructs the public semantic specification for a dedicated dsOMOP
 #' sticky-noise release. Noise parameters and state are deliberately
 #' absent: epsilon, seeds, nonces, and privacy epochs are owned by each data
-#' custodian and cannot be supplied by the analyst. Every accepted semantic
-#' release uses the server's fixed per-release epsilon and deterministic sticky
-#' noise. Since dsOMOP 2.10.0, each answer is a deterministic function of the
+#' custodian and cannot be supplied by the analyst. On dsOMOP 2.10.3,
+#' supported views share canonical protected components. A fixed synopsis
+#' declares its bounded-vector epsilon before exact support gates; a realised
+#' contribution release is heuristic and claims no mechanism epsilon or delta.
+#' Neither route claims differential privacy for the whole API transcript.
+#' Servers 2.10.0 to 2.10.2 instead derive each answer from the
 #' server's secret root, the question, the protected statistic and a private
 #' automatic database version: valid repeats return the same answer, and a
 #' database reload that adds rows re-draws every answer. Servers 2.7.1 to 2.9.x
@@ -165,7 +178,8 @@
 #'   \code{"binary_rate"}.
 #' @param variable Bare column name except for \code{"count"} and
 #'   \code{"bounded_record_count"}.
-#' @param levels Public, fixed character domain for a categorical histogram.
+#' @param levels Public character labels for a categorical histogram. On
+#'   2.10.3 these must be a view of the server's complete registered domain.
 #'   The server returns every requested level, including zero-count levels.
 #' @param breaks Public, fixed, strictly increasing finite numbers, canonical
 #'   \code{YYYY-MM-DD} dates, or \code{YYYY-MM-DDTHH:MM:SSZ} UTC datetimes.
@@ -438,7 +452,17 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 }
 
 .dp_first_answer_contract <- function(status, server) {
-  expected <- if (identical(status$release_binding, .DP_STATELESS_BINDING)) {
+  expected <- if (identical(status$release_binding, .DP_PROTECTED_BINDING)) {
+    list(
+      history_dependent = FALSE,
+      history_based_admission = FALSE,
+      privacy_call_quota = "none",
+      persistent_state = "noise_root_only",
+      release_binding = .DP_PROTECTED_BINDING,
+      service_capacity = "none",
+      privacy_contract = .DP_PROTECTED_PRIVACY_CONTRACT
+    )
+  } else if (identical(status$release_binding, .DP_STATELESS_BINDING)) {
     list(
       history_dependent = FALSE,
       privacy_call_quota = "none",
@@ -504,14 +528,18 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
     }
     return(status)
   }
-  if (!"snapshot_id" %in% names(status) ||
+  # A patched server's snapshot_id is optional presentation metadata. It
+  # cannot determine admission, even when empty or an arbitrary label.
+  protected <- identical(status$privacy_contract,
+                          .DP_PROTECTED_PRIVACY_CONTRACT)
+  if (!protected && (!"snapshot_id" %in% names(status) ||
       !is.character(status$snapshot_id) || length(status$snapshot_id) != 1L ||
-      is.na(status$snapshot_id) || !nzchar(status$snapshot_id)) {
+      is.na(status$snapshot_id) || !nzchar(status$snapshot_id))) {
     stop("Server '", server, "' returned a malformed DP status.",
          call. = FALSE)
   }
-  if (nchar(status$snapshot_id, type = "bytes") > 256L ||
-      !grepl("^[A-Za-z0-9][A-Za-z0-9._:@+-]*$", status$snapshot_id)) {
+  if (!protected && (nchar(status$snapshot_id, type = "bytes") > 256L ||
+      !grepl("^[A-Za-z0-9][A-Za-z0-9._:@+-]*$", status$snapshot_id))) {
     stop("Server '", server, "' returned an invalid public snapshot_id.",
          call. = FALSE)
   }
@@ -527,7 +555,15 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' helpers, this function never returns a partial federation: each requested
 #' node must provide a well-formed status.
 #'
-#' Since dsOMOP 2.10.0 the v3 service is seed-only:
+#' dsOMOP 2.10.3 uses the protected-release contract: canonical fixed-basis
+#' or realised-contribution components, without history-based admission or
+#' stored answers. This client declares that contract in its status request;
+#' the new server refuses clients 2.10.2 and earlier with an upgrade message.
+#' Every older server is explicitly warned as unpatched. Installing the new
+#' client cannot repair server-side disclosure defects. Mixed old/new
+#' protected pooling is refused; per-site results remain labelled by contract.
+#'
+#' On servers 2.10.0 to 2.10.2 the v3 service is seed-only:
 #' \code{release_binding = "seed_data_versioned_v1"},
 #' \code{persistent_state = "noise_root_only"},
 #' \code{service_capacity = "none"} and \code{history_dependent = FALSE}. Every
@@ -560,12 +596,20 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' treated as \code{FALSE}. Servers 2.9.0 and later also report
 #' \code{tools_mode}, the community tools' protection mode (\code{"auto"} by
 #' default, \code{"standard"} or \code{"dp"}).
-#' Each status contains the custodian's public \code{snapshot_id}. Federated
-#' sites may legitimately report different snapshot identifiers.
-#' Release preflight rejects either a repeated \code{noise_domain_id} or a
-#' repeated server-owned logical \code{domain}. The second check also prevents
-#' one logical privacy node from being pooled twice when its connections expose
-#' different noise material.
+#' Status may contain a public \code{snapshot_id} label. Federated sites may
+#' report different labels. On 2.10.3 servers it is optional display metadata
+#' with no effect on admission or noise. Fixed synopses are keyed on a private
+#' person-membership generation recomputed within each request's database
+#' snapshot, without a per-session cache. Clinical-value updates that leave
+#' person membership unchanged do not change that generation; cross-version
+#' inference remains a residual. The public \code{data_generation},
+#' \code{data_generation_basis} and \code{data_generation_residual} fields
+#' describe the policy without revealing the private generation.
+#' Protected pooling across multiple sites requires distinct payload identifiers
+#' \code{source$logical_source_id}; missing or repeated identifiers are
+#' refused, while per-site results remain available. On legacy servers only,
+#' release preflight rejects repeated \code{noise_domain_id} or server-owned
+#' logical \code{domain} values.
 #'
 #' @param datasources Named DataSHIELD connection list. \code{NULL} uses
 #'   \code{DSI::datashield.connections_find()}.
@@ -575,13 +619,89 @@ omop_privacy <- function(statistic, variable = NULL, levels = NULL,
 #' @export
 ds.omop.dp.status <- function(datasources = NULL) {
   datasources <- .dp_datasources(datasources)
-  statuses <- .dp_complete_aggregate(
-    datasources, call("omopDpStatusDS"), "DP status preflight"
-  )
+  statuses <- .dp_statuses(datasources)
+  for (message in .dp_unpatched_warnings(statuses)) {
+    warning(message, call. = FALSE)
+  }
+  statuses
+}
+
+#' DP status of every server, negotiated with the protected-release contract
+#'
+#' dsOMOPClient 2.10.3 declares the protected-release payload protocol it
+#' implements when it asks for the status (dsOMOP 2.10.3 servers refuse status
+#' calls from older clients with an upgrade message). A server older than
+#' dsOMOP 2.10.3 does not take that argument; it is asked again without it, so
+#' its legacy status can still be inspected and its legacy releases reported
+#' per site. Every requested server must answer.
+#'
+#' @param datasources Named DataSHIELD connections.
+#' @return An \code{omop_dp_status} list; attribute \code{unpatched} names the
+#'   servers that predate dsOMOP 2.10.3.
+#' @keywords internal
+.dp_statuses <- function(datasources) {
+  expected <- names(datasources)
+  results <- .ds_safe_aggregate(
+    datasources, call("omopDpStatusDS", .DP_PROTECTED_RELEASE_PROTOCOL))
+  errors <- attr(results, "ds_errors") %||% list()
+  attr(results, "ds_errors") <- NULL
+  old <- names(errors)[vapply(errors, function(e) {
+    any(grepl("unused argument", e, fixed = TRUE))
+  }, logical(1L))]
+  if (length(old) > 0L) {
+    retry <- .ds_safe_aggregate(datasources[old], call("omopDpStatusDS"))
+    retry_errors <- attr(retry, "ds_errors") %||% list()
+    for (server in names(retry)) results[[server]] <- retry[[server]]
+    errors <- c(errors[setdiff(names(errors), old)], retry_errors)
+  }
+  missing <- setdiff(expected, names(results))
+  if (length(errors) > 0L || length(missing) > 0L) {
+    failed <- unique(c(names(errors), missing))
+    detail <- if (length(errors) > 0L) {
+      paste(names(errors), unlist(errors, use.names = FALSE), sep = ": ",
+            collapse = "; ")
+    } else paste(failed, collapse = ", ")
+    stop("DP status preflight requires a complete federation; no partial ",
+         "result was published. Affected server(s): ",
+         paste(failed, collapse = ", "),
+         if (nzchar(detail)) paste0(" (", detail, ")") else "", ".",
+         call. = FALSE)
+  }
+  statuses <- results[expected]
   for (server in names(statuses)) {
     statuses[[server]] <- .dp_status_shape(statuses[[server]], server)
   }
-  structure(statuses, class = c("omop_dp_status", "list"))
+  unpatched <- names(statuses)[vapply(names(statuses), function(server) {
+    server %in% old ||
+      !identical(statuses[[server]]$privacy_contract,
+                 .DP_PROTECTED_PRIVACY_CONTRACT)
+  }, logical(1L))]
+  structure(statuses, class = c("omop_dp_status", "list"),
+            unpatched = unpatched)
+}
+
+#' Plain warnings for DP servers older than dsOMOP 2.10.3
+#'
+#' A server that predates dsOMOP 2.10.3 lacks its security fixes of the OHDSI
+#' community tools; its DP answers follow its legacy contract. The client says
+#' so plainly and never implies that a newer client repairs a server.
+#'
+#' @param statuses Result of \code{.dp_statuses}.
+#' @return Character vector of warning messages (one per unpatched server).
+#' @keywords internal
+.dp_unpatched_warnings <- function(statuses) {
+  unpatched <- attr(statuses, "unpatched") %||% character(0)
+  vapply(unpatched, function(server) {
+    status <- statuses[[server]]
+    contract <- status$privacy_contract %||% status$protocol %||% "unknown"
+    paste0(
+      "Server '", server, "' runs dsOMOP 2.10.2 or older (DP contract '",
+      contract, "'), without the dsOMOP 2.10.3 security fixes of the OHDSI ",
+      "community tools: its DP releases follow that legacy contract and stay ",
+      "exposed to the inference attacks dsOMOP 2.10.3 closes, and this ",
+      "dsOMOPClient cannot repair them. Its releases are reported as legacy ",
+      "per-site results; upgrade the server to dsOMOP 2.10.3.")
+  }, character(1L), USE.NAMES = FALSE)
 }
 
 #' Print the release policy on each DP server
@@ -1206,8 +1326,22 @@ print.omop_dp_status <- function(x, ...) {
 #' from every node, verifies the returned mechanism contract, and optionally
 #' pools only the noisy sufficient statistics. A failure at any site stops the
 #' call without publishing another site's value. Retrying the identical
-#' request returns the same complete answer. The default v3 contract requires
-#' dsOMOP 2.7.1 or later.
+#' request returns the same complete answer when its bounded contributions
+#' and applicable fixed-synopsis generation are unchanged.
+#'
+#' On dsOMOP 2.10.3, typed binary rates carry numerator/denominator masks of
+#' the complete registered domain; numeric histograms use one versioned
+#' projection of their complete atom basis before coarsening. Pooling sums
+#' compatible signed bases and derives the view once. Fixed synopses declare
+#' their bounded-vector epsilon and delta zero before exact support gates;
+#' realised-contribution releases are heuristic and declare neither. No
+#' finite epsilon describes the whole service transcript. The public
+#' \code{snapshot_id} is optional display metadata and never controls
+#' admission or noise. All older servers receive an explicit upgrade warning.
+#' A mixed old/new federation supports \code{type = "split"} only.
+#'
+#' The remaining legacy semantics apply only to servers before 2.10.3.
+#' Their default v3 contract requires dsOMOP 2.7.1 or later.
 #' For a staged upgrade only, the client option
 #' \code{dsomop.dp.allow_legacy_servers} (default \code{FALSE}) can be set to
 #' \code{TRUE} to permit legacy v2 servers, including mixed federations. Every
@@ -1235,7 +1369,8 @@ print.omop_dp_status <- function(x, ...) {
 #' Every input must have been produced by an audited person-local server path
 #' and carry its authenticated content-bound provenance capsule.
 #'
-#' Every answer uses the fixed epsilon reported by its server and delta zero.
+#' Legacy per-release answers report their server's fixed epsilon and delta
+#' zero under that older contract.
 #' There is no lifetime privacy budget or privacy call quota. Composition
 #' metadata describes only the participating sites in the current federated
 #' release. Repeating a question adds no observation; no full temporal
@@ -1256,7 +1391,12 @@ print.omop_dp_status <- function(x, ...) {
 #' @param type Optional result view: \code{"split"}, \code{"combine"}, or
 #'   \code{"both"}. When omitted, the legacy \code{pool} argument is preserved:
 #'   \code{TRUE} means both views and \code{FALSE} means split only.
-#' @return A \code{dsomop_result}. The \code{meta$privacy} record reports the
+#' @return A \code{dsomop_result}. On 2.10.3, \code{meta$privacy} reports
+#'   each site's protection route and guarantee scope. Only all-fixed
+#'   federations report vector epsilon composition (maximum for disjoint
+#'   sites, sum for overlapping sites), never an API-transcript epsilon.
+#'   Heuristic and legacy warnings remain in \code{meta$warnings}.
+#'   For older servers, \code{meta$privacy} reports the
 #'   effective population label, a named public snapshot map, fixed per-site
 #'   epsilon and parallel cross-site composition for this release. Federated
 #'   nodes are modeled as separate populations, so the combined epsilon and
@@ -1311,7 +1451,30 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   server_privacy$population_id <- population_id
 
   datasources <- .dp_datasources(datasources)
-  statuses <- ds.omop.dp.status(datasources)
+  statuses <- .dp_statuses(datasources)
+  unpatched_warnings <- .dp_unpatched_warnings(statuses)
+  protected <- vapply(statuses, function(status) {
+    identical(status$privacy_contract, .DP_PROTECTED_PRIVACY_CONTRACT)
+  }, logical(1L))
+  if (any(protected)) {
+    if (!all(protected)) {
+      if (want_combine) {
+        stop("Servers ", paste(names(statuses)[!protected], collapse = ", "),
+             " use the per-release DP contract of dsOMOP 2.10.2 or earlier, ",
+             "and ", paste(names(statuses)[protected], collapse = ", "),
+             " the protected-release contract of dsOMOP 2.10.3; their ",
+             "releases cannot be combined. Upgrade every server to dsOMOP ",
+             "2.10.3, or request per-site results (type = \"split\").",
+             call. = FALSE)
+      }
+      return(.dp_mixed_per_site_release(
+        x, privacy, datasources, protected, format, unpatched_warnings))
+    }
+    return(.dp_protected_release(
+      x, privacy, server_privacy, datasources, statuses, want_combine,
+      result_type, format, population_id, type, pool))
+  }
+  for (message in unpatched_warnings) warning(message, call. = FALSE)
   contract <- .dp_status_contract(statuses, privacy)
   harmonization <- NULL
   count_like <- privacy$statistic %in% c(
@@ -1365,7 +1528,7 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
   epsilons <- vapply(raw, function(value) as.numeric(value$epsilon), numeric(1L))
   deltas <- vapply(raw, function(value) as.numeric(value$delta), numeric(1L))
   snapshot_ids <- vapply(statuses, `[[`, character(1L), "snapshot_id")
-  warnings <- legacy_warnings
+  warnings <- c(unpatched_warnings, legacy_warnings)
   if (want_combine && length(statuses) > 1L &&
       identical(privacy$statistic, "bounded_distinct")) {
     warnings <- c(warnings, paste0(
@@ -1412,6 +1575,8 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
       paste(status$protocol, status$privacy_contract, sep = "/")
     }, character(1L)))) > 1L,
     legacy_servers = legacy_servers,
+    # Servers older than dsOMOP 2.10.3, without its security fixes.
+    unpatched_servers = attr(statuses, "unpatched") %||% character(0),
     privacy_epoch = vapply(
       statuses, `[[`, numeric(1L), "privacy_epoch"
     ),
@@ -1428,6 +1593,41 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
     result, result_type,
     "No complete disclosure-safe pooled DP release was available."
   )
+}
+
+# Per-site results of a federation mixing dsOMOP 2.10.3 servers with older
+# ones: each group answers under its own contract and nothing is pooled.
+.dp_mixed_per_site_release <- function(x, privacy, datasources, protected,
+                                       format, unpatched_warnings) {
+  for (message in unpatched_warnings) warning(message, call. = FALSE)
+  groups <- list(protected = datasources[protected],
+                 legacy = datasources[!protected])
+  parts <- lapply(groups, function(ds) {
+    suppressWarnings(ds.omop.dp.release(x, privacy, ds, type = "split",
+                                        format = format))
+  })
+  per_site <- c(parts$protected$per_site, parts$legacy$per_site)
+  per_site <- per_site[names(datasources)]
+  result <- dsomop_result(
+    per_site = per_site, pooled = NULL,
+    meta = list(
+      call_code = .build_code("ds.omop.dp.release", x = x,
+                              privacy = "<omop_privacy>", type = "split",
+                              format = format),
+      scope = "per_site",
+      warnings = c(unpatched_warnings, paste0(
+        "Mixed federation: servers ",
+        paste(names(datasources)[protected], collapse = ", "),
+        " answered under the dsOMOP 2.10.3 protected-release contract and ",
+        paste(names(datasources)[!protected], collapse = ", "),
+        " under their legacy per-release contract; nothing was pooled."))))
+  result[["meta"]]$privacy <- list(
+    statistic = privacy$statistic,
+    mixed_contracts = TRUE,
+    unpatched_servers = names(datasources)[!protected],
+    protected = parts$protected$meta$privacy,
+    legacy = parts$legacy$meta$privacy)
+  .result_type_view(result, "split", "Mixed federations are not pooled.")
 }
 
 #' Prepare a person-local table for sticky DP releases
@@ -1468,9 +1668,9 @@ ds.omop.dp.release <- function(x, privacy, datasources = NULL, pool = TRUE,
 #' @export
 ds.omop.dp.prepare <- function(x, out = NULL, symbol = "omop", conns = NULL) {
   if (inherits(x, "omop_recipe")) {
-    plan <- recipe_to_plan(x)
-    out <- .recipe_out_symbols(x, plan, out)
-  } else if (inherits(x, "omop_plan")) {
+    plan <- .recipe_plan_auto(x)
+    if (!.v2_is_plan_v2(plan)) out <- .recipe_out_symbols(x, plan, out)
+  } else if (inherits(x, c("omop_plan", "omop_plan_v2"))) {
     plan <- x
   } else {
     stop("x must be an omop_recipe or omop_plan.", call. = FALSE)
