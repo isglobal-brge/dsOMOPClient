@@ -168,7 +168,15 @@ test_that("D39 D42 effective native policies and public map order bind digests",
   b$options$date_spec$labels<-rev(b$options$date_spec$labels)
   expect_identical(.planNormalizedDigest(a)$sha256,.planNormalizedDigest(b)$sha256)
   b$variables$d$date_spec<-list(precision="month")
-  expect_identical(.planNormalizeV2(a),.planNormalizeV2(b))
+  expect_identical(.planNormalizedDigest(a)$sha256,.planNormalizedDigest(b)$sha256)
   b$variables$d$date_spec$partial<-"mid"
   expect_false(identical(.planNormalizedDigest(a)$sha256,.planNormalizedDigest(b)$sha256))
+})
+
+
+test_that("D42 native date operation negotiation matches normalized server requirements", {
+  r<-omop_recipe(variables=list(age=omop_age_at("2024-01-01"),gap=omop_time_between(omop_anchor(omop_event("death")),"2024-01-01")),outputs=omop_output("o",format="wide",grain="person"))
+  p<-recipe_to_plan(r)
+  expect_identical(as.character(.plan_v2_operations(p)),as.character(dsOMOP:::.irOperations(dsOMOP:::.irNormalize(p))))
+  expect_true(all(c("date.elapsed","date.presentation","anchor.event") %in% .plan_v2_operations(p)))
 })

@@ -85,7 +85,7 @@
 
 .v2_has_source_anchor <- function(x) {
   if (!is.list(x)) return(FALSE)
-  for (key in intersect(names(x) %||% character(0), c("anchor", "reference"))) {
+  for (key in intersect(names(x) %||% character(0), c("anchor", "reference", "from", "to"))) {
     a <- x[[key]]
     if (is.list(a) && !is.null(a[["source"]])) return(TRUE)
   }
@@ -105,8 +105,8 @@
 .plan_v2_operations <- function(plan) {
   x <- .planNormalizeV2(plan)
   ops <- if (.conceptNeedsPresentation(plan)) "output.concept_labels" else character(0)
-  date_vars <- plan$variables
-  if (!is.null(plan$options$date_spec) || any(vapply(date_vars, function(v) !is.null(v$date_spec) || (v$derived$kind %||% "") %in% c("calendar_date", "date_part"), logical(1)))) ops <- c(ops, "date.presentation")
+  date_vars <- x$variables
+  if (!is.null(x$options$date_spec) || any(vapply(date_vars, function(v) !is.null(v$date_spec) || (v$derived$kind %||% "") %in% c("calendar_date", "date_part"), logical(1)))) ops <- c(ops, "date.presentation")
   if (any(vapply(date_vars, function(v) (v$derived$kind %||% "") %in% c("time_between", "age_at"), logical(1)))) ops <- c(ops, "date.elapsed")
   add <- function(...) ops <<- c(ops, ...)
   events <- x$events %||% list()
