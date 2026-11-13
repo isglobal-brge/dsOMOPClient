@@ -12,7 +12,7 @@ omop_filter_group(..., operator = c("AND", "OR", "NOT"), label = NULL)
 \item{operator}{Character; \code{"AND"}, \code{"OR"} or (2.10.3)
 \code{"NOT"}, which negates the conjunction of its children: the legacy
 spelling of \code{\link{omop_not}()}. A NOT group has no v1 rendering; it
-runs as a language-2 plan on dsOMOP 2.10.4 servers.}
+runs as a language-2 plan on dsOMOP 2.10.3 servers.}
 
 \item{label}{Character or \code{NULL}; human-readable description
 (auto-generated from children if \code{NULL}).}

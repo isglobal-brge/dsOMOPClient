@@ -32,7 +32,7 @@ The former \code{"joined_long"} label is rejected because it had no
 faithful executable mapping; use split \code{"long"} outputs. The
 \code{"covariates_sparse"} label (2.10.3, B-22) is the language-2
 \code{format = "sparse"} over the output's variables as sources; it has
-no v1 rendering and runs on dsOMOP 2.10.4 servers.}
+no v1 rendering and runs on dsOMOP 2.10.3 servers.}
 
 \item{variables}{Character vector or \code{NULL}; variable names to include
 (\code{NULL} means all variables in the recipe).}

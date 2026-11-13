@@ -2,6 +2,12 @@
 
 Pairs with dsOMOP 2.10.3, the security release of the OHDSI-tools audit.
 
+- Corrected named single-output transport: output mappings and other named
+  scalar arguments now travel as one encoded JSON object, preserving their
+  names without a `c()`/`structure()` expression. Single-output recipes and
+  language-2 verbs run under the normal method allowlist; adapter refusals
+  reach the analyst with their actual reason. Existing call syntax is unchanged.
+
 - Release 2.10.3 pairs both packages, including recipe language 2 and the
   publication protocol. Existing valid secrets are reused; ordinary operation
   needs no privacy settings, state provisioning, epoch bump, ETL hook or TLS

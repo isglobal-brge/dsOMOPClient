@@ -68,7 +68,7 @@ test_that("a language-2 plan is refused before any assignment on any site", {
     state <- do.call(.legacy_federation, sites)
     err <- tryCatch(recipe_execute(.v2_recipe_b1()), error = conditionMessage)
     expect_match(err, "old lacks omopPlanStatusDS, omopStagedRevokeDS")
-    expect_match(err, "installs dsOMOP 2.10.4 on those servers and publishes its methods")
+    expect_match(err, "installs dsOMOP 2.10.3 on those servers and publishes its methods")
     expect_match(err, "Nothing was sent to any site")
     expect_identical(sum(state$assigns), 0L, info = paste(names(sites), collapse = "+"))
     # and directly through the executor

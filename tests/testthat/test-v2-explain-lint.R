@@ -96,7 +96,7 @@ test_that("lint compiles as execution does: newly permitted 2.10.1 shapes are la
   L <- recipe_lint(r)
   expect_false("no_compile" %in% L$code)
   expect_identical(L$severity[L$code == "language_2_only"], "INFO")
-  expect_match(L$message[L$code == "language_2_only"], "2.10.4 servers only")
+  expect_match(L$message[L$code == "language_2_only"], "2.10.3 servers only")
   plain <- omop_recipe(variables = omop_variable_age(), outputs = omop_output(name = "age", type = "wide"))
   expect_false("language_2_only" %in% recipe_lint(plain)$code)
 })

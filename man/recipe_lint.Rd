@@ -58,7 +58,7 @@ or wrong), and \code{"INFO"} (advisory). Rules:
     child population.}
   \item{language_2_only (INFO)}{a recipe of 2.10.1 constructors whose
     shape 2.10.3 newly permits (e.g. a NOT group) has no v1 plan and runs
-    as its language-2 plan on dsOMOP 2.10.4 servers only.}
+    as its language-2 plan on dsOMOP 2.10.3 servers only.}
 }
 The lint has no mirror of server disclosure gates (no width floors, no
 mandatory bins): from 2.10.3 the server's final publication rule is the

@@ -30,13 +30,14 @@
 #' DataSHIELD whitelist. This helper wraps them as JSON strings.
 #' The server-side .ds_arg() transparently deserializes them.
 #' In DSLite, call() handles native R objects directly, so this
-#' function only encodes lists/complex objects — scalars pass through.
+#' function encodes lists, vectors and named scalars; unnamed scalars pass through.
 #'
 #' @param x An R object to encode.
-#' @return A JSON string if x is a list, or x unchanged if scalar.
+#' @return A base64 JSON string for complex or named input; unnamed scalars unchanged.
 #' @keywords internal
 .ds_encode <- function(x) {
-  if (is.list(x) || (is.vector(x) && length(x) > 1)) {
+  if (is.list(x) || (is.atomic(x) && !is.null(names(x))) ||
+      (is.vector(x) && length(x) > 1)) {
     # jsonlite::toJSON serializes a named ATOMIC vector as a bare JSON array,
     # silently dropping its names (a named LIST keeps them as object keys).
     # This bites the execute out-mapping c(demo = "D", drugs = "X") and any

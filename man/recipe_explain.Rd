@@ -54,7 +54,7 @@ payload and the legacy rules it relies on; offline its lowered IR and
 digest are not available (the server lowers it), and its native rendering
 (\code{recipe_to_plan(version = 2)}) is never presented as the executed
 plan. With \code{conns}, each server whose profile publishes
-\code{omopPlanExplainDS} (dsOMOP 2.10.4) receives the selected wire plan
+\code{omopPlanExplainDS} (dsOMOP 2.10.3) receives the selected wire plan
 and reports its normalised IR, compatibility variants and semantic digest
 (attached as \code{$server}). A server whose profile does not publish it,
 and a call that fails, is reported by site and changes nothing else. For a
