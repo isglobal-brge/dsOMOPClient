@@ -143,7 +143,7 @@
   }
   if(identical(semantic,"flag")&&type %in% c("factor","ordered_factor")) {levels<-c("flag:0","flag:1");labels<-spec$binary$labels %||% inherited$levels$labels %||% c("no","yes")}
   resolved <- NULL
-  if (category_present && length(levels) && length(labels)==length(levels) && !concept) {
+  if (type %in% c("factor","ordered_factor") && category_present && length(levels) && length(labels)==length(levels) && !concept) {
     if (semantic %in% c("bins","category")) levels<-sub("^N",if(semantic=="bins")"bin:" else "category:",levels)
     if (semantic=="date") levels<-ifelse(startsWith(levels,"period:"),levels,paste0("period:",levels))
     contract <- list(spec=spec,producer=list(kind=semantic),producer_order=as.list(levels),producer_ordered=type=="ordered_factor")
@@ -161,6 +161,7 @@
     if(!is.null(levels)&&identical(spec$missing$na,"level")) {levels<-c(levels,"special:missing");labels<-NULL}
     if(!is.null(levels)&&identical(spec$missing$unknown,"level")) {levels<-c(levels,"special:unknown");labels<-NULL}
   }
+  if (semantic=="concept" && isFALSE(plan$options$translate_concepts)) type<-"integer"
   if (!type %in% c("factor","ordered_factor")) {levels<-NULL;labels<-NULL;spec$reference<-NULL}
   list(stable_key=key,name=key,meaning=if(is.null(variable))paste("Output",semantic,"role",key) else paste("Declared variable",key),
     semantic_type=semantic,r_type=type,storage_type="unresolved",unit=unit,
