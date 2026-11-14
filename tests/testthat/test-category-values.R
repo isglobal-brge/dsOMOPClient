@@ -94,7 +94,8 @@ test_that("C18 C64 consumed recodes preserve labels of retained concept identiti
   spec<-omop_category_spec(recode=omop_category_recode(c(`concept:45000123`="category:named"),
     c("category:named","concept:45000124","concept:45000125"),labels=c("Named","Second","Third")))
   rows<-omop_category_rows(e,"value_as_concept_id",spec)
-  r<-omop_recipe(variables=list(x=omop_category_reduce(rows,omop_reduce("mode"))))
+  reduced<-omop_category_reduce(rows,omop_reduce("mode"))
+  r<-omop_recipe(variables=list(x=reduced,styled=omop_category(reduced,omop_category_spec(label_style="code"))))
   for(mode in c("memory","staged")) {
     symbol<-paste0("RetainedLabels_",mode)
     result<-recipe_execute(r,out=symbol,symbol="labels",conns=ctx$conns,output_mode=mode)
@@ -104,6 +105,8 @@ test_that("C18 C64 consumed recodes preserve labels of retained concept identiti
       f<-.clf_frames(ctx,symbol)[[i]]
       expect_setequal(levels(f$x),c("Named","Second","Third"))
       expect_identical(as.character(f$x),if(i==1L)rep(c("Named","Second","Third"),each=6L) else rep(c("Named","Second"),each=9L))
+      expect_identical(as.character(f$styled),as.character(f$x))
+      expect_identical(levels(f$styled),levels(f$x))
     }
   }
 })
