@@ -52,7 +52,8 @@ test_that("C56 C61 source aliases cannot declassify and date-dependent categorie
   e<-omop_event("observation",45000120L,name="e")
   for(column in c("observation_source_value","observation_source_concept_id","value_as_string")) {
     r<-omop_recipe(variables=list(x=omop_category_reduce(omop_category_rows(e,column),omop_reduce("mode"))))
-    expect_error(recipe_execute(r,out="ForbiddenCategory",symbol="labels",conns=ctx$conns),"cannot be used|not a predicate|category_source_forbidden")
+    expect_error(recipe_execute(r,out="ForbiddenCategory",symbol="labels",conns=ctx$conns),"validation_error|cannot be used|not a predicate|category_source_forbidden")
+    for(server in ctx$servers)expect_error(server$getSessionData(server$getSessionIds()[[1L]],"ForbiddenCategory"))
   }
   repeated<-omop_repeated(e,list(value=omop_number_rows(e,"value_as_number")),timepoints=omop_timepoints(list(baseline=omop_timepoint())))
   period<-omop_category(omop_date(omop_anchor(e),omop_date_spec(precision="month")),omop_category_spec(ordered=TRUE))
