@@ -40,7 +40,7 @@ it with `python3 tools/book/audit-content.py`,
 needs Playwright Chromium). Copy `docs/` to the requested design/book-preview.
 
 Book 2 adds chapters 6–12, moves the visit walkthrough to chapter 13 and the
-capstone to 14, and retains the older URLs. There are 16 pages including Appendix A.
+capstone to 14, and retains the older URLs. Book 2 had 16 pages including Appendix A; Book 3 adds one more.
 The reading order lives in `_pkgdown.yml` and `pkgdown/index.md`; filenames retain
 stable URLs rather than encoding the current order for every page.
 
@@ -91,7 +91,7 @@ The optional provisioning scripts and Compose mount are shipped in the helper
 ZIP; chapter 0 states the live-deployment validation limit explicitly.
 
 After building, `Rscript tools/book/verify-bundle.R` unpacks the downloadable ZIP
-into a separate empty reader directory for each of the 16 chapters and executes
+into a separate empty reader directory for each of the 17 chapters and executes
 all chunks, including exercises and solutions, in fresh R processes. Only the
 lesson text, runner and expected output are staged outside the ZIP; no checkout
 helpers or verification harness are sourced. Every regenerated lesson must match
@@ -101,3 +101,36 @@ Appendix A runs again with a custom `BOOK_PRACTICE_DIR` and no default data path
 The verifier reuses loader-produced practice data and its manifest via symlinks
 and removes its temporary directories afterwards. The ZIP includes the unchanged
 released `tools/dates/va-native.R` as well as the nine `tools/book/` helpers.
+
+Book 3 adds chapter 15, **Working with lab values**, bringing the book to 17
+articles including Appendix A. It covers concept/unit discovery, per-person
+first/last/mean/min/max, an index offset with a seven-day tolerance, slope,
+declared unit conversion, bins and source-range flags, first-to-last change,
+and real dsBase mean/quantileMean/Gaussian GLM pooling. Each teaching section
+ends with an exercise and a collapsible solution. Chapters 6 and 8 gain numeric
+exercises on change and the weighting implied by the output grain.
+
+`load-numeric.R` is the unchanged loader from server commit `184bd6b` described
+in `numeric-tests.report.md`. The book loader invokes it with PostgreSQL disabled,
+then adapts its typed DuckDB output to the existing SQLite practice resource;
+no rows or reference ranges are invented. `duckdb` is now in the chapter 0
+installation block. The PostgreSQL/DuckDB loader can also be used directly by
+an administrator; its environment overrides and defaults remain unchanged.
+The book's one-place resource configuration stays in `connection.R`.
+
+`book_numeric_pair()` is explicitly offline-only: it splits the 28 public
+synthetic people into two disjoint groups of 14 using temporary SQLite copies.
+The `book_pool` session symbol keeps the demonstration separate from the main
+practice connection. The precompute/bundle runners disconnect both sessions and
+remove these temporary copies after checking the chapter. Interactive readers
+can end those connections with `ds.omop.disconnect(symbol="book_pool",
+conns=two_conns)` and `DSI::datashield.logout(two_conns)`, then remove the temporary
+files with `unlink(pair$path)`; the main connection uses the usual `omop` symbol.
+
+`verify-book3.R` independently computes the reducers and fit from source
+measurements, checks actual released summaries/counts, and verifies disjoint
+site files and weighted-site quantiles. `verify-numeric-loader.R DIRECTORY`
+compares every scalar in all 39 adapted tables with the checksum-pinned CSVs.
+Book 3 evidence is in `tools/book/evidence/book3/`. Run only
+`test-book-examples.R` for the package-level targeted check; the full package
+suites remain the integration/release job's responsibility.

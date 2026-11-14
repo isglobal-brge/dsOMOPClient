@@ -4,6 +4,7 @@ stopifnot(as.character(packageVersion("dsOMOP")) == "2.10.4",
 library(dsOMOPClient)
 source("tools/book/verify-book2.R")
 source("tools/book/verify.R")
+source("tools/book/verify-book3.R")
 options(width=88)
 knitr::opts_knit$set(root.dir = normalizePath("."))
 inputs <- sort(list.files("vignettes", "\\.Rmd\\.orig$", full.names=TRUE))
@@ -29,7 +30,7 @@ for (input in inputs) {
       }
       if (exists("practice", inherits=FALSE)) unlink(practice$path)
       if (exists("two_conns", inherits=FALSE)) {
-        try(ds.omop.disconnect(conns=two_conns), silent=TRUE)
+        try(ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-15-labs",input)) "book_pool" else "omop"), silent=TRUE)
         try(DSI::datashield.logout(two_conns), silent=TRUE)
       }
       if (exists("pair", inherits=FALSE)) unlink(pair$path)

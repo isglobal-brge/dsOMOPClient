@@ -43,6 +43,7 @@ verify_chapter <- function(input, env) {
       identical(d,get_data("D_va_reference")))
   }
   verify_book2(input, env, get_data)
+  verify_book3(input, env, get_data)
   # No native recipe accidentally executes through the legacy path.
   for(name in ls(env)) {
     obj <- get(name,env)

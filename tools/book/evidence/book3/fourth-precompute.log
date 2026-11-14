@@ -1,0 +1,15 @@
+PRECOMPUTE vignettes/book-15-labs.Rmd.orig
+
+Quitting from vignettes/book-15-labs.Rmd.orig:64-68 [recorded-units]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error in `[.data.frame`(unit_counts$pooled, c("concept_name", "count_value")) : 
+  undefined columns selected
+Calls: render ... tryCatch -> tryCatchList -> tryCatchOne -> <Anonymous>
+Execution halted
+Error: Fresh-process chapter failed: vignettes/book-15-labs.Rmd.orig
+Execution halted

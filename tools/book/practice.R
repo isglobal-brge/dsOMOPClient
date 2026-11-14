@@ -1,7 +1,8 @@
 # Two public, synthetic Eunomia resources on one real DSLite server.
 # Run the administrator loader first; analyst lessons never read DB rows.
 book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
-                          resource_names=c(gibleed="gibleed", numeric="numeric")) {
+                          resource_names=c(gibleed="gibleed", numeric="numeric"), symbol="omop") {
+  force(env)
   resource<-match.arg(resource)
   library(dsOMOP); library(dsOMOPClient); library(DSLite)
   directory<-Sys.getenv("BOOK_PRACTICE_DIR",file.path("..","practice-data"))
@@ -26,7 +27,7 @@ book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
   builder<-DSI::newDSLoginBuilder()
   builder$append(server="site",url="server",driver="DSLiteDriver")
   conns<-DSI::datashield.login(builder$build(),assign=FALSE)
-  ds.omop.connect(resource=resource_names[[resource]],conns=conns)
+  ds.omop.connect(resource=resource_names[[resource]],conns=conns,symbol=symbol)
   # The permanent public database is not a temporary per-chapter fixture.
   list(conns=conns,server=server,path=character(),database=paths[[resource]],resource=resource)
 }
@@ -34,15 +35,17 @@ book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
 # Offline-only administrator fixture: disjoint halves of public synthetic people.
 # No records are invented. The permanent practice resources are never modified.
 book_numeric_pair <- function(env=parent.frame()) {
-  base <- book_practice("numeric", env=env)
-  ds.omop.disconnect(conns=base$conns)
+  force(env)
+  base <- book_practice("numeric", env=env, symbol="book_pool")
+  ds.omop.disconnect(conns=base$conns, symbol="book_pool")
   DSI::datashield.logout(base$conns)
   source_db <- DBI::dbConnect(RSQLite::SQLite(), base$database)
   ids <- sort(DBI::dbReadTable(source_db, "person")$person_id)
   DBI::dbDisconnect(source_db)
   groups <- split(ids, rep(c("north", "south"), length.out=length(ids)))
   paths <- setNames(vapply(groups, function(x) tempfile("book-numeric-", fileext=".sqlite"), ""), names(groups))
-  withr::defer(unlink(paths), envir=env)
+  complete <- FALSE
+  on.exit(if (!complete) unlink(paths), add=TRUE)
   servers <- lapply(names(groups), function(site) {
     stopifnot(file.copy(base$database, paths[[site]]))
     db <- DBI::dbConnect(RSQLite::SQLite(), paths[[site]])
@@ -66,6 +69,7 @@ book_numeric_pair <- function(env=parent.frame()) {
   builder <- DSI::newDSLoginBuilder()
   for (site in names(groups)) builder$append(server=site, url=site, driver="DSLiteDriver")
   conns <- DSI::datashield.login(builder$build(), assign=FALSE)
-  ds.omop.connect(resource="numeric", conns=conns)
+  ds.omop.connect(resource="numeric", conns=conns, symbol="book_pool")
+  complete <- TRUE
   list(conns=conns, path=paths, groups=groups)
 }

@@ -16,7 +16,7 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
       }
       if (exists("practice", inherits=FALSE)) unlink(practice$path)
       if (exists("two_conns", inherits=FALSE)) {
-        try(dsOMOPClient::ds.omop.disconnect(conns=two_conns), silent=TRUE)
+        try(dsOMOPClient::ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-15-labs",input)) "book_pool" else "omop"), silent=TRUE)
         try(DSI::datashield.logout(two_conns), silent=TRUE)
       }
       if (exists("pair", inherits=FALSE)) unlink(pair$path)
