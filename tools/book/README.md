@@ -62,8 +62,10 @@ installation. `BOOK_PRACTICE_DIR` can point the helper to that loaded directory.
 The same files can be mounted into Rock and registered with the resource URLs in
 chapter 0; no data changes are needed to move them to a different host.
 
-The source archive hashes, revision, counts and provenance are in
-`evidence/book2/practice-manifest.json`. The loader preserves textual vocabulary
+The loader writes source archive hashes, revision, counts and provenance to
+`manifest.json` in the selected practice-data directory. Appendix A reads that
+file, respecting `BOOK_PRACTICE_DIR` and the `../practice-data` default.
+`evidence/book2/practice-manifest.json` retains historical build evidence. The loader preserves textual vocabulary
 and device identifiers instead of guessing that every `_id` column is numeric.
 GiBleed's header-only COST.csv has an incomplete final line; the recorded loader
 warning is harmless and the empty table is created with its columns.
@@ -88,6 +90,13 @@ The optional provisioning scripts and Compose mount are shipped in the helper
 ZIP; chapter 0 states the live-deployment validation limit explicitly.
 
 After building, `Rscript tools/book/verify-bundle.R` unpacks the downloadable ZIP
-into an empty reader directory and runs the visible GiBleed, questionnaire and
-numeric setup chunks. It reuses the existing public practice databases via a
-symlink and removes its temporary directory after the checks.
+into a separate empty reader directory for each of the 16 chapters and executes
+all chunks, including exercises and solutions, in fresh R processes. Only the
+lesson text, runner and expected output are staged outside the ZIP; no checkout
+helpers or verification harness are sourced. Every regenerated lesson must match
+the precomputed `.Rmd` byte-for-byte. The capstone also checks native plan and
+assigned-table equality and cause counts using the public synthetic fixture.
+Appendix A runs again with a custom `BOOK_PRACTICE_DIR` and no default data path.
+The verifier reuses loader-produced practice data and its manifest via symlinks
+and removes its temporary directories afterwards. The ZIP includes the unchanged
+released `tools/dates/va-native.R` as well as the nine `tools/book/` helpers.
