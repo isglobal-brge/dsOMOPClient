@@ -1,0 +1,129 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "incident_events": [
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "prior_observed_days": 10
+      }
+    ]
+  }
+}

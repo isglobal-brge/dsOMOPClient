@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "history": {
+      "table": "condition_occurrence",
+      "concept_set": {
+        "concepts": [
+          990004
+        ],
+        "include_descendants": false
+      }
+    },
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible"
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      }
+    }
+  },
+  "variables": {
+    "history_present": {
+      "source": {
+        "event": "history"
+      },
+      "reducer": {
+        "fn": "binary",
+        "window": {
+          "start": -365,
+          "end": -1,
+          "anchor": "index"
+        }
+      }
+    },
+    "history_days": {
+      "source": {
+        "event": "history"
+      },
+      "reducer": {
+        "fn": "count",
+        "window": {
+          "start": -365,
+          "end": -1,
+          "anchor": "index"
+        },
+        "distinct": "day"
+      }
+    }
+  },
+  "outputs": {
+    "history": {
+      "rows": "study",
+      "format": "wide",
+      "grain": "episode",
+      "result_symbol": "D_history",
+      "columns": [
+        "history_present",
+        "history_days"
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative"
+        }
+      }
+    }
+  },
+  "publish": [
+    "history"
+  ]
+}

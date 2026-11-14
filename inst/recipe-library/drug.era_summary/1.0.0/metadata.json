@@ -1,0 +1,29 @@
+{
+  "id": "drug.era_summary",
+  "template_version": "1.0.0",
+  "title": "Era summary",
+  "category": "drug",
+  "summary": "Summarise exposure courses for one declared drug class. Courses merge nearby fills using the stated gap and persistence; recorded covered days union actual recorded intervals and exclude those extensions. Coverage here is not restricted to observed days. Missing recorded ends use valid days supply, then the language's point-record policy.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "drug",
+    "era_summary"
+  ],
+  "fixture_id": "T12",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "drug_exposure"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

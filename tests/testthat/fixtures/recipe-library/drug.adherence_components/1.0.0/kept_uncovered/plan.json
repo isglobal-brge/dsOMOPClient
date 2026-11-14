@@ -1,0 +1,142 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "rx": {
+      "table": "drug_exposure",
+      "concept_set": {
+        "concepts": [
+          990006
+        ],
+        "include_descendants": false
+      },
+      "end": {
+        "fallback": "days_supply"
+      }
+    },
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    }
+  },
+  "intervals": {
+    "stock": {
+      "source": {
+        "event": "rx"
+      },
+      "gap": 0,
+      "persistence": 0,
+      "min_days": 0,
+      "by": "event",
+      "unmapped": "own_concept",
+      "end": "recorded_end",
+      "fallback": "days_supply",
+      "stockpile": true
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible",
+        "restrict_to_observation": false
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "keep",
+        "gap": 0
+      }
+    }
+  },
+  "variables": {
+    "observed_days": {
+      "derived": {
+        "kind": "observed_days",
+        "window": {
+          "start": 0,
+          "end": 9,
+          "anchor": "index"
+        }
+      }
+    },
+    "recorded_covered_days": {
+      "source": {
+        "interval": "stock"
+      },
+      "reducer": {
+        "fn": "covered_days",
+        "window": {
+          "start": 0,
+          "end": 9,
+          "anchor": "index"
+        },
+        "observed_only": true
+      }
+    },
+    "effective_covered_days": {
+      "source": {
+        "interval": "stock"
+      },
+      "reducer": {
+        "fn": "covered_days",
+        "window": {
+          "start": 0,
+          "end": 9,
+          "anchor": "index"
+        },
+        "coverage": "effective_supply",
+        "observed_only": true
+      }
+    },
+    "supply_days": {
+      "source": {
+        "event": "rx"
+      },
+      "reducer": {
+        "fn": "supply_days",
+        "window": {
+          "start": 0,
+          "end": 9,
+          "anchor": "index"
+        },
+        "fills": "clipped"
+      }
+    }
+  },
+  "outputs": {
+    "adherence": {
+      "rows": "study",
+      "format": "wide",
+      "grain": "episode",
+      "result_symbol": "D_adherence",
+      "columns": [
+        "observed_days",
+        "recorded_covered_days",
+        "effective_covered_days",
+        "supply_days"
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative"
+        }
+      }
+    }
+  },
+  "publish": [
+    "adherence"
+  ]
+}

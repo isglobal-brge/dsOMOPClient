@@ -1,0 +1,94 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    },
+    "measure": {
+      "table": "measurement",
+      "concept_set": {
+        "concepts": [
+          990003,
+          990009
+        ],
+        "include_descendants": false
+      },
+      "value": {
+        "column": "value_as_number"
+      },
+      "unit": {
+        "target": 8840,
+        "convert": {},
+        "unknown": "missing",
+        "censored": "keep"
+      }
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible"
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      }
+    }
+  },
+  "outputs": {
+    "measurements": {
+      "rows": "study",
+      "format": "person_period",
+      "grain": "episode",
+      "result_symbol": "D_measurements",
+      "options": {
+        "sources": [
+          {
+            "event": "measure"
+          }
+        ],
+        "window": {
+          "start": 0,
+          "end": 30,
+          "anchor": "index"
+        },
+        "representation": "dense",
+        "analyses": [
+          "count",
+          "mean",
+          "last"
+        ],
+        "bins": {
+          "width": 10
+        },
+        "carry_forward": {
+          "measure": {
+            "lookback": 10,
+            "expire": 10
+          }
+        }
+      }
+    }
+  },
+  "publish": [
+    "measurements"
+  ]
+}

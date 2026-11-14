@@ -1,0 +1,29 @@
+{
+  "id": "demographics.death_cause",
+  "template_version": "1.0.0",
+  "title": "Death cause",
+  "category": "demographics",
+  "summary": "Assign whether death was recorded from index through the horizon, its first recorded day offset, and that row's coded cause. Missing or unspecified cause is not evidence of a different cause. No cause-of-death hierarchy or underlying-versus-contributing cause is inferred.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "demographics",
+    "death_cause"
+  ],
+  "fixture_id": "T05",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "death"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

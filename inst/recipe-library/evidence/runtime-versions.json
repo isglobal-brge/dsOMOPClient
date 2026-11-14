@@ -1,0 +1,15 @@
+{
+  "R": "R version 4.6.2 (2026-10-29)",
+  "client": "2.10.4",
+  "server": "2.10.4",
+  "DSLite": "1.5.0",
+  "testthat": "3.3.2",
+  "roxygen2": "7.3.3",
+  "sqlite": {
+    "header": "3.53.3",
+    "library": "3.53.3"
+  },
+  "postgresql": "PostgreSQL 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0, 64-bit",
+  "mariadb": "10.6.23-MariaDB-0ubuntu0.22.04.1",
+  "mysql": "8.4.11"
+} 

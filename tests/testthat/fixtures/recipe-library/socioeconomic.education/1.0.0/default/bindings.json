@@ -1,0 +1,25 @@
+{
+  "index": {
+    "omop_ctor": "omop_event",
+    "table": "visit_occurrence",
+    "concepts": {
+      "omop_ctor": "omop_concept_set",
+      "concepts": 9201,
+      "descendants": false,
+      "mapped": false,
+      "exclude": null,
+      "name": null
+    },
+    "where": null,
+    "visit": null,
+    "value": null,
+    "unit": null,
+    "concept_col": null,
+    "end": null,
+    "name": "entry",
+    "on_missing_table": "error"
+  },
+  "select": "first_eligible",
+  "education": 990001,
+  "lookback": 365
+}

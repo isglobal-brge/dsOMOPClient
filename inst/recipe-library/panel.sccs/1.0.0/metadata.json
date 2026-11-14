@@ -1,0 +1,29 @@
+{
+  "id": "panel.sccs",
+  "template_version": "1.0.0",
+  "title": "Sccs",
+  "category": "panel",
+  "summary": "Assign observed intervals partitioned by drug exposure, annual-age bands and calendar years, with outcome counts and observed-day denominators. This simple risk definition is exposure time itself. Lagged, pre-exposure and post-exposure risk categories are not automatically added, and the recipe performs no conditional Poisson fitting.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "panel",
+    "sccs"
+  ],
+  "fixture_id": "T22",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "drug_exposure"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

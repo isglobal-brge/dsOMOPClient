@@ -1,0 +1,39 @@
+{
+  "id": "comorbidity.hfrs",
+  "template_version": "1.0.0",
+  "title": "Hfrs",
+  "category": "comorbidity",
+  "summary": "Assign the existing HFRS implementation from condition history through index. The existing reviewed mapping and weights are retained; the recipe does not impose admission-specific or two-year lookback rules.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "comorbidity",
+    "hfrs"
+  ],
+  "fixture_id": "T10",
+  "score_mapping_artifact": {
+    "package": "dsOMOP",
+    "version": "2.10.4",
+    "source": "R/extraction.R",
+    "sha256": "1a873030bc7d1c7bdacf0fd688bebb4e0a4b42eb7f8ef75a374ec7427dec7196",
+    "note": "Vocabulary resolution uses the execution CDM. This checksum pins the integrated definition/weight source, not a database snapshot."
+  },
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "condition_occurrence",
+      "concept",
+      "concept_ancestor",
+      "concept_relationship"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

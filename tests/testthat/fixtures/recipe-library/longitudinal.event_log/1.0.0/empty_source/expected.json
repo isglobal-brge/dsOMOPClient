@@ -1,0 +1,657 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "event_log": [
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": -10,
+        "end_days": -10,
+        "value": 4,
+        "unit_concept_id": "8840",
+        "event_number": 1
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 0,
+        "end_days": 0,
+        "value": 6,
+        "unit_concept_id": "8840",
+        "event_number": 2
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      },
+      {
+        "source": "measure",
+        "concept_id": "990003",
+        "start_days": 10,
+        "end_days": 10,
+        "value": 8,
+        "unit_concept_id": "8840",
+        "event_number": 3
+      }
+    ]
+  }
+}

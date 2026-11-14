@@ -1,0 +1,458 @@
+{
+  "oracle": "Hand-calculated from library-synthetic-v1; no production executor used.",
+  "excluded_protected_keys": [
+    "row_id",
+    "cohort_row_id",
+    "person_id"
+  ],
+  "components": {
+    "recurrent.events": [
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 10,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 2,
+        "outcome_event_number": 2,
+        "event_days_from_index": 20,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "event_number": 1,
+        "outcome_event_number": null,
+        "event_days_from_index": null,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365
+      }
+    ],
+    "recurrent.risk_sets": [
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      }
+    ]
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "death": {
+      "table": "death",
+      "concept_set": null,
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    },
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible",
+        "n": 1,
+        "offset": 0,
+        "end": {
+          "strategy": "observation_end",
+          "days": null,
+          "pad": 0
+        },
+        "restrict_to_observation": true
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      },
+      "parent": null,
+      "where": null
+    }
+  },
+  "variables": {
+    "death_recorded": {
+      "source": {
+        "event": "death"
+      },
+      "reducer": {
+        "fn": "binary",
+        "window": {
+          "start": 0,
+          "end": 365,
+          "anchor": "index"
+        },
+        "value": null,
+        "which": null,
+        "n": 1,
+        "side": "either",
+        "missing": "skip",
+        "distinct": null,
+        "p": null,
+        "agg": null,
+        "reference": null,
+        "predicate": null,
+        "reference_date": null,
+        "unit": "day",
+        "coverage": "recorded",
+        "fills": "start_in_window",
+        "observed_only": false
+      },
+      "broadcast": false,
+      "labels": {},
+      "column_names": {}
+    },
+    "death_days": {
+      "source": {
+        "event": "death"
+      },
+      "reducer": {
+        "fn": "first_date",
+        "window": {
+          "start": 0,
+          "end": 365,
+          "anchor": "index"
+        },
+        "value": null,
+        "which": null,
+        "n": 1,
+        "side": "either",
+        "missing": "skip",
+        "distinct": null,
+        "p": null,
+        "agg": null,
+        "reference": null,
+        "predicate": null,
+        "reference_date": null,
+        "unit": "day",
+        "coverage": "recorded",
+        "fills": "start_in_window",
+        "observed_only": false
+      },
+      "broadcast": false,
+      "labels": {},
+      "column_names": {}
+    },
+    "cause_concept_id": {
+      "source": {
+        "event": "death"
+      },
+      "reducer": {
+        "fn": "first_value",
+        "value": "concept_id",
+        "window": {
+          "start": 0,
+          "end": 365,
+          "anchor": "index"
+        },
+        "missing": "keep",
+        "which": null,
+        "n": 1,
+        "side": "either",
+        "distinct": null,
+        "p": null,
+        "agg": null,
+        "reference": null,
+        "predicate": null,
+        "reference_date": null,
+        "unit": "day",
+        "coverage": "recorded",
+        "fills": "start_in_window",
+        "observed_only": false
+      },
+      "broadcast": false,
+      "labels": {},
+      "column_names": {}
+    }
+  },
+  "outputs": {
+    "death_cause": {
+      "rows": "study",
+      "format": "wide",
+      "grain": "episode",
+      "result_symbol": "D_death_cause",
+      "columns": [
+        "death_recorded",
+        "death_days",
+        "cause_concept_id"
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative",
+          "reference": "index",
+          "bin_width": null,
+          "date_columns": null
+        },
+        "time_window": null
+      },
+      "collapse": null,
+      "sources": []
+    }
+  },
+  "publish": [
+    "death_cause"
+  ],
+  "options": {
+    "translate_concepts": true,
+    "block_sensitive": true,
+    "factor_concepts": true,
+    "labels": {},
+    "column_names": {}
+  },
+  "concept_sets": {},
+  "intervals": {}
+}

@@ -1,0 +1,95 @@
+{
+  "measurements": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key",
+        "native_name": "row_id"
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key",
+        "native_name": "cohort_row_id"
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key",
+        "native_name": "person_id"
+      },
+      "period_start_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "period_start_days"
+      },
+      "period_end_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "period_end_days"
+      },
+      "days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "days"
+      },
+      "measure_numeric_test_count": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "measure_990003_count"
+      },
+      "measure_numeric_test_mean": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "measure_990003_mean"
+      },
+      "measure_numeric_test_last": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "measure_990003_last"
+      },
+      "measure_numeric_test_carry": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "measure_990003_carry"
+      },
+      "measure_second_numeric_test_count": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "measure_990009_count"
+      },
+      "measure_second_numeric_test_mean": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "measure_990009_mean"
+      },
+      "measure_second_numeric_test_last": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "measure_990009_last"
+      },
+      "measure_second_numeric_test_carry": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "measure",
+        "native_name": "measure_990009_carry"
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key"
+    }
+  }
+}

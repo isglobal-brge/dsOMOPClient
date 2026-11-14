@@ -1,0 +1,29 @@
+{
+  "id": "comorbidity.condition_history",
+  "template_version": "1.0.0",
+  "title": "Condition history",
+  "category": "comorbidity",
+  "summary": "Assign any history and the number of distinct recorded days for a declared condition set before index. Multiple records on one day count once. This is a covariate, not a validated multi-category comorbidity score.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "comorbidity",
+    "condition_history"
+  ],
+  "fixture_id": "T11",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "condition_occurrence"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

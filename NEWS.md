@@ -179,6 +179,35 @@
   Use registered numeric measures, explicit numeric date representations,
   declared broadcasts/reducers, and typed wide/long companions as applicable.
 
+
+- Corrected with the matching server: empty active-comparator populations now
+  receive `insufficient_support` at the final gate. Default execution rolls back
+  all sites; `on_small_site = "skip"` retains both analysis roots at supported
+  sites, in memory and staged modes. This also covers populations emptied by
+  the template's eligibility criteria. Update the server and re-run the recipe.
+
+- Corrected: numeric library bindings now require a declared scale/unit policy,
+  including deferred references and imported/composed recipes. Previously
+  accepted unqualified numeric events are newly refused. Migrate by supplying
+  `omop_unit()` or restricting `unit_concept_id` to one unit with `omop_where()`.
+  No conversion is inferred from site records.
+
+- Added 24 immutable version-1.0.0 language-2 recipe templates, with local
+  `recipe_library_list()`, `recipe_library_describe()` and
+  `recipe_library_instantiate()` discovery and construction.
+- Templates cover demographics, recorded socioeconomic observations, five
+  existing comorbidity scores, drug courses/adherence components, new-user
+  and active-comparator cohorts, outcomes, survival, panels, event logs and
+  nested case-control sampling. Clinical concepts remain analyst inputs.
+- The design's coded-concept examples use reducer value roles in the integrated
+  2.10.4 API; event numeric value overrides reject concept columns. Coded
+  zero/missing values retain native concept presentation.
+- Fixed deferred panel source policy names during prefixed recipe merging,
+  so binding before or after a merge produces the same plan.
+- Catalogue constraints apply to later bindings and JSON/YAML round trips.
+  Provenance is client metadata; execution, capabilities, publication,
+  pseudonymisation and semantic digests use the existing 2.10.4 paths.
+
 # dsOMOPClient 2.10.4 (2026-11-13)
 
 - Corrected: assigned age bands, birth-year bands and panel/calendar categories

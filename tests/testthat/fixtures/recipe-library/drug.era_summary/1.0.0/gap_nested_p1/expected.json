@@ -1,0 +1,153 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "eras": [
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      },
+      {
+        "era_count": 1,
+        "era_days": 31,
+        "first_era_days": 31,
+        "covered_days": 25
+      }
+    ]
+  }
+}

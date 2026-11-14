@@ -1,0 +1,6 @@
+{
+  "drug": [990006, 990007],
+  "by": "ingredient",
+  "select": "first_eligible",
+  "washout_days": 10
+}

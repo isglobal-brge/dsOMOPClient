@@ -1,0 +1,82 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    },
+    "measure": {
+      "table": "measurement",
+      "concept_set": {
+        "concepts": [
+          990003
+        ],
+        "include_descendants": false
+      },
+      "value": {
+        "column": "value_as_number"
+      }
+    },
+    "history": {
+      "table": "condition_occurrence",
+      "concept_set": {
+        "concepts": [],
+        "include_descendants": false
+      }
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible"
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      }
+    }
+  },
+  "outputs": {
+    "event_log": {
+      "rows": "study",
+      "format": "long",
+      "grain": "episode",
+      "result_symbol": "D_event_log",
+      "sources": [
+        {
+          "event": "measure"
+        },
+        {
+          "event": "history"
+        }
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative"
+        },
+        "unit": "episode_event",
+        "event_log": true
+      }
+    }
+  },
+  "publish": [
+    "event_log"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "demographics.baseline",
+  "template_version": "1.0.0",
+  "title": "Baseline",
+  "category": "demographics",
+  "summary": "Assign one baseline row per selected index episode, containing annual age, recorded demographic categories and the number of observed days in the preceding lookback window. Missing demographic information stays missing; a short observed history does not by itself exclude the episode.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "demographics",
+    "baseline"
+  ],
+  "fixture_id": "T01",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

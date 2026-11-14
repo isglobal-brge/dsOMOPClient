@@ -1,0 +1,72 @@
+{
+  "sccs": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key"
+      },
+      "period_start_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "period_end_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "age": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "age_band": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "calendar_year": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "exposed_drug": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "active_drug": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "n_outcome": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key",
+      "set_id": null
+    }
+  }
+}

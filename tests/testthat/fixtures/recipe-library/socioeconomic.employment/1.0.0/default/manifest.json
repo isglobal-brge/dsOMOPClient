@@ -1,0 +1,39 @@
+{
+  "id": "socioeconomic.employment",
+  "template_version": "1.0.0",
+  "definition_checksum": "32da074fe468cf60a20f21c9ef5c0058d1cb05c118da8fe422a5b57c3e07bbf1",
+  "client_version": "2.10.4",
+  "server_version": "2.10.4",
+  "normalizer": "A-11",
+  "fixture": "library-synthetic-v1",
+  "vocabulary": "library-synthetic-v1",
+  "operations": [
+    "concept_set",
+    "event",
+    "output.concept_labels",
+    "output.wide",
+    "population.first_eligible",
+    "population.index",
+    "variable.reducer"
+  ],
+  "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+  "nfilter_subset": 5,
+  "backends": [
+    "sqlite",
+    "postgresql",
+    "mariadb",
+    "mysql"
+  ],
+  "fixture_tables_sha256": "923ded40b9c9ec27ccad88062e98f8609fc8358fceb99b276b46f5e5716bed24",
+  "vocabulary_sha256": "b4c8478eadf088f91c7d22c02c373b393a957784f7de10dcbf83c8c17604b69b",
+  "evidence": "library-impl.report.md; test-recipe-library-execution.R LIBRARY_EXECUTION records",
+  "oracle": "expected.json (hand-calculated), plus key/support/matching invariants in helper-recipe-library-cdm.R",
+  "expected_sha256": "db74ace433e18daf7118afd142e5511763895940427a88f96619692fcf365ad5",
+  "fix1_validation": {
+    "evidence": "inst/recipe-library/evidence/library-fix1-tests.json",
+    "sqlite_client_commit": "021d403da260e3dd1a16f0cecbd38822ed6a2296",
+    "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+    "independent_python_reference_client_commit": "076368501b8e3aa395d43bd19441568a2d7fa8fc",
+    "result": "passed"
+  }
+}

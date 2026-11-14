@@ -1,0 +1,29 @@
+{
+  "id": "matching.nested_case_control",
+  "template_version": "1.0.0",
+  "title": "Nested case control",
+  "category": "matching",
+  "summary": "Assign deterministic risk-set samples at first eligible recorded case times, matching sex and annual-age bands. Controls are observed and alive at the case time, have no outcome at or before that time, and may become future cases or be reused between sets. The controls criteria are reevaluated at each case time. Incomplete sets are retained. This is nested case-control sampling, not propensity-score or general nearest-neighbour matching.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "matching",
+    "nested_case_control"
+  ],
+  "fixture_id": "T24",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "death"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

@@ -1,0 +1,37 @@
+{
+  "education": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key"
+      },
+      "education_concept_id": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "measure"
+      },
+      "education_records": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key",
+      "set_id": null
+    }
+  }
+}

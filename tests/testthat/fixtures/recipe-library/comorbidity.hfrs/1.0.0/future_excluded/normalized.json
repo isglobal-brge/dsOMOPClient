@@ -1,0 +1,100 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "all",
+        "n": 1,
+        "offset": 0,
+        "end": {
+          "strategy": "observation_end",
+          "days": null,
+          "pad": 0
+        },
+        "restrict_to_observation": true
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      },
+      "parent": null,
+      "where": null
+    }
+  },
+  "variables": {
+    "hfrs": {
+      "derived": {
+        "kind": "hfrs",
+        "reference_date": null
+      },
+      "labels": {},
+      "column_names": {}
+    }
+  },
+  "outputs": {
+    "score": {
+      "rows": "study",
+      "format": "wide",
+      "grain": "episode",
+      "result_symbol": "D_score",
+      "columns": [
+        "hfrs"
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative",
+          "reference": "index",
+          "bin_width": null,
+          "date_columns": null
+        },
+        "time_window": null
+      },
+      "collapse": null,
+      "sources": []
+    }
+  },
+  "publish": [
+    "score"
+  ],
+  "options": {
+    "translate_concepts": true,
+    "block_sensitive": true,
+    "factor_concepts": true,
+    "labels": {},
+    "column_names": {}
+  },
+  "concept_sets": {},
+  "intervals": {}
+}

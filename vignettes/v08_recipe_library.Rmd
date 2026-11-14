@@ -1,0 +1,107 @@
+---
+title: "Versioned recipe library"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Versioned recipe library}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(dsOMOPClient)
+```
+
+The library provides 24 local, versioned starting points for analysis tables.
+Each returns an ordinary language-2 recipe. Instantiation does not contact
+sites, execute a query or collect patient rows. Existing capability and
+publication checks apply when you explicitly execute the recipe.
+
+```{r catalogue}
+catalogue <- recipe_library_list()
+catalogue[c("id", "template_version", "category", "output_names")]
+recipe_library_list(query = "recorded")[c("id", "summary")]
+```
+
+An exact ID and version pin the installed definition. A NULL version selects
+the installed recommendation. Required parameters have NULL defaults; that
+means unbound, not a nullable clinical value. Use the description to inspect
+parameters, contextual constraints, fixed policies, required inputs, schemas,
+limitations, provenance and the complete constructor expansion.
+
+```{r inspect}
+description <- recipe_library_describe("demographics.baseline", "1.0.0")
+description$parameters
+description$constraints
+description$expanded_template
+```
+
+Bind study definitions and then inspect the native plan. The selected visit
+concept below is an example study input, not a universal clinical default.
+
+```{r instantiate}
+r <- recipe_library_instantiate("demographics.baseline", "1.0.0")
+r <- recipe_bind(r, index = omop_event("visit_occurrence", 9201))
+recipe_to_plan(r, version = 2L)
+```
+
+```{r execute, eval=FALSE}
+recipe_execute(r, out = c(baseline = "analysis_baseline"),
+               conns = conns, symbol = "omop")
+```
+
+The default index selection is first eligible, with unique observation
+coverage and ambiguous/missing coverage dropped. Baseline windows end on day
+-1. Annual age uses calendar years, and every template has episode grain.
+Selection `all` can produce multiple rows per person. There is no implicit
+requirement for a complete lookback unless the population explicitly declares
+one. Review each entry's documentation before interpreting its table.
+
+Numeric sources should have an explicit study scale and unit policy. Dense
+measurement columns follow the finite declared concept set and vocabulary,
+even at sites with no matching measurement rows. The source must be named
+`measure`; other names are refused because carry-forward names that source.
+
+```{r measurement}
+panel <- recipe_library_instantiate("panel.measurements",
+  index = omop_event("visit_occurrence", 9201),
+  measure = omop_event("measurement", 3025315, value = "value_as_number",
+    unit = omop_unit(9529), name = "measure"),
+  horizon = 180L, bin_days = 30L)
+recipe_to_plan(panel, version = 2L)
+```
+
+Coded social observations use concept-valued reducers and retain the native
+concept presentation, including concept 0 and missing answers. They do not
+infer highest attainment or an ordering of employment categories. Drug
+adherence returns components; ratios require an explicit subsequent protected
+mutation. Scores use their existing mappings through index and do not accept
+a new lookback. New-user washout excludes starts in the lookback, not every
+supply interval overlapping it. Matching is risk-set sampling; SCCS is a
+partition table. Neither fits a causal model automatically.
+
+Client metadata records the origin ID/version, definition checksum,
+documentation revision and package version. JSON/YAML export/import preserves
+it. The bound plan's semantic digest controls execution identity. Editing a
+recipe creates a customised derivative; its library label does not certify
+that it still equals the pinned definition.
+
+```{r persistence}
+json <- recipe_export_json(r)
+restored <- recipe_import_json(json)
+restored$meta$recipe_library
+```
+
+Use ordinary editing and `recipe_merge(..., prefix = ...)` to compose recipes.
+Shared parameter definitions must agree. Prefixing preserves references but
+can change plan digests and deterministic matched controls. Separate episode
+rosters do not become joinable simply by merging them. The active-comparator
+entry demonstrates private baseline/survival joins on a shared roster and
+publishes only its two joined analysis tables.
+
+Execution defaults to memory and small-site errors. Choose staging or skipping
+explicitly; technical and schema errors cannot be skipped as small sites.
+An absent optional source yields NA; an available event-free count source
+normally yields zero. Only requested final roots undergo the existing support
+checks. The library adds no thresholds, privacy budgets, server state, SQL,
+wire fields or configuration.

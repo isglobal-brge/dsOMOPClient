@@ -1,0 +1,132 @@
+{
+  "oracle": "Hand-calculated from library-synthetic-v1; no production executor used.",
+  "excluded_protected_keys": [
+    "row_id",
+    "cohort_row_id",
+    "person_id"
+  ],
+  "components": {
+    "death_cause": [
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      },
+      {
+        "death_recorded": 0,
+        "death_days": null,
+        "cause_concept_id": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "outcome.incident_event",
+  "template_version": "1.0.0",
+  "title": "Incident event",
+  "category": "outcome",
+  "summary": "Assign first eligible events after a fully observed, event-free lookback. Incident means no qualifying recorded event in that lookback, not absence of disease throughout life. Same-day duplicates follow the deterministic index-event order. This is a case roster, not an incidence rate denominator.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "outcome",
+    "incident_event"
+  ],
+  "fixture_id": "T16",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

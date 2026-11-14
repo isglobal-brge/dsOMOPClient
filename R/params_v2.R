@@ -419,6 +419,7 @@ print.omop_param <- function(x, ...) {
     .v2_stop("Unbound parameter '", p$name %||% "?", "' in ", context,
              "; bind it with recipe_bind() before recipe_to_plan().")
   }
+  if (inherits(x, "omop_recipe")) .library_check_bindings(x)
   .v2_bind_walk(x, lookup, context)$value
 }
 
@@ -488,6 +489,7 @@ recipe_bind <- function(recipe, ...) {
     values[nm] <- list(.v2_param_check(params[[nm]]$type, values[[nm]],
                                        paste0("recipe_bind(): parameter '", nm, "'")))
   }
+  .library_check_bindings(recipe, values)
   lookup <- function(p) values[[p$name]]
   out <- .v2_bind_walk(recipe, lookup, "recipe_bind()")$value
   out$meta$modified <- Sys.time()

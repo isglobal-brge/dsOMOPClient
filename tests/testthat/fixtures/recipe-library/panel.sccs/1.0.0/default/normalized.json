@@ -1,0 +1,166 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "rx": {
+      "table": "drug_exposure",
+      "concept_set": {
+        "concepts": [
+          990006
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    },
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    },
+    "outcome": {
+      "table": "condition_occurrence",
+      "concept_set": {
+        "concepts": [
+          990005
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    }
+  },
+  "intervals": {
+    "exposure": {
+      "source": {
+        "event": "rx"
+      },
+      "gap": 0,
+      "persistence": 0,
+      "min_days": 0,
+      "by": "event",
+      "unmapped": "own_concept",
+      "end": "recorded_end",
+      "fallback": "days_supply",
+      "stockpile": false
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible",
+        "n": 1,
+        "offset": 0,
+        "end": {
+          "strategy": "observation_end",
+          "days": null,
+          "pad": 0
+        },
+        "restrict_to_observation": true
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      },
+      "parent": null,
+      "where": null
+    }
+  },
+  "outputs": {
+    "sccs": {
+      "rows": "study",
+      "format": "person_period",
+      "grain": "episode",
+      "result_symbol": "D_sccs",
+      "options": {
+        "window": {
+          "start": 0,
+          "end": 365,
+          "anchor": "index"
+        },
+        "representation": "dense",
+        "bins": {
+          "calendar": "year"
+        },
+        "partition": {
+          "boundaries": [
+            {
+              "interval": "exposure"
+            }
+          ],
+          "age_bands": 5,
+          "calendar": "year"
+        },
+        "outcomes": {
+          "outcome": {
+            "event": "outcome"
+          }
+        },
+        "exposures": {
+          "drug": {
+            "interval": "exposure"
+          }
+        },
+        "sources": [],
+        "carry_forward": {},
+        "analyses": [
+          "binary"
+        ],
+        "source_analyses": {}
+      },
+      "collapse": null,
+      "columns": null,
+      "sources": []
+    }
+  },
+  "publish": [
+    "sccs"
+  ],
+  "options": {
+    "translate_concepts": true,
+    "block_sensitive": true,
+    "factor_concepts": true,
+    "labels": {},
+    "column_names": {}
+  },
+  "concept_sets": {},
+  "variables": {}
+}

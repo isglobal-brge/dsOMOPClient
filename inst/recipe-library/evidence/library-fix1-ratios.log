@@ -1,0 +1,5 @@
+Client 57d68dea2b008dcc668ac25e3ddf9941e060de5b; server 18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9
+Targeted file: test-recipe-library-ratios.R. Two-site public execution/mutation; nfilter=5.
+4/4 PDC, 10/4 MPR, zero/NA denominators, keys, and refused in-place key edit rollback.
+Full pod log: /root/rt/wt/library/library-fix1-ratios.log
+RESULT failed: 0 errors: 0 skipped: 0 passed: 38 

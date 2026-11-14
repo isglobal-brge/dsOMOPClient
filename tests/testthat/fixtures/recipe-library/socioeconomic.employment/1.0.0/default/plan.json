@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "employment": {
+      "table": "observation",
+      "concept_set": {
+        "concepts": [
+          990002
+        ],
+        "include_descendants": false
+      },
+      "value": {
+        "column": "value_as_number"
+      }
+    },
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible"
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      }
+    }
+  },
+  "variables": {
+    "employment_concept_id": {
+      "source": {
+        "event": "employment"
+      },
+      "reducer": {
+        "fn": "last_value",
+        "value": "value_as_concept_id",
+        "window": {
+          "start": -365,
+          "end": -1,
+          "anchor": "index"
+        },
+        "missing": "keep"
+      }
+    },
+    "employment_records": {
+      "source": {
+        "event": "employment"
+      },
+      "reducer": {
+        "fn": "count",
+        "window": {
+          "start": -365,
+          "end": -1,
+          "anchor": "index"
+        }
+      }
+    }
+  },
+  "outputs": {
+    "employment": {
+      "rows": "study",
+      "format": "wide",
+      "grain": "episode",
+      "result_symbol": "D_employment",
+      "columns": [
+        "employment_concept_id",
+        "employment_records"
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative"
+        }
+      }
+    }
+  },
+  "publish": [
+    "employment"
+  ]
+}

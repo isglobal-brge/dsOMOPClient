@@ -1,0 +1,129 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "death_cause": [
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      },
+      {
+        "death_recorded": 1,
+        "death_days": 10,
+        "cause_concept_id": "0"
+      }
+    ]
+  }
+}

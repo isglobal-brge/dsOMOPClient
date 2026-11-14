@@ -1,0 +1,47 @@
+{
+  "incident_events": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key",
+        "native_name": null
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key",
+        "native_name": null
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key",
+        "native_name": null
+      },
+      "age": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": null
+      },
+      "sex": {
+        "type": "text",
+        "nullable": true,
+        "role": "measure",
+        "native_name": null
+      },
+      "prior_observed_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": null
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key"
+    }
+  }
+}

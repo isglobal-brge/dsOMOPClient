@@ -1,0 +1,28 @@
+{
+  "id": "longitudinal.event_log",
+  "template_version": "1.0.0",
+  "title": "Event log",
+  "category": "longitudinal",
+  "summary": "Assign a common-schema timeline from two declared sources, preserving source, concept, relative interval and numeric value/unit identity. One physical event can be associated with multiple index episodes. A source label identifies provenance, not a common unit or comparable measurement.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "longitudinal",
+    "event_log"
+  ],
+  "fixture_id": "T23",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

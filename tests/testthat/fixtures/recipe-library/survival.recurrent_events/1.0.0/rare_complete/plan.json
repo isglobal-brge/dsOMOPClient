@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    },
+    "outcome": {
+      "table": "condition_occurrence",
+      "concept_set": {
+        "concepts": [
+          990005
+        ],
+        "include_descendants": false
+      }
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible"
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      }
+    }
+  },
+  "outputs": {
+    "recurrent": {
+      "rows": "study",
+      "format": "survival",
+      "grain": "episode",
+      "result_symbol": "D_recurrent",
+      "options": {
+        "outcomes": {
+          "outcome": {
+            "event": "outcome"
+          }
+        },
+        "tar": {
+          "start": 1,
+          "end": 10,
+          "anchor": "index"
+        },
+        "censor": [
+          "observation_end",
+          "death"
+        ],
+        "format": "recurrent_events",
+        "event_order": "all",
+        "outcome_mode": "named",
+        "washout_days": 0,
+        "tie_policy": "priority",
+        "same_day_priority": "event",
+        "complete": true
+      }
+    }
+  },
+  "publish": [
+    "recurrent"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "cohort.new_users",
+  "template_version": "1.0.0",
+  "title": "New users",
+  "category": "cohort",
+  "summary": "Assign a new-user episode roster using the recipe language's standard drug-era and washout definition. First-eligible selection can retain a later eligible course after an earlier ineligible candidate. Ingredient mapping and same-day candidate order are deterministic. A zero washout means no washout or prior-observation requirement, not a claim of incident use.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "cohort",
+    "new_users"
+  ],
+  "fixture_id": "T14",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "drug_exposure"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

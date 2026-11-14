@@ -1,0 +1,345 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "baseline": [
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 5
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "race": "0",
+        "ethnicity": "0",
+        "prior_observed_days": 6
+      }
+    ]
+  }
+}

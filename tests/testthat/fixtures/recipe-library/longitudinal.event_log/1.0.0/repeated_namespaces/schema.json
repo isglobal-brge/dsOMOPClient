@@ -1,0 +1,71 @@
+{
+  "event_log": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key",
+        "native_name": null
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key",
+        "native_name": null
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key",
+        "native_name": null
+      },
+      "source": {
+        "type": "text",
+        "nullable": false,
+        "role": "measure",
+        "native_name": null
+      },
+      "concept_id": {
+        "type": "integer",
+        "nullable": true,
+        "role": "concept",
+        "native_name": null
+      },
+      "start_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": null
+      },
+      "end_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": null
+      },
+      "value": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "value",
+        "native_name": null
+      },
+      "unit_concept_id": {
+        "type": "integer",
+        "nullable": true,
+        "role": "unit",
+        "native_name": null
+      },
+      "event_number": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": null
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key"
+    }
+  }
+}

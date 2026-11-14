@@ -1,0 +1,29 @@
+{
+  "id": "socioeconomic.education",
+  "template_version": "1.0.0",
+  "title": "Education",
+  "category": "socioeconomic",
+  "summary": "Assign the last recorded coded education answer before index and the number of education records in the lookback window. A missing last answer stays missing rather than being replaced by an older answer. This does not infer highest educational attainment or order education concepts.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "socioeconomic",
+    "education"
+  ],
+  "fixture_id": "T02",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "observation"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

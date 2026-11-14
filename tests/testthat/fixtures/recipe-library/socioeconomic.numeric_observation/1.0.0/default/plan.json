@@ -1,0 +1,105 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "measure": {
+      "table": "measurement",
+      "concept_set": {
+        "concepts": [
+          990003
+        ],
+        "include_descendants": false
+      },
+      "value": {
+        "column": "value_as_number"
+      },
+      "unit": {
+        "target": 8840,
+        "convert": {},
+        "unknown": "missing",
+        "censored": "keep"
+      }
+    },
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible"
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      }
+    }
+  },
+  "variables": {
+    "numeric_value": {
+      "source": {
+        "event": "measure"
+      },
+      "reducer": {
+        "fn": "last_value",
+        "value": "value",
+        "window": {
+          "start": -365,
+          "end": -1,
+          "anchor": "index"
+        },
+        "missing": "keep"
+      }
+    },
+    "source_records": {
+      "source": {
+        "event": "measure"
+      },
+      "reducer": {
+        "fn": "count",
+        "window": {
+          "start": -365,
+          "end": -1,
+          "anchor": "index"
+        }
+      }
+    }
+  },
+  "outputs": {
+    "numeric_observation": {
+      "rows": "study",
+      "format": "wide",
+      "grain": "episode",
+      "result_symbol": "D_numeric_observation",
+      "columns": [
+        "numeric_value",
+        "source_records"
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative"
+        }
+      }
+    }
+  },
+  "publish": [
+    "numeric_observation"
+  ]
+}

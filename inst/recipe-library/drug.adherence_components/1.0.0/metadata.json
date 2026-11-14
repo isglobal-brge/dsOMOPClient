@@ -1,0 +1,29 @@
+{
+  "id": "drug.adherence_components",
+  "template_version": "1.0.0",
+  "title": "Adherence components",
+  "category": "drug",
+  "summary": "Assign transparent components for class-level adherence. PDC is effective covered observed days divided by observed days. The supplied MPR numerator sums each fill's supplied days clipped to the calendar window, including carry-in and overlapping fills; it is not observation-intersected and can exceed the denominator. These are explicit study conventions, not a universal adherence definition. Zero or missing denominator yields NA.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "drug",
+    "adherence_components"
+  ],
+  "fixture_id": "T13",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "drug_exposure"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

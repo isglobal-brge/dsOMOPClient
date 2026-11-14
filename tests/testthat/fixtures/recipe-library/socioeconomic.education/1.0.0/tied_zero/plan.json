@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "education": {
+      "table": "observation",
+      "concept_set": {
+        "concepts": [
+          990001
+        ],
+        "include_descendants": false
+      },
+      "value": {
+        "column": "value_as_number"
+      }
+    },
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible"
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      }
+    }
+  },
+  "variables": {
+    "education_concept_id": {
+      "source": {
+        "event": "education"
+      },
+      "reducer": {
+        "fn": "last_value",
+        "value": "value_as_concept_id",
+        "window": {
+          "start": -5,
+          "end": -1,
+          "anchor": "index"
+        },
+        "missing": "keep"
+      }
+    },
+    "education_records": {
+      "source": {
+        "event": "education"
+      },
+      "reducer": {
+        "fn": "count",
+        "window": {
+          "start": -5,
+          "end": -1,
+          "anchor": "index"
+        }
+      }
+    }
+  },
+  "outputs": {
+    "education": {
+      "rows": "study",
+      "format": "wide",
+      "grain": "episode",
+      "result_symbol": "D_education",
+      "columns": [
+        "education_concept_id",
+        "education_records"
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative"
+        }
+      }
+    }
+  },
+  "publish": [
+    "education"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "socioeconomic.numeric_observation",
+  "template_version": "1.0.0",
+  "title": "Numeric observation",
+  "category": "socioeconomic",
+  "summary": "Assign the latest pre-index value of a declared numeric social measure, such as a recorded deprivation score, on its supplied scale. This extracts recorded observations; it does not derive an area score from an address, equate different instruments or convert currencies.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "socioeconomic",
+    "numeric_observation"
+  ],
+  "fixture_id": "T04",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": "numeric value_as_number and declared scale/unit policy"
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

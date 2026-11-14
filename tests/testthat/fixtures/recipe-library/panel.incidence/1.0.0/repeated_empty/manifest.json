@@ -1,0 +1,34 @@
+{
+  "id": "panel.incidence",
+  "case": "repeated_empty",
+  "template_version": "1.0.0",
+  "definition_checksum": "ef561485b4f52c9c25061cd71009a6d496389913f5dce9fdffeb1f65d91f47d8",
+  "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+  "client_version": "2.10.4",
+  "server_version": "2.10.4",
+  "normalizer": "A-11",
+  "schema": "native-v2",
+  "fixture_sha256": "1f056cca76400fa6b329bd9ca99fc5207f754e9e8dcec5864c4a5bd7b02ee8ee",
+  "vocabulary_sha256": "b4c8478eadf088f91c7d22c02c373b393a957784f7de10dcbf83c8c17604b69b",
+  "backend": "sqlite",
+  "nfilter": 5,
+  "stockpile_cap_days": 90,
+  "operations": [
+    "concept_set",
+    "event",
+    "output.concept_labels",
+    "output.person_period",
+    "population.index"
+  ],
+  "note": "repeated_empty",
+  "evidence": "inst/recipe-library/evidence/library-fix1-tests.json",
+  "recording_base_client_commit": "172f924fd364821bc66dc23a8a512420d77a1872",
+  "recording_working_tree": true,
+  "fix1_validation": {
+    "evidence": "inst/recipe-library/evidence/library-fix1-tests.json",
+    "sqlite_client_commit": "021d403da260e3dd1a16f0cecbd38822ed6a2296",
+    "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+    "independent_python_reference_client_commit": "076368501b8e3aa395d43bd19441568a2d7fa8fc",
+    "result": "passed"
+  }
+}

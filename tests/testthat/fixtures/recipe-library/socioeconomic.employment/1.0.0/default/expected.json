@@ -1,0 +1,108 @@
+{
+  "oracle": "Hand-calculated from library-synthetic-v1; no production executor used.",
+  "excluded_protected_keys": [
+    "row_id",
+    "cohort_row_id",
+    "person_id"
+  ],
+  "components": {
+    "employment": [
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      },
+      {
+        "employment_concept_id": 0,
+        "employment_records": 1
+      }
+    ]
+  }
+}

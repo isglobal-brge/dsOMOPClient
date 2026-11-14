@@ -1,0 +1,273 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "sccs": [
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 19,
+        "period_end_days": 29,
+        "days": 11,
+        "age": 40,
+        "age_band": 8,
+        "calendar_year": 2020,
+        "exposed_drug": 11,
+        "active_drug": 1,
+        "n_outcome": 1
+      }
+    ]
+  }
+}

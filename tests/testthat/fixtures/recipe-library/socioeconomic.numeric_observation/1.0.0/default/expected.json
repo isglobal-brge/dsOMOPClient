@@ -1,0 +1,108 @@
+{
+  "oracle": "Hand-calculated from library-synthetic-v1; no production executor used.",
+  "excluded_protected_keys": [
+    "row_id",
+    "cohort_row_id",
+    "person_id"
+  ],
+  "components": {
+    "numeric_observation": [
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      },
+      {
+        "numeric_value": 4,
+        "source_records": 1
+      }
+    ]
+  }
+}

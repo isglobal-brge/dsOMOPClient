@@ -1,0 +1,108 @@
+{
+  "oracle": "Hand-calculated from library-synthetic-v1; no production executor used.",
+  "excluded_protected_keys": [
+    "row_id",
+    "cohort_row_id",
+    "person_id"
+  ],
+  "components": {
+    "history": [
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 1,
+        "history_days": 1
+      }
+    ]
+  }
+}

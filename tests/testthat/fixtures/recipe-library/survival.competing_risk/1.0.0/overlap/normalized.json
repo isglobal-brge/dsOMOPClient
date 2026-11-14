@@ -1,0 +1,150 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    },
+    "cause_a": {
+      "table": "condition_occurrence",
+      "concept_set": {
+        "concepts": [
+          990005
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    },
+    "cause_b": {
+      "table": "condition_occurrence",
+      "concept_set": {
+        "concepts": [
+          990005
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible",
+        "n": 1,
+        "offset": 0,
+        "end": {
+          "strategy": "observation_end",
+          "days": null,
+          "pad": 0
+        },
+        "restrict_to_observation": true
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      },
+      "parent": null,
+      "where": null
+    }
+  },
+  "outputs": {
+    "competing_risk": {
+      "rows": "study",
+      "format": "survival",
+      "grain": "episode",
+      "result_symbol": "D_competing_risk",
+      "options": {
+        "outcomes": {
+          "cause_a": {
+            "event": "cause_a"
+          },
+          "cause_b": {
+            "event": "cause_b"
+          }
+        },
+        "tar": {
+          "start": 1,
+          "end": 10,
+          "anchor": "index"
+        },
+        "censor": [
+          "observation_end",
+          "death"
+        ],
+        "prior_outcome": {
+          "lookback": 365,
+          "action": "exclude"
+        },
+        "format": "competing_risk",
+        "event_order": "first",
+        "outcome_mode": "named",
+        "tie_policy": "priority",
+        "same_day_priority": "event",
+        "tars": {},
+        "entry": null,
+        "washout_days": 0,
+        "gap_policy": "censor_at_gap",
+        "initial_state": "index",
+        "complete": false
+      },
+      "collapse": null,
+      "columns": null,
+      "sources": []
+    }
+  },
+  "publish": [
+    "competing_risk"
+  ],
+  "options": {
+    "translate_concepts": true,
+    "block_sensitive": true,
+    "factor_concepts": true,
+    "labels": {},
+    "column_names": {}
+  },
+  "concept_sets": {},
+  "intervals": {},
+  "variables": {}
+}

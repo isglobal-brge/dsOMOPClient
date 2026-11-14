@@ -1,0 +1,102 @@
+{
+  "recurrent.events": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key"
+      },
+      "outcome_name": {
+        "type": "text",
+        "nullable": true,
+        "role": "measure"
+      },
+      "event": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "event_number": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "outcome_event_number": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "event_days_from_index": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "entry_days_from_index": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "exit_days_from_index": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key",
+      "set_id": null
+    }
+  },
+  "recurrent.risk_sets": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key"
+      },
+      "entry_days_from_index": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "exit_days_from_index": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "follow_up_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key",
+      "set_id": null
+    }
+  }
+}

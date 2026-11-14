@@ -1,0 +1,153 @@
+{
+  "review": "design/2.10.3/astra-library-review-1.md",
+  "date": "2026-11-14",
+  "branch": "feat/2.10.5-library",
+  "package_versions": {
+    "dsOMOP": "2.10.4",
+    "dsOMOPClient": "2.10.4"
+  },
+  "runs": [
+    {
+      "name": "targeted",
+      "client_commit": "021d403da260e3dd1a16f0cecbd38822ed6a2296",
+      "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+      "files": [
+        "test-recipe-library.R",
+        "test-recipe-library-variants.R",
+        "test-recipe-library-units.R",
+        "test-recipe-library-boundaries.R",
+        "test-recipe-library-execution.R",
+        "test-v2-merge.R",
+        "test-v2-merge-deferred-base.R"
+      ],
+      "filter": "^recipe-library$|^recipe-library-variants$|^recipe-library-units$|^recipe-library-boundaries$|^recipe-library-execution$|^v2-merge$|^v2-merge-deferred-base$",
+      "environment": {
+        "DSOMOP_LIBRARY_BACKENDS": "sqlite"
+      },
+      "passed": 7237,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "cleanup_warnings": 31,
+      "default_cases": 24,
+      "variant_cases": 109,
+      "runner": "/workspace/dsomop/tools/rtest.sh",
+      "matching_sibling": "/workspace/dsomop/wt/library/dsOMOP",
+      "full_suite": false,
+      "recording_enabled": false,
+      "nfilter_subset": 5,
+      "modes": [
+        "memory",
+        "staged"
+      ],
+      "evidence": "inst/recipe-library/evidence/library-fix1-targeted.log",
+      "evidence_sha256": "6b9e9fa4ca25a22645af81d1d38362b93b96e97e2a5bf1e74cee779b7df8fc2e",
+      "full_pod_log": "/root/rt/wt/library/library-fix1-targeted.log",
+      "full_log_sha256": "59f507383474b6e28e2e7944b14be0d864d42c12c9316e1f52265a0e567c2325"
+    },
+    {
+      "name": "vendors",
+      "client_commit": "076368501b8e3aa395d43bd19441568a2d7fa8fc",
+      "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+      "files": [
+        "test-recipe-library-variants.R"
+      ],
+      "filter": "^recipe-library-variants$",
+      "environment": {
+        "DSOMOP_TEST_POSTGRES_HOST": "omopdb",
+        "DSOMOP_TEST_MARIADB_HOST": "127.0.0.1",
+        "DSOMOP_TEST_MYSQL_HOST": "127.0.0.1",
+        "DSOMOP_TEST_MYSQL_PORT": "3307",
+        "DSOMOP_LIBRARY_VARIANT_BACKENDS": "sqlite,postgresql,mariadb,mysql",
+        "DSOMOP_LIBRARY_CASES": "drug.adherence_components/(union_4_of_4|cap_binding|unavailable)|cohort.active_comparator/(dual_same_day|own_restart|opposite_switch|short_entry)|panel.measurements/(two_concepts|empty|unavailable)|panel.incidence/year_gap|panel.sccs/interior_11_days|matching.nested_case_control/(ratio_seed|future_cases|candidate_cap|distinct_person_support)"
+      },
+      "selected_cases": [
+        "cohort.active_comparator/dual_same_day",
+        "cohort.active_comparator/opposite_switch",
+        "cohort.active_comparator/own_restart",
+        "cohort.active_comparator/short_entry",
+        "drug.adherence_components/cap_binding",
+        "drug.adherence_components/unavailable",
+        "drug.adherence_components/union_4_of_4",
+        "matching.nested_case_control/candidate_cap",
+        "matching.nested_case_control/distinct_person_support",
+        "matching.nested_case_control/future_cases",
+        "matching.nested_case_control/ratio_seed",
+        "panel.incidence/year_gap",
+        "panel.measurements/empty",
+        "panel.measurements/two_concepts",
+        "panel.measurements/unavailable",
+        "panel.sccs/interior_11_days"
+      ],
+      "case_backend_checks": 64,
+      "passed": 3270,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "cleanup_warnings": 16,
+      "runner": "/workspace/dsomop/tools/rtest.sh",
+      "matching_sibling": "/workspace/dsomop/wt/library/dsOMOP",
+      "full_suite": false,
+      "recording_enabled": false,
+      "nfilter_subset": 5,
+      "modes": [
+        "memory",
+        "staged"
+      ],
+      "evidence": "inst/recipe-library/evidence/library-fix1-vendors.log",
+      "evidence_sha256": "37880beccf7c46fcc86b24aaa1446c159a20876956bf9e0f6fff0a569729ff48",
+      "full_pod_log": "/root/rt/wt/library/library-fix1-vendors.log",
+      "full_log_sha256": "2cb787ada261aa6c9fbaaf37b840a22e4ab2ff3c3c42b3fe4151a276bb3ce728"
+    },
+    {
+      "name": "ratios",
+      "client_commit": "57d68dea2b008dcc668ac25e3ddf9941e060de5b",
+      "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+      "files": [
+        "test-recipe-library-ratios.R"
+      ],
+      "filter": "^recipe-library-ratios$",
+      "environment": {},
+      "passed": 38,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "cleanup_warnings": 0,
+      "runner": "/workspace/dsomop/tools/rtest.sh",
+      "matching_sibling": "/workspace/dsomop/wt/library/dsOMOP",
+      "full_suite": false,
+      "recording_enabled": false,
+      "nfilter_subset": 5,
+      "modes": [
+        "memory",
+        "protected mutate"
+      ],
+      "evidence": "inst/recipe-library/evidence/library-fix1-ratios.log",
+      "evidence_sha256": "7821dbed91acdeabb8d5b8a7ec79d110603a7d02ff361f4e54bbc262811aa1d8",
+      "full_pod_log": "/root/rt/wt/library/library-fix1-ratios.log",
+      "full_log_sha256": "9de5a5690cd0b559835a01b5ec90a05e55db5425e30828586dce8de1a1ab1149"
+    }
+  ],
+  "independent_reference": {
+    "client_commit": "076368501b8e3aa395d43bd19441568a2d7fa8fc",
+    "server_reference_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+    "cases": 133,
+    "checks": [
+      "wire schema",
+      "Python reference normalized payload",
+      "normalizer idempotence",
+      "canonical payload SHA-256"
+    ],
+    "python": "3.11.2",
+    "jsonschema": "4.26.0",
+    "result": "passed",
+    "evidence": "inst/recipe-library/evidence/library-fix1-python-reference.log",
+    "evidence_sha256": "8aa8bb9fc75c71d9d383561b3681e307c942676fa5595aa50993ff048908d8dc"
+  },
+  "notes": [
+    "No full suites. Integration/release owns those.",
+    "Post-021d403 changes are test harness checksum collection and the separate README mutation test; no production change.",
+    "All variant manifests hash the fully mutated isolated source fixture copied to the backend.",
+    "Expected rows were independently authored, never captured from execution."
+  ]
+}

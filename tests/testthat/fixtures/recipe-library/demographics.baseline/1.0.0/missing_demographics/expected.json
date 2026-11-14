@@ -1,0 +1,177 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "baseline": [
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      },
+      {
+        "age": null,
+        "sex": null,
+        "race": null,
+        "ethnicity": null,
+        "prior_observed_days": 1
+      }
+    ]
+  }
+}

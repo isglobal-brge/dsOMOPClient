@@ -1,0 +1,28 @@
+{
+  "id": "panel.incidence",
+  "template_version": "1.0.0",
+  "title": "Incidence",
+  "category": "panel",
+  "summary": "Assign calendar-year person-period denominators and counts of recorded outcomes within observed periods. Zero-event periods remain. This supplies event-incidence components; it is not by itself a first-disease incidence rate. Choose an appropriate roster and event definition before aggregating, and account explicitly for overlapping episodes.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "panel",
+    "incidence"
+  ],
+  "fixture_id": "T21",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

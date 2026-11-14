@@ -1,0 +1,57 @@
+{
+  "matched": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key"
+      },
+      "set_id": {
+        "type": "bigint",
+        "nullable": true,
+        "role": "analytic_key"
+      },
+      "is_case": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "sampling_weight": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "measure"
+      },
+      "age": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "sex": {
+        "type": "text",
+        "nullable": true,
+        "role": "measure"
+      },
+      "exposure_history": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key",
+      "set_id": "native matched-set key"
+    }
+  }
+}

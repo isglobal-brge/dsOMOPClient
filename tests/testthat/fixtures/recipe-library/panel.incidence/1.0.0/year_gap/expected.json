@@ -1,0 +1,513 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "incidence": [
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 0,
+        "days": 1,
+        "calendar_year": 2020,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 2,
+        "period_end_days": 365,
+        "days": 364,
+        "calendar_year": 2020,
+        "n_outcome": 2
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      },
+      {
+        "period_start_days": 366,
+        "period_end_days": 367,
+        "days": 2,
+        "calendar_year": 2021,
+        "n_outcome": 1
+      }
+    ]
+  }
+}

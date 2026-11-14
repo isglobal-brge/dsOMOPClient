@@ -1,0 +1,347 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "recurrent.events": [
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "event_number": 1,
+        "outcome_event_number": 1,
+        "event_days_from_index": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1
+      }
+    ],
+    "recurrent.risk_sets": [
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      },
+      {
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 1,
+        "follow_up_days": 0
+      }
+    ]
+  }
+}

@@ -1463,6 +1463,7 @@
                                    tables = if (length(sc$tables)) .v2_array(as.character(sc$tables)),
                                    combine = if (!identical(sc$combine %||% "union", "union")) sc$combine))
   }
+  .library_check_plan(recipe, plan)
   .v2_validate_plan_semantics(plan)
   .v2_assert_no_class1(plan)
   .v2_assert_schema(plan)

@@ -1,0 +1,105 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "history": [
+      {
+        "history_present": 1,
+        "history_days": 1
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      },
+      {
+        "history_present": 0,
+        "history_days": 0
+      }
+    ]
+  }
+}

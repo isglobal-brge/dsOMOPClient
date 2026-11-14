@@ -1,0 +1,40 @@
+{
+  "client_commit": "3ca1252fe785b16b01d0b203f7fcec731600c98b",
+  "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+  "test_files": [
+    "test-recipe-library-boundaries.R",
+    "test-recipe-library-demo.R",
+    "test-recipe-library-execution.R",
+    "test-recipe-library.R",
+    "test-v2-acceptance.R",
+    "test-v2-execution.R",
+    "test-v2-merge-deferred-base.R",
+    "test-v2-merge.R",
+    "test-v2-params.R",
+    "test-v2-simple-binding-review.R"
+  ],
+  "targeted_filter": "^recipe-library|^v2-params$|^v2-merge|^v2-simple-binding-review$|^v2-execution$|^v2-acceptance$",
+  "runner": "/workspace/dsomop/tools/rtest.sh",
+  "timeout_seconds": 1800,
+  "environment": {
+    "RTEST_WITH": "/workspace/dsomop/wt/library/dsOMOP",
+    "RTEST_ENV": "DSOMOP_TEST_POSTGRES_HOST=omopdb DSOMOP_TEST_MARIADB_HOST=127.0.0.1 DSOMOP_TEST_MYSQL_HOST=127.0.0.1 DSOMOP_TEST_MYSQL_PORT=3307 DSOMOP_TEST_LIBRARY_DEMO=true"
+  },
+  "full_suites_run": false,
+  "synthetic_backends": [
+    "sqlite",
+    "postgresql",
+    "mariadb",
+    "mysql"
+  ],
+  "demo": "PostgreSQL omopdb/omop/demo_cdm (read-only)",
+  "result": {
+    "passed": 5852,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "execution_case_count": 96,
+  "evidence_file": "vendors-demo-dependencies-3ca1252.log",
+  "evidence_sha256": "39256949947aefd9accf2843c2fd0b151f3577d28a34b2671cb1fd8ac6b70ea8"
+}

@@ -1,0 +1,153 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "adherence": [
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      },
+      {
+        "observed_days": 10,
+        "recorded_covered_days": null,
+        "effective_covered_days": null,
+        "supply_days": null
+      }
+    ]
+  }
+}

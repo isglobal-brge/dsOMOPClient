@@ -1,0 +1,29 @@
+{
+  "id": "survival.recurrent_events",
+  "template_version": "1.0.0",
+  "title": "Recurrent events",
+  "category": "survival",
+  "summary": "Assign recurrent event rows and their risk-set intervals, including explicit event-free episodes. Event separation and same-day priority use the existing recurrent-event rules. This recipe does not fit a recurrent-event model or interpret event numbers as independent persons.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "survival",
+    "recurrent_events"
+  ],
+  "fixture_id": "T19",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "death"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

@@ -1,0 +1,39 @@
+{
+  "id": "comorbidity.charlson",
+  "template_version": "1.0.0",
+  "title": "Charlson",
+  "category": "comorbidity",
+  "summary": "Assign the server's reviewed Charlson score using condition history on or before the index date. The existing category, hierarchy and weighting implementation is retained; this is not an age-adjusted variant or a lookback-limited score.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "comorbidity",
+    "charlson"
+  ],
+  "fixture_id": "T06",
+  "score_mapping_artifact": {
+    "package": "dsOMOP",
+    "version": "2.10.4",
+    "source": "R/extraction.R",
+    "sha256": "1a873030bc7d1c7bdacf0fd688bebb4e0a4b42eb7f8ef75a374ec7427dec7196",
+    "note": "Vocabulary resolution uses the execution CDM. This checksum pins the integrated definition/weight source, not a database snapshot."
+  },
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "condition_occurrence",
+      "concept",
+      "concept_ancestor",
+      "concept_relationship"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

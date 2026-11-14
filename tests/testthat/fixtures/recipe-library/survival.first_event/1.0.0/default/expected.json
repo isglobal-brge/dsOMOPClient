@@ -1,0 +1,180 @@
+{
+  "oracle": "Hand-calculated from library-synthetic-v1; no production executor used.",
+  "excluded_protected_keys": [
+    "row_id",
+    "cohort_row_id",
+    "person_id"
+  ],
+  "components": {
+    "survival": [
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364
+      }
+    ]
+  }
+}

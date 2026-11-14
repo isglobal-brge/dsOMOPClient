@@ -1,0 +1,62 @@
+{
+  "event_log": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key"
+      },
+      "source": {
+        "type": "text",
+        "nullable": false,
+        "role": "measure"
+      },
+      "concept_id": {
+        "type": "integer",
+        "nullable": true,
+        "role": "concept"
+      },
+      "start_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "end_days": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "value": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "value"
+      },
+      "unit_concept_id": {
+        "type": "integer",
+        "nullable": true,
+        "role": "unit"
+      },
+      "event_number": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key",
+      "set_id": null
+    }
+  }
+}

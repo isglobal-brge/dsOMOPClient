@@ -1,0 +1,6 @@
+{
+  "drug": 990006,
+  "by": "event",
+  "select": "first_eligible",
+  "washout_days": 10
+}

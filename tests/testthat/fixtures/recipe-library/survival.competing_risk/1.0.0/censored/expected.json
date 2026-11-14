@@ -1,0 +1,177 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "competing_risk": [
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      },
+      {
+        "outcome_name": null,
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9
+      }
+    ]
+  }
+}

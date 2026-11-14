@@ -1,0 +1,29 @@
+{
+  "id": "survival.first_event",
+  "template_version": "1.0.0",
+  "title": "First event",
+  "category": "survival",
+  "summary": "Assign elapsed time to the first qualifying event during the inclusive risk window, capped by death and observation end. Prior outcomes are excluded relative to effective entry. Single-row follow-up stops on the last observed day before a gap; events in unobserved gaps do not count. Zero elapsed days is possible when entry and exit coincide.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "survival",
+    "first_event"
+  ],
+  "fixture_id": "T17",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "death"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

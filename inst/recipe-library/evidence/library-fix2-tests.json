@@ -1,0 +1,115 @@
+{
+  "review": "design/2.10.3/astra-library-review-2.md",
+  "finding": "R3",
+  "date": "2026-11-14",
+  "branch": "feat/2.10.5-library",
+  "package_versions": {
+    "dsOMOP": "2.10.4",
+    "dsOMOPClient": "2.10.4"
+  },
+  "full_suites": false,
+  "recording_enabled": false,
+  "runs": [
+    {
+      "name": "server-initial",
+      "server_commit": "a9b9424fd2d3593aba18e8e69e21d8e8464b3b69",
+      "client_commit": "69700920ee0d7e2878f2c6ddec48669eb80c0568",
+      "files": [
+        "test-compile-death-empty.R",
+        "test-compile-reduce.R",
+        "test-compile-output.R",
+        "test-publication-compiled.R"
+      ],
+      "filter": "^compile-death-empty$|^compile-reduce$|^compile-output$|^publication-compiled$",
+      "runner": "/workspace/dsomop/tools/rtest.sh",
+      "timeout_seconds": 1800,
+      "package": "/workspace/dsomop/wt/library/dsOMOP",
+      "matching_sibling": "/workspace/dsomop/wt/library/dsOMOPClient",
+      "environment": {},
+      "passed": 1245,
+      "failed": 0,
+      "errors": 2,
+      "skipped": 0,
+      "cleanup_warnings": 0,
+      "evidence": "evidence/library-fix2-server-initial.log",
+      "evidence_sha256": "346095e1f8020960061457e7556dc64ad2c249b2bc1c9b32655636d484b00c1a",
+      "full_pod_log": "/root/rt/wt/library/library-fix2-server-initial.log",
+      "note": "All three existing dependency files passed. Both new tests stopped on an invalid empty variables array in the fixture; corrected in 2beed9c."
+    },
+    {
+      "name": "server-focused",
+      "server_commit": "2beed9c63a10573e7f6e855edd1598ad1b01a82e",
+      "client_commit": "4cf201f25cd33bb8eb186e01c8df6ab63bfa8c02",
+      "files": [
+        "test-compile-death-empty.R"
+      ],
+      "filter": "^compile-death-empty$",
+      "runner": "/workspace/dsomop/tools/rtest.sh",
+      "timeout_seconds": 600,
+      "package": "/workspace/dsomop/wt/library/dsOMOP",
+      "matching_sibling": "/workspace/dsomop/wt/library/dsOMOPClient",
+      "environment": {},
+      "passed": 40,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "cleanup_warnings": 0,
+      "evidence": "evidence/library-fix2-server-focused.log",
+      "evidence_sha256": "577a193295d4481492f422aa9d861a3ce5a421b7a0bda3caaed6e172e9a65792",
+      "full_pod_log": "/root/rt/wt/library/library-fix2-server-focused.log",
+      "note": "Final native regression: available/unavailable death source, memoized typed empty frame, empty source and eligibility-empty populations, memory/staged support refusal."
+    },
+    {
+      "name": "client-initial",
+      "server_commit": "2beed9c63a10573e7f6e855edd1598ad1b01a82e",
+      "client_commit": "4cf201f25cd33bb8eb186e01c8df6ab63bfa8c02",
+      "files": [
+        "test-recipe-library-empty-comparator.R",
+        "test-recipe-library-boundaries.R",
+        "test-v2-execution.R"
+      ],
+      "filter": "^recipe-library-empty-comparator$|^recipe-library-boundaries$|^v2-execution$",
+      "runner": "/workspace/dsomop/tools/rtest.sh",
+      "timeout_seconds": 1200,
+      "package": "/workspace/dsomop/wt/library/dsOMOPClient",
+      "matching_sibling": "/workspace/dsomop/wt/library/dsOMOP",
+      "environment": {
+        "DSOMOP_LIBRARY_BACKENDS": "sqlite"
+      },
+      "passed": 85,
+      "failed": 0,
+      "errors": 2,
+      "skipped": 0,
+      "cleanup_warnings": 9,
+      "evidence": "evidence/library-fix2-client-initial.log",
+      "evidence_sha256": "a75dc3549cf05e7708edf34eea026a1681ff845f11c054c6ce44235d335dd203",
+      "full_pod_log": "/root/rt/wt/library/library-fix2-client-initial.log",
+      "note": "Both existing dependency files passed. New tests reached successful memory-mode skip, then the test helper incorrectly fetched frames from the skipped site; corrected in c4b82ba. Only the acceptance-matrix documentation was uncommitted."
+    },
+    {
+      "name": "client-focused",
+      "server_commit": "2beed9c63a10573e7f6e855edd1598ad1b01a82e",
+      "client_commit": "c4b82ba6cc83df0dcd18386c50bef152b3f84cc8",
+      "files": [
+        "test-recipe-library-empty-comparator.R"
+      ],
+      "filter": "^recipe-library-empty-comparator$",
+      "runner": "/workspace/dsomop/tools/rtest.sh",
+      "timeout_seconds": 900,
+      "package": "/workspace/dsomop/wt/library/dsOMOPClient",
+      "matching_sibling": "/workspace/dsomop/wt/library/dsOMOP",
+      "environment": {
+        "DSOMOP_LIBRARY_BACKENDS": "sqlite"
+      },
+      "passed": 141,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "cleanup_warnings": 8,
+      "evidence": "evidence/library-fix2-client-focused.log",
+      "evidence_sha256": "7fe541078a0234d756f446a3cfc7eb72799a80d7b4385f33a0cca74a7567077a",
+      "full_pod_log": "/root/rt/wt/library/library-fix2-client-focused.log",
+      "note": "Final two-site regression, both causes and output modes; only the acceptance-matrix documentation was uncommitted."
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "new_users": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key"
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key"
+      },
+      "age": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure"
+      },
+      "sex": {
+        "type": "text",
+        "nullable": true,
+        "role": "measure"
+      },
+      "index_source": {
+        "type": "text",
+        "nullable": true,
+        "role": "measure"
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key",
+      "set_id": null
+    }
+  }
+}

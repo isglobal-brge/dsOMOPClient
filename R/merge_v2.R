@@ -197,6 +197,11 @@ recipe_merge <- function(a, b, prefix = NULL) {
   }
 
   out <- r
+  out$meta$recipe_library <- lapply(r$meta$recipe_library, function(entry) {
+    if (!is.null(entry$numeric_output)) entry$numeric_output <- rn$out(entry$numeric_output)
+    if (!is.null(entry$numeric_variable)) entry$numeric_variable <- rn$var(entry$numeric_variable)
+    entry
+  })
   if (!is.null(r$options$date_spec)) out$options$date_spec <- rn$any(r$options$date_spec)
   out$populations <- list()
   for (id in names(r$populations)) {
@@ -497,7 +502,17 @@ recipe_merge <- function(a, b, prefix = NULL) {
       opts$partition$boundaries <- sources(opts$partition$boundaries)
     }
     for (k in intersect(names(opts), c("carry_forward", "source_analyses"))) {
-      if (length(opts[[k]])) names(opts[[k]]) <- unname(vapply(names(opts[[k]]), self$src, ""))
+      if (length(opts[[k]])) names(opts[[k]]) <- unname(vapply(names(opts[[k]]), function(key) {
+        mapped <- self$src(key)
+        # A named panel policy may refer to an inline source supplied only
+        # when an event parameter is bound. Its key lives in that deferred
+        # namespace too, even though no declaration exists in maps yet.
+        if (identical(mapped, key) && !is.null(prefix) &&
+            .merge_deferred_has_params(opts$sources %||% o$sources)) {
+          mapped <- .v2_name(paste0(prefix, "_", key), "recipe_merge(): deferred panel source")
+        }
+        mapped
+      }, ""))
     }
     if (!is.null(opts$from)) {
       from <- function(fr) {
@@ -598,6 +613,8 @@ recipe_merge <- function(a, b, prefix = NULL) {
     out <- recipe_set_publish(out, unique(c(roots(a), roots(b))))
   }
   out$meta <- list(created = Sys.time(), modified = Sys.time())
+  provenance <- c(a$meta$recipe_library, b$meta$recipe_library)
+  if (length(provenance)) out$meta$recipe_library <- provenance
   # Parameters are shared by name: two definitions of one name are refused.
   recipe_params(out)
   out

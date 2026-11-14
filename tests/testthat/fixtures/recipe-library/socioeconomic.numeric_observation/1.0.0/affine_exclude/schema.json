@@ -1,0 +1,41 @@
+{
+  "numeric_observation": {
+    "columns": {
+      "row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key",
+        "native_name": null
+      },
+      "cohort_row_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "episode_key",
+        "native_name": null
+      },
+      "person_id": {
+        "type": "bigint",
+        "nullable": false,
+        "role": "person_key",
+        "native_name": null
+      },
+      "numeric_value": {
+        "type": "numeric",
+        "nullable": true,
+        "role": "measure",
+        "native_name": null
+      },
+      "source_records": {
+        "type": "integer",
+        "nullable": true,
+        "role": "measure",
+        "native_name": null
+      }
+    },
+    "protection": {
+      "person_id": "existing pseudonymisation",
+      "row_id": "native episode key",
+      "cohort_row_id": "native episode key"
+    }
+  }
+}

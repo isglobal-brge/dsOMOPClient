@@ -1,0 +1,234 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "rx": {
+      "table": "drug_exposure",
+      "concept_set": {
+        "concepts": [
+          990006
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "end": {
+        "fallback": "days_supply"
+      },
+      "on_missing_table": "unavailable",
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null
+    },
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false,
+        "include_mapped": false,
+        "exclude": null
+      },
+      "concept_col": null,
+      "where": null,
+      "visit": null,
+      "value": null,
+      "unit": null,
+      "end": null,
+      "on_missing_table": "error"
+    }
+  },
+  "intervals": {
+    "stock": {
+      "source": {
+        "event": "rx"
+      },
+      "gap": 0,
+      "persistence": 0,
+      "min_days": 0,
+      "by": "event",
+      "unmapped": "own_concept",
+      "end": "recorded_end",
+      "fallback": "days_supply",
+      "stockpile": true
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible",
+        "n": 1,
+        "offset": 0,
+        "end": {
+          "strategy": "observation_end",
+          "days": null,
+          "pad": 0
+        },
+        "restrict_to_observation": true
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      },
+      "parent": null,
+      "where": null
+    }
+  },
+  "variables": {
+    "observed_days": {
+      "derived": {
+        "kind": "observed_days",
+        "window": {
+          "start": 0,
+          "end": 9,
+          "anchor": "index"
+        }
+      },
+      "labels": {},
+      "column_names": {}
+    },
+    "recorded_covered_days": {
+      "source": {
+        "interval": "stock"
+      },
+      "reducer": {
+        "fn": "covered_days",
+        "window": {
+          "start": 0,
+          "end": 9,
+          "anchor": "index"
+        },
+        "observed_only": true,
+        "value": null,
+        "which": null,
+        "n": 1,
+        "side": "either",
+        "missing": "skip",
+        "distinct": null,
+        "p": null,
+        "agg": null,
+        "reference": null,
+        "predicate": null,
+        "reference_date": null,
+        "unit": "day",
+        "coverage": "recorded",
+        "fills": "start_in_window"
+      },
+      "broadcast": false,
+      "labels": {},
+      "column_names": {}
+    },
+    "effective_covered_days": {
+      "source": {
+        "interval": "stock"
+      },
+      "reducer": {
+        "fn": "covered_days",
+        "window": {
+          "start": 0,
+          "end": 9,
+          "anchor": "index"
+        },
+        "coverage": "effective_supply",
+        "observed_only": true,
+        "value": null,
+        "which": null,
+        "n": 1,
+        "side": "either",
+        "missing": "skip",
+        "distinct": null,
+        "p": null,
+        "agg": null,
+        "reference": null,
+        "predicate": null,
+        "reference_date": null,
+        "unit": "day",
+        "fills": "start_in_window"
+      },
+      "broadcast": false,
+      "labels": {},
+      "column_names": {}
+    },
+    "supply_days": {
+      "source": {
+        "event": "rx"
+      },
+      "reducer": {
+        "fn": "supply_days",
+        "window": {
+          "start": 0,
+          "end": 9,
+          "anchor": "index"
+        },
+        "fills": "clipped",
+        "value": null,
+        "which": null,
+        "n": 1,
+        "side": "either",
+        "missing": "skip",
+        "distinct": null,
+        "p": null,
+        "agg": null,
+        "reference": null,
+        "predicate": null,
+        "reference_date": null,
+        "unit": "day",
+        "coverage": "recorded",
+        "observed_only": false
+      },
+      "broadcast": false,
+      "labels": {},
+      "column_names": {}
+    }
+  },
+  "outputs": {
+    "adherence": {
+      "rows": "study",
+      "format": "wide",
+      "grain": "episode",
+      "result_symbol": "D_adherence",
+      "columns": [
+        "observed_days",
+        "recorded_covered_days",
+        "effective_covered_days",
+        "supply_days"
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative",
+          "reference": "index",
+          "bin_width": null,
+          "date_columns": null
+        },
+        "time_window": null
+      },
+      "collapse": null,
+      "sources": []
+    }
+  },
+  "publish": [
+    "adherence"
+  ],
+  "options": {
+    "translate_concepts": true,
+    "block_sensitive": true,
+    "factor_concepts": true,
+    "labels": {},
+    "column_names": {}
+  },
+  "concept_sets": {}
+}

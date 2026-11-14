@@ -1,0 +1,30 @@
+{
+  "id": "cohort.active_comparator",
+  "template_version": "1.0.0",
+  "title": "Active comparator",
+  "category": "cohort",
+  "summary": "Assign baseline-adjusted analysis tables for first eligible initiation of either of two exposure classes. ITT follows the selected initiation; on-treatment follow-up additionally requires an active index-arm course at entry and censors at its end plus grace or the first opposite-arm course starting from entry. The tables carry the declared treatment source. These are study design tables; the recipe performs no confounding adjustment.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "cohort",
+    "active_comparator"
+  ],
+  "fixture_id": "T15",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "drug_exposure",
+      "death"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

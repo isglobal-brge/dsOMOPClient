@@ -1,0 +1,29 @@
+{
+  "id": "socioeconomic.employment",
+  "template_version": "1.0.0",
+  "title": "Employment",
+  "category": "socioeconomic",
+  "summary": "Assign the last coded employment-status answer before index and its source-record count. Occupation, employment status and income are different constructs: supply the intended question concepts. The recipe does not harmonise free text or assume an ordering of occupations.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "socioeconomic",
+    "employment"
+  ],
+  "fixture_id": "T03",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period",
+      "observation"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": null
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

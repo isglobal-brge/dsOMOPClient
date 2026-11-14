@@ -1,0 +1,88 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    },
+    "cause_a": {
+      "table": "condition_occurrence",
+      "concept_set": {
+        "concepts": [
+          990005
+        ],
+        "include_descendants": false
+      }
+    },
+    "cause_b": {
+      "table": "death"
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible"
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      }
+    }
+  },
+  "outputs": {
+    "competing_risk": {
+      "rows": "study",
+      "format": "survival",
+      "grain": "episode",
+      "result_symbol": "D_competing_risk",
+      "options": {
+        "outcomes": {
+          "cause_a": {
+            "event": "cause_a"
+          },
+          "cause_b": {
+            "event": "cause_b"
+          }
+        },
+        "tar": {
+          "start": 1,
+          "end": 10,
+          "anchor": "index"
+        },
+        "censor": [
+          "observation_end",
+          "death"
+        ],
+        "prior_outcome": {
+          "lookback": 365,
+          "action": "exclude"
+        },
+        "format": "competing_risk",
+        "event_order": "first",
+        "outcome_mode": "named",
+        "tie_policy": "priority",
+        "same_day_priority": "event"
+      }
+    }
+  },
+  "publish": [
+    "competing_risk"
+  ]
+}

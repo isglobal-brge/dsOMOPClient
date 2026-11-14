@@ -1,0 +1,2820 @@
+{
+  "oracle": "Hand-calculated from library-synthetic-v1; no production executor used.",
+  "excluded_protected_keys": [
+    "row_id",
+    "cohort_row_id",
+    "person_id"
+  ],
+  "components": {
+    "measurements": [
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 0,
+        "period_end_days": 29,
+        "days": 30,
+        "measure_count": 2,
+        "measure_mean": 7,
+        "measure_last": 8,
+        "measure_carry": 6
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 30,
+        "period_end_days": 59,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": 8
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 60,
+        "period_end_days": 89,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 90,
+        "period_end_days": 119,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 120,
+        "period_end_days": 149,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 150,
+        "period_end_days": 179,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 180,
+        "period_end_days": 209,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 210,
+        "period_end_days": 239,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 240,
+        "period_end_days": 269,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 270,
+        "period_end_days": 299,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 300,
+        "period_end_days": 329,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 330,
+        "period_end_days": 359,
+        "days": 30,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      },
+      {
+        "period_start_days": 360,
+        "period_end_days": 365,
+        "days": 6,
+        "measure_count": 0,
+        "measure_mean": null,
+        "measure_last": null,
+        "measure_carry": null
+      }
+    ]
+  }
+}

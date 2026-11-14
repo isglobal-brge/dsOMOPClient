@@ -1,0 +1,249 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "new_users": [
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      },
+      {
+        "age": 40,
+        "sex": "M",
+        "index_source": "rx_990006_era"
+      }
+    ]
+  }
+}

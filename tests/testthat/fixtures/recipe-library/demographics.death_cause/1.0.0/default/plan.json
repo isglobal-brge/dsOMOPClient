@@ -1,0 +1,104 @@
+{
+  "version": 2,
+  "meta": {
+    "language_version": "2.0",
+    "semantic_version": "2.0.0",
+    "generated_by": "dsOMOPClient",
+    "client_version": "2.10.4"
+  },
+  "events": {
+    "death": {
+      "table": "death"
+    },
+    "entry": {
+      "table": "visit_occurrence",
+      "concept_set": {
+        "concepts": [
+          9201
+        ],
+        "include_descendants": false
+      }
+    }
+  },
+  "populations": {
+    "study": {
+      "kind": "index",
+      "index": {
+        "source": {
+          "event": "entry"
+        },
+        "select": "first_eligible"
+      },
+      "coverage": {
+        "policy": "unique",
+        "on_ambiguous": "drop",
+        "on_missing": "drop",
+        "gap": 0
+      }
+    }
+  },
+  "variables": {
+    "death_recorded": {
+      "source": {
+        "event": "death"
+      },
+      "reducer": {
+        "fn": "binary",
+        "window": {
+          "start": 0,
+          "end": 365,
+          "anchor": "index"
+        }
+      }
+    },
+    "death_days": {
+      "source": {
+        "event": "death"
+      },
+      "reducer": {
+        "fn": "first_date",
+        "window": {
+          "start": 0,
+          "end": 365,
+          "anchor": "index"
+        }
+      }
+    },
+    "cause_concept_id": {
+      "source": {
+        "event": "death"
+      },
+      "reducer": {
+        "fn": "first_value",
+        "value": "concept_id",
+        "window": {
+          "start": 0,
+          "end": 365,
+          "anchor": "index"
+        },
+        "missing": "keep"
+      }
+    }
+  },
+  "outputs": {
+    "death_cause": {
+      "rows": "study",
+      "format": "wide",
+      "grain": "episode",
+      "result_symbol": "D_death_cause",
+      "columns": [
+        "death_recorded",
+        "death_days",
+        "cause_concept_id"
+      ],
+      "options": {
+        "date_handling": {
+          "mode": "relative"
+        }
+      }
+    }
+  },
+  "publish": [
+    "death_cause"
+  ]
+}

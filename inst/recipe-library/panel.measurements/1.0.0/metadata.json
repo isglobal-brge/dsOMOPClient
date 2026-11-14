@@ -1,0 +1,28 @@
+{
+  "id": "panel.measurements",
+  "template_version": "1.0.0",
+  "title": "Measurements",
+  "category": "panel",
+  "summary": "Assign dense observed periods with measurement count, mean, last value and a separately named carry-forward value at period start. Carry-forward uses the last nonmissing value at or before that start within lookback and expiry. It does not replace period mean/last, use future values, or assert that a value remains constant throughout the period. Event-free periods retain count zero and numeric NA; an unavailable source gives NA.",
+  "language_version": 2,
+  "min_client_version": "2.10.5",
+  "status": "recommended",
+  "documentation_revision": 1,
+  "tags": [
+    "panel",
+    "measurements"
+  ],
+  "fixture_id": "T20",
+  "required_tables": {
+    "fixed": [
+      "person",
+      "observation_period"
+    ],
+    "conditional": "Tables, value/unit/time roles and vocabulary required by the supplied index and other event bindings."
+  },
+  "required_roles": {
+    "index": "person, event key, start; interval end according to index policy",
+    "measure": "numeric value_as_number and declared scale/unit policy"
+  },
+  "limitations": "See documentation for fixed policies, windows, missingness, coverage, tie order, output schema and analysis limitations."
+}

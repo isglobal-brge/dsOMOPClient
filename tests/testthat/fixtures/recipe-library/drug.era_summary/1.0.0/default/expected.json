@@ -1,0 +1,156 @@
+{
+  "oracle": "Hand-calculated from library-synthetic-v1; no production executor used.",
+  "excluded_protected_keys": [
+    "row_id",
+    "cohort_row_id",
+    "person_id"
+  ],
+  "components": {
+    "eras": [
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      },
+      {
+        "era_count": 1,
+        "era_days": 44,
+        "first_era_days": 44,
+        "covered_days": 44
+      }
+    ]
+  }
+}

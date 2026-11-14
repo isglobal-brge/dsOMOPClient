@@ -1,0 +1,105 @@
+{
+  "oracle": "Hand arithmetic in helper-recipe-library-variants.R; never derived from executor rows",
+  "excluded_protected_keys": ["row_id", "cohort_row_id", "person_id", "set_id"],
+  "refusal": null,
+  "components": {
+    "education": [
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      },
+      {
+        "education_concept_id": null,
+        "education_records": 3
+      }
+    ]
+  }
+}

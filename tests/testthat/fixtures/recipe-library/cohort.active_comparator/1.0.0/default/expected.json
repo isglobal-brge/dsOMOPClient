@@ -1,0 +1,494 @@
+{
+  "oracle": "Hand-calculated from library-synthetic-v1; no production executor used.",
+  "excluded_protected_keys": [
+    "row_id",
+    "cohort_row_id",
+    "person_id"
+  ],
+  "components": {
+    "itt_analysis": [
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 365,
+        "follow_up_days": 364,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      }
+    ],
+    "on_treatment_analysis": [
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 1,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 10,
+        "follow_up_days": 9,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      },
+      {
+        "outcome_name": "outcome",
+        "event": 0,
+        "entry_days_from_index": 1,
+        "exit_days_from_index": 73,
+        "follow_up_days": 72,
+        "arm": "era_a",
+        "age": 40,
+        "sex": "M"
+      }
+    ]
+  }
+}

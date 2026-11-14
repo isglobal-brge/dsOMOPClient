@@ -133,6 +133,17 @@ passed both fresh and upgrade jobs. Both tested harness commit
 `17e5df40f4718bdece091f68d3003c764f061854`. These are evidence for that
 candidate, not a claim of live execution on every supported SQL dialect.
 
+## Recipe library (2.10.5 development)
+
+Use `recipe_library_list()` to discover 24 versioned templates and
+`recipe_library_describe(id)` to inspect their complete definitions, parameters,
+fixed policies and output schemas. `recipe_library_instantiate(id, ...)`
+returns an ordinary language-2 recipe with your study bindings. Discovery is
+local; assignment uses the existing `recipe_execute()` path.
+
+See the [recipe library guide](vignettes/v08_recipe_library.Rmd) and the
+[installed catalogue documentation](inst/recipe-library/README.md).
+
 ## Recipe language 2 in 2.10.4
 
 Use `omop_study()` for a study with explicit baseline and follow-up inputs, or

@@ -1,0 +1,48 @@
+{
+  "id": "drug.adherence_components",
+  "case": "cap_binding",
+  "template_version": "1.0.0",
+  "definition_checksum": "22a2c17534f14684fe2d33c5c4fcf9a72a2d33a8f34d6c9ae19caf6ba5ac7efa",
+  "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+  "client_version": "2.10.4",
+  "server_version": "2.10.4",
+  "normalizer": "A-11",
+  "schema": "native-v2",
+  "fixture_sha256": "b28cc3bd331d51644ff1dccd9755bb59774137f96a59032fca83e9c5a10bf029",
+  "vocabulary_sha256": "b4c8478eadf088f91c7d22c02c373b393a957784f7de10dcbf83c8c17604b69b",
+  "backend": "sqlite",
+  "nfilter": 5,
+  "stockpile_cap_days": 90,
+  "operations": [
+    "concept_set",
+    "event",
+    "interval",
+    "interval.stockpile",
+    "output.concept_labels",
+    "output.wide",
+    "population.first_eligible",
+    "population.index",
+    "reducer.covered_days.effective_supply",
+    "reducer.supply_days",
+    "variable.derived",
+    "variable.reducer"
+  ],
+  "note": "cap_binding",
+  "evidence": "inst/recipe-library/evidence/library-fix1-tests.json",
+  "recording_base_client_commit": "172f924fd364821bc66dc23a8a512420d77a1872",
+  "recording_working_tree": true,
+  "fix1_validation": {
+    "evidence": "inst/recipe-library/evidence/library-fix1-tests.json",
+    "sqlite_client_commit": "021d403da260e3dd1a16f0cecbd38822ed6a2296",
+    "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+    "independent_python_reference_client_commit": "076368501b8e3aa395d43bd19441568a2d7fa8fc",
+    "result": "passed",
+    "vendor_client_commit": "076368501b8e3aa395d43bd19441568a2d7fa8fc",
+    "backends": [
+      "sqlite",
+      "postgresql",
+      "mariadb",
+      "mysql"
+    ]
+  }
+}

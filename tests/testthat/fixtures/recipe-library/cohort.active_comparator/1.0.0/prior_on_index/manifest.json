@@ -1,0 +1,43 @@
+{
+  "id": "cohort.active_comparator",
+  "case": "prior_on_index",
+  "template_version": "1.0.0",
+  "definition_checksum": "b3c2095b42e484f11407d8c844a0ba7750322688770eb5958d36c83d8ec3c8e9",
+  "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+  "client_version": "2.10.4",
+  "server_version": "2.10.4",
+  "normalizer": "A-11",
+  "schema": "native-v2",
+  "fixture_sha256": "b7670393c9b9498ad76bc608a9e6bbd546d064a5c463e39ff60c70137c5b62af",
+  "vocabulary_sha256": "b4c8478eadf088f91c7d22c02c373b393a957784f7de10dcbf83c8c17604b69b",
+  "backend": "sqlite",
+  "nfilter": 5,
+  "stockpile_cap_days": 90,
+  "operations": [
+    "concept_set",
+    "event",
+    "interval",
+    "output.concept_labels",
+    "output.joined",
+    "output.survival",
+    "output.survival.censor_source",
+    "output.wide",
+    "population.any_of",
+    "population.first_eligible",
+    "population.index",
+    "publish.roots",
+    "variable.derived",
+    "variable.population_column"
+  ],
+  "note": "prior_on_index",
+  "evidence": "inst/recipe-library/evidence/library-fix1-tests.json",
+  "recording_base_client_commit": "172f924fd364821bc66dc23a8a512420d77a1872",
+  "recording_working_tree": true,
+  "fix1_validation": {
+    "evidence": "inst/recipe-library/evidence/library-fix1-tests.json",
+    "sqlite_client_commit": "021d403da260e3dd1a16f0cecbd38822ed6a2296",
+    "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+    "independent_python_reference_client_commit": "076368501b8e3aa395d43bd19441568a2d7fa8fc",
+    "result": "passed"
+  }
+}

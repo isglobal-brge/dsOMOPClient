@@ -1,0 +1,142 @@
+dsOMOP v2.10.4 loaded. OMOP CDM resource resolver registered.
+compile-death-empty: 12
+compile-output: duckdb keeps downloaded extensions and secrets in a temporary directory:
+i /tmp/Rtmp64YXvC/duckdb
+This is removed when the R session ends.
+* Extensions are re-downloaded each session.
+* Secrets are lost.
+i Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users).
+i Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message).
+i See ?duckdb_storage for details and alternatives.
+.............................................................................................................................................................................................................................................................................................[dsomop-audit] 2026-11-14T06:40:41+0000 method=omopPlanExecuteDS detail={"outputs":"d","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"ws7-test"},"events":{"lab":{"table":"measurement","concept_set":{"concepts":[92200001]},"value":{"column":"value_as_number"}},"dx":{"table":"condition_occurrence","concept_set":{"concepts":[92200002,92200003]}},"drug":{"table":"drug_exposure","concept_set":{"concepts":[92200004]}}},"populations":{"t":{"kind":"index","index":{"source":{"cohort_definition_id":1},"select":"all","end":{"strategy":"event_end"}}}},"variables":{"n":{"source":{"event":"lab"},"reducer":{"fn":"count"}}},"outputs":{"o":{"rows":"t","format":"wide","grain":"episode","columns":["n"]},"d":{"rows":"t","format":"dictionary","options":{"source_outputs":["o"]}}},"publish":["d"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T06:40:41+0000 method=publication detail={"output":"d","component":"d","passed":true}
+......[dsomop-audit] 2026-11-14T06:40:41+0000 method=omopPlanExecuteDS detail={"outputs":"d","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"ws7-test"},"events":{"lab":{"table":"measurement","concept_set":{"concepts":[92200001]},"value":{"column":"value_as_number"}},"dx":{"table":"condition_occurrence","concept_set":{"concepts":[92200002,92200003]}},"drug":{"table":"drug_exposure","concept_set":{"concepts":[92200004]}}},"populations":{"t":{"kind":"index","index":{"source":{"cohort_definition_id":1},"select":"all","end":{"strategy":"event_end"}}}},"variables":{"n":{"source":{"event":"lab"},"reducer":{"fn":"count"}}},"outputs":{"o":{"rows":"t","format":"wide","grain":"episode","columns":["n"]},"d":{"rows":"t","format":"dictionary","options":{"source_outputs":["o"]}}},"publish":["d"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T06:40:42+0000 method=publication detail={"output":"d","component":"d","passed":true}
+......[dsomop-audit] 2026-11-14T06:40:43+0000 method=omopPlanExecuteDS detail={"outputs":"d","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"ws7-test"},"events":{"lab":{"table":"measurement","concept_set":{"concepts":[92200001]},"value":{"column":"value_as_number"}},"dx":{"table":"condition_occurrence","concept_set":{"concepts":[92200002,92200003]}},"drug":{"table":"drug_exposure","concept_set":{"concepts":[92200004]}}},"populations":{"t":{"kind":"index","index":{"source":{"cohort_definition_id":1},"select":"all","end":{"strategy":"event_end"}}}},"variables":{"n":{"source":{"event":"lab"},"reducer":{"fn":"count"}}},"outputs":{"o":{"rows":"t","format":"wide","grain":"episode","columns":["n"]},"d":{"rows":"t","format":"dictionary","options":{"source_outputs":["o"]}}},"publish":["d"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T06:40:43+0000 method=publication detail={"output":"d","component":"d","passed":true}
+......[dsomop-audit] 2026-11-14T06:40:43+0000 method=omopPlanExecuteDS detail={"outputs":"d","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"ws7-test"},"events":{"lab":{"table":"measurement","concept_set":{"concepts":[92200001]},"value":{"column":"value_as_number"}},"dx":{"table":"condition_occurrence","concept_set":{"concepts":[92200002,92200003]}},"drug":{"table":"drug_exposure","concept_set":{"concepts":[92200004]}}},"populations":{"t":{"kind":"index","index":{"source":{"cohort_definition_id":1},"select":"all","end":{"strategy":"event_end"}}}},"variables":{"n":{"source":{"event":"lab"},"reducer":{"fn":"count"}}},"outputs":{"o":{"rows":"t","format":"wide","grain":"episode","columns":["n"]},"d":{"rows":"t","format":"dictionary","options":{"source_outputs":["o"]}}},"publish":["d"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T06:40:44+0000 method=publication detail={"output":"d","component":"d","passed":true}
+......[dsomop-audit] 2026-11-14T06:40:44+0000 method=omopPlanExecuteDS detail={"outputs":"d","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"ws7-test"},"events":{"lab":{"table":"measurement","concept_set":{"concepts":[92200001]},"value":{"column":"value_as_number"}},"dx":{"table":"condition_occurrence","concept_set":{"concepts":[92200002,92200003]}},"drug":{"table":"drug_exposure","concept_set":{"concepts":[92200004]}}},"populations":{"t":{"kind":"index","index":{"source":{"cohort_definition_id":1},"select":"all","end":{"strategy":"event_end"}}}},"variables":{"n":{"source":{"event":"lab"},"reducer":{"fn":"count"}}},"outputs":{"o":{"rows":"t","format":"wide","grain":"episode","columns":["n"]},"d":{"rows":"t","format":"dictionary","options":{"source_outputs":["o"]}}},"publish":["d"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T06:40:44+0000 method=publication detail={"output":"d","component":"d","passed":true}
+......[dsomop-audit] 2026-11-14T06:40:44+0000 method=omopPlanExecuteDS detail={"outputs":"d","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"ws7-test"},"events":{"lab":{"table":"measurement","concept_set":{"concepts":[92200001]},"value":{"column":"value_as_number"}},"dx":{"table":"condition_occurrence","concept_set":{"concepts":[92200002,92200003]}},"drug":{"table":"drug_exposure","concept_set":{"concepts":[92200004]}}},"populations":{"t":{"kind":"index","index":{"source":{"cohort_definition_id":1},"select":"all","end":{"strategy":"event_end"}}}},"variables":{"n":{"source":{"event":"lab"},"reducer":{"fn":"count"}}},"outputs":{"o":{"rows":"t","format":"wide","grain":"episode","columns":["n"]},"d":{"rows":"t","format":"dictionary","options":{"source_outputs":["o"]}}},"publish":["d"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T06:40:45+0000 method=publication detail={"output":"d","component":"d","passed":true}
+............[dsomop-audit] 2026-11-14T06:40:46+0000 method=publication detail={"output":"covariateRef","component":"covariateRef","passed":true}
+[dsomop-audit] 2026-11-14T06:40:46+0000 method=publication detail={"output":"covariateRef","component":"covariateRef_48b4100c94","passed":true}
+..........[dsomop-audit] 2026-11-14T06:40:47+0000 method=publication detail={"output":"covariateRef","component":"covariateRef","passed":true}
+[dsomop-audit] 2026-11-14T06:40:47+0000 method=publication detail={"output":"covariateRef","component":"covariateRef_48b4100c94","passed":true}
+................[dsomop-audit] 2026-11-14T06:40:48+0000 method=publication detail={"output":"covariateRef","component":"covariateRef","passed":true}
+[dsomop-audit] 2026-11-14T06:40:48+0000 method=publication detail={"output":"covariateRef","component":"covariateRef_48b4100c94","passed":true}
+[dsomop-audit] 2026-11-14T06:40:48+0000 method=publication detail={"output":"covariateRef","component":"timeRef","passed":true}
+..........[dsomop-audit] 2026-11-14T06:40:49+0000 method=publication detail={"output":"covariateRef","component":"covariateRef","passed":true}
+[dsomop-audit] 2026-11-14T06:40:50+0000 method=publication detail={"output":"covariateRef","component":"covariateRef_48b4100c94","passed":true}
+[dsomop-audit] 2026-11-14T06:40:50+0000 method=publication detail={"output":"covariateRef","component":"timeRef","passed":true}
+..................[dsomop-audit] 2026-11-14T06:40:51+0000 method=publication detail={"output":"timeRef","component":"timeRef","passed":true}
+[dsomop-audit] 2026-11-14T06:40:51+0000 method=publication detail={"output":"timeRef","component":"covariateRef","passed":true}
+[dsomop-audit] 2026-11-14T06:40:51+0000 method=publication detail={"output":"timeRef","component":"timeRef_236ee5f8e3","passed":true}
+..........[dsomop-audit] 2026-11-14T06:40:52+0000 method=publication detail={"output":"timeRef","component":"timeRef","passed":true}
+[dsomop-audit] 2026-11-14T06:40:52+0000 method=publication detail={"output":"timeRef","component":"covariateRef","passed":true}
+[dsomop-audit] 2026-11-14T06:40:53+0000 method=publication detail={"output":"timeRef","component":"timeRef_236ee5f8e3","passed":true}
+.........................................................................................................................................
+compile-reduce: duckdb keeps downloaded extensions and secrets in a temporary directory:
+i /tmp/Rtmp64YXvC/duckdb
+This is removed when the R session ends.
+* Extensions are re-downloaded each session.
+* Secrets are lost.
+i Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users).
+i Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message).
+i See ?duckdb_storage for details and alternatives.
+......................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+publication-compiled: [dsomop-audit] 2026-11-14T06:42:04+0000 method=publication detail={"output":"out","component":"out","passed":true}
+....[dsomop-audit] 2026-11-14T06:42:04+0000 method=publication detail={"output":"out","component":"out","passed":true}
+.............[dsomop-audit] 2026-11-14T06:42:05+0000 method=publication detail={"output":"out","component":"out","passed":true}
+...............[dsomop-audit] 2026-11-14T06:42:07+0000 method=publication detail={"output":"out","component":"out","passed":true}
+........[dsomop-audit] 2026-11-14T06:42:08+0000 method=publication detail={"output":"out","component":"out","passed":true}
+.........[dsomop-audit] 2026-11-14T06:42:09+0000 method=publication detail={"output":"out","component":"out","passed":true}
+...........[dsomop-audit] 2026-11-14T06:42:10+0000 method=publication detail={"output":"out","component":"out","passed":true}
+.......duckdb keeps downloaded extensions and secrets in a temporary directory:
+i /tmp/Rtmp64YXvC/duckdb
+This is removed when the R session ends.
+* Extensions are re-downloaded each session.
+* Secrets are lost.
+i Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users).
+i Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message).
+i See ?duckdb_storage for details and alternatives.
+[dsomop-audit] 2026-11-14T06:42:11+0000 method=publication detail={"output":"out","component":"out","passed":true}
+.......[dsomop-audit] 2026-11-14T06:42:13+0000 method=publication detail={"output":"out","component":"out","passed":true}
+.....[dsomop-audit] 2026-11-14T06:42:13+0000 method=publication detail={"output":"out","component":"out","passed":false}
+........[dsomop-audit] 2026-11-14T06:42:14+0000 method=publication detail={"output":"out","component":"out","passed":true}
+...................................[dsomop-audit] 2026-11-14T06:42:16+0000 method=publication detail={"output":"out","component":"out","passed":false}
+........[dsomop-audit] 2026-11-14T06:42:17+0000 method=publication detail={"output":"out","component":"out","passed":false}
+.........[dsomop-audit] 2026-11-14T06:42:17+0000 method=publication detail={"output":"out","component":"out","passed":false}
+....[dsomop-audit] 2026-11-14T06:42:18+0000 method=publication detail={"output":"out","component":"out","passed":false}
+....[dsomop-audit] 2026-11-14T06:42:18+0000 method=publication detail={"output":"out","component":"out","passed":true}
+......[dsomop-audit] 2026-11-14T06:42:18+0000 method=publication detail={"output":"out","component":"out","passed":false}
+.......[dsomop-audit] 2026-11-14T06:42:19+0000 method=publication detail={"output":"out","component":"out","passed":true}
+......[dsomop-audit] 2026-11-14T06:42:20+0000 method=publication detail={"output":"out","component":"out","passed":false}
+.......[dsomop-audit] 2026-11-14T06:42:20+0000 method=publication detail={"output":"out","component":"risk","passed":true}
+[dsomop-audit] 2026-11-14T06:42:20+0000 method=publication detail={"output":"out","component":"events","passed":false}
+........[dsomop-audit] 2026-11-14T06:42:20+0000 method=publication detail={"output":"out","component":"risk","passed":true}
+[dsomop-audit] 2026-11-14T06:42:20+0000 method=publication detail={"output":"out","component":"events","passed":true}
+......[dsomop-audit] 2026-11-14T06:42:21+0000 method=publication detail={"output":"out","component":"risk","passed":true}
+[dsomop-audit] 2026-11-14T06:42:21+0000 method=publication detail={"output":"out","component":"events","passed":false}
+.......[dsomop-audit] 2026-11-14T06:42:21+0000 method=publication detail={"output":"out","component":"risk","passed":true}
+[dsomop-audit] 2026-11-14T06:42:21+0000 method=publication detail={"output":"out","component":"events","passed":false}
+........[dsomop-audit] 2026-11-14T06:42:22+0000 method=publication detail={"output":"out","component":"risk","passed":true}
+[dsomop-audit] 2026-11-14T06:42:22+0000 method=publication detail={"output":"out","component":"events","passed":true}
+......[dsomop-audit] 2026-11-14T06:42:23+0000 method=publication detail={"output":"out","component":"risk","passed":true}
+[dsomop-audit] 2026-11-14T06:42:23+0000 method=publication detail={"output":"out","component":"events","passed":false}
+.......[dsomop-audit] 2026-11-14T06:42:24+0000 method=publication detail={"output":"out","component":"risk","passed":true}
+[dsomop-audit] 2026-11-14T06:42:24+0000 method=publication detail={"output":"out","component":"events","passed":false}
+..[dsomop-audit] 2026-11-14T06:42:24+0000 method=publication detail={"output":"out","component":"risk","passed":false}
+[dsomop-audit] 2026-11-14T06:42:24+0000 method=publication detail={"output":"out","component":"events","passed":false}
+[dsomop-audit] 2026-11-14T06:42:24+0000 method=publication detail={"output":"out","component":"dictionary","passed":true}
+..........[dsomop-audit] 2026-11-14T06:42:24+0000 method=publication detail={"output":"out","component":"dictionary","passed":true}
+[dsomop-audit] 2026-11-14T06:42:24+0000 method=publication detail={"output":"out","component":"events","passed":false}
+[dsomop-audit] 2026-11-14T06:42:24+0000 method=publication detail={"output":"out","component":"risk","passed":false}
+..........[dsomop-audit] 2026-11-14T06:42:25+0000 method=publication detail={"output":"out","component":"risk","passed":false}
+[dsomop-audit] 2026-11-14T06:42:25+0000 method=publication detail={"output":"out","component":"events","passed":false}
+[dsomop-audit] 2026-11-14T06:42:26+0000 method=publication detail={"output":"out","component":"dictionary","passed":true}
+...........[dsomop-audit] 2026-11-14T06:42:26+0000 method=publication detail={"output":"out","component":"dictionary","passed":true}
+[dsomop-audit] 2026-11-14T06:42:27+0000 method=publication detail={"output":"out","component":"events","passed":false}
+[dsomop-audit] 2026-11-14T06:42:27+0000 method=publication detail={"output":"out","component":"risk","passed":false}
+...........[dsomop-audit] 2026-11-14T06:42:27+0000 method=publication detail={"output":"out","component":"risk","passed":false}
+[dsomop-audit] 2026-11-14T06:42:27+0000 method=publication detail={"output":"out","component":"events","passed":false}
+....
+
+══ Failed ══════════════════════════════════════════════════════════════════════
+── 1. Error ('test-compile-death-empty.R:13:7'): death frames preserve empty ros
+<dsomop_ir_validation_error/dsomop_plan_rejection/error/condition>
+Error: validation_error: plan does not validate against plan-v2.json: /variables: expected type object, got array
+Backtrace:
+    ▆
+ 1. └─base::eval(...)
+ 2.   └─base::eval(...)
+ 3.     └─.ws7_ctx(h, plan) at test-compile-death-empty.R:13:7
+ 4.       └─dsOMOP:::.irValidateWire(plan) at tests/testthat/helper-ws7.R:73:3
+ 5.         └─dsOMOP:::.irRejectAll(...) at dsOMOP/R/ir.R:142:3
+ 6.           └─dsOMOP:::.irReject(...) at dsOMOP/R/ir.R:71:3
+
+── 2. Error ('test-compile-death-empty.R:41:7'): death-censored empty survival p
+<dsomop_ir_validation_error/dsomop_plan_rejection/error/condition>
+Error: validation_error: plan does not validate against plan-v2.json: /variables: expected type object, got array
+Backtrace:
+    ▆
+ 1. └─base::eval(...)
+ 2.   └─base::eval(...)
+ 3.     └─.ws7_ctx(h, plan, mode) at test-compile-death-empty.R:41:7
+ 4.       └─dsOMOP:::.irValidateWire(plan) at tests/testthat/helper-ws7.R:73:3
+ 5.         └─dsOMOP:::.irRejectAll(...) at dsOMOP/R/ir.R:142:3
+ 6.           └─dsOMOP:::.irReject(...) at dsOMOP/R/ir.R:71:3
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+Frustration is a natural part of programming :)
+
+FAILURES BY FILE
+                       file blocks failed errors
+ test-compile-death-empty.R      2      0      2
+
+FAILING TESTS
+test-compile-death-empty.R | death frames preserve empty rosters with available and unavailable sources | failed=0 error=TRUE
+test-compile-death-empty.R | death-censored empty survival populations reach the final support gate | failed=0 error=TRUE
+
+RESULT failed: 0 errors: 2 skipped: 0 passed: 1245 

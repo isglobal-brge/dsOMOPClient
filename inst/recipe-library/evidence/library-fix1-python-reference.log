@@ -1,0 +1,4 @@
+Independent Python reference: schema validation, exact normalized payload and idempotence passed for 133 library case bundles.
+Client 076368501b8e3aa395d43bd19441568a2d7fa8fc; server reference 18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9.
+Reference: dsOMOP/tools/ws0/normalize_reference.py; schema: dsOMOPClient/inst/schema/plan-v2.json.
+Independent hashlib SHA-256 verification also passed for all 133 canonical semantic payloads.

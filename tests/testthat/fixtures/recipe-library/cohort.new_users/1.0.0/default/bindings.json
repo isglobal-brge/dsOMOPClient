@@ -1,0 +1,6 @@
+{
+  "drug": 990006,
+  "by": "ingredient",
+  "select": "first_eligible",
+  "washout_days": 365
+}
