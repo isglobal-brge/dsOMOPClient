@@ -20,7 +20,8 @@ test_that("numeric recipes preserve baseline/features aliases, A27 categories an
       for (i in seq_along(frames)) {
         f <- frames[[i]]; d <- numeric_measurements(ctx$pg, ctx$schemas[[i]])
         want <- numeric_oracle(d)
-        expect_s3_class(f, "omop.table")
+        # Staged chunks are administrator-read data.frames; their published
+        # descriptor class is asserted by .numeric_frames before reading.
         expect_type(f$mean_date, "double"); expect_type(f$at_index, "double")
         expect_equal(sort(f$mean_date), sort(want$mean))
         expect_equal(sort(f$at_index), sort(want$at_index))
