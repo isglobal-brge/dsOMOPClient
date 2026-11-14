@@ -1,6 +1,7 @@
 # R6: public original inventories and final projection for panel/survival families.
 .schema_books <- function(recipe, ctx, symbol, mode="memory") {
   plan <- recipe_to_plan(recipe,version=2)
+  symbol <- paste0(symbol,"_",mode,"_",substr(.planNormalizedDigest(plan)$sha256,1L,8L))
   symbols <- setNames(paste0(symbol,"_",names(plan$outputs)),names(plan$outputs))
   result <- ds.omop.plan.execute(plan,out=symbols,symbol="labels",conns=ctx$conns,output_mode=mode)
   books <- local({
@@ -49,7 +50,7 @@ test_that("R6 S2 survival mode copies obey required roles across every patient c
     }
     copies <- setNames(lapply(components,function(component)omop_category_column("answer",component=component)),paste0("copy",seq_along(components)))
     # Preserve the exact S2 declaration for the single primary component.
-    if(length(components)==1L)copies <- list(copy=omop_category_column("answer",component=components[[1L]]))
+    if(length(components)==1L)copies <- list(copy=omop_category_column("answer",component=if(style!="survival")components[[1L]]))
     for(mode in c("memory","staged")) for(original in c(TRUE,FALSE)) {
       selected <- c(names(copies),if(original)"answer")
       output <- omop_output("surv",format="survival",rows="p",columns=selected,options=opts,category_columns=copies)
@@ -94,7 +95,21 @@ test_that("R6 unprojected panels enumerate closed source analyses and generated 
     options=list(sources=list(e),window=omop_window(0,20),bins=list(width=10),analyses=c("count","binary","mean"),
       source_analyses=list(e=c("binary","count")),outcomes=list(lab=e),exposures=list(active=e),
       carry_forward=list(e=list(lookback=30)),partition=list(age_bands=10,calendar="month")))
-  book <- .schema_books(.schema_recipe(e,output),ctx,"FullPanel")
+  recipe <- .schema_recipe(e,output)
+  recipe$options$translate_concepts <- FALSE
+  book <- .schema_books(recipe,ctx,"FullPanel")
   expect_true(all(c("period_start_days","period_end_days","days","age","age_band","calendar_month",
     "exposed_active","active_active","n_lab","e_45000120_binary","e_45000121_count","e_45000121_carry") %in% book[[1L]]$columns$name))
+})
+
+test_that("R6 panel public inventories handle closed exclusions and inactive analyses", {
+  plan <- list(events=list(e=list(table="condition_occurrence",concept_set="codes")),
+    concept_sets=list(codes=list(concepts=list(1L,2L,3L),exclude=list(concepts=list(2L)))))
+  node <- list(options=list(sources=list(list(event="e")),analyses=list("count","binary","mean")))
+  expect_identical(names(.codebookPanelColumns(plan,node)),c("period_start_days","period_end_days","days",
+    "e_1_binary","e_1_count","e_3_binary","e_3_count"))
+  node$options$analyses <- list("mean")
+  expect_identical(names(.codebookPanelColumns(plan,node)),c("period_start_days","period_end_days","days"))
+  node$options$sources <- list(list(interval="i")); node$options$analyses <- list("exposed_days","binary")
+  expect_identical(names(.codebookPanelColumns(plan,node)),c("period_start_days","period_end_days","days","i_binary","i_exposed_days"))
 })

@@ -217,7 +217,7 @@
     stems <- if (length(ids)==1L) key else paste0(key,"_",ids)
     if (!length(ids)) stems <- character()
     for (stem in stems) {
-      columns <- c(columns,setNames(ifelse(selected %in% c("mean","last"),"double","integer"),paste0(stem,"_",selected)))
+      if (length(selected)) columns <- c(columns,setNames(ifelse(selected %in% c("mean","last"),"double","integer"),paste0(stem,"_",selected)))
       if (!is.null(opts$carry_forward[[key]])) columns <- c(columns,setNames("double",paste0(stem,"_carry")))
     }
   }
