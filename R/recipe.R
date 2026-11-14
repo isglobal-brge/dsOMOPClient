@@ -6606,7 +6606,8 @@ recipe_import_json <- function(json) {
 recipe_export_yaml <- function(recipe, file = NULL) {
   if (!requireNamespace("yaml", quietly = TRUE))
     stop("Package 'yaml' is required for YAML export.", call. = FALSE)
-  text <- yaml::as.yaml(if(.numberHas(recipe)).numberRecipePlain(.recipe_plain(recipe)) else .recipe_plain(recipe), precision = 17L)
+  text <- yaml::as.yaml(if(.numberHas(recipe)).numberRecipePlain(.recipe_plain(recipe)) else .recipe_plain(recipe), precision = 17L,
+    handlers = list(numeric = .numberYamlNumeric))
   if (is.null(file)) return(text)
   writeLines(text, file)
   invisible(file)

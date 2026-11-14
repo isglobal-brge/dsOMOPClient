@@ -338,3 +338,10 @@ omop_number_daily <- function(input,reducer,within_day="mean",missing="skip",num
     within_day=.numberChoice(within_day,c("mean","max","first")),
     missing=.numberChoice(missing,c("skip","propagate"))),number_spec)
 }
+
+# yaml's precision is decimal places rather than significant digits. Emit
+# finite doubles in scientific notation so small coefficients round-trip too.
+.numberYamlNumeric <- function(x) {
+  if(any(!is.finite(x)))return(x)
+  structure(sprintf("%.17e",x),class="verbatim")
+}
