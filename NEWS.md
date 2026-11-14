@@ -517,6 +517,8 @@ describe the supported operations and migration paths.
   `ds.omop.server.version()`.
 
 ## Corrected
+
+- Prospective codebooks now evaluate empty public prototypes through the same numeric, date and categorical presentation functions used for execution. Membership inventory and released type extraction are shared. Rebuild existing codebooks; recipes need no migration.
 - (A-24) The exact frozen windowed-features corpus fixture `#1` has an
   unindexed `base` and is `unchanged_invalid`. Its explicit v1 omitted-grain
   refusal permits an attempted native rendering, but does not certify that

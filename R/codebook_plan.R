@@ -63,10 +63,11 @@
   out
 }
 
-.codebookPlanColumn <- function(key,type="unresolved",semantic="unresolved",variable=NULL,defaults=NULL,plan=list()) {
+.codebookPlanColumn <- function(key,type="unresolved",semantic="unresolved",variable=NULL,defaults=NULL,plan=list(),output_node=NULL,original=NULL) {
   spec<-.categoryEffective(variable$category_spec,defaults)
   category_present <- length(spec)>0L
-  d<-variable$derived;inherited<-NULL
+  d<-variable$derived;inherited<-original
+  if(!is.null(original)) {type<-original$r_type;semantic<-original$semantic_type}
   operand<-if(identical(d$kind,"repeated")) {
     at<-match(d$value,vapply(d$values,function(x)x$name,""));d$values[[at]]$variable
   } else if(identical(d$kind,"category_reduce")&&!d$reducer$fn %in% c("count","n_distinct","sum","any","all"))d$variable else NULL
@@ -86,12 +87,22 @@
       text="ordered_factor",date="Date",integer="integer",numeric="double")
   }
 
+  was_flag <- FALSE
+  if(is.null(variable) && semantic=="date" && is.null(plan$options$date_spec)) {
+    mode <- output_node$options$date_handling$mode %||% "relative"
+    date <- NULL
+    type <- switch(mode,absolute="Date",binned="character","integer")
+  }
   number<-variable$number_spec
   concept_kind <- .categoryDeclaredConcept(variable)
-  concept <- isTRUE(concept_kind)
+  concept <- isTRUE(concept_kind) || semantic=="concept"
+  if(concept && isFALSE(plan$options$translate_concepts))type <- "integer"
   fn <- variable$reducer$fn %||% d$reducer$fn %||% ""
-  numeric <- !is.null(variable) && !concept && !type %in% c("factor","ordered_factor","Date") &&
-    (nzchar(fn) || (d$kind %||% "") %in% c(.NUMBER_KINDS,"category_indicators","died") || semantic %in% c("numeric","date") && type %in% c("integer","double") || identical(inherited$semantic_type,"numeric") || identical(inherited$semantic_type,"flag"))
+  generated_numeric <- is.null(variable) && type %in% c("integer","double") && !semantic %in% c("key","concept","date") &&
+    !key %in% .numberStructuralColumns(output_node$format %||% "wide") &&
+    !identical(output_node$format,"survival")
+  numeric <- (generated_numeric || !is.null(variable)) && !concept && !type %in% c("factor","ordered_factor","Date") &&
+    (generated_numeric || nzchar(fn) || (d$kind %||% "") %in% c(.NUMBER_KINDS,"category_indicators","died") || semantic %in% c("numeric","date") && type %in% c("integer","double") || identical(inherited$semantic_type,"numeric") || identical(inherited$semantic_type,"flag"))
   pipeline<-if(numeric && (!is.null(number)||!is.null(plan$options$number_spec))) .numberEffective(number,plan$options$number_spec)$pipeline else list()
   terminal<-if(length(pipeline))tail(pipeline,1L)[[1L]] else list()
   representation<-terminal$kind %||% ""
@@ -127,10 +138,6 @@
       spec$binary <- NULL
     } else spec <- list()
   }
-  if(type %in% c("factor","ordered_factor")) {
-    if(!is.null(spec$ordered))type<-if(spec$ordered)"ordered_factor" else "factor"
-    if(length(spec$recode$map))type<-if(isTRUE(spec$ordered %||% spec$recode$ordered))"ordered_factor" else "factor"
-  }
   unit<-inherited$unit %||% if(!is.null(variable)&&semantic %in% c("numeric","flag","bins","category")) .categoryDeclaredUnit(plan,variable) else "not_applicable"
   for(step in pipeline) {
     if(step$kind=="event_unit")unit<-paste0("unit:",step$spec$target)
@@ -138,49 +145,77 @@
     if(step$kind=="expression")unit<-step$unit %||% "unresolved"
     if(step$kind %in% c("flag","present","missing"))unit<-"1"
   }
-  # Resolve closed producer domains with the same public identity rules as
-  # publication. Open vocabulary names still require admitted metadata.
-  levels<-inherited$levels$keys; labels<-inherited$levels$labels
-  if(representation %in% c("bins","category")) {
-    labels<-.numberDeclaredLevels(terminal)
-    if(length(labels))levels<-paste0(if(!category_present)"N" else if(representation=="bins")"bin:" else "category:",seq_along(labels))
-  }
-  if (!is.null(date) && type %in% c("factor","ordered_factor") && !representation %in% c("bins","category")) {
-    public <- if (date_kind=="date_part") .datePart(as.Date(character()),d$part,date) else if (date_kind=="calendar_date") .datePresent(list(lo=as.Date(character()),hi=as.Date(character())),date) else NULL
-    calendar <- attr(public,"omop_date_contract")
-    if (length(calendar$levels)) {levels<-if(category_present)paste0("period:",calendar$levels) else calendar$levels;labels<-calendar$labels}
-  }
-  if(identical(semantic,"flag")&&type %in% c("factor","ordered_factor")) {levels<-c("flag:0","flag:1");labels<-spec$binary$labels %||% inherited$levels$labels %||% c("no","yes")}
-  resolved <- NULL
-  if (type %in% c("factor","ordered_factor") && category_present && length(levels) && length(labels)==length(levels) && !concept) {
-    if (semantic %in% c("bins","category")) levels<-sub("^N",if(semantic=="bins")"bin:" else "category:",levels)
-    if (semantic=="date") levels<-ifelse(startsWith(levels,"period:"),levels,paste0("period:",levels))
-    contract <- list(spec=spec,producer=list(kind=semantic),producer_order=as.list(levels),producer_ordered=type=="ordered_factor")
-    records <- setNames(lapply(seq_along(levels),function(i)list(id=levels[[i]],label=labels[[i]],origin="producer",category=contract)),levels)
-    if (length(spec$recode$map)) {
-      targets<-unlist(spec$recode$levels,use.names=FALSE)
-      target_labels<-unlist(spec$recode$labels %||% sub("^[^:]+:","",targets),use.names=FALSE)
-      for (target in setdiff(targets,names(records))) records[[target]]<-list(id=target,label=target_labels[match(target,targets)],origin="recode",domain_only=TRUE,category=contract)
+  # Evaluate public empty prototypes with the execution functions. There are no
+  # patient values or vocabulary queries in this path. Open domains stay open.
+  value <- switch(type,integer=integer(),double=double(),logical=logical(),
+    character=character(),Date=as.Date(character()),factor=factor(character()),
+    ordered_factor=ordered(character()),NULL)
+  if (!is.null(date) && !date_kind %in% c("time_between","age_at"))
+    value <- .datePresent(list(lo=as.Date(character()),hi=as.Date(character())),date,
+      part=if(date_kind=="date_part")d$part,anchor=as.Date(character()))
+  if (numeric && length(pipeline)) {
+    # Expressions whose operand schema is not yet bound remain unresolved.
+    if(any(vapply(pipeline,function(p)p$kind=="expression",logical(1)))) value <- NULL
+    else {
+      base <- if(fn %in% c("count","n_distinct") || identical(d$kind,"number_count") ||
+        isTRUE(was_flag))integer() else if(!is.null(value)&&is.numeric(value)&&!is.factor(value))value else double()
+      value <- .numberPresent(base,list(pipeline=pipeline),
+        unit=if(!is.null(variable)).categoryDeclaredUnit(plan,variable) else unit,
+        ranges=list(low=double(),high=double()))
     }
-    resolved <- .categoryResolveRecords(unname(records),complete=FALSE,identity=contract)
-    levels<-resolved$keys;labels<-resolved$levels
-  } else {
-    levels<-spec$levels %||% if(length(spec$recode$map))spec$recode$levels else levels
-    labels<-spec$recode$labels %||% labels
-    if(!is.null(levels)&&identical(spec$missing$na,"level")) {levels<-c(levels,"special:missing");labels<-NULL}
-    if(!is.null(levels)&&identical(spec$missing$unknown,"level")) {levels<-c(levels,"special:unknown");labels<-NULL}
   }
-  if (semantic=="concept" && isFALSE(plan$options$translate_concepts)) type<-"integer"
-  if (!type %in% c("factor","ordered_factor")) {levels<-NULL;labels<-NULL;spec$reference<-NULL}
-  list(stable_key=key,name=key,meaning=if(is.null(variable))paste("Output",semantic,"role",key) else paste("Declared variable",key),
+  frame <- data.frame(value=if(is.null(value))logical() else value)
+  column <- list(type=type,role="measure")
+  contracts <- list()
+  if(!is.null(attr(value,"omop_date_contract"))) frame <- .dateCapture(frame,list(value=column))
+  else if(representation %in% c("bins","category") && is.factor(value)) {
+    attr(column,"number_contract") <- list(pipeline=pipeline)
+    frame <- .numberCapture(frame,list(value=column))
+  } else if(!is.null(inherited$levels) && is.factor(value)) {
+    keys <- unlist(inherited$levels$keys,use.names=FALSE)
+    labels <- unlist(inherited$levels$labels,use.names=FALSE)
+    contract <- list(spec=list(),producer=list(kind=semantic),producer_order=as.list(keys),producer_ordered=is.ordered(value))
+    records <- setNames(lapply(seq_along(keys),function(i)list(id=keys[i],label=labels[i],origin="producer",category=contract)),keys)
+    attr(frame,"omop_concepts") <- list(value=list(kind="category",category=contract,records=records,ids=character(),declared=keys))
+  }
+  if(semantic=="flag") {
+    frame$value <- integer()
+    attr(column,"semantic_flag") <- TRUE
+  }
+  input <- list(frame=frame,column=column)
+  if(!is.null(original) && identical(d$kind,"category_column")) {
+    input <- attr(original,"presentation_input") %||% input
+    frame <- input$frame; column <- input$column
+    attr(column,"category_spec") <- .categoryEffective(variable$category_spec,attr(column,"category_spec"))
+    value <- frame$value
+    concept <- FALSE
+  }
+  if(!is.null(value) && !concept && semantic!="concept") {
+    context <- list(ir=list(options=list(category_spec=defaults),variables=list()))
+    attr(column,"category_spec") <- .categoryEffective(variable$category_spec,attr(column,"category_spec"))
+    if(!length(attr(column,"category_spec")))attr(column,"category_spec") <- NULL
+    frame <- .categoryPresent(context,frame,list(value=column))
+    if(!is.null(value))value <- frame$value
+    spec <- attr(frame,"omop_concepts")$value$category$spec %||% spec
+  } else if(is.factor(value)) {
+    # Vocabulary labels and mapped domains are unresolved, but factor type and
+    # ordering use the very same resolver/factor constructor as publication.
+    contract <- list(spec=spec,producer=list(kind="concept"),producer_ordered=is.ordered(value))
+    value <- .categoryFactor(character(),.categoryResolveRecords(list(),complete=FALSE,identity=contract))
+  }
+  description <- if(is.null(value))list(r_type="unresolved") else
+    .presentationDescribe(value,attr(frame,"omop_concepts")$value)
+  type <- description$r_type
+  out <- list(stable_key=key,name=key,meaning=if(is.null(variable))paste("Output",semantic,"role",key) else paste("Declared variable",key),
     semantic_type=semantic,r_type=type,storage_type="unresolved",unit=unit,
-    levels=if(!is.null(levels))list(keys=levels,labels=labels,completeness="declared; open producers remain unresolved"),
-    ordered=if(type %in% c("factor","ordered_factor"))type=="ordered_factor",reference=if(type %in% c("factor","ordered_factor"))resolved$reference %||% spec$reference %||% inherited$reference,
-    contrasts=resolved$contrasts %||% if(type=="ordered_factor")list(kind="polynomial") else if(type=="factor")list(kind="treatment",reference=spec$reference),
+    levels=description$levels,ordered=description$ordered,reference=description$reference,
+    contrasts=description$contrasts,
     derivation=list(variable=variable,category_spec=spec),privacy_class=if(!is.null(variable$date_spec)||identical(variable$derived$kind,"repeated"))2L else "unresolved",
     aggregate_policy="Existing endpoint admission; unresolved for unrequested endpoints",
     missing_policy="Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA",
     provenance=list(source="public plan; no observed schema or vocabulary lookup"),completeness="unresolved")
+  attr(out,"presentation_input") <- input
+  out
 }
 
 # Closed panel identities can be enumerated without a vocabulary or patient query.
@@ -237,13 +272,7 @@
 # rosters) carries nullable index provenance. Membership publishes it after the
 # dates, even when all its values are NULL; no patient/schema lookup is needed.
 .codebookMembershipColumns <- function(plan, node) {
-  population <- plan$populations[[node$rows]]
-  columns <- c(if ("legacy_cohort_definition_id" %in% names(node$options))
-    c(cohort_definition_id="integer"),
-    cohort_start_date="unresolved",cohort_end_date="unresolved")
-  if ((population$kind %||% "") %in% c("index","criteria","setop","match"))
-    columns <- c(columns,index_source="character")
-  columns
+  .presentationMembershipColumns(plan$populations[[node$rows]],node$options %||% list())
 }
 
 .codebookPlanSchemas <- function(plan) {
@@ -295,7 +324,7 @@
     }
     for(component in names(definitions)) {
       types<-definitions[[component]]
-      rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural",defaults=plan$options$category_spec,plan=plan))
+      rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural",defaults=plan$options$category_spec,plan=plan,output_node=node))
       names(rows)<-names(types)
       structural <- names(rows)
       selected <- unlist(node$columns,use.names=FALSE)
@@ -319,7 +348,7 @@
         endpoints <- .dateOutputEndpoints(fmt, names(rows), plan$options$date_spec)
         for (key in unname(endpoints)) {
           if (key %in% names(rows)) .dateReject("Native endpoint name collides with an explicit variable.", "date_parts_names")
-          rows[[key]] <- .codebookPlanColumn(key, "Date", "date", defaults=plan$options$category_spec, plan=plan)
+          rows[[key]] <- .codebookPlanColumn(key, "Date", "date", defaults=plan$options$category_spec, plan=plan, output_node=node)
         }
         structural <- c(structural, unname(endpoints))
       }
@@ -337,7 +366,7 @@
       for(map in list(node$number_columns,node$category_columns))for(key in names(map)) {
         v<-map[[key]];dep<-v$derived
         while(!is.null(dep$variable))dep<-dep$variable$derived
-        if(is.null(dep$component)&&length(definitions)==1L||identical(dep$component,component))rows[[key]]<-.codebookPlanColumn(key,variable=v,defaults=plan$options$category_spec,plan=plan)
+        if(is.null(dep$component)&&length(definitions)==1L||identical(dep$component,component))rows[[key]]<-.codebookPlanColumn(key,variable=v,defaults=plan$options$category_spec,plan=plan,output_node=node,original=rows[[dep$column %||% ""]])
       }
       # Ordinary selected covariates already have their execution order. Only
       # expanded keys or output copies trigger execution's final projection.
