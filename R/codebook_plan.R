@@ -81,18 +81,17 @@
   date_kind<-if((d$kind %||% "") %in% .DATE_KINDS)d$kind else "calendar_date"
   if(!is.null(date)||(d$kind %||% "") %in% .DATE_KINDS || is.null(variable)&&grepl("_date$",key)) {
     date<-.dateEffective(date,plan$options$date_spec,date_kind,d$part)
-    if(date_kind %in% c("time_between","age_at")) {semantic<-"numeric";type<-if(isTRUE(d$bands))"ordered_factor" else "double"}
-    else if(date_kind=="date_part") {
-      semantic<-"date";type<-if(d$part %in% c("month","month_name","month_abbr","weekday","weekday_name","weekday_abbr","season")&&date$representation!="number")"ordered_factor" else "integer"
-    } else {
-      semantic<-"date";type<-if(date$representation %in% c("start","end")||date$precision=="day"&&date$representation=="auto")"Date" else if(date$representation=="number"&&identical(date$numeric,"decimal_year"))"double" else if(date$precision=="relative_days"||date$representation=="number")"integer" else "ordered_factor"
-    }
+    semantic <- if(date_kind %in% c("time_between","age_at"))"numeric" else "date"
+    type <- switch(.dateResultType(date,list(kind=date_kind,part=d$part,unit=d$unit,bands=d$bands)),
+      text="ordered_factor",date="Date",integer="integer",numeric="double")
   }
+
   number<-variable$number_spec
-  concept <- isTRUE(.categoryDeclaredConcept(variable))
+  concept_kind <- .categoryDeclaredConcept(variable)
+  concept <- isTRUE(concept_kind)
   fn <- variable$reducer$fn %||% d$reducer$fn %||% ""
-  numeric <- !is.null(variable) && !concept && is.null(date) && !type %in% c("factor","ordered_factor","Date") &&
-    (nzchar(fn) || (d$kind %||% "") %in% c(.NUMBER_KINDS,"category_indicators","died") || identical(inherited$semantic_type,"numeric") || identical(inherited$semantic_type,"flag"))
+  numeric <- !is.null(variable) && !concept && !type %in% c("factor","ordered_factor","Date") &&
+    (nzchar(fn) || (d$kind %||% "") %in% c(.NUMBER_KINDS,"category_indicators","died") || semantic %in% c("numeric","date") && type %in% c("integer","double") || identical(inherited$semantic_type,"numeric") || identical(inherited$semantic_type,"flag"))
   pipeline<-if(numeric && (!is.null(number)||!is.null(plan$options$number_spec))) .numberEffective(number,plan$options$number_spec)$pipeline else list()
   terminal<-if(length(pipeline))tail(pipeline,1L)[[1L]] else list()
   representation<-terminal$kind %||% ""
@@ -116,7 +115,7 @@
         if (step$kind=="expression") type<-"unresolved"
       }
     }
-    spec <- .categoryApplicableVocabulary(spec,variable$category_spec,concept)
+    spec <- .categoryApplicableVocabulary(spec,variable$category_spec,concept_kind)
     if (!flag) spec$binary <- NULL
     if(type %in% c("factor","ordered_factor")) {
       if(!is.null(spec$ordered))type<-if(spec$ordered)"ordered_factor" else "factor"
@@ -141,7 +140,7 @@
     calendar <- attr(public,"omop_date_contract")
     if (length(calendar$levels)) {levels<-if(category_present)paste0("period:",calendar$levels) else calendar$levels;labels<-calendar$labels}
   }
-  if(identical(semantic,"flag")&&type=="factor") {levels<-c("flag:0","flag:1");labels<-spec$binary$labels %||% inherited$levels$labels %||% c("no","yes")}
+  if(identical(semantic,"flag")&&type %in% c("factor","ordered_factor")) {levels<-c("flag:0","flag:1");labels<-spec$binary$labels %||% inherited$levels$labels %||% c("no","yes")}
   if(!is.null(levels)&&identical(spec$missing$na,"level")) {levels<-c(levels,"special:missing");labels<-NULL}
   if(!is.null(levels)&&identical(spec$missing$unknown,"level")) {levels<-c(levels,"special:unknown");labels<-NULL}
   if (!type %in% c("factor","ordered_factor")) {levels<-NULL;labels<-NULL;spec$reference<-NULL}

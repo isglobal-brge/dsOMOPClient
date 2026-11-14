@@ -122,3 +122,33 @@ test_that("R3 hierarchy defaults are inactive for flags and numeric/date categor
     category_spec=omop_category_spec(rollup=omop_category_rollup("snomed",separation=0L,domain="concept:45000124",multiple="all")))
   expect_error(recipe_execute(omop_recipe(variables=list(x=explicit)),out="ExplicitMultiple",symbol="labels",conns=ctx$conns),"Multiple hierarchy targets|category_type_unsupported")
 })
+
+
+test_that("R2 binary recipe defaults and explicit resets retain typed domains", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  v <- omop_variable(event=omop_event("observation",45000120L),reducer=omop_reduce("binary"))
+  r <- omop_recipe(variables=list(inherited=v,
+    logical=omop_category(v,omop_category_spec(binary=omop_category_binary("logical"))),
+    reset=omop_category(v,omop_category_spec(binary=omop_category_binary("integer")))),
+    category_spec=omop_category_spec(binary=omop_category_binary("factor",c("absent","present")),ordered=TRUE))
+  books <- .category_review_books(r,ctx,"BinaryDefaults")
+  expect_identical(books$prospective$r_type,books$published$r_type)
+  expect_identical(books$prospective$r_type[-1],c("ordered_factor","logical","integer"))
+  expect_equal(unlist(books$prospective$levels[[2]]$keys),unlist(books$published$levels[[2]]$keys))
+  expect_equal(unlist(books$prospective$levels[[2]]$labels),unlist(books$published$levels[[2]]$labels))
+  expect_null(books$prospective$levels[[3]]); expect_null(books$prospective$levels[[4]])
+})
+
+test_that("R2 date result typing uses execution semantics before numeric defaults", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  r <- omop_recipe(variables=list(days=omop_time_between("2020-01-01","2020-01-02"),
+    cyclic=omop_date_parts("2020-01-01",parts=c(cyclic="month_sin"))))
+  books <- .category_review_books(r,ctx,"DateNumericTypes")
+  expect_identical(books$prospective$r_type,books$published$r_type)
+  expect_identical(books$prospective$r_type[-1],c("integer","double"))
+  r <- omop_recipe(variables=list(days=omop_time_between("2020-01-01","2020-01-02")),
+    number_spec=omop_number_spec(representation="bins",breaks=c(0,2,10)))
+  books <- .category_review_books(r,ctx,"DateNumericBins")
+  expect_identical(books$prospective$r_type,books$published$r_type)
+  expect_identical(books$prospective$r_type[-1],"ordered_factor")
+})
