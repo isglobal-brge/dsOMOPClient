@@ -83,3 +83,27 @@ test_that("real dsBase mean quantileMean and glm pool numeric columns at two and
     expect_equal(unname(fit$coefficients[, 1L]), unname(stats::coef(reference)), tolerance = 1e-6)
   }
 })
+
+test_that("public recipes convert units before half-open value bins and predicates", {
+  ctx <- .numeric_sites(n = 2L)
+  for (selection in c("threshold", "bin")) {
+    predicate <- if (selection == "threshold") omop_where(value >= 12000) else
+      omop_where_tree(list(var = "value", op = "between", value = list(lower = 12000, upper = 15000, upper_inclusive = FALSE)))
+    lab <- omop_event("measurement", numeric_lab, name = "lab", where = predicate,
+      unit = omop_unit(8840L, convert = list(`8713` = c(factor = 1000, offset = 0))))
+    r <- omop_recipe(events = list(lab), populations = omop_population("p", index = omop_index("lab")),
+      variables = list(value = omop_variable("value", event = "lab", reducer = omop_reduce("mean"))),
+      outputs = omop_output("o", format = "wide", rows = "p", grain = "episode"))
+    for (mode in c("memory", "staged")) {
+      recipe_execute(r, out = c(o = "Converted"), symbol = "numeric", conns = ctx$conns, output_mode = mode)
+      frames <- .numeric_frames(ctx, "Converted")
+      for (i in seq_along(frames)) {
+        d <- numeric_measurements(ctx$pg, ctx$schemas[[i]])
+        d <- d[d$value_as_number >= 12 & (selection == "threshold" | d$value_as_number < 15), ]
+        want <- tapply(d$value_as_number * 1000, d$person_id, mean)
+        expect_type(frames[[i]]$value, "double")
+        expect_equal(sort(frames[[i]]$value), sort(as.numeric(want)))
+      }
+    }
+  }
+})
