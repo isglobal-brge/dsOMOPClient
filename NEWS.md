@@ -1,3 +1,29 @@
+# dsOMOP / dsOMOPClient 2.10.5 (development)
+
+* **Newly refused:** incidence `clean_window` values other than zero and
+  `fe.prevalence` `time_windows` values other than zero now fail with a bounded
+  setting-specific remedy before patient computation on ordinary, protected
+  and alias routes. These selectors previously did not implement the requested
+  science. Use a validated native risk/window recipe when that setting matters;
+  dropping a required window is not an equivalent analysis. Explicit null,
+  nonfinite/fractional values and malformed selectors are invalid settings.
+* **Corrected:** incidence discovery describes the first-target-episode,
+  full-window person-day estimand and separates contribution bounds from risk
+  windows. FE prevalence describes all-history events among scoped members,
+  without a cohort-relative date predicate.
+
+* **Newly refused:** both OHDSI concept importers now validate concept IDs and
+  Boolean flags before coercion, exclusion or deduplication. Supply integral
+  JSON numbers in 0..2147483647 (including 0 for unknown), not numeric strings;
+  use true/false or omit flags, not null. Duplicate keys and unsupported item
+  semantics refuse. Nested concept descriptions are limited to CONCEPT_NAME,
+  STANDARD_CONCEPT, STANDARD_CONCEPT_CAPTION, INVALID_REASON,
+  INVALID_REASON_CAPTION, CONCEPT_CODE, DOMAIN_ID, VOCABULARY_ID,
+  CONCEPT_CLASS_ID, VALID_START_DATE and VALID_END_DATE; they never affect
+  membership. Circe cohort exclusions/mixed flags remain unsupported; the
+  registry retains uniform included/excluded groups. List and JSON/file inputs
+  use the same strict parser.
+
 # dsOMOPClient 2.10.4 (2026-11-13)
 
 - Corrected: assigned age bands, birth-year bands and panel/calendar categories
