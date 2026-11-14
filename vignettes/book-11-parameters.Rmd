@@ -382,7 +382,7 @@ knitr::kable(book_counts(adult_counts))
 |yes      |    14|
 |NA       |     0|
 
-A missing age stays missing rather than becoming “no”. The adult count combines
+A missing age stays missing rather than becoming “no”. The adult count equals
 the 18-to-120 band; the under-18 band becomes “no”.
 
 </details>

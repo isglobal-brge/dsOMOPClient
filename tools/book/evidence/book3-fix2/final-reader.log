@@ -1,0 +1,3 @@
+PASS: all chunks and byte-identical output: book-00-showcase.Rmd.orig
+PASS: all chunks and byte-identical output: book-11-parameters.Rmd.orig
+PASS: both final edited chapters reproduce byte for byte using only published helpers

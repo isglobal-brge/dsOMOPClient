@@ -1,0 +1,31 @@
+Source/test commit: e0f8834 (docs/book)
+Read-only server: 18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9 (2.10.4)
+Focused construction:
+  bash tools/book/run-pod.sh install book-11-parameters
+  bash tools/book/run-pod.sh precompute 'book-11-parameters|book-00-showcase'
+Final package test:
+  RTEST_WITH='/workspace/dsomop/wt/book/dsOMOP /workspace/dsomop/wt/book/dsOMOPClient' RTEST_ENV='R_LIBS_USER=/root/rt/labels-deps' /workspace/dsomop/tools/rtest.sh /workspace/dsomop/wt/book/dsOMOPClient '^book-examples$' 1800
+Exactly tests/testthat/test-book-examples.R; 19 chapters / 325 lesson chunks, including solutions.
+On the pod from /root/rt/wt/book/dsOMOPClient:
+  R_LIBS=/root/rt/lib/wt_book_dsOMOPClient R_LIBS_USER=/root/rt/labels-deps Rscript tools/book/build-site.R
+  R_LIBS=/root/rt/lib/wt_book_dsOMOPClient R_LIBS_USER=/root/rt/labels-deps Rscript tools/book/verify-bundle.R
+Locally from /workspace/dsomop/wt/book/dsOMOPClient:
+  python3 tools/book/audit-content.py
+  python3 tools/book/audit-outputs.py
+  PLAYWRIGHT_BROWSERS_PATH=/home/dev/.cache/ms-playwright NODE_PATH=/usr/local/lib/node_modules node tools/book/audit-site.js
+No production R code, package versions, NAMESPACE or DESCRIPTION changed.
+No full package suites: COMMON.md Test economy requires the directly relevant file only.
+Final focused rerun on 8977d08, after presentation-only edits:
+  bash tools/book/run-pod.sh precompute 'book-11-parameters|book-00-showcase'
+  Both chapters, all 40 chunks and source/rollback assertions pass.
+  Rscript /tmp/astra-book3-fix2-final-reader.R (script retained as final-reader.R)
+  Both final lessons reproduce in fresh directories from the published helper ZIP.
+Final focused render after the full build:
+  pkgdown::build_article("book-00-showcase", new_process=FALSE)
+  pkgdown::build_article("book-11-parameters", new_process=FALSE)
+  pkgdown::build_llm_docs()
+  eval(tail(parse("tools/book/build-site.R"), 1)[[1]])
+The last expression copies reviewed CSS/JS after rendering. Exact asset parity and
+six styled capability cards are asserted. All content/output/browser checks were
+repeated against this final render. Seventeen other articles remain byte-identical
+to the full test; see final-source-manifest.json.

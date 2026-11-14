@@ -5,6 +5,9 @@ book teaches the released **2.10.4 native recipe API**, one small step
 at a time. Every worked lesson includes executed code, real synthetic
 results and an exercise with its solution.
 
+[Explore what you can do with dsOMOP
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-showcase.md)
+
 [Start with chapter 0
 →](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)
 

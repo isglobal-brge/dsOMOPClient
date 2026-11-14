@@ -1,0 +1,38 @@
+[
+  {
+    "location": "pod",
+    "path": "/root/rt/wt/book/dsOMOP",
+    "bytes": 23912251,
+    "deleted": true
+  },
+  {
+    "location": "pod",
+    "path": "/root/rt/wt/book/dsOMOPClient",
+    "bytes": 38347918,
+    "deleted": true
+  },
+  {
+    "location": "pod",
+    "path": "/root/rt/wt/book/lib",
+    "bytes": 16240593,
+    "deleted": true
+  },
+  {
+    "location": "pod",
+    "path": "/root/rt/lib/wt_book_dsOMOPClient",
+    "bytes": 16240618,
+    "deleted": true
+  },
+  {
+    "location": "pod",
+    "path": "/tmp/astra-book3-fix2-final-reader.R",
+    "bytes": 1056,
+    "deleted": true
+  },
+  {
+    "location": "local",
+    "path": "/tmp/astra-book3-fix2",
+    "bytes": 62404,
+    "deleted": true
+  }
+]

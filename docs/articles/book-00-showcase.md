@@ -1,0 +1,406 @@
+# What you can do with dsOMOP
+
+**What you will learn**
+
+See six things you can build while patient rows stay on the server, then
+choose the chapter that teaches your next step.
+
+Read the cards as a quick tour, or run them in order. Each output is a
+real 2.10.4 result. The first four cards use the **24-person synthetic
+questionnaire fixture**, not APHRC patient data; the last two use
+**synthetic Synthea27Nj labs**.
+
+**You need:** the packages and downloaded helpers from [Before you
+start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
+Start a fresh R session in `book-work`. The local fixture makes the
+vocabulary comparison reproducible.
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/fixture.R")
+practice <- book_fixture(two_sites = TRUE)
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"  "site2"
+
+The two sites have the same synthetic answer patterns but different
+vocabulary wording. They illustrate harmonisation, not two independent
+study populations.
+
+## Named concepts across sites
+
+**One categorical column, shared meanings.** Declare a common label for
+the same education concept, then ask each site for a protected count
+table.
+
+``` r
+named <- omop_recipe(variables = list(education = omop_variable(
+  event = omop_event("observation", 900001L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"),
+  labels = c("900102" = "University education"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(named, conns = conns)$selected == "v2")
+recipe_execute(named, out = c(people = "D_tour_named"), conns = conns)
+named_tables <- lapply(names(conns), function(site)
+  ds.omop.table("D_tour_named", "education", conns = conns[site]))
+names(named_tables) <- names(conns)
+named_tables
+```
+
+    #> $site
+    #> D_tour_named$education
+    #>  Secondary education University education 
+    #>                    6                    6 
+    #> 
+    #> $site2
+    #> D_tour_named$education
+    #>  Secondary education University education 
+    #>                    6                    6
+
+The same labels appear at both sites even though their local names
+differ. These are released counts, not an export of education answers.
+[Learn concepts and harmonisation
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md)
+
+Use one site for the next three cards; keep the other connection for
+cleanup.
+
+``` r
+two_conns <- conns
+conns <- two_conns[1L]
+names(conns)
+```
+
+    #> [1] "site"
+
+## Dates in your study’s format, and completed ages
+
+**Separate a date’s meaning from its presentation.** This recipe uses a
+custom month-year pattern and completed birthdays at death.
+
+``` r
+dates <- omop_recipe(variables = list(
+  month = omop_date("first_visit", omop_date_spec(precision = "custom",
+    pattern = "%b %Y")), age = omop_age_at("death")),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(dates, conns = conns)$selected == "v2")
+recipe_execute(dates, out = c(people = "D_tour_dates"), conns = conns)
+ds.omop.table("D_tour_dates", "month", conns = conns)
+```
+
+    #> D_tour_dates$month
+    #> Mar 2020 Jun 2020 Jul 2020 
+    #>        6        6        6
+
+``` r
+age_result <- dsBaseClient::ds.summary("D_tour_dates$age", datasources = conns)
+knitr::kable(book_summary(age_result))
+```
+
+| Site | Statistic | Value |
+| :--- | :-------- | ----: |
+| site | 5%        |    33 |
+| site | 10%       |    33 |
+| site | 25%       |    33 |
+| site | 50%       |    38 |
+| site | 75%       |    43 |
+| site | 90%       |    43 |
+| site | 95%       |    43 |
+| site | Mean      |    38 |
+
+Complete birth/death records give ages 33 and 43. Missing dates stay
+missing. Exact dates, numeric periods, month/quarter/year categories,
+date parts and supported custom patterns serve different questions;
+category release rules still apply. [Learn dates and ages
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-dates.md)
+
+## Choose the output shape
+
+**Person → event → period → follow-up.** Wide tables support named
+covariates; long tables retain events; panels repeat time bins; survival
+records end at an outcome or declared censor. All four remain private
+server tables.
+
+``` r
+visits <- omop_event("visit_occurrence", c(9201L, 9202L), name = "visits")
+visitors <- omop_population("visitors", index = omop_index(visits))
+base <- omop_recipe(events = list(visits), populations = list(visitors),
+  variables = list(visits = omop_variable(event = visits, reducer = omop_reduce("count"))),
+  outputs = omop_output("wide", rows = "visitors", format = "wide"))
+shapes <- list(
+  wide = base$outputs[[1L]],
+  long = omop_output("long", rows = "visitors", format = "long", sources = "visits"),
+  panel = omop_output("panel", rows = "visitors", format = "person_period",
+    options = list(sources = list(visits), bins = list(width = 30L),
+      window = omop_window(1, 90), analyses = "count")),
+  survival = omop_output("survival", rows = "visitors", format = "survival",
+    options = list(outcomes = list(revisit = visits), tar = omop_window(1, 365),
+      censor = list("observation_end", "death"))))
+```
+
+The same population enters at its first visit. The panel has three
+30-day bins; survival asks about the first repeat visit within a year,
+stopping earlier at observation end or death.
+
+``` r
+shape_columns <- lapply(names(shapes), function(shape) {
+  recipe <- base
+  recipe$outputs <- setNames(list(shapes[[shape]]), shape)
+  stopifnot(recipe_explain(recipe, conns = conns)$selected == "v2")
+  target <- paste0("D_tour_", shape)
+  recipe_execute(recipe, out = setNames(target, shape), conns = conns)
+  columns <- dsBaseClient::ds.colnames(target, datasources = conns)[[1L]]
+  data.frame(Shape = shape, Columns = paste(columns, collapse = ", "))
+})
+knitr::kable(do.call(rbind, shape_columns))
+```
+
+| Shape    | Columns                                                                                                                                               |
+| :------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| wide     | row\_id, cohort\_row\_id, person\_id, visits                                                                                                          |
+| long     | row\_id, cohort\_row\_id, person\_id, concept\_id, start\_date, end\_date, visit\_type\_concept\_id                                                   |
+| panel    | row\_id, cohort\_row\_id, person\_id, period\_start\_days, period\_end\_days, days, visits\_inpatient\_visit\_count, visits\_outpatient\_visit\_count |
+| survival | row\_id, cohort\_row\_id, person\_id, outcome\_name, event, entry\_days\_from\_index, exit\_days\_from\_index, follow\_up\_days                       |
+
+These are actual released column inventories, not patient rows. Panels
+and long tables contain repeated observations, so row count is not
+independent sample size.
+
+More shapes: presets, intervals, sparse data and joins
+
+Features and baseline are wide presets. Temporal covariates add time
+indices to sparse values; intervals retain bounds; membership retains
+population episodes; a dictionary describes concepts; joined combines
+declared private dependencies. The following executes each additional
+form on the same small study.
+
+``` r
+more <- list(
+  features = omop_output("features", rows = "visitors", type = "features"),
+  baseline = omop_output("baseline", rows = "visitors", type = "baseline"),
+  intervals = omop_output("intervals", rows = "visitors", format = "intervals",
+    options = list(sources = list(visits), window = omop_window(0, NULL))),
+  sparse = omop_output("sparse", rows = "visitors", format = "sparse",
+    options = list(sources = list(visits), analyses = "count")),
+  temporal = omop_output("temporal", rows = "visitors", format = "temporal_covariates",
+    options = list(sources = list(visits), bin_width = 30L,
+      window = omop_window(0, 89), analyses = "count")),
+  membership = omop_output("membership", rows = "visitors", format = "membership"))
+more_columns <- lapply(names(more), function(shape) {
+  recipe <- base
+  recipe$outputs <- setNames(list(more[[shape]]), shape)
+  stopifnot(recipe_explain(recipe, conns = conns)$selected == "v2")
+  target <- paste0("D_tour_", shape)
+  recipe_execute(recipe, out = setNames(target, shape), conns = conns)
+  data.frame(Shape = shape, Columns = paste(
+    dsBaseClient::ds.colnames(target, datasources = conns)[[1L]], collapse = ", "))
+})
+knitr::kable(do.call(rbind, more_columns))
+```
+
+| Shape      | Columns                                                                                                             |
+| :--------- | :------------------------------------------------------------------------------------------------------------------ |
+| features   | row\_id, cohort\_row\_id, person\_id, visits                                                                        |
+| baseline   | row\_id, cohort\_row\_id, person\_id, visits                                                                        |
+| intervals  | row\_id, cohort\_row\_id, person\_id, interval\_type, concept\_id, start\_days\_from\_index, end\_days\_from\_index |
+| sparse     | row\_id, cohort\_row\_id, person\_id, covariate\_id, covariate\_value                                               |
+| temporal   | row\_id, cohort\_row\_id, person\_id, time\_id, covariate\_id, covariate\_value                                     |
+| membership | row\_id, cohort\_row\_id, person\_id, cohort\_start\_date, cohort\_end\_date, index\_source                         |
+
+Sparse outputs also create reference companions that define their
+numeric keys. Keep those companions for interpretation.
+
+``` r
+dictionary <- base
+dictionary$outputs$dictionary <- omop_output("dictionary", rows = "visitors",
+  format = "dictionary", options = list(source_outputs = "wide"))
+dictionary$publish <- "dictionary"
+stopifnot(recipe_explain(dictionary, conns = conns)$selected == "v2")
+recipe_execute(dictionary, out = c(dictionary = "D_tour_dictionary"), conns = conns)
+dsBaseClient::ds.colnames("D_tour_dictionary", datasources = conns)
+```
+
+    #> $site
+    #> [1] "concept_id"       "concept_name"     "domain_id"        "vocabulary_id"   
+    #> [5] "concept_class_id" "source"
+
+``` r
+joined <- base
+joined$variables$age <- omop_age_at("first_visit")
+joined$outputs <- list(
+  counts = omop_output("counts", rows = "visitors", format = "wide", columns = "visits"),
+  ages = omop_output("ages", rows = "visitors", format = "wide", columns = "age"),
+  joined = omop_output("joined", rows = "visitors", format = "joined",
+    options = list(from = list(list(output = "counts"), list(output = "ages")),
+      how = "left", cardinality = "one_to_one")))
+joined$publish <- "joined"
+stopifnot(recipe_explain(joined, conns = conns)$selected == "v2")
+recipe_execute(joined, out = c(joined = "D_tour_joined"), conns = conns)
+dsBaseClient::ds.colnames("D_tour_joined", datasources = conns)
+```
+
+    #> $site
+    #> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"
+
+The join adds an age column without multiplying episodes. Only the
+dictionary or joined result is published in those respective calls.
+
+[Learn every output format
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-outputs.md)
+[Then analyse longitudinal data
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md)
+
+## The APHRC colleague’s verbal-autopsy table
+
+**One wide table combines the study variables.** The downloadable helper
+builds the released recipe: pseudonymous person key, completed ages,
+education and fever answers, visit periods, dates and coded cause of
+death.
+
+``` r
+source("tools/dates/va-native.R")
+va <- va_native_recipe()
+stopifnot(recipe_explain(va, conns = conns)$selected == "v2")
+recipe_execute(va, out = c(people = "D_tour_va"), conns = conns)
+dsBaseClient::ds.colnames("D_tour_va", datasources = conns)
+```
+
+    #> $site
+    #>  [1] "person_id"          "age_at_death"       "age_at_first_visit" "education"         
+    #>  [5] "fever"              "visit_date"         "visit_month"        "visit_quarter"     
+    #>  [9] "visit_year"         "visit_parts_year"   "visit_parts_month"  "death_date"        
+    #> [13] "cause_of_death"
+
+``` r
+ds.omop.table("D_tour_va", "cause_of_death", conns = conns)
+```
+
+    #> D_tour_va$cause_of_death
+    #> Myocardial infarction             Pneumonia 
+    #>                    12                     6
+
+The cause counts are synthetic questionnaire-fixture results, not APHRC
+findings. The person key and patient rows stay private; education and
+cause are each one named categorical column in the same table. [Build
+this table step by step
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md)
+
+Switch to the numeric practice resource for the last two cards. The
+common connection file keeps its DSLite/Opal choice in one place.
+
+``` r
+ds.omop.disconnect(conns = two_conns)
+DSI::datashield.logout(two_conns)
+unlink(practice$path)
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("numeric") else book_connect("numeric")
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"
+
+## Numbers and their groupings
+
+**Keep the number and a declared band.** Reduce hemoglobin to one mean
+per person, in recorded g/dL, and group those means using public
+teaching breaks.
+
+``` r
+labs <- omop_recipe(variables = list(hb = omop_mean_value("measurement", 3000963L,
+  unit = 8713L, window = omop_window(NULL, NULL))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(labs, conns = conns)$selected == "v2")
+recipe_execute(labs, out = c(people = "D_tour_labs"), conns = conns)
+ds.omop.mutate("D_tour_labs", band = cut(hb, c(0, 14, 15, 100),
+  labels = c("below 14", "14 to below 15", "15 or above"), right = FALSE),
+  newobj = "D_tour_bands", conns = conns)
+band_result <- dsBaseClient::ds.table("D_tour_bands$band", useNA = "no", datasources = conns)
+mean_result <- dsBaseClient::ds.mean("D_tour_bands$hb", type = "combine", datasources = conns)
+band_display <- book_group_comparison(band_result, mean_result, "Person mean hemoglobin", "g/dL")
+band_display$Category <- ordered(band_display$Category,
+  levels = c("below 14", "14 to below 15", "15 or above"))
+knitr::kable(band_display[order(band_display$Category), c("Category", "Count", "Mean")],
+  row.names = FALSE, col.names = c("Band (g/dL)", "People", "Mean (g/dL)"))
+```
+
+| Band (g/dL)    | People | Mean (g/dL) |
+| :------------- | -----: | ----------: |
+| below 14       |      9 |    14.46679 |
+| 14 to below 15 |      9 |    14.46679 |
+| 15 or above    |     10 |    14.46679 |
+
+Counts 9, 9 and 10 cover all 28 people. The repeated numeric mean is the
+overall mean of person means, not a mean within each band. Only the
+released display labels are ordered here. The breaks are teaching
+choices, not clinical ranges. [Learn reducers, units, flags and pooled
+analysis
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md)
+
+## Derive and filter without downloading rows
+
+**Add a column, then select with a condition.** The closed mutate-v1
+grammar supports arithmetic; `omop_where` declares the filter predicate.
+
+``` r
+ds.omop.mutate("D_tour_labs", hb_gl = hb * 10,
+  newobj = "D_tour_converted", conns = conns)
+ds.omop.filter("D_tour_converted", expr = omop_where(hb >= 14),
+  newobj = "D_tour_selected", conns = conns)
+selected_result <- dsBaseClient::ds.summary("D_tour_selected$hb_gl", datasources = conns)
+knitr::kable(book_summary(selected_result))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 140.9333 |
+| site | 10%       | 141.0533 |
+| site | 25%       | 143.2500 |
+| site | 50%       | 151.2500 |
+| site | 75%       | 155.7917 |
+| site | 90%       | 158.9000 |
+| site | 95%       | 159.9500 |
+| site | Mean      | 149.9991 |
+
+The retained people’s values are expressed in g/L, ten times g/dL. The
+final subset passes its publication check; the analyst receives only
+this summary. [Learn BMI, age groups, recodes and rollback
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-11-parameters.md)
+
+## Recap
+
+Select concepts, choose time and units, request the table shape, and
+derive columns privately. DataSHIELD returns approved summaries while
+rows stay at sites.
+
+## Try it
+
+Use the converted table to summarise all people, without the filter. Why
+does the mean differ from the preceding card?
+
+Solution
+
+``` r
+all_result <- dsBaseClient::ds.summary("D_tour_converted$hb_gl", datasources = conns)
+knitr::kable(book_summary(all_result))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 129.0500 |
+| site | 10%       | 131.4667 |
+| site | 25%       | 137.8500 |
+| site | 50%       | 143.2500 |
+| site | 75%       | 153.3542 |
+| site | 90%       | 157.0000 |
+| site | 95%       | 159.2375 |
+| site | Mean      | 144.6679 |
+
+This mean is 144.667857 g/L, ten times the earlier all-person mean in
+g/dL. The filtered card excludes people whose person mean is below 14
+g/dL, so its mean is higher. The unit conversion alone does not select
+people.

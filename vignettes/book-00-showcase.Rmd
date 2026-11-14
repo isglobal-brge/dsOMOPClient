@@ -375,16 +375,17 @@ mean_result <- dsBaseClient::ds.mean("D_tour_bands$hb", type = "combine", dataso
 band_display <- book_group_comparison(band_result, mean_result, "Person mean hemoglobin", "g/dL")
 band_display$Category <- ordered(band_display$Category,
   levels = c("below 14", "14 to below 15", "15 or above"))
-knitr::kable(band_display[order(band_display$Category), ])
+knitr::kable(band_display[order(band_display$Category), c("Category", "Count", "Mean")],
+  row.names = FALSE, col.names = c("Band (g/dL)", "People", "Mean (g/dL)"))
 ```
 
 
 
-|   |Category       | Count|Number                 |Unit |     Mean|
-|:--|:--------------|-----:|:----------------------|:----|--------:|
-|3  |below 14       |     9|Person mean hemoglobin |g/dL | 14.46679|
-|1  |14 to below 15 |     9|Person mean hemoglobin |g/dL | 14.46679|
-|2  |15 or above    |    10|Person mean hemoglobin |g/dL | 14.46679|
+|Band (g/dL)    | People| Mean (g/dL)|
+|:--------------|------:|-----------:|
+|below 14       |      9|    14.46679|
+|14 to below 15 |      9|    14.46679|
+|15 or above    |     10|    14.46679|
 
 Counts 9, 9 and 10 cover all 28 people. The repeated numeric mean is the overall
 mean of person means, not a mean within each band. Only the released display

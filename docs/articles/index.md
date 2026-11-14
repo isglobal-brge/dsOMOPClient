@@ -2,6 +2,8 @@
 
 ### Learn step by step
 
+  - [What you can do with
+    dsOMOP](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-showcase.md):
   - [0. Getting
     started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md):
   - [1. What DataSHIELD and OMOP

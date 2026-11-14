@@ -2,6 +2,7 @@ pandoc: 2.9.2.1
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  book-00-showcase: book-00-showcase.html
   book-00-start: book-00-start.html
   book-01-mental-model: book-01-mental-model.html
   book-02-connect: book-02-connect.html
@@ -27,7 +28,7 @@ articles:
   v05_multi_server: v05_multi_server.html
   v06_security: v06_security.html
   v07_querylibrary_sticky: v07_querylibrary_sticky.html
-last_built: 2026-11-14T05:59Z
+last_built: 2026-11-14T06:25Z
 urls:
   reference: https://isglobal-brge.github.io/dsOMOPClient/reference
   article: https://isglobal-brge.github.io/dsOMOPClient/articles
