@@ -113,3 +113,16 @@ test_that("N44 explain and lint expose only declared numeric semantics", {
   expect_silent(recipe_lint(r))
   expect_silent(parse(text=recipe_to_code(r)))
 })
+
+test_that("N45 N66 N67 N74 every missing numeric capability refuses before any assignment", {
+  e<-omop_event("measurement",3000963L,name="lab")
+  req<-list(version=1L,assign=list(list(name="y",expr=list(col="x"))))
+  r<-omop_recipe(events=list(e),variables=list(n=omop_number_count("lab"),change=omop_number_change("lab"),v=omop_number_derive(list(x=omop_number_rows("lab")),req,"1",reducer=omop_reduce("sum"),number_spec=omop_number_spec(rounding=omop_number_round("floor")))),outputs=omop_output("w",format="wide",number_columns=list(copy=omop_number_column("v"))))
+  required<-grep("^number[.]",.plan_v2_operations(recipe_to_plan(r,version=2)),value=TRUE)
+  expect_setequal(required,c("number.presentation","number.rows","number.count","number.change","number.expression","number.columns"))
+  for(missing in required) {
+    state<-.legacy_federation(new=c("one","two"),ops=setdiff(union(.V2_ALL_OPS,required),missing))
+    expect_error(recipe_execute(r),paste0("lacks ",missing))
+    expect_identical(unname(state$assigns),c(0L,0L))
+  }
+})
