@@ -35,7 +35,7 @@ test_that("both imported groups retain policy in wire, save/load, code, bind and
   native$concept_sets$cs$validity_policy <- NULL
   native$concept_sets$cs$exclude$validity_policy <- NULL
   expect_false(identical(.policy_digest(native), .policy_digest(r)))
-  expect_error(recipe_merge(r, native), "different|conflict")
+  expect_error(recipe_merge(r, native), "recipes disagree on concept set")
 })
 
 test_that("Circe policy survives legacy lowering and generated code", {
