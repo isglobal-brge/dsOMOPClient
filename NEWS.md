@@ -1,5 +1,16 @@
 # dsOMOP / dsOMOPClient 2.10.5 (development)
 
+* **Corrected / newly refused:** both OHDSI import paths attach the executable
+  `ohdsi-import-1` vocabulary policy. Explicit included/excluded concepts must
+  exist as valid public vocabulary records (including concept 0); invalid
+  descendants and invalid mapped sources are excluded. Mapping follows valid
+  Maps-to sources toward selected targets; classification concepts are allowed.
+  Native declarations retain their existing behavior. Re-import old saved
+  definitions to opt into the stricter policy. Policy-bearing plans require
+  the paired server's `vocabulary.ohdsi_import_validity` capability; incapable
+  servers refuse without native fallback. Save/load, code generation, merge,
+  wire normalization and semantic digests retain the policy.
+
 * **Newly permitted:** `recipe_circe_support()` describes the directional
   bridge subset, and `recipe_circe_check()` inspects definitions locally and
   reports independent unsupported clauses with bounded structural diagnostics.
@@ -9,7 +20,8 @@
   list inputs), hashes, adapter/subset versions and optional sanitized public
   origin declarations. Save/load retains the origin and marks edited population
   declarations as derivatives. This provenance is client-side, not a claim of
-  general phenotype equivalence or of vocabulary-policy enforcement.
+  general phenotype equivalence. Vocabulary validity is enforced separately by
+  the executable policy described above.
   The pinned PhenotypeLibrary 304 example has a private membership/date oracle
   against its upstream SQL; unsupported example 10 reports structural refusals.
   Re-import an old definition to obtain the new provenance fields.

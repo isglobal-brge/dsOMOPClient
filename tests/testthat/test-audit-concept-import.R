@@ -62,7 +62,8 @@ test_that("present flags are Boolean and all items are validated before subset r
   expect_true(pop$index_event$include_mapped)
   expr$items[[2L]] <- list(concept = list(CONCEPT_ID = 123), isExcluded = TRUE)
   reg <- recipe_import_concept_sets(omop_recipe(), expr)
-  expect_equal(reg$concept_sets[[1L]]$exclude, 123L)
+  expect_equal(reg$concept_sets[[1L]]$exclude$concepts, 123L)
+  expect_identical(reg$concept_sets[[1L]]$exclude$validity_policy, "ohdsi-import-1")
   expect_error(recipe_import_circe(.audit_circe(expr)), "excluded concept-set")
   expr$items[[2L]]$concept$CONCEPT_ID <- "secret-patient-string"
   .audit_import_both(expr, "invalid_concept_id")

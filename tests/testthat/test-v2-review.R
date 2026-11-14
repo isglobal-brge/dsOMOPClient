@@ -144,7 +144,7 @@ test_that("OHDSI export refuses a nested exclusion instead of flattening it (B4)
   expect_error(recipe_export_concept_sets(nested), "nested exclusion")
   one <- omop_recipe(concept_sets = list(cs = omop_concept_set(c(1, 2), exclude = omop_concept_set(1))))
   back <- recipe_import_concept_sets(omop_recipe(), recipe_export_concept_sets(one))
-  expect_identical(as.integer(recipe_concept_sets(back)$cs$exclude), 1L)
+  expect_identical(as.integer(recipe_concept_sets(back)$cs$exclude$concepts), 1L)
 })
 
 # --- B6 -------------------------------------------------------------------------

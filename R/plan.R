@@ -73,12 +73,12 @@ ds.omop.plan <- function() {
     return(.plan_integer_vector(value, field))
   }
   allowed <- c(
-    "concepts", "include_descendants", "include_mapped", "exclude"
+    "concepts", "include_descendants", "include_mapped", "exclude", "validity_policy"
   )
   if (is.null(names(value)) || any(!nzchar(names(value))) ||
       anyDuplicated(names(value)) || length(setdiff(names(value), allowed))) {
     stop(field, " may contain only concepts, include_descendants, ",
-         "include_mapped, and exclude.", call. = FALSE)
+         "include_mapped, exclude, and validity_policy.", call. = FALSE)
   }
   normalized <- list(
     concepts = .plan_integer_vector(value$concepts, paste0(field, "$concepts"))
@@ -92,6 +92,7 @@ ds.omop.plan <- function() {
       normalized[[flag]] <- value[[flag]]
     }
   }
+  if (!is.null(value$validity_policy)) normalized$validity_policy <- .ohdsiValidityPolicy(value$validity_policy)
   if (!is.null(value$exclude)) {
     normalized$exclude <- .plan_integer_vector(
       value$exclude, paste0(field, "$exclude"), allow_empty = TRUE
@@ -1902,6 +1903,13 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   assign(symbol, session, envir = .dsomop_client_env)
   presentation_key <- .conceptPlanKey(plan)
   conns <- conns %||% session$conns
+  if (.ohdsiHasImportedValidity(plan)) {
+    language <- .v2_server_language(session, names(conns))
+    capable <- vapply(names(conns), function(s) {
+      "vocabulary.ohdsi_import_validity" %in% language[[s]]$operations
+    }, logical(1))
+    if (!all(capable)) stop("Imported definitions require vocabulary.ohdsi_import_validity; upgrade the paired server before execution.", call. = FALSE)
+  }
   # B1: which protocol every participating site supports, before anything is
   # assigned. The publication protocol needs it on every site; otherwise a v2
   # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.

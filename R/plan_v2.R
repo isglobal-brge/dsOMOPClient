@@ -111,6 +111,7 @@
   out <- list(concepts = .v2_array(cs$concepts),
               include_descendants = isTRUE(cs$descendants))
   if (isTRUE(cs$mapped)) out$include_mapped <- TRUE
+  if (!is.null(cs$validity_policy)) out$validity_policy <- .ohdsiValidityPolicy(cs$validity_policy)
   if (!is.null(cs$exclude)) {
     out$exclude <- if (inherits(cs$exclude, "omop_concept_set")) {
       .v2w_concept_set_inline(cs$exclude)
@@ -461,8 +462,14 @@
     anchor <- if (!is.null(p$reference_date)) p$reference_date else "index"
     .v2w_window(ctx, omop_window(w$start, w$end, anchor = anchor), where)
   }
+  legacy_concepts <- function(ids) {
+    cs <- p$concept_set
+    if (is.null(cs)) return(as.integer(ids))
+    omop_concept_set(as.integer(unlist(cs$concepts)), descendants = isTRUE(cs$include_descendants),
+      mapped = isTRUE(cs$include_mapped), validity_policy = cs$validity_policy)
+  }
   legacy_event <- function(table, ids) {
-    list(event = .v2c_event(ctx, omop_event(table, as.integer(ids)), where))
+    list(event = .v2c_event(ctx, omop_event(table, legacy_concepts(ids)), where))
   }
   switch(f$type,
     sex = list(person = list(var = "gender_concept_id", op = "==",
@@ -544,7 +551,7 @@
         if (!is.null(p$max_value)) list(var = "value", op = "<", value = as.numeric(p$max_value))))
       source <- if (length(bounds)) {
         tree <- if (length(bounds) == 1L) bounds[[1L]] else list(and = bounds)
-        list(event = .v2c_event(ctx, omop_event("measurement", ids,
+        list(event = .v2c_event(ctx, omop_event("measurement", legacy_concepts(ids),
                                                 where = omop_where_tree(tree)), where))
       } else legacy_event("measurement", ids)
       inner <- list(source = source, op = ">=", n = 1L)
@@ -599,7 +606,7 @@
 .v2_lower_index_event <- function(ctx, ie, context) {
   cs <- if (is.null(ie$concept_id)) NULL else
     omop_concept_set(ie$concept_id, descendants = isTRUE(ie$include_descendants),
-                     mapped = isTRUE(ie$include_mapped))
+                     mapped = isTRUE(ie$include_mapped), validity_policy = ie$validity_policy)
   ev <- omop_event(ie$table, cs)
   end <- omop_end("observation_end")
   if (!is.null(ie$end_strategy)) {

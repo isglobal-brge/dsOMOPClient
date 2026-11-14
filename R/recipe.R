@@ -1744,6 +1744,8 @@ omop_filter_missing_measurement <- function(concept_id, window = NULL,
 #' @param primary_limit Character; \code{"first"}, \code{"last"}, or
 #'   \code{"all"} candidate events per person.
 #' @param include_descendants,include_mapped Logical concept-set expansion flags.
+#' @param validity_policy NULL for native semantics, or \code{"ohdsi-import-1"}
+#'   for the server-enforced imported-vocabulary validity contract.
 #' @param end_strategy \code{NULL} for the OHDSI/Circe default (exit at the end
 #'   of the unique observation period covering the index), or the transport-safe
 #'   OHDSI DateOffset shape \code{list(DateOffset = list(DateField =
@@ -1758,7 +1760,7 @@ omop_index_event <- function(concept_id = NULL,
                              primary_limit = c("first", "last", "all"),
                              include_descendants = FALSE,
                              include_mapped = FALSE,
-                             end_strategy = NULL) {
+                             end_strategy = NULL, validity_policy = NULL) {
   # Defect B-20: the event tables of the server's role registry (design-2.10.3
   # section 6.2, vendored inst/ohdsi/roles-*.csv), not a fixed allowlist. The
   # server checks the table against its own CDM version.
@@ -1825,6 +1827,7 @@ omop_index_event <- function(concept_id = NULL,
     include_mapped = include_mapped
   )
   if (!is.null(end_strategy)) obj$end_strategy <- end_strategy
+  if (!is.null(validity_policy)) obj$validity_policy <- .ohdsiValidityPolicy(validity_policy)
   class(obj) <- c("omop_index_event", "list")
   obj
 }
@@ -3693,13 +3696,14 @@ print.omop_recipe <- function(x, ...) {
     concept_set <- NULL
     if (!is.null(ie$concept_id)) {
       concept_set <- if (isTRUE(ie$include_descendants) ||
-                         isTRUE(ie$include_mapped)) {
+                         isTRUE(ie$include_mapped) || !is.null(ie$validity_policy)) {
         list(concepts = as.integer(ie$concept_id),
              include_descendants = isTRUE(ie$include_descendants),
              include_mapped = isTRUE(ie$include_mapped))
       } else {
         as.integer(ie$concept_id)
       }
+      if (!is.null(ie$validity_policy)) concept_set$validity_policy <- ie$validity_policy
     }
     spec$index_event <- list(
       table = ie$table,
@@ -5691,6 +5695,7 @@ recipe_to_code <- function(recipe) {
           primary_limit = ie$primary_limit,
           include_descendants = if (isTRUE(ie$include_descendants)) TRUE else NULL,
           include_mapped = if (isTRUE(ie$include_mapped)) TRUE else NULL,
+          validity_policy = ie$validity_policy,
           end_strategy = ie$end_strategy))
       }
       pop_code <- c(pop_code, .codegen_call("omop_population",
@@ -5712,6 +5717,12 @@ recipe_to_code <- function(recipe) {
           "), coverage = ", .v2_codegen(p$circe_v2$coverage), "); p })(",
           pop_code[[length(pop_code)]], ")")
       }
+    }
+    if (!is.null(p$circe_provenance)) {
+      pop_code[[length(pop_code)]] <- paste0(
+        "(function(p) { p$circe_provenance <- ",
+        .codegen_value(.circe_refresh_provenance(p)$circe_provenance),
+        "; p })(", pop_code[[length(pop_code)]], ")")
     }
     if (!is.null(p$simple)) {
       pop_code[[length(pop_code)]] <- paste0(
@@ -5980,6 +5991,10 @@ recipe_to_code <- function(recipe) {
 #' @return Character; R code that recreates the filter.
 #' @keywords internal
 .codegen_filter <- function(f) {
+  if (!is.null(f$params$concept_set)) {
+    return(.codegen_call("omop_filter", type = f$type, level = f$level,
+                        params = f$params, label = f$label))
+  }
   if (f$type == "sex") {
     .codegen_call("omop_filter_sex", value = f$params$value)
   } else if (f$type == "cohort") {
@@ -6313,6 +6328,7 @@ recipe_to_code <- function(recipe) {
             primary_limit = ie$primary_limit %||% "first",
             include_descendants = isTRUE(ie$include_descendants),
             include_mapped = isTRUE(ie$include_mapped),
+            validity_policy = ie$validity_policy,
             end_strategy = ie$end_strategy
           )
         }
@@ -6735,7 +6751,9 @@ recipe_import_yaml <- function(yaml) {
     stop("Circe export: a fixed-reference occurrence filter is not ",
          "index-relative and cannot be represented equivalently.", call. = FALSE)
   }
-  cs <- .circe_codeset(sets, p$concept_id, name = p$concept_name)
+  cs <- .circe_codeset(sets, p$concept_id, name = p$concept_name,
+    include_descendants = isTRUE(p$concept_set$include_descendants),
+    include_mapped = isTRUE(p$concept_set$include_mapped))
   inner <- stats::setNames(list(list(CodesetId = cs$id)), domain)
   # not_has_concept -> exactly 0; concept_count / has_concept -> at least N.
   occ <- if (identical(f$type, "not_has_concept"))
@@ -6766,7 +6784,9 @@ recipe_import_yaml <- function(yaml) {
     stop("Circe export: a fixed-reference measurement filter cannot be ",
          "represented as an index-relative Circe criterion.", call. = FALSE)
   }
-  cs <- .circe_codeset(sets, p$concept_id)
+  cs <- .circe_codeset(sets, p$concept_id,
+    include_descendants = isTRUE(p$concept_set$include_descendants),
+    include_mapped = isTRUE(p$concept_set$include_mapped))
   meas <- list(CodesetId = cs$id)
   if (!is.null(p$min_value)) {
     meas$ValueAsNumber <- list(Value = p$min_value, Op = "gte")
@@ -7135,6 +7155,16 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
 #' Convert one Circe occurrence criteria back into a recipe filter
 #' @keywords internal
 .circe_criteria_to_filter <- function(crit, concept_sets) {
+  out <- .circe_criteria_to_filter_unchecked(crit, concept_sets)
+  domain <- intersect(names(crit$Criteria %||% crit), unlist(.circe_domain_map))[[1L]]
+  spec <- (crit$Criteria %||% crit)[[domain]]
+  d <- .circe_codeset_details(spec$CodesetId, concept_sets)
+  out$params$concept_set <- list(concepts = d$ids, include_descendants = d$include_descendants,
+    include_mapped = d$include_mapped, validity_policy = "ohdsi-import-1")
+  out
+}
+
+.circe_criteria_to_filter_unchecked <- function(crit, concept_sets) {
   allowed_wrapper <- c("Criteria", "StartWindow", "EndWindow", "Occurrence",
                        "RestrictVisit", "IgnoreObservationPeriod")
   unknown_wrapper <- setdiff(names(crit) %||% character(0), allowed_wrapper)
@@ -7333,6 +7363,7 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
     primary_limit = primary_limit,
     include_descendants = details$include_descendants,
     include_mapped = details$include_mapped,
+    validity_policy = if (!is.null(details$ids)) "ohdsi-import-1" else NULL,
     end_strategy = end_strategy
   )
 }
@@ -7582,7 +7613,8 @@ recipe_import_circe <- function(file_or_json, id = NULL, label = NULL, origin = 
       paste0("concept_set_", as.integer(spec$CodesetId))
     }
     cs <- omop_concept_set(d$ids, descendants = isTRUE(d$include_descendants),
-                           mapped = isTRUE(d$include_mapped), name = cs_name)
+                           mapped = isTRUE(d$include_mapped), name = cs_name,
+                           validity_policy = "ohdsi-import-1")
   }
   end <- omop_end("observation_end")
   if (!is.null(end_strategy)) {

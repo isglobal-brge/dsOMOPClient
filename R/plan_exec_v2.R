@@ -105,6 +105,7 @@
 .plan_v2_operations <- function(plan) {
   x <- .planNormalizeV2(plan)
   ops <- if (.conceptNeedsPresentation(plan)) "output.concept_labels" else character(0)
+  if (.ohdsiHasImportedValidity(x)) ops <- c(ops, "vocabulary.ohdsi_import_validity")
   date_vars <- x$variables
   if (!is.null(x$options$date_spec) || any(vapply(date_vars, function(v) !is.null(v$date_spec) || (v$derived$kind %||% "") %in% c("calendar_date", "date_part"), logical(1)))) ops <- c(ops, "date.presentation")
   if (any(vapply(date_vars, function(v) (v$derived$kind %||% "") %in% c("time_between", "age_at"), logical(1)))) ops <- c(ops, "date.elapsed")
@@ -307,6 +308,10 @@
 #' @keywords internal
 .recipe_select_plan <- function(recipe) {
   needs <- .recipe_needs_v2(recipe)
+  if (.ohdsiHasImportedValidity(recipe) || any(vapply(recipe$populations,
+      function(p) !is.null(p$index_event$validity_policy), logical(1)))) {
+    needs <- c(needs, "imported vocabulary validity policy")
+  }
   v1_refusal <- NULL
   if (length(needs) == 0L) {
     v1 <- .recipe_v1_or_null(recipe)

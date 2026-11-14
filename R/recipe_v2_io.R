@@ -70,9 +70,10 @@
       name = x$name, type = x$type, default = x$default, description = x$description)),
     omop_param_op = list(ctor = ".v2_param_op", args = list(
       op = x$op, e1 = x$args[[1L]], e2 = if (length(x$args) > 1L) x$args[[2L]])),
-    omop_concept_set = list(ctor = "omop_concept_set", args = list(
+    omop_concept_set = list(ctor = "omop_concept_set", args = c(list(
       concepts = x$concepts, descendants = x$descendants, mapped = x$mapped,
-      exclude = x$exclude, name = x$name)),
+      exclude = x$exclude, name = x$name),
+      if (!is.null(x$validity_policy)) list(validity_policy = x$validity_policy))),
     omop_event = switch(x$kind %||% "table",
       table = list(ctor = "omop_event", args = list(
         table = x$table, concepts = x$concepts, where = x$where, visit = x$visit,

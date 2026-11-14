@@ -204,13 +204,16 @@
 #' @param exclude \code{NULL}, an integer vector of exact concept IDs, or an
 #'   unnamed \code{omop_concept_set()} expanded with its own flags.
 #' @param name Optional registry name.
+#' @param validity_policy NULL retains native semantics. The versioned
+#'   \code{"ohdsi-import-1"} policy requires valid explicit vocabulary records
+#'   and excludes invalid expanded records; OHDSI importers select it explicitly.
 #' @return An \code{omop_concept_set} object.
 #' @examples
 #' t2dm <- omop_concept_set(201826, descendants = TRUE, name = "t2dm")
 #' @seealso \code{\link{omop_event}}, \code{\link{omop_recipe}}
 #' @export
 omop_concept_set <- function(concepts, descendants = FALSE, mapped = FALSE,
-                             exclude = NULL, name = NULL) {
+                             exclude = NULL, name = NULL, validity_policy = NULL) {
   if (missing(concepts)) stop("omop_concept_set(): concepts is required.", call. = FALSE)
   concepts <- .v2_ids(concepts, "omop_concept_set(): concepts", allow_empty = TRUE)
   descendants <- .v2_flag(descendants, "omop_concept_set(): descendants")
@@ -226,9 +229,11 @@ omop_concept_set <- function(concepts, descendants = FALSE, mapped = FALSE,
     }
   }
   name <- .v2_name(name, "omop_concept_set(): name")
-  structure(list(concepts = concepts, descendants = descendants,
+  out <- structure(list(concepts = concepts, descendants = descendants,
                  mapped = mapped, exclude = exclude, name = name),
             class = c("omop_concept_set", "list"))
+  if (!is.null(validity_policy)) out$validity_policy <- .ohdsiValidityPolicy(validity_policy)
+  out
 }
 
 #' @export

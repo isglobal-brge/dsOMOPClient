@@ -289,10 +289,10 @@ recipe_import_concept_sets <- function(recipe, x) {
   if (length(excl)) {
     ex_desc <- uniform(excl, "include_descendants")
     ex_map <- uniform(excl, "include_mapped")
-    exclude <- if (ex_desc || ex_map) {
-      omop_concept_set(ids_of(excl), descendants = ex_desc, mapped = ex_map)
-    } else ids_of(excl)
+    exclude <- omop_concept_set(ids_of(excl), descendants = ex_desc, mapped = ex_map,
+                               validity_policy = "ohdsi-import-1")
   }
   omop_concept_set(ids_of(incl), descendants = uniform(incl, "include_descendants"),
-                   mapped = uniform(incl, "include_mapped"), exclude = exclude, name = name)
+                   mapped = uniform(incl, "include_mapped"), exclude = exclude, name = name,
+                   validity_policy = "ohdsi-import-1")
 }
