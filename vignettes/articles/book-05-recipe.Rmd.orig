@@ -89,7 +89,7 @@ That is a teaching definition, not an assumption to carry silently into a study.
 ## Assign the result
 
 ```{r execute}
-recipe_execute(people, out = c(people = "D_people"), conns = conns)
+print(recipe_execute(people, out = c(people = "D_people"), conns = conns))
 ```
 
 The reply is a mapping of output names to server symbols. `D_people` is still on
@@ -134,7 +134,7 @@ answers <- omop_recipe(
   variables = list(education = education, fever = fever, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
 stopifnot(recipe_explain(answers, conns = conns)$selected == "v2")
-recipe_execute(answers, out = c(people = "D_answers"), conns = conns)
+print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
 ```
 
 ```{r yes-no}

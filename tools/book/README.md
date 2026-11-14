@@ -17,3 +17,8 @@ six copies of four patterns, with inpatient/outpatient concepts and a second
 fever answer. It retains threshold 5, ordinary factor gates and pseudonyms.
 The second optional site differs only in public vocabulary labels/version.
 It is not Eunomia GiBleed; the optional Opal deployment is described separately.
+
+DSLite 1.5 has a quoted-string lexer defect exposed by dsBase calls. The fixture
+uses the same scoped tokenizer repair as the released concept-label analysis
+tests. It does not mock ds.table, results, allowlists or disclosure checks. The
+repair is restored when the fixture scope ends and is unnecessary for Opal.

@@ -44,7 +44,7 @@ objects. People without visits retain missing values.
 offsets <- omop_recipe(variables = list(first_days = first, last_days = last),
   outputs = omop_output("visits", format = "wide", grain = "person"))
 stopifnot(recipe_explain(offsets, conns = conns)$selected == "v2")
-recipe_execute(offsets, out = c(visits = "D_offsets"), conns = conns)
+print(recipe_execute(offsets, out = c(visits = "D_offsets"), conns = conns))
 ```
 
 ```{r offset-summary}
@@ -71,7 +71,7 @@ visit_study <- omop_study(visit, outputs = "baseline",
   baseline = list(first_days = omop_first_date("visit_occurrence"),
                   last_days = omop_last_date("visit_occurrence")))
 stopifnot(recipe_explain(visit_study, conns = conns)$selected == "v2")
-recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns)
+print(recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns))
 ```
 
 ```{r simple-summary}
@@ -88,7 +88,7 @@ wide table it excludes the people who never visited.
 calendar <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("visits", format = "wide", grain = "person"))
 stopifnot(recipe_explain(calendar, conns = conns)$selected == "v2")
-recipe_execute(calendar, out = c(visits = "D_calendar"), conns = conns)
+print(recipe_execute(calendar, out = c(visits = "D_calendar"), conns = conns))
 ```
 
 `omop_date()` defaults to day precision and assigns a Date on the server.
@@ -103,7 +103,7 @@ months <- omop_recipe(variables = list(visit_month = omop_date("first_visit",
   omop_date_spec(precision = "month", level_range = c("2020-03-01", "2020-07-31")))),
   outputs = omop_output("visits", format = "wide", grain = "person"))
 stopifnot(recipe_explain(months, conns = conns)$selected == "v2")
-recipe_execute(months, out = c(visits = "D_months"), conns = conns)
+print(recipe_execute(months, out = c(visits = "D_months"), conns = conns))
 ```
 
 ```{r month-counts}
@@ -138,7 +138,7 @@ first such record. People without inpatient records have a missing setting.
 inpatient_people <- omop_recipe(variables = list(setting = setting),
   outputs = omop_output("people", format = "wide", grain = "person"))
 stopifnot(recipe_explain(inpatient_people, conns = conns)$selected == "v2")
-recipe_execute(inpatient_people, out = c(people = "D_inpatient"), conns = conns)
+print(recipe_execute(inpatient_people, out = c(people = "D_inpatient"), conns = conns))
 ```
 
 ```{r inpatient-count}
@@ -150,14 +150,16 @@ This counts people with an inpatient setting, not total inpatient visits.
 ## Keep one row per visit
 
 A *long* output retains event rows. Register an event named `visits` and ask for
-its records, including `visit_start_date`:
+its records. Long outputs normalise the source date to `start_date` and the
+setting to `concept_id`. Day precision keeps actual calendar dates:
 
 ```{r long-visits}
 long_visits <- omop_recipe(
-  events = list(visits = omop_event("visit_occurrence", concepts = c(9201L, 9202L))),
-  outputs = omop_output("visits", format = "long", sources = "visits"))
+  events = list(visits = omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "visits")),
+  outputs = omop_output("visits", format = "long", sources = "visits"),
+  date_spec = omop_date_spec(precision = "day"))
 stopifnot(recipe_explain(long_visits, conns = conns)$selected == "v2")
-recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns)
+print(recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns))
 ```
 
 ```{r long-columns}
@@ -165,9 +167,21 @@ dsBaseClient::ds.colnames("D_visits", datasources = conns)
 ```
 
 The column inventory describes a private table. It does not return a visit row.
+The source's `visit_start_date` is now called `start_date`. If your analysis needs
+the source spelling, add a value-preserving alias on the server:
+
+```{r visit-date-alias}
+print(ds.omop.mutate("D_visits", visit_start_date = start_date,
+                     newobj = "D_visit_dates", conns = conns))
+dsBaseClient::ds.colnames("D_visit_dates", datasources = conns)
+```
+
+This copies the date column inside the protected table. It preserves one row per
+visit and returns only the new symbol name and column names.
+
 
 ```{r visit-counts}
-dsBaseClient::ds.table("D_visits$visit_concept_id", useNA = "no", datasources = conns)
+dsBaseClient::ds.table("D_visits$concept_id", useNA = "no", datasources = conns)
 ```
 
 These are counts of visit records by translated setting. A person can contribute
@@ -192,7 +206,7 @@ template <- omop_recipe(variables = list(setting = omop_variable(
   outputs = omop_output("people", format = "wide", grain = "person"))
 outpatient <- recipe_bind(template, setting = 9202L)
 stopifnot(recipe_explain(outpatient, conns = conns)$selected == "v2")
-recipe_execute(outpatient, out = c(people = "D_outpatient"), conns = conns)
+print(recipe_execute(outpatient, out = c(people = "D_outpatient"), conns = conns))
 ds.omop.table("D_outpatient", "setting", conns = conns)
 ```
 

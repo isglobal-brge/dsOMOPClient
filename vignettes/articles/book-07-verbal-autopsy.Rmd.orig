@@ -136,7 +136,7 @@ explanation$selected
 ```
 
 ```{r va-execute}
-recipe_execute(va, out = c(people = "D_va"), conns = conns)
+print(recipe_execute(va, out = c(people = "D_va"), conns = conns))
 ```
 
 A successful symbol mapping means the server assigned the private wide table.
@@ -216,7 +216,7 @@ source("tools/dates/va-native.R")
 reference <- va_native_recipe()
 stopifnot(recipe_explain(reference, conns = conns)$selected == "v2")
 identical(recipe_to_plan(va), recipe_to_plan(reference))
-recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns)
+print(recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns))
 ds.omop.table("D_va_reference", "cause_of_death", conns = conns)
 ```
 

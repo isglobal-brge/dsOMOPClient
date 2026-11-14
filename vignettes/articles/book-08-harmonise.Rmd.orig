@@ -48,7 +48,7 @@ harmonised <- omop_recipe(variables = list(education = omop_variable(
   labels = c("900102" = "University education"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
 stopifnot(recipe_explain(harmonised, conns = two_conns)$selected == "v2")
-recipe_execute(harmonised, out = c(people = "D_shared"), conns = two_conns)
+print(recipe_execute(harmonised, out = c(people = "D_shared"), conns = two_conns))
 ```
 
 A common explicit label resolves the known wording difference. Harmonisation is

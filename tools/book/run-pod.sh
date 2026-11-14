@@ -10,4 +10,6 @@ rsync -az --exclude=.git --exclude=docs -e "ssh -i $HOME/.ssh/runpod_cover -o St
 if [[ "${1:-}" != precompute ]]; then
 ssh "${opts[@]}" "root@$host" "R CMD INSTALL -l $remote/lib $remote/dsOMOP > $remote/install-server.log 2>&1 && R CMD INSTALL -l $remote/lib $remote/dsOMOPClient > $remote/install-client.log 2>&1"
 fi
-ssh "${opts[@]}" "root@$host" "cd $remote/dsOMOPClient && R_LIBS=$remote/lib R_LIBS_USER=/root/rt/labels-deps Rscript tools/book/precompute.R" | tee tools/book/evidence/precompute.log
+ssh "${opts[@]}" "root@$host" "cd $remote/dsOMOPClient && R_LIBS=$remote/lib R_LIBS_USER=/root/rt/labels-deps Rscript tools/book/precompute.R" 2>&1 | tee tools/book/evidence/precompute.log
+rsync -az --include='*/' --include='*.Rmd' --exclude='*' -e "ssh -i $HOME/.ssh/runpod_cover -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p $port" "root@$host:$remote/dsOMOPClient/vignettes/articles/" vignettes/articles/
+rsync -az -e "ssh -i $HOME/.ssh/runpod_cover -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p $port" "root@$host:$remote/dsOMOPClient/tools/book/evidence/session-info.txt" tools/book/evidence/

@@ -3,6 +3,7 @@ stopifnot(as.character(packageVersion("dsOMOP")) == "2.10.4",
           as.character(packageVersion("dsOMOPClient")) == "2.10.4")
 library(dsOMOPClient)
 source("tools/book/fixture.R")
+source("tools/book/verify.R")
 options(width=88)
 knitr::opts_knit$set(root.dir = normalizePath("."))
 for (input in sort(list.files("vignettes/articles", "\\.Rmd\\.orig$", full.names=TRUE))) {
@@ -22,9 +23,9 @@ for (input in sort(list.files("vignettes/articles", "\\.Rmd\\.orig$", full.names
     })
     knitr::opts_chunk$set(error=FALSE, warning=TRUE, message=FALSE, comment="#>", collapse=TRUE)
     tryCatch(knitr::knit(input, output=sub("\\.orig$", "", input), envir=environment(), quiet=TRUE), error=function(e) { print(DSI::datashield.errors()); stop(e) })
+    verify_chapter(input, environment())
   }
   render()
 }
 message("All chapter chunks executed successfully")
-source("tools/book/verify.R")
 writeLines(capture.output(sessionInfo()),"tools/book/evidence/session-info.txt")

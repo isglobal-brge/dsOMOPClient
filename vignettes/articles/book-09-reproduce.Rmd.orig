@@ -35,6 +35,14 @@ vapply(c("dsOMOP", "dsOMOPClient", "DSI", "DSLite", "dsBase", "dsBaseClient"),
 These are the actual versions used for this rendering. Detailed assertions,
 source hashes and test logs are retained under `tools/book/evidence`.
 
+## The local test driver
+
+DSLite 1.5 rejects some quoted dsBase call strings containing commas. The practice
+helper applies the same scoped lexer repair used by the package's release tests.
+It changes tokenisation only: ds.table, assignments and all disclosure checks still
+run for real. It does not apply to Opal. The helper also injects a synthetic test
+pseudonym root; a deployed server manages its own private root automatically.
+
 ## Migrating older recipes
 
 The 2.10.2 colleague example selected a categorical observation with
@@ -61,7 +69,7 @@ check <- omop_recipe(variables = list(age = omop_age_at("death")),
   outputs = omop_output("people", format = "wide", grain = "person"))
 recipe_explain(check, conns = conns)$selected
 stopifnot(recipe_explain(check, conns = conns)$selected == "v2")
-recipe_execute(check, out = c(people = "D_migration"), conns = conns)
+print(recipe_execute(check, out = c(people = "D_migration"), conns = conns))
 ```
 
 If an explanation selects v1, it is explaining the legacy execution path. Merely
