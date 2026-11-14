@@ -23,7 +23,8 @@ omop_recipe(
   labels = NULL,
   column_names = NULL,
   date_spec = NULL,
-  number_spec = NULL
+  number_spec = NULL,
+  category_spec = NULL
 )
 }
 \arguments{
@@ -88,6 +89,8 @@ when another output depends on them and are never released.}
 \item{date_spec}{Recipe-wide defaults created with omop_date_spec().}
 
 \item{number_spec}{Recipe-wide numeric presentation defaults.}
+
+\item{category_spec}{Recipe-wide category presentation defaults.}
 }
 \value{
 An \code{omop_recipe} object.

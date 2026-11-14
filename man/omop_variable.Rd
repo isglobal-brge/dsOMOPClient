@@ -33,7 +33,8 @@ omop_variable(
   labels = NULL,
   column_names = NULL,
   date_spec = NULL,
-  number_spec = NULL
+  number_spec = NULL,
+  category_spec = NULL
 )
 }
 \arguments{
@@ -113,6 +114,8 @@ column keys to complete, valid R names. Variable maps override recipe maps.}
 \item{date_spec}{Native date presentation; variable fields override recipe defaults.}
 
 \item{number_spec}{Native numeric presentation created with omop_number_spec().}
+
+\item{category_spec}{Native category identity and presentation.}
 }
 \value{
 An \code{omop_variable} object (a named list with class

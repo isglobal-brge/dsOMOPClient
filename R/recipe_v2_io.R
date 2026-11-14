@@ -7,7 +7,7 @@
 # import (the constructor is called again, so imported objects are validated
 # exactly like hand-written ones) and the generated R code.
 
-.V2_TAGGED_CLASSES <- c("omop_number_spec", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_date_spec", "omop_date_source", "omop_variable_bundle", "omop_concept_set", "omop_event", "omop_predicate", "omop_unit",
+.V2_TAGGED_CLASSES <- c("omop_timepoint", "omop_timepoints", "omop_visits", "omop_category_spec", "omop_category_order", "omop_category_recode", "omop_category_rollup", "omop_category_language", "omop_category_missing", "omop_category_binary", "omop_number_spec", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_date_spec", "omop_date_source", "omop_variable_bundle", "omop_concept_set", "omop_event", "omop_predicate", "omop_unit",
                         "omop_criterion", "omop_window", "omop_bound", "omop_anchor",
                         "omop_index", "omop_any_of", "omop_end", "omop_coverage",
                         "omop_interval", "omop_censor", "omop_reducer", "omop_match",
@@ -21,6 +21,15 @@
 
 # Constructor name and arguments that rebuild a language-2 object.
 .v2_ctor_spec <- function(x) {
+  if(inherits(x,c("omop_timepoint","omop_timepoints","omop_visits"))) {a<-unclass(x);a$kind<-NULL;return(list(ctor=class(x)[1L],args=a))}
+  if(inherits(x,"omop_variable") && !is.null(x$category_spec)) {
+    s<-x$category_spec;x$category_spec<-NULL
+    return(list(ctor="omop_category",args=list(variable=x,category_spec=s)))
+  }
+  if(inherits(x,c("omop_category_spec", "omop_category_order", "omop_category_recode", "omop_category_rollup", "omop_category_language", "omop_category_missing", "omop_category_binary"))) {
+    a<-unclass(x);if(!inherits(x,"omop_category_rollup"))a$kind<-NULL
+    return(list(ctor=class(x)[1L],args=a))
+  }
   if(inherits(x,"omop_variable") && !is.null(x$number_spec) && !identical(x$kind,"reducer") && !(x$derived$kind %||% "") %in% .NUMBER_KINDS) {
     s<-x$number_spec;x$number_spec<-NULL
     return(list(ctor="omop_number",args=list(variable=x,number_spec=s)))
@@ -45,6 +54,11 @@
                   name = x$name))
     }
     d <- x$derived
+    if(identical(d$kind,"repeated"))return(list(ctor=".repeatedScalar",args=list(declaration=d,broadcast=x$broadcast),name=x$name))
+    if(identical(d$kind,"category_reduce"))return(list(ctor="omop_category_reduce",args=list(variable=d$variable,reducer=d$reducer,broadcast=x$broadcast),name=x$name))
+    if(identical(d$kind,"category_column"))return(list(ctor="omop_category_column",args=list(column=d$column,component=d$component),name=x$name))
+    if(identical(d$kind,"category_rows"))return(list(ctor="omop_category_rows",args=list(event=d$source,value=d$value),name=x$name))
+    if(identical(d$kind,"category_indicators"))return(list(ctor=".categoryIndicatorScalar",args=list(variable=d$variable,key=d$key,missing=d$missing),name=x$name))
     if((d$kind %||% "") %in% .NUMBER_KINDS) {
       ctor <- paste0("omop_",d$kind);d$kind<-NULL
       if(!is.null(d$source)){d$event<-d$source;d$source<-NULL}
@@ -245,7 +259,7 @@
     return(out)
   }
   ctor <- as.character(ctor)[[1L]]
-  allowed <- c("omop_number", "omop_number_spec", "omop_number_pipeline", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_number_rows", "omop_number_column", "omop_number_count", "omop_number_change", "omop_number_derive", "omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
+  allowed <- c("omop_category_column","omop_category_reduce","omop_timepoint", "omop_timepoints", "omop_visits", ".repeatedScalar", ".categoryIndicatorScalar", "omop_category_rows", "omop_category_indicators", "omop_category", "omop_category_spec", "omop_category_order", "omop_category_recode", "omop_category_rollup", "omop_category_language", "omop_category_missing", "omop_category_binary", "omop_number", "omop_number_spec", "omop_number_pipeline", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_number_rows", "omop_number_column", "omop_number_count", "omop_number_change", "omop_number_derive", "omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
                "omop_ethnicity", "omop_birth_year_band", "omop_died", "omop_days_to_death",
                "omop_n_observation_periods", "omop_obs_duration", "omop_prior_obs",
                "omop_followup", "omop_observed_days", "omop_score", "omop_concept_set",
