@@ -17,7 +17,8 @@ omop_output(
   format = NULL,
   sources = NULL,
   collapse = NULL,
-  number_columns = NULL
+  number_columns = NULL,
+  category_columns = NULL
 )
 }
 \arguments{
@@ -68,6 +69,8 @@ and \code{format} are alternatives; giving neither keeps the legacy
 \code{"any"}: person grain over an indexed population.}
 
 \item{number_columns}{Named numeric column copies/formulas over the canonical output frame.}
+
+\item{category_columns}{Named categorical copies over original typed output columns.}
 }
 \value{
 An \code{omop_output} object.

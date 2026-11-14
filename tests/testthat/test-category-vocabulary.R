@@ -34,3 +34,52 @@ test_that("C20 C23 code styles and deterministic language candidates preserve ze
     expect_true("001A" %in% levels(f$code));expect_true("Alpha" %in% levels(f$translated));expect_true("001A - Alpha" %in% levels(f$named))
   }
 })
+
+test_that("C10 C15 C16 hierarchy ambiguity and exact separation are public contracts", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"INSERT INTO concept SELECT 45000123, concept_name, domain_id, vocabulary_id, concept_class_id, standard_concept, concept_code, valid_start_date, valid_end_date, invalid_reason FROM concept WHERE concept_id=45000124 AND NOT EXISTS (SELECT 1 FROM concept WHERE concept_id=45000123)")
+    for(id in 45000301:45000302)DBI::dbExecute(con,paste0("INSERT INTO concept SELECT ",id,", 'Ancestor",id,"', domain_id, 'SNOMED', concept_class_id, standard_concept, '",id,"', valid_start_date, valid_end_date, invalid_reason FROM concept WHERE concept_id=45000124"))
+    ca<-expand.grid(ancestor_concept_id=45000301:45000302,descendant_concept_id=45000123:45000125)
+    ca$min_levels_of_separation<-1L;ca$max_levels_of_separation<-3L
+    DBI::dbWriteTable(con,"concept_ancestor",ca,append=TRUE);DBI::dbDisconnect(con)
+  }
+  e<-omop_event("observation",45000120L)
+  v<-omop_variable(event=e,reducer=omop_reduce("last_value",value="value_as_concept_id"))
+  domain<-omop_concept_set(45000123:45000125)
+  roll<-function(...)omop_category_spec(rollup=omop_category_rollup("snomed",domain=domain,...))
+  ambiguous<-omop_recipe(variables=list(x=omop_category(v,roll(separation=1))))
+  ap<-recipe_to_plan(ambiguous,version=2)
+  expect_error(ds.omop.plan.execute(ap,out=setNames("Ambiguous",names(ap$outputs)),symbol="labels",conns=ctx$conns),"category_rollup_ambiguous")
+  r<-omop_recipe(variables=list(
+    min2=omop_category(v,roll(separation=2,distance="min")),
+    max2=omop_category(v,roll(separation=2,distance="max")),
+    priority=omop_category(v,roll(separation=1,multiple="priority",priority=c("concept:45000302","concept:45000301"))),
+    flags=omop_category_indicators(omop_category(v,roll(separation=3,distance="max",multiple="all")),c(a="concept:45000301",b="concept:45000302"))))
+  recipe_execute(r,out="Hierarchy",symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"Hierarchy")) {
+    expect_identical(as.character(f$min2),as.character(f$max2))
+    expect_false(any(grepl("Ancestor",as.character(f$min2))))
+    expect_true(all(f$priority=="Ancestor45000302"))
+    expect_true(all(f$flags_a==1L));expect_true(all(f$flags_b==1L));expect_equal(nrow(f),18L)
+  }
+})
+
+test_that("C12 C13 C14 ICD10 rollup deduplicates reverse maps and follows exact class edges", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"INSERT INTO concept SELECT 45000123, concept_name, domain_id, vocabulary_id, concept_class_id, standard_concept, concept_code, valid_start_date, valid_end_date, invalid_reason FROM concept WHERE concept_id=45000124 AND NOT EXISTS (SELECT 1 FROM concept WHERE concept_id=45000123)")
+    concepts<-data.frame(concept_id=c(45000401L,45000402L,45000410L,45000420L),concept_name=c("A00","A01","Block","Chapter"),domain_id=c("Condition","Condition","Condition","Observation"),vocabulary_id="ICD10",concept_class_id=c("ICD10 Hierarchy","ICD10 Hierarchy","ICD10 SubChapter","ICD10 Chapter"),standard_concept="C",concept_code=c("A00","A01","A00-A09","I"),valid_start_date="2000-01-01",valid_end_date="2099-12-31",invalid_reason=NA_character_)
+    DBI::dbWriteTable(con,"concept",concepts,append=TRUE)
+    maps<-expand.grid(concept_id_1=45000401:45000402,concept_id_2=45000123:45000125);maps$relationship_id<-"Maps to"
+    edges<-data.frame(concept_id_1=c(45000401L,45000410L,45000410L),concept_id_2=c(45000410L,45000402L,45000420L),relationship_id=c("Is a","Subsumes","Is a"))
+    rel<-rbind(maps,edges);rel$valid_start_date<-"2000-01-01";rel$valid_end_date<-"2099-12-31";rel$invalid_reason<-NA_character_
+    DBI::dbWriteTable(con,"concept_relationship",rel,append=TRUE);DBI::dbDisconnect(con)
+  }
+  e<-omop_event("observation",45000120L);v<-omop_variable(event=e,reducer=omop_reduce("last_value",value="value_as_concept_id"))
+  variables<-setNames(lapply(c("block","chapter"),function(level)omop_category(v,omop_category_spec(rollup=omop_category_rollup("icd10",level=level,vocabulary="ICD10",domain=paste0("concept:",45000123:45000125))))),c("block","chapter"))
+  recipe_execute(omop_recipe(variables=variables),out="ICD",symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"ICD")) {expect_true(all(f$block=="Block"));expect_true(all(f$chapter=="Chapter"));expect_equal(nrow(f),18L)}
+})

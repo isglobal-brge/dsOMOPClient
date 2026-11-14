@@ -406,7 +406,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
       for (k in c("reference", "from", "to")) if (!is.null(x$derived[[k]])) x$derived[[k]] <- self$any(x$derived[[k]])
       if (!is.null(x$derived$window)) x$derived$window <- self$any(x$derived$window)
       if (!is.null(x$derived$source)) x$derived$source <- self$src(x$derived$source)
-      if (identical(x$derived$kind,"number_column")) {
+      if ((x$derived$kind %||% "") %in% c("number_column","category_column")) {
         key<-x$derived$column
         if(key %in% names(maps$variable))key<-self$var(key)
         else if(key %in% names(maps$number_column))key<-unname(maps$number_column[[key]])
@@ -459,6 +459,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
     if (!is.null(o$variables)) o$variables <- refs(o$variables, self$var)
     if (!is.null(o$sources)) o$sources <- sources(o$sources)
     if (!is.null(o$number_columns)) o$number_columns <- lapply(o$number_columns,self$any)
+    if (!is.null(o$category_columns)) o$category_columns <- lapply(o$category_columns,self$any)
     opts <- o$options %||% list()
     named_refs <- function(x) {
       if (is.null(x)) return(x)

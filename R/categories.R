@@ -111,6 +111,7 @@ omop_category_binary <- function(as="integer", labels=c("no","yes")) {
 }
 .categoryWire <- function(x, field=NULL) {
   if (is.null(x)) return(NULL)
+  if(inherits(x,"omop_concept_set"))return(.v2w_concept_set_inline(x))
   if (is.list(x)) {
     x <- unclass(x)
     if (!length(x)) return(.pnv2EmptyObject())

@@ -2458,6 +2458,7 @@ omop_output <- function(name = "output_1",
   if (!is.null(collapse)) obj$collapse <- collapse
   if (!is.null(sources)) obj$sources <- sources
   if (!is.null(category_columns)) {
+    category_columns<-.categoryExpandBundles(category_columns)
     .numberNames(names(category_columns));lapply(category_columns,.numberVariableArg)
     obj$category_columns<-category_columns
   }

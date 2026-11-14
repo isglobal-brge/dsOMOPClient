@@ -36,3 +36,16 @@ test_that("C58 category constructors survive executable code and recipe intercha
   expect_equal(.planNormalizedDigest(recipe_to_plan(tail(recipes,1)[[1]],version=2))$sha256,.planNormalizedDigest(p)$sha256)
   expect_silent(recipe_to_plan(recipe_merge(r,r,prefix="copy"),version=2))
 })
+
+test_that("C57 C58 nested category and repeated declarations round trip executable code", {
+  e<-omop_event("observation",45000120L,name="answer")
+  rows<-omop_category_rows(e,"value_as_concept_id")
+  times<-omop_timepoints(list(now=omop_timepoint(),later=omop_timepoint(6,"months")),anchor="2020-01-01")
+  r<-omop_recipe(variables=list(nth=omop_category_reduce(rows,omop_reduce("nth_value",n=c(1L,3L))),repeated=omop_repeated(e,list(x=rows),timepoints=times)))
+  env<-new.env(parent=asNamespace("dsOMOPClient"));eval(parse(text=recipe_to_code(r)),env)
+  recipes<-Filter(function(x)inherits(x,"omop_recipe"),as.list(env))
+  expect_length(recipes,1L)
+  expect_equal(.planNormalizedDigest(recipe_to_plan(recipes[[1L]],version=2))$sha256,.planNormalizedDigest(recipe_to_plan(r,version=2))$sha256)
+  expect_error(omop_category_reduce(rows,omop_reduce("last_value",value="value_as_concept_id")),"omit value")
+  expect_error(omop_category_reduce(rows,omop_reduce("last_value",unit="month")),"only with time_since")
+})

@@ -52,6 +52,7 @@ omop_repeated <- function(event,values,timepoints=NULL,visits=NULL,missing="keep
     if(inherits(values[[n]],"omop_category_bundle"))for(k in names(values[[n]]))flat[[paste(n,k,sep="_")]]<-values[[n]][[k]]
     else flat[[n]]<-values[[n]]
   }
+  if(anyDuplicated(names(flat))) .categoryReject("Expanded repeated operand names collide.","repeated_spec_invalid")
   if(any(!vapply(flat,inherits,logical(1),"omop_variable"))) .categoryReject("Only typed same-event row projections are repeated.","repeated_grain_incompatible")
   points<-if(!is.null(timepoints))names(timepoints$points) else paste0("visit_",visits$numbers)
   out<-list()
