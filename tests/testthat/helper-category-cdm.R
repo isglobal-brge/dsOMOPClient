@@ -35,7 +35,10 @@
   for(i in seq_len(n)) {
     path<-file.path(base,paste0("site",i,".sqlite"));stopifnot(file.copy(source,path))
     db<-DBI::dbConnect(RSQLite::SQLite(),path)
-    for(table in DBI::dbListTables(db))if("person_id" %in% DBI::dbListFields(db,table))DBI::dbExecute(db,paste0("DELETE FROM ",DBI::dbQuoteIdentifier(db,table)," WHERE person_id % ",n," != ",i-1L))
+    # Fixed roster-only cohort keeps this all-format transport test targeted;
+    # it never selects on a category, measurement, outcome or missingness.
+    keep<-DBI::dbGetQuery(db,"SELECT person_id FROM person ORDER BY person_id LIMIT 108")$person_id
+    for(table in DBI::dbListTables(db))if("person_id" %in% DBI::dbListFields(db,table))DBI::dbExecute(db,paste0("DELETE FROM ",DBI::dbQuoteIdentifier(db,table)," WHERE person_id % ",n," != ",i-1L," OR person_id NOT IN (",paste(keep,collapse=","),")"))
     DBI::dbDisconnect(db);paths<-c(paths,path)
     resource<-resourcer::newResource(name="numeric",url=paste0("omop+dbi:sqlite://",path),format="omop.dbi.db")
     config<-DSLite::defaultDSConfiguration(include=c("dsOMOP","dsBase"))
