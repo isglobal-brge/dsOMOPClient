@@ -36,7 +36,7 @@ audit_numeric_studies <- function(measure,observation=NULL) {
   # Q19 Analyst-declared bounds, before reduction. No automatic correction.
   clean<-choose(list(var="x",op="<=",value=250),col("x"))
   clean_mean<-audit_expression(list(x=rows),clean,"unit:8554",omop_reduce("mean"))
-  clip_mean<-audit_expression(list(x=omop_number(rows,omop_number_spec(transform=omop_number_transform("clip",upper=250)))),col("x"),"unit:8554",omop_reduce("mean"))
+  clip_mean<-audit_expression(list(x=omop_number(rows,omop_number_spec(transform=omop_number_transform("clip",lower=0,upper=250)))),col("x"),"unit:8554",omop_reduce("mean"))
   raw<-selected("mean",NULL,NULL)
   after_mean<-audit_expression(list(x=raw),clean,"unit:8554")
   out<-list(baseline=baseline,followup=followup,difference=difference,ratio=ratio,percent_change=percent,
