@@ -42,7 +42,7 @@ remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never")
 
 The *client* is the package on your computer. The *server* runs requests near the
 data; DSLite lets you run it locally for practice. Pandoc is also needed to rebuild
-the site (RStudio includes it). The [reproduction notes](book-09-reproduce.html)
+the site (RStudio includes it). The [reproduction notes](book-17-reproduce.html)
 record the dependency versions used for this book.
 
 ## Get the book helpers
@@ -94,7 +94,7 @@ prove that the server has the matching methods.
 
 The practice server has two resources. **GiBleed** supports the introductory
 schema and vocabulary lessons. **Synthea27Nj** supplies hemoglobin and other
-numeric measurements with units for [Working with lab values](book-15-labs.html). Both contain fictional patients; “numeric”
+numeric measurements with units for [Working with lab values](book-14-labs.html). Both contain fictional patients; “numeric”
 means populated numeric fields, not real patient records. GiBleed has 44,053
 measurement rows but no populated `value_as_number`, so it cannot teach lab-value
 reducers on its own.
@@ -318,7 +318,7 @@ Which packages run locally?
 <details><summary>Solution 2</summary>
 
 ```{r book4-exercise-2}
-vapply(c("DSI", "DSOpal", "dsOMOPClient"), function(x) as.character(packageVersion(x)), "")
+vapply(c("DSI", "DSLite", "dsOMOPClient"), function(x) as.character(packageVersion(x)), "")
 ```
 
 These are client packages. The server installs dsOMOP and dsBase separately.
@@ -343,3 +343,4 @@ Both named resources are required. Changing a host belongs in this one file, not
 
 You can distinguish your client installation from the server installation and have a practice connection.
 
+**Next:** [1. What DataSHIELD and OMOP mean](book-01-mental-model.html).

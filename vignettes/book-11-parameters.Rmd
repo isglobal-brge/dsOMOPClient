@@ -351,7 +351,7 @@ knitr::kable(book_counts(age_counts))
 |NA        |     0|
 
 `cut` produces text labels in this grammar, not an ordered R factor. The table
-may display them alphabetically. [Chapter 15](book-15-labs.html) shows how to
+may display them alphabetically. [Chapter 15](book-14-labs.html) shows how to
 assign an explicit factor level sequence for modelling and display.
 
 **Exercise:** create an adult flag using the same lower boundary of 18.

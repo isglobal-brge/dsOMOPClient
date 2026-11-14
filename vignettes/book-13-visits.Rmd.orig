@@ -20,6 +20,11 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+
 ## Start this chapter
 
 Start a fresh R session in the `book-work` directory created in
@@ -255,3 +260,4 @@ No. Multiple visits can belong to one person; a model must respect repeated obse
 
 Choose offsets for elapsed time and omop_date for calendar presentation. Wide selects one value per person; long keeps visit rows privately.
 
+**Next:** [14. Working with lab values](book-14-labs.html).

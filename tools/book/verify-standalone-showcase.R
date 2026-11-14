@@ -1,7 +1,7 @@
 # Source-data and whole-object checks; never part of the analyst workflow.
 # precompute.R snapshots the synthetic objects just before refusal/connection switch.
 verify_standalone_showcase <- function(input, env, get_data) {
-  if (!grepl("book-11-parameters|book-00-showcase", input)) return(invisible(NULL))
+  if (!grepl("book-11-parameters|book-showcase", input)) return(invisible(NULL))
   same <- function(x,y) stopifnot(isTRUE(all.equal(as.numeric(x),as.numeric(y), tolerance=1e-8)))
   summary_matches <- function(actual, x) same(book_summary(actual)$Value,
     c(quantile(x,c(.05,.1,.25,.5,.75,.9,.95),na.rm=TRUE),mean(x,na.rm=TRUE)))

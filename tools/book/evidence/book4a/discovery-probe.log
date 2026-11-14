@@ -1,0 +1,325 @@
+dsOMOP v2.10.5 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+  concept_id concept_name domain_id vocabulary_id standard_concept
+1     317009       Asthma Condition        SNOMED                S
+[1] "output"
+[1] "celecoxib"
+  concept_id                             concept_name domain_id vocabulary_id
+1    1118088 celecoxib 200 MG Oral Capsule [Celebrex]      Drug        RxNorm
+2   44923712 celecoxib 200 MG Oral Capsule [Celebrex]      Drug           NDC
+3    1118084                                celecoxib      Drug        RxNorm
+  standard_concept concept_class_id concept_code valid_start_date
+1                S     Branded Drug       213469       1970-01-01
+2             <NA>     11-digit NDC  00025152531       2000-01-01
+3                S       Ingredient       140587       1970-01-01
+  valid_end_date invalid_reason
+1     2099-12-31           <NA>
+2     2099-12-31           <NA>
+3     2099-12-31           <NA>
+[1] "diclofenac"
+  concept_id                                        concept_name domain_id
+1   45011828 Diclofenac Sodium 75 MG Delayed Release Oral Tablet      Drug
+2   40162359 Diclofenac Sodium 75 MG Delayed Release Oral Tablet      Drug
+3    1124300                                          Diclofenac      Drug
+  vocabulary_id standard_concept concept_class_id concept_code valid_start_date
+1           NDC             <NA>     11-digit NDC  00781178901       2000-01-01
+2        RxNorm                S    Clinical Drug       855926       2009-08-02
+3        RxNorm                S       Ingredient         3355       1970-01-01
+  valid_end_date invalid_reason
+1     2099-12-31           <NA>
+2     2099-12-31           <NA>
+3     2099-12-31           <NA>
+[1] "gastrointestinal hemorrhage"
+  concept_id                             concept_name domain_id vocabulary_id
+1   35208414 Gastrointestinal hemorrhage, unspecified Condition       ICD10CM
+2     192671              Gastrointestinal hemorrhage Condition        SNOMED
+  standard_concept    concept_class_id concept_code valid_start_date
+1             <NA> 4-char billing code        K92.2       2007-01-01
+2                S    Clinical Finding     74474003       1970-01-01
+  valid_end_date invalid_reason
+1     2099-12-31           <NA>
+2     2099-12-31           <NA>
+[1] "antiinflammatory"
+NULL
+
+Logging into the collaborating servers
+[1] "Glucose"
+  concept_id                                 concept_name   domain_id
+1    4012477                       Glucose tolerance test Measurement
+2    4149386                  Urine screening for glucose Measurement
+3    4146454             Self-monitoring of blood glucose Measurement
+4    3000483               Glucose [Mass/volume] in Blood Measurement
+5    3004501     Glucose [Mass/volume] in Serum or Plasma Measurement
+6    3009261    Glucose [Presence] in Urine by Test strip Measurement
+7    3024629 Glucose [Mass/volume] in Urine by Test strip Measurement
+  vocabulary_id standard_concept concept_class_id concept_code valid_start_date
+1        SNOMED                S        Procedure    113076002       2002-01-31
+2        SNOMED                S        Procedure    268556000       2002-01-31
+3        SNOMED                S        Procedure    308113006       2002-01-31
+4         LOINC                S         Lab Test       2339-0       1970-01-01
+5         LOINC                S         Lab Test       2345-7       1970-01-01
+6         LOINC                S         Lab Test      25428-4       1970-01-01
+7         LOINC                S         Lab Test       5792-7       1970-01-01
+  valid_end_date invalid_reason
+1     2099-12-31           <NA>
+2     2099-12-31           <NA>
+3     2099-12-31           <NA>
+4     2099-12-31           <NA>
+5     2099-12-31           <NA>
+6     2099-12-31           <NA>
+7     2099-12-31           <NA>
+[1] "Creatinine"
+   concept_id                                                     concept_name
+1        9601                                  nanogram per gram of creatinine
+2    44777625                             nanogram per milligram of creatinine
+3        9014                                 microgram per gram of creatinine
+4        9072                            microgram per milligram of creatinine
+5    44777646                            microgram per millimole of creatinine
+6        9015                                 micromole per gram of creatinine
+7        9671                            micromole per milligram of creatinine
+8        9073                            micromole per millimole of creatinine
+9        9675                                 micromole per mole of creatinine
+10       9247                                           per gram of creatinine
+11   44777596                                               gram of creatinine
+12       9511                                      gram per gram of creatinine
+13       9074                            milligram per milligram of creatinine
+14       9075                            milligram per millimole of creatinine
+15       8915                                      unit per gram of creatinine
+16       9555                           milliequivalent per gram of creatinine
+17       9597                            milliunit per milligram of creatinine
+18       9682             bone collagen equivalent per millimole of creatinine
+19       9683             bone collagen equivalent per micromole of creatinine
+20       9566                                          milligram of creatinine
+21       9017                                 milligram per gram of creatinine
+22       9018                                 millimole per gram of creatinine
+23   44777619                            millimole per millimole of creatinine
+24       9019                                 millimole per mole of creatinine
+25       9114 nanomole of bone collagen equivalent per millimole of creatinine
+26       9610                                  nanomole per gram of creatinine
+27   44777634                             nanomole per milligram of creatinine
+28       9063                             nanomole per millimole of creatinine
+29   44777636                                  nanomole per mole of creatinine
+30     720850                                  picogram per gram of creatinine
+31     720862                             picogram per milligram of creatinine
+32    3001802                    Microalbumin/Creatinine [Mass Ratio] in Urine
+33    3016723                      Creatinine [Mass/volume] in Serum or Plasma
+34    3051825                                Creatinine [Mass/volume] in Blood
+     domain_id vocabulary_id standard_concept concept_class_id
+1         Unit          UCUM                S             Unit
+2         Unit          UCUM                S             Unit
+3         Unit          UCUM                S             Unit
+4         Unit          UCUM                S             Unit
+5         Unit          UCUM                S             Unit
+6         Unit          UCUM                S             Unit
+7         Unit          UCUM                S             Unit
+8         Unit          UCUM                S             Unit
+9         Unit          UCUM                S             Unit
+10        Unit          UCUM                S             Unit
+11        Unit          UCUM                S             Unit
+12        Unit          UCUM                S             Unit
+13        Unit          UCUM                S             Unit
+14        Unit          UCUM                S             Unit
+15        Unit          UCUM                S             Unit
+16        Unit          UCUM                S             Unit
+17        Unit          UCUM                S             Unit
+18        Unit          UCUM                S             Unit
+19        Unit          UCUM                S             Unit
+20        Unit          UCUM                S             Unit
+21        Unit          UCUM                S             Unit
+22        Unit          UCUM                S             Unit
+23        Unit          UCUM                S             Unit
+24        Unit          UCUM                S             Unit
+25        Unit          UCUM                S             Unit
+26        Unit          UCUM                S             Unit
+27        Unit          UCUM                S             Unit
+28        Unit          UCUM                S             Unit
+29        Unit          UCUM                S             Unit
+30        Unit          UCUM                S             Unit
+31        Unit          UCUM                S             Unit
+32 Measurement         LOINC                S         Lab Test
+33 Measurement         LOINC                S         Lab Test
+34 Measurement         LOINC                S         Lab Test
+                concept_code valid_start_date valid_end_date invalid_reason
+1                ng/g{creat}       1970-01-01     2099-12-31           <NA>
+2               ng/mg{creat}       1970-01-01     2099-12-31           <NA>
+3                ug/g{creat}       1970-01-01     2099-12-31           <NA>
+4               ug/mg{creat}       1970-01-01     2099-12-31           <NA>
+5             ug/mmol{creat}       1970-01-01     2099-12-31           <NA>
+6              umol/g{creat}       1970-01-01     2099-12-31           <NA>
+7             umol/mg{creat}       1970-01-01     2099-12-31           <NA>
+8           umol/mmol{creat}       1970-01-01     2099-12-31           <NA>
+9            umol/mol{creat}       1970-01-01     2099-12-31           <NA>
+10                 /g{creat}       1970-01-01     2099-12-31           <NA>
+11                  g{creat}       1970-01-01     2099-12-31           <NA>
+12                g/g{creat}       1970-01-01     2099-12-31           <NA>
+13              mg/mg{creat}       1970-01-01     2099-12-31           <NA>
+14            mg/mmol{creat}       1970-01-01     2099-12-31           <NA>
+15              [U]/g{creat}       1970-01-01     2099-12-31           <NA>
+16         10*-3.eq/g{creat}       1970-01-01     2099-12-31           <NA>
+17       10*-3.[U]/mg{creat}       1970-01-01     2099-12-31           <NA>
+18     {BColl}eq/mmol{creat}       1970-01-01     2099-12-31           <NA>
+19     {BColl}eq/umol{creat}       1970-01-01     2099-12-31           <NA>
+20                 mg{creat}       1970-01-01     2099-12-31           <NA>
+21               mg/g{creat}       1970-01-01     2099-12-31           <NA>
+22             mmol/g{creat}       1970-01-01     2099-12-31           <NA>
+23          mmol/mmol{creat}       1970-01-01     2099-12-31           <NA>
+24           mmol/mol{creat}       1970-01-01     2099-12-31           <NA>
+25 nmol{BColl}eq/mmol{creat}       1970-01-01     2099-12-31           <NA>
+26             nmol/g{creat}       1970-01-01     2099-12-31           <NA>
+27            nmol/mg{creat}       1970-01-01     2099-12-31           <NA>
+28          nmol/mmol{creat}       1970-01-01     2099-12-31           <NA>
+29           nmol/mol{creat}       1970-01-01     2099-12-31           <NA>
+30               pg/g{creat}       2022-04-07     2099-12-31           <NA>
+31              pg/mg{creat}       2022-04-07     2099-12-31           <NA>
+32                   14959-1       1970-01-01     2099-12-31           <NA>
+33                    2160-0       1970-01-01     2099-12-31           <NA>
+34                   38483-4       2004-10-20     2099-12-31           <NA>
+[1] "Systolic"
+  concept_id                          concept_name   domain_id vocabulary_id
+1   40758413 Blood pressure systolic and diastolic Measurement         LOINC
+2    3004249               Systolic blood pressure Measurement         LOINC
+  standard_concept     concept_class_id concept_code valid_start_date
+1                S Clinical Observation      55284-4       2015-06-28
+2                S Clinical Observation       8480-6       1996-09-06
+  valid_end_date invalid_reason
+1     2099-12-31           <NA>
+2     2099-12-31           <NA>
+[1] "Diastolic"
+  concept_id                          concept_name   domain_id vocabulary_id
+1   40758413 Blood pressure systolic and diastolic Measurement         LOINC
+2    3012888              Diastolic blood pressure Measurement         LOINC
+  standard_concept     concept_class_id concept_code valid_start_date
+1                S Clinical Observation      55284-4       2015-06-28
+2                S Clinical Observation       8462-4       1996-09-06
+  valid_end_date invalid_reason
+1     2099-12-31           <NA>
+2     2099-12-31           <NA>
+[1] "Body weight"
+  concept_id             concept_name   domain_id vocabulary_id
+1       9253 per kilogram body weight        Unit          UCUM
+2    3025315              Body weight Measurement         LOINC
+  standard_concept     concept_class_id concept_code valid_start_date
+1                S                 Unit /kg{body'wt}       1970-01-01
+2                S Clinical Observation      29463-7       1970-01-01
+  valid_end_date invalid_reason
+1     2099-12-31           <NA>
+2     2099-12-31           <NA>
+[1] "Body height"
+  concept_id concept_name   domain_id vocabulary_id standard_concept
+1    3036277  Body height Measurement         LOINC                S
+      concept_class_id concept_code valid_start_date valid_end_date
+1 Clinical Observation       8302-2       1996-09-06     2099-12-31
+  invalid_reason
+1           <NA>
+   concept_id n_persons
+1     3000905        25
+2     3000963        25
+3     3002736        25
+4     3004249        25
+5     3009744        25
+6     3012030        25
+7     3012888        25
+8     3015182        25
+9     3020416        25
+10    3023314        25
+11    3023599        25
+12    3024171        25
+13    3024929        25
+14    3025315        25
+15    3027018        25
+16    3036277        25
+17    3038553        25
+18    3043111        25
+19   43055141        25
+20     765449        20
+21    3661628        20
+22    4064377        20
+23   37016945        20
+24    3007070        15
+25    3009966        15
+26    3020891        15
+27    3022192        15
+28    3027114        15
+29   37395717        15
+30    3000285        10
+31    3000483        10
+32    3004295        10
+33    3004410        10
+34    3005456        10
+35    3014094        10
+36    3018572        10
+37    3032503        10
+38    3051825        10
+39    4024958        10
+40   40762638        10
+41    3000053         5
+42    4052083         5
+43    4091461         5
+44   46236327         5
+45     706158         0
+46    3000876         0
+47    3001247         0
+48    3001488         0
+49    3005136         0
+50    3006451         0
+                                                                         concept_name
+1                                   Leukocytes [#/volume] in Blood by Automated count
+2                                                   Hemoglobin [Mass/volume] in Blood
+3            Platelet distribution width [Entitic volume] in Blood by Automated count
+4                                                             Systolic blood pressure
+5                                               MCHC [Mass/volume] by Automated count
+6                                               MCH [Entitic mass] by Automated count
+7                                                            Diastolic blood pressure
+8                  Erythrocyte distribution width [Entitic volume] by Automated count
+9                                 Erythrocytes [#/volume] in Blood by Automated count
+10                           Hematocrit [Volume Fraction] of Blood by Automated count
+11                                            MCV [Entitic volume] by Automated count
+12                                                                   Respiratory rate
+13                                   Platelets [#/volume] in Blood by Automated count
+14                                                                        Body weight
+15                                                                         Heart rate
+16                                                                        Body height
+17                                                      Body mass index (BMI) [Ratio]
+18                  Platelet mean volume [Entitic volume] in Blood by Automated count
+19                      Pain severity - 0-10 verbal numeric rating [Score] - Reported
+20                                               Assessment using PHQ-2 questionnaire
+21                                                       Screening for domestic abuse
+22                                                               Depression screening
+23                                                           Screening for drug abuse
+24                                Cholesterol in HDL [Mass/volume] in Serum or Plasma
+25                Cholesterol in LDL [Mass/volume] in Serum or Plasma by Direct assay
+26                                                                   Body temperature
+27                                      Triglyceride [Mass/volume] in Serum or Plasma
+28                                       Cholesterol [Mass/volume] in Serum or Plasma
+29            Depression screening using PHQ-9 (Patient Health Questionnaire 9) score
+30                                                     Sodium [Moles/volume] in Blood
+31                                                     Glucose [Mass/volume] in Blood
+32                                               Urea nitrogen [Mass/volume] in Blood
+33                                           Hemoglobin A1c/Hemoglobin.total in Blood
+34                                                  Potassium [Moles/volume] in Blood
+35                                      Carbon dioxide, total [Moles/volume] in Blood
+36                                                   Chloride [Moles/volume] in Blood
+37                                                     Calcium [Mass/volume] in Blood
+38                                                  Creatinine [Mass/volume] in Blood
+39                                                                     Throat culture
+40                                 Body mass index (BMI) [Percentile] Per age and sex
+41                                               Head Occipital-frontal circumference
+42                                                Measurement of respiratory function
+43                                                            Standard pregnancy test
+44                                                  Weight-for-length Per age and sex
+45 SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection
+46                                             Codfish IgE Ab [Units/volume] in Serum
+47                                      Common Ragweed IgE Ab [Units/volume] in Serum
+48                                            Cow milk IgE Ab [Units/volume] in Serum
+49                               Cladosporium herbarum IgE Ab [Units/volume] in Serum
+50                                              Walnut IgE Ab [Units/volume] in Serum
+[1] "survival"
+[1] "ds.glm"        "ds.glmSummary" "ds.rbind"      "ds.glmPredict"
+[5] "ds.glmerSLMA"  "ds.glmSLMA"   
+NULL
+Ran 6/6 deferred expressions

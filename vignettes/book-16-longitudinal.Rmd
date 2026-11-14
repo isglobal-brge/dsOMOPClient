@@ -17,7 +17,7 @@ mixed models across two connections.
 </div>
 
 **You need:** [Before you start](book-00-start.html#before-you-start),
-[output formats](book-08-outputs.html) and [lab values](book-15-labs.html).
+[output formats](book-08-outputs.html) and [lab values](book-14-labs.html).
 Start a fresh session in `book-work` and run every section in order, including solutions.
 GiBleed and Synthea are public **synthetic** resources. Their results teach analysis
 mechanics, not clinical conclusions. This chapter uses dsBaseClient 6.3.5.

@@ -229,7 +229,7 @@ hierarchy; do not invent SNOMED or ATC ancestry for them.
 
 ```{r questionnaire-presence}
 question_presence <- ds.omop.concept.prevalence("observation", scope = "pooled", conns = conns)
-knitr::kable(question_presence$pooled)
+knitr::kable(question_presence$pooled[setdiff(names(question_presence$pooled), "concept_id")])
 ```
 
 ```{r cause-presence}
@@ -294,4 +294,4 @@ Search, inspect standard status and mappings, explore ancestry, check protected
 clinical use, then save the definition. The subsequent chapters reuse these
 catalogues; the case studies repeat the same process for their research question.
 
-**Next:** [A first recipe](book-05-recipe.html).
+**Next:** [5. A first recipe](book-05-recipe.html).

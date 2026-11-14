@@ -16,7 +16,7 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
       }
       if (exists("practice", inherits=FALSE)) unlink(practice$path)
       if (exists("two_conns", inherits=FALSE)) {
-        try(dsOMOPClient::ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-15-labs|book-16-longitudinal",input)) "book_pool" else "omop"), silent=TRUE)
+        try(dsOMOPClient::ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-14-labs|book-16-longitudinal",input)) "book_pool" else "omop"), silent=TRUE)
         try(DSI::datashield.logout(two_conns), silent=TRUE)
       }
       if (exists("pair", inherits=FALSE)) unlink(pair$path)
@@ -26,7 +26,7 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
     # Compare the entire lesson, including exercises, solutions and all outputs.
     stopifnot(identical(unname(tools::md5sum(output)),
                         unname(tools::md5sum(expected))))
-    if (grepl("book-07-verbal-autopsy", input)) {
+    if (grepl("book-18-verbal-autopsy", input)) {
       stopifnot(identical(recipe_to_plan(va), recipe_to_plan(reference)))
       # These are public synthetic fixtures: verify the actual assigned tables too.
       original <- DSLite::getDSLiteData(conns, "D_va")$site
@@ -36,7 +36,7 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
         sum(rebuilt$cause_of_death == "Pneumonia", na.rm=TRUE) == 6L)
       message("PASS: capstone native plan, assigned table and cause categories")
     }
-    if (grepl("book-09-reproduce", input)) {
+    if (grepl("book-17-reproduce", input)) {
       stopifnot(identical(manifest, jsonlite::read_json(file.path(
         Sys.getenv("BOOK_PRACTICE_DIR", "../practice-data"), "manifest.json"))))
       message("PASS: Appendix A reads the loader manifest")
@@ -53,7 +53,7 @@ practice_dir <- normalizePath(Sys.getenv("BOOK_PRACTICE_DIR", "../practice-data"
 stopifnot(all(file.exists(file.path(practice_dir,
   c("gibleed.sqlite", "numeric.sqlite", "manifest.json")))))
 inputs <- sort(list.files("vignettes", "^book-.*\\.Rmd\\.orig$", full.names=TRUE))
-stopifnot(length(inputs) == 19L)
+stopifnot(length(inputs) == 25L)
 local({
   scratch <- tempfile("book-reader-")
   dir.create(scratch)
@@ -91,7 +91,7 @@ local({
   }
   for (input in inputs) run_chapter(input)
   # No ../practice-data exists in this case: the override must actually be used.
-  run_chapter(inputs[grepl("book-09-reproduce", inputs)], custom=TRUE)
+  run_chapter(inputs[grepl("book-17-reproduce", inputs)], custom=TRUE)
   message("PASS: 19 complete chapters in fresh R processes from the final ZIP; ",
           "Appendix A also passed with BOOK_PRACTICE_DIR and no default data path")
 })

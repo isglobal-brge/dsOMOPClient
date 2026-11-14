@@ -165,7 +165,7 @@ cat(text_message, "\n")
 
 This definition is refused before execution. Use the reviewed coded answer
 `value_as_concept_id` and translated categories when it answers the question,
-as in [chapter 10](book-08-harmonise.html). Free text is not needed for that analysis.
+as in [chapter 10](book-10-harmonise.html). Free text is not needed for that analysis.
 
 ## Why dates and ages can remain private columns
 

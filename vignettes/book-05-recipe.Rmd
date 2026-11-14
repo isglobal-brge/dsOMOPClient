@@ -373,7 +373,7 @@ yes_no_result
 
 </details>
 
-The table contains your lower-case labels. See [chapter 10](book-08-harmonise.html)
+The table contains your lower-case labels. See [chapter 10](book-10-harmonise.html)
 for the same operation across two different vocabularies.
 
 ## Recap

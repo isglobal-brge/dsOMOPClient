@@ -20,6 +20,11 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+
 ## Start this chapter
 
 Start a fresh R session in the `book-work` directory created in
@@ -230,7 +235,7 @@ yes_no_result
 
 </details>
 
-The table contains your lower-case labels. See [chapter 10](book-08-harmonise.html)
+The table contains your lower-case labels. See [chapter 10](book-10-harmonise.html)
 for the same operation across two different vocabularies.
 
 ## Try it
@@ -277,3 +282,4 @@ The pseudonymous person key is automatic. The education, fever and cause columns
 
 An event selects records, a reducer selects a value, and a wide output arranges private rows. Only the aggregate returns to you.
 
+**Next:** [6. Events, windows and reducers](book-06-events.html).

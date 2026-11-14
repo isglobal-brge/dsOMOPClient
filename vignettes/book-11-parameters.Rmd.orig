@@ -22,6 +22,11 @@ Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
 The numbers describe teaching data, not clinical findings.
 
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+
 ## Start this chapter
 
 Start a fresh R session in the `book-work` directory created in
@@ -195,7 +200,7 @@ knitr::kable(book_counts(age_counts))
 ```
 
 `cut` produces text labels in this grammar, not an ordered R factor. The table
-may display them alphabetically. [Chapter 15](book-15-labs.html) shows how to
+may display them alphabetically. [Chapter 14](book-14-labs.html) shows how to
 assign an explicit factor level sequence for modelling and display.
 
 **Exercise:** create an adult flag using the same lower boundary of 18.
@@ -429,3 +434,4 @@ Each binding is a separate recipe. Its own index changes which earlier records f
 
 Parameters change declared inputs, shortcuts express common native recipes, and mutate/filter operate privately on assigned tables. Each final object still passes publication checks.
 
+**Next:** [12. What stays private](book-12-privacy.html).

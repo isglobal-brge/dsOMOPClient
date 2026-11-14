@@ -1,3 +1,35 @@
+# Reproducing book 4a
+
+The authoring branch is docs/book. Book 4a executes the A-29 2.10.5 packages
+from the read-only numbers worktrees in a private pod library. Run
+`tools/book/run-pod.sh` to install them and precompute; pass `precompute` to reuse
+the installed runtime. `BOOK_SERVER_SOURCE` and `BOOK_CLIENT_SOURCE` can override
+the default package sources. They are copied only into this job's pod directory.
+Do not install the docs-only source package over the numeric runtime.
+
+The book has 25 pages: a showcase and chapters 0–23. Chapters 0–18 form the
+tutorial, ending with the verbal-autopsy capstone; chapters 19–23 are case studies.
+Files, titles, navbar, article index and explicit Next links use this same order.
+Source is `.Rmd.orig`; generated `.Rmd` contains executed code and real output.
+The site build needs no server. Run `Rscript tools/book/build-site.R`, then
+`Rscript tools/book/verify-bundle.R` for fresh reader sessions using only the ZIP.
+The five case studies use the same private DSLite paths and release checks.
+
+Targeted validation comprises all chapter chunks and solutions, the existing
+source-data oracles, `verify-book4.R` formula/model/rate checks, content and output
+HTML audits, and desktop/mobile browser checks including actual long-block scroll.
+Run the package-level `test-book-examples.R` only; full suites belong to integration.
+Evidence for this update is in `tools/book/evidence/book4a/`.
+
+Book 4a deliberately excludes the pending categorical/layout extension. It states
+where the current runtime or source cannot support a request: absent ATC vocabulary,
+unknown questionnaire sex, unpopulated serum/plasma creatinine, and the all-missing
+reference-category publication refusal. The numeric chapter uses public finite
+pipeline bounds because this build rejects infinite endpoints in that form.
+No private source rows are fabricated and no disclosure rule is weakened.
+
+The historical notes below describe prior validation rounds and their evidence.
+
 # Reproducing the book
 
 Use the locally released 2.10.4 pair. From the client package root, run

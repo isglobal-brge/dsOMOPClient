@@ -1,0 +1,57 @@
+dsOMOP v2.10.5 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+
+Logging into the collaborating servers
+[dsomop-audit] 2026-11-14T16:06:43+0000 method=omopPlanExecuteDS detail={"outputs":"analysis","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"events":{"celecoxib":{"table":"drug_exposure","concept_set":{"concepts":[1118084],"include_descendants":true}},"diclofenac":{"table":"drug_exposure","concept_set":{"concepts":[1124300],"include_descendants":true}},"dx_192671":{"table":"condition_occurrence","concept_set":{"concepts":[192671],"include_descendants":true}}},"populations":{"users":{"kind":"index","index":{"source":{"any_of":[{"event":"celecoxib"},{"event":"diclofenac"}]},"select":"first_eligible"},"where":{"and":[{"observed":{"before":365}},{"has":{"source":{"event":"celecoxib"},"op":"==","n":0,"window":{"start":-365,"end":-1,"anchor":"index"}}},{"has":{"source":{"event":"diclofenac"},"op":"==","n":0,"window":{"start":-365,"end":-1,"anchor":"index"}}},{"not":{"and":[{"has":{"source":{"event":"celecoxib"},"op":">=","n":1,"window":{"start":0,"end":0,"anchor":"index"}}},{"has":{"source":{"event":"diclofenac"},"op":">=","n":1,"window":{"start":0,"end":0,"anchor":"index"}}}]}}]}}},"variables":{"age":{"derived":{"kind":"age","reference":"index","bands":false}},"celecoxib":{"source":{"event":"celecoxib"},"reducer":{"fn":"binary","window":{"start":0,"end":0,"anchor":"index"}}}},"outputs":{"baseline":{"rows":"users","format":"wide","grain":"episode","result_symbol":"D_baseline"},"survival":{"rows":"users","format":"survival","grain":"episode","result_symbol":"D_survival","options":{"outcomes":{"bleed":{"event":"dx_192671"}},"tar":{"start":1,"end":365,"anchor":"index"},"censor":["observation_end","death"],"format":"survival","event_order":"first","outcome_mode":"composite"}},"analysis":{"rows":"users","format":"joined","grain":"episode","result_symbol":"D_analysis","options":{"how":"inner","cardinality":"one_to_one","from":[{"output":"baseline"},{"output":"survival"}]}}},"publish":["analysis"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T16:07:11+0000 method=publication detail={"output":"analysis","component":"analysis","passed":true}
+[dsomop-audit] 2026-11-14T16:07:11+0000 method=omopPlanExecuteDS detail={"outputs":"analysis","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"events":{"celecoxib":{"table":"drug_exposure","concept_set":{"concepts":[1118084],"include_descendants":true}},"diclofenac":{"table":"drug_exposure","concept_set":{"concepts":[1124300],"include_descendants":true}},"dx_192671":{"table":"condition_occurrence","concept_set":{"concepts":[192671],"include_descendants":true}}},"populations":{"users":{"kind":"index","index":{"source":{"any_of":[{"event":"celecoxib"},{"event":"diclofenac"}]},"select":"first_eligible"},"where":{"and":[{"observed":{"before":365}},{"has":{"source":{"event":"celecoxib"},"op":"==","n":0,"window":{"start":-365,"end":-1,"anchor":"index"}}},{"has":{"source":{"event":"diclofenac"},"op":"==","n":0,"window":{"start":-365,"end":-1,"anchor":"index"}}},{"not":{"and":[{"has":{"source":{"event":"celecoxib"},"op":">=","n":1,"window":{"start":0,"end":0,"anchor":"index"}}},{"has":{"source":{"event":"diclofenac"},"op":">=","n":1,"window":{"start":0,"end":0,"anchor":"index"}}}]}}]}}},"variables":{"age":{"derived":{"kind":"age","reference":"index","bands":false}},"celecoxib":{"source":{"event":"celecoxib"},"reducer":{"fn":"binary","window":{"start":0,"end":0,"anchor":"index"}}}},"outputs":{"baseline":{"rows":"users","format":"wide","grain":"episode","result_symbol":"D_baseline"},"survival":{"rows":"users","format":"survival","grain":"episode","result_symbol":"D_survival","options":{"outcomes":{"bleed":{"event":"dx_192671"}},"tar":{"start":1,"end":365,"anchor":"index"},"censor":["observation_end","death"],"format":"survival","event_order":"first","outcome_mode":"composite"}},"analysis":{"rows":"users","format":"joined","grain":"episode","result_symbol":"D_analysis","options":{"how":"inner","cardinality":"one_to_one","from":[{"output":"baseline"},{"output":"survival"}]}}},"publish":["analysis"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T16:07:37+0000 method=publication detail={"output":"analysis","component":"analysis","passed":true}
+      analysis 
+"D_comparison" 
+Registered S3 method overwritten by 'gamlss':
+  method   from
+  print.ri bit 
+$north
+ [1] "row_id"                "cohort_row_id"         "person_id"            
+ [4] "age"                   "celecoxib"             "outcome_name"         
+ [7] "event"                 "entry_days_from_index" "exit_days_from_index" 
+[10] "follow_up_days"       
+
+$south
+ [1] "row_id"                "cohort_row_id"         "person_id"            
+ [4] "age"                   "celecoxib"             "outcome_name"         
+ [7] "event"                 "entry_days_from_index" "exit_days_from_index" 
+[10] "follow_up_days"       
+
+[dsomop-audit] 2026-11-14T16:07:39+0000 method=omopMutateDS detail={"columns":"years"}
+[dsomop-audit] 2026-11-14T16:07:39+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[dsomop-audit] 2026-11-14T16:07:39+0000 method=omopMutateDS detail={"columns":"years"}
+[dsomop-audit] 2026-11-14T16:07:39+0000 method=publication detail={"output":"result","component":"result","passed":true}
+
+
+ WARNING: you may have specified an offset or regression weights
+
+ as part of the model formula. In ds.glm (unlike the usual glm in R)
+
+ you must specify an offset or weights separately from the formula
+
+ using the offset or weights argument.
+
+
+Error:
+! There are some DataSHIELD errors, list them with datashield.errors()
+Backtrace:
+    ▆
+ 1. └─dsBaseClient::ds.glm(...)
+ 2.   └─DSI::datashield.aggregate(datasources, cally1)
+ 3.     └─DSI:::.handle_errors(errors.print)
+ 4.       └─DSI:::.checkLastErrors()
+ 5.         └─cli::cli_abort(...)
+ 6.           └─rlang::abort(...)
+Execution halted
+Ran 4/4 deferred expressions

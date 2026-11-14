@@ -1,9 +1,9 @@
 ---
-title: "15. Working with lab values"
+title: "14. Working with lab values"
 author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{15. Working with lab values}
+  %\VignetteIndexEntry{14. Working with lab values}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -24,6 +24,11 @@ These are **public synthetic Synthea27Nj patients**, from the pinned Eunomia
 archive used by the numeric validation loader. There are 28 fictional people,
 not 27. GiBleed is the other practice resource and has no populated numeric
 measurement values. All results below were executed with dsOMOP 2.10.5.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Connect and find a lab
 
@@ -423,7 +428,7 @@ classifying before rounding answers a different question.
 presentation <- omop_number_pipeline(
   omop_number_unit("unit:8713", "unit:8636", factor = 10),
   omop_number_round("decimals", 1),
-  omop_number_spec(representation = "bins", breaks = c(-Inf, 140, 150, Inf),
+  omop_number_spec(representation = "bins", breaks = c(0, 140, 150, 1000),
     labels = c("below 140", "140 to below 150", "150 or above")))
 pipeline_recipe <- omop_recipe(variables = list(band = omop_number(average, presentation)))
 explanation <- recipe_explain(pipeline_recipe, detail = "semantics")
@@ -475,8 +480,9 @@ change_summary <- dsBaseClient::ds.summary("D_lab_change$change", datasources = 
 knitr::kable(book_summary(change_summary))
 ```
 
-A single observed value produces zero difference but cannot establish stability
-or estimate a slope. Measurement frequency affects observed attainment times.
+A single observed value produces missing native change: two eligible readings
+are required. Subtracting separately reduced first and last would instead give
+zero for that person, which would falsely suggest an observed change. Measurement frequency affects observed attainment times.
 
 **Exercise.** Summarise the time to the teaching target. What does day zero mean?
 
@@ -499,7 +505,7 @@ and privacy lineage. They do not join unrelated measurement rows.
 
 ```{r number-columns}
 column_recipe <- omop_recipe(variables = list(mean = average),
-  outputs = omop_output("people", format = "wide", grain = "person",
+  outputs = omop_output("people", format = "wide", grain = "person", columns = c("mean", "mean_rounded"),
     number_columns = list(mean_rounded = omop_number_column("mean",
       number_spec = omop_number_spec(rounding = omop_number_round("decimals", 1))))))
 print(recipe_execute(column_recipe, out = c(people = "D_number_columns"), conns = conns))
@@ -630,3 +636,5 @@ and time window before releasing summaries. Declare conversions, distinguish
 teaching cutoffs from recorded reference bounds, and distinguish change from
 slope. Pool only compatible variables from nonoverlapping sites, and interpret
 `ds.quantileMean` according to its weighted-site definition.
+
+**Next:** [15. Derived numeric formulas](book-15-formulas.html).

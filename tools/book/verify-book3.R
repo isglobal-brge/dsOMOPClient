@@ -1,6 +1,6 @@
 # Independent oracles over the public synthetic source, never an analyst route.
 verify_book3 <- function(input, env, get_data) {
-  if (!grepl("book-15-labs|book-06-events|book-08-outputs", input)) return(invisible(NULL))
+  if (!grepl("book-14-labs|book-06-events|book-08-outputs", input)) return(invisible(NULL))
   db <- DBI::dbConnect(RSQLite::SQLite(), env$practice$database)
   on.exit(DBI::dbDisconnect(db), add=TRUE)
   m <- DBI::dbGetQuery(db, paste("SELECT person_id, measurement_id, measurement_date,",
@@ -12,7 +12,7 @@ verify_book3 <- function(input, env, get_data) {
     index <- dates[1L] + 7
     eligible <- which(dates >= index-7 & dates <= index & !is.na(v))
     closest <- eligible[order(abs(dates[eligible]-index), dates[eligible], x$measurement_id[eligible])][1L]
-    data.frame(person_id=x$person_id[1L], first=v[1L], last=tail(v,1), mean=mean(v),
+    data.frame(person_id=x$person_id[1L], n=nrow(x), first=v[1L], last=tail(v,1), mean=mean(v),
       minimum=min(v), maximum=max(v), at_index=v[closest],
       per_day=if (length(unique(dates))>1L) unname(coef(lm(v ~ dates))[[2L]]) else NA_real_,
       high_count=sum(v>x$range_high,na.rm=TRUE), low_count=sum(v<x$range_low,na.rm=TRUE))
@@ -28,11 +28,11 @@ verify_book3 <- function(input, env, get_data) {
     stopifnot(is.factor(band), is.ordered(band),
       identical(levels(band),c("below 14","14 to below 15","15 or above")),
       is.ordered(env$bin_display$Category))
-    same(get_data("D_event_change")$change, oracle$last-oracle$first)
-    summary_matches(env$event_change, oracle$last-oracle$first)
+    same(get_data("D_event_change")$change, ifelse(oracle$n>=2,oracle$last-oracle$first,NA_real_))
+    summary_matches(env$event_change, ifelse(oracle$n>=2,oracle$last-oracle$first,NA_real_))
   }
   if (grepl("book-08-outputs", input)) summary_matches(env$output_lab, oracle$mean)
-  if (!grepl("book-15-labs", input)) return(invisible(NULL))
+  if (!grepl("book-14-labs", input)) return(invisible(NULL))
   d <- get_data("D_labs")
   stopifnot(nrow(d)==28L, length(unique(d$person_id))==28L, nrow(m)==108L,
     all(is.na(m$range_low)), all(is.na(m$range_high)))
@@ -46,8 +46,8 @@ verify_book3 <- function(input, env, get_data) {
   summary_matches(env$annual_summary, 365*oracle$per_day)
   same(get_data("D_lab_gl")$mean_gl, 10*oracle$mean)
   summary_matches(env$conversion_summary, 10*oracle$mean)
-  same(get_data("D_lab_change")$change,oracle$last-oracle$first)
-  summary_matches(env$change_summary,oracle$last-oracle$first)
+  same(get_data("D_lab_change")$change,ifelse(oracle$n>=2,oracle$last-oracle$first,NA_real_))
+  summary_matches(env$change_summary,ifelse(oracle$n>=2,oracle$last-oracle$first,NA_real_))
   flags <- get_data("D_lab_flags")
   stopifnot(is.ordered(flags$band), identical(levels(flags$band),env$band_levels))
   same(flags$rounded,round(oracle$mean,1))
@@ -57,8 +57,8 @@ verify_book3 <- function(input, env, get_data) {
   stopifnot(grepl("publication status",env$reference_message))
   same(get_data("D_log")$logged,log(oracle$mean))
   same(get_data("D_number_columns")$mean_rounded,round(oracle$mean,1))
-  same(get_data("D_lab_change")$ratio,oracle$last/oracle$first)
-  same(get_data("D_lab_change")$percent,100*(oracle$last-oracle$first)/oracle$first)
+  same(get_data("D_lab_change")$ratio,ifelse(oracle$n>=2,oracle$last/oracle$first,NA_real_))
+  same(get_data("D_lab_change")$percent,100*(ifelse(oracle$n>=2,oracle$last-oracle$first,NA_real_))/oracle$first)
   observed <- vapply(split(m,m$person_id),function(x) {
     found <- which(x$value_as_number>=14)
     if(!length(found)) return(NA_real_)

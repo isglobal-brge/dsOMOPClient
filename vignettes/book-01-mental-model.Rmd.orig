@@ -132,3 +132,4 @@ This returns the service’s protected summary; no person identifier is released
 
 OMOP makes data structures familiar. DataSHIELD keeps patient rows at the server and checks released summaries.
 
+**Next:** [2. Resources, connections and symbols](book-02-connect.html).

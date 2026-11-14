@@ -12,3 +12,6 @@ for (term in c('Glucose','Creatinine','Systolic','Diastolic','Body weight','Body
  print(term);print(ds.omop.concept.search(term,conns=conns)$pooled)
 }
 print(ds.omop.concept.prevalence('measurement',top_n=50,scope='pooled',conns=conns)$pooled)
+print(grep('Surv|surv|cox',rownames(installed.packages()),value=TRUE))
+for(pkg in c('dsBaseClient','dsSurvivalClient')) if(requireNamespace(pkg,quietly=TRUE)) print(grep('cox|Surv|rbind|glm',getNamespaceExports(pkg),value=TRUE))
+print(ds.omop.concept.search(NULL,vocabulary='ATC',standard_only=FALSE,conns=conns)$pooled)

@@ -136,7 +136,7 @@ verify_book2 <- function(input, env, get_data) {
             as.integer(as.Date("2024-03-14")-as.Date("2020-03-14")),
             as.integer(as.Date("2024-05-10")-as.Date("2020-07-20")),NA),6))
   }
-  if (grepl("book-08-harmonise", input)) {
+  if (grepl("book-10-harmonise", input)) {
     # Single-site objects were released before the temporary connections closed.
     stopifnot(identical(dimnames(env$site_tables[[1L]]),dimnames(env$site_tables[[2L]])),
       identical(dimnames(env$site_tables[[1L]])[[1L]],

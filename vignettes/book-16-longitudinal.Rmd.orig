@@ -17,10 +17,15 @@ mixed models across two connections.
 </div>
 
 **You need:** [Before you start](book-00-start.html#before-you-start),
-[output formats](book-08-outputs.html) and [lab values](book-15-labs.html).
+[output formats](book-08-outputs.html) and [lab values](book-14-labs.html).
 Start a fresh session in `book-work` and run every section in order, including solutions.
 GiBleed and Synthea are public **synthetic** resources. Their results teach analysis
 mechanics, not clinical conclusions. This chapter uses dsBaseClient 6.3.5.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## The same people, two shapes
 
@@ -471,3 +476,5 @@ shape when possible, and understand what information a reshape cannot recover.
 A first-event hazard needs an at-risk panel with follow-up stopped at the event.
 Repeated-measure models instead retain repeated readings and model their dependence.
 Check every site's diagnostics and distinguish joint GLM estimation from SLMA pooling.
+
+**Next:** [17. Reproduction and migration notes](book-17-reproduce.html).

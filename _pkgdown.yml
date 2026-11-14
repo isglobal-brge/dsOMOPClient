@@ -14,7 +14,7 @@ template:
     border-radius: 0.3rem
 home:
   title: Learn dsOMOPClient
-  description: A practical DataSHIELD and OMOP book with executed examples for 2.10.4.
+  description: A practical DataSHIELD and OMOP book with executed examples for 2.10.5.
 navbar:
   structure:
     left: [intro, book, reference, news]
@@ -29,49 +29,61 @@ navbar:
     book:
       text: Tutorial chapters
       menu:
-        - text: What you can do with dsOMOP
-          href: articles/book-00-showcase.html
-        - text: 0. Getting started
+        - text: "What you can do with dsOMOP"
+          href: articles/book-showcase.html
+        - text: "0. Getting started"
           href: articles/book-00-start.html
-        - text: 1. DataSHIELD and OMOP
+        - text: "1. What DataSHIELD and OMOP mean"
           href: articles/book-01-mental-model.html
-        - text: 2. Connecting
+        - text: "2. Resources, connections and symbols"
           href: articles/book-02-connect.html
-        - text: 3. Exploring the CDM
+        - text: "3. Exploring the CDM"
           href: articles/book-03-explore.html
-        - text: 4. Vocabulary
+        - text: "4. Finding the concept IDs you need"
           href: articles/book-04-vocabulary.html
-        - text: 5. A first recipe
+        - text: "5. A first recipe"
           href: articles/book-05-recipe.html
-        - text: 6. Events, windows and reducers
+        - text: "6. Events, windows and reducers"
           href: articles/book-06-events.html
-        - text: 7. Populations
+        - text: "7. Populations and index events"
           href: articles/book-07-populations.html
-        - text: 8. Output formats
+        - text: "8. Choosing an output format"
           href: articles/book-08-outputs.html
-        - text: 9. Dates
+        - text: "9. Dates, periods and ages"
           href: articles/book-09-dates.html
-        - text: 10. Concepts as categories
-          href: articles/book-08-harmonise.html
-        - text: 11. Reusable studies and verbs
+        - text: "10. Concepts as categories"
+          href: articles/book-10-harmonise.html
+        - text: "11. Reusable studies and standalone verbs"
           href: articles/book-11-parameters.html
-        - text: 12. Privacy
+        - text: "12. What stays private"
           href: articles/book-12-privacy.html
-        - text: 13. Visit walkthrough
-          href: articles/book-06-visits.html
-        - text: 14. Verbal-autopsy capstone
-          href: articles/book-07-verbal-autopsy.html
-        - text: 15. Working with lab values
-          href: articles/book-15-labs.html
-        - text: 16. Longitudinal data
+        - text: "13. Visit dates, one idea at a time"
+          href: articles/book-13-visits.html
+        - text: "14. Working with lab values"
+          href: articles/book-14-labs.html
+        - text: "15. Derived numeric formulas"
+          href: articles/book-15-formulas.html
+        - text: "16. Longitudinal data: from events to analysis"
           href: articles/book-16-longitudinal.html
-        - text: Appendix A. Reproduction and migration
-          href: articles/book-09-reproduce.html
+        - text: "17. Reproduction and migration notes"
+          href: articles/book-17-reproduce.html
+        - text: "18. Capstone: a verbal-autopsy wide table"
+          href: articles/book-18-verbal-autopsy.html
+        - text: "19. Case study: HDSS-style mortality"
+          href: articles/book-19-case-mortality.html
+        - text: "20. Case study: celecoxib versus diclofenac"
+          href: articles/book-20-case-gibleed.html
+        - text: "21. Case study: glucose trajectories"
+          href: articles/book-21-case-glucose.html
+        - text: "22. Case study: drug utilisation"
+          href: articles/book-22-case-drug.html
+        - text: "23. Case study: a harmonised Table 1"
+          href: articles/book-23-case-table1.html
 articles:
   - title: Learn step by step
     navbar: ~
     contents:
-      - book-00-showcase
+      - book-showcase
       - book-00-start
       - book-01-mental-model
       - book-02-connect
@@ -82,17 +94,23 @@ articles:
       - book-07-populations
       - book-08-outputs
       - book-09-dates
-      - book-08-harmonise
+      - book-10-harmonise
       - book-11-parameters
       - book-12-privacy
-      - book-06-visits
-      - book-07-verbal-autopsy
-      - book-15-labs
+      - book-13-visits
+      - book-14-labs
+      - book-15-formulas
       - book-16-longitudinal
-  - title: Reproduction and migration
+      - book-17-reproduce
+      - book-18-verbal-autopsy
+  - title: Case studies
     navbar: ~
     contents:
-      - book-09-reproduce
+      - book-19-case-mortality
+      - book-20-case-gibleed
+      - book-21-case-glucose
+      - book-22-case-drug
+      - book-23-case-table1
   - title: Earlier reference guides
     navbar: ~
     contents:

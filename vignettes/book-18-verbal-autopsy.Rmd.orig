@@ -1,9 +1,9 @@
 ---
-title: "14. Capstone: a verbal-autopsy wide table"
+title: "18. Capstone: a verbal-autopsy wide table"
 author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{14. Capstone: a verbal-autopsy wide table}
+  %\VignetteIndexEntry{18. Capstone: a verbal-autopsy wide table}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -20,6 +20,11 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+
 ## Start this chapter
 
 Start a fresh R session in the `book-work` directory created in
@@ -35,6 +40,21 @@ names(conns)
 ```
 
 The `site` connection is ready. This chapter creates its temporary questionnaire fixture locally.
+
+## Find the questionnaire concepts first
+
+The local catalogue is the chapter-4 questionnaire vocabulary, not GiBleed's
+clinical vocabulary. Search before selecting questions and coded answers.
+
+```{r va-discovery}
+va_catalogue <- ds.omop.concept.search(NULL, standard_only = FALSE, limit = 100, conns = conns)$pooled
+knitr::kable(va_catalogue[c("concept_name", "domain_id", "standard_concept")])
+va_ids <- setNames(va_catalogue$concept_id, va_catalogue$concept_name)
+va_sets <- lapply(va_ids, omop_concept_set)
+```
+
+These local concepts have no external Maps to or ancestry. Their observed uses
+were checked in [chapter 4](book-04-vocabulary.html#find-the-colleagues-questions-answers-and-causes).
 
 ## Begin with the clinical question
 
@@ -267,7 +287,27 @@ dsBaseClient::ds.colnames("D_va", datasources = conns)
 Its private columns combine several domains. The approved aggregate remains the analyst-facing result.
 
 </details>
+## Add a native numeric presentation
+
+Keep exact completed age private and add a broad age band with the A-29 numeric
+wrapper. Missing age stays missing. These public teaching bands do not repair
+incomplete birth dates or infer an age for a survivor.
+
+```{r va-native-number}
+va_numeric <- omop_recipe(variables = c(va$variables,
+  list(age_band = omop_number_bins(age_at_death, breaks = c(0, 40, 121),
+    labels = c("under 40", "40 and over")))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+print(recipe_execute(va_numeric, out = c(people = "D_va_numeric"), conns = conns))
+ds.omop.table("D_va_numeric", "age_band", conns = conns)
+```
+
+The earlier date presentation and concept translation remain native. Custom
+category order, rollups, wide-by-time layout and codebooks await the separate
+categorical/layout update; this chapter does not invent arguments for them.
+
 ## Recap
 
 The native 2.10.5 API now supports the whole capstone: pseudonymous roster, completed age, coded answers, calendar periods and cause of death.
 
+**Next:** [19. Case study: HDSS-style mortality](book-19-case-mortality.html).

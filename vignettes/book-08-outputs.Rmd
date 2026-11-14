@@ -684,7 +684,7 @@ knitr::kable(book_summary(output_lab))
 
 The wide table gives each included person one mean in g/dL. An average over
 measurement rows would give more weight to people with more measurements.
-[Working with lab values](book-15-labs.html) builds this distinction into a
+[Working with lab values](book-14-labs.html) builds this distinction into a
 two-connection analysis. Neither shape grants access to individual rows.
 
 </details>

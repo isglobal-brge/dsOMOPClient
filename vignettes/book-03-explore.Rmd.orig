@@ -123,3 +123,4 @@ No. GiBleed has measurement rows but no numeric values. The numeric chapters use
 
 Schema exploration tells you which fields exist. Safe counts describe support without returning records.
 
+**Next:** [4. Finding the concept IDs you need](book-04-vocabulary.html).

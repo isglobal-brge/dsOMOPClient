@@ -87,7 +87,7 @@ dsBaseClient::ds.colnames("D_date_exact", datasources = conns)
 
 People with no visit keep a missing date. Native `omop_date()` and ordinary
 `first_date`/`last_date` reducers differ: those reducers without a date specification
-return day offsets. The [visit walkthrough](book-06-visits.html) compares both.
+return day offsets. The [visit walkthrough](book-13-visits.html) compares both.
 
 ## Month periods as categories
 

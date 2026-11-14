@@ -22,6 +22,11 @@ Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
 The numbers describe teaching data, not clinical findings.
 
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+
 ## Start this chapter
 
 Start a fresh R session in the `book-work` directory created in
@@ -451,9 +456,10 @@ event_change <- dsBaseClient::ds.summary("D_event_change$change", datasources = 
 knitr::kable(book_summary(event_change))
 ```
 
-This is change in g/dL, without dividing by elapsed time. A fitted slope uses
+This is change in g/dL, without dividing by elapsed time. Native change needs
+two eligible readings; a single reading stays missing rather than becoming zero. A fitted slope uses
 all eligible dates and values and has units per day. Continue with
-[Working with lab values](book-15-labs.html) for both methods and pooled analyses.
+[Working with lab values](book-14-labs.html) for both methods and pooled analyses.
 
 </details>
 
@@ -475,3 +481,4 @@ It changes the numeric coordinate under the declared conversion map, not who the
 
 An event chooses records, a window chooses time, and a reducer answers one question. Empty records and an undefined anchor are different.
 
+**Next:** [7. Populations and index events](book-07-populations.html).

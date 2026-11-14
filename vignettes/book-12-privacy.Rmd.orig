@@ -22,6 +22,11 @@ Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
 The numbers describe teaching data, not clinical findings.
 
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+
 ## Start this chapter
 
 Start a fresh R session in the `book-work` directory created in
@@ -129,7 +134,7 @@ cat(text_message, "\n")
 
 This definition is refused before execution. Use the reviewed coded answer
 `value_as_concept_id` and translated categories when it answers the question,
-as in [chapter 10](book-08-harmonise.html). Free text is not needed for that analysis.
+as in [chapter 10](book-10-harmonise.html). Free text is not needed for that analysis.
 
 ## Why dates and ages can remain private columns
 
@@ -222,3 +227,4 @@ No. A JSON definition is public study logic. The resulting dates remain private 
 
 A recipe creates private objects and returns their names. Final patient outputs need distinct-person support; aggregates and category metadata have further checks. Class-1 fields and protected-key expressions are refused.
 
+**Next:** [13. Visit dates, one idea at a time](book-13-visits.html).

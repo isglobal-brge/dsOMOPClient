@@ -168,3 +168,4 @@ The same handle routes both calls to the current resource. A symbol name does no
 
 The resource identifies a database; `omop` is its session handle; `D_people` will name a private result.
 
+**Next:** [3. Exploring the CDM](book-03-explore.html).

@@ -1,9 +1,9 @@
 ---
-title: "Appendix A. Reproduction and migration notes"
+title: "17. Reproduction and migration notes"
 author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Appendix A. Reproduction and migration notes}
+  %\VignetteIndexEntry{17. Reproduction and migration notes}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -19,6 +19,11 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -173,7 +178,47 @@ vapply(manifest, function(x) x$dataset, "")
 No. Loading practice data, precomputing examples and rendering the site are three distinct operations.
 
 </details>
+## Strict Circe imports preserve the question
+
+Circe JSON describes an OHDSI cohort. Import is a translation into the executable
+recipe subset, not a promise that every Circe setting is supported. Refusing an
+unsupported criterion protects the research question from silent simplification.
+This deliberately invalid example stops at the unsupported additional criteria:
+
+```{r circe-refusal}
+circe_message <- tryCatch(recipe_import_circe(jsonlite::toJSON(list(
+  AdditionalCriteria = list(Type = "ALL", CriteriaList = list(list(unsupported = TRUE)))),
+  auto_unbox = TRUE)), error = function(e) conditionMessage(e))
+cat(circe_message, "\n")
+```
+
+Do not delete criteria merely to make an import run. Translate them with a
+supported native definition, verify the same population semantics, and retain
+the original JSON alongside the reviewed recipe.
+
+## Unsupported settings must remain visible
+
+Typed constructors reject irrelevant settings instead of guessing their meaning.
+For example, square-root transformation has no affine multiplier parameter:
+
+```{r setting-refusal}
+setting_message <- tryCatch(omop_number_transform("sqrt", factor = 2),
+  error = function(e) conditionMessage(e))
+cat(setting_message, "\n")
+```
+
+Declare an explicit affine stage and a square-root stage if that ordered
+calculation is intended. A successful parse is not evidence that a statistical
+option was honoured; keep execution capabilities and the explain output with
+the protocol. Audit-specific catalogue settings depend on the separately
+integrated audit implementation; this book does not silently install it over A-29.
+
+The per-table codebook and its new fields belong to the categorical/layout
+extension, excluded from this update. The existing dictionary in the output
+chapter remains vocabulary metadata, not an invented codebook contract.
+
 ## Recap
 
 The editable source executes once; the generated website is offline. Migration changes the recipe definitions, not just column names.
 
+**Next:** [18. Capstone: a verbal-autopsy wide table](book-18-verbal-autopsy.html).

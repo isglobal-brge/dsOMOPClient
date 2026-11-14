@@ -20,6 +20,11 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+
 ## Start this chapter
 
 Start a fresh R session in the `book-work` directory created in
@@ -269,3 +274,4 @@ TRUE means this definition can be recorded. It does not prove that two different
 
 Concept values translate by default. Label maps recode answers; column maps rename variables. Shared labels give common categories across vocabulary wording differences, after you confirm concept meanings.
 
+**Next:** [11. Reusable studies and standalone verbs](book-11-parameters.html).

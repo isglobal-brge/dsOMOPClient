@@ -1,53 +1,54 @@
 # Learn dsOMOPClient
 
-Build useful study tables while patient records stay on the server.
-This book teaches the released **2.10.4 native recipe API**, one small step at a time.
-Every worked lesson includes executed code, real synthetic results and an exercise
-with its solution.
+Build study tables while patient records stay on each server. This book teaches
+native language 2 with the **2.10.5 A-29 numeric build**, on public synthetic
+GiBleed and Synthea data. A separately labelled questionnaire fixture supplies
+the colleague's verbal-autopsy examples. Every chapter has executed examples,
+real outputs and at least three exercises with collapsible solutions.
 
-[Explore what you can do with dsOMOP →](articles/book-00-showcase.html)
+[Explore what you can do →](articles/book-showcase.html)
 
-[Start with chapter 0 →](articles/book-00-start.html)
+## Tutorial chapters
 
-## Your path through the book
+The numbered tutorial runs from first connection through native numbers and
+reproducibility to the verbal-autopsy capstone. The case studies then combine
+those skills into end-to-end studies. Dataset and API limitations are shown
+explicitly where a requested analysis cannot be supported.
 
-| Chapter | What you will do |
-|---|---|
-| [0. Getting started](articles/book-00-start.html) | Install and open a practice session |
-| [1. DataSHIELD and OMOP](articles/book-01-mental-model.html) | Understand what stays private |
-| [2. Connecting](articles/book-02-connect.html) | Attach a resource and use symbols |
-| [3. Exploring the CDM](articles/book-03-explore.html) | Read schema and safe counts |
-| [4. Vocabulary](articles/book-04-vocabulary.html) | Find concepts and build sets |
-| [5. A first recipe](articles/book-05-recipe.html) | Create education and cause columns |
-| [6. Events, windows and reducers](articles/book-06-events.html) | Choose records, time and one-value summaries |
-| [7. Populations](articles/book-07-populations.html) | Define eligibility, episodes, new users and matching |
-| [8. Output formats](articles/book-08-outputs.html) | Choose shapes, censoring and joins |
-| [9. Dates](articles/book-09-dates.html) | Use parts, periods, anchored ages and partial dates |
-| [10. Concepts as categories](articles/book-08-harmonise.html) | Translate, recode, rename and harmonise two sites |
-| [11. Reusable studies and verbs](articles/book-11-parameters.html) | Bind parameters and use mutate/filter |
-| [12. Privacy](articles/book-12-privacy.html) | Understand final release and refused columns |
-| [13. Visit walkthrough](articles/book-06-visits.html) | Combine offsets, dates and event rows |
-| [14. Verbal-autopsy capstone](articles/book-07-verbal-autopsy.html) | Combine answers, age, visit periods and cause |
-| [15. Working with lab values](articles/book-15-labs.html) | Reduce, convert and pool synthetic lab values |
-| [16. Longitudinal data](articles/book-16-longitudinal.html) | Shape events, build risk sets and model repeated measures |
+- [0. Getting started](articles/book-00-start.html)
+- [1. What DataSHIELD and OMOP mean](articles/book-01-mental-model.html)
+- [2. Resources, connections and symbols](articles/book-02-connect.html)
+- [3. Exploring the CDM](articles/book-03-explore.html)
+- [4. Finding the concept IDs you need](articles/book-04-vocabulary.html)
+- [5. A first recipe](articles/book-05-recipe.html)
+- [6. Events, windows and reducers](articles/book-06-events.html)
+- [7. Populations and index events](articles/book-07-populations.html)
+- [8. Choosing an output format](articles/book-08-outputs.html)
+- [9. Dates, periods and ages](articles/book-09-dates.html)
+- [10. Concepts as categories](articles/book-10-harmonise.html)
+- [11. Reusable studies and standalone verbs](articles/book-11-parameters.html)
+- [12. What stays private](articles/book-12-privacy.html)
+- [13. Visit dates, one idea at a time](articles/book-13-visits.html)
+- [14. Working with lab values](articles/book-14-labs.html)
+- [15. Derived numeric formulas](articles/book-15-formulas.html)
+- [16. Longitudinal data: from events to analysis](articles/book-16-longitudinal.html)
+- [17. Reproduction and migration notes](articles/book-17-reproduce.html)
+- [18. Capstone: a verbal-autopsy wide table](articles/book-18-verbal-autopsy.html)
 
-The main lessons use one DataSHIELD connection at a time. GiBleed teaches the
-basics; Synthea27Nj supplies numeric labs. Both have synthetic people. A separately
-labelled 24-person test fixture supplies the colleague’s questionnaire examples. Chapter 10 includes
-a two-connection vocabulary harmonisation demonstration. Chapter 15 pools numeric
-summaries and a Gaussian model across disjoint synthetic sites.
-[Reproduction and migration notes](articles/book-09-reproduce.html) explain how
-the examples run and how older recipe conventions differ. The visit walkthrough
-and capstone retain their original URLs so earlier links continue to work.
+## Case studies
 
-## Learn with real execution
+- [19. Case study: HDSS-style mortality](articles/book-19-case-mortality.html)
+- [20. Case study: celecoxib versus diclofenac](articles/book-20-case-gibleed.html)
+- [21. Case study: glucose trajectories](articles/book-21-case-glucose.html)
+- [22. Case study: drug utilisation](articles/book-22-case-drug.html)
+- [23. Case study: a harmonised Table 1](articles/book-23-case-table1.html)
 
-The displayed results come from DSLite running the matching released server and
-client against the chapter’s stated synthetic dataset. The verbal-autopsy example
-uses the released native follow-up recipe, including exact age at death and
-calendar precision. The optional local Opal/GiBleed instructions explain the
-production-shaped connection route; GiBleed is a different dataset.
+## Reproduce what you read
 
-Read the book in order. Use the function reference when you need argument details.
-The older reference guides are retained for existing links and are not the book's
-learning path. This is an OHDSI-inspired theme, not an OHDSI endorsement.
+The website contains precomputed code and output; it does not open connections.
+[Reproduction](articles/book-17-reproduce.html) records software, data and study
+definitions. The downloadable helpers open fresh DSLite sessions; the shared
+connection file also supports the separately documented Opal route.
+
+This is an OHDSI-inspired theme, not an OHDSI endorsement. The author is David
+Sarrat González. The categorical and layout extension is outside this update.

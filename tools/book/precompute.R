@@ -4,6 +4,7 @@ stopifnot(as.character(packageVersion("dsOMOP")) == "2.10.5",
 library(dsOMOPClient)
 source("tools/book/verify-book2.R")
 source("tools/book/verify.R")
+source("tools/book/verify-book4.R")
 source("tools/book/verify-book3.R")
 source("tools/book/verify-longitudinal.R")
 source("tools/book/verify-standalone-showcase.R")
@@ -14,11 +15,13 @@ args <- if (sys.nframe() == 0L) commandArgs(trailingOnly=TRUE) else character()
 if (length(args)) inputs <- inputs[grepl(args[[1L]], basename(inputs))]
 stopifnot(length(inputs) > 0L)
 if (!"--chapter-worker" %in% args) {
+  failures <- character()
   for (input in inputs) {
     status <- system2(file.path(R.home("bin"), "Rscript"),
       c("tools/book/precompute.R", shQuote(basename(input)), "--chapter-worker"))
-    if (status != 0L) stop("Fresh-process chapter failed: ", input)
+    if (status != 0L) failures <- c(failures,input)
   }
+  if (length(failures)) stop("Fresh-process chapters failed: ", paste(failures,collapse=", "))
   message("All chapters passed in separate R processes using visible setup")
 } else {
   for (input in inputs) {
@@ -31,7 +34,7 @@ if (!"--chapter-worker" %in% args) {
         }
         if (exists("practice", inherits=FALSE)) unlink(practice$path)
         if (exists("two_conns", inherits=FALSE)) {
-          try(ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-15-labs|book-16-longitudinal",input)) "book_pool" else "omop"), silent=TRUE)
+          try(ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-14-labs|book-16-longitudinal",input)) "book_pool" else "omop"), silent=TRUE)
           try(DSI::datashield.logout(two_conns), silent=TRUE)
         }
         if (exists("pair", inherits=FALSE)) unlink(pair$path)
@@ -41,7 +44,7 @@ if (!"--chapter-worker" %in% args) {
       knitr::opts_hooks$set(label = function(options) {
         if (grepl("book-11-parameters", input) && options$label == "unknown-function")
           chapter_env$rollback_snapshot <- DSLite::getDSLiteData(chapter_env$conns, "D_bmi")$site
-        if (grepl("book-00-showcase", input) && options$label == "showcase-numeric-connection") {
+        if (grepl("book-showcase", input) && options$label == "showcase-numeric-connection") {
           symbols <- DSI::datashield.symbols(chapter_env$conns)$site
           symbols <- symbols[grepl("^D_tour_", symbols)]
           chapter_env$showcase_snapshot <- setNames(lapply(symbols, function(symbol)
