@@ -393,6 +393,9 @@ recipe_merge <- function(a, b, prefix = NULL) {
       x <- upd(x, "event", self$src)
       return(upd(x, "window", self$any))
     }
+    if(inherits(x,"omop_timepoint"))return(upd(x,"anchor",self$any))
+    if(inherits(x,"omop_timepoints")) {x<-upd(x,"anchor",self$any);return(upd(x,"points",function(p)lapply(p,self$any)))}
+    if(inherits(x,"omop_visits")) {x<-upd(x,"source",self$src);return(upd(x,"window",self$any))}
     if (inherits(x, "omop_reducer")) {
       for (k in c("window", "reference", "simple")) x <- upd(x, k, self$any)
       return(x)
@@ -410,6 +413,10 @@ recipe_merge <- function(a, b, prefix = NULL) {
         x$derived$column<-key
         if(!is.null(x$derived$component))x$derived$component<-self$out(x$derived$component)
       }
+      if(!is.null(x$derived$variable))x$derived$variable<-self$any(x$derived$variable)
+      if(!is.null(x$derived$values))x$derived$values<-lapply(x$derived$values,self$any)
+      if(!is.null(x$derived$timepoints))x$derived$timepoints<-self$any(x$derived$timepoints)
+      if(!is.null(x$derived$visits))x$derived$visits<-self$any(x$derived$visits)
       if (!is.null(x$derived$inputs)) x$derived$inputs <- lapply(x$derived$inputs,self$any)
       if (!is.null(x$derived$reducer)) x$derived$reducer <- self$any(x$derived$reducer)
       return(x)

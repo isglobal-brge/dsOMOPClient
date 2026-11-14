@@ -1517,9 +1517,8 @@ omop_reduce <- function(fn, value = NULL, window = NULL, which = NULL, n = 1L,
   if (!identical(fn, "quantile") && !is.null(p)) {
     stop("omop_reduce(): p is used only with quantile.", call. = FALSE)
   }
-  if (fn %in% c("any", "all") && is.null(predicate)) {
-    stop("omop_reduce(): ", fn, " needs a predicate.", call. = FALSE)
-  }
+  # Unbound any/all also serve typed category indicators. Ordinary event
+  # reducers still require a predicate when bound and validated.
   if (!fn %in% c("any", "all") && !is.null(predicate)) {
     stop("omop_reduce(): predicate is used only with any/all.", call. = FALSE)
   }

@@ -1,0 +1,27 @@
+test_that("C32 C38 C42 repeated public bundles retain requested missing columns", {
+  ctx<-.clf_setup();.numeric_lexer()
+  e<-omop_event("observation",45000120L)
+  points<-omop_timepoints(list(baseline=omop_timepoint(),m6=omop_timepoint(6,"months")),anchor="2020-01-01")
+  bundle<-omop_repeated(e,list(answer=omop_category_rows(e,"value_as_concept_id")),timepoints=points)
+  expect_s3_class(bundle$answer_m6,"omop_variable")
+  r<-omop_recipe(variables=list(education=bundle),labels=c(`45000123`="primary",`45000124`="secondary",`45000125`="tertiary"))
+  p<-recipe_to_plan(r,version=2)
+  expect_true("layout.repeated" %in% .plan_v2_operations(p))
+  ds.omop.plan.execute(p,out=setNames("Repeated",names(p$outputs)),symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"Repeated")) {
+    expect_equal(nrow(f),18L)
+    expect_true(all(c("education_answer_baseline","education_answer_m6") %in% names(f)))
+    expect_false(anyNA(f$education_answer_baseline))
+    expect_true(all(is.na(f$education_answer_m6)))
+  }
+  code<-recipe_to_code(r)
+  expect_silent(parse(text=code))
+})
+test_that("C44 time grids reject ambiguity and keep declaration order", {
+  e<-omop_event("measurement")
+  expect_error(omop_timepoint(tolerance=c(1,2)),"containing zero")
+  expect_error(omop_timepoints(list(x=omop_timepoint(),x=omop_timepoint())),"unique")
+  expect_error(omop_repeated(e,list(x=omop_number_rows(e))),"exactly")
+  b<-omop_repeated(e,list(x=omop_number_rows(e)),timepoints=omop_timepoints(list(m12=omop_timepoint(12,"months"),baseline=omop_timepoint())))
+  expect_identical(names(b),c("x_m12","x_baseline"))
+})

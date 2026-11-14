@@ -1,0 +1,38 @@
+test_that("C01 C03 C57 category declarations lower through the public API", {
+  order <- c("concept:20","concept:10","concept:30")
+  s <- omop_category_spec(levels=order,order=omop_category_order(order),ordered=TRUE)
+  v <- omop_variable(name="education",table="person",column="race_concept_id")
+  r <- omop_recipe(variables=list(education=omop_category(v,s)),
+    category_spec=omop_category_spec(ordered=FALSE))
+  p <- recipe_to_plan(r,version=2)
+  expect_true(p$variables$education$category_spec$ordered)
+  expect_false(p$options$category_spec$ordered)
+  expect_null(v$category_spec)
+  expect_true("category.presentation" %in% .plan_v2_operations(p))
+  expect_error(recipe_to_plan(r,version=1),"category_spec")
+  expect_error(omop_category_order(c("concept:1","concept:1")),"unique")
+  expect_error(omop_category_order(c("concept:01")),"canonical")
+  expect_error(omop_category_spec(binary=list(kind="category_binary",as="factor",labels=c("a","a"))),"unique")
+  expect_error(.categorySpecCheck(list(sql="SELECT *")),"closed")
+  expect_error(omop_category_rollup("none",level=1),"no other")
+  expect_error(omop_category_rollup("snomed",ancestors="concept:1",domain="concept:2",distance="max"),"separation")
+})
+test_that("C02 ordinal metadata binds the exact canonical key array", {
+  keys<-c("concept:20","concept:10","concept:30")
+  sha<-as.character(openssl::sha256(charToRaw(.jcsCanonical(as.list(keys)))))
+  m<-omop_category_order(metadata=list(id="education",version="1",sha256=sha,keys=keys))
+  expect_identical(.categoryOrderCheck(m),.categoryOrderCheck(omop_category_order(keys)))
+  expect_error(omop_category_order(metadata=list(id="education",version="1",sha256=paste(rep("0",64),collapse=""),keys=keys)),"hash")
+})
+test_that("C58 category constructors survive executable code and recipe interchange", {
+  r<-omop_recipe(variables=list(x=omop_category(omop_race(),omop_category_spec(
+    order=omop_category_order(metadata="identity"),ordered=FALSE,
+    missing=omop_category_missing(na="level")))))
+  p<-recipe_to_plan(r,version=2)
+  env<-new.env(parent=asNamespace("dsOMOPClient"))
+  eval(parse(text=recipe_to_code(r)),env)
+  recipes<-Filter(function(x)inherits(x,"omop_recipe"),as.list(env))
+  expect_true(length(recipes)>0)
+  expect_equal(.planNormalizedDigest(recipe_to_plan(tail(recipes,1)[[1]],version=2))$sha256,.planNormalizedDigest(p)$sha256)
+  expect_silent(recipe_to_plan(recipe_merge(r,r,prefix="copy"),version=2))
+})

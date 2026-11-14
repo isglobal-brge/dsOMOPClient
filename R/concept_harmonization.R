@@ -31,7 +31,7 @@
         if (length(candidates)>1L) paste0("; vocabulary conflict: ",paste(candidates,collapse=" / ")),
         if (!is.null(decision$version)) paste0("; version ",decision$version), "; ",decision$rule))
     }
-    shared <- resolved[intersect(names(resolved), c("ids", "labels", "levels", "vocabulary", "kind", "calendar", "number"))]
+    shared <- resolved[intersect(names(resolved), c("ids", "labels", "levels", "vocabulary", "kind", "calendar", "number", "category", "keys", "aliases", "ordered", "reference", "contrasts"))]
     naming_ids <- unique(unlist(lapply(per_server,function(x) x$reference_names[[col]]),use.names=FALSE))
     if (length(naming_ids)) shared$naming_ids <- naming_ids[.conceptIdOrder(naming_ids)]
     shared
@@ -60,6 +60,12 @@
   spec <- list(concept_protocol = 1L, columns = result, numbers = numbers,
        evidence = unique(unlist(lapply(per_server, function(x) x$evidence), use.names = FALSE)),
        names = if (length(generated)) as.list(.conceptGeneratedNames(keys, generated)) else list())
+  schemas<-lapply(per_server,function(x)x$schema)
+  if(any(!vapply(schemas,is.null,logical(1)))) {
+    if(any(vapply(schemas,is.null,logical(1))) || length(unique(vapply(schemas,.jcsCanonical,"")))!=1L)
+      .categoryReject("Published column types/derivations differ across retained sites.","category_domain_incompatible")
+    spec$schema<-schemas[[1L]]
+  }
   attr(spec,"concept_explain") <- explanation
   spec
 }
