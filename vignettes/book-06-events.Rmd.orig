@@ -351,9 +351,30 @@ print(ds.omop.mutate("D_reducers",
   newobj = "D_lab_bins", conns = conns))
 ```
 
+`cut()` in dsOMOP 2.10.4 produces character labels. Make a server-side
+factor with explicitly sequenced levels before tabulating it:
+
+```{r ordered-bin-levels}
+band_levels <- c("below 14", "14 to below 15", "15 or above")
+dsBaseClient::ds.asFactor("D_lab_bins$band", newobj.name = "event_band",
+  forced.factor.levels = band_levels, datasources = conns)
+dsBaseClient::ds.levels("event_band", datasources = conns)
+```
+
+The levels now run from low to high on the server and in the count table.
+This is a factor with a declared level sequence, **not R's `ordered` class**:
+`ds.asFactor()` uses ordinary categorical contrasts, with the first level as
+reference. Sorting a displayed table alone would not change those model semantics.
+Do not pass `ordered_result` to `ds.omop.mutate()`; that argument is unsupported.
+For an ordinal display, apply `ordered()` only to the released category labels;
+it does not make private values available or change the server model.
+
 ```{r bins-result}
-bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
-knitr::kable(book_counts(bins_result))
+bins_result <- dsBaseClient::ds.table("event_band", useNA = "always", datasources = conns)
+bin_display <- book_counts(bins_result)
+bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
+knitr::kable(bin_display[order(bin_display$Category, na.last = TRUE), ])
+dsBaseClient::ds.mean("D_lab_bins$mean", type = "combine", datasources = conns)
 ```
 
 <details><summary>Full aggregate response</summary>

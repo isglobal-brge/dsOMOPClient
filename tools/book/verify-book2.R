@@ -47,7 +47,7 @@ verify_book2 <- function(input, env, get_data) {
     expected_counts <- list(any = c(9,19,0), all = c(24,4,0), ever = 28,
       bins = as.numeric(table(factor(as.character(cut(oracle[,"mean"], c(0,14,15,100),
         labels=c("below 14","14 to below 15","15 or above"), right=FALSE)),
-        levels=c("14 to below 15","15 or above","below 14")))),
+        levels=c("below 14","14 to below 15","15 or above")))),
       ranges = 28)
     expected_counts$bins <- c(expected_counts$bins, 0)
     for (name in names(tables)) {
