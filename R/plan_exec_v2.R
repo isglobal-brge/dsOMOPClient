@@ -58,7 +58,7 @@
          "support (", detail, "). It has no equivalent v1 plan: parent inheritance, ",
          "coverage policies, event censoring, matching and the other language-2 ",
          "constructs are never dropped to fit an older server. Upgrade dsOMOP on ",
-         "those servers to ", .DSOMOP_PROTOCOL_RELEASE, ".", call. = FALSE)
+         "those servers to ", if(.numberHas(plan))"2.10.5" else .DSOMOP_PROTOCOL_RELEASE, ".", call. = FALSE)
   }
   invisible(TRUE)
 }
@@ -105,7 +105,8 @@
 .plan_v2_operations <- function(plan) {
   x <- .planNormalizeV2(plan)
   ops <- if (.conceptNeedsPresentation(plan)) "output.concept_labels" else character(0)
-  date_vars <- x$variables
+  ops <- c(ops, .numberCapabilities(x))
+  date_vars <- .numberVariables(x)
   if (!is.null(x$options$date_spec) || any(vapply(date_vars, function(v) !is.null(v$date_spec) || (v$derived$kind %||% "") %in% c("calendar_date", "date_part"), logical(1)))) ops <- c(ops, "date.presentation")
   if (any(vapply(date_vars, function(v) (v$derived$kind %||% "") %in% c("time_between", "age_at"), logical(1)))) ops <- c(ops, "date.elapsed")
   add <- function(...) ops <<- c(ops, ...)
@@ -156,7 +157,7 @@
     add("window.anchor.source")
   }
   reducers <- character(0)
-  for (v in x$variables %||% list()) {
+  for (v in .numberVariables(x)) {
     if (!is.null(v$reducer)) {
       add("variable.reducer")
       reducers <- c(reducers, v$reducer$fn)
@@ -221,7 +222,8 @@
 #' Language-2 constructs of a recipe (no v1 equivalent)
 #' @keywords internal
 .recipe_v2_constructs <- function(recipe) {
-  c(if (.conceptHasMaps(recipe)) "concept labels/column_names",
+  c(if (.numberHas(recipe)) "number_spec/numeric declarations (use native language 2)",
+    if (.conceptHasMaps(recipe)) "concept labels/column_names",
     if (!is.null(recipe$options$date_spec) || any(vapply(recipe$variables, function(v) !is.null(v$date_spec), logical(1)))) "date_spec", .recipe_v2_constructs_base(recipe))
 }
 
@@ -427,7 +429,7 @@
     !is.null(p$index$source$cohort_definition_id) || !is.null(p$cohort_definition_id)
   }, logical(1))
   if (any(pops_cohort)) tables <- c(tables, "cohort")
-  for (v in x$variables %||% list()) {
+  for (v in .numberVariables(x)) {
     k <- v$derived$kind %||% ""
     if (k %in% c("charlson", "chads2", "chadsvasc", "dcsi", "hfrs")) {
       tables <- c(tables, "condition_occurrence")

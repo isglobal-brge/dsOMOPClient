@@ -1,3 +1,67 @@
+# dsOMOPClient 2.10.5 (2026-11-14)
+
+- Corrected (STG-R1-01): staging cleanup validates every committed descriptor
+  before classifying expired or consumed output. Parseable malformed manifests
+  preserve the entire directory and its ownership tracking. Re-run affected
+  recipes after upgrading; public readers still reject invalid or expired data.
+
+- Newly permitted (CR-33 / A-32): repeated staged executions no longer stop at
+  a per-handle directory count. Before reserving a directory, the server reclaims
+  only handle-owned staging whose committed outputs are all expired, consumed
+  (data files removed), or revoked. Live outputs and active executions remain
+  intact; byte and row caps still protect staging. Re-run affected recipes;
+  `dsomop.max_staging_dirs_per_handle` is retired and ignored.
+
+- Corrected (A-29 second review): integer numeric expressions retain a
+  conservative signed64 result type through nested formulas, selectors and
+  publication, including empty inputs. Re-run affected recipes; integer
+  expression results now consistently use integer64 storage.
+- Newly refused: native numeric arithmetic and mixed numeric branches/coalesce
+  reject inexact integer-to-binary64 conversions even for inline intermediates.
+  Retain raw/count identity representation or use exactly representable inputs;
+  naming an intermediate does not change admission. Legacy mutate semantics
+  and the closed expression grammar are unchanged.
+
+- Corrected (A-29 review): independently normalized numeric siblings retain
+  their original event-row binding in long and intervals outputs. BIGINT
+  longitudinal arithmetic now checks exact conversion before calculation;
+  retain raw/count identity when a binary64 conversion is refused.
+- Corrected: expression types follow each selected canonical/presented input
+  prefix, preserving fractional values and exact integers. Slope reducers and
+  generated relation-day columns retain class-2 provenance through copies,
+  categories and transport. Supply roles use days; unrelated numeric roles
+  do not inherit measurement units. Re-run affected numeric recipes.
+- Newly refused: scalar formulas in long output, including nested formulas,
+  require explicit `broadcast = TRUE`, just like direct scalar reducers.
+
+
+- Corrected: shared numeric contracts retain full binary64 precision through
+  DataSHIELD JSON transport, including fractional conversion factors and
+  adjacent breakpoints. Re-execute recipes to reconcile those contracts.
+
+- Newly permitted (A-29 / CR-30): native numeric presentation with declared
+  source and fixed units, ordered transforms, exact binary64 decimal rounding,
+  public bins and clinical categories, flags and value presence/missingness.
+  Numeric rows, counts, longitudinal changes, closed multi-input expressions
+  and output-local canonical column copies run before protection and release.
+  Numeric capabilities are negotiated before assignment; new declarations
+  require native language 2 and dsOMOP 2.10.5 at every selected site.
+- Newly permitted: numeric factor reconciliation retains the complete ordered
+  public domain, including unused levels. Memory and Parquet carry numeric
+  units, expression identity, domains and privacy lineage. Incompatible retained
+  contracts fail and roll back; a numeric sibling is required for arithmetic.
+- Corrected: A-29 CV results are dimensionless SD/mean. The compatibility route
+  without numeric declarations retains its percentage CV. To display a native
+  CV as a percent, explicitly apply an affine factor of 100.
+- Corrected: exact BIGINT selectors and integer count promotion avoid silent
+  binary64/32-bit loss. Identity and round(none) retain integer64; operations
+  requiring an inexact double conversion refuse with a bounded remedy.
+- Newly refused: explicit numeric presentation of identifiers, concept values,
+  Dates/factors, model weights or structural codes; factor-valued matrix cells;
+  implicit event broadcasts; and nonnumeric/foreign expression bindings.
+  Use registered numeric measures, explicit numeric date representations,
+  declared broadcasts/reducers, and typed wide/long companions as applicable.
+
 # dsOMOPClient 2.10.4 (2026-11-13)
 
 - Corrected: assigned age bands, birth-year bands and panel/calendar categories
@@ -100,12 +164,7 @@ choose the native date/age helpers explicitly for new semantics. The protected
 release protocol introduced in 2.10.3 is unchanged; pooling still requires
 compatible contracts and logical source identities.
 
-Release verification: [recipe/publication contract run 43515122503](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515122503)
-passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3;
-[full e2e run 43515127555](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515127555)
-passed both fresh and upgrade jobs. Both tested harness commit
-`17e5df40f4718bdece091f68d3003c764f061854`. These are evidence for that
-candidate, not a claim of live execution on every supported SQL dialect.
+The release candidate passed recipe/publication and end-to-end checks for fresh installations and upgrades on Opal 5.7.6 and 6.1.3. These checks do not establish live execution on every supported SQL dialect.
 
 # dsOMOPClient 2.10.3 (2026-11-13)
 

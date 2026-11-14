@@ -152,13 +152,7 @@ explicit numeric representations for date arithmetic. See [release
 notes](https://isglobal-brge.github.io/dsOMOPClient/news/index.html) for
 migrations and the client extraction vignette for examples.
 
-Release verification: [recipe/publication contract
-run 43515122503](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515122503)
-passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3; [full e2e
-run 43515127555](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515127555)
-passed both fresh and upgrade jobs. Both tested harness commit
-`17e5df40f4718bdece091f68d3003c764f061854`. These are evidence for that
-candidate, not a claim of live execution on every supported SQL dialect.
+The release candidate passed recipe/publication and end-to-end checks for fresh installations and upgrades on Opal 5.7.6 and 6.1.3. These checks do not establish live execution on every supported SQL dialect.
 
 ## Recipe language 2 in 2.10.4
 
@@ -411,51 +405,7 @@ workflows. It is a separate package and must be reviewed against the
 same server allowlist and disclosure policy; this README does not assert
 compatibility with every dsOMOP output or deployment.
 
-## Acknowledgements
 
-  - The development of dsOMOP has been supported by the
-    **[RadGen4COPD](https://github.com/isglobal-brge/RadGen4COPD)**,
-    **[P4COPD](https://www.clinicbarcelona.org/en/projects-and-clinical-assays/detail/p4copd-prediction-prevention-personalized-and-precision-management-of-copd-in-young-adults)**,
-    **[CADSET](https://www.ersnet.org/science-and-research/clinical-research-collaboration-application-programme/cadset-chronic-airway-diseases-early-stratification/)**,
-    and **[DATOS-CAT](https://datos-cat.github.io/LandingPage)**
-    projects. These collaborations have not only provided essential
-    financial backing but have also affirmed the project’s relevance and
-    application in significant research endeavors.
-  - This project has received funding from the **[Spanish Ministry of
-    Education, Innovation and
-    Universities](https://www.ciencia.gob.es/en/)**, the **[National
-    Agency for Research](https://www.aei.gob.es/en)**, and the **[Fund
-    for Regional
-    Development](https://ec.europa.eu/regional_policy/funding/erdf_en)**
-    **(PID2021-122855OB-I00)**. We also acknowledge support from the
-    grant **CEX2023-0001290-S** funded by
-    **MCIN/AEI/10.13039/501100011033**, and support from the
-    **[Generalitat de
-    Catalunya](https://web.gencat.cat/en/inici/index.html)** through the
-    **[CERCA Program](https://cerca.cat/en/)** and the **Consolidated
-    Group on HEALTH ANALYTICS (2021 SGR 01563)**.
-  - Additionally, this project has received funding from the
-    **[Instituto de Salud Carlos III (ISCIII)](https://www.isciii.es/)**
-    through the project **“PMP21/00090,”** co-funded by the **[European
-    Union’s](https://european-union.europa.eu/index_en)** **Resilience
-    and Recovery Facility**. It has also been partially funded by the
-    **“Complementary Plan for Biotechnology Applied to Health,”**
-    coordinated by the **[Institut de Bioenginyeria de Catalunya
-    (IBEC)](https://ibecbarcelona.eu/)** within the framework of the
-    **Recovery, Transformation, and Resilience Plan (C17.I1)** – Funded
-    by the **[European
-    Union](https://european-union.europa.eu/index_en)** –
-    **[NextGenerationEU](https://next-generation-eu.europa.eu/index_en)**.
+## Support
 
-## Contact
-
-For further information or inquiries, please contact:
-
-  - **Juan R González**: <juanr.gonzalez@isglobal.org>
-  - **David Sarrat González**: <david.sarrat@isglobal.org>
-
-For more details about **DataSHIELD**, visit
-<https://www.datashield.org>.
-
-For more information about the **Barcelona Institute for Global Health
-(ISGlobal)**, visit <https://www.isglobal.org>.
+Report issues through the package repository.

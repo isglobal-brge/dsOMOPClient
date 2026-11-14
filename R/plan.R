@@ -1896,7 +1896,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   v2 <- .v2_is_plan_v2(plan)
   .conceptValidatePlan(plan, wire = v2)
   # Translation is one contract for memory, staged and protected executions.
-  harmonize_factors <- !isFALSE(plan$options$translate_concepts) || .categoryNeedsPresentation(plan)
+  harmonize_factors <- !isFALSE(plan$options$translate_concepts) || .categoryNeedsPresentation(plan) || .numberHas(plan)
   session <- .get_session(symbol)
   session$concept_presentation <- NULL
   assign(symbol, session, envir = .dsomop_client_env)

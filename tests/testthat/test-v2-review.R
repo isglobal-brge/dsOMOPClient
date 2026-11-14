@@ -1,4 +1,4 @@
-# WS-8 fix round (Astra's review of 12 November 2026): regressions for B2, B3,
+# WS-8 fix round (regression review of 12 November 2026): regressions for B2, B3,
 # B4, B6, N1, N2 and the operation-inventory parity with the server.
 
 .server_ops <- function(plan) {

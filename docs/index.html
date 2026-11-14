@@ -125,7 +125,7 @@
 <h3 id="new-presentation-in-2104">New presentation in 2.10.4<a class="anchor" aria-label="anchor" href="#new-presentation-in-2104"></a>
 </h3>
 <p>Concept-valued outputs use shared labelled factors. <code>labels</code> can merge concept categories deliberately; <code>column_names</code> renames generated columns without merging them. <code><a href="reference/ds.omop.table.html">ds.omop.table()</a></code> retains unused public levels and exact labels when pooling. Native <code><a href="reference/omop_date_spec.html">omop_date_spec()</a></code>, <code><a href="reference/omop_date_spec.html">omop_date_parts()</a></code> and <code><a href="reference/omop_date_spec.html">omop_age_at()</a></code> provide calendar factors, numeric coordinates, Date bounds and anchored ages. No absolute-date permission is needed for assignment; final person support and aggregate controls remain. Re-run recipes after upgrading to recreate factors; use explicit numeric representations for date arithmetic. See <a href="https://isglobal-brge.github.io/dsOMOPClient/news/index.html">release notes</a> for migrations and the client extraction vignette for examples.</p>
-<p>Release verification: <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515122503" class="external-link">recipe/publication contract run 43515122503</a> passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3; <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515127555" class="external-link">full e2e run 43515127555</a> passed both fresh and upgrade jobs. Both tested harness commit <code>17e5df40f4718bdece091f68d3003c764f061854</code>. These are evidence for that candidate, not a claim of live execution on every supported SQL dialect.</p>
+<p>The release candidate passed recipe/publication and end-to-end checks for fresh installations and upgrades on Opal 5.7.6 and 6.1.3. These checks do not establish live execution on every supported SQL dialect.</p>
 </div>
 </div>
 <div class="section level2">
@@ -239,28 +239,8 @@
 <p>An example is <strong><a href="https://github.com/isglobal-brge/dsOMOPHelper" class="external-link"><code>dsOMOPHelper</code></a></strong>, which combines calls from <code>dsOMOPClient</code> and <code>dsBaseClient</code> for common workflows. It is a separate package and must be reviewed against the same server allowlist and disclosure policy; this README does not assert compatibility with every dsOMOP output or deployment.</p>
 </div>
 <div class="section level2">
-<h2 id="acknowledgements">Acknowledgements<a class="anchor" aria-label="anchor" href="#acknowledgements"></a>
-</h2>
-<ul>
-<li>The development of dsOMOP has been supported by the <strong><a href="https://github.com/isglobal-brge/RadGen4COPD" class="external-link">RadGen4COPD</a></strong>, <strong><a href="https://www.clinicbarcelona.org/en/projects-and-clinical-assays/detail/p4copd-prediction-prevention-personalized-and-precision-management-of-copd-in-young-adults" class="external-link">P4COPD</a></strong>, <strong><a href="https://www.ersnet.org/science-and-research/clinical-research-collaboration-application-programme/cadset-chronic-airway-diseases-early-stratification/" class="external-link">CADSET</a></strong>, and <strong><a href="https://datos-cat.github.io/LandingPage" class="external-link">DATOS-CAT</a></strong> projects. These collaborations have not only provided essential financial backing but have also affirmed the project’s relevance and application in significant research endeavors.</li>
-<li>This project has received funding from the <strong><a href="https://www.ciencia.gob.es/en/" class="external-link">Spanish Ministry of Education, Innovation and Universities</a></strong>, the <strong><a href="https://www.aei.gob.es/en" class="external-link">National Agency for Research</a></strong>, and the <strong><a href="https://ec.europa.eu/regional_policy/funding/erdf_en" class="external-link">Fund for Regional Development</a></strong> <strong>(PID2021-122855OB-I00)</strong>. We also acknowledge support from the grant <strong>CEX2023-0001290-S</strong> funded by <strong>MCIN/AEI/10.13039/501100011033</strong>, and support from the <strong><a href="https://web.gencat.cat/en/inici/index.html" class="external-link">Generalitat de Catalunya</a></strong> through the <strong><a href="https://cerca.cat/en/" class="external-link">CERCA Program</a></strong> and the <strong>Consolidated Group on HEALTH ANALYTICS (2021 SGR 01563)</strong>.</li>
-<li>Additionally, this project has received funding from the <strong><a href="https://www.isciii.es/" class="external-link">Instituto de Salud Carlos III (ISCIII)</a></strong> through the project <strong>“PMP21/00090,”</strong> co-funded by the <strong><a href="https://european-union.europa.eu/index_en" class="external-link">European Union’s</a></strong> <strong>Resilience and Recovery Facility</strong>. It has also been partially funded by the <strong>“Complementary Plan for Biotechnology Applied to Health,”</strong> coordinated by the <strong><a href="https://ibecbarcelona.eu/" class="external-link">Institut de Bioenginyeria de Catalunya (IBEC)</a></strong> within the framework of the <strong>Recovery, Transformation, and Resilience Plan (C17.I1)</strong> – Funded by the <strong><a href="https://european-union.europa.eu/index_en" class="external-link">European Union</a></strong> – <strong><a href="https://next-generation-eu.europa.eu/index_en" class="external-link">NextGenerationEU</a></strong>.</li>
-</ul>
-</div>
-<div class="section level2">
-<h2 id="contact">Contact<a class="anchor" aria-label="anchor" href="#contact"></a>
-</h2>
-<p>For further information or inquiries, please contact:</p>
-<ul>
-<li>
-<strong>Juan R González</strong>: <a href="mailto:juanr.gonzalez@isglobal.org" class="email">juanr.gonzalez@isglobal.org</a>
-</li>
-<li>
-<strong>David Sarrat González</strong>: <a href="mailto:david.sarrat@isglobal.org" class="email">david.sarrat@isglobal.org</a>
-</li>
-</ul>
-<p>For more details about <strong>DataSHIELD</strong>, visit <a href="https://www.datashield.org" class="external-link">https://www.datashield.org</a>.</p>
-<p>For more information about the <strong>Barcelona Institute for Global Health (ISGlobal)</strong>, visit <a href="https://www.isglobal.org" class="external-link">https://www.isglobal.org</a>.</p>
+<h2 id="support">Support</h2>
+<p>Report issues through the package repository.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

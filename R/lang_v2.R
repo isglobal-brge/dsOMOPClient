@@ -1470,6 +1470,7 @@ omop_reduce <- function(fn, value = NULL, window = NULL, which = NULL, n = 1L,
                         coverage = c("recorded", "effective_supply"),
                         fills = c("start_in_window", "clipped"),
                         observed_only = FALSE) {
+  explicit_value <- !is.null(value)
   if (base::missing(fn)) stop("omop_reduce(): fn is required.", call. = FALSE)
   fn <- .v2_choice(fn, .V2_REDUCER_FNS, "omop_reduce(): fn")
   value <- .v2_column(value, "omop_reduce(): value")
@@ -1548,7 +1549,7 @@ omop_reduce <- function(fn, value = NULL, window = NULL, which = NULL, n = 1L,
                  reference = reference, predicate = predicate,
                  reference_date = reference_date, unit = unit, coverage = coverage,
                  fills = fills, observed_only = observed_only),
-            class = c("omop_reducer", "list"))
+            number_value_explicit = explicit_value, class = c("omop_reducer", "list"))
 }
 
 #' @export
