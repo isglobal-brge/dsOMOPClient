@@ -2,11 +2,18 @@
 .equivalence_books <- function(recipe,ctx,mode,label) {
   plan <- recipe_to_plan(recipe,version=2)
   server <- ctx$servers[[1L]]
-  handle <- server$getSessionData(server$getSessionIds()[[1L]],".dsomop_handle_labels")
+  handle <- server$getSessionData(server$getSessionIds()[[1L]],paste0(".dsomop_handle_",.get_session("labels")$res_symbol))
   validation <- dsOMOP:::.planValidate(handle,plan)
   if(!isTRUE(validation$valid))stop(paste(validation$errors,collapse="; "))
   symbols <- setNames(paste0("Eq_",names(plan$outputs)),names(plan$outputs))
-  result <- ds.omop.plan.execute(plan,out=symbols,symbol="labels",conns=ctx$conns,output_mode=mode)
+  rejection <- character()
+  reject_entry <- dsOMOP:::.rejectionEntry
+  testthat::local_mocked_bindings(.rejectionEntry=function(e) {
+    rejection <<- unique(c(rejection,conditionMessage(e)))
+    reject_entry(e)
+  },.package="dsOMOP")
+  result <- tryCatch(ds.omop.plan.execute(plan,out=symbols,symbol="labels",conns=ctx$conns,output_mode=mode),
+    error=function(e)stop(paste(c(conditionMessage(e),rejection),collapse="\n")))
   books <- local({
     testthat::local_mocked_bindings(datashield.aggregate=function(...)stop("unexpected network"),
       datashield.assign.expr=function(...)stop("unexpected network"),.package="DSI")
@@ -123,4 +130,16 @@ for(scope in c("recipe","variable")) local({
         .equivalence_books(recipe,ctx,"memory",paste(label,"memory"))
       }
   })
+})
+
+
+test_that("copy prototypes branch at the same canonical and presented stages", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  e <- omop_event("observation",45000120L)
+  n <- omop_variable(event=e,reducer=omop_reduce("count"))
+  r <- omop_recipe(variables=list(n=omop_number_bins(n,breaks=c(0,2,10))),
+    outputs=omop_output("wide",columns=c("n","raw","nominal"),
+      number_columns=list(raw=omop_number_column("n",number_spec=omop_number_spec(representation="number"))),
+      category_columns=list(nominal=omop_category_column("n",category_spec=omop_category_spec(ordered=FALSE)))))
+  for(mode in c("memory","staged")) .equivalence_books(r,ctx,mode,paste("copies",mode))
 })

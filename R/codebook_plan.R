@@ -94,6 +94,12 @@
     type <- switch(mode,absolute="Date",binned="character","integer")
   }
   number<-variable$number_spec
+  number_input <- if(identical(d$kind,"number_column"))attr(original,"number_input") else NULL
+  if(!is.null(number_input)) {
+    type <- .presentationDescribe(number_input$value,domains=FALSE)$r_type
+    semantic <- if(isTRUE(number_input$flag))"flag" else "numeric"
+    number <- number %||% number_input$spec
+  }
   concept_kind <- .categoryDeclaredConcept(variable)
   concept <- isTRUE(concept_kind) || semantic=="concept"
   if(concept && isFALSE(plan$options$translate_concepts))type <- "integer"
@@ -109,7 +115,7 @@
   if(!is.null(variable)) {
     fn<-variable$reducer$fn %||% variable$derived$reducer$fn %||% ""
     flag<-fn %in% c("binary","any","all","abnormal","abnormal_low","abnormal_high") ||
-      identical(variable$derived$kind,"category_indicators") || identical(variable$derived$kind,"died") || identical(inherited$semantic_type,"flag")
+      identical(variable$derived$kind,"category_indicators") || identical(variable$derived$kind,"died") || identical(inherited$semantic_type,"flag") || semantic=="flag"
     was_flag<-flag
     flag_column <- list()
     attr(flag_column,"semantic_flag") <- flag
@@ -138,7 +144,7 @@
       spec$binary <- NULL
     } else spec <- list()
   }
-  unit<-inherited$unit %||% if(!is.null(variable)&&semantic %in% c("numeric","flag","bins","category")) .categoryDeclaredUnit(plan,variable) else "not_applicable"
+  unit<-number_input$unit %||% inherited$unit %||% if(!is.null(variable)&&semantic %in% c("numeric","flag","bins","category")) .categoryDeclaredUnit(plan,variable) else "not_applicable"
   for(step in pipeline) {
     if(step$kind=="event_unit")unit<-paste0("unit:",step$spec$target)
     if(step$kind=="fixed_unit")unit<-step$to
@@ -153,14 +159,17 @@
   if (!is.null(date) && !date_kind %in% c("time_between","age_at"))
     value <- .datePresent(list(lo=as.Date(character()),hi=as.Date(character())),date,
       part=if(date_kind=="date_part")d$part,anchor=as.Date(character()))
+  base <- if(fn %in% c("count","n_distinct") || identical(d$kind,"number_count") ||
+    isTRUE(was_flag))integer() else if(!is.null(value)&&is.numeric(value)&&!is.factor(value))value else double()
+  source_unit <- number_input$unit %||% if(!is.null(variable)).categoryDeclaredUnit(plan,variable) else unit
+  if(!is.null(number_input))base <- number_input$value
+  number_input <- if(numeric)list(value=base,unit=source_unit,spec=number,flag=isTRUE(was_flag))
   if (numeric && length(pipeline)) {
     # Expressions whose operand schema is not yet bound remain unresolved.
     if(any(vapply(pipeline,function(p)p$kind=="expression",logical(1)))) value <- NULL
     else {
-      base <- if(fn %in% c("count","n_distinct") || identical(d$kind,"number_count") ||
-        isTRUE(was_flag))integer() else if(!is.null(value)&&is.numeric(value)&&!is.factor(value))value else double()
       value <- .numberPresent(base,list(pipeline=pipeline),
-        unit=if(!is.null(variable)).categoryDeclaredUnit(plan,variable) else unit,
+        unit=source_unit,
         ranges=list(low=double(),high=double()))
     }
   }
@@ -215,6 +224,7 @@
     aggregate_policy="Existing endpoint admission; unresolved for unrequested endpoints",
     missing_policy="Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA",
     provenance=list(source="public plan; no observed schema or vocabulary lookup"),completeness="unresolved")
+  attr(out,"number_input") <- number_input
   attr(out,"presentation_input") <- input
   out
 }
