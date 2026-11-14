@@ -74,3 +74,27 @@ After execution, `recipe_codebook(result)` uses only the release metadata
 already admitted for each published component. It does not query a server,
 report counts or missingness, or retry rejected components. Keep the result
 receipt or use the bound recipe for a prospective codebook.
+
+Plain native language-2 releases also carry codebooks, including untranslated
+numeric outputs. Every participating server must advertise
+`output.codebook_metadata`. Nested survival components receive their explicitly
+selected covariates and their own schema records. Prospective books preserve
+public structure while leaving automatic vocabulary names and open domains
+unresolved. Codebooks do not say whether a declared level was observed.
+
+Intentional user-label merges retain their canonical minimum-ID identity and
+permitted aliases through category reduction. A later recode may name an alias,
+but cannot split its existing equivalence group. Conflicting alias targets
+refuse. A group containing zero and a known concept must be recoded as a whole
+before requesting Unknown classification.
+
+Arithmetic after a semantic flag clears its flag status. A later explicit
+threshold/presence/missing operation restores it. For an available empty time
+point, raw and threshold results are NA, present is 0 and missing is 1; an
+unavailable source or undefined/overflowing target remains NA throughout.
+
+Protected table and GLM analyses use the existing in-memory endpoint routes.
+`ds.omop.table()` retains declared unused categories and pools counts by the
+shared identity contract; model routes use the declared contrasts. Parquet
+chunks retain the same types, full levels and contrasts for downstream staged
+consumers. Factor codes are never a replacement for an explicit integer flag.

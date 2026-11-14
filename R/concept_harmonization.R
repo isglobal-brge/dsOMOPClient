@@ -36,6 +36,7 @@
         if (!is.null(decision$version)) paste0("; version ",decision$version), "; ",decision$rule))
     }
     shared <- resolved[intersect(names(resolved), c("ids", "labels", "levels", "vocabulary", "kind", "calendar", "number", "category", "keys", "aliases", "ordered", "reference", "contrasts"))]
+    shared$provenance<-resolved$decisions
     naming_ids <- unique(unlist(lapply(per_server,function(x) x$reference_names[[col]]),use.names=FALSE))
     if (length(naming_ids)) shared$naming_ids <- naming_ids[.conceptIdOrder(naming_ids)]
     shared

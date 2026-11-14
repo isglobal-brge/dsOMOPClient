@@ -43,5 +43,21 @@ test_that("C48 empty category metadata encodes null without changing plan NA val
   expect_identical(names(got$columns$x$aliases),c("a","b"))
   expect_null(got$columns$x$aliases$a)
   expect_identical(got$columns$x$aliases$b,"flag:1")
-  expect_error(.ds_encode_lossless(list(value=NA_real_)),"NA is not a JSON")
+  expect_error(.ds_encode_lossless(list(value=NA_real_)),"NA is not a JSON|Non-finite numbers")
+})
+
+test_that("C53 C54 C59 plain native numeric and untranslated releases have local codebooks", {
+  ctx<-.clf_setup();.numeric_lexer()
+  r<-omop_recipe(variables=list(n=omop_variable(event=omop_event("observation",45000120L),reducer=omop_reduce("count"))),options=list(translate_concepts=FALSE))
+  p<-recipe_to_plan(r,version=2)
+  expect_true("output.codebook_metadata" %in% .plan_v2_operations(p))
+  for(mode in c("memory","staged")) {
+    result<-recipe_execute(r,out=paste0("PlainBook_",mode),symbol="labels",conns=ctx$conns,output_mode=mode)
+    book<-recipe_codebook(result)
+    expect_length(book,1L);expect_identical(book[[1L]]$status,"published")
+    expect_identical(book[[1L]]$columns$r_type[book[[1L]]$columns$name=="n"],"integer")
+  }
+  session<-.get_session("labels")
+  session$capabilities[[1L]]$recipe_language$operations<-setdiff(session$capabilities[[1L]]$recipe_language$operations,"output.codebook_metadata")
+  expect_error(.v2_assert_supported(p,session,names(ctx$conns)),"output.codebook_metadata")
 })

@@ -1896,7 +1896,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   v2 <- .v2_is_plan_v2(plan)
   .conceptValidatePlan(plan, wire = v2)
   # Translation is one contract for memory, staged and protected executions.
-  harmonize_factors <- !isFALSE(plan$options$translate_concepts) || .categoryNeedsPresentation(plan) || .numberHas(plan)
+  harmonize_factors <- v2 || !isFALSE(plan$options$translate_concepts) || .categoryNeedsPresentation(plan) || .numberHas(plan)
   session <- .get_session(symbol)
   session$concept_presentation <- NULL
   assign(symbol, session, envir = .dsomop_client_env)
@@ -1906,7 +1906,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # assigned. The publication protocol needs it on every site; otherwise a v2
   # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
   harmonizes <- isTRUE(harmonize_factors) &&
-    (isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan)) &&
+    (v2 || isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan)) &&
     !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
   if (harmonizes && !v2) {
     language <- .v2_server_language(session, names(conns))
@@ -2096,7 +2096,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     .plan_verify_publication(conns, inventories)
     presentation <- list()
     if (isTRUE(harmonize_factors) &&
-        (isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan))) {
+        (v2 || isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan))) {
       presentation <- .harmonizePublicationFactors(inventories, conns)
     }
     if (any(partial)) {

@@ -27,3 +27,37 @@ test_that("C39 C40 C41 C42 visit ranking precedes the measurement join", {
     }
   }
 })
+
+test_that("C40 C41 visit keys, missing starts and conflicting duplicates have bounded semantics", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"DELETE FROM visit_occurrence");DBI::dbExecute(con,"DELETE FROM observation")
+    visits<-expand.grid(position=1:3,person_id=1:18)
+    visits$visit_occurrence_id<-visits$person_id*100+c(2,10,20)[visits$position]
+    visits$visit_concept_id<-9201L;visits$visit_type_concept_id<-0L
+    visits$visit_start_date<-c("2020-01-01","2020-01-01",NA_character_)[visits$position]
+    visits$visit_end_date<-visits$visit_start_date
+    rows<-visits[,c("person_id","visit_occurrence_id")]
+    rows$observation_id<-seq_len(nrow(rows));rows$observation_concept_id<-45000120L
+    rows$observation_date<-"2020-01-01";rows$observation_type_concept_id<-0L
+    rows$value_as_number<-c(2,10,20)[visits$position]
+    unlinked<-rows[seq_len(18),];unlinked$observation_id<-unlinked$observation_id+1000L;unlinked$visit_occurrence_id<-NA;unlinked$value_as_number<-999
+    visits$position<-NULL
+    DBI::dbWriteTable(con,"visit_occurrence",visits,append=TRUE)
+    DBI::dbWriteTable(con,"observation",rbind(unlinked,rows[nrow(rows):1,]),append=TRUE)
+    DBI::dbDisconnect(con)
+  }
+  e<-omop_event("observation",45000120L);v<-omop_event("visit_occurrence")
+  r<-omop_recipe(variables=list(x=omop_repeated(e,list(value=omop_number_rows(e)),visits=omop_visits(c(1L,2L,3L),v))))
+  recipe_execute(r,out="VisitKeys",symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"VisitKeys")) {
+    expect_true(all(f$x_value_visit_1==2));expect_true(all(f$x_value_visit_2==10));expect_true(all(is.na(f$x_value_visit_3)))
+  }
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    old<-DBI::dbReadTable(con,"visit_occurrence");extra<-old[1L,,drop=FALSE];extra$visit_start_date<-"2020-02-01"
+    DBI::dbWriteTable(con,"visit_occurrence",rbind(old,extra),overwrite=TRUE);DBI::dbDisconnect(con)
+  }
+  expect_error(recipe_execute(r,out="DuplicateVisit",symbol="labels",conns=ctx$conns),"repeated_spec_invalid|duplicate|identity")
+})

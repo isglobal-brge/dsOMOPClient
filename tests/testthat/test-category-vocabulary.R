@@ -124,3 +124,20 @@ test_that("C11 C22 missing hierarchy tables and source-code requests fail withou
   r$variables$x<-omop_category(omop_variable(event=omop_event("observation",999999L),reducer=omop_reduce("last_value",value="concept_id")),omop_category_spec(label_style="source_code"))
   expect_error(recipe_execute(r,out="SourceCode",symbol="labels",conns=ctx$conns),"category_source_forbidden")
 })
+
+test_that("C51 C62 equal labels cannot hide different public hierarchy maps", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(i in seq_along(ctx$paths)) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),ctx$paths[[i]])
+    DBI::dbExecute(con,"INSERT INTO concept SELECT 45000123,concept_name,domain_id,vocabulary_id,concept_class_id,standard_concept,concept_code,valid_start_date,valid_end_date,invalid_reason FROM concept WHERE concept_id=45000124 AND NOT EXISTS (SELECT 1 FROM concept WHERE concept_id=45000123)")
+    for(id in 45000501:45000502)DBI::dbExecute(con,paste0("INSERT INTO concept SELECT ",id,",'Same target',domain_id,'SNOMED',concept_class_id,standard_concept,'",id,"',valid_start_date,valid_end_date,invalid_reason FROM concept WHERE concept_id=45000124"))
+    ca<-data.frame(ancestor_concept_id=if(i==1L)45000501L else 45000502L,descendant_concept_id=45000123:45000125,min_levels_of_separation=1L,max_levels_of_separation=1L)
+    DBI::dbWriteTable(con,"concept_ancestor",ca,append=TRUE);DBI::dbDisconnect(con)
+  }
+  v<-omop_variable(event=omop_event("observation",45000120L),reducer=omop_reduce("last_value",value="value_as_concept_id"))
+  v<-omop_category(v,omop_category_spec(rollup=omop_category_rollup("snomed",separation=1L,domain=paste0("concept:",45000123:45000125))))
+  for(input in list(v,omop_category_indicators(v,c(target="concept:45000501"))[["target"]])) {
+    r<-omop_recipe(variables=list(x=input))
+    expect_error(recipe_execute(r,out="DifferentMaps",symbol="labels",conns=ctx$conns),"category_domain_incompatible")
+  }
+})

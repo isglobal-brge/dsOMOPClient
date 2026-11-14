@@ -58,7 +58,7 @@
          "support (", detail, "). It has no equivalent v1 plan: parent inheritance, ",
          "coverage policies, event censoring, matching and the other language-2 ",
          "constructs are never dropped to fit an older server. Upgrade dsOMOP on ",
-         "those servers to ", if(.numberHas(plan))"2.10.5" else .DSOMOP_PROTOCOL_RELEASE, ".", call. = FALSE)
+         "those servers to ", "2.10.5", ".", call. = FALSE)
   }
   invisible(TRUE)
 }
@@ -105,7 +105,7 @@
 .plan_v2_operations <- function(plan) {
   x <- .planNormalizeV2(plan)
   ops <- if (.conceptNeedsPresentation(plan)) "output.concept_labels" else character(0)
-  ops <- c(ops, .numberCapabilities(x), .categoryCapabilities(x))
+  ops <- c(ops, .numberCapabilities(x), .categoryCapabilities(x), "output.codebook_metadata")
   date_vars <- .numberVariables(x)
   if (!is.null(x$options$date_spec) || any(vapply(date_vars, function(v) !is.null(v$date_spec) || (v$derived$kind %||% "") %in% c("calendar_date", "date_part"), logical(1)))) ops <- c(ops, "date.presentation")
   if (any(vapply(date_vars, function(v) (v$derived$kind %||% "") %in% c("time_between", "age_at"), logical(1)))) ops <- c(ops, "date.elapsed")

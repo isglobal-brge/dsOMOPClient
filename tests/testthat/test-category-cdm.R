@@ -3,16 +3,6 @@ for(dataset in c("GiBleed","Synthea27Nj"))local({
   dataset<-dataset
   test_that(paste("C46 C48 C53 C54 C56 C64",dataset,"runs all native formats and codebooks at three sites"), {
     .numeric_lexer()
-    Rprof("/tmp/cats-cdm-profile.out",interval=.02)
-    withr::defer(Rprof(NULL))
-    setTimeLimit(cpu=180,elapsed=300,transient=TRUE)
-    withr::defer(setTimeLimit(cpu=Inf,elapsed=Inf,transient=FALSE))
-    diagnose<-.harmonizeOneSymbol
-    body(diagnose)<-substitute({
-      on.exit({if(exists("assign_errors",inherits=FALSE)&&length(assign_errors))message("Private contract assignment: ",paste(assign_errors,collapse="; "));if(exists("assign_condition",inherits=FALSE)&&!is.null(assign_condition))message("Private assignment condition: ",conditionMessage(assign_condition))},add=TRUE)
-      ORIGINAL
-    },list(ORIGINAL=body(diagnose)))
-    testthat::local_mocked_bindings(.harmonizeOneSymbol=diagnose,.package="dsOMOPClient")
     ctx<-if(dataset=="GiBleed").category_gibleed_sites() else .numeric_sites()
     recipe<-.category_format_recipe(if(dataset=="GiBleed")3006322L else 3000963L)
     plan<-recipe_to_plan(recipe,version=2)

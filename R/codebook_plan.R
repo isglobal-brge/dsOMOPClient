@@ -66,11 +66,17 @@
 .codebookPlanColumn <- function(key,type="unresolved",semantic="unresolved",variable=NULL,defaults=NULL) {
   spec<-.categoryEffective(variable$category_spec,defaults)
   number<-variable$number_spec
-  representation<-number$representation %||% ""
+  pipeline<-if(!is.null(number)).numberEffective(number)$pipeline else list()
+  terminal<-if(length(pipeline))tail(pipeline,1L)[[1L]] else list()
+  representation<-number$representation %||% terminal$kind %||% ""
   if(!is.null(variable)) {
     fn<-variable$reducer$fn %||% variable$derived$reducer$fn %||% ""
     flag<-fn %in% c("binary","any","all","abnormal","abnormal_low","abnormal_high") ||
-      identical(variable$derived$kind,"category_indicators") || representation %in% c("flag","present","missing")
+      identical(variable$derived$kind,"category_indicators") || identical(variable$derived$kind,"died")
+    for(step in pipeline) {
+      if(step$kind %in% c("flag","present","missing"))flag<-TRUE
+      else if(!(step$kind=="transform" && step$method=="identity" || step$kind=="round" && step$method=="none" || step$kind=="fixed_unit" && step$factor==1 && (step$offset %||% 0)==0))flag<-FALSE
+    }
     concept<-identical(variable$derived$kind,"category_rows") ||
       identical(variable$reducer$value,"value_as_concept_id") || identical(variable$reducer$value,"concept_id")
     if(flag) {semantic<-"flag";type<-spec$binary$as %||% "integer"}
@@ -84,6 +90,10 @@
   }
   levels<-spec$levels %||% spec$recode$levels
   labels<-spec$recode$labels
+  if(is.null(levels)&&representation %in% c("bins","category")) {
+    labels<-.numberDeclaredLevels(terminal)
+    if(length(labels))levels<-paste0(if(representation=="bins")"bin:" else "category:",seq_along(labels))
+  }
   if(identical(semantic,"flag")&&type=="factor") {levels<-c("flag:0","flag:1");labels<-spec$binary$labels}
   if(!is.null(levels)&&identical(spec$missing$na,"level")) {levels<-c(levels,"special:missing");labels<-NULL}
   if(!is.null(levels)&&identical(spec$missing$unknown,"level")) {levels<-c(levels,"special:unknown");labels<-NULL}
@@ -147,7 +157,7 @@
       types<-definitions[[component]]
       rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural"))
       names(rows)<-names(types)
-      if(component==output) {
+      if(component==output || fmt=="survival" && grains[[component]]!="none") {
         variables<-unlist(node$columns %||% if(fmt=="wide")names(plan$variables) else character(),use.names=FALSE)
         for(key in intersect(variables,names(plan$variables)))rows[[key]]<-.codebookPlanColumn(key,variable=plan$variables[[key]],defaults=plan$options$category_spec)
       }
@@ -176,6 +186,12 @@
   for(name in names(plan$variables)) {
     v<-plan$variables[[name]];s<-.categoryEffective(v$category_spec,defaults)
     if(length(s))lines<-c(lines,paste0("Category variable '",name,"': ",.jcsCanonical(.pnv2Plain(s)),"; applicability follows its declared producer; complete public keys are in recipe_codebook()."))
+    declaration<-.codebookPlanColumn(name,variable=v,defaults=defaults)
+    inactive<-character()
+    if(declaration$semantic_type %in% c("bins","category","numeric"))inactive<-intersect(names(defaults),c("label_style","language","rollup","binary"))
+    if(declaration$semantic_type=="flag"&&declaration$r_type %in% c("integer","logical"))inactive<-union(inactive,intersect(names(defaults),c("levels","order","ordered","reference","recode","rollup","label_style","language","missing")))
+    inactive<-setdiff(inactive,names(v$category_spec))
+    if(length(inactive))lines<-c(lines,paste0("  Inactive recipe fields for '",name,"': ",paste(inactive,collapse=", ")))
     d<-v$derived
     if(identical(d$kind,"repeated"))lines<-c(lines,paste0("Repeated variable '",name,"': ",.jcsCanonical(.pnv2Plain(d)),"; broadcast=",isTRUE(v$broadcast),"; date-dependent class 2."))
     if(identical(d$kind,"category_reduce"))lines<-c(lines,paste0("Category reduction '",name,"' applies identity grouping before ",d$reducer$fn,"; consumed input operations are not repeated on the result."))

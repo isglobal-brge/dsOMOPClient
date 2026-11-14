@@ -72,11 +72,12 @@ test_that("C49 staged category metadata tampering fails before materialisation",
   r<-.clf_recipe();r$variables$education<-omop_category(r$variables$education,omop_category_spec(ordered=TRUE))
   recipe_execute(r,out="Tamper",symbol="labels",conns=ctx$conns,output_mode="staged")
   server<-ctx$servers[[1L]];d<-server$getSessionData(server$getSessionIds()[[1L]],"Tamper")
+  spec<-.conceptUnionReports(list(site=dsOMOP:::.conceptStageReport(d)))
   original<-d$metadata$concept_presentation
   meta<-dsOMOP:::.ds_arg(original)
   meta$contracts$education$category$spec$ordered<-FALSE
   d$metadata$concept_presentation<-dsOMOP:::.conceptEncode(meta)
-  expect_error(dsOMOP:::.publishReadChunks(d,function(chunk)NULL))
+  expect_error(dsOMOP::omopAsFactorColumnsDS(d,.ds_encode(spec)),"not committed|revoked")
 })
 
 test_that("C52 C61 label merges cannot borrow support or rescue a sparse family", {
@@ -96,4 +97,32 @@ test_that("C52 C61 label merges cannot borrow support or rescue a sparse family"
   }
   r<-omop_recipe(events=list(e),outputs=omop_output("sparse",format="sparse",columns=character(),options=list(sources=list(e),analyses="binary")),category_spec=omop_category_spec(ordered=FALSE))
   expect_error(recipe_execute(r,out="SparseRare",symbol="labels",conns=ctx$conns),"insufficient_support|insufficient support")
+})
+
+test_that("C50 C55 category labels and codebooks use only each component's retained sites", {
+  for(strict in c(TRUE,FALSE))local({
+    ctx<-.clf_setup(strict=strict,excluded=TRUE);.numeric_lexer()
+    r<-.clf_recipe()
+    r$variables$education<-omop_category(r$variables$education,omop_category_spec(ordered=FALSE))
+    few<-omop_event("observation",45000125L,name="few")
+    r$events<-list(few=few)
+    r$populations<-list(base=omop_population("base"),few=omop_population("few",index=omop_index(few)))
+    r$outputs<-list(output=omop_output("output",rows="base"),small=omop_output("small",rows="few",grain="episode"))
+    for(policy in c("error","skip")) {
+      symbols<-c(output=paste0("CategoryRetained_",policy),small=paste0("CategorySmall_",policy))
+      execute<-function()recipe_execute(r,out=symbols,symbol="labels",conns=ctx$conns,on_small_site=policy)
+      if(strict&&policy=="error") {
+        expect_error(execute(),"insufficient_support")
+        expect_true(all(vapply(DSI::datashield.symbols(ctx$conns),function(x)!any(symbols %in% x),logical(1))))
+      } else {
+        result<-suppressWarnings(execute())
+        book<-recipe_codebook(result)
+        expect_true("small/small" %in% names(book))
+        cols<-book[["small/small"]]$columns
+        labels<-cols$levels[[which(cols$name=="education")]]$labels
+        expect_false(any(grepl("Excluded",labels)))
+        expect_false(any(grepl("45000127",unlist(book[["small/small"]]$columns$levels))))
+      }
+    }
+  })
 })

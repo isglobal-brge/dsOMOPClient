@@ -8,6 +8,7 @@ test_that("C18 C19 C57 C63 identity reduction follows mapping and preserves type
     rows$observation_date<-as.character(as.Date("2020-01-01")+rows$position)
     rows$observation_type_concept_id<-0L
     rows$value_as_concept_id<-c(rep(45000123L,4),rep(45000124L,3),rep(45000125L,3))[rows$position]
+    rows$value_as_number<-c(rep(1,4),5:10)[rows$position]
     rows$position<-NULL
     DBI::dbWriteTable(con,"observation",rows,append=TRUE);DBI::dbDisconnect(con)
   }
@@ -16,7 +17,7 @@ test_that("C18 C19 C57 C63 identity reduction follows mapping and preserves type
   raw<-omop_category_rows(e,"value_as_concept_id")
   grouped<-omop_category(raw,s)
   yes<-omop_category_indicators(grouped,c(y="category:y"))[["y"]]
-  variables<-list(post=omop_category(omop_variable(event=e,reducer=omop_reduce("mode",value="value_as_concept_id")),s),
+  variables<-list(numeric_post=omop_number_bins(omop_variable(event=e,reducer=omop_reduce("mode",value="value_as_number")),breaks=c(-Inf,4,Inf)),numeric_grouped=omop_category_reduce(omop_number_bins(omop_number_rows(e),breaks=c(-Inf,4,Inf)),omop_reduce("mode")),post=omop_category(omop_variable(event=e,reducer=omop_reduce("mode",value="value_as_concept_id")),s),
     before=omop_category_reduce(grouped,omop_reduce("mode")),
     count=omop_category_reduce(grouped,omop_reduce("count")),
     distinct=omop_category_reduce(grouped,omop_reduce("n_distinct")),
@@ -34,6 +35,7 @@ test_that("C18 C19 C57 C63 identity reduction follows mapping and preserves type
     ds.omop.plan.execute(p,out=setNames(symbol,names(p$outputs)),symbol="labels",conns=ctx$conns,output_mode=mode)
     for(f in .clf_frames(ctx,symbol)) {
       expect_true(all(f$post=="x"));expect_true(all(f$before=="y"))
+      expect_true(all(f$numeric_post=="(-Inf,4)"));expect_true(all(f$numeric_grouped=="[4,Inf)"))
       expect_true(all(f$count==10L));expect_true(all(f$distinct==2L))
       expect_true(all(f$first=="x"));expect_true(all(f$last=="y"))
       expect_true(all(f$any==1L));expect_true(all(f$all==0L));expect_true(all(f$total==6L))
