@@ -46,3 +46,19 @@ test_that("C30 C31 only semantic identity chains retain flags and factor order c
   bad$variables$x<-omop_category(flag,omop_category_spec(binary=omop_category_binary(),missing=omop_category_missing("level")))
   expect_error(recipe_execute(bad,out="BadIntegerMissing",symbol="labels",conns=ctx$conns),"category_spec_invalid")
 })
+
+test_that("C56 C61 source aliases cannot declassify and date-dependent categories retain class two", {
+  ctx<-.clf_setup();.numeric_lexer()
+  e<-omop_event("observation",45000120L,name="e")
+  for(column in c("observation_source_value","observation_source_concept_id","value_as_string")) {
+    r<-omop_recipe(variables=list(x=omop_category_reduce(omop_category_rows(e,column),omop_reduce("mode"))))
+    expect_error(recipe_execute(r,out="ForbiddenCategory",symbol="labels",conns=ctx$conns),"cannot be used|not a predicate|category_source_forbidden")
+  }
+  repeated<-omop_repeated(e,list(value=omop_number_rows(e,"value_as_number")),timepoints=omop_timepoints(list(baseline=omop_timepoint())))
+  period<-omop_category(omop_date(omop_anchor(e),omop_date_spec(precision="month")),omop_category_spec(ordered=TRUE))
+  r<-omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),variables=list(period=period,repeated=repeated),outputs=omop_output("wide",rows="p"))
+  result<-recipe_execute(r,out="ClassLineage",symbol="labels",conns=ctx$conns)
+  columns<-recipe_codebook(result)[[1L]]$columns
+  expect_identical(columns$privacy_class[match(c("period","repeated_value_baseline"),columns$name)],c("2","2"))
+  expect_false(any(c("source_value","observed","count","unavailable","selected_date","selected_key") %in% names(columns)))
+})
