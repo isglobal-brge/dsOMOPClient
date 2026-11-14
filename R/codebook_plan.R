@@ -66,7 +66,6 @@
 .codebookPlanColumn <- function(key,type="unresolved",semantic="unresolved",variable=NULL,defaults=NULL,plan=list(),output_node=NULL,original=NULL) {
   if(type=="flag") {type<-"integer";semantic<-"flag"}
   spec<-.categoryEffective(variable$category_spec,defaults)
-  category_present <- length(spec)>0L
   d<-variable$derived;inherited<-original
   if(!is.null(original)) {type<-original$r_type;semantic<-original$semantic_type}
   operand<-if(identical(d$kind,"repeated")) {
@@ -167,7 +166,6 @@
   }
   frame <- data.frame(value=if(is.null(value))logical() else value)
   column <- list(type=type,role="measure")
-  contracts <- list()
   if(!is.null(attr(value,"omop_date_contract"))) frame <- .dateCapture(frame,list(value=column))
   else if(representation %in% c("bins","category") && is.factor(value)) {
     attr(column,"number_contract") <- list(pipeline=.numberWireFinite(pipeline))
@@ -184,6 +182,7 @@
     attr(column,"number_contract") <- list(pipeline=.numberWireFinite(pipeline))
     if(!.categoryFlag(variable,column))semantic <- if(is.factor(value))representation else "numeric"
   }
+  attr(column,"category_spec") <- variable$category_spec
   input <- list(frame=frame,column=column)
   if(!is.null(original) && identical(d$kind,"category_column")) {
     input <- attr(original,"presentation_input") %||% input

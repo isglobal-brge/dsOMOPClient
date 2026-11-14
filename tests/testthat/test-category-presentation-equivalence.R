@@ -1,6 +1,10 @@
 # Compare independent published/actual oracles, not one descriptor helper to itself.
 .equivalence_books <- function(recipe,ctx,mode,label) {
   plan <- recipe_to_plan(recipe,version=2)
+  server <- ctx$servers[[1L]]
+  handle <- server$getSessionData(server$getSessionIds()[[1L]],"labels")
+  validation <- dsOMOP:::.planValidate(handle,plan)
+  if(!isTRUE(validation$valid))stop(paste(validation$errors,collapse="; "))
   symbols <- setNames(paste0("Eq_",names(plan$outputs)),names(plan$outputs))
   result <- ds.omop.plan.execute(plan,out=symbols,symbol="labels",conns=ctx$conns,output_mode=mode)
   books <- local({
@@ -66,8 +70,9 @@
   when <- omop_date(omop_anchor(e))
   if(scope=="variable") {
     count <- omop_number(count,number)
-    flag <- omop_category(flag,category)
-    when <- omop_category(omop_date(omop_anchor(e),date),category)
+    if(!is.null(category))flag <- omop_category(flag,category)
+    when <- omop_date(omop_anchor(e),date)
+    if(!is.null(category))when <- omop_category(when,category)
   }
   vars <- list(n=count,flag=flag,when=when)
   outputs <- list(
