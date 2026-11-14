@@ -16,7 +16,8 @@ omop_output(
   columns = NULL,
   format = NULL,
   sources = NULL,
-  collapse = NULL
+  collapse = NULL,
+  number_columns = NULL
 )
 }
 \arguments{
@@ -65,6 +66,8 @@ and \code{format} are alternatives; giving neither keeps the legacy
 
 \item{collapse}{(2.10.3) \code{"first_episode"}, \code{"last_episode"} or
 \code{"any"}: person grain over an indexed population.}
+
+\item{number_columns}{Named numeric column copies/formulas over the canonical output frame.}
 }
 \value{
 An \code{omop_output} object.

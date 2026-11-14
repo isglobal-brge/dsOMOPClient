@@ -22,7 +22,8 @@ omop_recipe(
   publish = NULL,
   labels = NULL,
   column_names = NULL,
-  date_spec = NULL
+  date_spec = NULL,
+  number_spec = NULL
 )
 }
 \arguments{
@@ -85,6 +86,8 @@ when another output depends on them and are never released.}
 \item{column_names}{Recipe-wide stable generated-column key to final-name map.}
 
 \item{date_spec}{Recipe-wide defaults created with omop_date_spec().}
+
+\item{number_spec}{Recipe-wide numeric presentation defaults.}
 }
 \value{
 An \code{omop_recipe} object.
