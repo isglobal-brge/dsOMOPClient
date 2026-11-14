@@ -106,3 +106,24 @@ test_that("Circe origin and wire meta cannot introduce executable policy require
   native$populations$circe_provenance$index_event$validity_policy <- "ohdsi-import-1"
   expect_true(dsOMOPClient:::.ohdsiHasImportedValidity(native))
 })
+
+test_that("imported validity survives category-domain composition after prerequisite integration", {
+  domain <- omop_concept_set(201820L, descendants = TRUE,
+    exclude = omop_concept_set(201821L, validity_policy = "ohdsi-import-1"),
+    validity_policy = "ohdsi-import-1")
+  category <- omop_category_spec(rollup = omop_category_rollup("ancestors",
+    ancestors = "concept:201820", vocabulary = "SNOMED", domain = domain))
+  r <- omop_recipe(variables = list(x = omop_category_rows(
+    omop_event("condition_occurrence", 201820L), category_spec = category)),
+    outputs = omop_output("o", format = "long", sources = omop_event("condition_occurrence", 201820L)))
+  plan <- recipe_to_plan(r)
+  declared <- plan$variables$x$category_spec$rollup$domain
+  expect_identical(declared$validity_policy, "ohdsi-import-1")
+  expect_identical(declared$exclude$validity_policy, "ohdsi-import-1")
+  expect_true("vocabulary.ohdsi_import_validity" %in% .plan_v2_operations(plan))
+  expect_true("vocabulary.ohdsi_import_validity" %in% dsOMOP:::.irOperations(dsOMOP:::.irPrepare(plan)))
+  expect_identical(.policy_digest(recipe_import_json(recipe_export_json(r))), .policy_digest(r))
+  expect_identical(.policy_digest(eval(parse(text = recipe_to_code(r)))), .policy_digest(r))
+  bad <- declared; bad$validity_policy <- "PRIVATE_SENTINEL"
+  expect_error(.categoryDomainCheck(bad), "^invalid_vocabulary_policy:")
+})
