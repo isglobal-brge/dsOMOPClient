@@ -1,5 +1,11 @@
 # dsOMOP / dsOMOPClient 2.10.5 (development)
 
+- Corrected (audit prerequisite integration): imported vocabulary validity
+  remains executable in category rollup domains, including exclusions.
+  Use a server advertising vocabulary.ohdsi_import_validity for these domains.
+- Corrected: prospective generated-date columns apply category ordering defaults
+  consistently with publication. Rebuild affected codebooks.
+
 - Corrected: explicit coverage on an imported Circe population now overrides
   the translated coverage default during compilation, including saved and
   generated recipes. Remove the explicit coverage to restore the imported
