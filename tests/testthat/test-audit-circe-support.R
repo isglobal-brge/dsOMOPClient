@@ -283,3 +283,17 @@ test_that("Circe export refuses unrepresentable native coverage while native edi
   r$populations$p$coverage <- omop_coverage("unique")
   expect_true(recipe_circe_check(r, "export")$supported)
 })
+
+test_that("malformed nested clauses do not erase diagnostics for their siblings", {
+  x <- .audit_support_definition()
+  x$InclusionRules <- list(list(expression = list(Type = "ALL", Groups = list(
+    list(Type = "ALL", CriteriaList = list(list(Criteria = list(Measurement = "PRIVATE_SENTINEL"))),
+      DemographicCriteriaList = list(list(Age = list(Op = "unsupported", Value = 5)))),
+    list(Type = "ANY", CriteriaList = list(list(Criteria = list(Death = list()))))))))
+  issues <- recipe_circe_check(x)$issues
+  expect_true(any(endsWith(issues$path, ".Measurement")))
+  expect_true(any(endsWith(issues$path, ".Age")))
+  expect_true(any(endsWith(issues$path, ".Death")))
+  expect_false(any(issues$path == "$"))
+  expect_false(any(grepl("PRIVATE_SENTINEL", unlist(issues), fixed = TRUE)))
+})

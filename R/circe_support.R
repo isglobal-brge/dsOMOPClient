@@ -97,7 +97,7 @@ recipe_circe_check <- function(x, direction = "import") {
   }
   # Unknown object names are addressed by position, never copied into errors.
   fields <- function(obj, allowed, path) {
-    if (!is.list(obj)) {
+    if (!is.list(obj) || (length(obj) && is.null(names(obj)))) {
       add(path, "Object", "Provide an object with the documented structural fields.", "invalid_definition")
       return(FALSE)
     }
@@ -189,15 +189,15 @@ recipe_circe_check <- function(x, direction = "import") {
         paste0(path, ".StartWindow"), "StartWindow", "Use supported day offsets anchored to index start.")
     }
     if (is.list(inner)) for (k in seq_along(inner)) {
-      domain <- names(inner)[[k]]
+      domain <- if (is.null(names(inner))) "" else names(inner)[[k]]
       if (!domain %in% unlist(.circe_domain_map)) {
         known <- domain %in% c("Death", "DrugEra", "ConditionEra", "ObservationPeriod", "VisitDetail")
         add(paste0(path, if (entry) "" else ".Criteria", if (known) paste0(".", domain) else paste0("[field:", k, "]")),
           if (known) domain else "UnknownDomain", "This domain has no cohort-bridge adapter.")
       } else {
         spec <- if (entry) .circe_primary_spec(domain, inner[[k]]) else inner[[k]]
-        fields(spec, c("CodesetId", if (!entry && domain == "Measurement") "ValueAsNumber"),
-          paste0(path, if (entry) "" else ".Criteria", ".", domain))
+        if (!fields(spec, c("CodesetId", if (!entry && domain == "Measurement") "ValueAsNumber"),
+          paste0(path, if (entry) "" else ".Criteria", ".", domain))) next
         at <- paste0(path, if (entry) "" else ".Criteria", ".", domain)
         probe(.circe_codeset_details(spec$CodesetId, sets), paste0(at, ".CodesetId"),
           "ConceptReference", "Use a declared concept-set ID with supported expansion semantics.")
