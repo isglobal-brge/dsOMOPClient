@@ -7095,47 +7095,19 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
     valid_set_id <- length(set_num) == 1L && is.finite(set_num) &&
       length(set_id) == 1L && !is.na(set_id) && set_num == set_id && set_id >= 0L
     if (isTRUE(valid_set_id) && identical(set_id, id_int)) {
-      items <- s$expression$items %||% list()
-      if (length(items) == 0L) {
-        stop("Circe import: referenced concept set is empty.", call. = FALSE)
-      }
-      allowed_item <- c("concept", "isExcluded", "includeDescendants",
-                        "includeMapped")
-      for (it in items) {
-        unknown_item <- setdiff(names(it) %||% character(0), allowed_item)
-        if (length(unknown_item) > 0L) {
-          stop("Circe import: unsupported concept-set item field(s): ",
-               paste(unknown_item, collapse = ", "), ".", call. = FALSE)
-        }
-        for (flag in allowed_item[-1]) {
-          if (!is.null(it[[flag]]) &&
-              (!is.logical(it[[flag]]) || length(it[[flag]]) != 1L ||
-               is.na(it[[flag]]))) {
-            stop("Circe import: concept-set flags must be JSON booleans.",
-                 call. = FALSE)
-          }
-        }
-      }
-      excluded <- vapply(items, function(it) isTRUE(it$isExcluded), logical(1))
+      items <- .ohdsi_concept_items(s$expression)
+      excluded <- vapply(items, `[[`, logical(1), "is_excluded")
       if (any(excluded)) {
         stop("Circe import: excluded concept-set items are not supported by ",
              "omop_index_event/recipe filters.", call. = FALSE)
       }
-      descendants <- vapply(items, function(it) isTRUE(it$includeDescendants),
-                            logical(1))
-      mapped <- vapply(items, function(it) isTRUE(it$includeMapped), logical(1))
+      descendants <- vapply(items, `[[`, logical(1), "include_descendants")
+      mapped <- vapply(items, `[[`, logical(1), "include_mapped")
       if (length(unique(descendants)) > 1L || length(unique(mapped)) > 1L) {
         stop("Circe import: concept-set expansion flags must be uniform across ",
              "all items.", call. = FALSE)
       }
-      ids <- vapply(items, function(it) {
-        id <- suppressWarnings(as.integer(it$concept$CONCEPT_ID))
-        if (length(id) != 1L || is.na(id) || id < 0L) {
-          stop("Circe import: concept sets must contain non-negative integer ",
-               "CONCEPT_ID values.", call. = FALSE)
-        }
-        id
-      }, integer(1))
+      ids <- vapply(items, `[[`, integer(1), "concept_id")
       return(list(ids = unique(ids),
                   include_descendants = descendants[[1]],
                   include_mapped = mapped[[1]],
@@ -7396,11 +7368,14 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
 #' @seealso \code{\link{recipe_export_circe}}, \code{\link{omop_population}}
 #' @export
 recipe_import_circe <- function(file_or_json, id = NULL, label = NULL) {
-  if (length(file_or_json) == 1 && file.exists(file_or_json)) {
-    file_or_json <- paste(readLines(file_or_json, warn = FALSE), collapse = "\n")
-  }
-  expr <- jsonlite::fromJSON(file_or_json, simplifyVector = FALSE)
+  expr <- .ohdsi_read_definition(file_or_json)
   concept_sets <- expr$ConceptSets %||% list()
+  # Validate ALL definitions, including unreferenced and excluded items, before
+  # interpreting the supported cohort subset.
+  for (i in seq_along(concept_sets)) {
+    .ohdsi_concept_items(concept_sets[[i]]$expression,
+                         paste0("$.ConceptSets[", i, "].expression"))
+  }
 
   unsupported_top <- c("AdditionalCriteria", "CensoringCriteria",
                        "CensorWindow")
