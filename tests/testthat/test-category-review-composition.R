@@ -47,7 +47,7 @@ test_that("R5 mode and vector nth copies preserve consumed identity across sites
     source <- if(fn=="mode")"answer" else "answer_1"
     copies <- list(copy=omop_category_column(source),
       styled=omop_category_column(source,category_spec=omop_category_spec(ordered=TRUE,
-        order=omop_category_order(c("category:third","category:second","category:first","special:missing","special:unknown")))))
+        order=omop_category_order(metadata="identity"))))
     if(fn=="nth_value")copies$absent <- omop_category_column("answer_3")
     r <- omop_recipe(variables=list(answer=v),outputs=omop_output("w",format="wide",category_columns=copies))
     symbol <- paste0("ReducedCopy_",fn,"_",mode)
@@ -59,7 +59,7 @@ test_that("R5 mode and vector nth copies preserve consumed identity across sites
       expect_identical(attr(f,"omop_concepts")[[source]],attr(f,"omop_concepts")$copy)
       expect_identical(as.character(f[[source]]),as.character(f$styled))
       expect_true(is.ordered(f$styled)); expect_false(is.ordered(f[[source]]))
-      expect_identical(head(levels(f$styled),3L),c("Third","Second","First"))
+      expect_identical(head(levels(f$styled),3L),c("First","Second","Third"))
       if(fn=="nth_value") {
         expect_identical(f$answer_3,f$absent)
         expect_identical(attr(f,"omop_concepts")$answer_3,attr(f,"omop_concepts")$absent)
