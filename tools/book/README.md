@@ -86,3 +86,8 @@ It executes chapter 2's actual attach/switch chunks against renamed resources in
 DSLite and checks the Opal scripts' API signatures. This is not a live Opal test.
 The optional provisioning scripts and Compose mount are shipped in the helper
 ZIP; chapter 0 states the live-deployment validation limit explicitly.
+
+After building, `Rscript tools/book/verify-bundle.R` unpacks the downloadable ZIP
+into an empty reader directory and runs the visible GiBleed, questionnaire and
+numeric setup chunks. It reuses the existing public practice databases via a
+symlink and removes its temporary directory after the checks.

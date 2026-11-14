@@ -25,7 +25,7 @@ const path = require('path');
         if(result.learnBoxes!==1||result.chapterLinks!==16||!result.byline||!result.copyButtons||!result.footer)
           throw new Error('Book presentation incomplete: '+JSON.stringify({slug,...result}));
         const solution=page.locator('details').filter({has:page.locator('summary',{hasText:'Solution'})}).first();
-        await solution.locator('summary').click();
+        await solution.locator(':scope > summary').click();
         if(await solution.getAttribute('open')===null) throw new Error('Solution does not open: '+slug);
         if(width===390) {
           const contents=page.locator('.mobile-contents');
@@ -44,13 +44,21 @@ const path = require('path');
           throw new Error('Code copy included wrong text or recorded output');
         result.copyTest='passed';
       }
+      if(['articles/book-05-recipe','articles/book-06-events','articles/book-08-outputs'].includes(slug)) {
+        const full=page.locator('details').filter({has:page.locator('summary',{hasText:'Full aggregate response'})}).first();
+        if(await full.count()!==1 || await full.getAttribute('open')!==null)
+          throw new Error('Full aggregate response must be collapsed initially: '+slug);
+      }
       if(result.overflow) throw new Error('Page horizontal overflow: '+slug+' '+width);
       results.push({slug,...result});
-      if(['articles/book-06-events','articles/book-08-outputs','articles/book-08-harmonise','articles/book-07-verbal-autopsy'].includes(slug)) {
+      if(['articles/book-00-start','articles/book-05-recipe','articles/book-06-events','articles/book-08-outputs','articles/book-08-harmonise','articles/book-07-verbal-autopsy'].includes(slug)) {
         await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
         await page.screenshot({path:`tools/book/evidence/book2/${slug.split('/')[1]}-${width}.png`,fullPage:false});
       }
     }
+    await page.goto('file://'+path.resolve('docs/articles/book-06-events.html'));
+    await page.locator('h2').filter({hasText:'Value bins and explicit high/low flags'}).scrollIntoViewIfNeeded();
+    await page.screenshot({path:`tools/book/evidence/fix1/numeric-bins-${width}.png`,fullPage:false});
     await page.goto('file://'+path.resolve('docs/authors.html'));
     if(!await page.locator('main').innerText().then(x=>x.includes('Tutorial book by David Sarrat González')))
       throw new Error('Book credit missing on authors page');

@@ -41,7 +41,10 @@ for p in [root/'docs/index.html', root/'docs/authors.html', *sorted((root/'docs/
             if unquote(url.fragment) not in target_parser.ids:
                 missing.append({'page':str(p.relative_to(root)), 'href':link})
 assert not missing, missing
-report={'chapters':len(chapters),'executed_visible_chunks':sum(counts.values()),'chunks_by_chapter':counts,
+report={'chapters':len(chapters),
+        'executed_source_chunks':sum(len(re.findall(r'^```\{r ', p.read_text(), re.M))
+                                     for p in (root/'vignettes').glob('book-*.Rmd.orig')),
+        'rendered_r_code_blocks':sum(counts.values()),'code_blocks_by_chapter':counts,
         'missing_local_links':missing,'uncomputed_chunks':0,'untranslated_fixture_id_outputs':0}
 (root/'tools/book/evidence/book2/content-audit.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))
