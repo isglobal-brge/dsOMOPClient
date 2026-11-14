@@ -7,14 +7,27 @@ test_that("C09 C10 ATC levels use classes and preflight every declared input", {
     DBI::dbWriteTable(con,"concept",targets,append=TRUE)
     ca<-expand.grid(ancestor_concept_id=45000201:45000205,descendant_concept_id=45000123:45000125)
     ca$min_levels_of_separation<-8L;ca$max_levels_of_separation<-9L
+    ca<-rbind(ca,data.frame(ancestor_concept_id=45000201L,descendant_concept_id=45000205L,min_levels_of_separation=1L,max_levels_of_separation=1L))
     DBI::dbWriteTable(con,"concept_ancestor",ca,append=TRUE);DBI::dbDisconnect(con)
   }
   v<-omop_variable(event=omop_event("observation",45000120L),reducer=omop_reduce("last_value",value="value_as_concept_id"))
   for(level in 1:5) {
     r<-omop_recipe(variables=list(atc=omop_category(v,omop_category_spec(rollup=omop_category_rollup("atc",level=level,domain=paste0("concept:",45000123:45000125))))))
+    if(level==1L) {
+      input<-omop_category_rows(omop_event("observation",45000120L),"value_as_concept_id",omop_category_spec(rollup=omop_category_rollup("atc",level=5,domain=paste0("concept:",45000123:45000125))))
+      reduced<-omop_category_reduce(input,omop_reduce("mode"))
+      r$variables$second<-omop_category(reduced,omop_category_spec(rollup=omop_category_rollup("atc",level=1,domain="concept:45000205")))
+      r$variables$styled<-omop_category(reduced,omop_category_spec(label_style="code_name"))
+    }
     symbol<-paste0("ATC",level)
     recipe_execute(r,out=symbol,symbol="labels",conns=ctx$conns)
-    for(f in .clf_frames(ctx,symbol))expect_true(all(as.character(f$atc)==paste0("ATC",level)))
+    for(f in .clf_frames(ctx,symbol)) {
+      expect_true(all(as.character(f$atc)==paste0("ATC",level)))
+      if(level==1L) {
+        expect_true(all(as.character(f$second)=="ATC1"))
+        expect_true(all(as.character(f$styled)=="A5 - ATC5"))
+      }
+    }
   }
 })
 test_that("C20 C23 code styles and deterministic language candidates preserve zeros", {
