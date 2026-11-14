@@ -182,3 +182,22 @@ test_that("editing imported populations changes the executable declaration and p
   native <- recipe_to_plan(r)
   expect_true(any(vapply(native$events, function(e) 201821L %in% unlist(e$concept_set$concepts), logical(1))))
 })
+
+test_that("conflicting import edits refuse while successive reconciled edits remain usable", {
+  pop <- recipe_import_circe(.audit_support_definition(), id = "p")
+  pop$index_event$concept_id <- 201826L
+  first <- .circe_reconcile_population(pop)
+  first$index_event$concept_id <- 201821L
+  second <- .circe_reconcile_population(first)
+  expect_identical(second$circe_v2$index$source$concepts$concepts, 201821L)
+  expect_identical(second$circe_provenance$original_sha256,
+    pop$circe_provenance$original_sha256)
+  conflict <- pop
+  conflict$circe_v2$index$source <- omop_event("condition_occurrence", 201822L)
+  err <- tryCatch(.circe_reconcile_population(conflict), error = identity)
+  expect_s3_class(err, "error")
+  expect_match(conditionMessage(err), "^ambiguous_circe_edit:")
+  expect_false(grepl("201826|201822", conditionMessage(err)))
+  conflict$circe_v2 <- NULL
+  expect_identical(.circe_reconcile_population(conflict), conflict)
+})
