@@ -2,7 +2,7 @@
 .equivalence_books <- function(recipe,ctx,mode,label) {
   plan <- recipe_to_plan(recipe,version=2)
   server <- ctx$servers[[1L]]
-  handle <- server$getSessionData(server$getSessionIds()[[1L]],"labels")
+  handle <- server$getSessionData(server$getSessionIds()[[1L]],".dsomop_handle_labels")
   validation <- dsOMOP:::.planValidate(handle,plan)
   if(!isTRUE(validation$valid))stop(paste(validation$errors,collapse="; "))
   symbols <- setNames(paste0("Eq_",names(plan$outputs)),names(plan$outputs))
@@ -65,13 +65,13 @@
 
 .equivalence_recipe <- function(date,number,category,scope,matrices=FALSE) {
   e <- omop_event("observation",45000120L,name="e")
-  count <- omop_variable(event=e,reducer=omop_reduce("count"))
-  flag <- omop_variable(event=e,reducer=omop_reduce("binary"))
-  when <- omop_date(omop_anchor(e))
+  count <- omop_variable(event=e,reducer=omop_reduce("count"),broadcast=TRUE)
+  flag <- omop_variable(event=e,reducer=omop_reduce("binary"),broadcast=TRUE)
+  when <- omop_date(omop_anchor(e),broadcast=TRUE)
   if(scope=="variable") {
     count <- omop_number(count,number)
     if(!is.null(category))flag <- omop_category(flag,category)
-    when <- omop_date(omop_anchor(e),date)
+    when <- omop_date(omop_anchor(e),date,broadcast=TRUE)
     if(!is.null(category))when <- omop_category(when,category)
   }
   vars <- list(n=count,flag=flag,when=when)
