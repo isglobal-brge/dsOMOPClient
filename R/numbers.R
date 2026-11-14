@@ -301,6 +301,9 @@ omop_number_derive <- function(inputs,exprs,unit,result=NULL,reducer=NULL,number
 # Portable numeric recipe data retains explicit infinite bin tails as wire
 # markers while finite boundaries keep the exact lossless numeric encoding.
 .numberRecipePlain <- function(x) {
+  if(inherits(x,"POSIXt"))return(format(x,"%Y-%m-%dT%H:%M:%OS6Z",tz="UTC"))
+  if(inherits(x,"Date"))return(format(x,"%Y-%m-%d"))
+  if(is.factor(x))return(as.character(x))
   if(is.list(x))return(lapply(x,.numberRecipePlain))
   if(is.numeric(x)&&any(is.infinite(x)))return(lapply(x,function(v)if(is.infinite(v))if(v<0)"-Inf" else "Inf" else v))
   x
