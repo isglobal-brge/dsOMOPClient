@@ -15,7 +15,13 @@ described in [Before you
 start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice
 connection; all the outputs below come from real dsOMOP and dsOMOPClient
-2.10.4 calls. The numbers describe teaching data, not clinical findings.
+2.10.5 calls. The numbers describe teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
+including the separate questionnaire catalogue. Additional
+body-measurement concepts are found on screen in the [formula
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -54,11 +60,10 @@ download.
 ``` r
 private <- omop_recipe(variables = list(age = omop_age_at("2024-06-01")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(private, conns = conns)$selected == "v2")
 print(recipe_execute(private, out = c(people = "D_private"), conns = conns))
 ```
 
-    #>      people 
+    #>      people
     #> "D_private"
 
 The mapping is the result you receive from recipe execution. Exact
@@ -85,12 +90,12 @@ dsBaseClient::ds.summary("D_private$age", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #> 
+    #>
     #> $site$length
     #> [1] 24
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean 
+    #>   5%  10%  25%  50%  75%  90%  95% Mean
     #>   34   34   34   43   49   49   49   42
 
 An approved aggregate method checks its own disclosure rules. A
@@ -158,7 +163,7 @@ cat(text_message, "\n")
 This definition is refused before execution. Use the reviewed coded
 answer `value_as_concept_id` and translated categories when it answers
 the question, as in
-[chapter 10](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md).
+[chapter 10](https://isglobal-brge.github.io/dsOMOPClient/articles/book-10-harmonise.md).
 Free text is not needed for that analysis.
 
 ## Why dates and ages can remain private columns
@@ -172,11 +177,10 @@ face the applicable release controls.
 ``` r
 date_recipe <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(date_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns))
 ```
 
-    #>           people 
+    #>           people
     #> "D_private_date"
 
 ``` r
@@ -224,13 +228,6 @@ No chapter needs raw-row download methods, weaker thresholds, database
 TLS changes or owner configuration to make its normal protected recipe
 route work.
 
-## Recap
-
-A recipe creates private objects and returns their names. Final patient
-outputs need distinct-person support; aggregates and category metadata
-have further checks. Class-1 fields and protected-key expressions are
-refused.
-
 ## Try it
 
 After the refused small filter, confirm you can still summarise the
@@ -245,13 +242,55 @@ dsBaseClient::ds.summary("D_private$age", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #> 
+    #>
     #> $site$length
     #> [1] 24
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean 
+    #>   5%  10%  25%  50%  75%  90%  95% Mean
     #>   34   34   34   43   49   49   49   42
 
 The original object remains usable. A refusal is not permission to
 bypass its release rule with another encoding.
+
+## Exercise 2: a common variant
+
+Confirm a failed key-copy attempt left the original schema usable.
+
+Solution 2
+
+``` r
+dsBaseClient::ds.colnames("D_private", datasources = conns)
+```
+
+    #> $site
+    #> [1] "person_id" "age"
+
+The protected key was not turned into an analyst variable; the original
+private object remains.
+
+## Exercise 3: a pitfall to avoid
+
+Check a valid date recipe is still a local definition. Does
+serialisation release dates?
+
+Solution 3
+
+``` r
+is.character(recipe_export_json(date_recipe))
+```
+
+    #> [1] TRUE
+
+No. A JSON definition is public study logic. The resulting dates remain
+private and aggregates still face release checks.
+
+## Recap
+
+A recipe creates private objects and returns their names. Final patient
+outputs need distinct-person support; aggregates and category metadata
+have further checks. Class-1 fields and protected-key expressions are
+refused.
+
+**Next:** [13. Visit dates, one idea at a
+time](https://isglobal-brge.github.io/dsOMOPClient/articles/book-13-visits.md).

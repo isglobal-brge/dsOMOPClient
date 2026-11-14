@@ -155,8 +155,16 @@ its columns; `ds.class` checks types. Then inspect one summary or table and
 missingness with `ds.numNA`. Every method applies its own release rules. None
 of these calls retrieves patient rows.
 
+On Opal, `ds.ls` searches the server workspace. With the installed DSLite/dsBase
+pair, it searches the R global environment instead, so the filtered result below
+is deliberately empty. That does **not** mean extraction failed. The driver's
+`datashield.symbols` method correctly lists the assigned DSLite symbols; we show
+its `D_` analysis objects next. This is a practice-driver difference, not a reason
+to inspect patient rows.
+
 ```{r full-output-check}
-dsBaseClient::ds.ls(datasources = conns)
+dsBaseClient::ds.ls(search.filter = "D_*", datasources = conns)
+lapply(DSI::datashield.symbols(conns), function(x) x[grepl("^D_", x)])
 dsBaseClient::ds.dim("D_people", datasources = conns)
 dsBaseClient::ds.colnames("D_people", datasources = conns)
 dsBaseClient::ds.class("D_people$education", datasources = conns)

@@ -14,7 +14,13 @@ described in [Before you
 start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice
 connection; all the outputs below come from real dsOMOP and dsOMOPClient
-2.10.4 calls. The numbers describe teaching data, not clinical findings.
+2.10.5 calls. The numbers describe teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
+including the separate questionnaire catalogue. Additional
+body-measurement concepts are found on screen in the [formula
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -59,11 +65,10 @@ visit episodes.
 ``` r
 visit_members <- omop_recipe(populations = list(visitors),
   outputs = omop_output("members", rows = "visitors", format = "membership"))
-stopifnot(recipe_explain(visit_members, conns = conns)$selected == "v2")
 print(recipe_execute(visit_members, out = c(members = "D_members"), conns = conns))
 ```
 
-    #>     members 
+    #>     members
     #> "D_members"
 
 Membership includes pseudonymous keys and episode dates. Inspect its
@@ -108,11 +113,10 @@ is not evidence of eligibility.
 eligible_recipe <- omop_recipe(populations = list(eligible),
   variables = list(visits = omop_count("visit_occurrence", before = Inf)),
   outputs = omop_output("people", rows = "eligible", format = "wide"))
-stopifnot(recipe_explain(eligible_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(eligible_recipe, out = c(people = "D_eligible"), conns = conns))
 ```
 
-    #>       people 
+    #>       people
     #> "D_eligible"
 
 The count includes visits through the chosen index day.
@@ -124,12 +128,12 @@ dsBaseClient::ds.summary("D_eligible$visits", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #> 
+    #>
     #> $site$length
     #> [1] 12
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>   5%  10%  25%  50%  75%  90%  95% Mean 
+    #>   5%  10%  25%  50%  75%  90%  95% Mean
     #>    2    2    2    2    2    2    2    2
 
 This aggregate describes the eligible episodes, not everybody in the
@@ -147,11 +151,10 @@ covered <- eligible
 covered$coverage <- omop_coverage(policy = "union", gap = 0)
 coverage_recipe <- omop_recipe(populations = list(covered),
   outputs = omop_output("members", rows = "eligible", format = "membership"))
-stopifnot(recipe_explain(coverage_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(coverage_recipe, out = c(members = "D_covered"), conns = conns))
 ```
 
-    #>     members 
+    #>     members
     #> "D_covered"
 
 Here each person has one observation period, so the policy does not
@@ -172,11 +175,10 @@ cohort_population <- omop_population("saved", index = omop_index(
   list(cohort_definition_id = 1L), select = "all", end = omop_end("event_end")))
 cohort_recipe <- omop_recipe(populations = list(cohort_population),
   outputs = omop_output("members", rows = "saved", format = "membership"))
-stopifnot(recipe_explain(cohort_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(cohort_recipe, out = c(members = "D_cohort"), conns = conns))
 ```
 
-    #>    members 
+    #>    members
     #> "D_cohort"
 
 This reads existing cohort episodes without writing a cohort to the
@@ -196,11 +198,10 @@ new_users <- omop_new_users(950001L, washout_days = 365, by = "concept")
 new_user_recipe <- omop_study(new_users, outputs = "baseline",
   baseline = list(prior_fills = omop_count("drug_exposure", 950001L,
     window = omop_window(-365, -1))))
-stopifnot(recipe_explain(new_user_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(new_user_recipe, out = c(baseline = "D_new_users"), conns = conns))
 ```
 
-    #>      baseline 
+    #>      baseline
     #> "D_new_users"
 
 The synthetic medicine uses concept grouping explicitly; ingredient
@@ -218,28 +219,28 @@ dsBaseClient::ds.table("D_new_users$prior_fills", useNA = "no", datasources = co
     #>                        study
     #> D_new_users$prior_fills site
     #>                       0    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                        study
     #> D_new_users$prior_fills site
     #>                       0    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                        study
     #> D_new_users$prior_fills site
     #>                       0   18
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_new_users$prior_fills
-    #> 0 
-    #> 1 
-    #> 
+    #> 0
+    #> 1
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_new_users$prior_fills
-    #>  0 
-    #> 18 
-    #> 
-    #> 
+    #>  0
+    #> 18
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -291,11 +292,10 @@ matched_recipe <- omop_recipe(populations = list(cases, controls, matched),
   variables = list(is_case = omop_population_column("is_case"),
     weight = omop_population_column("sampling_weight")),
   outputs = omop_output("sample", rows = "matched", format = "wide"))
-stopifnot(recipe_explain(matched_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(matched_recipe, out = c(sample = "D_matched"), conns = conns))
 ```
 
-    #>      sample 
+    #>      sample
     #> "D_matched"
 
 The match-set key stays protected on the server. Sampling weights and
@@ -311,42 +311,36 @@ dsBaseClient::ds.table("D_matched$is_case", useNA = "no", datasources = conns)
     #> D_matched$is_case site
     #>                 0    1
     #>                 1    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                  study
     #> D_matched$is_case site
     #>                 0  0.5
     #>                 1  0.5
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                  study
     #> D_matched$is_case site
     #>                 0   18
     #>                 1   18
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_matched$is_case
-    #>   0   1 
-    #> 0.5 0.5 
-    #> 
+    #>   0   1
+    #> 0.5 0.5
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_matched$is_case
-    #>  0  1 
-    #> 18 18 
-    #> 
-    #> 
+    #>  0  1
+    #> 18 18
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
 These are sampled rows, including repeated controls when permitted. They
 are not disease prevalence or counts of unique people. Matching defines
 a design; it does not by itself remove all confounding.
-
-## Recap
-
-Index selection sets episodes; criteria and coverage decide eligibility.
-Existing cohorts, new-user eras and risk-set samples are population
-definitions in the same language.
 
 ## Try it
 
@@ -359,11 +353,10 @@ Solution
 all_visitors <- omop_population("visitors", index = omop_index(visits, select = "all"))
 all_recipe <- omop_recipe(populations = list(all_visitors),
   outputs = omop_output("members", rows = "visitors", format = "membership"))
-stopifnot(recipe_explain(all_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(all_recipe, out = c(members = "D_all_visitors"), conns = conns))
 ```
 
-    #>          members 
+    #>          members
     #> "D_all_visitors"
 
 ``` r
@@ -377,3 +370,45 @@ dsBaseClient::ds.colnames("D_all_visitors", datasources = conns)
 The keys distinguish episodes even when a person appears more than once.
 The synthetic verification harness checks 30 episodes for 18 distinct
 people.
+
+## Exercise 2: a common variant
+
+Inspect the new-user output. Is the washout a column created after
+entry?
+
+Solution 2
+
+``` r
+dsBaseClient::ds.colnames("D_new_users", datasources = conns)
+```
+
+    #> $site
+    #> [1] "row_id"        "cohort_row_id" "person_id"     "prior_fills"
+
+Washout belongs to eligibility. A baseline prior-fill count can verify
+the design but cannot replace its inclusion criterion.
+
+## Exercise 3: a pitfall to avoid
+
+Compile the all-visit membership definition and check its index
+selection.
+
+Solution 3
+
+``` r
+all_visitors$index$select
+```
+
+    #> [1] "all"
+
+The all selector retains repeated episodes. The episode, not necessarily
+the person, is the analysis row.
+
+## Recap
+
+Index selection sets episodes; criteria and coverage decide eligibility.
+Existing cohorts, new-user eras and risk-set samples are population
+definitions in the same language.
+
+**Next:** [8. Choosing an output
+format](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-outputs.md).

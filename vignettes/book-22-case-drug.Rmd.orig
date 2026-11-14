@@ -34,6 +34,7 @@ library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
 source("tools/book/practice.R")
+source("tools/book/case-helpers.R")
 practice <- book_connect("gibleed")
 conns <- practice$conns
 atc <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE, conns = conns)$pooled
@@ -77,7 +78,8 @@ persistence <- omop_variable(event = era, reducer = omop_reduce("first_era_days"
   window = omop_window(0, 364)))
 utilisation <- omop_study(users, outputs = "baseline", baseline = list(
   covered = covered, persistence = persistence,
-  pdc = omop_number(covered, omop_number_spec(transform = omop_number_transform("affine", factor = 1/365))),
+  pdc = omop_number_derive(list(covered = covered),
+    book_expr(book_op("/", book_col("covered"), book_lit(365))), unit = "1"),
   discontinued = omop_number_flag(persistence, "lt", 365),
   fills = omop_variable(event = drug, reducer = omop_reduce("count", window = omop_window(0, 364)))))
 print(recipe_execute(utilisation, out = c(baseline = "D_utilisation"), conns = conns))
@@ -92,6 +94,8 @@ covered days. Recorded prescribing is not proof of actual ingestion.
 ## PDC and discontinuation
 
 Proportion of days covered (PDC) divides covered days by the 365 eligible days.
+The native expression declares a dimensionless result (`unit = "1"`), rather
+than retaining the covered-days coordinate after a display rescaling.
 A first era shorter than 365 days is a protocol-defined discontinuation indicator
 under this gap rule, not proof of permanent treatment cessation.
 

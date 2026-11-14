@@ -14,7 +14,13 @@ described in [Before you
 start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice
 connection; all the outputs below come from real dsOMOP and dsOMOPClient
-2.10.4 calls. The numbers describe teaching data, not clinical findings.
+2.10.5 calls. The numbers describe teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
+including the separate questionnaire catalogue. Additional
+body-measurement concepts are found on screen in the [formula
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -155,11 +161,10 @@ Otherwise an unknown remains missing. Empty windows give any = 0 and all
 reducers <- omop_recipe(variables = list(first = first, last = last,
   mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(reducers, conns = conns)$selected == "v2")
 print(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
 ```
 
-    #>       people 
+    #>       people
     #> "D_reducers"
 
 Only the symbol mapping returns. Request one approved aggregate at a
@@ -190,12 +195,12 @@ first_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #> 
+    #>
     #> $site$length
     #> [1] 28
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
     #> 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571
 
 This summarises the first nonmissing measurement per person.
@@ -225,12 +230,12 @@ last_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #> 
+    #>
     #> $site$length
     #> [1] 28
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
     #> 12.34000 12.74000 13.60000 15.00000 16.25000 16.83000 17.03000 14.89286
 
 Later readings can change the last-value summary. The source dataset
@@ -261,12 +266,12 @@ days_result
     #> $site
     #> $site$class
     #> [1] "integer"
-    #> 
+    #>
     #> $site$length
     #> [1] 28
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
     #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
 
 This summarises one measurement-day count per person. A frequency table
@@ -295,28 +300,28 @@ ever_result
     #>                study
     #> D_reducers$ever site
     #>               1    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                study
     #> D_reducers$ever site
     #>               1    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                study
     #> D_reducers$ever site
     #>               1   28
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_reducers$ever
-    #> 1 
-    #> 1 
-    #> 
+    #> 1
+    #> 1
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_reducers$ever
-    #>  1 
-    #> 28 
-    #> 
-    #> 
+    #>  1
+    #> 28
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -347,32 +352,32 @@ any_result
     #>                  0     1
     #>                  1     1
     #>                  NA  NaN
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                    study
     #> D_reducers$any_high      site
     #>                  0  0.3214286
     #>                  1  0.6785714
     #>                  NA 0.0000000
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                    study
     #> D_reducers$any_high site
     #>                  0     9
     #>                  1    19
     #>                  NA    0
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_reducers$any_high
-    #>     0     1    NA 
-    #> 0.321 0.679 0.000 
-    #> 
+    #>     0     1    NA
+    #> 0.321 0.679 0.000
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_reducers$any_high
-    #>  0  1 NA 
-    #>  9 19  0 
-    #> 
-    #> 
+    #>  0  1 NA
+    #>  9 19  0
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -404,32 +409,32 @@ all_result
     #>                  0     1
     #>                  1     1
     #>                  NA  NaN
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                    study
     #> D_reducers$all_high      site
     #>                  0  0.8571429
     #>                  1  0.1428571
     #>                  NA 0.0000000
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                    study
     #> D_reducers$all_high site
     #>                  0    24
     #>                  1     4
     #>                  NA    0
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_reducers$all_high
-    #>     0     1    NA 
-    #> 0.857 0.143 0.000 
-    #> 
+    #>     0     1    NA
+    #> 0.857 0.143 0.000
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_reducers$all_high
-    #>  0  1 NA 
-    #> 24  4  0 
-    #> 
-    #> 
+    #>  0  1 NA
+    #> 24  4  0
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -463,12 +468,12 @@ mean_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #> 
+    #>
     #> $site$length
     #> [1] 28
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
     #> 12.90500 13.14667 13.78500 14.32500 15.33542 15.70000 15.92375 14.46679
 
 This summarises one mean per person. It is not the pooled mean of all
@@ -485,11 +490,10 @@ need not occur on the index day.
 at_index <- omop_study(measure, outputs = "baseline",
   baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
     tolerance = c(-30, 0), unit = 8713L)))
-stopifnot(recipe_explain(at_index, conns = conns)$selected == "v2")
 print(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
 ```
 
-    #>     baseline 
+    #>     baseline
     #> "D_at_index"
 
 The tolerance excludes later measurements. The shortcut uses
@@ -521,12 +525,12 @@ at_index_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #> 
+    #>
     #> $site$length
     #> [1] 28
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
     #> 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571
 
 Only people with an eligible hemoglobin measurement enter this indexed
@@ -567,11 +571,10 @@ across sites before pooling.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(converted, conns = conns)$selected == "v2")
 print(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
 ```
 
-    #>        people 
+    #>        people
     #> "D_converted"
 
 ``` r
@@ -599,12 +602,12 @@ conversion_result
     #> $site
     #> $site$class
     #> [1] "numeric"
-    #> 
+    #>
     #> $site$length
     #> [1] 28
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
     #> 129.0500 131.4667 137.8500 143.2500 153.3542 157.0000 159.2375 144.6679
 
 The means are ten times the g/dL means. This run uses the dataset’s
@@ -618,52 +621,31 @@ are arbitrary teaching choices, **not clinical reference ranges or
 treatment thresholds**. We apply them to each person’s mean, privately.
 
 ``` r
-print(ds.omop.mutate("D_reducers",
-  band = cut(mean, breaks = c(0, 14, 15, 100),
-    labels = c("below 14", "14 to below 15", "15 or above"), right = FALSE),
-  high = ifelse(mean >= 15, 1L, 0L), low = ifelse(mean < 14, 1L, 0L),
-  newobj = "D_lab_bins", conns = conns))
-```
-
-    #> [1] "D_lab_bins"
-
-`cut()` in dsOMOP 2.10.4 produces character labels. Make a server-side
-factor with explicitly sequenced levels before tabulating it:
-
-``` r
+mean_value <- omop_variable(event = measure, reducer = omop_reduce("mean"))
 band_levels <- c("below 14", "14 to below 15", "15 or above")
-dsBaseClient::ds.asFactor("D_lab_bins$band", newobj.name = "event_band",
-  forced.factor.levels = band_levels, datasources = conns)
+binned <- omop_recipe(variables = list(mean = mean_value,
+  band = omop_number_bins(mean_value, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
+  high = omop_number_flag(mean_value, "ge", 15),
+  low = omop_number_flag(mean_value, "lt", 14)))
+print(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
 ```
 
-    #> $all.unique.levels
-    #> [1] "below 14"       "14 to below 15" "15 or above"   
-    #> 
-    #> $return.message
-    #> [1] "Data object <event_band> correctly created in all specified data sources"
+    #>       output
+    #> "D_lab_bins"
+
+The band is an ordered factor directly on the server. No mutate-plus-cut
+or subsequent factor conversion is needed. The type matters for model
+contrasts.
 
 ``` r
-dsBaseClient::ds.levels("event_band", datasources = conns)
+dsBaseClient::ds.class("D_lab_bins$band", datasources = conns)
 ```
 
     #> $site
-    #> $site$Levels
-    #> [1] "below 14"       "14 to below 15" "15 or above"   
-    #> 
-    #> $site$ValidityMessage
-    #> [1] "VALID ANALYSIS"
-
-The levels now run from low to high on the server and in the count
-table. This is a factor with a declared level sequence, **not R’s
-`ordered` class**: `ds.asFactor()` uses ordinary categorical contrasts,
-with the first level as reference. Sorting a displayed table alone would
-not change those model semantics. Do not pass `ordered_result` to
-`ds.omop.mutate()`; that argument is unsupported. For an ordinal
-display, apply `ordered()` only to the released category labels; it does
-not make private values available or change the server model.
+    #> [1] "dsomop_date_factor" "ordered"            "factor"
 
 ``` r
-bins_result <- dsBaseClient::ds.table("event_band", useNA = "always", datasources = conns)
+bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
 bin_display <- book_counts(bins_result)
 bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
 knitr::kable(bin_display[order(bin_display$Category, na.last = TRUE), ])
@@ -683,12 +665,12 @@ dsBaseClient::ds.mean("D_lab_bins$mean", type = "combine", datasources = conns)
     #> $Global.Mean
     #>                 EstimatedMean Nmissing Nvalid Ntotal
     #> studiesCombined      14.46679        0     28     28
-    #> 
+    #>
     #> $Nstudies
     #> [1] 1
-    #> 
+    #>
     #> $ValidityMessage
-    #>      ValidityMessage 
+    #>      ValidityMessage
     #> site "VALID ANALYSIS"
 
 Full aggregate response
@@ -700,39 +682,39 @@ bins_result
     #> $output.list
     #> $output.list$TABLE_rvar.by.study_row.props
     #>                 study
-    #> event_band       site
+    #> D_lab_bins$band  site
     #>   below 14          1
     #>   14 to below 15    1
     #>   15 or above       1
     #>   NA              NaN
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                 study
-    #> event_band            site
+    #> D_lab_bins$band       site
     #>   below 14       0.3214286
     #>   14 to below 15 0.3214286
     #>   15 or above    0.3571429
     #>   NA             0.0000000
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                 study
-    #> event_band       site
+    #> D_lab_bins$band  site
     #>   below 14          9
     #>   14 to below 15    9
     #>   15 or above      10
     #>   NA                0
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
-    #> event_band
-    #>       below 14 14 to below 15    15 or above             NA 
-    #>          0.321          0.321          0.357          0.000 
-    #> 
+    #> D_lab_bins$band
+    #>       below 14 14 to below 15    15 or above             NA
+    #>          0.321          0.321          0.357          0.000
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
-    #> event_band
-    #>       below 14 14 to below 15    15 or above             NA 
-    #>              9              9             10              0 
-    #> 
-    #> 
+    #> D_lab_bins$band
+    #>       below 14 14 to below 15    15 or above             NA
+    #>              9              9             10              0
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -753,11 +735,10 @@ ranges <- omop_recipe(variables = list(
   high_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_high")),
   low_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_low"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(ranges, conns = conns)$selected == "v2")
 print(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
 ```
 
-    #>         people 
+    #>         people
     #> "D_lab_ranges"
 
 ``` r
@@ -780,28 +761,28 @@ ranges_result
     #>                        study
     #> D_lab_ranges$high_count site
     #>                       0    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                        study
     #> D_lab_ranges$high_count site
     #>                       0    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                        study
     #> D_lab_ranges$high_count site
     #>                       0   28
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_lab_ranges$high_count
-    #> 0 
-    #> 1 
-    #> 
+    #> 0
+    #> 1
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_lab_ranges$high_count
-    #>  0 
-    #> 28 
-    #> 
-    #> 
+    #>  0
+    #> 28
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -810,11 +791,6 @@ no recorded comparable abnormal-high result; it is **not evidence of
 normality**. The study-defined flags above remain a separate, explicit
 definition. Never fill missing clinical reference ranges with an
 invented normal interval.
-
-## Recap
-
-An event chooses records, a window chooses time, and a reducer answers
-one question. Empty records and an undefined anchor are different.
 
 ## Try it
 
@@ -827,11 +803,10 @@ Solution
 row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(row_count, conns = conns)$selected == "v2")
 print(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
 ```
 
-    #>        people 
+    #>        people
     #> "D_row_count"
 
 ``` r
@@ -859,12 +834,12 @@ solution_result
     #> $site
     #> $site$class
     #> [1] "integer"
-    #> 
+    #>
     #> $site$length
     #> [1] 28
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
     #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
 
 Compare the released summaries: records on the same day would count
@@ -879,30 +854,78 @@ and summarise the differences. Is this the same quantity as a slope?
 Solution
 
 ``` r
-print(ds.omop.mutate("D_reducers", change = last - first,
-  newobj = "D_event_change", conns = conns))
+change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
+print(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
 ```
 
-    #> [1] "D_event_change"
+    #>           output
+    #> "D_event_change"
 
 ``` r
 event_change <- dsBaseClient::ds.summary("D_event_change$change", datasources = conns)
 knitr::kable(book_summary(event_change))
 ```
 
-| Site | Statistic |       Value |
-| :--- | :-------- | ----------: |
-| site | 5%        | \-2.8950000 |
-| site | 10%       | \-2.4900000 |
-| site | 25%       | \-0.9500000 |
-| site | 50%       |   0.9000000 |
-| site | 75%       |   2.1750000 |
-| site | 90%       |   3.2000000 |
-| site | 95%       |   3.6550000 |
-| site | Mean      |   0.9071429 |
+| Site | Statistic |   Value |
+| :--- | :-------- | ------: |
+| site | 5%        | \-2.940 |
+| site | 10%       | \-2.580 |
+| site | 25%       | \-1.400 |
+| site | 50%       |   1.600 |
+| site | 75%       |   2.400 |
+| site | 90%       |   3.200 |
+| site | 95%       |   3.760 |
+| site | Mean      |   1.016 |
 
-This is change in g/dL, without dividing by elapsed time. A fitted slope
-uses all eligible dates and values and has units per day. Continue with
-[Working with lab
-values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md)
+This is change in g/dL, without dividing by elapsed time. Native change
+needs two eligible readings; a single reading stays missing rather than
+becoming zero. A fitted slope uses all eligible dates and values and has
+units per day. Continue with [Working with lab
+values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md)
 for both methods and pooled analyses.
+
+## Exercise 2: a common variant
+
+Inspect the unit declaration before executing a conversion. What
+changes: the patients or the measurement coordinate?
+
+Solution 2
+
+``` r
+class(lab_gl)
+```
+
+    #> [1] "omop_event" "list"
+
+``` r
+lab_gl$unit
+```
+
+    #> $target
+    #> [1] 8636
+    #>
+    #> $convert
+    #> $convert$`8713`
+    #> factor offset
+    #>     10      0
+    #>
+    #>
+    #> $unknown
+    #> [1] "missing"
+    #>
+    #> $censored
+    #> [1] "keep"
+    #>
+    #> attr(,"class")
+    #> [1] "omop_unit" "list"
+
+It changes the numeric coordinate under the declared conversion map, not
+who the source records describe.
+
+## Recap
+
+An event chooses records, a window chooses time, and a reducer answers
+one question. Empty records and an undefined anchor are different.
+
+**Next:** [7. Populations and index
+events](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-populations.md).

@@ -34,9 +34,10 @@ book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
 
 # Offline-only administrator fixture: disjoint halves of public synthetic people.
 # No records are invented. The permanent practice resources are never modified.
-book_numeric_pair <- function(env=parent.frame()) {
+book_numeric_pair <- function(env=parent.frame(), resource=c("numeric", "gibleed")) {
+  resource <- match.arg(resource)
   force(env)
-  base <- book_practice("numeric", env=env, symbol="book_pool")
+  base <- book_practice(resource, env=env, symbol="book_pool")
   ds.omop.disconnect(conns=base$conns, symbol="book_pool")
   DSI::datashield.logout(base$conns)
   source_db <- DBI::dbConnect(RSQLite::SQLite(), base$database)

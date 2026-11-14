@@ -11,11 +11,17 @@ start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#
 [output
 formats](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-outputs.md)
 and [lab
-values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md).
+values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md).
 Start a fresh session in `book-work` and run every section in order,
 including solutions. GiBleed and Synthea are public **synthetic**
 resources. Their results teach analysis mechanics, not clinical
 conclusions. This chapter uses dsBaseClient 6.3.5.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
+including the separate questionnaire catalogue. Additional
+body-measurement concepts are found on screen in the [formula
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## The same people, two shapes
 
@@ -86,11 +92,10 @@ visitors <- omop_population("visitors", index = omop_index(visits))
 visit_recipe <- omop_recipe(events = list(visits), populations = list(visitors),
   outputs = omop_output("visits", rows = "visitors", format = "long", sources = "admission",
     options = list(columns_derived = c("days_from_index", "duration_days"))))
-stopifnot(recipe_explain(visit_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), conns = conns))
 ```
 
-    #>         visits 
+    #>         visits
     #> "D_visit_long"
 
 The long table remains private. Release only the named visit-type counts
@@ -101,9 +106,9 @@ dsBaseClient::ds.colnames("D_visit_long", datasources = conns)
 ```
 
     #> $site
-    #>  [1] "row_id"                  "cohort_row_id"           "person_id"              
-    #>  [4] "concept_id"              "start_date"              "end_date"               
-    #>  [7] "visit_type_concept_id"   "discharge_to_concept_id" "days_from_index"        
+    #>  [1] "row_id"                  "cohort_row_id"           "person_id"
+    #>  [4] "concept_id"              "start_date"              "end_date"
+    #>  [7] "visit_type_concept_id"   "discharge_to_concept_id" "days_from_index"
     #> [10] "duration_days"
 
 ``` r
@@ -129,12 +134,12 @@ visit_time
     #> $Global.Mean
     #>                 EstimatedMean Nmissing Nvalid Ntotal
     #> studiesCombined      1272.554        0   1037   1037
-    #> 
+    #>
     #> $Nstudies
     #> [1] 1
-    #> 
+    #>
     #> $ValidityMessage
-    #>      ValidityMessage 
+    #>      ValidityMessage
     #> site "VALID ANALYSIS"
 
 No. Here the mean is about 1273 days: the first admission contributes
@@ -177,11 +182,10 @@ windows <- omop_recipe(events = list(lab), populations = list(entry), variables 
   last2 = window_value("last_value", 1000, 1999),
   last3 = window_value("last_value", 2000, 2999)),
   outputs = omop_output("wide", rows = "entry", format = "wide"))
-stopifnot(recipe_explain(windows, conns = conns)$selected == "v2")
 print(recipe_execute(windows, out = c(wide = "D_windows"), conns = conns))
 ```
 
-    #>        wide 
+    #>        wide
     #> "D_windows"
 
 No eligible nonmissing value gives `NA`. It never gives zero hemoglobin.
@@ -272,7 +276,7 @@ dsBaseClient::ds.dataFrame(c("D_windows$person_id", "first.1", "first.2", "first
 
     #> $is.object.created
     #> [1] "A data object <D_for_reshape> has been created in all specified data sources"
-    #> 
+    #>
     #> $validity.check
     #> [1] "<D_for_reshape> appears valid in all sources"
 
@@ -284,7 +288,7 @@ dsBaseClient::ds.reShape("D_for_reshape", varying = c("first.1", "first.2", "fir
 
     #> $is.object.created
     #> [1] "A data object <D_reshaped> has been created in all specified data sources"
-    #> 
+    #>
     #> $validity.check
     #> [1] "<D_reshaped> appears valid in all sources"
 
@@ -313,11 +317,10 @@ panel <- omop_recipe(events = list(lab), populations = list(entry),
   outputs = omop_output("panel", rows = "entry", format = "person_period",
     options = list(sources = list(lab), bins = list(width = 1000L),
       window = omop_window(0, 2999), analyses = c("count", "last"), representation = "dense")))
-stopifnot(recipe_explain(panel, conns = conns)$selected == "v2")
 print(recipe_execute(panel, out = c(panel = "D_panel"), conns = conns))
 ```
 
-    #>     panel 
+    #>     panel
     #> "D_panel"
 
 ``` r
@@ -397,11 +400,10 @@ hazard <- omop_recipe(events = list(lab, death), populations = list(entry), vari
       options = list(from = list(list(output = "daily"), list(output = "ends")),
         how = "left", cardinality = "many_to_one"))))
 hazard$publish <- "risk"
-stopifnot(recipe_explain(hazard, conns = two_conns, symbol = "book_pool")$selected == "v2")
 print(recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "book_pool"))
 ```
 
-    #>     risk 
+    #>     risk
     #> "D_days"
 
 Remove days after the first repeat or death. A missing next-day value
@@ -509,18 +511,18 @@ list(iterations = hazard_fit$iter, valid_days = hazard_fit$Nvalid,
 
     #> $iterations
     #> [1] 13
-    #> 
+    #>
     #> $valid_days
     #> [1] 48560
-    #> 
+    #>
     #> $disclosure_risk
     #>       RISK OF DISCLOSURE
     #> north                  0
     #> south                  0
-    #> 
+    #>
     #> $errors
     #>       ERROR MESSAGES
-    #> north "No errors"   
+    #> north "No errors"
     #> south "No errors"
 
 This is a jointly estimated distributed GLM. Its risk-set likelihood has
@@ -559,11 +561,10 @@ bmi_entry <- omop_population("bmi_entry", index = omop_index(bmi))
 repeated <- omop_recipe(events = list(bmi), populations = list(bmi_entry),
   outputs = omop_output("long", rows = "bmi_entry", format = "long", sources = "bmi",
     options = list(columns_derived = c("value", "unit", "days_since_previous"))))
-stopifnot(recipe_explain(repeated, conns = two_conns, symbol = "book_pool")$selected == "v2")
 print(recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "book_pool"))
 ```
 
-    #>     long 
+    #>     long
     #> "D_long"
 
 ``` r
@@ -571,19 +572,19 @@ dsBaseClient::ds.colnames("D_long", datasources = two_conns)
 ```
 
     #> $north
-    #>  [1] "row_id"                      "cohort_row_id"              
-    #>  [3] "person_id"                   "concept_id"                 
-    #>  [5] "start_date"                  "end_date"                   
-    #>  [7] "measurement_type_concept_id" "value_as_concept_id"        
-    #>  [9] "meas_event_field_concept_id" "days_since_previous"        
-    #> [11] "value"                       "unit_concept_id"            
-    #> 
+    #>  [1] "row_id"                      "cohort_row_id"
+    #>  [3] "person_id"                   "concept_id"
+    #>  [5] "start_date"                  "end_date"
+    #>  [7] "measurement_type_concept_id" "value_as_concept_id"
+    #>  [9] "meas_event_field_concept_id" "days_since_previous"
+    #> [11] "value"                       "unit_concept_id"
+    #>
     #> $south
-    #>  [1] "row_id"                      "cohort_row_id"              
-    #>  [3] "person_id"                   "concept_id"                 
-    #>  [5] "start_date"                  "end_date"                   
-    #>  [7] "measurement_type_concept_id" "value_as_concept_id"        
-    #>  [9] "meas_event_field_concept_id" "days_since_previous"        
+    #>  [1] "row_id"                      "cohort_row_id"
+    #>  [3] "person_id"                   "concept_id"
+    #>  [5] "start_date"                  "end_date"
+    #>  [7] "measurement_type_concept_id" "value_as_concept_id"
+    #>  [9] "meas_event_field_concept_id" "days_since_previous"
     #> [11] "value"                       "unit_concept_id"
 
 `start_date` is days since first BMI under the default relative-date
@@ -698,7 +699,7 @@ list(sites = binary_mixed$num.valid.studies,
 
     #> $sites
     #> [1] 2
-    #> 
+    #>
     #> $time_odds_ratio
     #> [1] 1.00938
 
@@ -728,3 +729,6 @@ at-risk panel with follow-up stopped at the event. Repeated-measure
 models instead retain repeated readings and model their dependence.
 Check every site’s diagnostics and distinguish joint GLM estimation from
 SLMA pooling.
+
+**Next:** [17. Reproduction and migration
+notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md).

@@ -7,13 +7,13 @@ package versions.
 
 This chapter creates the public synthetic GiBleed practice connection.
 Run the sections in order in one R session. All printed results below
-were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
+were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching
 data, not clinical findings.
 
 ## Before you start
 
 You need R 4.1 or newer (the recorded run used R 4.6.2), internet access
-for installation, and either an Opal with dsOMOP 2.10.4 or the local
+for installation, and either an Opal with dsOMOP 2.10.5 or the local
 DSLite practice server below. RStudio is a convenient editor; ordinary R
 also works. Download the book helpers below; you do not need a Git
 checkout.
@@ -21,9 +21,14 @@ checkout.
 Run this **installation block once**, before the examples. It installs
 every package used by the lessons, the offline server and the
 reproduction tools. Installation changes your library and is not
-executed during the book build. The two dsOMOP tags must be available on
-GitHub; this book’s recorded run used the matching locally tagged
-sources.
+executed during the book build. This is an **A-29 development preview**:
+no 2.10.5 release tag existed at build time. Obtain the matching source
+directories or package archives from your study team. In the authoring
+workspace the defaults below select the two local `feat/2.10.5-numbers`
+worktrees; elsewhere set the two environment variables to your supplied
+paths. A future release can replace these two local installs with its
+published tags. This preview does not ask you to install a nonexistent
+tag.
 
 ``` r
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
@@ -31,20 +36,21 @@ install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "rmarkdown", "pkgdown", "bslib", "opalr", "duckdb"))
 remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
 remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
-remotes::install_github("isglobal-brge/dsOMOP@2.10.4", upgrade = "never")
-remotes::install_github("isglobal-brge/dsOMOPClient@2.10.4", upgrade = "never")
+server_source <- Sys.getenv("BOOK_SERVER_SOURCE", "/workspace/dsomop/wt/numbers/dsOMOP")
+client_source <- Sys.getenv("BOOK_CLIENT_SOURCE", "/workspace/dsomop/wt/numbers/dsOMOPClient")
+remotes::install_local(server_source, upgrade = "never")
+remotes::install_local(client_source, upgrade = "never")
 ```
 
 The *client* is the package on your computer. The *server* runs requests
 near the data; DSLite lets you run it locally for practice. Pandoc is
 also needed to rebuild the site (RStudio includes it). The [reproduction
-notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-reproduce.md)
+notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md)
 record the dependency versions used for this book.
 
 ## Get the book helpers
 
-The released 2.10.4 package archive does **not** contain `tools/book/`.
-Download
+The book helpers are distributed separately from the package. Download
 [book-helpers.zip](https://isglobal-brge.github.io/dsOMOPClient/downloads/book-helpers.zip)
 from this site, leaving it zipped in your Downloads folder. In R, run
 this block and select that ZIP when the file chooser opens:
@@ -55,7 +61,7 @@ dir.create(book_dir, recursive = TRUE, showWarnings = FALSE)
 unzip(file.choose(), exdir = book_dir)
 setwd(book_dir)
 stopifnot(all(file.exists(file.path("tools/book",
-  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R", "load-numeric.R")))),
+  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R", "load-numeric.R", "case-helpers.R")))),
   file.exists("tools/dates/va-native.R"))
 getwd()
 ```
@@ -72,11 +78,13 @@ and [practice
 loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-practice.R)
 and [numeric
 loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-numeric.R)
+and [formula
+helpers](https://isglobal-brge.github.io/dsOMOPClient/downloads/case-helpers.R)
 files under `book-work/tools/book/`. Keep the numeric loader filename
 `load-numeric.R`; the practice loader sources it. Also create
 `book-work/tools/dates/` and save the [released capstone
 helper](https://isglobal-brge.github.io/dsOMOPClient/downloads/va-native.R)
-there as `va-native.R`; chapter 14’s solution uses it.
+there as `va-native.R`; chapter 18’s solution uses it.
 
 `connection.R` is the one place to select DSLite or Opal and set the
 Opal URL, project, profile and two resource names. Leave its defaults
@@ -90,14 +98,14 @@ vapply(c("dsOMOPClient", "dsOMOP", "DSI", "DSLite", "dsBaseClient"),
        function(package) as.character(packageVersion(package)), character(1))
 ```
 
-    #> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient 
-    #>     "2.10.4"     "2.10.4"      "1.8.0"      "1.5.0"      "6.3.5"
+    #> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient
+    #>     "2.10.5"     "2.10.5"      "1.8.0"      "1.5.0"      "6.3.5"
 
 ``` r
 ds.omop.client.version()
 ```
 
-    #> [1] "2.10.4"
+    #> [1] "2.10.5"
 
 This reports the package on your computer. A correct client version
 alone does not prove that the server has the matching methods.
@@ -108,7 +116,7 @@ The practice server has two resources. **GiBleed** supports the
 introductory schema and vocabulary lessons. **Synthea27Nj** supplies
 hemoglobin and other numeric measurements with units for [Working with
 lab
-values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md).
+values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md).
 Both contain fictional patients; “numeric” means populated numeric
 fields, not real patient records. GiBleed has 44,053 measurement rows
 but no populated `value_as_number`, so it cannot teach lab-value
@@ -182,7 +190,7 @@ ds.omop.server.version(conns = conns)
 ```
 
     #>   server published running missing ready advice recipe_language
-    #> 1   site    2.10.4  2.10.4          TRUE           2, 2.0.0....
+    #> 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....
 
 The reply comes from the server. Check both the installed and published
 versions when using Opal: publishing makes the package methods available
@@ -285,7 +293,7 @@ source("tools/book/opal-admin.R")
 This downloadable [administrator
 script](https://isglobal-brge.github.io/dsOMOPClient/downloads/opal-admin.R)
 logs in as `administrator` (or `BOOK_OPAL_ADMIN_USER`), installs dsBase
-6.3.5 and dsOMOP 2.10.4 in the configured profile with
+6.3.5 and dsOMOP 2.10.5 in the configured profile with
 `dsadmin.install_github_package()`, then calls
 `dsadmin.publish_package()` for both. Publishing registers their
 assign/aggregate methods and package options. It creates the named
@@ -305,7 +313,7 @@ SQLite needs no database credentials. The script declares `package =
 prints the installed package versions and resource definitions for
 checking. In the Opal browser UI, log in as the administrator using the
 same URL, open **Administration → DataSHIELD**, and verify the selected
-profile lists dsBase 6.3.5 and dsOMOP 2.10.4 with published methods.
+profile lists dsBase 6.3.5 and dsOMOP 2.10.5 with published methods.
 Resources remain database references; do not import them as downloadable
 patient tables.
 
@@ -331,7 +339,7 @@ PASS: practice.gibleed connected; measurement schema returned
 PASS: practice.numeric connected; measurement schema returned
 ```
 
-Confirm installed and published server versions are 2.10.4 in the
+Confirm installed and published server versions are 2.10.5 in the
 version reply. A failed login, missing driver, unpublished method,
 unreadable mount or wrong resource name stops the checks; do not proceed
 to the lessons until both pass. The script disconnects and logs out.
@@ -344,11 +352,6 @@ Rock mount, run the resource provisioning with that host’s
 administrator, and update only `connection.R`. No database TLS setting
 or study-specific privacy setting is needed.
 
-## Recap
-
-You can distinguish your client installation from the server
-installation and have a practice connection.
-
 ## Try it
 
 Ask the client and server for their versions again. Which call needs a
@@ -360,11 +363,53 @@ Solution
 ds.omop.client.version()
 ```
 
-    #> [1] "2.10.4"
+    #> [1] "2.10.5"
 
 ``` r
 ds.omop.server.version(conns = conns)
 ```
 
     #>   server published running missing ready advice recipe_language
-    #> 1   site    2.10.4  2.10.4          TRUE           2, 2.0.0....
+    #> 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....
+
+## Exercise 2: a common variant
+
+Which packages run locally?
+
+Solution 2
+
+``` r
+vapply(c("DSI", "DSLite", "dsOMOPClient"), function(x) as.character(packageVersion(x)), "")
+```
+
+    #>          DSI       DSLite dsOMOPClient
+    #>      "1.8.0"      "1.5.0"     "2.10.5"
+
+These are client packages. The server installs dsOMOP and dsBase
+separately.
+
+## Exercise 3: a pitfall to avoid
+
+Check that the shared resource configuration names both practice
+datasets.
+
+Solution 3
+
+``` r
+source("tools/book/connection.R")
+resource_names
+```
+
+    #>   gibleed   numeric
+    #> "gibleed" "numeric"
+
+Both named resources are required. Changing a host belongs in this one
+file, not in each lesson.
+
+## Recap
+
+You can distinguish your client installation from the server
+installation and have a practice connection.
+
+**Next:** [1. What DataSHIELD and OMOP
+mean](https://isglobal-brge.github.io/dsOMOPClient/articles/book-01-mental-model.md).

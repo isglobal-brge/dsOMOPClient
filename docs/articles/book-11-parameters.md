@@ -14,7 +14,13 @@ described in [Before you
 start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice
 connection; all the outputs below come from real dsOMOP and dsOMOPClient
-2.10.4 calls. The numbers describe teaching data, not clinical findings.
+2.10.5 calls. The numbers describe teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
+including the separate questionnaire catalogue. Additional
+body-measurement concepts are found on screen in the [formula
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -74,7 +80,6 @@ required setting is supplied.
 
 ``` r
 outpatient <- recipe_bind(template, setting = 9202L)
-stopifnot(recipe_explain(outpatient, conns = conns)$selected == "v2")
 recipe_explain(outpatient)$selected
 ```
 
@@ -87,7 +92,7 @@ Binding fills the placeholder while preserving the template. Concept
 print(recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns))
 ```
 
-    #>             baseline 
+    #>             baseline
     #> "D_param_outpatient"
 
 ``` r
@@ -97,12 +102,12 @@ dsBaseClient::ds.summary("D_param_outpatient$age", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #> 
+    #>
     #> $site$length
     #> [1] 28
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>        5%       10%       25%       50%       75%       90%       95%      Mean 
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean
     #>  0.000000  0.000000  0.750000  3.500000 17.000000 18.000000 18.000000  8.071429
 
 The server computes annual age (index year minus birth year) at the
@@ -118,17 +123,17 @@ print(outpatient)
     #> Label precedence: variable recode, recipe recode, vocabulary name, decimal ID fallback. Explicit equal recodes merge categories.
     #> Federation: permitted ID union, including declared unused levels; newest comparable vocabulary version, then bytewise name tie. Unresolved versions never establish recency.
     #> Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.
-    #> variables.prior_visits: concept origin follows reducer count over the declared source value; explicit variable name is retained. 
+    #> variables.prior_visits: concept origin follows reducer count over the declared source value; explicit variable name is retained.
     #> === omop_recipe ===
     #> Populations ( 2 ):
-    #>    base  :  All Persons 
-    #>    study  :  Base Population 
+    #>    base  :  All Persons
+    #>    study  :  Base Population
     #> Variables ( 2 ):
-    #>    prior_visits :  count of visit_occurrence 
-    #>    age :  derived age (exact annual age) 
+    #>    prior_visits :  count of visit_occurrence
+    #>    age :  derived age (exact annual age)
     #> Filters ( 0 ):
     #> Outputs ( 1 ):
-    #>    baseline  [ wide ] pop: study 
+    #>    baseline  [ wide ] pop: study
     #> Study 'study' (omop_study()) defaults chosen:
     #>   - index selection "first" (default): the first candidate per person, selected before the requirements
     #>   - observation coverage unique/drop/drop (default)
@@ -156,11 +161,10 @@ shortcuts <- omop_study(omop_event("measurement", 3000963L), outputs = "baseline
     count = omop_count("measurement", 3000963L, before = 365),
     value = omop_value_at_index("measurement", 3000963L,
       tolerance = c(-30, 0), unit = 8713L)))
-stopifnot(recipe_explain(shortcuts, conns = conns)$selected == "v2")
 print(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
 ```
 
-    #>      baseline 
+    #>      baseline
     #> "D_shortcuts"
 
 ``` r
@@ -172,28 +176,28 @@ dsBaseClient::ds.table("D_shortcuts$ever", useNA = "no", datasources = conns)
     #>                 study
     #> D_shortcuts$ever site
     #>                1    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                 study
     #> D_shortcuts$ever site
     #>                1    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                 study
     #> D_shortcuts$ever site
     #>                1   28
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_shortcuts$ever
-    #> 1 
-    #> 1 
-    #> 
+    #> 1
+    #> 1
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_shortcuts$ever
-    #>  1 
-    #> 28 
-    #> 
-    #> 
+    #>  1
+    #> 28
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -221,6 +225,13 @@ be read or written; class-1 source names are also refused.
 [Privacy](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md)
 explains those protections.
 
+For derivation inside a new recipe, prefer the native expressions taught
+in [Derived numeric
+formulas](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.md).
+This chapter deliberately teaches standalone mutation of an **already
+assigned** table, including sequential assignments, new objects and
+rollback. Those remain useful operations.
+
 ## Prepare weight and height at the same date
 
 BMI is weight in kilograms divided by squared height in metres. Index
@@ -239,11 +250,10 @@ body <- omop_study(weight_event, outputs = "baseline", baseline = list(
   age = omop_age_at(omop_anchor(weight_event)),
   first_date = omop_date(omop_anchor(weight_event, which = "first")),
   last_date = omop_date(omop_anchor(weight_event, which = "last"))))
-stopifnot(recipe_explain(body, conns = conns)$selected == "v2")
 print(recipe_execute(body, out = c(baseline = "D_body"), conns = conns))
 ```
 
-    #> baseline 
+    #> baseline
     #> "D_body"
 
 These are synthetic Synthea measurements, including children. Calculated
@@ -285,7 +295,7 @@ c(original_has_bmi = "bmi" %in% body_columns$site,
   new_has_bmi = "bmi" %in% bmi_columns$site)
 ```
 
-    #> original_has_bmi      new_has_bmi 
+    #> original_has_bmi      new_has_bmi
     #>            FALSE             TRUE
 
 The original has no BMI column, and the new object does.
@@ -319,7 +329,7 @@ knitr::kable(book_counts(age_counts))
 
 `cut` produces text labels in this grammar, not an ordered R factor. The
 table may display them alphabetically.
-[Chapter 15](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md)
+[Chapter 14](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md)
 shows how to assign an explicit factor level sequence for modelling and
 display.
 
@@ -493,7 +503,7 @@ c(copy_added = "bmi_copy" %in% before_columns$site,
   bmi_unchanged = identical(bmi_result, before_bmi))
 ```
 
-    #>    copy_added bmi_unchanged 
+    #>    copy_added bmi_unchanged
     #>          TRUE          TRUE
 
 The replacement adds `bmi_copy` while preserving BMI. The client keeps a
@@ -578,7 +588,7 @@ c(columns_preserved = identical(before_columns, after_columns),
     DSI::datashield.symbols(conns)$site))
 ```
 
-    #>     columns_preserved         bmi_preserved refused_copies_absent 
+    #>     columns_preserved         bmi_preserved refused_copies_absent
     #>                  TRUE                  TRUE                  TRUE
 
 All checks are true. Even the earlier `bmi + 1` assignment was not
@@ -653,12 +663,6 @@ This category means ages 18 and over, so its summary agrees with the
 preceding filter. The earlier missingness case ensures an unknown age is
 not called adult.
 
-## Recap
-
-Parameters change declared inputs, shortcuts express common native
-recipes, and mutate/filter operate privately on assigned tables. Each
-final object still passes publication checks.
-
 ## Try it
 
 Bind the same template to inpatient visits and summarise the prior-visit
@@ -668,11 +672,10 @@ Solution
 
 ``` r
 inpatient <- recipe_bind(template, setting = 9201L)
-stopifnot(recipe_explain(inpatient, conns = conns)$selected == "v2")
 print(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
 ```
 
-    #>            baseline 
+    #>            baseline
     #> "D_param_inpatient"
 
 ``` r
@@ -682,15 +685,24 @@ dsBaseClient::ds.summary("D_param_inpatient$prior_visits", datasources = conns)
     #> $site
     #> $site$class
     #> [1] "integer"
-    #> 
+    #>
     #> $site$length
     #> [1] 7
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>        5%       10%       25%       50%       75%       90%       95%      Mean 
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean
     #>  2.000000  2.000000  2.500000  6.000000  8.500000 11.000000 12.500000  6.285714
 
 Each binding is a separate recipe. Its own index changes which earlier
 records fall into the lookback window. A numeric summary suits these
 varied counts; a categorical table can be refused when it creates too
 many distinct levels in a small population.
+
+## Recap
+
+Parameters change declared inputs, shortcuts express common native
+recipes, and mutate/filter operate privately on assigned tables. Each
+final object still passes publication checks.
+
+**Next:** [12. What stays
+private](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md).

@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   // Preserve every recorded warning, with an explicit expandable label on the
   // one lesson that explains dsBase's single-iteration local setup fits.
-  if (/book-(15-labs|16-longitudinal)\.html$/.test(location.pathname)) {
+  if (/book-(14-labs|16-longitudinal|20-case-gibleed|21-case-glucose)\.html$/.test(location.pathname)) {
     main.querySelectorAll('pre:not(.sourceCode)').forEach(pre => {
       const lines = pre.textContent.trim().split('\n');
       if (!lines.length || !lines.every(line => line.trim() ===

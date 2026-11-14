@@ -1,4 +1,5 @@
-// Run with NODE_PATH=/usr/local/lib/node_modules node tools/book/audit-site.js.
+// Run with PLAYWRIGHT_BROWSERS_PATH=/home/dev/.cache/ms-playwright
+// NODE_PATH=/usr/local/lib/node_modules node tools/book/audit-site.js.
 const { chromium } = require('playwright-chromium');
 const fs = require('fs');
 const path = require('path');
@@ -71,7 +72,7 @@ const path = require('path');
         await warnings.locator('summary').click();
       }
       if (book) {
-        const scrolling = await page.locator('main pre').evaluateAll(blocks => {
+        const scrolling = await page.locator('main pre, main .table').evaluateAll(blocks => {
           let checked = 0;
           for (const block of blocks) {
             if (!block.getClientRects().length) continue;

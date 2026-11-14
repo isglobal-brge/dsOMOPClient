@@ -14,7 +14,13 @@ described in [Before you
 start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice
 connection; all the outputs below come from real dsOMOP and dsOMOPClient
-2.10.4 calls. The numbers describe teaching data, not clinical findings.
+2.10.5 calls. The numbers describe teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
+including the separate questionnaire catalogue. Additional
+body-measurement concepts are found on screen in the [formula
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -100,11 +106,10 @@ at entry. The template already contains an executable wide output.
 ## Wide: named columns
 
 ``` r
-stopifnot(recipe_explain(base, conns = conns)$selected == "v2")
 print(recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns))
 ```
 
-    #>         wide 
+    #>         wide
     #> "D_fmt_wide"
 
 ``` r
@@ -112,7 +117,7 @@ dsBaseClient::ds.colnames("D_fmt_wide", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          
+    #> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"
     #> [6] "hemoglobin"
 
 There is one row per episode and one column per requested variable. A
@@ -127,11 +132,10 @@ source instead of reducing it.
 long <- base
 long$outputs <- list(long = omop_output("long", rows = "visitors", format = "long",
   sources = "visits"))
-stopifnot(recipe_explain(long, conns = conns)$selected == "v2")
 print(recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns))
 ```
 
-    #>         long 
+    #>         long
     #> "D_fmt_long"
 
 ``` r
@@ -139,8 +143,8 @@ dsBaseClient::ds.colnames("D_fmt_long", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"                   "cohort_row_id"            "person_id"               
-    #> [4] "concept_id"               "start_date"               "end_date"                
+    #> [1] "row_id"                   "cohort_row_id"            "person_id"
+    #> [4] "concept_id"               "start_date"               "end_date"
     #> [7] "visit_type_concept_id"    "admitted_from_concept_id" "discharged_to_concept_id"
 
 The source columns become a normalised schema, including `concept_id`
@@ -156,11 +160,10 @@ table. Native typed variables preserve their declared values.
 ``` r
 features <- base
 features$outputs <- list(features = omop_output("features", rows = "visitors", type = "features"))
-stopifnot(recipe_explain(features, conns = conns)$selected == "v2")
 print(recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns))
 ```
 
-    #>         features 
+    #>         features
     #> "D_fmt_features"
 
 ``` r
@@ -168,7 +171,7 @@ dsBaseClient::ds.colnames("D_fmt_features", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          
+    #> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"
     #> [6] "hemoglobin"
 
 This is a wide table, not the sparse coordinate representation shown
@@ -183,11 +186,10 @@ windows of its variables explicitly.
 ``` r
 baseline <- base
 baseline$outputs <- list(baseline = omop_output("baseline", rows = "visitors", type = "baseline"))
-stopifnot(recipe_explain(baseline, conns = conns)$selected == "v2")
 print(recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns))
 ```
 
-    #>         baseline 
+    #>         baseline
     #> "D_fmt_baseline"
 
 ``` r
@@ -195,7 +197,7 @@ dsBaseClient::ds.colnames("D_fmt_baseline", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          
+    #> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"
     #> [6] "hemoglobin"
 
 The preset does not turn an all-history count into a pre-index count.
@@ -213,11 +215,10 @@ panel <- base
 panel$outputs <- list(panel = omop_output("panel", rows = "visitors", format = "person_period",
   options = list(sources = list(visits), bins = list(width = 30L),
     window = omop_window(1, 90), analyses = "count", representation = "dense")))
-stopifnot(recipe_explain(panel, conns = conns)$selected == "v2")
 print(recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns))
 ```
 
-    #>         panel 
+    #>         panel
     #> "D_fmt_panel"
 
 ``` r
@@ -225,9 +226,9 @@ dsBaseClient::ds.colnames("D_fmt_panel", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"                        "cohort_row_id"                
-    #> [3] "person_id"                     "period_start_days"            
-    #> [5] "period_end_days"               "days"                         
+    #> [1] "row_id"                        "cohort_row_id"
+    #> [3] "person_id"                     "period_start_days"
+    #> [5] "period_end_days"               "days"
     #> [7] "visits_inpatient_visit_count"  "visits_outpatient_visit_count"
 
 A dense panel retains the empty bins with zero event counts. `bins =
@@ -246,7 +247,6 @@ temporal <- base
 temporal$outputs <- list(temporal = omop_output("temporal", rows = "visitors", format = "temporal_covariates",
   options = list(sources = list(visits), bin_width = 30L,
     window = omop_window(0, 89), analyses = "count")))
-stopifnot(recipe_explain(temporal, conns = conns)$selected == "v2")
 print(recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns))
 ```
 
@@ -255,32 +255,32 @@ print(recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = con
     #> $site$temporal$temporal
     #> $site$temporal$temporal$symbol
     #> [1] "D_fmt_temporal"
-    #> 
+    #>
     #> $site$temporal$temporal$grain
     #> [1] "episode"
-    #> 
+    #>
     #> $site$temporal$temporal$n_columns
     #> [1] 6
-    #> 
-    #> 
+    #>
+    #>
     #> $site$temporal$covariateRef
     #> $site$temporal$covariateRef$symbol
     #> [1] "D_fmt_temporal.covariateRef"
-    #> 
+    #>
     #> $site$temporal$covariateRef$grain
     #> [1] "none"
-    #> 
+    #>
     #> $site$temporal$covariateRef$n_columns
     #> [1] 5
-    #> 
-    #> 
+    #>
+    #>
     #> $site$temporal$timeRef
     #> $site$temporal$timeRef$symbol
     #> [1] "D_fmt_temporal.timeRef"
-    #> 
+    #>
     #> $site$temporal$timeRef$grain
     #> [1] "none"
-    #> 
+    #>
     #> $site$temporal$timeRef$n_columns
     #> [1] 3
 
@@ -289,7 +289,7 @@ dsBaseClient::ds.colnames("D_fmt_temporal", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"          "cohort_row_id"   "person_id"       "time_id"        
+    #> [1] "row_id"          "cohort_row_id"   "person_id"       "time_id"
     #> [5] "covariate_id"    "covariate_value"
 
 The returned mapping also names the covariate and time reference tables.
@@ -308,11 +308,10 @@ survival <- base
 survival$outputs <- list(survival = omop_output("survival", rows = "visitors", format = "survival",
   options = list(outcomes = list(admission = inpatient),
     tar = omop_window(1, NULL), censor = list("observation_end", "death"))))
-stopifnot(recipe_explain(survival, conns = conns)$selected == "v2")
 print(recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns))
 ```
 
-    #>         survival 
+    #>         survival
     #> "D_fmt_survival"
 
 ``` r
@@ -320,7 +319,7 @@ dsBaseClient::ds.colnames("D_fmt_survival", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"                "cohort_row_id"         "person_id"            
+    #> [1] "row_id"                "cohort_row_id"         "person_id"
     #> [4] "outcome_name"          "event"                 "entry_days_from_index"
     #> [7] "exit_days_from_index"  "follow_up_days"
 
@@ -352,30 +351,30 @@ survival_result
     #> D_fmt_survival$event site
     #>                    0    1
     #>                    1    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                     study
     #> D_fmt_survival$event site
     #>                    0 0.75
     #>                    1 0.25
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                     study
     #> D_fmt_survival$event site
     #>                    0   21
     #>                    1    7
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_fmt_survival$event
-    #>    0    1 
-    #> 0.75 0.25 
-    #> 
+    #>    0    1
+    #> 0.75 0.25
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_fmt_survival$event
-    #>  0  1 
-    #> 21  7 
-    #> 
-    #> 
+    #>  0  1
+    #> 21  7
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -392,11 +391,10 @@ eras.
 intervals <- base
 intervals$outputs <- list(intervals = omop_output("intervals", rows = "visitors", format = "intervals",
   options = list(sources = list(rx), window = omop_window(0, NULL))))
-stopifnot(recipe_explain(intervals, conns = conns)$selected == "v2")
 print(recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns))
 ```
 
-    #>         intervals 
+    #>         intervals
     #> "D_fmt_intervals"
 
 ``` r
@@ -404,7 +402,7 @@ dsBaseClient::ds.colnames("D_fmt_intervals", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"                "cohort_row_id"         "person_id"            
+    #> [1] "row_id"                "cohort_row_id"         "person_id"
     #> [4] "interval_type"         "concept_id"            "start_days_from_index"
     #> [7] "end_days_from_index"
 
@@ -421,7 +419,6 @@ contribution.
 sparse <- base
 sparse$outputs <- list(sparse = omop_output("sparse", rows = "visitors", format = "sparse",
   options = list(sources = list(visits), analyses = c("binary", "count"))))
-stopifnot(recipe_explain(sparse, conns = conns)$selected == "v2")
 print(recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns))
 ```
 
@@ -430,21 +427,21 @@ print(recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns))
     #> $site$sparse$sparse
     #> $site$sparse$sparse$symbol
     #> [1] "D_fmt_sparse"
-    #> 
+    #>
     #> $site$sparse$sparse$grain
     #> [1] "episode"
-    #> 
+    #>
     #> $site$sparse$sparse$n_columns
     #> [1] 5
-    #> 
-    #> 
+    #>
+    #>
     #> $site$sparse$covariateRef
     #> $site$sparse$covariateRef$symbol
     #> [1] "D_fmt_sparse.covariateRef"
-    #> 
+    #>
     #> $site$sparse$covariateRef$grain
     #> [1] "none"
-    #> 
+    #>
     #> $site$sparse$covariateRef$n_columns
     #> [1] 5
 
@@ -453,7 +450,7 @@ dsBaseClient::ds.colnames("D_fmt_sparse", datasources = conns)
 ```
 
     #> $site
-    #> [1] "row_id"          "cohort_row_id"   "person_id"       "covariate_id"   
+    #> [1] "row_id"          "cohort_row_id"   "person_id"       "covariate_id"
     #> [5] "covariate_value"
 
 The data contain a covariate key and value. The reference companion maps
@@ -469,11 +466,10 @@ independently of its measurements.
 ``` r
 membership <- base
 membership$outputs <- list(membership = omop_output("membership", rows = "visitors", format = "membership"))
-stopifnot(recipe_explain(membership, conns = conns)$selected == "v2")
 print(recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns))
 ```
 
-    #>         membership 
+    #>         membership
     #> "D_fmt_membership"
 
 ``` r
@@ -500,11 +496,10 @@ dictionary$outputs <- list(
   dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary",
     options = list(source_outputs = "counts")))
 dictionary$publish <- "dictionary"
-stopifnot(recipe_explain(dictionary, conns = conns)$selected == "v2")
 print(recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns))
 ```
 
-    #>         dictionary 
+    #>         dictionary
     #> "D_fmt_dictionary"
 
 ``` r
@@ -512,7 +507,7 @@ dsBaseClient::ds.colnames("D_fmt_dictionary", datasources = conns)
 ```
 
     #> $site
-    #> [1] "concept_id"       "concept_name"     "domain_id"        "vocabulary_id"   
+    #> [1] "concept_id"       "concept_name"     "domain_id"        "vocabulary_id"
     #> [5] "concept_class_id" "source"
 
 The schema contains vocabulary fields, not frequencies. A dictionary
@@ -545,11 +540,10 @@ private intermediate steps and do not each need a separately published
 symbol.
 
 ``` r
-stopifnot(recipe_explain(joined, conns = conns)$selected == "v2")
 print(recipe_execute(joined, out = c(joined = "D_fmt_joined"), conns = conns))
 ```
 
-    #>         joined 
+    #>         joined
     #> "D_fmt_joined"
 
 ``` r
@@ -563,12 +557,6 @@ A left join retains the first input’s rows. Here each episode has
 exactly one counts row and one ages row. Repeated event rows would
 require a different, explicit cardinality; do not silently multiply a
 study population.
-
-## Recap
-
-Choose the population and row meaning before the format. Outputs stay
-private; multi-component outputs carry reference companions. Censoring
-and join cardinality are study decisions.
 
 ## Try it
 
@@ -602,12 +590,12 @@ solution_result
     #> $site
     #> $site$class
     #> [1] "integer"
-    #> 
+    #>
     #> $site$length
     #> [1] 28
-    #> 
+    #>
     #> $site$`quantiles & mean`
-    #>        5%       10%       25%       50%       75%       90%       95%      Mean 
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean
     #>  11.75000  16.40000  23.75000  45.00000  75.25000 117.60000 152.20000  61.96429
 
 Both use the same reducer and episodes. Joining one row to one row adds
@@ -640,10 +628,36 @@ knitr::kable(book_summary(output_lab))
 The wide table gives each included person one mean in g/dL. An average
 over measurement rows would give more weight to people with more
 measurements. [Working with lab
-values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md)
+values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md)
 builds this distinction into a two-connection analysis. Neither shape
 grants access to individual rows.
 
 [Chapter 16](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md)
 develops these choices through irregular measurements, server reshaping,
 a discrete-time hazard and pooled mixed models.
+
+## Exercise 2: a common variant
+
+Inspect the wide schema before proposing a model.
+
+Solution 2
+
+``` r
+dsBaseClient::ds.colnames("D_fmt_wide", datasources = conns)
+```
+
+    #> $site
+    #> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"
+    #> [6] "hemoglobin"
+
+One column per variable and one row per declared population unit are
+modelling choices, not export permissions.
+
+## Recap
+
+Choose the population and row meaning before the format. Outputs stay
+private; multi-component outputs carry reference companions. Censoring
+and join cardinality are study decisions.
+
+**Next:** [9. Dates, periods and
+ages](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-dates.md).

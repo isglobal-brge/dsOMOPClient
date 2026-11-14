@@ -12,8 +12,14 @@ started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)
 described in [Before you
 start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below
-were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
+were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching
 data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
+including the separate questionnaire catalogue. Additional
+body-measurement concepts are found on screen in the [formula
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -115,7 +121,7 @@ class(people)
 produce missing values. We did not add a legacy raw-ID variable to keep
 the roster.
 
-## Check the language before running
+## Predict: read the recipe explanation
 
 ``` r
 explained <- recipe_explain(people, conns = conns)
@@ -125,10 +131,11 @@ explained$selected
 
     #> [1] "v2"
 
-The selected plan is language 2. This check is made for every executable
-recipe in the book. With no time restriction, each variable reads all
-available history independently. That is a teaching definition to choose
-explicitly in a real study.
+The selected plan is language 2. Before running, predict one private row
+per person, two named categorical variables, and a pseudonymous key.
+With no time restriction, each variable reads all available history
+independently. That is a teaching definition to choose explicitly in a
+real study.
 
 Full plan explanation (optional)
 
@@ -137,6 +144,12 @@ A label contract records the category names and their ordering.
 Federation reconciliation makes those categories agree across sites. A
 bytewise tie compares the bytes of text to make a repeated choice
 deterministic. You do not need to configure these for this first recipe.
+
+Read the lines in order: the selected language is the execution route;
+the population defines the row; each variable identifies its source and
+reducer; output defaults determine the shape; category reconciliation
+determines names. The explanation contains declarations, not observed
+patient frequencies.
 
 Print all the chosen defaults:
 
@@ -161,19 +174,95 @@ recipe_explain(people)
     #> variables.education: concept origin follows reducer last_value over value_as_concept_id; explicit variable name is retained.
     #> variables.cause_of_death: concept origin follows reducer first_value over cause_concept_id; explicit variable name is retained.
 
-## Assign the result
+## Run: assign the result
 
 ``` r
 print(recipe_execute(people, out = c(people = "D_people"), conns = conns))
 ```
 
-    #>     people 
+    #>     people
     #> "D_people"
 
 The reply is a mapping of output names to server symbols. `D_people` is
 still on the server. Concept-valued columns are labelled factors because
-of their declared type. In 2.10.4 the names `education` and
+of their declared type. In 2.10.5 the names `education` and
 `cause_of_death` need no `_concept_id` suffix.
+
+## Verify: check what you got
+
+Do this complete check once while learning a new extraction. `ds.ls`
+lists server symbols; `ds.dim` describes the result dimensions;
+`ds.colnames` names its columns; `ds.class` checks types. Then inspect
+one summary or table and missingness with `ds.numNA`. Every method
+applies its own release rules. None of these calls retrieves patient
+rows.
+
+On Opal, `ds.ls` searches the server workspace. With the installed
+DSLite/dsBase pair, it searches the R global environment instead, so the
+filtered result below is deliberately empty. That does **not** mean
+extraction failed. The driver’s `datashield.symbols` method correctly
+lists the assigned DSLite symbols; we show its `D_` analysis objects
+next. This is a practice-driver difference, not a reason to inspect
+patient rows.
+
+``` r
+dsBaseClient::ds.ls(search.filter = "D_*", datasources = conns)
+```
+
+    #> $site
+    #> $site$environment.searched
+    #> [1] "R_GlobalEnv"
+    #>
+    #> $site$objects.found
+    #> character(0)
+    #>
+    #> $site$search.filter.final
+    #> [1] "D_*"
+
+``` r
+lapply(DSI::datashield.symbols(conns), function(x) x[grepl("^D_", x)])
+```
+
+    #> $site
+    #> [1] "D_people"
+
+``` r
+dsBaseClient::ds.dim("D_people", datasources = conns)
+```
+
+    #> $`dimensions of D_people in site`
+    #> [1] 24  3
+    #>
+    #> $`dimensions of D_people in combined studies`
+    #> [1] 24  3
+
+``` r
+dsBaseClient::ds.colnames("D_people", datasources = conns)
+```
+
+    #> $site
+    #> [1] "person_id"      "education"      "cause_of_death"
+
+``` r
+dsBaseClient::ds.class("D_people$education", datasources = conns)
+```
+
+    #> $site
+    #> [1] "dsomop_concept_factor" "factor"
+
+``` r
+dsBaseClient::ds.numNA("D_people$education", datasources = conns)
+```
+
+    #> $site
+    #> [1] 12
+
+The category table in the next step completes the check. Compare it with
+your prediction. Later lessons use at most one helpful schema or
+variable check per extraction; type checks recur only when the lesson is
+about types. Explain a recipe again when a new default, censoring,
+matching or presentation rule matters. This is the **predict, run,
+verify** habit of a careful federated analyst.
 
 ## Count the education categories
 
@@ -199,30 +288,30 @@ education_table_result
     #> D_people$education     site
     #>   Secondary education     1
     #>   University education    1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                       study
     #> D_people$education     site
     #>   Secondary education   0.5
     #>   University education  0.5
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                       study
     #> D_people$education     site
     #>   Secondary education     6
     #>   University education    6
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_people$education
-    #>  Secondary education University education 
-    #>                  0.5                  0.5 
-    #> 
+    #>  Secondary education University education
+    #>                  0.5                  0.5
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_people$education
-    #>  Secondary education University education 
-    #>                    6                    6 
-    #> 
-    #> 
+    #>  Secondary education University education
+    #>                    6                    6
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
@@ -242,7 +331,7 @@ ds.omop.table("D_people", "cause_of_death", conns = conns)
 ```
 
     #> D_people$cause_of_death
-    #> Myocardial infarction             Pneumonia 
+    #> Myocardial infarction             Pneumonia
     #>                    12                     6
 
 `ds.omop.table()` calls the real dsBase `ds.table()` and preserves the
@@ -270,11 +359,10 @@ become “no”.
 answers <- omop_recipe(
   variables = list(education = education, fever = fever, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(answers, conns = conns)$selected == "v2")
 print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
 ```
 
-    #>      people 
+    #>      people
     #> "D_answers"
 
 ``` r
@@ -299,41 +387,36 @@ yes_no_result
     #> D_answers$fever site
     #>             yes    1
     #>             no     1
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                study
     #> D_answers$fever site
     #>             yes  0.5
     #>             no   0.5
-    #> 
+    #>
     #> $output.list$TABLE_rvar.by.study_counts
     #>                study
     #> D_answers$fever site
     #>             yes    6
     #>             no     6
-    #> 
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_proportions
     #> D_answers$fever
-    #> yes  no 
-    #> 0.5 0.5 
-    #> 
+    #> yes  no
+    #> 0.5 0.5
+    #>
     #> $output.list$TABLES.COMBINED_all.sources_counts
     #> D_answers$fever
-    #> yes  no 
-    #>   6   6 
-    #> 
-    #> 
+    #> yes  no
+    #>   6   6
+    #>
+    #>
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
 The table contains your lower-case labels. See
-[chapter 10](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md)
+[chapter 10](https://isglobal-brge.github.io/dsOMOPClient/articles/book-10-harmonise.md)
 for the same operation across two different vocabularies.
-
-## Recap
-
-An event selects records, a reducer selects a value, and a wide output
-arranges private rows. Only the aggregate returns to you.
 
 ## Try it
 
@@ -347,5 +430,48 @@ ds.omop.table("D_people", "education", conns = conns)
 ```
 
     #> D_people$education
-    #>  Secondary education University education 
+    #>  Secondary education University education
     #>                    6                    6
+
+## Exercise 2: a common variant
+
+Count causes with dsBase directly, preserving missing causes.
+
+Solution 2
+
+``` r
+knitr::kable(book_counts(dsBaseClient::ds.table("D_people$cause_of_death", useNA = "always", datasources = conns)))
+```
+
+| Category              | Count |
+| :-------------------- | ----: |
+| Myocardial infarction |    12 |
+| Pneumonia             |     6 |
+| NA                    |     6 |
+
+Missing cause is not another coded cause and not proof that a person
+survived.
+
+## Exercise 3: a pitfall to avoid
+
+Verify the combined answer table has the three intended variables.
+
+Solution 3
+
+``` r
+dsBaseClient::ds.colnames("D_answers", datasources = conns)
+```
+
+    #> $site
+    #> [1] "person_id"      "education"      "fever"          "cause_of_death"
+
+The pseudonymous person key is automatic. The education, fever and cause
+columns come from separate declarations.
+
+## Recap
+
+An event selects records, a reducer selects a value, and a wide output
+arranges private rows. Only the aggregate returns to you.
+
+**Next:** [6. Events, windows and
+reducers](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-events.md).

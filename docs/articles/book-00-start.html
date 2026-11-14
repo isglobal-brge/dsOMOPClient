@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,25 +34,31 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorial-chapters" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorial chapters</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-tutorial-chapters">
-<li><a class="dropdown-item" href="../articles/book-00-showcase.html">What you can do with dsOMOP</a></li>
+<li><a class="dropdown-item" href="../articles/book-showcase.html">What you can do with dsOMOP</a></li>
     <li><a class="dropdown-item" href="../articles/book-00-start.html">0. Getting started</a></li>
-    <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. DataSHIELD and OMOP</a></li>
-    <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Connecting</a></li>
+    <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. What DataSHIELD and OMOP mean</a></li>
+    <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Resources, connections and symbols</a></li>
     <li><a class="dropdown-item" href="../articles/book-03-explore.html">3. Exploring the CDM</a></li>
-    <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Vocabulary</a></li>
+    <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Finding the concept IDs you need</a></li>
     <li><a class="dropdown-item" href="../articles/book-05-recipe.html">5. A first recipe</a></li>
     <li><a class="dropdown-item" href="../articles/book-06-events.html">6. Events, windows and reducers</a></li>
-    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations</a></li>
-    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Output formats</a></li>
-    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates</a></li>
-    <li><a class="dropdown-item" href="../articles/book-08-harmonise.html">10. Concepts as categories</a></li>
-    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and verbs</a></li>
-    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. Privacy</a></li>
-    <li><a class="dropdown-item" href="../articles/book-06-visits.html">13. Visit walkthrough</a></li>
-    <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">14. Verbal-autopsy capstone</a></li>
-    <li><a class="dropdown-item" href="../articles/book-15-labs.html">15. Working with lab values</a></li>
-    <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data</a></li>
-    <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">Appendix A. Reproduction and migration</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations and index events</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Choosing an output format</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates, periods and ages</a></li>
+    <li><a class="dropdown-item" href="../articles/book-10-harmonise.html">10. Concepts as categories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and standalone verbs</a></li>
+    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. What stays private</a></li>
+    <li><a class="dropdown-item" href="../articles/book-13-visits.html">13. Visit dates, one idea at a time</a></li>
+    <li><a class="dropdown-item" href="../articles/book-14-labs.html">14. Working with lab values</a></li>
+    <li><a class="dropdown-item" href="../articles/book-15-formulas.html">15. Derived numeric formulas</a></li>
+    <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a></li>
+    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Reproduction and migration notes</a></li>
+    <li><a class="dropdown-item" href="../articles/book-18-verbal-autopsy.html">18. Capstone: a verbal-autopsy wide table</a></li>
+    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: HDSS-style mortality</a></li>
+    <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
+    <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -89,36 +95,38 @@
 <p><strong>What you will learn</strong></p>
 <p>Install the client, choose a practice environment, and check both package versions.</p>
 </div>
-<p>This chapter creates the public synthetic GiBleed practice connection. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
+<p>This chapter creates the public synthetic GiBleed practice connection. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.</p>
 <div class="section level2">
 <h2 id="before-you-start">Before you start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
 </h2>
-<p>You need R 4.1 or newer (the recorded run used R 4.6.2), internet access for installation, and either an Opal with dsOMOP 2.10.4 or the local DSLite practice server below. RStudio is a convenient editor; ordinary R also works. Download the book helpers below; you do not need a Git checkout.</p>
-<p>Run this <strong>installation block once</strong>, before the examples. It installs every package used by the lessons, the offline server and the reproduction tools. Installation changes your library and is not executed during the book build. The two dsOMOP tags must be available on GitHub; this book’s recorded run used the matching locally tagged sources.</p>
+<p>You need R 4.1 or newer (the recorded run used R 4.6.2), internet access for installation, and either an Opal with dsOMOP 2.10.5 or the local DSLite practice server below. RStudio is a convenient editor; ordinary R also works. Download the book helpers below; you do not need a Git checkout.</p>
+<p>Run this <strong>installation block once</strong>, before the examples. It installs every package used by the lessons, the offline server and the reproduction tools. Installation changes your library and is not executed during the book build. This is an <strong>A-29 development preview</strong>: no 2.10.5 release tag existed at build time. Obtain the matching source directories or package archives from your study team. In the authoring workspace the defaults below select the two local <code>feat/2.10.5-numbers</code> worktrees; elsewhere set the two environment variables to your supplied paths. A future release can replace these two local installs with its published tags. This preview does not ask you to install a nonexistent tag.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"remotes"</span>, <span class="st">"DSI"</span>, <span class="st">"DSOpal"</span>, <span class="st">"DSLite"</span>, <span class="st">"DBI"</span>, <span class="st">"RSQLite"</span>,</span>
 <span>                   <span class="st">"resourcer"</span>, <span class="st">"withr"</span>, <span class="st">"openssl"</span>, <span class="st">"jsonlite"</span>, <span class="st">"knitr"</span>,</span>
 <span>                   <span class="st">"rmarkdown"</span>, <span class="st">"pkgdown"</span>, <span class="st">"bslib"</span>, <span class="st">"opalr"</span>, <span class="st">"duckdb"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBase@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBaseClient@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"isglobal-brge/dsOMOP@2.10.4"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"isglobal-brge/dsOMOPClient@2.10.4"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span></code></pre></div>
-<p>The <em>client</em> is the package on your computer. The <em>server</em> runs requests near the data; DSLite lets you run it locally for practice. Pandoc is also needed to rebuild the site (RStudio includes it). The <a href="book-09-reproduce.html">reproduction notes</a> record the dependency versions used for this book.</p>
+<span><span class="va">server_source</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_SERVER_SOURCE"</span>, <span class="st">"/workspace/dsomop/wt/numbers/dsOMOP"</span><span class="op">)</span></span>
+<span><span class="va">client_source</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_CLIENT_SOURCE"</span>, <span class="st">"/workspace/dsomop/wt/numbers/dsOMOPClient"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_local.html" class="external-link">install_local</a></span><span class="op">(</span><span class="va">server_source</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_local.html" class="external-link">install_local</a></span><span class="op">(</span><span class="va">client_source</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span></code></pre></div>
+<p>The <em>client</em> is the package on your computer. The <em>server</em> runs requests near the data; DSLite lets you run it locally for practice. Pandoc is also needed to rebuild the site (RStudio includes it). The <a href="book-17-reproduce.html">reproduction notes</a> record the dependency versions used for this book.</p>
 </div>
 <div class="section level2">
 <h2 id="get-the-book-helpers">Get the book helpers<a class="anchor" aria-label="anchor" href="#get-the-book-helpers"></a>
 </h2>
-<p>The released 2.10.4 package archive does <strong>not</strong> contain <code>tools/book/</code>. Download <a href="../downloads/book-helpers.zip">book-helpers.zip</a> from this site, leaving it zipped in your Downloads folder. In R, run this block and select that ZIP when the file chooser opens:</p>
+<p>The book helpers are distributed separately from the package. Download <a href="../downloads/book-helpers.zip">book-helpers.zip</a> from this site, leaving it zipped in your Downloads folder. In R, run this block and select that ZIP when the file chooser opens:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">book_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/path.expand.html" class="external-link">path.expand</a></span><span class="op">(</span><span class="st">"~/book-work"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">book_dir</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html" class="external-link">unzip</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.choose.html" class="external-link">file.choose</a></span><span class="op">(</span><span class="op">)</span>, exdir <span class="op">=</span> <span class="va">book_dir</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">setwd</a></span><span class="op">(</span><span class="va">book_dir</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"tools/book"</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"practice.R"</span>, <span class="st">"fixture.R"</span>, <span class="st">"connection.R"</span>, <span class="st">"display.R"</span>, <span class="st">"load-practice.R"</span>, <span class="st">"load-numeric.R"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"practice.R"</span>, <span class="st">"fixture.R"</span>, <span class="st">"connection.R"</span>, <span class="st">"display.R"</span>, <span class="st">"load-practice.R"</span>, <span class="st">"load-numeric.R"</span>, <span class="st">"case-helpers.R"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"tools/dates/va-native.R"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>The last line prints your home directory followed by <code>/book-work</code>. In every new R session run <code>setwd(path.expand("~/book-work"))</code> before the chapter setup. The ZIP preserves <code>tools/book/</code> and <code>tools/dates/</code> automatically. Alternatively, save the individual <a href="../downloads/practice.R">practice</a>, <a href="../downloads/fixture.R">fixture</a>, <a href="../downloads/connection.R">connection</a>, <a href="../downloads/display.R">display</a> and <a href="../downloads/load-practice.R">practice loader</a> and <a href="../downloads/load-numeric.R">numeric loader</a> files under <code>book-work/tools/book/</code>. Keep the numeric loader filename <code>load-numeric.R</code>; the practice loader sources it. Also create <code>book-work/tools/dates/</code> and save the <a href="../downloads/va-native.R">released capstone helper</a> there as <code>va-native.R</code>; chapter 14’s solution uses it.</p>
+<p>The last line prints your home directory followed by <code>/book-work</code>. In every new R session run <code>setwd(path.expand("~/book-work"))</code> before the chapter setup. The ZIP preserves <code>tools/book/</code> and <code>tools/dates/</code> automatically. Alternatively, save the individual <a href="../downloads/practice.R">practice</a>, <a href="../downloads/fixture.R">fixture</a>, <a href="../downloads/connection.R">connection</a>, <a href="../downloads/display.R">display</a> and <a href="../downloads/load-practice.R">practice loader</a> and <a href="../downloads/load-numeric.R">numeric loader</a> and <a href="../downloads/case-helpers.R">formula helpers</a> files under <code>book-work/tools/book/</code>. Keep the numeric loader filename <code>load-numeric.R</code>; the practice loader sources it. Also create <code>book-work/tools/dates/</code> and save the <a href="../downloads/va-native.R">released capstone helper</a> there as <code>va-native.R</code>; chapter 18’s solution uses it.</p>
 <p><code>connection.R</code> is the one place to select DSLite or Opal and set the Opal URL, project, profile and two resource names. Leave its defaults for local practice.</p>
 </div>
 <div class="section level2">
@@ -129,16 +137,16 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dsOMOPClient"</span>, <span class="st">"dsOMOP"</span>, <span class="st">"DSI"</span>, <span class="st">"DSLite"</span>, <span class="st">"dsBaseClient"</span><span class="op">)</span>,</span>
 <span>       <span class="kw">function</span><span class="op">(</span><span class="va">package</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="va">package</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient </span></span>
-<span><span class="co">#&gt;     "2.10.4"     "2.10.4"      "1.8.0"      "1.5.0"      "6.3.5"</span></span></code></pre>
+<span><span class="co">#&gt;     "2.10.5"     "2.10.5"      "1.8.0"      "1.5.0"      "6.3.5"</span></span></code></pre>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.client.version.html">ds.omop.client.version</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "2.10.4"</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; [1] "2.10.5"</span></span></code></pre>
 <p>This reports the package on your computer. A correct client version alone does not prove that the server has the matching methods.</p>
 </div>
 <div class="section level2">
 <h2 id="load-two-public-synthetic-datasets">Load two public synthetic datasets<a class="anchor" aria-label="anchor" href="#load-two-public-synthetic-datasets"></a>
 </h2>
-<p>The practice server has two resources. <strong>GiBleed</strong> supports the introductory schema and vocabulary lessons. <strong>Synthea27Nj</strong> supplies hemoglobin and other numeric measurements with units for <a href="book-15-labs.html">Working with lab values</a>. Both contain fictional patients; “numeric” means populated numeric fields, not real patient records. GiBleed has 44,053 measurement rows but no populated <code>value_as_number</code>, so it cannot teach lab-value reducers on its own.</p>
+<p>The practice server has two resources. <strong>GiBleed</strong> supports the introductory schema and vocabulary lessons. <strong>Synthea27Nj</strong> supplies hemoglobin and other numeric measurements with units for <a href="book-14-labs.html">Working with lab values</a>. Both contain fictional patients; “numeric” means populated numeric fields, not real patient records. GiBleed has 44,053 measurement rows but no populated <code>value_as_number</code>, so it cannot teach lab-value reducers on its own.</p>
 <p>The administrator loader is <a href="../downloads/load-practice.R">tools/book/load-practice.R</a>. It downloads pinned <a href="https://github.com/OHDSI/EunomiaDatasets" class="external-link">Eunomia datasets</a>, verifies archive checksums and loads two SQLite files. For Synthea it calls the <a href="../downloads/load-numeric.R">numeric validation loader</a> unchanged, then copies its typed DuckDB tables into portable SQLite, checking all 39 row counts. Dates retain ISO calendar text and numeric values retain numeric types. The temporary DuckDB copy is removed. This adds the <code>duckdb</code> package to the installation block above. From your <code>book-work</code> R session, run the loader once:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system2.html" class="external-link">system2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Rhome.html" class="external-link">R.home</a></span><span class="op">(</span><span class="st">"bin"</span><span class="op">)</span>, <span class="st">"Rscript"</span><span class="op">)</span>,</span>
@@ -171,7 +179,7 @@
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   server published running missing ready advice recipe_language</span></span>
-<span><span class="co">#&gt; 1   site    2.10.4  2.10.4          TRUE           2, 2.0.0....</span></span></code></pre>
+<span><span class="co">#&gt; 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....</span></span></code></pre>
 <p>The reply comes from the server. Check both the installed and published versions when using Opal: publishing makes the package methods available to analysts.</p>
 </div>
 <div class="section level2">
@@ -214,7 +222,7 @@
 <p>From an R session in <code>book-work</code>, run:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/opal-admin.R"</span><span class="op">)</span></span></code></pre></div>
-<p>This downloadable <a href="../downloads/opal-admin.R">administrator script</a> logs in as <code>administrator</code> (or <code>BOOK_OPAL_ADMIN_USER</code>), installs dsBase 6.3.5 and dsOMOP 2.10.4 in the configured profile with <code>dsadmin.install_github_package()</code>, then calls <code>dsadmin.publish_package()</code> for both. Publishing registers their assign/aggregate methods and package options. It creates the named analyst if absent, grants DataSHIELD and profile use, creates the project and these resources, and grants the analyst resource <code>view</code> permission (the permission used for DataSHIELD). It leaves disclosure thresholds unchanged and refuses an existing resource whose URL or format differs. Existing analyst passwords are not reset.</p>
+<p>This downloadable <a href="../downloads/opal-admin.R">administrator script</a> logs in as <code>administrator</code> (or <code>BOOK_OPAL_ADMIN_USER</code>), installs dsBase 6.3.5 and dsOMOP 2.10.5 in the configured profile with <code>dsadmin.install_github_package()</code>, then calls <code>dsadmin.publish_package()</code> for both. Publishing registers their assign/aggregate methods and package options. It creates the named analyst if absent, grants DataSHIELD and profile use, creates the project and these resources, and grants the analyst resource <code>view</code> permission (the permission used for DataSHIELD). It leaves disclosure thresholds unchanged and refuses an existing resource whose URL or format differs. Existing analyst passwords are not reset.</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -239,7 +247,7 @@
 </tr>
 </tbody>
 </table>
-<p>SQLite needs no database credentials. The script declares <code>package = "dsOMOP"</code> on each resource so its resolver loads when assigned. It prints the installed package versions and resource definitions for checking. In the Opal browser UI, log in as the administrator using the same URL, open <strong>Administration → DataSHIELD</strong>, and verify the selected profile lists dsBase 6.3.5 and dsOMOP 2.10.4 with published methods. Resources remain database references; do not import them as downloadable patient tables.</p>
+<p>SQLite needs no database credentials. The script declares <code>package = "dsOMOP"</code> on each resource so its resolver loads when assigned. It prints the installed package versions and resource definitions for checking. In the Opal browser UI, log in as the administrator using the same URL, open <strong>Administration → DataSHIELD</strong>, and verify the selected profile lists dsBase 6.3.5 and dsOMOP 2.10.5 with published methods. Resources remain database references; do not import them as downloadable patient tables.</p>
 </div>
 <div class="section level3">
 <h3 id="first-analyst-login-and-checks-for-both-resources">First analyst login and checks for both resources<a class="anchor" aria-label="anchor" href="#first-analyst-login-and-checks-for-both-resources"></a>
@@ -251,14 +259,9 @@
 <p>The <a href="../downloads/check-opal.R">check script</a> uses the same configuration and DSOpal login as the chapters, prints <code>site</code> and <code><a href="../reference/ds.omop.server.version.html">ds.omop.server.version()</a></code>, then attaches each resource and requests its measurement schema. Both calls must return a nonempty schema before these success lines can print:</p>
 <pre class="text"><code>PASS: practice.gibleed connected; measurement schema returned
 PASS: practice.numeric connected; measurement schema returned</code></pre>
-<p>Confirm installed and published server versions are 2.10.4 in the version reply. A failed login, missing driver, unpublished method, unreadable mount or wrong resource name stops the checks; do not proceed to the lessons until both pass. The script disconnects and logs out. Start the chapter’s visible setup to log in again. <a href="book-02-connect.html">Chapter 2</a> exercises switching on the same connection.</p>
+<p>Confirm installed and published server versions are 2.10.5 in the version reply. A failed login, missing driver, unpublished method, unreadable mount or wrong resource name stops the checks; do not proceed to the lessons until both pass. The script disconnects and logs out. Start the chapter’s visible setup to log in again. <a href="book-02-connect.html">Chapter 2</a> exercises switching on the same connection.</p>
 <p>To move to a future demo Opal, transfer the same two SQLite files to its Rock mount, run the resource provisioning with that host’s administrator, and update only <code>connection.R</code>. No database TLS setting or study-specific privacy setting is needed.</p>
 </div>
-</div>
-<div class="section level2">
-<h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
-</h2>
-<p>You can distinguish your client installation from the server installation and have a practice connection.</p>
 </div>
 <div class="section level2">
 <h2 id="try-it">Try it<a class="anchor" aria-label="anchor" href="#try-it"></a>
@@ -267,12 +270,43 @@ PASS: practice.numeric connected; measurement schema returned</code></pre>
 <details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.client.version.html">ds.omop.client.version</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "2.10.4"</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; [1] "2.10.5"</span></span></code></pre>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   server published running missing ready advice recipe_language</span></span>
-<span><span class="co">#&gt; 1   site    2.10.4  2.10.4          TRUE           2, 2.0.0....</span></span></code></pre>
+<span><span class="co">#&gt; 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....</span></span></code></pre>
 </details>
+</div>
+<div class="section level2">
+<h2 id="exercise-2-a-common-variant">Exercise 2: a common variant<a class="anchor" aria-label="anchor" href="#exercise-2-a-common-variant"></a>
+</h2>
+<p>Which packages run locally?</p>
+<details><p><summary>Solution 2</summary></p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DSI"</span>, <span class="st">"DSLite"</span>, <span class="st">"dsOMOPClient"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>, <span class="st">""</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;          DSI       DSLite dsOMOPClient </span></span>
+<span><span class="co">#&gt;      "1.8.0"      "1.5.0"     "2.10.5"</span></span></code></pre>
+<p>These are client packages. The server installs dsOMOP and dsBase separately.</p>
+</details>
+</div>
+<div class="section level2">
+<h2 id="exercise-3-a-pitfall-to-avoid">Exercise 3: a pitfall to avoid<a class="anchor" aria-label="anchor" href="#exercise-3-a-pitfall-to-avoid"></a>
+</h2>
+<p>Check that the shared resource configuration names both practice datasets.</p>
+<details><p><summary>Solution 3</summary></p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
+<span><span class="va">resource_names</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;   gibleed   numeric </span></span>
+<span><span class="co">#&gt; "gibleed" "numeric"</span></span></code></pre>
+<p>Both named resources are required. Changing a host belongs in this one file, not in each lesson.</p>
+</details>
+</div>
+<div class="section level2">
+<h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
+</h2>
+<p>You can distinguish your client installation from the server installation and have a practice connection.</p>
+<p><strong>Next:</strong> <a href="book-01-mental-model.html">1. What DataSHIELD and OMOP mean</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

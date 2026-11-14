@@ -11,7 +11,7 @@ started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)
 described in [Before you
 start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below
-were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
+were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching
 data, not clinical findings.
 
 ## Start this chapter
@@ -106,7 +106,7 @@ ds.omop.table.stats("person", conns = conns)$per_site$site
 
     #> $rows
     #> [1] 2690
-    #> 
+    #>
     #> $persons
     #> [1] 2690
 
@@ -138,11 +138,6 @@ The practical sequence is: choose events, describe variables, assign a
 table, then request an aggregate. Chapters 5–7 walk through it one small
 step at a time.
 
-## Recap
-
-OMOP makes data structures familiar. DataSHIELD keeps patient rows at
-the server and checks released summaries.
-
 ## Try it
 
 Find the columns of the death table without asking for its rows.
@@ -162,3 +157,64 @@ knitr::kable(ds.omop.columns("death", conns = conns)$site)
 | cause\_concept\_id         | integer       | real         | attribute\_concept | concept         |              | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
 | cause\_source\_value       | varchar(50)   | text         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |
 | cause\_source\_concept\_id | integer       | real         | source\_concept    | concept         |              | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |
+
+## Exercise 2: a common variant
+
+Find the visit date column without asking for visits.
+
+Solution 2
+
+``` r
+knitr::kable(ds.omop.columns("visit_occurrence", conns = conns)$site)
+```
+
+| column\_name                     | cdm\_datatype | db\_datatype | concept\_role      | semantic\_class | fk\_domain   | is\_date | is\_extension | is\_untyped\_identifier | is\_sensitive | is\_blocked | is\_quasi\_identifier |
+| :------------------------------- | :------------ | :----------- | :----------------- | :-------------- | :----------- | :------- | :------------ | :---------------------- | :------------ | :---------- | :-------------------- |
+| visit\_occurrence\_id            | integer       | real         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| person\_id                       | integer       | real         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| visit\_concept\_id               | integer       | real         | domain\_concept    | concept         | Visit        | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| visit\_start\_date               | date          | text         | non\_concept       | ordinary        |              | TRUE     | FALSE         | FALSE                   | FALSE         | FALSE       | TRUE                  |
+| visit\_start\_datetime           | datetime      | text         | non\_concept       | ordinary        |              | TRUE     | FALSE         | FALSE                   | FALSE         | FALSE       | TRUE                  |
+| visit\_end\_date                 | date          | text         | non\_concept       | ordinary        |              | TRUE     | FALSE         | FALSE                   | FALSE         | FALSE       | TRUE                  |
+| visit\_end\_datetime             | datetime      | text         | non\_concept       | ordinary        |              | TRUE     | FALSE         | FALSE                   | FALSE         | FALSE       | TRUE                  |
+| visit\_type\_concept\_id         | Integer       | real         | type\_concept      | concept         | Type Concept | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| provider\_id                     | integer       | real         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| care\_site\_id                   | integer       | real         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| visit\_source\_value             | varchar(50)   | text         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |
+| visit\_source\_concept\_id       | integer       | real         | source\_concept    | concept         |              | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |
+| admitting\_source\_concept\_id   | integer       | real         | source\_concept    | concept         | Visit        | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |
+| admitting\_source\_value         | varchar(50)   | text         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |
+| discharge\_to\_concept\_id       | integer       | real         | attribute\_concept | concept         | Visit        | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| discharge\_to\_source\_value     | varchar(50)   | text         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |
+| preceding\_visit\_occurrence\_id | integer       | real         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+
+A schema describes fields, not people. A date field can exist in an
+empty table.
+
+## Exercise 3: a pitfall to avoid
+
+Ask for protected person-table statistics. Why is this different from a
+row download?
+
+Solution 3
+
+``` r
+ds.omop.table.stats("person", conns = conns)$per_site$site
+```
+
+    #> $rows
+    #> [1] 2690
+    #>
+    #> $persons
+    #> [1] 2690
+
+This returns the service’s protected summary; no person identifier is
+released.
+
+## Recap
+
+OMOP makes data structures familiar. DataSHIELD keeps patient rows at
+the server and checks released summaries.
+
+**Next:** [2. Resources, connections and
+symbols](https://isglobal-brge.github.io/dsOMOPClient/articles/book-02-connect.md).

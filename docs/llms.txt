@@ -1,63 +1,87 @@
 # Learn dsOMOPClient
 
-Build useful study tables while patient records stay on the server. This
-book teaches the released **2.10.4 native recipe API**, one small step
-at a time. Every worked lesson includes executed code, real synthetic
-results and an exercise with its solution.
+Build study tables while patient records stay on each server. This book
+teaches native language 2 with the **2.10.5 A-29 numeric build**, on
+public synthetic GiBleed and Synthea data. A separately labelled
+questionnaire fixture supplies the colleague’s verbal-autopsy examples.
+Every chapter has executed examples, real outputs and at least three
+exercises with collapsible solutions.
 
-[Explore what you can do with dsOMOP
-→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-showcase.md)
+[Explore what you can do
+→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-showcase.md)
 
-[Start with chapter 0
-→](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)
+## Tutorial chapters
 
-## Your path through the book
+The numbered tutorial runs from first connection through native numbers
+and reproducibility to the verbal-autopsy capstone. The case studies
+then combine those skills into end-to-end studies. Dataset and API
+limitations are shown explicitly where a requested analysis cannot be
+supported.
 
-| Chapter                                                                                                        | What you will do                                          |
-| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| [0. Getting started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)                   | Install and open a practice session                       |
-| [1. DataSHIELD and OMOP](https://isglobal-brge.github.io/dsOMOPClient/articles/book-01-mental-model.md)        | Understand what stays private                             |
-| [2. Connecting](https://isglobal-brge.github.io/dsOMOPClient/articles/book-02-connect.md)                      | Attach a resource and use symbols                         |
-| [3. Exploring the CDM](https://isglobal-brge.github.io/dsOMOPClient/articles/book-03-explore.md)               | Read schema and safe counts                               |
-| [4. Vocabulary](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md)                   | Find concepts and build sets                              |
-| [5. A first recipe](https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.md)                   | Create education and cause columns                        |
-| [6. Events, windows and reducers](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-events.md)     | Choose records, time and one-value summaries              |
-| [7. Populations](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-populations.md)                 | Define eligibility, episodes, new users and matching      |
-| [8. Output formats](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-outputs.md)                  | Choose shapes, censoring and joins                        |
-| [9. Dates](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-dates.md)                             | Use parts, periods, anchored ages and partial dates       |
-| [10. Concepts as categories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md)       | Translate, recode, rename and harmonise two sites         |
-| [11. Reusable studies and verbs](https://isglobal-brge.github.io/dsOMOPClient/articles/book-11-parameters.md)  | Bind parameters and use mutate/filter                     |
-| [12. Privacy](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md)                        | Understand final release and refused columns              |
-| [13. Visit walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-visits.md)               | Combine offsets, dates and event rows                     |
-| [14. Verbal-autopsy capstone](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md) | Combine answers, age, visit periods and cause             |
-| [15. Working with lab values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md)           | Reduce, convert and pool synthetic lab values             |
-| [16. Longitudinal data](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md)         | Shape events, build risk sets and model repeated measures |
+  - [0. Getting
+    started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)
+  - [1. What DataSHIELD and OMOP
+    mean](https://isglobal-brge.github.io/dsOMOPClient/articles/book-01-mental-model.md)
+  - [2. Resources, connections and
+    symbols](https://isglobal-brge.github.io/dsOMOPClient/articles/book-02-connect.md)
+  - [3. Exploring the
+    CDM](https://isglobal-brge.github.io/dsOMOPClient/articles/book-03-explore.md)
+  - [4. Finding the concept IDs you
+    need](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md)
+  - [5. A first
+    recipe](https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.md)
+  - [6. Events, windows and
+    reducers](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-events.md)
+  - [7. Populations and index
+    events](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-populations.md)
+  - [8. Choosing an output
+    format](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-outputs.md)
+  - [9. Dates, periods and
+    ages](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-dates.md)
+  - [10. Concepts as
+    categories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-10-harmonise.md)
+  - [11. Reusable studies and standalone
+    verbs](https://isglobal-brge.github.io/dsOMOPClient/articles/book-11-parameters.md)
+  - [12. What stays
+    private](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md)
+  - [13. Visit dates, one idea at a
+    time](https://isglobal-brge.github.io/dsOMOPClient/articles/book-13-visits.md)
+  - [14. Working with lab
+    values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md)
+  - [15. Derived numeric
+    formulas](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.md)
+  - [16. Longitudinal data: from events to
+    analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md)
+  - [17. Reproduction and migration
+    notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md)
+  - [18. Capstone: a verbal-autopsy wide
+    table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-verbal-autopsy.md)
 
-The main lessons use one DataSHIELD connection at a time. GiBleed
-teaches the basics; Synthea27Nj supplies numeric labs. Both have
-synthetic people. A separately labelled 24-person test fixture supplies
-the colleague’s questionnaire examples. Chapter 10 includes a
-two-connection vocabulary harmonisation demonstration. Chapter 15 pools
-numeric summaries and a Gaussian model across disjoint synthetic sites.
-[Reproduction and migration
-notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-reproduce.md)
-explain how the examples run and how older recipe conventions differ.
-The visit walkthrough and capstone retain their original URLs so earlier
-links continue to work.
+## Case studies
 
-## Learn with real execution
+  - [19. Case study: HDSS-style
+    mortality](https://isglobal-brge.github.io/dsOMOPClient/articles/book-19-case-mortality.md)
+  - [20. Case study: celecoxib versus
+    diclofenac](https://isglobal-brge.github.io/dsOMOPClient/articles/book-20-case-gibleed.md)
+  - [21. Case study: glucose
+    trajectories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-21-case-glucose.md)
+  - [22. Case study: drug
+    utilisation](https://isglobal-brge.github.io/dsOMOPClient/articles/book-22-case-drug.md)
+  - [23. Case study: a harmonised
+    Table 1](https://isglobal-brge.github.io/dsOMOPClient/articles/book-23-case-table1.md)
 
-The displayed results come from DSLite running the matching released
-server and client against the chapter’s stated synthetic dataset. The
-verbal-autopsy example uses the released native follow-up recipe,
-including exact age at death and calendar precision. The optional local
-Opal/GiBleed instructions explain the production-shaped connection
-route; GiBleed is a different dataset.
+## Reproduce what you read
 
-Read the book in order. Use the function reference when you need
-argument details. The older reference guides are retained for existing
-links and are not the book’s learning path. This is an OHDSI-inspired
-theme, not an OHDSI endorsement.
+The website contains precomputed code and output; it does not open
+connections.
+[Reproduction](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md)
+records software, data and study definitions. The downloadable helpers
+open fresh DSLite sessions; the shared connection file also supports the
+separately documented Opal route.
+
+This is an OHDSI-inspired theme, not an OHDSI endorsement. The author is
+David Sarrat González. The categorical and layout extension is outside
+this update.
 
 # Package index
 
@@ -298,6 +322,14 @@ theme, not an OHDSI endorsement.
   - `omop_match()` `omop_age_band()` `omop_strata()` : Matched and
     nested case-control sampling
   - `omop_new_users()` : New users of a drug (simple layer)
+  - `omop_number_spec()` `omop_number_pipeline()` `omop_number_unit()`
+    `omop_number_transform()` `omop_number_round()` `omop_number_expr()`
+    `omop_number_input()` `omop_number()` `omop_number_bins()`
+    `omop_number_category()` `omop_number_flag()`
+    `omop_number_present()` `omop_number_missing()` `omop_number_rows()`
+    `omop_number_column()` `omop_number_count()` `omop_number_change()`
+    `omop_number_derive()` : Private numeric presentation and
+    expressions
   - `omop_output()` : Create an output specification
   - `recipe_merge()` `omop_param()` `recipe_params()` `recipe_bind()` :
     Recipe parameters: placeholders, binding and merging
@@ -400,7 +432,7 @@ theme, not an OHDSI endorsement.
 ### Learn step by step
 
   - [What you can do with
-    dsOMOP](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-showcase.md):
+    dsOMOP](https://isglobal-brge.github.io/dsOMOPClient/articles/book-showcase.md):
   - [0. Getting
     started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md):
   - [1. What DataSHIELD and OMOP
@@ -409,8 +441,8 @@ theme, not an OHDSI endorsement.
     symbols](https://isglobal-brge.github.io/dsOMOPClient/articles/book-02-connect.md):
   - [3. Exploring the
     CDM](https://isglobal-brge.github.io/dsOMOPClient/articles/book-03-explore.md):
-  - [4. Vocabulary and concept
-    sets](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md):
+  - [4. Finding the concept IDs you
+    need](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md):
   - [5. A first
     recipe](https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.md):
   - [6. Events, windows and
@@ -422,24 +454,36 @@ theme, not an OHDSI endorsement.
   - [9. Dates, periods and
     ages](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-dates.md):
   - [10. Concepts as
-    categories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md):
+    categories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-10-harmonise.md):
   - [11. Reusable studies and standalone
     verbs](https://isglobal-brge.github.io/dsOMOPClient/articles/book-11-parameters.md):
   - [12. What stays
     private](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md):
   - [13. Visit dates, one idea at a
-    time](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-visits.md):
-  - [14. Capstone: a verbal-autopsy wide
-    table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md):
-  - [15. Working with lab
-    values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md):
+    time](https://isglobal-brge.github.io/dsOMOPClient/articles/book-13-visits.md):
+  - [14. Working with lab
+    values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md):
+  - [15. Derived numeric
+    formulas](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.md):
   - [16. Longitudinal data: from events to
     analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md):
+  - [17. Reproduction and migration
+    notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-17-reproduce.md):
+  - [18. Capstone: a verbal-autopsy wide
+    table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-verbal-autopsy.md):
 
-### Reproduction and migration
+### Case studies
 
-  - [Appendix A. Reproduction and migration
-    notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-reproduce.md):
+  - [19. Case study: HDSS-style
+    mortality](https://isglobal-brge.github.io/dsOMOPClient/articles/book-19-case-mortality.md):
+  - [20. Case study: celecoxib versus
+    diclofenac](https://isglobal-brge.github.io/dsOMOPClient/articles/book-20-case-gibleed.md):
+  - [21. Case study: glucose
+    trajectories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-21-case-glucose.md):
+  - [22. Case study: drug
+    utilisation](https://isglobal-brge.github.io/dsOMOPClient/articles/book-22-case-drug.md):
+  - [23. Case study: a harmonised
+    Table 1](https://isglobal-brge.github.io/dsOMOPClient/articles/book-23-case-table1.md):
 
 ### Earlier reference guides
 

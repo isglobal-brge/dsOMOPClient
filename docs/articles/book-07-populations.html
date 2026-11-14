@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,25 +34,31 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorial-chapters" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorial chapters</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-tutorial-chapters">
-<li><a class="dropdown-item" href="../articles/book-00-showcase.html">What you can do with dsOMOP</a></li>
+<li><a class="dropdown-item" href="../articles/book-showcase.html">What you can do with dsOMOP</a></li>
     <li><a class="dropdown-item" href="../articles/book-00-start.html">0. Getting started</a></li>
-    <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. DataSHIELD and OMOP</a></li>
-    <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Connecting</a></li>
+    <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. What DataSHIELD and OMOP mean</a></li>
+    <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Resources, connections and symbols</a></li>
     <li><a class="dropdown-item" href="../articles/book-03-explore.html">3. Exploring the CDM</a></li>
-    <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Vocabulary</a></li>
+    <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Finding the concept IDs you need</a></li>
     <li><a class="dropdown-item" href="../articles/book-05-recipe.html">5. A first recipe</a></li>
     <li><a class="dropdown-item" href="../articles/book-06-events.html">6. Events, windows and reducers</a></li>
-    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations</a></li>
-    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Output formats</a></li>
-    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates</a></li>
-    <li><a class="dropdown-item" href="../articles/book-08-harmonise.html">10. Concepts as categories</a></li>
-    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and verbs</a></li>
-    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. Privacy</a></li>
-    <li><a class="dropdown-item" href="../articles/book-06-visits.html">13. Visit walkthrough</a></li>
-    <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">14. Verbal-autopsy capstone</a></li>
-    <li><a class="dropdown-item" href="../articles/book-15-labs.html">15. Working with lab values</a></li>
-    <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data</a></li>
-    <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">Appendix A. Reproduction and migration</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations and index events</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Choosing an output format</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates, periods and ages</a></li>
+    <li><a class="dropdown-item" href="../articles/book-10-harmonise.html">10. Concepts as categories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and standalone verbs</a></li>
+    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. What stays private</a></li>
+    <li><a class="dropdown-item" href="../articles/book-13-visits.html">13. Visit dates, one idea at a time</a></li>
+    <li><a class="dropdown-item" href="../articles/book-14-labs.html">14. Working with lab values</a></li>
+    <li><a class="dropdown-item" href="../articles/book-15-formulas.html">15. Derived numeric formulas</a></li>
+    <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a></li>
+    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Reproduction and migration notes</a></li>
+    <li><a class="dropdown-item" href="../articles/book-18-verbal-autopsy.html">18. Capstone: a verbal-autopsy wide table</a></li>
+    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: HDSS-style mortality</a></li>
+    <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
+    <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -90,7 +96,8 @@
 <p>Choose who enters a study, define episodes and observation coverage, reuse a cohort, identify new users and sample controls at case time.</p>
 </div>
 <p>This chapter uses the 24-person synthetic questionnaire test fixture described in <a href="book-00-start.html">Getting started</a>.</p>
-<p><strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run its sections in order. Each chapter starts from a fresh practice connection; all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls. The numbers describe teaching data, not clinical findings.</p>
+<p><strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run its sections in order. Each chapter starts from a fresh practice connection; all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls. The numbers describe teaching data, not clinical findings.</p>
+<p>Concept selections refer to the searches and saved definitions in <a href="book-04-vocabulary.html">chapter 4</a>, including the separate questionnaire catalogue. Additional body-measurement concepts are found on screen in the <a href="book-15-formulas.html#find-the-inputs-before-calculating">formula walkthrough</a>.</p>
 <div class="section level2">
 <h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
 </h2>
@@ -122,7 +129,6 @@
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">visit_members</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"members"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"membership"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">visit_members</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">visit_members</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>members <span class="op">=</span> <span class="st">"D_members"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;     members </span></span>
 <span><span class="co">#&gt; "D_members"</span></span></code></pre>
@@ -151,7 +157,6 @@
 <code class="sourceCode R"><span><span class="va">eligible_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">eligible</span><span class="op">)</span>,</span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>visits <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_count</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, before <span class="op">=</span> <span class="cn">Inf</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"eligible"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">eligible_recipe</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">eligible_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_eligible"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;       people </span></span>
 <span><span class="co">#&gt; "D_eligible"</span></span></code></pre>
@@ -179,7 +184,6 @@
 <span><span class="va">covered</span><span class="op">$</span><span class="va">coverage</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_index.html">omop_coverage</a></span><span class="op">(</span>policy <span class="op">=</span> <span class="st">"union"</span>, gap <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="va">coverage_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">covered</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"members"</span>, rows <span class="op">=</span> <span class="st">"eligible"</span>, format <span class="op">=</span> <span class="st">"membership"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">coverage_recipe</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">coverage_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>members <span class="op">=</span> <span class="st">"D_covered"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;     members </span></span>
 <span><span class="co">#&gt; "D_covered"</span></span></code></pre>
@@ -194,7 +198,6 @@
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cohort_definition_id <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span>, select <span class="op">=</span> <span class="st">"all"</span>, end <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_end</a></span><span class="op">(</span><span class="st">"event_end"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">cohort_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">cohort_population</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"members"</span>, rows <span class="op">=</span> <span class="st">"saved"</span>, format <span class="op">=</span> <span class="st">"membership"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">cohort_recipe</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">cohort_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>members <span class="op">=</span> <span class="st">"D_cohort"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;    members </span></span>
 <span><span class="co">#&gt; "D_cohort"</span></span></code></pre>
@@ -209,7 +212,6 @@
 <span><span class="va">new_user_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">new_users</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>prior_fills <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_count</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, <span class="fl">950001L</span>,</span>
 <span>    window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="op">-</span><span class="fl">365</span>, <span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">new_user_recipe</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">new_user_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_new_users"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;      baseline </span></span>
 <span><span class="co">#&gt; "D_new_users"</span></span></code></pre>
@@ -278,7 +280,6 @@
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>is_case <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_population_column</a></span><span class="op">(</span><span class="st">"is_case"</span><span class="op">)</span>,</span>
 <span>    weight <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_population_column</a></span><span class="op">(</span><span class="st">"sampling_weight"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"sample"</span>, rows <span class="op">=</span> <span class="st">"matched"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">matched_recipe</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">matched_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>sample <span class="op">=</span> <span class="st">"D_matched"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;      sample </span></span>
 <span><span class="co">#&gt; "D_matched"</span></span></code></pre>
@@ -320,11 +321,6 @@
 <p>These are sampled rows, including repeated controls when permitted. They are not disease prevalence or counts of unique people. Matching defines a design; it does not by itself remove all confounding.</p>
 </div>
 <div class="section level2">
-<h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
-</h2>
-<p>Index selection sets episodes; criteria and coverage decide eligibility. Existing cohorts, new-user eras and risk-set samples are population definitions in the same language.</p>
-</div>
-<div class="section level2">
 <h2 id="try-it">Try it<a class="anchor" aria-label="anchor" href="#try-it"></a>
 </h2>
 <p>Keep every visit episode instead of just the first, and inspect the resulting private membership schema.</p>
@@ -333,7 +329,6 @@
 <code class="sourceCode R"><span><span class="va">all_visitors</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"visitors"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">visits</span>, select <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">all_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">all_visitors</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"members"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"membership"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">all_recipe</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">all_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>members <span class="op">=</span> <span class="st">"D_all_visitors"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;          members </span></span>
 <span><span class="co">#&gt; "D_all_visitors"</span></span></code></pre>
@@ -344,6 +339,35 @@
 <span><span class="co">#&gt; [5] "cohort_end_date"   "index_source"</span></span></code></pre>
 <p>The keys distinguish episodes even when a person appears more than once. The synthetic verification harness checks 30 episodes for 18 distinct people.</p>
 </details>
+</div>
+<div class="section level2">
+<h2 id="exercise-2-a-common-variant">Exercise 2: a common variant<a class="anchor" aria-label="anchor" href="#exercise-2-a-common-variant"></a>
+</h2>
+<p>Inspect the new-user output. Is the washout a column created after entry?</p>
+<details><p><summary>Solution 2</summary></p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_new_users"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; [1] "row_id"        "cohort_row_id" "person_id"     "prior_fills"</span></span></code></pre>
+<p>Washout belongs to eligibility. A baseline prior-fill count can verify the design but cannot replace its inclusion criterion.</p>
+</details>
+</div>
+<div class="section level2">
+<h2 id="exercise-3-a-pitfall-to-avoid">Exercise 3: a pitfall to avoid<a class="anchor" aria-label="anchor" href="#exercise-3-a-pitfall-to-avoid"></a>
+</h2>
+<p>Compile the all-visit membership definition and check its index selection.</p>
+<details><p><summary>Solution 3</summary></p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">all_visitors</span><span class="op">$</span><span class="va">index</span><span class="op">$</span><span class="va">select</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "all"</span></span></code></pre>
+<p>The all selector retains repeated episodes. The episode, not necessarily the person, is the analysis row.</p>
+</details>
+</div>
+<div class="section level2">
+<h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
+</h2>
+<p>Index selection sets episodes; criteria and coverage decide eligibility. Existing cohorts, new-user eras and risk-set samples are population definitions in the same language.</p>
+<p><strong>Next:</strong> <a href="book-08-outputs.html">8. Choosing an output format</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

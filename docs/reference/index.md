@@ -237,6 +237,14 @@
   - `omop_match()` `omop_age_band()` `omop_strata()` : Matched and
     nested case-control sampling
   - `omop_new_users()` : New users of a drug (simple layer)
+  - `omop_number_spec()` `omop_number_pipeline()` `omop_number_unit()`
+    `omop_number_transform()` `omop_number_round()` `omop_number_expr()`
+    `omop_number_input()` `omop_number()` `omop_number_bins()`
+    `omop_number_category()` `omop_number_flag()`
+    `omop_number_present()` `omop_number_missing()` `omop_number_rows()`
+    `omop_number_column()` `omop_number_count()` `omop_number_change()`
+    `omop_number_derive()` : Private numeric presentation and
+    expressions
   - `omop_output()` : Create an output specification
   - `recipe_merge()` `omop_param()` `recipe_params()` `recipe_bind()` :
     Recipe parameters: placeholders, binding and merging

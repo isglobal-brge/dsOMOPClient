@@ -89,3 +89,8 @@ main .table { display: block; max-width: 100%; overflow-x: auto; }
 @media (max-width: 575.98px) {
   .book-page main pre { max-height: min(400px, 60vh); }
 }
+/* Recorded Markdown tables are outputs too; retain horizontal scrolling. */
+.book-page main .table { max-height: 400px; overflow-y: auto; }
+@media (max-width: 575.98px) {
+  .book-page main .table { max-height: min(400px, 60vh); }
+}

@@ -32,7 +32,15 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
       lines[cleanup] <- gsub("dsOexec[.][A-Za-z0-9]+", "dsOexec.TEMP", lines[cleanup])
       lines
     }
-    stopifnot(identical(canonical_lesson(output), canonical_lesson(expected)))
+    actual_lines <- canonical_lesson(output); expected_lines <- canonical_lesson(expected)
+    if (!identical(actual_lines, expected_lines)) {
+      n <- max(length(actual_lines),length(expected_lines))
+      length(actual_lines)<-n;length(expected_lines)<-n
+      at <- which(is.na(actual_lines) != is.na(expected_lines) |
+        (!is.na(actual_lines) & !is.na(expected_lines) & actual_lines != expected_lines))
+      print(data.frame(line=head(at,12),expected=expected_lines[head(at,12)],actual=actual_lines[head(at,12)]))
+      stop("Reader output differs: ",basename(input))
+    }
     if (grepl("book-18-verbal-autopsy", input)) {
       stopifnot(identical(recipe_to_plan(va), recipe_to_plan(reference)))
       # These are public synthetic fixtures: verify the actual assigned tables too.
@@ -61,6 +69,8 @@ stopifnot(all(file.exists(file.path(practice_dir,
   c("gibleed.sqlite", "numeric.sqlite", "manifest.json")))))
 inputs <- sort(list.files("vignettes", "^book-.*\\.Rmd\\.orig$", full.names=TRUE))
 stopifnot(length(inputs) == 25L)
+if (length(args)) inputs <- inputs[grepl(args[[1]],inputs)]
+stopifnot(length(inputs)>0L)
 local({
   scratch <- tempfile("book-reader-")
   dir.create(scratch)
@@ -98,7 +108,8 @@ local({
   }
   for (input in inputs) run_chapter(input)
   # No ../practice-data exists in this case: the override must actually be used.
-  run_chapter(inputs[grepl("book-17-reproduce", inputs)], custom=TRUE)
+  if (any(grepl("book-17-reproduce", inputs)))
+    run_chapter(inputs[grepl("book-17-reproduce", inputs)], custom=TRUE)
   message("PASS: 25 complete chapters in fresh R processes from the final ZIP; ",
           "Reproduction chapter also passed with BOOK_PRACTICE_DIR and no default data path")
 })

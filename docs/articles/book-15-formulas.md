@@ -1,0 +1,438 @@
+# 15\. Derived numeric formulas
+
+**What you will learn**
+
+Bind measurements at a common date, derive BMI, mean arterial pressure
+and a ratio, and check the inputs needed for eGFR and duplicate
+handling.
+
+**You need:** the packages, downloaded helpers and two loaded resources
+in [Before you
+start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start),
+plus the recipe basics from
+[chapter 6](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-events.md).
+Start a fresh R session in `book-work`. Run the sections in order: each
+uses objects defined immediately above it.
+
+These are **public synthetic Synthea27Nj patients**, from the pinned
+Eunomia archive used by the numeric validation loader. There are 28
+fictional people, not 27. GiBleed is the other practice resource and has
+no populated numeric measurement values. All results below were executed
+with dsOMOP 2.10.5.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
+including the separate questionnaire catalogue. Additional
+body-measurement concepts are found on screen in the [formula
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html#find-the-inputs-before-calculating).
+
+## Find the inputs before calculating
+
+Use the same Synthea resource as the lab chapter. A formula does not
+make inputs comparable: check the measurement meaning, units and date
+before combining them.
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+source("tools/book/case-helpers.R")
+practice <- book_connect("numeric")
+conns <- practice$conns
+```
+
+Search weight and height separately. The search rows carry standard
+status, concept class and validity dates. Select an exact name, not the
+first search hit.
+
+``` r
+weight_hits <- ds.omop.concept.search("Body weight", domain = "Measurement", conns = conns)$pooled
+height_hits <- ds.omop.concept.search("Body height", domain = "Measurement", conns = conns)$pooled
+knitr::kable(rbind(weight_hits, height_hits)[c("concept_name", "standard_concept", "vocabulary_id")])
+```
+
+| concept\_name | standard\_concept | vocabulary\_id |
+| :------------ | :---------------- | :------------- |
+| Body weight   | S                 | LOINC          |
+| Body height   | S                 | LOINC          |
+
+``` r
+weight_id <- weight_hits$concept_id[trimws(weight_hits$concept_name) == "Body weight"]
+height_id <- height_hits$concept_id[trimws(height_hits$concept_name) == "Body height"]
+body_sets <- list(weight = omop_concept_set(weight_id), height = omop_concept_set(height_id))
+```
+
+``` r
+weight_units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = weight_id,
+  scope = "pooled", conns = conns)$pooled
+height_units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = height_id,
+  scope = "pooled", conns = conns)$pooled
+knitr::kable(weight_units)
+```
+
+|   n | concept\_name | value |
+| --: | :------------ | :---- |
+| 510 | kilogram      | 9529  |
+
+``` r
+knitr::kable(height_units)
+```
+
+|   n | concept\_name | value |
+| --: | :------------ | :---- |
+| 495 | centimeter    | 8582  |
+
+The unit IDs used below were returned by those protected inventories. In
+the pinned source they mean kilogram and centimetre, as also inspected
+in chapter 4.
+
+## Bind weight and height on the same day
+
+Index on first weight. The exact-day tolerance selects both inputs at
+that date. An absent height stays missing; choosing a distant height
+silently would change the formula’s meaning. Synthea includes children,
+so do not apply adult BMI bands.
+
+``` r
+weight_event <- omop_event("measurement", body_sets$weight)
+weight <- omop_value_at_index("measurement", body_sets$weight, tolerance = c(0, 0), unit = 9529L)
+height <- omop_value_at_index("measurement", body_sets$height, tolerance = c(0, 0), unit = 8582L)
+```
+
+## Declare BMI with the closed expression grammar
+
+The small `book_col`, `book_lit`, `book_op` and `book_expr` helpers
+construct plain data lists; their source is in the downloadable helpers.
+For example:
+
+``` r
+book_expr(book_op("/", book_col("weight"), book_col("height")))
+```
+
+    #> $version
+    #> [1] 1
+    #>
+    #> $assign
+    #> $assign[[1]]
+    #> $assign[[1]]$name
+    #> [1] "result"
+    #>
+    #> $assign[[1]]$expr
+    #> $assign[[1]]$expr$op
+    #> [1] "/"
+    #>
+    #> $assign[[1]]$expr$args
+    #> $assign[[1]]$expr$args[[1]]
+    #> $assign[[1]]$expr$args[[1]]$col
+    #> [1] "weight"
+    #>
+    #>
+    #> $assign[[1]]$expr$args[[2]]
+    #> $assign[[1]]$expr$args[[2]]$col
+    #> [1] "height"
+
+No arbitrary R or SQL runs on the server. BMI is kg divided by metres
+squared. The expression below converts cm squared to metres squared with
+a factor of 10,000.
+
+``` r
+bmi <- omop_number_derive(list(weight = weight, height = height),
+  book_expr(book_op("/", book_op("*", book_col("weight"), book_lit(10000)),
+    book_op("*", book_col("height"), book_col("height")))), unit = "coordinate:bmi_kg_m2")
+body <- omop_study(weight_event, outputs = "baseline",
+  baseline = list(weight = weight, height = height, bmi = bmi))
+print(recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns))
+```
+
+    #>         baseline
+    #> "D_formula_body"
+
+``` r
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_formula_body$bmi", datasources = conns)))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 11.53374 |
+| site | 10%       | 13.62216 |
+| site | 25%       | 15.88957 |
+| site | 50%       | 23.86380 |
+| site | 75%       | 27.93787 |
+| site | 90%       | 30.20849 |
+| site | 95%       | 30.36386 |
+| site | Mean      | 22.11315 |
+
+Inputs default to their canonical numeric stage. Presentation rounding
+does not silently round a formula input. Division by zero and missing
+inputs yield missing values. A coordinate name documents the derived
+result; it does not validate a clinical formula or create a unit
+conversion automatically.
+
+**Exercise 1.** Round BMI to one decimal for presentation while keeping
+the unrounded formula available.
+
+Solution 1
+
+``` r
+body_rounded <- omop_study(weight_event, outputs = "baseline",
+  baseline = list(bmi = bmi, rounded = omop_number(bmi,
+    omop_number_spec(rounding = omop_number_round("decimals", 1)))))
+print(recipe_execute(body_rounded, out = c(baseline = "D_formula_rounded"), conns = conns))
+```
+
+    #>            baseline
+    #> "D_formula_rounded"
+
+``` r
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_formula_rounded$rounded", datasources = conns)))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 11.52000 |
+| site | 10%       | 13.60000 |
+| site | 25%       | 15.85000 |
+| site | 50%       | 23.85000 |
+| site | 75%       | 27.90000 |
+| site | 90%       | 30.19000 |
+| site | 95%       | 30.40000 |
+| site | Mean      | 22.10357 |
+
+The final presentation changes; the canonical BMI expression still uses
+its unrounded inputs.
+
+## Mean arterial pressure and a ratio
+
+Find systolic and diastolic pressure, inspect their recorded units, then
+bind both to the same systolic measurement date. The familiar
+approximate MAP formula is (SBP + 2 × DBP) / 3; it is a derived
+estimate, not a separately measured pressure.
+
+``` r
+sbp_hits <- ds.omop.concept.search("Systolic blood pressure", domain = "Measurement", conns = conns)$pooled
+dbp_hits <- ds.omop.concept.search("Diastolic blood pressure", domain = "Measurement", conns = conns)$pooled
+knitr::kable(rbind(sbp_hits, dbp_hits)[c("concept_name", "standard_concept", "vocabulary_id")])
+```
+
+| concept\_name                         | standard\_concept | vocabulary\_id |
+| :------------------------------------ | :---------------- | :------------- |
+| Blood pressure systolic and diastolic | S                 | LOINC          |
+| Systolic blood pressure               | S                 | LOINC          |
+| Blood pressure systolic and diastolic | S                 | LOINC          |
+| Diastolic blood pressure              | S                 | LOINC          |
+
+``` r
+sbp_id <- sbp_hits$concept_id[trimws(sbp_hits$concept_name) == "Systolic blood pressure"]
+dbp_id <- dbp_hits$concept_id[trimws(dbp_hits$concept_name) == "Diastolic blood pressure"]
+knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = sbp_id,
+  scope = "pooled", conns = conns)$pooled)
+```
+
+|   n | concept\_name             | value |
+| --: | :------------------------ | :---- |
+| 725 | millimeter mercury column | 8876  |
+
+``` r
+sbp_event <- omop_event("measurement", omop_concept_set(sbp_id))
+sbp <- omop_value_at_index("measurement", sbp_id, tolerance = c(0, 0), unit = 8876L)
+dbp <- omop_value_at_index("measurement", dbp_id, tolerance = c(0, 0), unit = 8876L)
+map <- omop_number_derive(list(sbp = sbp, dbp = dbp),
+  book_expr(book_op("/", book_op("+", book_col("sbp"),
+    book_op("*", book_lit(2), book_col("dbp"))), book_lit(3))), unit = "unit:8876")
+ratio <- omop_number_derive(list(sbp = sbp, dbp = dbp),
+  book_expr(book_op("/", book_col("sbp"), book_col("dbp"))), unit = "1")
+pressure <- omop_study(sbp_event, outputs = "baseline", baseline = list(map = map, ratio = ratio))
+print(recipe_execute(pressure, out = c(baseline = "D_formula_pressure"), conns = conns))
+```
+
+    #>             baseline
+    #> "D_formula_pressure"
+
+``` r
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_formula_pressure$map", datasources = conns)))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 85.70000 |
+| site | 10%       | 87.23333 |
+| site | 25%       | 90.08333 |
+| site | 50%       | 93.50000 |
+| site | 75%       | 95.75000 |
+| site | 90%       | 96.96667 |
+| site | 95%       | 99.40000 |
+| site | Mean      | 93.53571 |
+
+**Exercise 2.** Summarise the dimensionless systolic/diastolic ratio. Is
+its unit mmHg?
+
+Solution 2
+
+``` r
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_formula_pressure$ratio", datasources = conns)))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 1.220452 |
+| site | 10%       | 1.291128 |
+| site | 25%       | 1.316157 |
+| site | 50%       | 1.516234 |
+| site | 75%       | 1.612708 |
+| site | 90%       | 1.639933 |
+| site | 95%       | 1.726477 |
+| site | Mean      | 1.487598 |
+
+No. The identical numerator and denominator units cancel. That does not
+make ratios from different measurement definitions interchangeable.
+
+## eGFR: validate the prerequisites before deriving
+
+The race-free adult CKD-EPI 2021 creatinine equation needs serum
+creatinine, age and sex. Its public formula is 142 × min(Scr/κ, 1)^α ×
+max(Scr/κ, 1)^−1.2 × 0.9938^age, with κ = 0.7 and α = −0.241 for female,
+κ = 0.9 and α = −0.302 for male, and a further factor 1.012 for female.
+Scr is in mg/dL. See the [National Kidney Foundation
+equation](https://www.kidney.org/professionals/ckd-epi-creatinine-equation-2021).
+
+Do not substitute a different specimen because the correct source is
+sparse. This check distinguishes vocabulary availability from observed
+use:
+
+``` r
+creatinine_hits <- ds.omop.concept.search("Creatinine", domain = "Measurement",
+  vocabulary = "LOINC", conns = conns)$pooled
+knitr::kable(creatinine_hits[c("concept_name", "standard_concept")])
+```
+
+| concept\_name                                   | standard\_concept |
+| :---------------------------------------------- | :---------------- |
+| Microalbumin/Creatinine \[Mass Ratio\] in Urine | S                 |
+| Creatinine \[Mass/volume\] in Serum or Plasma   | S                 |
+| Creatinine \[Mass/volume\] in Blood             | S                 |
+
+``` r
+serum_id <- creatinine_hits$concept_id[trimws(creatinine_hits$concept_name) ==
+  "Creatinine [Mass/volume] in Serum or Plasma"]
+serum_set <- omop_concept_set(serum_id)
+knitr::kable(ds.omop.concept.locate(serum_id, scope = "pooled", conns = conns)$pooled)
+```
+
+The pinned subset’s populated creatinine concept is **Blood**, while the
+formula requests Serum or Plasma. This lesson therefore does not report
+patient eGFR. The A-29 build used here has no named CKD-EPI helper:
+`omop_number_derive` accepts closed arithmetic, while powers can be
+composed from log, affine and exp stages. A production definition still
+needs validated specimen equivalence, aligned age and sex, adult
+eligibility and formula validation. A published formula alone is not
+permission to change the source semantics.
+
+**Exercise 3.** Why would using the first creatinine search hit be
+unsafe? Save the intended serum definition instead.
+
+Solution 3
+
+``` r
+formula_concepts <- list(body = body_sets, systolic = omop_concept_set(sbp_id),
+  diastolic = omop_concept_set(dbp_id), serum_creatinine = serum_set)
+formula_file <- tempfile(fileext = ".rds")
+saveRDS(formula_concepts, formula_file)
+identical(readRDS(formula_file), formula_concepts)
+```
+
+    #> [1] TRUE
+
+Name matching is a discovery aid. The intended specimen, unit and source
+use must all agree before formula execution.
+
+## Collapse repeated episodes deliberately
+
+A person may have several eligible measurement episodes. Requesting
+person grain requires an explicit collapse rule: first\_episode,
+last\_episode or any. This collapses repeated population episodes, not
+duplicate source measurements.
+
+``` r
+episodes <- omop_population("weights", index = omop_index(weight_event, select = "all"))
+collapsed <- omop_recipe(populations = list(episodes), variables = list(weight = weight),
+  outputs = omop_output("people", rows = "weights", format = "wide", grain = "person",
+    collapse = "first_episode"))
+cat(grep("collapse|grain", recipe_explain(collapsed)$text, value = TRUE), sep = "\n")
+```
+
+    #> Output 'people' [wide] rows 'weights', grain person (collapse first_episode)
+    #>   - output 'people': one row per person from an episode population, collapse = "first_episode"
+
+``` r
+print(recipe_execute(collapsed, out = c(people = "D_collapsed_weights"), conns = conns))
+```
+
+    #>                people
+    #> "D_collapsed_weights"
+
+``` r
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_collapsed_weights$weight", datasources = conns)))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        |  2.71000 |
+| site | 10%       |  3.73000 |
+| site | 25%       | 11.05000 |
+| site | 50%       | 70.90000 |
+| site | 75%       | 75.72500 |
+| site | 90%       | 80.94000 |
+| site | 95%       | 84.83500 |
+| site | Mean      | 50.44643 |
+
+A same-day tolerance still does not average duplicate readings
+automatically. Closest-value selection uses deterministic ordering; a
+mean weights eligible rows. Document whether the problem is repeated
+episodes or duplicated source records before choosing a collapse or
+reducer. The events chapter compares record counts with distinct-day
+counts.
+
+**Exercise 4.** Choose the last eligible episode instead. Predict the
+selection before comparing its summary with the first-episode output.
+
+Solution 4
+
+``` r
+last_episode <- collapsed
+last_episode$outputs$people$collapse <- "last_episode"
+print(recipe_execute(last_episode, out = c(people = "D_last_weights"), conns = conns))
+```
+
+    #>           people
+    #> "D_last_weights"
+
+``` r
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_last_weights$weight", datasources = conns)))
+```
+
+| Site | Statistic |  Value |
+| :--- | :-------- | -----: |
+| site | 5%        | 12.630 |
+| site | 10%       | 16.850 |
+| site | 25%       | 64.325 |
+| site | 50%       | 75.000 |
+| site | 75%       | 82.300 |
+| site | 90%       | 89.630 |
+| site | 95%       | 94.365 |
+| site | Mean      | 66.600 |
+
+The person roster is collapsed with a different temporal choice. This is
+not a measurement average, and it need not equal an average over all
+episodes.
+
+## Recap
+
+Align meanings, units and dates before arithmetic. Native expressions
+preserve private inputs and declared coordinates. BMI, MAP and ratios
+use the closed grammar; missing prerequisites are a reason to stop a
+formula study. Collapse repeated episodes explicitly instead of letting
+duplicate rows change an analysis.
+
+**Next:** [16. Longitudinal data: from events to
+analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md).

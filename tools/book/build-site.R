@@ -3,8 +3,10 @@ stopifnot(length(list.files("vignettes", "^book-.*\\.Rmd$")) == 25L)
 for (path in list.files("vignettes", "^book-.*\\.Rmd$", full.names=TRUE)) {
   stopifnot(!any(grepl("^```\\{r", readLines(path))))
 }
-# Drop obsolete numbered book output before rebuilding the complete article set.
-unlink(list.files("docs/articles", "^book-.*[.](html|md)$", full.names=TRUE))
+# With article names, refresh only changed pages after a complete site build.
+articles <- commandArgs(trailingOnly=TRUE)
+# Drop obsolete numbered book output only for a complete article build.
+if (!length(articles)) unlink(list.files("docs/articles", "^book-.*[.](html|md)$", full.names=TRUE))
 # The docs branch predates the unpublished numeric implementation. Stage its
 # reference topic only for the build; the book never vendors package R code.
 numeric_rd <- "../a29-client/man/omop_number_spec.Rd"
@@ -20,7 +22,10 @@ local({
   # Render the runtime version honestly; leave the docs branch package untouched.
   writeLines(sub("^Version:.*", paste("Version:", packageVersion("dsOMOPClient")),
     description), "DESCRIPTION")
-  pkgdown::build_site(new_process = FALSE, examples = FALSE, install = FALSE, lazy = FALSE)
+  if (length(articles)) {
+    for (article in articles) pkgdown::build_article(article, new_process=FALSE, lazy=FALSE)
+    pkgdown::build_llm_docs()
+  } else pkgdown::build_site(new_process = FALSE, examples = FALSE, install = FALSE, lazy = FALSE)
 })
 
 dir.create("docs/downloads",showWarnings=FALSE)
@@ -35,3 +40,4 @@ utils::zip("docs/downloads/book-helpers.zip", helpers)
 # Some pkgdown stages restore cached assets after init_site(). Ship the exact
 # reviewed book assets, including new capability-card styles, at the end.
 stopifnot(all(file.copy(c("pkgdown/extra.css", "pkgdown/extra.js"), "docs", overwrite=TRUE)))
+file.create("docs/.nojekyll")
