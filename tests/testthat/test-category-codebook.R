@@ -22,6 +22,7 @@ test_that("C53 prospective books contain fixed keys, declared types, domains and
   b<-recipe_codebook(r)
   expect_identical(b[["wide/wide"]]$columns$name[1:3],c("row_id","cohort_row_id","person_id"))
   expect_identical(b[["wide/wide"]]$columns$r_type[b[["wide/wide"]]$columns$name=="flag"],"logical")
+  expect_identical(b[["wide/wide"]]$columns$r_type[b[["wide/wide"]]$columns$name=="repeated_value_m6"],"factor")
   expect_identical(b[["sparse/covariateRef"]]$columns$name,c("covariate_id","source","concept_id","concept_name","analysis"))
   expect_true(all(b[["wide/wide"]]$columns$name %in% b[["joined/joined"]]$columns$name))
   p<-recipe_to_plan(r,version=2)
@@ -60,4 +61,13 @@ test_that("C53 C54 C59 plain native numeric and untranslated releases have local
   session<-.get_session("labels")
   session$capabilities[[1L]]$recipe_language$operations<-setdiff(session$capabilities[[1L]]$recipe_language$operations,"output.codebook_metadata")
   expect_error(.v2_assert_supported(p,session,names(ctx$conns)),"output.codebook_metadata")
+})
+
+test_that("C53 codebook units describe declared pipelines without exposing source inventories", {
+  e<-omop_event("measurement",3000963L,unit=omop_unit(8713L))
+  v<-omop_variable(event=e,reducer=omop_reduce("mean"))
+  r<-omop_recipe(variables=list(raw=v,converted=omop_number(v,omop_number_spec(unit=omop_number_unit("unit:8713","coordinate:test",2))),flag=omop_number_flag(v,"gt",12)))
+  columns<-recipe_codebook(r)[[1L]]$columns
+  expect_identical(columns$unit[match(c("raw","converted","flag"),columns$name)],c("unit:8713","coordinate:test","1"))
+  expect_identical(columns$r_type[match(c("raw","converted","flag"),columns$name)],c("double","double","integer"))
 })

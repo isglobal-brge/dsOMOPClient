@@ -224,7 +224,7 @@
 .recipe_v2_constructs <- function(recipe) {
   c(if (.numberHas(recipe)) "number_spec/numeric declarations (use native language 2)",
     if (.conceptHasMaps(recipe)) "concept labels/column_names",
-    if (length(.categoryCapabilities(recipe))) "category_spec",
+    if (length(.categoryCapabilities(recipe))) paste0("category_spec/category_rows/category_indicators/category_reduce/category_columns/repeated (",paste(.categoryCapabilities(recipe),collapse=", "),")"),
     if (!is.null(recipe$options$date_spec) || any(vapply(recipe$variables, function(v) !is.null(v$date_spec), logical(1)))) "date_spec", .recipe_v2_constructs_base(recipe))
 }
 

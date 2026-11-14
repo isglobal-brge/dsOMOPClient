@@ -7,7 +7,7 @@ for(dataset in c("GiBleed","Synthea27Nj"))local({
     recipe<-.category_format_recipe(if(dataset=="GiBleed")3006322L else 3000963L)
     plan<-recipe_to_plan(recipe,version=2)
     expect_setequal(vapply(plan$outputs,function(x)x$format,""),c("wide","long","intervals","membership","dictionary","person_period","sparse","temporal_covariates","survival","joined"))
-    expect_length(recipe_codebook(recipe),13L)
+    expect_length(recipe_codebook(recipe),15L)
     prior<-NULL
     for(mode in c("memory","staged")) {
       destinations<-setNames(paste0("Categories_",names(plan$outputs),"_",mode),names(plan$outputs))

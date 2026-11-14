@@ -6,6 +6,8 @@
   repeated<-omop_repeated(lab,list(value=repeat_values),timepoints=omop_timepoints(list(baseline=omop_timepoint(),m6=omop_timepoint(6,"months",c(-7,7)))))
   outputs<-list(
     omop_output("wide",format="wide",rows="p",grain="episode"),
+    omop_output("baseline",type="baseline",rows="p",grain="episode"),
+    omop_output("features",type="features",rows="p",grain="episode"),
     omop_output("long",format="long",rows="p",sources=list(lab),options=list(columns_derived=c("value","unit","days_from_index"))),
     omop_output("intervals",format="intervals",rows="p",options=list(sources=list(lab))),
     omop_output("membership",format="membership",rows="p"),

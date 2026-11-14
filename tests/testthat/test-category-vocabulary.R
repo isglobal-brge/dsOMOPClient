@@ -141,3 +141,21 @@ test_that("C51 C62 equal labels cannot hide different public hierarchy maps", {
     expect_error(recipe_execute(r,out="DifferentMaps",symbol="labels",conns=ctx$conns),"category_domain_incompatible")
   }
 })
+
+test_that("C11 C17 required adapter defects refuse and out-of-domain cells stay private NA", {
+  ctx<-.clf_setup();.numeric_lexer()
+  v<-omop_variable(event=omop_event("observation",45000120L),reducer=omop_reduce("last_value",value="value_as_concept_id"))
+  spec<-omop_category_spec(rollup=omop_category_rollup("snomed",ancestors="concept:999999",domain="concept:45000124",unmatched="keep"))
+  r<-omop_recipe(variables=list(x=omop_category(v,spec)))
+  result<-recipe_execute(r,out="PublicDomain",symbol="labels",conns=ctx$conns)
+  for(i in 1:3) {
+    f<-.clf_frames(ctx,"PublicDomain")[[i]]
+    expect_equal(sum(!is.na(f$x)),if(i==1L)6L else 9L)
+  }
+  expect_false(any(c("observed","count","unavailable") %in% names(recipe_codebook(result)[[1L]]$columns)))
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"UPDATE concept SET concept_class_id=NULL WHERE concept_id=45000124");DBI::dbDisconnect(con)
+  }
+  expect_error(recipe_execute(r,out="MalformedAdapter",symbol="labels",conns=ctx$conns),"category_domain_incompatible")
+})

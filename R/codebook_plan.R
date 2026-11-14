@@ -63,8 +63,27 @@
   out
 }
 
-.codebookPlanColumn <- function(key,type="unresolved",semantic="unresolved",variable=NULL,defaults=NULL) {
+.codebookPlanColumn <- function(key,type="unresolved",semantic="unresolved",variable=NULL,defaults=NULL,plan=list()) {
   spec<-.categoryEffective(variable$category_spec,defaults)
+  d<-variable$derived;inherited<-NULL
+  operand<-if(identical(d$kind,"repeated")) {
+    at<-match(d$value,vapply(d$values,function(x)x$name,""));d$values[[at]]$variable
+  } else if(identical(d$kind,"category_reduce")&&!d$reducer$fn %in% c("count","n_distinct","sum","any","all"))d$variable else NULL
+  if(!is.null(operand)) {
+    inherited<-.codebookPlanColumn(key,variable=operand,plan=plan)
+    type<-inherited$r_type;semantic<-inherited$semantic_type
+  }
+  date<-variable$date_spec
+  date_kind<-if((d$kind %||% "") %in% .DATE_KINDS)d$kind else "calendar_date"
+  if(!is.null(date)||(d$kind %||% "") %in% .DATE_KINDS || is.null(variable)&&grepl("_date$",key)) {
+    date<-.dateEffective(date,plan$options$date_spec,date_kind,d$part)
+    if(date_kind %in% c("time_between","age_at")) {semantic<-"numeric";type<-if(isTRUE(d$bands))"ordered_factor" else "double"}
+    else if(date_kind=="date_part") {
+      semantic<-"date";type<-if(d$part %in% c("month","month_name","month_abbr","weekday","weekday_name","weekday_abbr","season")&&date$representation!="number")"ordered_factor" else "integer"
+    } else {
+      semantic<-"date";type<-if(date$representation %in% c("start","end")||date$precision=="day"&&date$representation=="auto")"Date" else if(date$precision=="relative_days"||date$representation=="number")"integer" else "ordered_factor"
+    }
+  }
   number<-variable$number_spec
   pipeline<-if(!is.null(number)).numberEffective(number)$pipeline else list()
   terminal<-if(length(pipeline))tail(pipeline,1L)[[1L]] else list()
@@ -72,35 +91,44 @@
   if(!is.null(variable)) {
     fn<-variable$reducer$fn %||% variable$derived$reducer$fn %||% ""
     flag<-fn %in% c("binary","any","all","abnormal","abnormal_low","abnormal_high") ||
-      identical(variable$derived$kind,"category_indicators") || identical(variable$derived$kind,"died")
+      identical(variable$derived$kind,"category_indicators") || identical(variable$derived$kind,"died") || identical(inherited$semantic_type,"flag")
+    was_flag<-flag
     for(step in pipeline) {
       if(step$kind %in% c("flag","present","missing"))flag<-TRUE
       else if(!(step$kind=="transform" && step$method=="identity" || step$kind=="round" && step$method=="none" || step$kind=="fixed_unit" && step$factor==1 && (step$offset %||% 0)==0))flag<-FALSE
     }
+    if(was_flag&&!flag) {semantic<-"numeric";type<-"double"}
     concept<-identical(variable$derived$kind,"category_rows") ||
-      identical(variable$reducer$value,"value_as_concept_id") || identical(variable$reducer$value,"concept_id")
+      identical(variable$reducer$value,"value_as_concept_id") || identical(variable$reducer$value,"concept_id") || grepl("_concept_id$",variable$raw$column %||% "")
     if(flag) {semantic<-"flag";type<-spec$binary$as %||% "integer"}
     else if(concept) {semantic<-"concept";type<-"factor"}
     else if(representation %in% c("bins","category")) {semantic<-representation;type<-"ordered_factor"}
-    else if(fn %in% c("count","n_distinct","sum","mean","min","max","median")) {semantic<-"numeric";type<-if(fn %in% c("count","n_distinct"))"integer" else "double"}
+    else if(fn %in% c("count","n_distinct","sum","mean","min","max","median","first_value","last_value","nth_value","closest_value","mode") && is.null(inherited) || (d$kind %||% "") %in% c("number_rows","number_derive","number_change","number_count")) {semantic<-"numeric";type<-if(fn %in% c("count","n_distinct")||identical(d$kind,"number_count"))"integer" else "double"}
     if(type %in% c("factor","ordered_factor")) {
       if(!is.null(spec$ordered))type<-if(spec$ordered)"ordered_factor" else "factor"
       if(length(spec$recode$map))type<-if(isTRUE(spec$ordered %||% spec$recode$ordered))"ordered_factor" else "factor"
     }
   }
-  levels<-spec$levels %||% spec$recode$levels
-  labels<-spec$recode$labels
+  unit<-inherited$unit %||% if(!is.null(variable)&&semantic %in% c("numeric","flag","bins","category")) .categoryDeclaredUnit(plan,variable) else "not_applicable"
+  for(step in pipeline) {
+    if(step$kind=="event_unit")unit<-paste0("unit:",step$spec$target)
+    if(step$kind=="fixed_unit")unit<-step$to
+    if(step$kind=="expression")unit<-step$unit %||% "unresolved"
+    if(step$kind %in% c("flag","present","missing"))unit<-"1"
+  }
+  levels<-spec$levels %||% spec$recode$levels %||% inherited$levels$keys
+  labels<-spec$recode$labels %||% inherited$levels$labels
   if(is.null(levels)&&representation %in% c("bins","category")) {
     labels<-.numberDeclaredLevels(terminal)
     if(length(labels))levels<-paste0(if(representation=="bins")"bin:" else "category:",seq_along(labels))
   }
-  if(identical(semantic,"flag")&&type=="factor") {levels<-c("flag:0","flag:1");labels<-spec$binary$labels}
+  if(identical(semantic,"flag")&&type=="factor") {levels<-c("flag:0","flag:1");labels<-spec$binary$labels %||% inherited$levels$labels %||% c("no","yes")}
   if(!is.null(levels)&&identical(spec$missing$na,"level")) {levels<-c(levels,"special:missing");labels<-NULL}
   if(!is.null(levels)&&identical(spec$missing$unknown,"level")) {levels<-c(levels,"special:unknown");labels<-NULL}
   list(stable_key=key,name=key,meaning=if(is.null(variable))paste("Output",semantic,"role",key) else paste("Declared variable",key),
-    semantic_type=semantic,r_type=type,storage_type="unresolved",unit=number$unit %||% "unresolved",
+    semantic_type=semantic,r_type=type,storage_type="unresolved",unit=unit,
     levels=if(!is.null(levels))list(keys=levels,labels=labels,completeness="declared; open producers remain unresolved"),
-    ordered=if(type %in% c("factor","ordered_factor"))type=="ordered_factor",reference=spec$reference,
+    ordered=if(type %in% c("factor","ordered_factor"))type=="ordered_factor",reference=spec$reference %||% inherited$reference,
     contrasts=if(type=="ordered_factor")list(kind="polynomial") else if(type=="factor")list(kind="treatment",reference=spec$reference),
     derivation=list(variable=variable,category_spec=spec),privacy_class=if(!is.null(variable$date_spec)||identical(variable$derived$kind,"repeated"))2L else "unresolved",
     aggregate_policy="Existing endpoint admission; unresolved for unrequested endpoints",
@@ -155,16 +183,16 @@
     }
     for(component in names(definitions)) {
       types<-definitions[[component]]
-      rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural"))
+      rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural",plan=plan))
       names(rows)<-names(types)
       if(component==output || fmt=="survival" && grains[[component]]!="none") {
         variables<-unlist(node$columns %||% if(fmt=="wide")names(plan$variables) else character(),use.names=FALSE)
-        for(key in intersect(variables,names(plan$variables)))rows[[key]]<-.codebookPlanColumn(key,variable=plan$variables[[key]],defaults=plan$options$category_spec)
+        for(key in intersect(variables,names(plan$variables)))rows[[key]]<-.codebookPlanColumn(key,variable=plan$variables[[key]],defaults=plan$options$category_spec,plan=plan)
       }
       for(map in list(node$number_columns,node$category_columns))for(key in names(map)) {
         v<-map[[key]];dep<-v$derived
         while(!is.null(dep$variable))dep<-dep$variable$derived
-        if(is.null(dep$component)&&length(definitions)==1L||identical(dep$component,component))rows[[key]]<-.codebookPlanColumn(key,variable=v,defaults=plan$options$category_spec)
+        if(is.null(dep$component)&&length(definitions)==1L||identical(dep$component,component))rows[[key]]<-.codebookPlanColumn(key,variable=v,defaults=plan$options$category_spec,plan=plan)
       }
       schemas[[paste(output,component,sep="/")]]<<-list(schema=list(columns=unname(rows),row_keys=as.list(intersect(names(id),names(rows)))),categories=list(),row_grain=grains[[component]],status="prospective")
     }
@@ -186,7 +214,7 @@
   for(name in names(plan$variables)) {
     v<-plan$variables[[name]];s<-.categoryEffective(v$category_spec,defaults)
     if(length(s))lines<-c(lines,paste0("Category variable '",name,"': ",.jcsCanonical(.pnv2Plain(s)),"; applicability follows its declared producer; complete public keys are in recipe_codebook()."))
-    declaration<-.codebookPlanColumn(name,variable=v,defaults=defaults)
+    declaration<-.codebookPlanColumn(name,variable=v,defaults=defaults,plan=plan)
     inactive<-character()
     if(declaration$semantic_type %in% c("bins","category","numeric"))inactive<-intersect(names(defaults),c("label_style","language","rollup","binary"))
     if(declaration$semantic_type=="flag"&&declaration$r_type %in% c("integer","logical"))inactive<-union(inactive,intersect(names(defaults),c("levels","order","ordered","reference","recode","rollup","label_style","language","missing")))

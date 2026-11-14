@@ -59,3 +59,18 @@ test_that("C03 C59 explain preserves public category policies without data acces
   expect_match(text,"Semantic flags retain false/true identity",fixed=TRUE)
   expect_match(text,"Open concept and period domains remain unresolved",fixed=TRUE)
 })
+
+test_that("C59 every missing category capability refuses before assignment", {
+  e<-omop_event("observation",45000120L,name="e")
+  rows<-omop_category_rows(e,"value_as_concept_id",omop_category_spec(rollup=omop_category_rollup("snomed",separation=1L,domain="concept:45000124")))
+  flag<-omop_category_indicators(rows,c(yes="concept:45000124"))[["yes"]]
+  r<-omop_recipe(events=list(e),variables=list(any=omop_category_reduce(flag,omop_reduce("any")),time=omop_repeated(e,list(value=rows),timepoints=omop_timepoints(list(now=omop_timepoint()),anchor="2020-01-01"))))
+  required<-grep("^(category[.]|layout[.]|output[.]codebook)",.plan_v2_operations(recipe_to_plan(r,version=2)),value=TRUE)
+  expect_setequal(required,c("category.presentation","category.rollup","category.indicators","category.reduce","layout.repeated","output.codebook_metadata"))
+  for(missing in required) {
+    state<-.legacy_federation(new=c("one","two"),ops=setdiff(union(.V2_ALL_OPS,required),missing))
+    expect_error(recipe_execute(r),paste0("lacks ",missing))
+    expect_identical(unname(state$assigns),c(0L,0L))
+  }
+  expect_error(recipe_to_plan(r,version=1),"repeated")
+})
