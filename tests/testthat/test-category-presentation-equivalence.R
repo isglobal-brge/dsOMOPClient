@@ -12,6 +12,15 @@
     rejection <<- unique(c(rejection,conditionMessage(e)))
     reject_entry(e)
   },.package="dsOMOP")
+  assign_expr <- DSI::datashield.assign.expr
+  testthat::local_mocked_bindings(datashield.assign.expr=function(...) {
+    args <- list(...); callback <- args$error
+    args$error <- function(server,message) {
+      rejection <<- unique(c(rejection,message))
+      if(is.function(callback))callback(server,message)
+    }
+    do.call(assign_expr,args)
+  },.package="DSI")
   result <- tryCatch(ds.omop.plan.execute(plan,out=symbols,symbol="labels",conns=ctx$conns,output_mode=mode),
     error=function(e)stop(paste(c(conditionMessage(e),rejection),collapse="\n")))
   books <- local({
@@ -77,12 +86,16 @@
   when <- omop_date(omop_anchor(e),broadcast=TRUE)
   if(scope=="variable") {
     count <- omop_number(count,number)
-    if(!is.null(category))flag <- omop_category(flag,category)
+    if(!is.null(category$binary))flag <- omop_category(flag,category)
     when <- omop_date(omop_anchor(e),date,broadcast=TRUE)
-    if(!is.null(category))when <- omop_category(when,category)
+    if(!is.null(category$ordered) && date$precision=="month")when <- omop_category(when,category)
+    if(!is.null(category$ordered) && identical(number$representation,"bins"))count <- omop_category(count,category)
   }
   event_value <- omop_number_rows(e)
-  if(scope=="variable")event_value <- omop_number(event_value,number)
+  if(scope=="variable") {
+    event_value <- omop_number(event_value,number)
+    if(!is.null(category$ordered) && identical(number$representation,"bins"))event_value <- omop_category(event_value,category)
+  }
   vars <- list(n=count,flag=flag,when=when,event_value=event_value)
   selected <- c("n","flag","when")
   outputs <- list(
