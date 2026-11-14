@@ -12,18 +12,18 @@ omop.feature.drug_duration(concept_set, agg = "mean", name = NULL)
 
 ## Arguments
 
-- concept_set:
+  - concept\_set:
 
-  Numeric vector of concept IDs, or an `omop_concept_set` object.
+    Numeric vector of concept IDs, or an `omop_concept_set` object.
 
-- agg:
+  - agg:
 
-  Character; aggregation function — `"mean"`, `"sum"`, or `"max"`
-  (default `"mean"`).
+    Character; aggregation function — `"mean"`, `"sum"`, or `"max"`
+    (default `"mean"`).
 
-- name:
+  - name:
 
-  Character; optional custom name for the feature column.
+    Character; optional custom name for the feature column.
 
 ## Value
 
@@ -31,8 +31,7 @@ An `omop_feature_spec` object with `type = "drug_duration"`.
 
 ## See also
 
-[`ds.omop.plan.features`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.features.md),
-[`omop.feature.count`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.count.md)
+`ds.omop.plan.features`, `omop.feature.count`
 
 ## Examples
 

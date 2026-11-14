@@ -15,44 +15,51 @@ ds.omop.table.stats(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 ```
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; the CDM table name (e.g., `"condition_occurrence"`,
-  `"person"`).
+    Character; the CDM table name (e.g., `"condition_occurrence"`,
+    `"person"`).
 
-- stats:
+  - stats:
 
-  Character vector; which statistics to compute. Supported values are
-  `"rows"` (total row count) and `"persons"` (distinct person count).
-  Default: `c("rows", "persons")`.
+    Character vector; which statistics to compute. Supported values are
+    `"rows"` (total row count) and `"persons"` (distinct person count).
+    Default: `c("rows", "persons")`.
 
-- scope:
+  - scope:
 
-  Character; `"per_site"` (default) or `"pooled"`.
+    Character; `"per_site"` (default) or `"pooled"`.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; `"strict"` (default) requires all servers to succeed,
-  `"pooled_only_ok"` allows partial results.
+    Character; `"strict"` (default) requires all servers to succeed,
+    `"pooled_only_ok"` allows partial results.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or NULL to use the session default.
+    DSI connection object(s) or NULL to use the session default.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, return a dry-run result containing only the
-  generated call code (default: `TRUE`).
+    Logical; if `FALSE`, return a dry-run result containing only the
+    generated call code (default: `TRUE`).
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`; aliases
+    follow dsBaseClient conventions. When omitted, legacy `scope`
+    behaviour is preserved.
 
 ## Value
 

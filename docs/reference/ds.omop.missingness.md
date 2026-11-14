@@ -18,47 +18,54 @@ ds.omop.missingness(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 ```
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; the CDM table name (e.g., `"measurement"`,
-  `"observation"`).
+    Character; the CDM table name (e.g., `"measurement"`,
+    `"observation"`).
 
-- columns:
+  - columns:
 
-  Character vector; specific column names to check, or NULL to check all
-  columns in the table (default: NULL).
+    Character vector; specific column names to check, or NULL to check
+    all columns in the table (default: NULL).
 
-- cohort:
+  - cohort:
 
-  Cohort reference (a `dsomop_cohort_handle`, a `cohort_definition_id`,
-  or a server-side cohort table name), or NULL.
+    Cohort reference (a `dsomop_cohort_handle`, a
+    `cohort_definition_id`, or a server-side cohort table name), or
+    NULL.
 
-- scope:
+  - scope:
 
-  Character; `"per_site"` (default) or `"pooled"`.
+    Character; `"per_site"` (default) or `"pooled"`.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or NULL to use the session default.
+    DSI connection object(s) or NULL to use the session default.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, return a dry-run result containing only the
-  generated call code (default: `TRUE`).
+    Logical; if `FALSE`, return a dry-run result containing only the
+    generated call code (default: `TRUE`).
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. When
+    omitted, legacy `scope` behaviour is preserved.
 
 ## Value
 

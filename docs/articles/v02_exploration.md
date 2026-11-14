@@ -18,7 +18,6 @@ generated call and any server warnings.
 ## Prerequisites
 
 ``` r
-
 library(dsOMOPClient)
 # Assume connections are established and the OMOP resource is attached:
 # ds.omop.connect(resource = "project.omop_cdm", conns = conns, symbol = "omop")
@@ -27,7 +26,6 @@ library(dsOMOPClient)
 ## Listing Tables and Columns
 
 ``` r
-
 tables <- ds.omop.tables(symbol = "omop", conns = conns)
 # Per-site character vectors of discovered table names
 
@@ -43,7 +41,6 @@ controller explicitly lists them in `dsomop.allowed_cdm_extensions`.
 ## Relationships
 
 ``` r
-
 joins <- ds.omop.joins(symbol = "omop", conns = conns)
 # Inferred join edges (person_id, visit_occurrence_id, *_concept_id, ...)
 ```
@@ -51,7 +48,6 @@ joins <- ds.omop.joins(symbol = "omop", conns = conns)
 ## Table and Column Statistics
 
 ``` r
-
 ts <- ds.omop.table.stats("measurement", symbol = "omop", conns = conns)
 # row_count and person_count (COUNT(DISTINCT person_id)); suppressed if small
 
@@ -60,13 +56,12 @@ cs <- ds.omop.column.stats("measurement", "value_as_number",
 cs$per_site$server1
 ```
 
-[`ds.omop.column.stats()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.column.stats.md)
-returns banded support/completeness fields and, for a reviewed numeric
-measure, a mean and sample `sd` over one within-person mean per
-contributor. The mean and standard deviation have different
-minimum-support floors. Raw minima/maxima and quantiles are deliberately
-absent; request the separately gated quantile or histogram endpoints
-when their estimand is appropriate.
+`ds.omop.column.stats()` returns banded support/completeness fields and,
+for a reviewed numeric measure, a mean and sample `sd` over one
+within-person mean per contributor. The mean and standard deviation have
+different minimum-support floors. Raw minima/maxima and quantiles are
+deliberately absent; request the separately gated quantile or histogram
+endpoints when their estimand is appropriate.
 
 ## Concept Prevalence
 
@@ -76,7 +71,6 @@ released count band, then by the public concept key; `top_n` never
 exposes exact within-band rank:
 
 ``` r
-
 prev <- ds.omop.concept.prevalence("condition_occurrence",
   metric = "persons", top_n = 50, symbol = "omop", conns = conns)
 head(prev$per_site$server1)
@@ -89,7 +83,6 @@ Pass an explicit `concept_col` to rank the categorical concepts on the
 breakdowns:
 
 ``` r
-
 ds.omop.concept.prevalence("person", concept_col = "gender_concept_id",
   symbol = "omop", conns = conns)
 ds.omop.concept.prevalence("person", concept_col = "race_concept_id",
@@ -104,7 +97,6 @@ The `death` table is explored the same way, naming its cause concept
 column:
 
 ``` r
-
 ds.omop.concept.prevalence("death", concept_col = "cause_concept_id",
   symbol = "omop", conns = conns)
 ```
@@ -117,7 +109,6 @@ together with `top_n` to page through the banded, public-key-stabilized
 ordering (the page is `[offset+1 .. offset+top_n]`):
 
 ``` r
-
 # First page of the 25 most prevalent concepts across the whole CDM
 page1 <- ds.omop.concept.prevalence(global = TRUE, top_n = 25,
   symbol = "omop", conns = conns)
@@ -134,7 +125,6 @@ inside a count band.
 ## Value Frequencies and Histograms
 
 ``` r
-
 ds.omop.value.counts("person", "gender_concept_id",
   symbol = "omop", conns = conns)
 
@@ -154,7 +144,6 @@ independent people or ignore an inapplicable cohort scope.
 ## Other Profiling
 
 ``` r
-
 ds.omop.domain.coverage(scope = "pooled", symbol = "omop", conns = conns)
 ds.omop.missingness("measurement",
   columns = c("value_as_number", "value_as_concept_id"),
@@ -167,16 +156,11 @@ ds.omop.crosstab("person", "gender_concept_id", "race_concept_id",
 
 Most exploration functions accept a unified `cohort =` argument so you
 can run the same profiling within a subpopulation. The argument accepts
-a cohort handle (from
-[`ds.omop.cohort.create()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.create.md)
-/
-[`ds.omop.cohort.combine()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.combine.md)
-/
-[`ds.omop.cohort.from_table()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.from_table.md)),
-a numeric cohort definition id, or a server-side cohort table name:
+a cohort handle (from `ds.omop.cohort.create()` /
+`ds.omop.cohort.combine()` / `ds.omop.cohort.from_table()`), a numeric
+cohort definition id, or a server-side cohort table name:
 
 ``` r
-
 dm <- ds.omop.cohort.create(
   spec = list(type = "condition", concept_set = c(201826)),
   symbol = "omop", conns = conns)
@@ -192,13 +176,13 @@ ds.omop.missingness("measurement", cohort = dm,
 
 See the *Cohort Management* vignette for building cohorts, including
 turning a workspace `omop.table` into a reusable cohort with
-[`ds.omop.cohort.from_table()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.from_table.md).
+`ds.omop.cohort.from_table()`.
 
 ## Disclosure-Gated Manipulation of Extracted Tables
 
 Once a plan or recipe has produced a server-side `omop.table` (see
 *Extraction*), you can reshape it **without** pulling any row-level data
-using four disclosure-aware verbs. Each verb takes the *name(s)* of
+using disclosure-aware verbs. Each verb takes the *name(s)* of
 server-side `omop.table` symbols, computes the new frame on every
 server, and stores it under `newobj`. Only `omop.table` inputs are
 accepted; the result is re-gated on the number of **distinct person
@@ -209,12 +193,11 @@ distinct-person gate is reapplied and the verbs fail closed when support
 is insufficient.
 
 ``` r
-
 # Join two token-keyed frames on the person key (only the person key is allowed)
 joined <- ds.omop.merge("baseline", "labs", by = "person_id", type = "left",
   symbol = "omop", conns = conns)
 
-# Keep broad categories; numeric/date ranges belong in the recipe filter DSL
+# Filter a category; typed expression filters also support numeric/date predicates
 women <- ds.omop.filter("baseline", var = "sex", op = "==", value = "F",
   symbol = "omop", conns = conns)
 
@@ -229,10 +212,9 @@ stacked <- ds.omop.bind_rows("wave1", "wave2", symbol = "omop", conns = conns)
 
 Each call returns (invisibly) the name of the new server-side symbol,
 which you can feed into further reviewed verbs, into
-[`ds.omop.cohort.from_table()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.from_table.md),
-or into an allowlisted analysis method that explicitly supports the
-object’s grain and protected columns. Generic `dsBaseClient`
-compatibility is not implied.
+`ds.omop.cohort.from_table()`, or into an allowlisted analysis method
+that explicitly supports the object’s grain and protected columns.
+Generic `dsBaseClient` compatibility is not implied.
 
 ## Multi-Server Schema Comparison
 
@@ -240,7 +222,6 @@ When working with several servers, compare their schemas before
 planning:
 
 ``` r
-
 comparison <- ds.omop.compare(symbol = "omop", conns = conns)
 comparison$common_tables   # tables present on every server
 comparison$server_only     # tables unique to particular servers
@@ -253,7 +234,6 @@ vignette).
 ## Schema Snapshot
 
 ``` r
-
 snapshot <- ds.omop.snapshot(symbol = "omop", conns = conns)
 # Tables, columns and relationships per server, for documentation/visualisation
 ```

@@ -6,10 +6,9 @@ copy of the plan (all outputs, nested `filters$custom` and/or trees,
 `concept_set`s, `time_window`s, cohort, and representation formats),
 tagged with a schema version. The format is chosen from the file
 extension unless given explicitly: `.json` uses jsonlite; `.yaml`/`.yml`
-uses yaml. A plan reloaded with
-[`ds.omop.plan.load`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.load.md)
-executes identically to the original (the round-trip is lossless with
-respect to what is sent to the server).
+uses yaml. A plan reloaded with `ds.omop.plan.load` executes identically
+to the original (the round-trip is lossless with respect to what is sent
+to the server).
 
 ## Usage
 
@@ -19,18 +18,19 @@ ds.omop.plan.save(plan, file, format = NULL)
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object, or a language-2 plan (`omop_plan_v2`, saved
+    as its wire plan).
 
-- file:
+  - file:
 
-  Character; destination path ending in `.json`, `.yml`, or `.yaml`.
+    Character; destination path ending in `.json`, `.yml`, or `.yaml`.
 
-- format:
+  - format:
 
-  Character or `NULL`; optional explicit format (`"json"` or `"yaml"`)
-  overriding the extension.
+    Character or `NULL`; optional explicit format (`"json"` or `"yaml"`)
+    overriding the extension.
 
 ## Value
 
@@ -38,8 +38,7 @@ The file path, invisibly.
 
 ## See also
 
-[`ds.omop.plan.load`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.load.md),
-[`ds.omop.plan.execute`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.execute.md)
+`ds.omop.plan.load`, `ds.omop.plan.execute`
 
 ## Examples
 

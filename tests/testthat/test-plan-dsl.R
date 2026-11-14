@@ -481,8 +481,8 @@ test_that("harmonization rejects dynamic wide/features and missing expansion tab
     ds.omop.plan(), "w", "condition_occurrence",
     concept_set = 201820L, representation = list(format = "wide")
   )
-  expect_error(ds.omop.plan.harmonize(wide),
-               "set translate_concepts = FALSE")
+  # A-27 permits translated generated names through retained identity metadata.
+  expect_length(dsOMOPClient:::.plan_dependency_manifest(wide)$issues, 0L)
 
   auto <- ds.omop.plan.features(
     ds.omop.plan(), "f", "condition_occurrence", specs = list()
@@ -543,7 +543,20 @@ test_that("vocabulary-dependent plans require one reported vocabulary version", 
     ds.omop.plan(), "events", "condition_occurrence",
     concept_set = 201820L
   )
-  expect_error(ds.omop.plan.harmonize(p), "vocabulary version")
+  # Presentation alone can reconcile different vocabulary versions (A-27).
+  expect_silent(ds.omop.plan.harmonize(p))
+  comparison$common_columns$concept <- c(comparison$common_columns$concept,
+    "domain_id", "vocabulary_id")
+  comparison$common_column_types$concept <- c(comparison$common_column_types$concept,
+    domain_id = "character", vocabulary_id = "character")
+  comparison$common_tables <- c(comparison$common_tables, "concept_ancestor")
+  comparison$common_columns$concept_ancestor <- c("ancestor_concept_id",
+    "descendant_concept_id", "min_levels_of_separation")
+  comparison$common_column_types$concept_ancestor <- stats::setNames(
+    rep("numeric", 3L), comparison$common_columns$concept_ancestor)
+  expanded <- ds.omop.plan.events(ds.omop.plan(), "events", "condition_occurrence",
+    concept_set = list(concepts = 201820L, include_descendants = TRUE))
+  expect_error(ds.omop.plan.harmonize(expanded), "vocabulary version")
 })
 
 test_that("schema binding ignores irrelevant columns but detects required drift", {

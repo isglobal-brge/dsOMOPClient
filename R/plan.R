@@ -1881,8 +1881,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 
 # Shared plan executor. Loading tables uses the core method
 # omopPlanExecuteDS; ds.omop.dp.prepare() uses the community-tool method
-# omopDpPlanExecuteDS, which seals the outputs for DP releases and must not be
-# followed by concept-factor harmonization (a core recode drops the seal).
+# omopDpPlanExecuteDS, which seals the outputs for DP releases. Translated
+# outputs use the authenticated, seal-preserving A-27 reconciliation route.
 .plan_execute_impl <- function(plan, out = NULL, symbol = "omop", conns = NULL,
                                output_mode = "memory",
                                server_method = "omopPlanExecuteDS",
@@ -1894,32 +1894,25 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # publication protocol as a v1 plan; only its preparation and its lossless
   # wire encoding differ.
   v2 <- .v2_is_plan_v2(plan)
-  if (identical(output_mode, "staged")) {
-    # Standard concept identifiers are the stable OHDSI interchange encoding
-    # and allow the server to stream fact tables without per-chunk vocabulary
-    # lookups on an active DB cursor.
-    if (!identical(plan$options$translate_concepts, FALSE)) {
-      plan$options$translate_concepts <- FALSE
-      # Translation changes the output schema covered by a pre-existing
-      # federation signature. Force the normal preparation path to rebuild the
-      # contract for the staged representation instead of rejecting it as a
-      # post-harmonization mutation or, worse, reusing stale schema evidence.
-      if (v2) {
-        attr(plan, "harmonization") <- NULL
-        .v2_assert_schema(plan)
-      } else {
-        plan$harmonization <- NULL
-      }
-    }
-  }
+  .conceptValidatePlan(plan, wire = v2)
+  # Translation is one contract for memory, staged and protected executions.
+  harmonize_factors <- !isFALSE(plan$options$translate_concepts) || .categoryNeedsPresentation(plan)
   session <- .get_session(symbol)
+  session$concept_presentation <- NULL
+  assign(symbol, session, envir = .dsomop_client_env)
+  presentation_key <- .conceptPlanKey(plan)
   conns <- conns %||% session$conns
   # B1: which protocol every participating site supports, before anything is
   # assigned. The publication protocol needs it on every site; otherwise a v2
   # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
-  harmonizes <- isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
-    isTRUE(plan$options$factor_concepts %||% TRUE) &&
+  harmonizes <- isTRUE(harmonize_factors) &&
+    (isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan)) &&
     !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
+  if (harmonizes && !v2) {
+    language <- .v2_server_language(session, names(conns))
+    missing <- names(conns)[!vapply(language, function(x) "output.concept_labels" %in% x$operations, logical(1))]
+    if (length(missing)) stop("Concept presentation requires output.concept_labels on: ", paste(missing, collapse = ", "), call. = FALSE)
+  }
   route <- .plan_protocol_route(conns, server_method, harmonizes)
   if (!route$protocol) {
     if (v2) {
@@ -2028,9 +2021,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     # v2 plans keep every digit, explicit nulls and empty objects, so the
     # server parses exactly the plan whose semantic digest was computed.
     if (v2) .ds_encode_lossless(plan) else .ds_encode(plan),
-    # zero publication roots (publish = []): an empty JSON object, never a
-    # bare character(0) that a DataSHIELD expression parser would refuse
-    if (length(out)) .ds_encode(out) else .ds_encode(stats::setNames(list(), character(0))),
+    # A mapping is an object even with one entry: a named scalar deparses as
+    # a nested c() call, which DataSHIELD does not publish. Zero publication
+    # roots (publish = []) retain an explicit empty JSON object.
+    if (length(out)) .ds_encode(as.list(out)) else .ds_encode(stats::setNames(list(), character(0))),
     output_mode, commit_policy = if (on_small_site == "skip") {
       "all_or_none"
     } else "server")
@@ -2100,9 +2094,10 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       if (x$status == "refused") NULL else x$published
     })
     .plan_verify_publication(conns, inventories)
-    if (isTRUE(harmonize_factors) && identical(output_mode, "memory") &&
-        isTRUE(plan$options$factor_concepts %||% TRUE)) {
-      .harmonizePublicationFactors(inventories, conns)
+    presentation <- list()
+    if (isTRUE(harmonize_factors) &&
+        (isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan))) {
+      presentation <- .harmonizePublicationFactors(inventories, conns)
     }
     if (any(partial)) {
       warning("Plan publication is partial: ", paste(rejected, collapse = "; "),
@@ -2127,6 +2122,9 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     .plan_remove_status(conns, exec_symbol)
     owned <- lapply(inventories, .plan_inventory_symbols)
     .record_session_outputs(symbol, unlist(owned, recursive = FALSE))
+    session <- .get_session(symbol)
+    session$concept_presentation <- list(key=presentation_key,sites=names(conns),components=presentation)
+    assign(symbol, session, envir=.dsomop_client_env)
     if (standard) out else inventories
   }, error = function(e) {
     cleanup <- tryCatch({
@@ -2173,7 +2171,8 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # code validation_error and one constant of the closed vocabulary (the
   # section 11 adapter refusals; A-20 (j): the interval helpers' row caps)
   reasons <- c("adapter_person_mismatch", "cost_currency_mixed",
-               "stockpile_row_cap", "reducer_row_cap")
+               "stockpile_row_cap", "reducer_row_cap", "date_spec_invalid", "date_source_invalid",
+               "date_pattern_invalid", "date_policy_conflict", "date_parts_names")
   for (rejection in x$rejected) {
     if (!is.list(rejection) || !length(rejection) %in% 2:3 ||
         !setequal(names(rejection), c("code", "message", "reason")[seq_along(rejection)]) ||
@@ -2268,6 +2267,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 }
 
 .harmonizePublicationFactors <- function(inventories, conns) {
+  explanation <- list()
   roots <- unique(unlist(lapply(inventories, names), use.names = FALSE))
   for (root in roots) {
     components <- unique(unlist(lapply(inventories, function(x) names(x[[root]])),
@@ -2275,10 +2275,13 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     for (component in components) {
       symbols <- lapply(inventories, function(x) x[[root]][[component]]$symbol)
       symbols <- unlist(symbols, use.names = TRUE)
-      if (length(symbols)) .harmonizeOneSymbol(symbols, conns[names(symbols)])
+      if (length(symbols)) {
+        lines <- .harmonizeOneSymbol(symbols, conns[names(symbols)])
+        if (length(lines)) explanation[[paste(root,component,sep="/")]] <- lines
+      }
     }
   }
-  invisible(NULL)
+  invisible(explanation)
 }
 
 #' Resolve the out argument of ds.omop.plan.execute into a named mapping
@@ -2618,19 +2621,19 @@ ds.omop.plan.execute <- function(plan, out = NULL,
 
 #' Harmonize the concept-id columns of one server-side symbol
 #'
-#' Implements the three-phase coordination for a single symbol: (1) aggregate
-#' each server's safe levels via \code{omopFactorLevelsDS}; (2) union them
-#' client-side into one deterministic ordering (numeric ids sorted
-#' numerically, character names sorted lexically), dropping any column flagged
-#' unsafe on \emph{any} server and any union exceeding the smallest server
-#' cap; (3) broadcast the shared spec back via \code{omopAsFactorColumnsDS}.
+#' Collects only metadata admitted by the existing factor-level transport,
+#' reconciles A-27 identities and generated names, then applies a complete
+#' shared contract at every retained site in memory or staged execution.
+#' Unsafe or incomplete contracts fail publication. Changed vocabulary evidence
+#' is reconciled once more before assignment. Older untagged objects use the
+#' legacy level transport.
 #'
-#' @param sym Character; the server-side symbol to harmonize.
-#' @param conns DSI connections object restricted to servers holding
-#'   \code{sym}.
-#' @return \code{NULL} invisibly.
+#' @param sym Character; per-site server symbols of one retained component.
+#' @param conns DSI connections restricted to that component's retained sites.
+#' @param .retry Internal flag allowing one evidence refresh.
+#' @return Permitted resolution text invisibly, for the client publication receipt.
 #' @keywords internal
-.harmonizeOneSymbol <- function(sym, conns) {
+.harmonizeOneSymbol <- function(sym, conns, .retry = TRUE) {
   expected_servers <- names(conns)
   aggregate_success <- character(0)
   aggregate_errors <- character(0)
@@ -2685,15 +2688,18 @@ ds.omop.plan.execute <- function(plan, out = NULL,
          } else "", call. = FALSE)
   }
   per_server <- per_server[expected_servers]
-  spec <- .unionConceptLevels(per_server)
+  spec <- if (any(vapply(per_server, function(x) !is.null(x$concept_protocol), logical(1)))) {
+    .conceptUnionReports(per_server)
+  } else .unionConceptLevels(per_server)
   if (length(spec) == 0L) {
     return(invisible(NULL))
   }
   assign_success <- character(0)
   assign_errors <- character(0)
+  assign_condition <- NULL
   for (target in unique(unname(sym))) {
     sites <- names(sym)[sym == target]
-    DSI::datashield.assign.expr(
+    tryCatch(DSI::datashield.assign.expr(
       conns[sites], symbol = target,
       expr = call("omopAsFactorColumnsDS", as.symbol(target), .ds_encode(spec)),
       success = function(server) {
@@ -2702,15 +2708,18 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       error = function(server, message) {
         assign_errors[[server]] <<- message
       }
-    )
+    ), error = function(e) { assign_condition <<- e })
   }
   failed <- unique(c(names(assign_errors),
                      setdiff(expected_servers, assign_success)))
   if (length(failed) > 0L) {
+    if (.retry && length(assign_errors) && all(grepl("Concept presentation evidence changed", assign_errors, fixed = TRUE))) {
+      return(.harmonizeOneSymbol(sym, conns, .retry = FALSE))
+    }
     stop("Concept-factor recoding failed or was incomplete on: ",
          paste(failed, collapse = ", "), ".", call. = FALSE)
   }
-  invisible(NULL)
+  invisible(attr(spec,"concept_explain"))
 }
 
 #' Merge per-server concept levels into one shared ordered spec
@@ -2949,7 +2958,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
                    "concept_class_id", "standard_concept", "invalid_reason")
     }
     add("concept", columns, reason)
-    needs_vocabulary_identity <<- TRUE
+    if (dictionary) needs_vocabulary_identity <<- TRUE
   }
   add_concept_set <- function(spec, reason) {
     if (is.null(spec) || !is.list(spec) || is.null(spec$concepts)) {
@@ -3257,12 +3266,6 @@ ds.omop.plan.execute <- function(plan, out = NULL,
         if (length(flat) == 0L || anyNA(flat)) {
           issues <- c(issues, paste0(
             reason, " wide format requires a closed integer concept_set"
-          ))
-        }
-        if (translate) {
-          issues <- c(issues, paste0(
-            reason, " wide labels depend on vocabulary names; set ",
-            "translate_concepts = FALSE for a stable federated schema"
           ))
         }
       }
@@ -4497,4 +4500,24 @@ plot.omop_plan <- function(x, engine = c("dot", "base"), ...) {
     }
   }
   invisible(x)
+}
+
+
+# Category presentation is independent of opting out of concept labels.
+# Sex has a fixed F/M domain; the remaining domains use the controlled date
+# metadata route so different local observations cannot change factor coding.
+.categoryNeedsPresentation <- function(plan) {
+  if (.dateNeedsPresentation(plan)) return(TRUE)
+  if (any(vapply(plan$variables, function(v) {
+    d <- v$derived
+    identical(d$kind, "birth_year_band") || (identical(d$kind, "age") && isTRUE(d$bands))
+  }, logical(1)))) return(TRUE)
+  any(vapply(plan$outputs, function(o) {
+    opts <- o$options %||% list()
+    dh <- opts$date_handling %||% o$date_handling
+    partition <- opts$partition %||% list()
+    "age_at_index" %in% unlist(o$derived) || identical(dh$mode, "binned") ||
+      !is.null(partition$age_bands) || any(partition$calendar %in% c("month", "year")) ||
+      identical(opts$bins$calendar, "year")
+  }, logical(1)))
 }

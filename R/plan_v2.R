@@ -780,6 +780,16 @@
 }
 
 .v2w_variable <- function(ctx, v, name) {
+  out <- .v2w_variable_base(ctx, v, name)
+  if (!is.null(v$date_spec)) out$date_spec <- .dateWireSpec(ctx, v$date_spec, name)
+  for (key in c("labels", "column_names")) {
+    map <- .conceptMap(v[[key]], paste0("variables.", name, ".", key), key == "column_names")
+    if (length(map)) out[[key]] <- as.list(map)
+  }
+  out
+}
+
+.v2w_variable_base <- function(ctx, v, name) {
   context <- paste0("variable '", name, "'")
   if (!.v2_is_v2_variable(v)) return(.v2_lower_legacy_variable(ctx, v, name, context))
   switch(v$kind,
@@ -792,6 +802,12 @@
     },
     derived = {
       d <- .v2_resolve_params(v$derived, context)
+      if (d$kind %in% .DATE_KINDS) {
+        wire <- d[!vapply(d, is.null, logical(1))]
+        for (key in intersect(names(wire), c("reference", "from", "to"))) wire[[key]] <- .dateWireSource(ctx, wire[[key]], context)
+        if (!is.null(wire$age_breaks)) wire$age_breaks <- .v2_array(wire$age_breaks)
+        return(list(derived = wire, broadcast = isTRUE(v$broadcast)))
+      }
       wire <- .v2w_derived(d)
       if (identical(d$kind, "observed_days")) {
         wire$window <- .v2w_window(ctx, d$window, context)
@@ -1263,7 +1279,7 @@
     wire$options <- .v2_legacy_source_output_options(ctx, out, format, recipe_vars[take], context)
     return(wire)
   }
-  if (format %in% c("wide", "long", "sparse")) {
+  if (format %in% c("wide", "long", "sparse", "survival", "person_period", "intervals", "membership", "joined")) {
     take <- if (is.null(columns)) {
       if (identical(format, "wide")) names(recipe_vars) else character(0)
     } else columns
@@ -1403,8 +1419,13 @@
                            client_version = as.character(utils::packageVersion("dsOMOPClient"))))
   opts <- recipe$options %||% list()
   plan_opts <- list()
+  if (!is.null(opts$date_spec)) plan_opts$date_spec <- .dateWireSpec(ctx, opts$date_spec, "recipe date_spec")
   for (nm in c("translate_concepts", "block_sensitive", "factor_concepts")) {
     if (!is.null(opts[[nm]]) && !isTRUE(opts[[nm]])) plan_opts[[nm]] <- FALSE
+  }
+  for (key in c("labels", "column_names")) {
+    map <- .conceptMap(opts[[key]], paste0("options.", key), key == "column_names")
+    if (length(map)) plan_opts[[key]] <- as.list(map)
   }
   if (!is.null(recipe$coverage)) plan_opts$coverage <- .v2w_coverage(recipe$coverage)
   if (length(plan_opts)) plan$options <- plan_opts

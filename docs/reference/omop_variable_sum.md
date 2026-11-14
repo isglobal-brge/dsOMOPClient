@@ -17,25 +17,26 @@ omop_variable_sum(
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; source OMOP CDM table.
+    Character; source OMOP CDM table.
 
-- column:
+  - column:
 
-  Character; numeric column to sum (e.g. `"days_supply"`, `"quantity"`).
+    Character; numeric column to sum (e.g. `"days_supply"`,
+    `"quantity"`).
 
-- concept_id:
+  - concept\_id:
 
-  Integer or `NULL`; concept ID filter.
+    Integer or `NULL`; concept ID filter.
 
-- concept_name:
+  - concept\_name:
 
-  Character or `NULL`; human-readable name.
+    Character or `NULL`; human-readable name.
 
-- name:
+  - name:
 
-  Character or `NULL`; output column name (auto-generated if `NULL`).
+    Character or `NULL`; output column name (auto-generated if `NULL`).
 
 ## Value
 
@@ -44,8 +45,7 @@ metadata field.
 
 ## See also
 
-[`omop_variable`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md),
-[`omop.feature.sum_value`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.sum_value.md)
+`omop_variable`, `omop.feature.sum_value`
 
 ## Examples
 

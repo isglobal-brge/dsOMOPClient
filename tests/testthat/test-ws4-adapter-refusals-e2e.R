@@ -108,17 +108,7 @@ test_that("A-18 end to end: adapter refusals reach the analyst with their reason
     conns <- DSI::datashield.login(builder$build())
     ds.omop.connect(resource = "omop_ws4e", symbol = "omop_ws4e", conns = conns)
     out <- stats::setNames("D_ws4e", case$root)
-    # The server advertises a recipe-language operation only when everything
-    # it needs is installed (design 4.4), and the client sends a language-2
-    # plan only to servers advertising every operation the plan uses (WS-8).
-    # Until the WS-5/6/7 compiler closure is integrated this tests refusal
-    # transport only. The override removes itself once that closure exists:
-    # both fixtures and both policies must then pass ordinary negotiation,
-    # including every operation required by their actual plans.
-    if (length(.ws4e_missing_compilers())) {
-      testthat::local_mocked_bindings(.v2_assert_supported = function(...) invisible(TRUE),
-                                      .package = "dsOMOPClient")
-    }
+    # Exercise the installed server capability advertisement without overrides.
     for (on_small_site in c("error", "skip")) {
       err <- tryCatch(
         withr::with_options(list(nfilter.subset = 3L),
@@ -194,7 +184,7 @@ test_that("A-24 indexed per-variable windows execute through ordinary capability
       omop_variable(name = "recent_a1c", table = "measurement", concept_id = 3004410,
                     format = "binary", time_window = list(start = -30L, end = -1L))),
     outputs = omop_output("features", type = "features", population_id = "indexed"),
-    options = list(factor_concepts = FALSE))
+    options = list(translate_concepts = FALSE, factor_concepts = FALSE))
   selected <- dsOMOPClient:::.recipe_plan_for_session(r, "omop_ws8_features", conns)
   expect_s3_class(selected, "omop_plan_v2")
   expect_identical(selected$outputs$features$grain, "episode")

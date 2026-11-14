@@ -19,28 +19,29 @@ ds.omop.plan.baseline(
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- columns:
+  - columns:
 
-  Character vector; person-table columns to include (e.g.
-  `"gender_concept_id"`, `"race_concept_id"`). Exact birth components
-  are not releasable; request `"age_at_index"` through `derived`
-  instead. Pass a *named* vector to rename columns. Unnamed entries keep
-  their source name. Identifier columns cannot be renamed (they are
-  stripped server-side regardless).
+    Character vector; person-table columns to include (e.g.
+    `"gender_concept_id"`, `"race_concept_id"`). Exact birth components
+    are not releasable; request `"age_at_index"` through `derived`
+    instead. Pass a *named* vector to rename columns. Unnamed entries
+    keep their source name. Identifier columns cannot be renamed (they
+    are stripped server-side regardless).
 
-- derived:
+  - derived:
 
-  Character vector; derived fields to compute. Supported values include
-  `"age_at_index"`, `"prior_observation"`, and `"future_observation"`.
+    Character vector; derived fields to compute. Supported values
+    include `"age_at_index"`, `"prior_observation"`, and
+    `"future_observation"`.
 
-- name:
+  - name:
 
-  Character; output name used as a key in the plan's outputs list and as
-  the default symbol name on the server.
+    Character; output name used as a key in the plan's outputs list and
+    as the default symbol name on the server.
 
 ## Value
 
@@ -48,8 +49,7 @@ The modified `omop_plan` with the baseline output appended.
 
 ## See also
 
-[`ds.omop.plan.person_level`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.person_level.md),
-[`ds.omop.plan.cohort`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.cohort.md)
+`ds.omop.plan.person_level`, `ds.omop.plan.cohort`
 
 ## Examples
 

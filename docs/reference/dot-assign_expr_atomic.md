@@ -17,29 +17,29 @@ Assign one server-side symbol atomically across a federation
 
 ## Arguments
 
-- conns:
+  - conns:
 
-  Named DataSHIELD connections.
+    Named DataSHIELD connections.
 
-- newobj:
+  - newobj:
 
-  Destination symbol, which must not already exist.
+    Destination symbol, which must not already exist.
 
-- expr:
+  - expr:
 
-  Unevaluated assign expression.
+    Unevaluated assign expression.
 
-- context:
+  - context:
 
-  Human-readable operation label.
+    Human-readable operation label.
 
-- session_symbol:
+  - session\_symbol:
 
-  Optional local OMOP session name to update after commit.
+    Optional local OMOP session name to update after commit.
 
-- required_symbols:
+  - required\_symbols:
 
-  Source symbols that must exist on every server.
+    Source symbols that must exist on every server.
 
 ## Value
 

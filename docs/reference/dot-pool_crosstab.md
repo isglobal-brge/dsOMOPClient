@@ -17,14 +17,14 @@ subtraction attacks.
 
 ## Arguments
 
-- per_site:
+  - per\_site:
 
-  Named list of server cross-tab objects.
+    Named list of server cross-tab objects.
 
-- policy:
+  - policy:
 
-  Character; "strict" or "pooled_only_ok".
+    Character; "strict" or "pooled\_only\_ok".
 
 ## Value
 
-List with \$result and \$warnings.
+List with $result and $warnings.

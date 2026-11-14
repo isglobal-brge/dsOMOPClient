@@ -2,11 +2,9 @@
 
 Maps the recipe POPULATION / cohort layer to an OHDSI Circe
 cohort-expression JSON (the format ATLAS imports/exports). The entry
-event comes only from an explicit
-[`omop_index_event`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_index_event.md).
-This is an executable, fail-closed subset: unsupported semantics raise
-an error rather than being omitted and accidentally broadening the
-cohort.
+event comes only from an explicit `omop_index_event`. This is an
+executable, fail-closed subset: unsupported semantics raise an error
+rather than being omitted and accidentally broadening the cohort.
 
 ## Usage
 
@@ -16,18 +14,18 @@ recipe_export_circe(recipe, population_id = "base", file = NULL)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- population_id:
+  - population\_id:
 
-  Character; which population to export (default `"base"`).
+    Character; which population to export (default `"base"`).
 
-- file:
+  - file:
 
-  Character or `NULL`; path to write the Circe JSON to. If `NULL`, the
-  JSON string is returned.
+    Character or `NULL`; path to write the Circe JSON to. If `NULL`, the
+    JSON string is returned.
 
 ## Value
 
@@ -37,41 +35,43 @@ The Circe JSON string (if `file` is `NULL`) or the file path invisibly.
 
 **Supported constructs (recipe \<-\> Circe):**
 
-- `omop_index_event` on a condition/drug/measurement/observation/
-  procedure/device/visit table -\> PrimaryCriteria First/Last. Direct
-  dsOMOP plans also support All; Circe All is rejected because Circe
-  subsequently applies ERA collapse while dsOMOP preserves individual
-  episodes.
+  - `omop_index_event` on a condition/drug/measurement/observation/
+    procedure/device/visit table -\> PrimaryCriteria First/Last. Direct
+    dsOMOP plans also support All; Circe All is rejected because Circe
+    subsequently applies ERA collapse while dsOMOP preserves individual
+    episodes.
 
-- `omop_filter_has_concept` -\> InclusionRule occurrence criteria; it is
-  never implicitly promoted to an entry event.
+  - `omop_filter_has_concept` -\> InclusionRule occurrence criteria; it
+    is never implicitly promoted to an entry event.
 
-- `omop_filter_not_has_concept` -\> InclusionRule occurrence "exactly 0"
-  criteria.
+  - `omop_filter_not_has_concept` -\> InclusionRule occurrence "exactly
+    0" criteria.
 
-- `omop_filter_concept_count` -\> InclusionRule occurrence "at least N"
-  criteria.
+  - `omop_filter_concept_count` -\> InclusionRule occurrence "at least
+    N" criteria.
 
-- Presence-only `omop_filter_has_measurement` -\> Measurement criteria.
-  Numeric bounds are rejected because Circe cannot carry the
-  DataSHIELD-issued safe-bin contract.
+  - `omop_filter_has_measurement` -\> Measurement criteria, including
+    one-sided numeric bounds (inclusive minimum or exclusive maximum).
+    Two-sided half-open ranges and authenticated safe-bin contracts
+    cannot be represented equivalently and are rejected.
 
-- `omop_filter_sex` / `omop_filter_age` -\> DemographicCriteria Gender /
-  Age.
+  - `omop_filter_sex` / `omop_filter_age` -\> DemographicCriteria Gender
+    / Age.
 
-- Filter `window = list(start, end)` day offsets -\> criteria
-  `StartWindow` (index-relative days).
+  - Filter `window = list(start, end)` day offsets -\> criteria
+    `StartWindow` (index-relative days).
 
-- `omop_filter_prior_observation` / `omop_filter_followup` -\> the entry
-  event `ObservationWindow` (PriorDays / PostDays).
+  - `omop_filter_prior_observation` / `omop_filter_followup` -\> the
+    entry event `ObservationWindow` (PriorDays / PostDays).
 
-- An explicit OHDSI `DateOffset` end strategy (`StartDate` or `EndDate`
-  plus an integer offset) -\> `EndStrategy`. With no strategy, cohort
-  exit defaults to the covering observation-period end.
+  - An explicit OHDSI `DateOffset` end strategy (`StartDate` or
+    `EndDate` plus an integer offset) -\> `EndStrategy`. With no
+    strategy, cohort exit defaults to the covering observation-period
+    end.
 
-- An `omop_filter_group(operator = "OR")` -\> a nested Circe
-  CriteriaGroup of Type ANY; the population's top-level AND criteria map
-  to the cohort's implicit ALL.
+  - An `omop_filter_group(operator = "OR")` -\> a nested Circe
+    CriteriaGroup of Type ANY; the population's top-level AND criteria
+    map to the cohort's implicit ALL.
 
 **Intentionally unsupported** (rejected, never silently lost):
 set-operation populations, `cohort_definition_id` references,
@@ -84,8 +84,7 @@ and nested groups are rejected on import.
 
 ## See also
 
-[`recipe_import_circe`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_import_circe.md),
-[`omop_population`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_population.md)
+`recipe_import_circe`, `omop_population`
 
 ## Examples
 

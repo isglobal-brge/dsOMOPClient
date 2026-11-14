@@ -1,9 +1,9 @@
 # Derive an index-relative temporal spec from variables' time windows
 
-Variable `time_window`s are index-relative day offsets
-(`list(start=, end=)`). One output stream may carry one common window;
-differing scopes must be split by the caller/compiler and are rejected
-here rather than unioned (which would broaden at least one variable).
+Variable `time_window`s are index-relative day offsets (`list(start=,
+end=)`). One output stream may carry one common window; differing scopes
+must be split by the caller/compiler and are rejected here rather than
+unioned (which would broaden at least one variable).
 
 ## Usage
 
@@ -13,9 +13,9 @@ here rather than unioned (which would broaden at least one variable).
 
 ## Arguments
 
-- vars:
+  - vars:
 
-  List of `omop_variable` objects.
+    List of `omop_variable` objects.
 
 ## Value
 

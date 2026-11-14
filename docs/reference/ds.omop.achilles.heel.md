@@ -13,13 +13,13 @@ ds.omop.achilles.heel(symbol = "omop", conns = NULL)
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; session symbol (default "omop").
+    Character; session symbol (default "omop").
 
-- conns:
+  - conns:
 
-  Optional DataSHIELD connections.
+    Optional DataSHIELD connections.
 
 ## Value
 

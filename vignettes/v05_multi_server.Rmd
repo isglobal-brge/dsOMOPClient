@@ -18,9 +18,9 @@ dsOMOP v2 is designed for federated analysis across multiple DataSHIELD servers,
 each hosting an OMOP CDM database. Servers may differ in CDM version, available
 tables and columns, vocabulary version, database engine, disclosure policy and
 data volume. dsOMOP exposes those differences through runtime introspection and
-negotiates a common age/date/capacity policy. Baseline age groups are computed
-on the intersection of public age boundaries, so sites with different but
-coarsenable grids emit the same labels. Schema comparison does **not** by itself
+negotiates compatible aggregate policies and capacity limits. Assigned
+categories use their shared declared factor domains; aggregate age groups
+retain their public-grid rules. Schema comparison does **not** by itself
 make arbitrary heterogeneous plans portable: the analyst must still reconcile
 the requested tables, columns, concepts and output cardinality before execution.
 
@@ -154,24 +154,24 @@ status <- ds.omop.status(symbol = "omop")
 
 ## Federation-Wide Concept Factors
 
-When a plan executes in memory mode with `factor_concepts = TRUE` (the default),
-dsOMOP runs a cross-server coordination step after extraction: it collects the
-permitted `_concept_id` levels, computes their union in deterministic order and
-broadcasts that ordering so every server uses the same codes. A value present
-on only some sites becomes an unused level on the others.
+In 2.10.4, concept-valued columns reconcile by semantic type, including
+renamed reducers and staged outputs. With translation enabled, retained sites
+share category labels and order by concept ID. Ordinary age bands and calendar
+categories reconcile even when concept translation is disabled. Public unused
+levels remain available; failed or unsafe level discovery aborts the federation.
 
-This removes one common source of inconsistent model matrices. It is not a
-blanket compatibility guarantee for `ds.glm`, `ds.glmSLMA`, `ds.table` or other
-packages: each downstream server method must be separately allowlisted and
-tested with `omop.table`/`dsomop_protected` objects and with empty local levels.
+Variable and recipe `labels` maps can combine concept categories deliberately.
+Automatic labels prefer comparable newer vocabulary releases, then deterministic
+UTF-8 order. Presentation-only differences in vocabulary versions are allowed.
+Descendant/mapped expansion and vocabulary-dependent scores still require the
+strict semantic checks for the concepts actually used by the analysis; equal
+labels alone do not establish equal meaning.
 
-Shared factor codes also do not harmonize vocabulary semantics. For plans that
-use concept-name translation, descendant or mapped expansion, dictionaries, or
-OHDSI vocabulary-dependent scores, strict harmonization requires one identical
-non-missing reported vocabulary version and rechecks that identity before
-execution. A matching version is necessary but is not proof of identical local
-mappings: pin the intended standard concept IDs or compare expansions whenever
-the study's governance requires stronger semantic assurance.
+Use `ds.omop.table(data, column, conns)` for pooled concept counts with complete
+permitted levels and literal labels, including commas. Missing or suppressed
+site counts cause refusal. Other downstream methods must be separately
+allowlisted and checked with `omop.table`/`dsomop_protected` objects. An ordered
+age/calendar factor also has different model contrasts from a numeric trend.
 
 Extraction-size limits are site policy too. The defaults are 1,000 feature
 specifications (`dsomop.max_feature_specs`), 1,000 pivoted concepts
@@ -240,14 +240,18 @@ a schema, CDM metadata, server package or disclosure-policy change.
 
 ## Common Age, Date and Count Policy
 
-For a multi-server session, dsOMOPClient rejects incompatible versions or
-semantics rather than silently accepting the first server's configuration. It
-uses the largest minimum age/date range, accepts age bands only on boundaries
-common to every public server grid, and requires matching calendar semantics,
-day granularity, timezone and week start. Age is currently annual-resolution
-`reference_year - year_of_birth`, not birthday-aware completed age. This is the
-same definition used by OHDSI Circe cohort criteria; nullable OMOP birth
-month/day fields are not used to create site-dependent pseudo-precision.
+Assigned outputs and aggregate endpoints have different policies. Final
+assignment requires distinct-person support; private intermediates can be small,
+assigned age bands may use an increasing integer grid starting at zero, and
+native dates need no absolute-date permission. Shared date specifications and
+factor levels must agree across retained sites. `omop_age()` is annual
+reference-year minus birth-year; `omop_age_at()` explicitly requests completed
+age at an anchor, with missing partial births unless imputation is declared.
+
+Aggregate age/date queries retain their public grids, minimum ranges and
+calendar-policy compatibility checks. Those checks do not silently coarsen an
+explicit native assignment. See the extraction chapter for Date bounds,
+calendar factors and numeric representations.
 
 Count pooling additionally requires identical `dsomop.nfilter.band` widths.
 Already banded site counts cannot in general be re-binned exactly, and pooled

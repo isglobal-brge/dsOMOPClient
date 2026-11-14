@@ -1,11 +1,8 @@
 # List available query templates (DEPRECATED)
 
-Deprecated shim for
-[`ds.omop.analysis.list`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.list.md).
-The curated query templates are now part of the unified analysis
-catalog; this forwards to
-[`ds.omop.analysis.list()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.list.md)
-and returns the catalog data frame.
+Deprecated shim for `ds.omop.analysis.list`. The curated query templates
+are now part of the unified analysis catalog; this forwards to
+`ds.omop.analysis.list()` and returns the catalog data frame.
 
 ## Usage
 
@@ -20,24 +17,24 @@ ds.omop.query.list(
 
 ## Arguments
 
-- domain:
+  - domain:
 
-  Character; optional domain filter. `NULL` (the default) returns all
-  domains.
+    Character; optional domain filter. `NULL` (the default) returns all
+    domains.
 
-- provider:
+  - provider:
 
-  Character; ignored (retained for back-compatibility).
+    Character; ignored (retained for back-compatibility).
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
 ## Value
 
@@ -45,7 +42,7 @@ Data frame of analysis-catalog entry metadata (the pooled view).
 
 ## See also
 
-[`ds.omop.analysis.list`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.list.md)
+`ds.omop.analysis.list`
 
 ## Examples
 

@@ -27,87 +27,93 @@ ds.omop.value.histogram(
   nbins = 9L,
   xlab = NULL,
   main = NULL,
-  col = "#4C72B0"
+  col = "#4C72B0",
+  type = NULL
 )
 ```
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; the CDM table name (e.g., `"measurement"`).
+    Character; the CDM table name (e.g., `"measurement"`).
 
-- value_col:
+  - value\_col:
 
-  Character; the numeric column to histogram (e.g.,
-  `"value_as_number"`).
+    Character; the numeric column to histogram (e.g.,
+    `"value_as_number"`).
 
-- bins:
+  - bins:
 
-  Integer; the number of histogram bins (default: 20).
+    Integer; the number of histogram bins (default: 20).
 
-- concept_id:
+  - concept\_id:
 
-  Integer or NULL; optional concept ID to restrict rows to a single
-  concept of the table before binning (e.g. `value_as_number` for one
-  measurement concept). Default: NULL for all rows. The server applies
-  the same disclosure controls to the concept-filtered population.
-  Requires a dsOMOP server build with histogram concept scoping; older
-  servers reject the argument (use the concept-scoped quantiles
-  aggregate via
-  [`ds.omop.value.quantiles()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.value.quantiles.md)
-  as a fallback).
+    Integer or NULL; optional concept ID to restrict rows to a single
+    concept of the table before binning (e.g. `value_as_number` for one
+    measurement concept). Default: NULL for all rows. The server applies
+    the same disclosure controls to the concept-filtered population.
+    Requires a dsOMOP server build with histogram concept scoping; older
+    servers reject the argument (use the concept-scoped quantiles
+    aggregate via `ds.omop.value.quantiles()` as a fallback).
 
-- cohort_table:
+  - cohort\_table:
 
-  Character; name of a server-side cohort temp table for filtering, or
-  NULL (default: NULL).
+    Character; name of a server-side cohort temp table for filtering, or
+    NULL (default: NULL).
 
-- window:
+  - window:
 
-  List with `start`/`end` date strings for temporal filtering, or NULL
-  (default: NULL).
+    List with `start`/`end` date strings for temporal filtering, or NULL
+    (default: NULL).
 
-- cohort:
+  - cohort:
 
-  Cohort reference (a `dsomop_cohort_handle`, a `cohort_definition_id`,
-  or a server-side cohort table name), or NULL. Takes precedence over
-  `cohort_table`.
+    Cohort reference (a `dsomop_cohort_handle`, a
+    `cohort_definition_id`, or a server-side cohort table name), or
+    NULL. Takes precedence over `cohort_table`.
 
-- scope:
+  - scope:
 
-  Character; `"per_site"` (default) or `"pooled"`.
+    Character; `"per_site"` (default) or `"pooled"`.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or NULL to use the session default.
+    DSI connection object(s) or NULL to use the session default.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, return a dry-run result containing only the
-  generated call code (default: `TRUE`).
+    Logical; if `FALSE`, return a dry-run result containing only the
+    generated call code (default: `TRUE`).
 
-- plot:
+  - plot:
 
-  Logical; if `TRUE`, draw a federation-wide bar chart of the pooled,
-  shared-edge bins (forces `scope = "pooled"`) and return the result
-  invisibly. Default `FALSE`.
+    Logical; if `TRUE`, draw a federation-wide bar chart of the pooled,
+    shared-edge bins (forces `scope = "pooled"`) and return the result
+    invisibly. Default `FALSE`.
 
-- nbins:
+  - nbins:
 
-  Integer; number of display bins used when `plot = TRUE` (default: 9).
+    Integer; number of display bins used when `plot = TRUE` (default:
+    9).
 
-- xlab, main, col:
+  - xlab, main, col:
 
-  Axis label, title and bar colour used when `plot = TRUE`.
+    Axis label, title and bar colour used when `plot = TRUE`.
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. A pooled
+    plot requires `"combine"` or `"both"`. When omitted, legacy `scope`
+    behaviour is preserved.
 
 ## Value
 

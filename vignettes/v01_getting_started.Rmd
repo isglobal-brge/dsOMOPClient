@@ -25,6 +25,15 @@ of two packages:
 - **dsOMOPClient** (client-side): runs on your local machine. Provides an
   ergonomic API for schema exploration, cohort management, and data extraction.
 
+## Upgrading to 2.10.4
+
+Install matching dsOMOP and dsOMOPClient 2.10.4, publish the server package's
+methods and Options on Opal, and call `ds.omop.server.version(conns)` to confirm
+both installed and published versions. Existing private roots are reused;
+no privacy settings, key provisioning, epoch bump or TLS change is needed.
+Re-run recipes to obtain the new categorical outputs. The extraction chapter
+covers concept labels, native calendar dates and anchored ages.
+
 ## Prerequisites
 
 - A DataSHIELD server (Opal, Armadillo, or DSLite) with dsOMOP v2 installed

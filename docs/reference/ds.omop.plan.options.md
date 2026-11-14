@@ -17,29 +17,29 @@ ds.omop.plan.options(
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- translate_concepts:
+  - translate\_concepts:
 
-  Logical; if `TRUE`, concept ID columns are automatically translated to
-  human-readable concept names in output tables.
+    Logical; if `TRUE`, concept ID columns are automatically translated
+    to human-readable concept names in output tables.
 
-- block_sensitive:
+  - block\_sensitive:
 
-  Logical; if `TRUE`, sensitive columns (e.g. exact dates, free-text
-  notes) are excluded from outputs.
+    Logical; if `TRUE`, sensitive columns (e.g. exact dates, free-text
+    notes) are excluded from outputs.
 
-- factor_concepts:
+  - factor\_concepts:
 
-  Logical; if `TRUE` (default), after a memory-mode execution every
-  `_concept_id` column is converted into a factor whose levels are
-  harmonized across all connected servers, so pooled
-  `ds.glm`/`ds.glmSLMA`/`ds.table` see an identical level coding.
-  Columns whose distinct values exceed the server disclosure cap are
-  left raw. Set `FALSE` to keep the raw integer ids (or translated
-  character names) unchanged.
+    Logical; if `TRUE` (default), after a memory-mode execution every
+    `_concept_id` column is converted into a factor whose levels are
+    harmonized across all connected servers, so pooled
+    `ds.glm`/`ds.glmSLMA`/`ds.table` see an identical level coding.
+    Columns whose distinct values exceed the server disclosure cap are
+    left raw. Set `FALSE` to keep the raw integer ids (or translated
+    character names) unchanged.
 
 ## Value
 
@@ -47,8 +47,7 @@ The modified `omop_plan` with updated options.
 
 ## See also
 
-[`ds.omop.plan`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.md),
-[`ds.omop.plan.execute`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.execute.md)
+`ds.omop.plan`, `ds.omop.plan.execute`
 
 ## Examples
 

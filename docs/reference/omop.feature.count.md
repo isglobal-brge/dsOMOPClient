@@ -13,15 +13,15 @@ omop.feature.count(concept_set, name = NULL)
 
 ## Arguments
 
-- concept_set:
+  - concept\_set:
 
-  Numeric vector of concept IDs, or an `omop_concept_set` object
-  defining the concepts to count.
+    Numeric vector of concept IDs, or an `omop_concept_set` object
+    defining the concepts to count.
 
-- name:
+  - name:
 
-  Character; optional custom name for the feature column. If `NULL`,
-  auto-generated from the concept and table context.
+    Character; optional custom name for the feature column. If `NULL`,
+    auto-generated from the concept and table context.
 
 ## Value
 
@@ -29,9 +29,8 @@ An `omop_feature_spec` object with `type = "count"`.
 
 ## See also
 
-[`ds.omop.plan.features`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.features.md),
-[`omop.feature.boolean`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.boolean.md),
-[`omop.feature.mean_value`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.mean_value.md)
+`ds.omop.plan.features`, `omop.feature.boolean`,
+`omop.feature.mean_value`
 
 ## Examples
 

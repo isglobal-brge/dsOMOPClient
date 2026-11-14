@@ -1,6 +1,6 @@
-# Generate R code string for a single omop_filter
+# Generate R code string for a single omop\_filter
 
-Generate R code string for a single omop_filter
+Generate R code string for a single omop\_filter
 
 ## Usage
 
@@ -10,9 +10,9 @@ Generate R code string for a single omop_filter
 
 ## Arguments
 
-- f:
+  - f:
 
-  An `omop_filter` object.
+    An `omop_filter` object.
 
 ## Value
 

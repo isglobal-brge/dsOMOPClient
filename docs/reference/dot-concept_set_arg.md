@@ -1,4 +1,4 @@
-# Build a concept_set argument, expanding descendants when requested
+# Build a concept\_set argument, expanding descendants when requested
 
 Returns a bare integer vector by default, or a concept-set spec of the
 form `list(concepts = ids, include_descendants = TRUE)` when any
@@ -13,13 +13,13 @@ spec via `.vocabExpandConceptSet` at execution time.
 
 ## Arguments
 
-- vs:
+  - vs:
 
-  List of `omop_variable` objects contributing the concepts.
+    List of `omop_variable` objects contributing the concepts.
 
-- ids:
+  - ids:
 
-  Integer vector of concept IDs.
+    Integer vector of concept IDs.
 
 ## Value
 

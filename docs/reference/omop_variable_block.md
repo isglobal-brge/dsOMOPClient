@@ -1,13 +1,10 @@
 # Create a variable block
 
 A variable block groups variables that share a source table, time
-window, and row-level filters. When passed to
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
-via its `blocks` argument, the block's `concept_ids` are expanded into
-individual
-[`omop_variable`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md)
-objects that inherit the block's defaults. This is the compact way to
-add many concepts from one table.
+window, and row-level filters. When passed to `omop_recipe` via its
+`blocks` argument, the block's `concept_ids` are expanded into
+individual `omop_variable` objects that inherit the block's defaults.
+This is the compact way to add many concepts from one table.
 
 ## Usage
 
@@ -25,74 +22,98 @@ omop_variable_block(
   population_id = "base",
   expand = FALSE,
   reference_date = NULL,
-  unit = NULL
+  unit = NULL,
+  where = NULL,
+  visit = NULL,
+  concept_col = NULL,
+  visit_filter = NULL
 )
 ```
 
 ## Arguments
 
-- id:
+  - id:
 
-  Character or `NULL`; block ID (auto-generated from table and concept
-  count if `NULL`).
+    Character or `NULL`; block ID (auto-generated from table and concept
+    count if `NULL`).
 
-- table:
+  - table:
 
-  Character; shared source OMOP CDM table (e.g.
-  `"condition_occurrence"`).
+    Character; shared source OMOP CDM table (e.g.
+    `"condition_occurrence"`).
 
-- concept_ids:
+  - concept\_ids:
 
-  Integer vector; concept IDs for all variables in the block.
+    Integer vector; concept IDs for all variables in the block.
 
-- concept_names:
+  - concept\_names:
 
-  Character vector or `NULL`; human-readable names matching
-  `concept_ids` positionally.
+    Character vector or `NULL`; human-readable names matching
+    `concept_ids` positionally.
 
-- time_window:
+  - time\_window:
 
-  Named list with `start`/`end` offsets, or `NULL` for no window.
+    Named list with `start`/`end` offsets, or `NULL` for no window.
 
-- format:
+  - format:
 
-  Character; default output format for variables in this block (e.g.
-  `"binary"`, `"count"`).
+    Character; default output format for variables in this block (e.g.
+    `"binary"`, `"count"`).
 
-- value_source:
+  - value\_source:
 
-  Character or `NULL`; default value source column (e.g.
-  `"value_as_number"`).
+    Character or `NULL`; default value source column (e.g.
+    `"value_as_number"`).
 
-- suffix_mode:
+  - suffix\_mode:
 
-  Character; naming mode for multi-column expansion (`"index"`,
-  `"range"`, or `"label"`).
+    Character; naming mode for multi-column expansion (`"index"`,
+    `"range"`, or `"label"`).
 
-- filters:
+  - filters:
 
-  List of
-  [`omop_filter`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.md)
-  objects; row-level filters applied to all variables in the block.
+    List of `omop_filter` objects; row-level filters applied to all
+    variables in the block.
 
-- population_id:
+  - population\_id:
 
-  Character; which population this block belongs to (default `"base"`).
+    Character; which population this block belongs to (default
+    `"base"`).
 
-- expand:
+  - expand:
 
-  Logical; if `TRUE`, expand the block's concepts to include vocabulary
-  descendants server-side (default `FALSE`).
+    Logical; if `TRUE`, expand the block's concepts to include
+    vocabulary descendants server-side (default `FALSE`).
 
-- reference_date:
+  - reference\_date:
 
-  Character/Date or `NULL`; fixed reference date required for a
-  `"time_since"` block.
+    Character/Date or `NULL`; fixed reference date required for a
+    `"time_since"` block.
 
-- unit:
+  - unit:
 
-  Character or `NULL`; `"day"` (default for `time_since`) or complete
-  calendar `"month"` units.
+    Character or `NULL`; `"day"` (default for `time_since`) or complete
+    calendar `"month"` units.
+
+  - where:
+
+    (2.10.3) A row predicate from `omop_where` applied to every variable
+    of the block.
+
+  - visit:
+
+    (2.10.3) `NULL`, `list(type = <visit_concept_ids>)` or `"index"`,
+    for every variable of the block.
+
+  - concept\_col:
+
+    (2.10.3) Concept column the block's concepts scope.
+
+  - visit\_filter:
+
+    (2.10.3) Legacy alias of `visit`, spelled as in `omop_variable`:
+    `list(concept_ids = <visit_concept_ids>)` is `visit = list(type =
+    <visit_concept_ids>)`. Giving both is an error.
 
 ## Value
 
@@ -100,8 +121,7 @@ An `omop_variable_block` object.
 
 ## See also
 
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md),
-[`omop_variable`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md)
+`omop_recipe`, `omop_variable`
 
 ## Examples
 

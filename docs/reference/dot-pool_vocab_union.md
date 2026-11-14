@@ -17,9 +17,9 @@ Returns `NULL` when there is nothing to pool.
 
 ## Arguments
 
-- per_site:
+  - per\_site:
 
-  Named list of per-server data frames.
+    Named list of per-server data frames.
 
 ## Value
 

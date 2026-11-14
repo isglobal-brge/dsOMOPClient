@@ -12,9 +12,9 @@ it in backticks so `list(<name> = ...)` stays valid (filter IDs such as
 
 ## Arguments
 
-- nm:
+  - nm:
 
-  Character; the element name.
+    Character; the element name.
 
 ## Value
 

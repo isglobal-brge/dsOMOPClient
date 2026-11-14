@@ -5,10 +5,8 @@ There are two executable levels: `"population"` (person-level inclusion
 criteria) and `"row"` (event-level restrictions). Post-extraction
 transformations belong in the output specification rather than in a
 filter; the retired `"output"` filter level is rejected. Filters are
-passed to
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
-via its `filters` argument and can be nested into groups with
-[`omop_filter_group`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter_group.md).
+passed to `omop_recipe` via its `filters` argument and can be nested
+into groups with `omop_filter_group`.
 
 ## Usage
 
@@ -54,6 +52,8 @@ omop_filter_value_concept(
   column = "value_as_concept_id",
   concept_name = NULL
 )
+
+omop_filter_concept_set(concept_ids, concept_col = NULL)
 
 omop_filter_not_has_concept(
   concept_id,
@@ -101,141 +101,153 @@ omop_filter_missing_measurement(
 
 ## Arguments
 
-- type:
+  - type:
 
-  Character; executable filter type. Population filters are `"sex"`,
-  `"age_range"`, `"age_group"`, `"cohort"`, `"has_concept"`,
-  `"not_has_concept"`, `"concept_count"`, `"prior_observation"`,
-  `"followup"`, `"visit_count"`, `"has_measurement"`, and
-  `"missing_measurement"`. Row filters are `"date_range"`,
-  `"concept_set"`, `"value_bin"`, `"value_concept"`, and the fail-closed
-  typed `"custom"` predicate.
+    Character; executable filter type. Population filters are `"sex"`,
+    `"age_range"`, `"age_group"`, `"cohort"`, `"has_concept"`,
+    `"not_has_concept"`, `"concept_count"`, `"prior_observation"`,
+    `"followup"`, `"visit_count"`, `"has_measurement"`, and
+    `"missing_measurement"`. Row filters are `"date_range"`,
+    `"concept_set"`, `"value_bin"`, `"value_concept"`, and the
+    fail-closed typed `"custom"` predicate.
 
-- level:
+  - level:
 
-  Character; `"population"` or `"row"`. When omitted, the unique
-  executable level for `type` is selected. Output-level filters are not
-  part of the executable Recipe contract.
+    Character; `"population"` or `"row"`. When omitted, the unique
+    executable level for `type` is selected. Output-level filters are
+    not part of the executable Recipe contract.
 
-- params:
+  - params:
 
-  Named list; filter-specific parameters (varies by type).
+    Named list; filter-specific parameters (varies by type).
 
-- label:
+  - label:
 
-  Character or `NULL`; human-readable description (auto-generated from
-  type and params if `NULL`).
+    Character or `NULL`; human-readable description (auto-generated from
+    type and params if `NULL`).
 
-- value:
+  - value:
 
-  Character; sex value. Accepts "F", "f", "female", "Female", "FEMALE",
-  "M", "m", "male", "Male", "MALE" — normalized internally to "F" or
-  "M".
+    Character; sex value. Accepts "F", "f", "female", "Female",
+    "FEMALE", "M", "m", "male", "Male", "MALE" — normalized internally
+    to "F" or "M".
 
-- min:
+  - min:
 
-  Numeric; minimum age (inclusive)
+    Numeric; minimum age (inclusive)
 
-- max:
+  - max:
 
-  Numeric; maximum age (inclusive)
+    Numeric; maximum age (inclusive)
 
-- year:
+  - year:
 
-  Integer or NULL; explicit calendar-year anchor (shorthand for July 1
-  of that year). A cohort index supplies the anchor when omitted.
+    Integer or NULL; explicit calendar-year anchor (shorthand for July 1
+    of that year). A cohort index supplies the anchor when omitted.
 
-- reference_date:
+  - reference\_date:
 
-  Date/string or `NULL`; fixed anchor for `window` when the population
-  has no cohort index. An index is used when this is omitted.
+    Date/string or `NULL`; fixed anchor for `window` when the population
+    has no cohort index. An index is used when this is omitted.
 
-- groups:
+  - groups:
 
-  Character vector; age group labels (e.g. c("18-24", "25-34"))
+    Character vector; age group labels (e.g. c("18-24", "25-34"))
 
-- cohort_definition_id:
+  - cohort\_definition\_id:
 
-  Integer; existing OMOP cohort_definition_id to require for membership.
+    Integer; existing OMOP cohort\_definition\_id to require for
+    membership.
 
-- concept_id:
+  - concept\_id:
 
-  Integer scalar or vector; measurement concept ID(s) to check absence
-  of (a vector requires all of them to be absent)
+    Integer scalar or vector; measurement concept ID(s) to check absence
+    of (a vector requires all of them to be absent)
 
-- table:
+  - table:
 
-  Character; which OMOP table to check
+    Character; which OMOP table to check
 
-- concept_name:
+  - concept\_name:
 
-  Character or NULL; human-readable name
+    Character or NULL; human-readable name
 
-- window:
+  - window:
 
-  Named list with start/end index-relative day offsets, or NULL;
-  restricts absence to that window (e.g. "no HbA1c in the prior year")
+    Named list with start/end index-relative day offsets, or NULL;
+    restricts absence to that window (e.g. "no HbA1c in the prior year")
 
-- min_count:
+  - min\_count:
 
-  Integer; minimum number of visits
+    Integer; minimum number of visits
 
-- start:
+  - start:
 
-  Character; inclusive start date in ISO `YYYY-MM-DD` form.
+    Character or `NULL`; inclusive start date in ISO `YYYY-MM-DD` form.
+    A one-sided range (only `start` or only `end`) compiles to a single
+    `>=` / `<=` comparison.
 
-- end:
+  - end:
 
-  Character; inclusive end date in ISO `YYYY-MM-DD` form and not before
-  `start`. The server applies the authoritative minimum disclosure-safe
-  width configured by the data controller.
+    Character or `NULL`; inclusive end date in ISO `YYYY-MM-DD` form and
+    not before `start`. No minimum calendar width is imposed on private
+    assignment filters; publication applies final support.
 
-- date_column:
+  - date\_column:
 
-  Character or `NULL`; explicit OMOP date column. When `NULL`,
-  [`recipe_to_plan`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_plan.md)
-  infers the standard date column from the output's OMOP table.
+    Character or `NULL`; explicit OMOP date column. When `NULL`,
+    `recipe_to_plan` infers the standard date column from the output's
+    OMOP table.
 
-- column:
+  - column:
 
-  Character; the value-concept column (default `"value_as_concept_id"`)
+    Character; the value-concept column (default
+    `"value_as_concept_id"`)
 
-- threshold:
+  - threshold:
 
-  Numeric; threshold value
+    Numeric; threshold value
 
-- direction:
+  - direction:
 
-  Character; "above" or "below"
+    Character; "above" or "below"
 
-- safe_bins:
+  - safe\_bins:
 
-  Server-issued result for the same measurement concept from
-  [`ds.omop.safe.cutpoints()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.safe.cutpoints.md).
-  Required whenever a numeric range is supplied; client-authored
-  thresholds are not executable.
+    Server-issued result for the same measurement concept from
+    `ds.omop.safe.cutpoints()`. Optional for numeric criteria. If
+    supplied, both bounds must be issued edges and the scope must match.
 
-- concept_ids:
+  - concept\_ids:
 
-  Integer scalar or vector; the value concept(s) to keep (a record
-  matches if its value concept is any of them)
+    Integer scalar or vector; the concept(s) to keep (a record matches
+    if its concept is any of them: the value concept for
+    `omop_filter_value_concept()`; the table's domain concept, or
+    `concept_col`, for `omop_filter_concept_set()`)
 
-- min_days:
+  - concept\_col:
 
-  Integer; minimum days of followup
+    Character or `NULL`; the concept column the set is matched on.
+    `NULL` (default) uses the output table's domain concept column from
+    the role registry (`condition_concept_id` for
+    `condition_occurrence`, `drug_concept_id` for `drug_exposure`, ...).
 
-- visit_concept_id:
+  - min\_days:
 
-  Integer scalar or vector, or NULL; visit type filter (a vector counts
-  visits of any of the given types)
+    Integer; minimum days of followup
 
-- min_value:
+  - visit\_concept\_id:
 
-  Numeric or NULL; minimum value
+    Integer scalar or vector, or NULL; visit type filter (a vector
+    counts visits of any of the given types)
 
-- max_value:
+  - min\_value:
 
-  Numeric or NULL; maximum value
+    Numeric or NULL; inclusive minimum value
+
+  - max\_value:
+
+    Numeric or NULL; exclusive maximum value
 
 ## Value
 
@@ -248,10 +260,20 @@ Convenience constructors are provided for common filter types:
 `omop_filter_has_concept`, `omop_filter_date_range`,
 `omop_filter_value`.
 
+## has\_measurement and missing\_measurement are not complements
+
+`omop_filter_has_measurement()` keeps persons with at least one
+measurement row of the concept (in the value range when one is given);
+`omop_filter_missing_measurement()` keeps persons with *no row with a
+non-null value*, so a person whose only rows have a NULL value satisfies
+both. Both keep this 2.10.1 meaning. In language 2 the two absences are
+explicit: `omop_has_not(event)` (no row) and `omop_has_not(event,
+nonmissing = "value_as_number")` (no non-null value); `recipe_lint()`
+reports the legacy pair (INFO).
+
 ## See also
 
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md),
-[`omop_filter_group`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter_group.md)
+`omop_recipe`, `omop_filter_group`
 
 ## Examples
 

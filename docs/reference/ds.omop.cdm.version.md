@@ -15,20 +15,20 @@ ds.omop.cdm.version(symbol = "omop", conns = NULL, execute = TRUE)
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, returns a dry-run `dsomop_result` containing only
-  the reproducible R code without contacting the servers.
+    Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
+    only the reproducible R code without contacting the servers.
 
 ## Value
 

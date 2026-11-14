@@ -12,9 +12,9 @@ truncating to 50 characters.
 
 ## Arguments
 
-- x:
+  - x:
 
-  Character; the name to sanitize.
+    Character; the name to sanitize.
 
 ## Value
 

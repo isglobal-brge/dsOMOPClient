@@ -159,6 +159,23 @@ recipe_merge <- function(a, b, prefix = NULL) {
   cs <- unique(c(sub("^concept_set:", "", grep("^concept_set:", nodes, value = TRUE)),
                  names(r$concept_sets %||% list())))
   maps$concept_set <- stats::setNames(vapply(cs, f, ""), cs)
+  rewrite_names <- function(x) {
+    if (!length(x)) return(x)
+    replacements <- c(maps$variable, maps$event, maps$interval)
+    replacements <- replacements[!duplicated(names(replacements))]
+    stems <- names(replacements)[order(nchar(names(replacements)), decreasing = TRUE)]
+    keys <- names(x)
+    for (i in seq_along(keys)) for (stem in stems) {
+      if (identical(keys[[i]], stem) || startsWith(keys[[i]], paste0(stem, "_"))) {
+        keys[[i]] <- paste0(replacements[[stem]], substring(keys[[i]], nchar(stem) + 1L))
+        break
+      }
+    }
+    names(x) <- keys
+    x
+  }
+  r$options$column_names <- rewrite_names(r$options$column_names)
+  for (vn in names(r$variables)) r$variables[[vn]]$column_names <- rewrite_names(r$variables[[vn]]$column_names)
   rn <- .merge_renamer(maps, prefix = prefix)
 
   # b's recipe-level filters keep constraining b's base: they move onto it.
@@ -175,6 +192,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
   }
 
   out <- r
+  if (!is.null(r$options$date_spec)) out$options$date_spec <- rn$any(r$options$date_spec)
   out$populations <- list()
   for (id in names(r$populations)) {
     if (share_base && identical(id, "base")) next
@@ -334,6 +352,11 @@ recipe_merge <- function(a, b, prefix = NULL) {
       for (k in c("window", "criterion", "where")) x <- upd(x, k, self$any)
       return(upd(x, "criteria", function(cr) lapply(cr, self$any)))
     }
+    if (inherits(x, "omop_date_source")) {
+      x <- upd(x, "event", self$src)
+      return(upd(x, "search", self$any))
+    }
+    if (inherits(x, "omop_date_spec")) return(upd(x, "anchor", self$any))
     if (inherits(x, "omop_anchor")) {
       x <- upd(x, "event", self$src)
       return(upd(x, "search", self$any))
@@ -375,7 +398,8 @@ recipe_merge <- function(a, b, prefix = NULL) {
     }
     if (inherits(x, "omop_variable") && .v2_is_v2_variable(x)) {
       x <- upd(x, "event", self$src)
-      for (k in c("reducer", "where")) x <- upd(x, k, self$any)
+      for (k in c("reducer", "where", "date_spec")) x <- upd(x, k, self$any)
+      for (k in c("reference", "from", "to")) if (!is.null(x$derived[[k]])) x$derived[[k]] <- self$any(x$derived[[k]])
       if (!is.null(x$derived$window)) x$derived$window <- self$any(x$derived$window)
       return(x)
     }
@@ -526,6 +550,16 @@ recipe_merge <- function(a, b, prefix = NULL) {
     conflicts <- c(conflicts, "recipe-level filters (they would constrain the second recipe's base population)")
   }
   if (!identical(a$scope, b$scope)) conflicts <- c(conflicts, "the recipe scope (cohort/tables)")
+  for (key in c("labels", "column_names")) {
+    ma <- a$options[[key]]; mb <- b$options[[key]]
+    common <- intersect(names(ma), names(mb))
+    if (length(common) && !identical(unname(ma[common]), unname(mb[common]))) {
+      conflicts <- c(conflicts, paste0("options.", key))
+    }
+    combined <- .conceptMapOverlay(ma, mb)
+    if (length(combined)) a$options[[key]] <- b$options[[key]] <- combined
+  }
+  out$options <- a$options
   if (!identical(a$options %||% list(), b$options %||% list())) conflicts <- c(conflicts, "the plan options")
   if (!identical(a$coverage, b$coverage)) conflicts <- c(conflicts, "the recipe coverage default")
   if (length(conflicts)) {

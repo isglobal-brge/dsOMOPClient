@@ -1,11 +1,8 @@
 # Save a recipe to JSON or YAML
 
-Convenience wrapper around
-[`recipe_export_json`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_export_json.md)
-and
-[`recipe_export_yaml`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_export_yaml.md).
-The format is inferred from the file extension unless supplied
-explicitly.
+Convenience wrapper around `recipe_export_json` and
+`recipe_export_yaml`. The format is inferred from the file extension
+unless supplied explicitly.
 
 ## Usage
 
@@ -15,17 +12,17 @@ recipe_save(recipe, file, format = NULL)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- file:
+  - file:
 
-  Character; destination path ending in `.json`, `.yml`, or `.yaml`.
+    Character; destination path ending in `.json`, `.yml`, or `.yaml`.
 
-- format:
+  - format:
 
-  Character or `NULL`; optional explicit format: `"json"` or `"yaml"`.
+    Character or `NULL`; optional explicit format: `"json"` or `"yaml"`.
 
 ## Value
 
@@ -33,9 +30,7 @@ The file path invisibly.
 
 ## See also
 
-[`recipe_load`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_load.md),
-[`recipe_export_json`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_export_json.md),
-[`recipe_export_yaml`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_export_yaml.md)
+`recipe_load`, `recipe_export_json`, `recipe_export_yaml`
 
 ## Examples
 

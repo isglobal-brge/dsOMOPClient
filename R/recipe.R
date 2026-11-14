@@ -164,7 +164,11 @@
 #' }
 #' @seealso \code{\link{omop_recipe}}, \code{\link{omop_variable_block}},
 #'   \code{\link{omop_reduce}}
+#' @param labels Named character map from concept IDs to category labels.
+#' @param column_names Named character map from stable untranslated generated
+#'   column keys to complete, valid R names. Variable maps override recipe maps.
 #' @export
+#' @param date_spec Native date presentation; variable fields override recipe defaults.
 omop_variable <- function(name = NULL,
                           table = NULL,
                           column = NULL,
@@ -200,7 +204,11 @@ omop_variable <- function(name = NULL,
                           reducer = NULL,
                           where = NULL,
                           visit = NULL,
-                          broadcast = FALSE) {
+                          broadcast = FALSE,
+                          labels = NULL, column_names = NULL, date_spec = NULL) {
+  date_spec <- .dateSpecArg(date_spec)
+  labels <- .conceptMap(labels, "omop_variable(): labels")
+  column_names <- .conceptMap(column_names, "omop_variable(): column_names", TRUE)
   if (!is.null(event) || !is.null(reducer)) {
     legacy_given <- c(
       table = !is.null(table), column = !is.null(column),
@@ -230,7 +238,9 @@ omop_variable <- function(name = NULL,
                         where = .v2_predicate_arg(where, "omop_variable(): where"),
                         visit = .v2_visit(visit, "omop_variable(): visit"),
                         broadcast = .v2_flag(broadcast, "omop_variable(): broadcast"),
-                        name = .v2_name(name, "omop_variable(): name")))
+                        name = .v2_name(name, "omop_variable(): name"),
+                        labels = if (length(labels)) labels,
+                        column_names = if (length(column_names)) column_names, date_spec = date_spec))
   }
   if (is.null(table)) {
     stop("omop_variable(): table is required (or give event = and reducer =).",
@@ -316,6 +326,9 @@ omop_variable <- function(name = NULL,
   if (!is.null(where)) obj$where <- .v2_predicate_arg(where, "omop_variable(): where")
   if (!is.null(visit)) obj$visit <- visit
   if (isTRUE(broadcast)) obj$broadcast <- TRUE
+  if (length(labels)) obj$labels <- labels
+  if (length(column_names)) obj$column_names <- column_names
+  if (!is.null(date_spec)) obj$date_spec <- date_spec
   class(obj) <- c("omop_variable", "list")
   obj
 }
@@ -328,6 +341,8 @@ omop_variable <- function(name = NULL,
 #' @export
 #' @method print omop_variable
 print.omop_variable <- function(x, ...) {
+  if (length(x$labels)) cat("  Concept recodes:", paste(names(x$labels), x$labels, sep = " -> ", collapse = "; "), "\n")
+  if (length(x$column_names)) cat("  Generated names:", paste(names(x$column_names), x$column_names, sep = " -> ", collapse = "; "), "\n")
   if (.v2_is_v2_variable(x)) {
     cat("omop_variable:", x$name %||% "<unnamed>", "\n")
     switch(x$kind,
@@ -2639,7 +2654,10 @@ print.omop_output <- function(x, ...) {
 #'   \code{\link{omop_variable_block}}, \code{\link{recipe_preview}},
 #'   \code{\link{recipe_execute}}, \code{\link{recipe_save}},
 #'   \code{\link{recipe_to_plan}}
+#' @param labels Recipe-wide concept-ID to category-label map; variable maps win.
+#' @param column_names Recipe-wide stable generated-column key to final-name map.
 #' @export
+#' @param date_spec Recipe-wide defaults created with omop_date_spec().
 omop_recipe <- function(variables = NULL,
                         filters = NULL,
                         outputs = NULL,
@@ -2654,8 +2672,15 @@ omop_recipe <- function(variables = NULL,
                         events = NULL,
                         intervals = NULL,
                         coverage = NULL,
-                        publish = NULL) {
+                        publish = NULL,
+                        labels = NULL, column_names = NULL, date_spec = NULL) {
   recipe <- .omop_recipe_empty()
+  if (!is.null(date_spec)) recipe$options$date_spec <- .dateSpecArg(date_spec)
+  variables <- .dateExpandBundles(variables)
+  labels <- .conceptMap(labels, "omop_recipe(): labels")
+  column_names <- .conceptMap(column_names, "omop_recipe(): column_names", TRUE)
+  if (length(labels)) recipe$options$labels <- labels
+  if (length(column_names)) recipe$options$column_names <- column_names
 
   # Language-2 registries (stored only when used, so legacy recipes keep their
   # exact plain form).
@@ -2723,6 +2748,12 @@ omop_recipe <- function(variables = NULL,
       factor_concepts    = options$factor_concepts)
   }
 
+  for (v in recipe$variables) {
+    kind <- v$derived$kind %||% "calendar_date"
+    if (!is.null(v$date_spec) || kind %in% .DATE_KINDS && !is.null(v$derived)) {
+      .dateEffective(v$date_spec, recipe$options$date_spec, kind, v$derived$part)
+    }
+  }
   recipe
 }
 
@@ -3125,6 +3156,7 @@ recipe_clear <- function(recipe) {
 #' @export
 #' @method print omop_recipe
 print.omop_recipe <- function(x, ...) {
+  cat(paste(.conceptExplain(x), collapse = "\n"), "\n")
   cat("=== omop_recipe ===\n")
 
   cat("Populations (", length(x$populations), "):\n")
@@ -3793,6 +3825,7 @@ recipe_to_plan <- function(recipe, version = 2L) {
   if (!identical(version, 2L)) {
     stop("recipe_to_plan(): version must be 1 or 2.", call. = FALSE)
   }
+  .conceptValidatePlan(recipe)
   .recipe_to_plan_v2(recipe)
 }
 
@@ -5902,6 +5935,8 @@ recipe_to_code <- function(recipe) {
       block_sensitive    = o$block_sensitive    %||% TRUE,
       factor_concepts    = o$factor_concepts    %||% TRUE)
   }
+
+  if (!is.null(o$date_spec)) slot_args$date_spec <- .codegen_raw(.v2_codegen(o$date_spec))
 
   # Language-2 recipe slots.
   if (length(recipe$concept_sets %||% list())) {

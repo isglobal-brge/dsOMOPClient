@@ -194,28 +194,33 @@ test_that("non-character / empty out is rejected", {
 test_that("execute with out=NULL sends the auto-derived mapping and returns it", {
   .ergo_with_session()
   p <- ds.omop.plan()
-  p <- ds.omop.plan.baseline(p, name = "baseline")
-  p <- ds.omop.plan.options(p, factor_concepts = FALSE)  # skip harmonization
+  p <- ds.omop.plan.baseline(p, name = "baseline", derived = character())
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE, translate_concepts = FALSE)  # skip harmonization
 
   res <- .ergo_capture(function() ds.omop.plan.execute(p))
   expect_equal(res$ret, c(baseline = "D_baseline"))
   # the executeDS assign carries the resolved out mapping as its 3rd DS arg.
-  # Even one named output uses scalar JSON transport, avoiding a c() call
-  # in DataSHIELD's restricted expression grammar.
+  # The object mapping must survive deparse/parse without becoming a nested
+  # c() call, which a real DataSHIELD method profile refuses.
   exec <- res$calls[[1]]$expr
   expect_equal(as.character(exec[[1]]), "omopPlanExecuteDS")
-  expect_null(names(exec[[4]]))
-  expect_equal(.ergo_b64_decode(exec[[4]]), list(baseline = "D_baseline"))
+  wire <- parse(text = paste(deparse(exec), collapse = "\n"))[[1L]]
+  expect_type(wire[[4L]], "character")
+  expect_null(names(wire[[4L]]))
+  expect_match(wire[[4L]], "^B64:")
+  expect_identical(.ergo_b64_decode(wire[[4L]]), list(baseline = "D_baseline"))
 })
 
 test_that("execute B64-encodes a multi-output mapping over the transport", {
   .ergo_with_session()
   p <- .ergo_plan_two()
-  p <- ds.omop.plan.options(p, factor_concepts = FALSE)
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE, translate_concepts = FALSE)
 
   res <- .ergo_capture(function() ds.omop.plan.execute(p))
   expect_equal(res$ret, c(demo = "D_demo", conds = "D_conds"))
   exec <- res$calls[[1]]$expr
+  expect_identical(exec[[4L]], dsOMOPClient:::.ds_encode(
+    c(demo = "D_demo", conds = "D_conds")))
   expect_equal(.ergo_b64_decode(exec[[4]]),
                list(demo = "D_demo", conds = "D_conds"))
 })
@@ -223,8 +228,8 @@ test_that("execute B64-encodes a multi-output mapping over the transport", {
 test_that("execute with bare out='D' binds the sole output", {
   .ergo_with_session()
   p <- ds.omop.plan()
-  p <- ds.omop.plan.baseline(p, name = "baseline")
-  p <- ds.omop.plan.options(p, factor_concepts = FALSE)
+  p <- ds.omop.plan.baseline(p, name = "baseline", derived = character())
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE, translate_concepts = FALSE)
 
   res <- .ergo_capture(function() ds.omop.plan.execute(p, out = "D"))
   expect_equal(res$ret, c(baseline = "D"))
@@ -233,7 +238,7 @@ test_that("execute with bare out='D' binds the sole output", {
 test_that("execute with bare out='D' on a multi-output plan errors before any assign", {
   .ergo_with_session()
   p <- .ergo_plan_two()
-  p <- ds.omop.plan.options(p, factor_concepts = FALSE)
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE, translate_concepts = FALSE)
 
   res <- NULL
   expect_error(
@@ -359,7 +364,7 @@ test_that("execute uses fresh server names when requested destinations are occup
   )
   p <- ds.omop.plan.events(ds.omop.plan(), "events", "condition_occurrence",
                            concept_set = 201820L)
-  p <- ds.omop.plan.options(p, factor_concepts = FALSE)
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE, translate_concepts = FALSE)
   result <- ds.omop.plan.execute(p, out = c(events = "D"))
   expect_identical(result$a$events$data$symbol, "D.1")
   expect_setequal(state$symbols$a, c("D", "other_session", "D.1"))
@@ -539,8 +544,8 @@ test_that(".resolve_target_symbol errors clearly when nothing is recorded", {
 test_that("execute records last_output so a later manipulate verb defaults to it", {
   .ergo_with_session()
   p <- ds.omop.plan()
-  p <- ds.omop.plan.baseline(p, name = "baseline")
-  p <- ds.omop.plan.options(p, factor_concepts = FALSE)
+  p <- ds.omop.plan.baseline(p, name = "baseline", derived = character())
+  p <- ds.omop.plan.options(p, factor_concepts = FALSE, translate_concepts = FALSE)
 
   res <- .ergo_capture(function() {
     ds.omop.plan.execute(p)                       # records D_baseline

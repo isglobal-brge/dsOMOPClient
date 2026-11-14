@@ -22,37 +22,41 @@ omop_index_event(
 
 ## Arguments
 
-- concept_id:
+  - concept\_id:
 
-  Integer concept ID(s), or `NULL` for any event in the selected table.
+    Integer concept ID(s), or `NULL` for any event in the selected
+    table.
 
-- table:
+  - table:
 
-  Character OMOP event table. The currently executable portable subset
-  is condition_occurrence, drug_exposure, measurement, observation,
-  procedure_occurrence, device_exposure, and visit_occurrence.
+    Character OMOP event table: any table with an event role record in
+    the role registry (condition\_occurrence, drug\_exposure,
+    procedure\_occurrence, device\_exposure, measurement, observation,
+    visit\_occurrence, visit\_detail, observation\_period, death,
+    specimen, note, payer\_plan\_period, the era tables and, in CDM 5.4,
+    episode). The server checks it against its own CDM version.
 
-- concept_name:
+  - concept\_name:
 
-  Optional human-readable concept-set name.
+    Optional human-readable concept-set name.
 
-- primary_limit:
+  - primary\_limit:
 
-  Character; `"first"`, `"last"`, or `"all"` candidate events per
-  person.
+    Character; `"first"`, `"last"`, or `"all"` candidate events per
+    person.
 
-- include_descendants, include_mapped:
+  - include\_descendants, include\_mapped:
 
-  Logical concept-set expansion flags.
+    Logical concept-set expansion flags.
 
-- end_strategy:
+  - end\_strategy:
 
-  `NULL` for the OHDSI/Circe default (exit at the end of the unique
-  observation period covering the index), or the transport-safe OHDSI
-  DateOffset shape
-  `list(DateOffset = list(DateField = "StartDate"|"EndDate", Offset = <integer>))`.
-  Use `EndDate` with offset zero to select the physical event end
-  (capped at observation-period end, as in Circe).
+    `NULL` for the OHDSI/Circe default (exit at the end of the unique
+    observation period covering the index), or the transport-safe OHDSI
+    DateOffset shape `list(DateOffset = list(DateField =
+    "StartDate"|"EndDate", Offset = <integer>))`. Use `EndDate` with
+    offset zero to select the physical event end (capped at
+    observation-period end, as in Circe).
 
 ## Value
 

@@ -2,7 +2,7 @@
 
 Returns the distinct concept classes from the OMOP `concept_class` table
 on each connected server (falling back to distinct `concept_class_id`
-values on `concept` when the concept_class table is not loaded).
+values on `concept` when the concept\_class table is not loaded).
 Vocabulary reference data carries no patient information, so this reader
 is not disclosure-gated and the per-site frames are pooled by set union.
 
@@ -14,20 +14,20 @@ ds.omop.vocab.classes(symbol = "omop", conns = NULL, execute = TRUE)
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, returns a dry-run `dsomop_result` containing only
-  the reproducible R code without contacting the servers.
+    Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
+    only the reproducible R code without contacting the servers.
 
 ## Value
 

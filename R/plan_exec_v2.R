@@ -85,7 +85,7 @@
 
 .v2_has_source_anchor <- function(x) {
   if (!is.list(x)) return(FALSE)
-  for (key in intersect(names(x) %||% character(0), c("anchor", "reference"))) {
+  for (key in intersect(names(x) %||% character(0), c("anchor", "reference", "from", "to"))) {
     a <- x[[key]]
     if (is.list(a) && !is.null(a[["source"]])) return(TRUE)
   }
@@ -104,7 +104,10 @@
 #' @keywords internal
 .plan_v2_operations <- function(plan) {
   x <- .planNormalizeV2(plan)
-  ops <- character(0)
+  ops <- if (.conceptNeedsPresentation(plan)) "output.concept_labels" else character(0)
+  date_vars <- x$variables
+  if (!is.null(x$options$date_spec) || any(vapply(date_vars, function(v) !is.null(v$date_spec) || (v$derived$kind %||% "") %in% c("calendar_date", "date_part"), logical(1)))) ops <- c(ops, "date.presentation")
+  if (any(vapply(date_vars, function(v) (v$derived$kind %||% "") %in% c("time_between", "age_at"), logical(1)))) ops <- c(ops, "date.elapsed")
   add <- function(...) ops <<- c(ops, ...)
   events <- x$events %||% list()
   if (length(x$concept_sets %||% list()) ||
@@ -218,6 +221,11 @@
 #' Language-2 constructs of a recipe (no v1 equivalent)
 #' @keywords internal
 .recipe_v2_constructs <- function(recipe) {
+  c(if (.conceptHasMaps(recipe)) "concept labels/column_names",
+    if (!is.null(recipe$options$date_spec) || any(vapply(recipe$variables, function(v) !is.null(v$date_spec), logical(1)))) "date_spec", .recipe_v2_constructs_base(recipe))
+}
+
+.recipe_v2_constructs_base <- function(recipe) {
   out <- character(0)
   add <- function(x) out <<- c(out, x)
   if (length(recipe$concept_sets %||% list())) add("a concept-set registry (concept_sets =)")
@@ -433,7 +441,8 @@
       tables <- c(tables, "death")
     }
   }
-  if (!isFALSE(x$options$translate_concepts)) vocab <- TRUE
+  # A-27: presentation versions reconcile through factor metadata; expansion
+  # and vocabulary-dependent scores above still require semantic identity.
   tables <- sort(unique(tolower(tables)))
   list(tables = stats::setNames(rep(list(character(0)), length(tables)), tables),
        needs_vocabulary_identity = vocab)

@@ -10,20 +10,25 @@ is taken from the first responding server.
 ## Usage
 
 ``` r
-ds.omop.achilles.catalog(symbol = "omop", conns = NULL)
+ds.omop.achilles.catalog(symbol = "omop", conns = NULL, type = NULL)
 ```
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. The
+    historical default is `"both"`.
 
 ## Value
 

@@ -17,25 +17,25 @@ omop_variable_sd(
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; source OMOP CDM table.
+    Character; source OMOP CDM table.
 
-- concept_id:
+  - concept\_id:
 
-  Integer; concept ID filter.
+    Integer; concept ID filter.
 
-- concept_name:
+  - concept\_name:
 
-  Character or `NULL`; human-readable name.
+    Character or `NULL`; human-readable name.
 
-- name:
+  - name:
 
-  Character or `NULL`; output column name.
+    Character or `NULL`; output column name.
 
-- value_source:
+  - value\_source:
 
-  Character; value column (default `"value_as_number"`).
+    Character; value column (default `"value_as_number"`).
 
 ## Value
 

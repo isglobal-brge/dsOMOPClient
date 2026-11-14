@@ -5,11 +5,13 @@ server's single fail-closed run path, which validates and sanitizes
 parameters, applies optional population scoping, runs the entry's
 compute step (SQL template or wrapped Achilles/OHDSI accessor), and
 funnels the result through the ONE per-patient disclosure gate.
-Aggregate entries return disclosure-controlled data frames that are
-additionally pooled across servers (count columns are summed with
-suppression propagation). Assign-mode QueryLibrary loaders (detected
-from the entry metadata) instead store their result server-side and
-return per-server assignment confirmations.
+Aggregate entries return disclosure-controlled data frames pooled
+according to the server-owned contract. Protected components are summed
+on their signed basis before display projection; protected effects use
+inverse-variance meta-analysis of per-site estimates. Standard count
+contracts sum counts with suppression propagation. Assign-mode
+QueryLibrary loaders (detected from the entry metadata) instead store
+their result server-side and return per-server assignment confirmations.
 
 ## Usage
 
@@ -24,81 +26,88 @@ ds.omop.analysis.run(
   plot = FALSE,
   date_handling = NULL,
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = "both"
 )
 ```
 
 ## Arguments
 
-- name:
+  - name:
 
-  Character; the entry id, or a shorthand for it (native id without the
-  `"dsomop:"` prefix, or a unique id suffix).
+    Character; the entry id, or a shorthand for it (native id without
+    the `"dsomop:"` prefix, or a unique id suffix).
 
-- params:
+  - params:
 
-  Named list; parameter values for the entry (see
-  [`ds.omop.analysis.get`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.get.md)
-  for the entry's parameter specs).
+    Named list; parameter values for the entry (see
+    `ds.omop.analysis.get` for the entry's parameter specs).
 
-- cohort:
+  - cohort:
 
-  Optional cohort reference to scope the population to: a
-  `dsomop_cohort_handle` (from
-  [`ds.omop.cohort.create`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.create.md),
-  [`ds.omop.cohort.combine`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.combine.md),
-  or
-  [`ds.omop.cohort.from_table`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.cohort.from_table.md)),
-  a `cohort_definition_id`, or a server-side cohort table name. `NULL`
-  (the default) means no cohort scoping.
+    Optional cohort reference to scope the population to: a
+    `dsomop_cohort_handle` (from `ds.omop.cohort.create`,
+    `ds.omop.cohort.combine`, or `ds.omop.cohort.from_table`), a
+    `cohort_definition_id`, or a server-side cohort table name. `NULL`
+    (the default) means no cohort scoping.
 
-- tables:
+  - tables:
 
-  Optional character vector of server-side `omop.table` symbol names to
-  scope the population to (their distinct persons). May be combined with
-  `cohort`. Each table crosses DataSHIELD as its own bare named
-  `scope_table_<n>` argument, never through a generic
-  [`list()`](https://rdrr.io/r/base/list.html) or
-  [`c()`](https://rdrr.io/r/base/c.html) AggregateMethod.
+    Optional character vector of server-side `omop.table` symbol names
+    to scope the population to (their distinct persons). May be combined
+    with `cohort`. Each table crosses DataSHIELD as its own bare named
+    `scope_table_<n>` argument, never through a generic `list()` or
+    `c()` AggregateMethod.
 
-- combine:
+  - combine:
 
-  Character; how to fold multiple scope sources together: `"union"` (the
-  default) or `"intersect"`.
+    Character; how to fold multiple scope sources together: `"union"`
+    (the default) or `"intersect"`.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; how suppressed (NA) cells are handled when pooling
-  aggregate results across servers. `"strict"` (the default) sets the
-  pooled value to NA if any server suppressed it; `"pooled_only_ok"`
-  sums only the non-suppressed values.
+    Character; how suppressed (NA) cells are handled when pooling
+    aggregate results across servers. `"strict"` (default) requires each
+    pooled group on every server; `"pooled_only_ok"` pools only
+    available disclosure-safe contributions. Kaplan-Meier curves still
+    require every preceding risk-set bin because their values are
+    cumulative.
 
-- plot:
+  - plot:
 
-  Logical; when `TRUE` AND the entry ships a plot recipe, build a
-  `ggplot` CLIENT-SIDE over the pooled, gate-passed data and attach it
-  to the result (also returned via the `"plot"` attribute and
-  `meta$plot`). `FALSE` (the default) returns data only and never
-  touches ggplot2. The plot is purely a client-side rendering of numbers
-  that already cleared the server's disclosure gate (see Safety, below).
-  A broken/incompatible recipe degrades to a warning and a `NULL` plot —
-  it never costs you the returned data.
+    Logical; when `TRUE` AND the entry ships a plot recipe, build a
+    `ggplot` CLIENT-SIDE over the pooled, gate-passed data and attach it
+    to the result (also returned via the `"plot"` attribute and
+    `meta$plot`). `FALSE` (the default) returns data only and never
+    touches ggplot2. The plot is purely a client-side rendering of
+    numbers that already cleared the server's disclosure gate (see
+    Safety, below). A broken/incompatible recipe degrades to a warning
+    and a `NULL` plot — it never costs you the returned data.
 
-- date_handling:
+  - date\_handling:
 
-  For assign-mode loaders, the server-side date policy: `"remove"`
-  (default), `"relative"`, `"binned"`, or server-authorized
-  `"absolute"`. Ignored for aggregate entries.
+    For assign-mode loaders, the server-side date policy: `"remove"`
+    (default), `"relative"`, `"binned"`, or server-authorized
+    `"absolute"`. Ignored for aggregate entries.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
+
+  - type:
+
+    Result view, following dsBaseClient terminology: `"both"` (default)
+    returns per-server and correctly combined results, `"split"` returns
+    only per-server results, and `"combine"` returns only the combined
+    result. The aliases `"b"`, `"splits"`/`"s"`, and `"combined"`/`"c"`
+    are accepted. Combining is performed only from the server-owned
+    pooling contract; no column-name heuristics are used.
 
 ## Value
 
@@ -108,7 +117,17 @@ cross-server aggregation. For assign-mode entries, `per_site` holds
 per-server assignment confirmations (the data stays on the server) and
 the server-side symbol name is recorded in the result metadata. When
 `plot = TRUE` and the entry ships a plot recipe, the built `ggplot` is
-attached as the `"plot"` attribute (and `meta$plot`).
+attached as the `"plot"` attribute (and `meta$plot`). `meta$protection`
+holds each server's protection label and estimand. On dsOMOP 2.10.3,
+`"fixed_synopsis"` declares a bounded-vector epsilon and delta zero
+before exact support gates; `"realised_sticky"` is heuristic and
+declares neither. A `"mixed"` frame identifies its standard and
+protected blocks without a frame-level epsilon or delta. No route claims
+an API-transcript guarantee. `"standard"`, `"standard_fallback"` and
+`"unavailable"` carry no protected guarantee. Older servers may return
+the legacy `"dp"` label under their own contract, with an upgrade
+warning. The server's `dsomop.tools.mode` (default `"auto"`) decides it
+per question.
 
 ## Details
 
@@ -129,26 +148,20 @@ shorthand errors with the candidate ids.
 Three layers, simplest first — reach for the lowest one that does the
 job:
 
-- **One-liners**
-  ([`ds.omop.prevalence`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.prevalence.md),
-  [`ds.omop.distribution`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.distribution.md)):
-  the fastest path for the two most common summaries over a cohort. One
-  call plus good defaults; thin wrappers over this function.
+  - **One-liners** (`ds.omop.prevalence`, `ds.omop.distribution`): the
+    fastest path for the two most common summaries over a cohort. One
+    call plus good defaults; thin wrappers over this function.
 
-- **Analysis catalog**
-  ([`ds.omop.analysis.list`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.list.md)
-  /
-  [`ds.omop.analysis.get`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.get.md)
-  / `ds.omop.analysis.run`): the full menu of curated, pre-gated
-  analyses (QueryLibrary, Achilles, OHDSI, native diagnostics). Use it
-  to discover and run any named analysis with explicit params.
+  - **Analysis catalog** (`ds.omop.analysis.list` /
+    `ds.omop.analysis.get` / `ds.omop.analysis.run`): the full menu of
+    curated, pre-gated analyses (QueryLibrary, Achilles, OHDSI, native
+    diagnostics). Use it to discover and run any named analysis with
+    explicit params.
 
-- **Recipes**
-  ([`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md) +
-  [`recipe_execute`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_execute.md)):
-  author a bespoke EXTRACTION — choose populations, variables, filters,
-  and output shape — when no single catalog analysis fits. The complete,
-  declarative query surface.
+  - **Recipes** (`omop_recipe` + `recipe_execute`): author a bespoke
+    EXTRACTION — choose populations, variables, filters, and output
+    shape — when no single catalog analysis fits. The complete,
+    declarative query surface.
 
 ## Safety (client-side plotting)
 
@@ -159,8 +172,7 @@ received from a server.
 
 ## See also
 
-[`ds.omop.analysis.list`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.list.md),
-[`ds.omop.analysis.get`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.get.md)
+`ds.omop.analysis.list`, `ds.omop.analysis.get`
 
 ## Examples
 

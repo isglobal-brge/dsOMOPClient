@@ -23,41 +23,41 @@ ds.omop.merge(
 
 ## Arguments
 
-- x:
+  - x:
 
-  Character; name of the left server-side `omop.table` symbol (e.g. the
-  `newobj` returned by a previous verb, or a symbol created by
-  [`ds.omop.plan.execute`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.execute.md)).
-  If `NULL` (the default), the session's most recently produced output
-  symbol is used.
+    Character; name of the left server-side `omop.table` symbol (e.g.
+    the `newobj` returned by a previous verb, or a symbol created by
+    `ds.omop.plan.execute`). If `NULL` (the default), the session's most
+    recently produced output symbol is used.
 
-- y:
+  - y:
 
-  Character; name of the right server-side `omop.table` symbol.
+    Character; name of the right server-side `omop.table` symbol.
 
-- by:
+  - by:
 
-  Character vector; the join key. Must be the person key (`"person_id"`
-  or `"subject_id"`); other columns are rejected server-side.
+    Character vector; the join key. Must be the person key
+    (`"person_id"` or `"subject_id"`); other columns are rejected
+    server-side.
 
-- type:
+  - type:
 
-  Character; `"inner"` (default) or `"left"`.
+    Character; `"inner"` (default) or `"left"`.
 
-- newobj:
+  - newobj:
 
-  Character; name of the server-side symbol to create. If `NULL`
-  (default), a unique name is generated.
+    Character; name of the server-side symbol to create. If `NULL`
+    (default), a unique name is generated.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
 ## Value
 
@@ -65,8 +65,7 @@ Invisibly, the name of the created server-side symbol (`newobj`).
 
 ## See also
 
-[`ds.omop.filter`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.filter.md),
-[`ds.omop.bind_rows`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.bind_rows.md)
+`ds.omop.filter`, `ds.omop.bind_rows`
 
 ## Examples
 

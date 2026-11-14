@@ -10,13 +10,13 @@ recipe_remove_filter(recipe, id)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- id:
+  - id:
 
-  Character; filter ID to remove.
+    Character; filter ID to remove.
 
 ## Value
 
@@ -24,4 +24,4 @@ The modified `omop_recipe` object.
 
 ## See also
 
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
+`omop_recipe`

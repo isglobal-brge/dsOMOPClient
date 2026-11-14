@@ -5,16 +5,16 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Cohort Management • dsOMOPClient</title>
+<title>Populations, index dates and study recipes • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Cohort Management">
-<meta name="description" content="Define, combine and reuse person and recurrent episode cohorts.">
-<meta property="og:description" content="Define, combine and reuse person and recurrent episode cohorts.">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Populations, index dates and study recipes">
+<meta name="description" content="Define a study with the simple layer, then make its population rules explicit.">
+<meta property="og:description" content="Define a study with the simple layer, then make its population rules explicit.">
 </head>
 <body>
     <a href="#container" class="visually-hidden-focusable">Skip to content</a>
@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,13 +39,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/v01_getting_started.html">Getting Started with dsOMOP v2</a></li>
     <li><a class="dropdown-item" href="../articles/v02_exploration.html">Schema Exploration</a></li>
-    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Cohort Management</a></li>
-    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Data Extraction with the Plan DSL</a></li>
+    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Populations, index dates and study recipes</a></li>
+    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Events, reducers and analysis outputs</a></li>
     <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
     <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -61,11 +62,10 @@
 
 
 
-
-<div class="row">
+<script src="v03_cohorts_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Cohort Management</h1>
+      <h1>Populations, index dates and study recipes</h1>
 
 
       <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/v03_cohorts.Rmd" class="external-link"><code>vignettes/v03_cohorts.Rmd</code></a></small>
@@ -74,288 +74,97 @@
 
 
 
+<p>This chapter follows the 2.10.4 recipe-language-2 contract. Examples are not evaluated during documentation builds because they need authenticated connections and study-specific concept definitions. Use matching client and server packages and check the server’s advertised operations before execution. A recipe describes work beside the database; patient rows stay on the DataSHIELD server.</p>
 <div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+<h2 id="start-with-a-study-question">Start with a study question<a class="anchor" aria-label="anchor" href="#start-with-a-study-question"></a>
 </h2>
-<p>A cohort defines a set of persons and, when dates are present, one or
-more episodes per person. dsOMOP v2 supports three ways to obtain
-one:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Pre-existing cohorts</strong> stored in the results schema
-(e.g. generated by ATLAS or CohortGenerator).</li>
-<li>
-<strong>Spec-based cohorts</strong> created on-the-fly from a
-structured specification.</li>
-<li>
-<strong>Workspace cohorts</strong> built from an already-extracted
-<code>omop.table</code> with
-<code><a href="../reference/ds.omop.cohort.from_table.html">ds.omop.cohort.from_table()</a></code>.</li>
-</ol>
-<p>All three produce a server-side cohort table (carried client-side as
-a <code>dsomop_cohort_handle</code>) that can scope exploration queries
-(the unified <code>cohort =</code> argument) and filter extraction plans
-and recipes.</p>
-</div>
-<div class="section level2">
-<h2 id="listing-and-inspecting-cohorts">Listing and Inspecting Cohorts<a class="anchor" aria-label="anchor" href="#listing-and-inspecting-cohorts"></a>
-</h2>
+<p>Suppose we want adults starting metformin, with a year of observable history, and follow them for myocardial infarction. Concept IDs below are illustrative: review their vocabulary definitions and descendants for your study.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="va">metformin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="fl">1503297</span>, descendants <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">diabetes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="fl">201826</span>, descendants <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"condition_occurrence"</span>, <span class="fl">432984</span>, descendants <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">cohorts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.cohort.list.html">ds.omop.cohort.list</a></span><span class="op">(</span>symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="co"># cohort_definition_id, cohort_definition_name, ...</span></span>
-<span></span>
-<span><span class="va">defn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.cohort.definition.html">ds.omop.cohort.definition</a></span><span class="op">(</span><span class="fl">42</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="co"># Full definition details for cohort 42</span></span></code></pre></div>
+<span><span class="va">study</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span></span>
+<span>  index <span class="op">=</span> <span class="fu"><a href="../reference/omop_new_users.html">omop_new_users</a></span><span class="op">(</span><span class="va">metformin</span>, washout_days <span class="op">=</span> <span class="fl">365</span>,</span>
+<span>                         select <span class="op">=</span> <span class="st">"first_eligible"</span>, by <span class="op">=</span> <span class="st">"ingredient"</span><span class="op">)</span>,</span>
+<span>  require <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">18</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>                 has <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"condition_occurrence"</span>, <span class="va">diabetes</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_age</a></span><span class="op">(</span><span class="op">)</span>, sex <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_sex</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>                  visits <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_count</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, before <span class="op">=</span> <span class="fl">365</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  outcomes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mi <span class="op">=</span> <span class="va">mi</span><span class="op">)</span>,</span>
+<span>  follow_up <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>start <span class="op">=</span> <span class="fl">1</span>, end <span class="op">=</span> <span class="fl">365</span>,</span>
+<span>                   censor <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"observation_end"</span>, <span class="st">"death"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  outputs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"baseline"</span>, <span class="st">"survival"</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"metformin_study"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">study</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_to_code.html">recipe_to_code</a></span><span class="op">(</span><span class="va">study</span><span class="op">)</span></span></code></pre></div>
+<p>The simple layer returns an ordinary advanced recipe. <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> shows its choices and <code><a href="../reference/recipe_to_code.html">recipe_to_code()</a></code> makes them reproducible. It uses episode grain, relative dates and priority ties. Baseline becomes a wide output; one outcome becomes survival, while multiple outcomes become competing risk (the first selected cause, not every later event). <code>long</code> uses outcome events; <code>panel</code> counts them in 30-day bins. Those outputs require outcomes; baseline requires variables. With no explicit follow-up settings, start is day 1, the end is unbounded, and observation end and death censor follow-up.</p>
+<p><code><a href="../reference/omop_new_users.html">omop_new_users()</a></code> indexes drug eras (default gap 30 days), uses the interval end for the episode end, and requires the washout to be observed and free of the drug on days -365 through -1. Giving that population to <code><a href="../reference/omop_study.html">omop_study()</a></code> keeps its index and criteria and adds <code>require</code>. The default <code>require$has</code> looks through the index day; <code>no_history_of</code> stops the day before it.</p>
 </div>
 <div class="section level2">
-<h2 id="creating-a-cohort-from-a-spec">Creating a Cohort from a Spec<a class="anchor" aria-label="anchor" href="#creating-a-cohort-from-a-spec"></a>
+<h2 id="make-the-population-explicit">Make the population explicit<a class="anchor" aria-label="anchor" href="#make-the-population-explicit"></a>
 </h2>
-<p><code><a href="../reference/ds.omop.cohort.create.html">ds.omop.cohort.create()</a></code> takes a <code>spec</code> list
-that must contain a <code>type</code> and a
-<code>concept_set</code>:</p>
+<p>Use the advanced layer when the index, coverage, eligibility or output grain needs a different policy. Here the first eligible exposure is selected; this is deliberately an exposure-indexed example, not the era-indexed expansion of the previous study.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">diabetes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.cohort.create.html">ds.omop.cohort.create</a></span><span class="op">(</span></span>
-<span>  spec <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"condition"</span>, concept_set <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">201826</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  cohort_id <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  name <span class="op">=</span> <span class="st">"diabetes_cohort"</span>,</span>
-<span>  mode <span class="op">=</span> <span class="st">"temporary"</span>,</span>
-<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">conns</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co"># Returns a dsomop_cohort_handle pointing at the server-side cohort table</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="supported-spec-types">Supported Spec Types<a class="anchor" aria-label="anchor" href="#supported-spec-types"></a>
-</h3>
-<table class="table">
-<colgroup>
-<col width="33%">
-<col width="33%">
-<col width="33%">
-</colgroup>
-<thead><tr class="header">
-<th>Type</th>
-<th>Source Table</th>
-<th>Notes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>condition</code></td>
-<td>condition_occurrence</td>
-<td>Filter by condition concepts</td>
-</tr>
-<tr class="even">
-<td><code>drug</code></td>
-<td>drug_exposure</td>
-<td>Filter by drug concepts</td>
-</tr>
-<tr class="odd">
-<td><code>measurement</code></td>
-<td>measurement</td>
-<td>Filter by concepts + optional issued numeric bin</td>
-</tr>
-<tr class="even">
-<td><code>observation</code></td>
-<td>observation</td>
-<td>Filter by observation concepts</td>
-</tr>
-<tr class="odd">
-<td><code>procedure</code></td>
-<td>procedure_occurrence</td>
-<td>Filter by procedure concepts</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="measurement-with-a-server-issued-numeric-bin">Measurement with a Server-Issued Numeric Bin<a class="anchor" aria-label="anchor" href="#measurement-with-a-server-issued-numeric-bin"></a>
-</h3>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">high_hba1c_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.safe.filter.value.html">ds.omop.safe.filter.value</a></span><span class="op">(</span></span>
-<span>  <span class="st">"measurement"</span>, <span class="st">"value_as_number"</span>,</span>
-<span>  threshold <span class="op">=</span> <span class="fl">6.5</span>, direction <span class="op">=</span> <span class="st">"above"</span>,</span>
-<span>  concept_id <span class="op">=</span> <span class="fl">3004410</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">high_hba1c</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.cohort.create.html">ds.omop.cohort.create</a></span><span class="op">(</span></span>
-<span>  spec <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    type <span class="op">=</span> <span class="st">"measurement"</span>,</span>
-<span>    concept_set <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3004410</span><span class="op">)</span>,</span>
-<span>    value_bin <span class="op">=</span> <span class="va">high_hba1c_bin</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  cohort_id <span class="op">=</span> <span class="fl">101</span>,</span>
-<span>  name <span class="op">=</span> <span class="st">"high_hba1c"</span>,</span>
-<span>  mode <span class="op">=</span> <span class="st">"temporary"</span>,</span>
-<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">conns</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="persistent-cohorts">Persistent Cohorts<a class="anchor" aria-label="anchor" href="#persistent-cohorts"></a>
-</h3>
-<p><code>mode = "persistent"</code> writes to the results/cohort schema
-so the cohort survives across sessions, instead of the default
-session-scoped temporary table. This is disabled by default and requires
-both <code>options(dsomop.allow_persistent_cohorts = TRUE)</code> and a
-separately reviewed write role/schema. The ordinary analysis identity
-should otherwise remain read-only apart from supported session-temporary
-objects.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.cohort.create.html">ds.omop.cohort.create</a></span><span class="op">(</span></span>
-<span>  spec <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"condition"</span>, concept_set <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">201826</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  cohort_id <span class="op">=</span> <span class="fl">200</span>,</span>
-<span>  name <span class="op">=</span> <span class="st">"diabetes_persistent"</span>,</span>
-<span>  mode <span class="op">=</span> <span class="st">"persistent"</span>,</span>
-<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">conns</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="combining-cohorts">Combining Cohorts<a class="anchor" aria-label="anchor" href="#combining-cohorts"></a>
-</h2>
-<p><code><a href="../reference/ds.omop.cohort.combine.html">ds.omop.cohort.combine()</a></code> accepts the handles returned by
-<code>cohort.create()</code> (or cohort table names) and applies a set
-operation. The combined result is re-gated on its distinct-person
-count:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">both</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.cohort.combine.html">ds.omop.cohort.combine</a></span><span class="op">(</span></span>
-<span>  op <span class="op">=</span> <span class="st">"intersect"</span>,          <span class="co"># "union", "intersect", or "setdiff"</span></span>
-<span>  cohort_a <span class="op">=</span> <span class="va">diabetes</span>,</span>
-<span>  cohort_b <span class="op">=</span> <span class="va">high_hba1c</span>,</span>
-<span>  new_name <span class="op">=</span> <span class="st">"dm_and_high_hba1c"</span>,</span>
-<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">conns</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><code>"difference"</code> is accepted as an alias for
-<code>"setdiff"</code>. Every set operation is gated on
-<code>nfilter.subset</code>; a result describing too few unique persons
-is blocked.</p>
-</div>
-<div class="section level2">
-<h2 id="building-a-cohort-from-a-workspace-table">Building a Cohort from a Workspace Table<a class="anchor" aria-label="anchor" href="#building-a-cohort-from-a-workspace-table"></a>
-</h2>
-<p>Any server-side <code>omop.table</code> you have already produced –
-the output of <code><a href="../reference/ds.omop.plan.execute.html">ds.omop.plan.execute()</a></code>, of a recipe, or of a
-manipulation verb (<code><a href="../reference/ds.omop.merge.html">ds.omop.merge()</a></code> and friends) – can be
-promoted to a reusable cohort. Only the symbol <strong>name</strong>
-travels to the server; the server reads its distinct person tokens,
-reverses them to original ids with the per-resource key, gates the count
-(fail-closed), and materialises a size-checked cohort table. No
-identifier ever leaves the server.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Suppose a plan produced a features table under the symbol "F"</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.plan.execute.html">ds.omop.plan.execute</a></span><span class="op">(</span><span class="va">plan</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>features <span class="op">=</span> <span class="st">"F"</span><span class="op">)</span>,</span>
-<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Turn the persons in F into a cohort, then reuse it to scope exploration</span></span>
-<span><span class="va">coh</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.cohort.from_table.html">ds.omop.cohort.from_table</a></span><span class="op">(</span><span class="st">"F"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"condition_occurrence"</span>, cohort <span class="op">=</span> <span class="va">coh</span>,</span>
-<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="the-unified-cohort-argument">The Unified <code>cohort =</code> Argument<a class="anchor" aria-label="anchor" href="#the-unified-cohort-argument"></a>
-</h2>
-<p>Exploration aggregates accept a single <code>cohort =</code> argument
-that resolves any of: a <code>dsomop_cohort_handle</code>, a numeric
-cohort definition id, or a server-side cohort table name. This lets you
-run the same profiling within a subpopulation:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.column.stats.html">ds.omop.column.stats</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"value_as_number"</span>, concept_id <span class="op">=</span> <span class="fl">3004410</span>,</span>
-<span>  cohort <span class="op">=</span> <span class="va">diabetes</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.missingness.html">ds.omop.missingness</a></span><span class="op">(</span><span class="st">"measurement"</span>, cohort <span class="op">=</span> <span class="va">diabetes</span>,</span>
-<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.crosstab.html">ds.omop.crosstab</a></span><span class="op">(</span><span class="st">"person"</span>, <span class="st">"gender_concept_id"</span>, <span class="st">"race_concept_id"</span>,</span>
-<span>  cohort <span class="op">=</span> <span class="va">diabetes</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"condition_occurrence"</span>, <span class="st">"condition_concept_id"</span>,</span>
-<span>  cohort <span class="op">=</span> <span class="fl">42</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>   <span class="co"># by definition id</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="using-cohorts-in-plans">Using Cohorts in Plans<a class="anchor" aria-label="anchor" href="#using-cohorts-in-plans"></a>
-</h2>
-<p>Reference a cohort in an extraction plan with
-<code><a href="../reference/ds.omop.plan.cohort.html">ds.omop.plan.cohort()</a></code>:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.plan.html">ds.omop.plan</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Use an existing cohort by definition id ...</span></span>
-<span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.plan.cohort.html">ds.omop.plan.cohort</a></span><span class="op">(</span><span class="va">plan</span>, cohort_definition_id <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># ... or define one inline with a spec</span></span>
-<span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.plan.cohort.html">ds.omop.plan.cohort</a></span><span class="op">(</span><span class="va">plan</span>,</span>
-<span>  spec <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"condition"</span>, concept_set <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">201826</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.plan.baseline.html">ds.omop.plan.baseline</a></span><span class="op">(</span><span class="va">plan</span>,</span>
-<span>  columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gender_concept_id"</span>, <span class="st">"race_concept_id"</span><span class="op">)</span>,</span>
-<span>  derived <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age_at_index"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/ds.omop.plan.execute.html">ds.omop.plan.execute</a></span><span class="op">(</span><span class="va">plan</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D"</span><span class="op">)</span>,</span>
-<span>  symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p><code>ds.omop.cohort.ref(id)</code> builds the same
-<code>cohort_definition_id</code> reference object if you prefer to
-assemble the reference separately.</p>
-</div>
-<div class="section level2">
-<h2 id="recurrent-cohorts-and-index-events">Recurrent Cohorts and Index Events<a class="anchor" aria-label="anchor" href="#recurrent-cohorts-and-index-events"></a>
-</h2>
-<p>The longitudinal unit is explicit. Materialized cohort rows receive a
-stable <code>cohort_row_id</code>; identical people may therefore have
-several index episodes. For a recipe population anchored on source
-events, declare the index event and whether to retain the first, last or
-all candidates:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span></span>
-<span>  id <span class="op">=</span> <span class="st">"study"</span>,</span>
-<span>  index_event <span class="op">=</span> <span class="fu"><a href="../reference/omop_index_event.html">omop_index_event</a></span><span class="op">(</span></span>
-<span>    table <span class="op">=</span> <span class="st">"condition_occurrence"</span>,</span>
-<span>    concept_id <span class="op">=</span> <span class="fl">201826</span>,</span>
-<span>    primary_limit <span class="op">=</span> <span class="st">"all"</span></span>
-<span>  <span class="op">)</span>,</span>
+<code class="sourceCode R"><span><span class="va">rx</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, <span class="va">metformin</span><span class="op">)</span></span>
+<span><span class="va">pop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span></span>
+<span>  id <span class="op">=</span> <span class="st">"users"</span>, label <span class="op">=</span> <span class="st">"Eligible metformin starts"</span>,</span>
+<span>  index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">rx</span>, select <span class="op">=</span> <span class="st">"first_eligible"</span>,</span>
+<span>                     end <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_end</a></span><span class="op">(</span><span class="st">"observation_end"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  coverage <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_coverage</a></span><span class="op">(</span>policy <span class="op">=</span> <span class="st">"unique"</span>, on_ambiguous <span class="op">=</span> <span class="st">"drop"</span>,</span>
+<span>                           on_missing <span class="op">=</span> <span class="st">"drop"</span><span class="op">)</span>,</span>
 <span>  filters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="../reference/omop_filter.html">omop_filter_has_concept</a></span><span class="op">(</span></span>
-<span>      concept_id <span class="op">=</span> <span class="fl">3004410</span>,</span>
-<span>      table <span class="op">=</span> <span class="st">"measurement"</span>,</span>
-<span>      window <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>start <span class="op">=</span> <span class="op">-</span><span class="fl">365L</span>, end <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>Index-event execution currently supports condition, drug,
-measurement, observation, procedure, device and visit-occurrence tables
-with a standard person key, event date/end and stable primary key. It
-implements a deliberate Circe-like subset; it is not arbitrary
-CirceR/CohortGenerator execution. Primary first/last/all selection
-occurs before inclusion filters. By default each retained index episode
-ends at the end of the unique OMOP observation period covering its
-index, matching Circe. To request a bounded offset, use for example
-<code>end_strategy = list(DateOffset = list(DateField = "StartDate", Offset = 30L))</code>.
-<code>DateField = "EndDate", Offset = 0L</code> explicitly requests the
-source event’s physical end (capped at observation-period end). Missing
-or overlapping observation periods and unsupported Circe end strategies
-fail closed.</p>
-<p>When an externally generated cohort can be recurrent and a population
-filter uses its index date, set <code>episode_policy</code> to
-<code>"any_episode"</code>, <code>"all_episodes"</code>,
-<code>"first_episode"</code> or <code>"last_episode"</code>. Without
-one, recurrent index-dependent filtering fails closed instead of
-silently choosing an episode. These policies decide person membership;
-per-episode extraction is separately controlled by the output grain
-described in the <em>Data Extraction</em> vignette.</p>
-<p><code><a href="../reference/ds.omop.cohort.from_table.html">ds.omop.cohort.from_table()</a></code> promotes the distinct person
-set represented by an <code>omop.table</code>; it does not reconstruct
-arbitrary episode dates from a generic workspace table.</p>
+<span>    <span class="fu"><a href="../reference/omop_has.html">omop_observed</a></span><span class="op">(</span>before <span class="op">=</span> <span class="fl">365</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/omop_has.html">omop_has_not</a></span><span class="op">(</span><span class="va">rx</span>, window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="op">-</span><span class="fl">365</span>, <span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/omop_has.html">omop_has</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"condition_occurrence"</span>, <span class="va">diabetes</span><span class="op">)</span>,</span>
+<span>             window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/omop_has.html">omop_age_is</a></span><span class="op">(</span>min <span class="op">=</span> <span class="fl">18</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span></span>
+<span>  populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>users <span class="op">=</span> <span class="va">pop</span><span class="op">)</span>,</span>
+<span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_age</a></span><span class="op">(</span><span class="op">)</span>, sex <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_sex</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  outputs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span></span>
+<span>    <span class="st">"baseline"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, rows <span class="op">=</span> <span class="st">"users"</span>, grain <span class="op">=</span> <span class="st">"episode"</span>,</span>
+<span>    columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"sex"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><code>first</code> selects a candidate before eligibility; an ineligible first candidate can therefore leave no episode. <code>first_eligible</code> evaluates each candidate’s criteria and then selects. <code>all</code> keeps recurrent qualifying episodes. An index offset applies before coverage lookup. By default an index must lie in one unique observation period; ambiguous candidates are dropped privately. <code>on_ambiguous = "error"</code> requests a bounded typed refusal instead. Union coverage can bridge a declared gap for episode construction, but observed-day reducers still count only recorded observed days.</p>
+<p>Windows use inclusive whole days. A missing required anchor makes a criterion UNKNOWN, including absence and <code>count == 0</code>; NOT of UNKNOWN remains UNKNOWN. Only TRUE candidates survive. An available event with no rows is different from an unavailable table: <code>on_missing_table = "unavailable"</code> makes criteria UNKNOWN and features NA, rather than manufacturing absence or zero.</p>
 </div>
 <div class="section level2">
-<h2 id="disclosure-controls">Disclosure Controls<a class="anchor" aria-label="anchor" href="#disclosure-controls"></a>
+<h2 id="combine-criteria-and-populations">Combine criteria and populations<a class="anchor" aria-label="anchor" href="#combine-criteria-and-populations"></a>
 </h2>
-<p>Every cohort operation – creation, combination, and
-<code>from_table</code> promotion – enforces <code>nfilter.subset</code>
-on the number of <strong>unique persons</strong> (counted as
-<code>COUNT(DISTINCT person_id)</code>). If a cohort would contain fewer
-than the threshold, the operation fails closed without returning the
-observed support:</p>
-<pre><code>Error: Disclosive: cohort support is below the configured threshold.</code></pre>
-<p>See the <em>Security</em> vignette for how an Opal administrator
-configures the thresholds.</p>
+<p>A predicate inside one event must hold on the same row. Separate <code><a href="../reference/omop_has.html">omop_has()</a></code> criteria may be satisfied by different rows. Distinct visit counts ignore missing visit keys.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">positive_lab</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3004410</span>,</span>
+<span>                           where <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">value_as_number</span> <span class="op">&gt;=</span> <span class="fl">7</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">criterion</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_has.html">omop_all</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/omop_has.html">omop_has</a></span><span class="op">(</span><span class="va">positive_lab</span>, window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="op">-</span><span class="fl">90</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/omop_has.html">omop_has</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, <span class="fl">9201</span><span class="op">)</span>,</span>
+<span>           window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="op">-</span><span class="fl">365</span>, <span class="fl">0</span><span class="op">)</span>, distinct <span class="op">=</span> <span class="st">"visit"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">child</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"lab_users"</span>, parent_id <span class="op">=</span> <span class="st">"users"</span>,</span>
+<span>                         filters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">criterion</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_add_population.html">recipe_add_population</a></span><span class="op">(</span><span class="va">recipe</span>, <span class="va">child</span><span class="op">)</span></span></code></pre></div>
+<p>A child without its own index inherits its parent’s episodes before evaluating index-relative criteria. A child with its own index keeps those episodes and intersects the parent’s persons. Union, intersection and difference are private population operations; small operands are allowed. Only a final published patient component must meet <code>nfilter.subset</code>, measured in distinct persons, not episode rows. An empty final patient component has support zero.</p>
+<p>A persisted results cohort is another index source:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">external</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"external"</span>,</span>
+<span>  index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cohort_definition_id <span class="op">=</span> <span class="fl">42</span><span class="op">)</span>,</span>
+<span>                     end <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_end</a></span><span class="op">(</span><span class="st">"event_end"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Its start/end come from the cohort rows; the ordinary coverage and end rules still apply. A cohort identifier used as a selector must be positive. Existing <code><a href="../reference/ds.omop.cohort.create.html">ds.omop.cohort.create()</a></code>, <code>.combine()</code> and <code>.from_table()</code> workflows remain available; cohort handles are private inputs, not a way to retrieve rows.</p>
+</div>
+<div class="section level2">
+<h2 id="inspect-execute-and-retain-the-inventory">Inspect, execute and retain the inventory<a class="anchor" aria-label="anchor" href="#inspect-execute-and-retain-the-inventory"></a>
+</h2>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_lint.html">recipe_lint</a></span><span class="op">(</span><span class="va">recipe</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_validate.html">recipe_validate</a></span><span class="op">(</span><span class="va">recipe</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">recipe</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">recipe</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_baseline"</span><span class="op">)</span>,</span>
+<span>                         conns <span class="op">=</span> <span class="va">conns</span>, on_small_site <span class="op">=</span> <span class="st">"error"</span><span class="op">)</span></span></code></pre></div>
+<p><code>conns</code> is your existing DataSHIELD connection list. Explain describes the plan and capabilities without private candidate or support counts. Execution returns the server’s committed inventory: retain it, since occupied symbol names cause fresh names to be allocated. A partial <code>out</code> mapping publishes only those mapped roots unless <code>publish</code> is explicitly supplied.</p>
+<p>With the default strict server, a small final root causes federation rollback. <code>on_small_site = "skip"</code> keeps passing sites and returns NULL for a small site. On a non-strict server, <code>error</code> returns passing families with a warning and <code>partial</code> status; <code>skip</code> commits nothing at that site if any family is small. Technical failures always raise errors and trigger cleanup. The client reads <code>omopPlanStatusDS</code> before deleting its execution symbol.</p>
+<p>Continue with <a href="v04_extraction.html">outputs and reducers</a> to build analysis columns, including education level and cause of death.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -370,7 +179,7 @@ configures the thresholds.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
   </div></footer>

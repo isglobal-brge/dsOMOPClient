@@ -7,9 +7,88 @@
 
 .legacy_recipe_b1 <- function() omop_recipe(
   variables = omop_variable_age(name = "age_at_2025", year = 2025),
-  outputs = omop_output("ages", type = "wide"))
+  outputs = omop_output("ages", type = "wide"),
+  options = list(translate_concepts = FALSE))
 .v2_recipe_b1 <- function() omop_recipe(variables = list(age = omop_age()),
                                         outputs = omop_output("o", format = "wide"))
+
+# Inspect the expression after the same deparse/parse boundary used by the
+# transport. A bare named scalar becomes c(name = "symbol") at this boundary,
+# even when inspecting the original in-memory call would hide that defect.
+.protocol_wire_mapping <- function(expr, expected) {
+  wire <- parse(text = paste(deparse(expr), collapse = "\n"))[[1L]]
+  expect_false(any(vapply(as.list(wire)[-1L], is.call, logical(1))))
+  token <- wire[[4L]]
+  expect_type(token, "character")
+  expect_length(token, 1L)
+  expect_null(names(token))
+  expect_match(token, "^B64:")
+  decoded <- .decode_ds(token)
+  if (length(expected)) expect_identical(decoded, as.list(expected)) else {
+    expect_type(decoded, "list")
+    expect_length(decoded, 0L)
+    expect_identical(token, "B64:e30") # {}, not []
+  }
+  invisible(wire)
+}
+
+test_that("v1 singleton, multiple and subset mappings survive strict current and legacy transport", {
+  single <- .legacy_recipe_b1()
+  multiple <- omop_recipe(
+    variables = omop_variable_age(name = "age_at_2025", year = 2025),
+    outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")),
+    options = list(translate_concepts = FALSE))
+  cases <- list(
+    list(recipe = single, out = c(ages = "D_single")),
+    list(recipe = multiple, out = c(a = "D_first", b = "D_second")),
+    list(recipe = multiple, out = c(b = "D_subset")))
+  for (sites in list(list(new = "current"), list(old = "old"),
+                    list(old = "old", new = "current"))) {
+    for (dp in c(FALSE, TRUE)) for (case in cases) {
+      state <- do.call(.legacy_federation, sites)
+      result <- suppressWarnings(if (dp) {
+        ds.omop.dp.prepare(case$recipe, out = case$out)
+      } else recipe_execute(case$recipe, out = case$out))
+      expect_identical(result, case$out)
+      for (site in names(state$sent)) {
+        wire <- .protocol_wire_mapping(state$sent[[site]], case$out)
+        expect_identical(as.character(wire[[1L]]),
+                         if (dp) "omopDpPlanExecuteDS" else "omopPlanExecuteDS")
+        if (length(sites$old)) {
+          expect_null(as.list(wire)$commit_policy)
+          expect_null(.check_2102_call(.contract_2102(), wire))
+        } else expect_identical(as.list(wire)$commit_policy, "server")
+      }
+      if (length(sites$old)) {
+        expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
+      }
+    }
+  }
+})
+
+test_that("native mappings preserve exact publication roots including the empty object", {
+  single <- recipe_to_plan(.v2_recipe_b1())
+  multiple <- recipe_to_plan(omop_recipe(variables = list(age = omop_age()),
+    outputs = list(omop_output("o", format = "wide"), omop_output("other", format = "wide"))))
+  empty <- multiple
+  empty$publish <- list()
+  cases <- list(
+    list(plan = single, out = c(o = "D_single")),
+    list(plan = multiple, out = c(o = "D_first", other = "D_second")),
+    list(plan = multiple, out = c(other = "D_subset")),
+    list(plan = empty, out = stats::setNames(character(0), character(0))))
+  for (dp in c(FALSE, TRUE)) for (case in cases) {
+    state <- .legacy_federation(new = "current")
+    result <- if (dp) ds.omop.dp.prepare(case$plan, out = case$out) else
+      ds.omop.plan.execute(case$plan, out = case$out)
+    expect_identical(result, case$out)
+    wire <- .protocol_wire_mapping(state$sent$current, case$out)
+    sent <- .decode_ds(wire[[3L]])
+    expect_identical(as.character(unlist(sent$publish, use.names = FALSE)), names(case$out))
+    expect_identical(as.list(wire)$commit_policy, "server")
+    expect_true("omopPlanStatusDS" %in% .called(state))
+  }
+})
 
 test_that("the fixture reproduces the 2.10.2 contract: commit_policy is refused", {
   contract <- .contract_2102()
@@ -33,6 +112,11 @@ test_that("a single 2.10.2 site runs a v1 plan as the 2.10.2 legacy call", {
   expect_null(as.list(sent)$commit_policy)
   # the same v1 payload, byte for byte
   expect_identical(sent[[3L]], dsOMOPClient:::.ds_encode(recipe_to_plan(r, version = 1)))
+  transported <- parse(text = paste(deparse(sent), collapse = "\n"))[[1L]]
+  expect_false(any(vapply(as.list(transported)[-1L], is.call, logical(1))))
+  expect_identical(.decode_ds(transported[[4L]]), list(ages = "D_ages"))
+  expect_identical(transported[[2L]], sent[[2L]])
+  expect_identical(transported[[5L]], "memory")
   expect_false(any(c("omopPlanStatusDS", "omopStagedRevokeDS") %in% .called(state)))
   expect_true("D_ages" %in% state$symbols$old)
 })
@@ -55,7 +139,8 @@ test_that("a mixed federation sends the legacy call to every site, with one warn
 test_that("the legacy route checks the out mapping as 2.10.2 did, before any assignment", {
   state <- .legacy_federation(old = "old", new = "new")
   r <- omop_recipe(variables = omop_variable_age(name = "age_at_2025", year = 2025),
-                   outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")))
+                   outputs = list(omop_output("a", type = "wide"), omop_output("b", type = "wide")),
+    options = list(translate_concepts = FALSE))
   expect_error(suppressWarnings(recipe_execute(r, out = c(a = "X", b = "X.covariates"))),
                "overlapping reserved component families")
   expect_error(suppressWarnings(recipe_execute(r, out = c(a = "X", c = "Y"))),
@@ -134,7 +219,8 @@ test_that("preflight checks methods on the final site before any assignment", {
     methods$last$aggregate <- setdiff(methods$last$aggregate, method)
     local_mocked_bindings(.dsomop_published_methods = function(...) methods,
                           .package = "dsOMOPClient")
-    expect_error(recipe_execute(.legacy_recipe_b1()), paste0("last lacks ", method))
+    expect_error(recipe_execute(recipe_set_options(.legacy_recipe_b1(),
+      translate_concepts = TRUE)), paste0("last lacks ", method))
     expect_identical(state$assigns, c(first = 0L, last = 0L))
   }
 })
@@ -150,7 +236,7 @@ test_that("an unlistable site's profile stops all assignments", {
   expect_identical(state$assigns, c(first = 0L, last = 0L))
 })
 
-test_that("DP preflight needs its assign method but no factor recoding methods", {
+test_that("numeric DP preflight needs its assign method but no factor recoding methods", {
   state <- .legacy_federation(new = c("first", "last"),
                               unpublished = "omopDpPlanExecuteDS")
   expect_error(ds.omop.dp.prepare(.legacy_recipe_b1()), "lacks omopDpPlanExecuteDS")

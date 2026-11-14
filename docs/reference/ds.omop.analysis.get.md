@@ -10,26 +10,33 @@ federation fails closed.
 ## Usage
 
 ``` r
-ds.omop.analysis.get(name, symbol = "omop", conns = NULL)
+ds.omop.analysis.get(name, symbol = "omop", conns = NULL, type = "both")
 ```
 
 ## Arguments
 
-- name:
+  - name:
 
-  Character; the entry id (e.g. `"dsomop:achilles.401"`) or a shorthand
-  for it (native id without the `"dsomop:"` prefix, or a unique id
-  suffix; an ambiguous shorthand errors with the candidates).
+    Character; the entry id (e.g. `"dsomop:achilles.401"`) or a
+    shorthand for it (native id without the `"dsomop:"` prefix, or a
+    unique id suffix; an ambiguous shorthand errors with the
+    candidates).
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
+
+  - type:
+
+    Result view: `"both"` (default), `"split"`, or `"combine"`;
+    dsBaseClient-style aliases are accepted. A split view can inspect
+    nodes whose metadata differ; combined views require equality.
 
 ## Value
 
@@ -43,8 +50,7 @@ equality across nodes.
 
 ## See also
 
-[`ds.omop.analysis.list`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.list.md),
-[`ds.omop.analysis.run`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.run.md)
+`ds.omop.analysis.list`, `ds.omop.analysis.run`
 
 ## Examples
 

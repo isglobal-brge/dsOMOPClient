@@ -1,4 +1,4 @@
-# Build feature specifications from a list of omop_variable objects
+# Build feature specifications from a list of omop\_variable objects
 
 Maps each variable's format to the corresponding `omop.feature.*`
 constructor and returns a named list of feature spec objects.
@@ -11,9 +11,9 @@ constructor and returns a named list of feature spec objects.
 
 ## Arguments
 
-- vs:
+  - vs:
 
-  List of `omop_variable` objects.
+    List of `omop_variable` objects.
 
 ## Value
 

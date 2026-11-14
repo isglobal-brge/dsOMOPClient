@@ -10,14 +10,14 @@ Extract filters (or groups containing filters) at a given level
 
 ## Arguments
 
-- filters:
+  - filters:
 
-  List of `omop_filter` and/or `omop_filter_group` objects.
+    List of `omop_filter` and/or `omop_filter_group` objects.
 
-- level:
+  - level:
 
-  Character; the filter level to extract (`"population"`, `"row"`, or
-  `"output"`).
+    Character; the filter level to extract (`"population"`, `"row"`, or
+    `"output"`).
 
 ## Value
 

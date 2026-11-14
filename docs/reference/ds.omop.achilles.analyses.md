@@ -8,27 +8,37 @@ the pooled result is taken from the first responding server.
 ## Usage
 
 ``` r
-ds.omop.achilles.analyses(domain = NULL, symbol = "omop", conns = NULL)
+ds.omop.achilles.analyses(
+  domain = NULL,
+  symbol = "omop",
+  conns = NULL,
+  type = NULL
+)
 ```
 
 ## Arguments
 
-- domain:
+  - domain:
 
-  Character; optional domain filter. Valid values include `"person"`,
-  `"condition"`, `"drug"`, `"measurement"`, `"procedure"`,
-  `"observation"`, `"visit"`, and `"device"`. `NULL` (the default)
-  returns all domains.
+    Character; optional domain filter. Valid values include `"person"`,
+    `"condition"`, `"drug"`, `"measurement"`, `"procedure"`,
+    `"observation"`, `"visit"`, and `"device"`. `NULL` (the default)
+    returns all domains.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. The
+    historical default is `"both"`.
 
 ## Value
 

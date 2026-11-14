@@ -1,8 +1,13 @@
 # Query an OHDSI result table
 
 Reads rows from a pre-computed OHDSI result table with server-controlled
-disclosure. When `scope = "pooled"`, counts are summed across servers
-with suppression propagation; rates/proportions are set to NA.
+disclosure. Split-only requests preserve that compatibility endpoint.
+Combined requests obtain the physical result table's closed,
+server-owned pooling contract and combine complete disclosure-controlled
+frames through that contract; they never route through a same-named live
+analysis or a column-name pooling heuristic. Reviewed equality filters
+are applied server-side; selection, ordering, and the row limit are
+applied only after contractual pooling.
 
 ## Usage
 
@@ -17,51 +22,57 @@ ds.omop.ohdsi.results(
   scope = c("per_site", "pooled"),
   pooling_policy = "strict",
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = NULL
 )
 ```
 
 ## Arguments
 
-- table_name:
+  - table\_name:
 
-  Character; which result table to query.
+    Character; which result table to query.
 
-- columns:
+  - columns:
 
-  Character vector; columns to select (NULL = all safe columns).
+    Character vector; columns to select (NULL = all safe columns).
 
-- filters:
+  - filters:
 
-  Named list; WHERE conditions.
+    Named list; WHERE conditions.
 
-- order_by:
+  - order\_by:
 
-  Character; ORDER BY column.
+    Character; ORDER BY column.
 
-- limit:
+  - limit:
 
-  Integer; max rows (capped at 5000 server-side).
+    Integer; max rows (capped at 5000 server-side).
 
-- tool_id:
+  - tool\_id:
 
-  Character; optional tool identifier.
+    Character; optional tool identifier.
 
-- scope:
+  - scope:
 
-  Character; `"per_site"` or `"pooled"`.
+    Character; `"per_site"` or `"pooled"`.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL`, uses active session.
+    DSI connection object(s). If `NULL`, uses active session.
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. When
+    omitted, legacy `scope` behaviour is preserved.
 
 ## Value
 

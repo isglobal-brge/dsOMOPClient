@@ -23,38 +23,36 @@ ds.omop.plan.features(
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- name:
+  - name:
 
-  Character; output name used as a key in the plan's outputs list.
+    Character; output name used as a key in the plan's outputs list.
 
-- table:
+  - table:
 
-  Character; source OMOP table name (e.g. `"condition_occurrence"`,
-  `"measurement"`).
+    Character; source OMOP table name (e.g. `"condition_occurrence"`,
+    `"measurement"`).
 
-- specs:
+  - specs:
 
-  Named list of `omop_feature_spec` objects created by the
-  `omop.feature.*` family of functions (e.g.
-  [`omop.feature.boolean`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.boolean.md),
-  [`omop.feature.count`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.count.md)).
+    Named list of `omop_feature_spec` objects created by the
+    `omop.feature.*` family of functions (e.g. `omop.feature.boolean`,
+    `omop.feature.count`).
 
-- grain:
+  - grain:
 
-  Character; `"person"` (default) or `"episode"`. Episode grain
-  preserves one row per cohort episode and requires
-  `temporal$index_window`.
+    Character; `"person"` (default) or `"episode"`. Episode grain
+    preserves one row per cohort episode and requires
+    `temporal$index_window`.
 
-- temporal:
+  - temporal:
 
-  Optional
-  [`omop.temporal()`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.temporal.md)
-  specification. Supply an `index_window` when `grain = "episode"` or
-  when feature specs contain episode-relative `time_window` values.
+    Optional `omop.temporal()` specification. Supply an `index_window`
+    when `grain = "episode"` or when feature specs contain
+    episode-relative `time_window` values.
 
 ## Value
 
@@ -62,9 +60,7 @@ The modified `omop_plan` with the features output appended.
 
 ## See also
 
-[`omop.feature.boolean`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.boolean.md),
-[`omop.feature.count`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.count.md),
-[`ds.omop.plan.events`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.events.md)
+`omop.feature.boolean`, `omop.feature.count`, `ds.omop.plan.events`
 
 ## Examples
 

@@ -15,19 +15,19 @@ ds.omop.plan.cohort(plan, cohort_definition_id = NULL, spec = NULL)
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- cohort_definition_id:
+  - cohort\_definition\_id:
 
-  Integer; ID of an existing cohort in the cohort table. Mutually
-  exclusive with `spec`.
+    Integer; ID of an existing cohort in the cohort table. Mutually
+    exclusive with `spec`.
 
-- spec:
+  - spec:
 
-  Named list; inline cohort specification DSL describing inclusion
-  criteria. Mutually exclusive with `cohort_definition_id`.
+    Named list; inline cohort specification DSL describing inclusion
+    criteria. Mutually exclusive with `cohort_definition_id`.
 
 ## Value
 
@@ -35,8 +35,7 @@ The modified `omop_plan` with the cohort slot populated.
 
 ## See also
 
-[`ds.omop.plan`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.md),
-[`ds.omop.plan.cohort_membership`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.cohort_membership.md)
+`ds.omop.plan`, `ds.omop.plan.cohort_membership`
 
 ## Examples
 

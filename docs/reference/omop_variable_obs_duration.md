@@ -16,13 +16,13 @@ omop_variable_obs_duration(
 
 ## Arguments
 
-- name:
+  - name:
 
-  Character; output column name (default `"obs_duration"`).
+    Character; output column name (default `"obs_duration"`).
 
-- period_policy:
+  - period\_policy:
 
-  Character; one of `"total"`, `"first"`, `"last"`, or `"longest"`.
+    Character; one of `"total"`, `"first"`, `"last"`, or `"longest"`.
 
 ## Value
 
@@ -31,8 +31,7 @@ An `omop_variable` object with `format = "obs_duration"` and a
 
 ## See also
 
-[`omop_variable`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md),
-[`omop_variable_age`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_age.md)
+`omop_variable`, `omop_variable_age`
 
 ## Examples
 

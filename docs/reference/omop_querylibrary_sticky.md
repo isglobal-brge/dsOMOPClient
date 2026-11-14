@@ -1,12 +1,21 @@
 # Build an executable sticky redesign of an OHDSI QueryLibrary question
 
-Creates a validated workflow specification containing an
-[`omop_privacy`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_privacy.md)
-object. The input table is not created by this function: it must be a
-server-created, person-local `omop.table` produced by the typed
-Recipe/Plan path, with the requested value and ordering columns. All
-levels, breaks, bounds, positive values and record caps are public
-analysis choices fixed before data access.
+Creates a validated workflow specification containing an `omop_privacy`
+object. The input table is not created by this function: it is a
+server-created, person-local `omop.table` prepared for DP from a typed
+recipe or plan, with the requested value and ordering columns. Give that
+recipe or plan as `preparation` and
+`ds.omop.querylibrary.sticky.release` prepares the input automatically
+(dsOMOP 2.9.1 or later), or prepare it yourself with
+`ds.omop.dp.prepare`. Tables loaded with `ds.omop.plan.execute` or
+`recipe_execute` carry no DP provenance (the core never uses DP), and a
+person-local table from a community-tool loader (an assign-mode
+analysis-catalog entry) also works. Questions with an
+`automatic_equivalent` in `omop_querylibrary_sticky_catalog` are
+answered by the analysis catalog with no preparation at all. All levels,
+breaks, bounds, positive values, reference dates and record caps are
+public analysis choices fixed before data access; the data custodian
+owns every privacy setting.
 
 ## Usage
 
@@ -28,60 +37,58 @@ omop_querylibrary_sticky(
 
 ## Arguments
 
-- upstream_id:
+  - upstream\_id:
 
-  Published QueryLibrary ID in the pinned catalog.
+    Published QueryLibrary ID in the pinned catalog.
 
-- variable:
+  - variable:
 
-  Value column in the protected prepared table. Not used for a
-  distinct-person count.
+    Value column in the protected prepared table. Not used for a
+    distinct-person count.
 
-- levels:
+  - levels:
 
-  Complete fixed public domain for a categorical histogram.
+    Complete fixed public domain for a categorical histogram.
 
-- breaks:
+  - breaks:
 
-  Fixed public numeric, ISO-date, or UTC-datetime histogram breaks.
+    Fixed public numeric, ISO-date, or UTC-datetime histogram breaks.
 
-- lower, upper:
+  - lower, upper:
 
-  Fixed finite bounds for a bounded person mean.
+    Fixed finite bounds for a bounded person mean.
 
-- positive:
+  - positive:
 
-  Fixed public values defining a positive binary outcome.
+    Fixed public values defining a positive binary outcome.
 
-- max_contributions:
+  - max\_contributions:
 
-  Public person-level contribution cap. It is required for record
-  counts, record histograms, and bounded distinct cardinality; it
-  defaults to one for a person/category presence histogram.
+    Public person-level contribution cap. It is required for record
+    counts, record histograms, and bounded distinct cardinality; it
+    defaults to one for a person/category presence histogram.
 
-- order_by:
+  - order\_by:
 
-  Public longitudinal ordering column. It is required for a record
-  histogram. First/last date mappings use `variable` itself when it is
-  omitted.
+    Public longitudinal ordering column. It is required for a record
+    histogram. First/last date mappings use `variable` itself when it is
+    omitted.
 
-- population_id:
+  - population\_id:
 
-  Optional public compatibility label passed to
-  [`omop_privacy`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_privacy.md).
+    Optional public compatibility label passed to `omop_privacy`.
 
-- preparation:
+  - preparation:
 
-  Optional `omop_recipe` or `omop_plan` documenting how the protected
-  input will be prepared. It must compile to exactly one output.
-  Execution remains explicit so the assigned symbol is visible to the
-  analyst and custodian.
+    Optional `omop_recipe` or `omop_plan` that defines the release
+    population and its variables. It must compile to exactly one output.
+    `ds.omop.querylibrary.sticky.release` prepares the input from it
+    automatically when no `x` is given.
 
 ## Value
 
 An `omop_querylibrary_sticky` specification. Pass it to
-[`ds.omop.querylibrary.sticky.release`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.querylibrary.sticky.release.md)
-after preparing its input.
+`ds.omop.querylibrary.sticky.release` after preparing its input.
 
 ## Details
 
@@ -89,7 +96,6 @@ The literal upstream SQL is never returned or executed. Exact ZIP,
 source/free-text labels, and patient/event rows fail closed. Record
 counts and distinct-concept cardinality are bounded per person and
 therefore target capped redesign estimands rather than the unbounded
-upstream estimands. The resulting object has no formal-DP switch:
-release delegates to the one server-owned sticky privacy service, whose
-status and result metadata state the implemented guarantee and
-accounting limitations.
+upstream estimands. The resulting object delegates release to the one
+server-owned fixed per-release sticky service, whose status and result
+metadata state the implemented guarantee.

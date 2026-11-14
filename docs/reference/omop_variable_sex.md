@@ -11,9 +11,9 @@ omop_variable_sex(name = "sex")
 
 ## Arguments
 
-- name:
+  - name:
 
-  Character; output column name (default `"sex"`).
+    Character; output column name (default `"sex"`).
 
 ## Value
 
@@ -22,8 +22,7 @@ metadata field.
 
 ## See also
 
-[`omop_variable`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.md),
-[`omop_variable_age`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_age.md)
+`omop_variable`, `omop_variable_age`
 
 ## Examples
 

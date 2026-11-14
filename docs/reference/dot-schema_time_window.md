@@ -1,6 +1,6 @@
-# Render a variable time_window as a preview string
+# Render a variable time\_window as a preview string
 
-Render a variable time_window as a preview string
+Render a variable time\_window as a preview string
 
 ## Usage
 

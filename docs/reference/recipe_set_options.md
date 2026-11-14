@@ -2,14 +2,10 @@
 
 Stores global execution options on the recipe itself, the single source
 of truth. These options are applied to the compiled plan by
-[`recipe_to_plan`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_plan.md)
-and therefore reach every downstream path
-([`recipe_execute`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_execute.md),
-[`recipe_preview`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_preview.md),
-[`recipe_validate`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_validate.md)).
-Only non-NULL arguments are updated; existing option values are
-preserved for omitted arguments. Mirrors
-[`ds.omop.plan.options`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.options.md).
+`recipe_to_plan` and therefore reach every downstream path
+(`recipe_execute`, `recipe_preview`, `recipe_validate`). Only non-NULL
+arguments are updated; existing option values are preserved for omitted
+arguments. Mirrors `ds.omop.plan.options`.
 
 ## Usage
 
@@ -24,25 +20,25 @@ recipe_set_options(
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- translate_concepts:
+  - translate\_concepts:
 
-  Logical; if `TRUE`, concept ID columns are translated to
-  human-readable concept names in output tables.
+    Logical; if `TRUE`, concept ID columns are translated to
+    human-readable concept names in output tables.
 
-- block_sensitive:
+  - block\_sensitive:
 
-  Logical; if `TRUE`, sensitive columns (e.g. exact dates, free-text
-  notes) are excluded from outputs.
+    Logical; if `TRUE`, sensitive columns (e.g. exact dates, free-text
+    notes) are excluded from outputs.
 
-- factor_concepts:
+  - factor\_concepts:
 
-  Logical; if `TRUE`, after a memory-mode execution every `_concept_id`
-  column is converted to a factor whose levels are harmonized across all
-  connected servers.
+    Logical; if `TRUE`, after a memory-mode execution every
+    `_concept_id` column is converted to a factor whose levels are
+    harmonized across all connected servers.
 
 ## Value
 
@@ -50,6 +46,4 @@ The modified `omop_recipe` with updated options.
 
 ## See also
 
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md),
-[`recipe_to_plan`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_plan.md),
-[`ds.omop.plan.options`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.options.md)
+`omop_recipe`, `recipe_to_plan`, `ds.omop.plan.options`

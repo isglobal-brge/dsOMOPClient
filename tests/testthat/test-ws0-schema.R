@@ -39,6 +39,8 @@ test_that("examples and probes behave identically on the client validator", {
   }
   probes <- c(dsOMOPClient:::.jsonSchemaLoad(file.path(d, "probes", "plan-v2-probes.json")),
               dsOMOPClient:::.jsonSchemaLoad(file.path(d, "probes", "mutate-v1-probes.json")))
+  # A-25 keeps all named population-cohort compatibility forms off the wire.
+  expect_true(all(paste0("P", 68:72) %in% vapply(probes, function(p) p$id, "")))
   schemas <- list(`plan-v2` = plan, `mutate-v1` = mut)
   n <- 0L
   for (p in probes) {

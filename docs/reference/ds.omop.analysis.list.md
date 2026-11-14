@@ -12,25 +12,36 @@ other server internals are exposed.
 ## Usage
 
 ``` r
-ds.omop.analysis.list(domain = NULL, symbol = "omop", conns = NULL)
+ds.omop.analysis.list(
+  domain = NULL,
+  symbol = "omop",
+  conns = NULL,
+  type = "both"
+)
 ```
 
 ## Arguments
 
-- domain:
+  - domain:
 
-  Character; optional clinical-domain filter (e.g. `"condition"`,
-  `"person"`). `NULL` (the default) returns entries for all domains.
+    Character; optional clinical-domain filter (e.g. `"condition"`,
+    `"person"`). `NULL` (the default) returns entries for all domains.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
+
+  - type:
+
+    Result view: `"both"` (default), `"split"`, or `"combine"`;
+    dsBaseClient-style aliases are accepted. A split view can inspect
+    nodes whose catalogs differ; combined views require equality.
 
 ## Value
 
@@ -43,8 +54,7 @@ a plot (`has_plot`).
 
 ## See also
 
-[`ds.omop.analysis.get`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.get.md),
-[`ds.omop.analysis.run`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.run.md)
+`ds.omop.analysis.get`, `ds.omop.analysis.run`
 
 ## Examples
 

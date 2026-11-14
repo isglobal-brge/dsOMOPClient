@@ -1,11 +1,8 @@
 # Get query template details (DEPRECATED)
 
-Deprecated shim for
-[`ds.omop.analysis.get`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.get.md).
-Forwards to
-[`ds.omop.analysis.get()`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.get.md)
-using the entry's pack-prefixed catalog name (`"dsomop:<query_id>"`) and
-returns the entry metadata list.
+Deprecated shim for `ds.omop.analysis.get`. Forwards to
+`ds.omop.analysis.get()` using the entry's pack-prefixed catalog name
+(`"dsomop:<query_id>"`) and returns the entry metadata list.
 
 ## Usage
 
@@ -15,19 +12,19 @@ ds.omop.query.get(query_id, symbol = "omop", conns = NULL)
 
 ## Arguments
 
-- query_id:
+  - query\_id:
 
-  Character; the legacy query ID (e.g., `"condition_prevalence"`).
+    Character; the legacy query ID (e.g., `"condition_prevalence"`).
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
 ## Value
 
@@ -35,7 +32,7 @@ Named list of catalog entry metadata, or `NULL` if not found.
 
 ## See also
 
-[`ds.omop.analysis.get`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.get.md)
+`ds.omop.analysis.get`
 
 ## Examples
 

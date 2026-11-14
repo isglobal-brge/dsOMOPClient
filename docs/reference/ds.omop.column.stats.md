@@ -17,54 +17,61 @@ ds.omop.column.stats(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 ```
 
 ## Arguments
 
-- table:
+  - table:
 
-  Character; the CDM table name (e.g., `"condition_occurrence"`).
+    Character; the CDM table name (e.g., `"condition_occurrence"`).
 
-- column:
+  - column:
 
-  Character; the column name to profile (e.g., `"condition_start_date"`,
-  `"value_as_number"`).
+    Character; the column name to profile (e.g.,
+    `"condition_start_date"`, `"value_as_number"`).
 
-- concept_id:
+  - concept\_id:
 
-  Integer or NULL; optional concept ID to restrict rows to a single
-  concept of the table before computing the column statistics (e.g.,
-  `value_as_number` for one measurement concept). Default: NULL for all
-  rows. The server applies the same disclosure controls to the
-  concept-filtered population.
+    Integer or NULL; optional concept ID to restrict rows to a single
+    concept of the table before computing the column statistics (e.g.,
+    `value_as_number` for one measurement concept). Default: NULL for
+    all rows. The server applies the same disclosure controls to the
+    concept-filtered population.
 
-- cohort:
+  - cohort:
 
-  Cohort reference (a `dsomop_cohort_handle`, a `cohort_definition_id`,
-  or a server-side cohort table name), or NULL.
+    Cohort reference (a `dsomop_cohort_handle`, a
+    `cohort_definition_id`, or a server-side cohort table name), or
+    NULL.
 
-- scope:
+  - scope:
 
-  Character; `"per_site"` (default) or `"pooled"`.
+    Character; `"per_site"` (default) or `"pooled"`.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or NULL to use the session default.
+    DSI connection object(s) or NULL to use the session default.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, return a dry-run result containing only the
-  generated call code (default: `TRUE`).
+    Logical; if `FALSE`, return a dry-run result containing only the
+    generated call code (default: `TRUE`).
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. When
+    omitted, legacy `scope` behaviour is preserved.
 
 ## Value
 

@@ -10,9 +10,9 @@ Format an R value for code generation
 
 ## Arguments
 
-- x:
+  - x:
 
-  An R value to format as code
+    An R value to format as code
 
 ## Value
 

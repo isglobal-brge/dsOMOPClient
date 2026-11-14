@@ -2,8 +2,8 @@
 
 Queries the `achilles_results` table on each connected server for the
 specified analysis IDs. These are pre-computed count-based statistics
-(e.g., person counts by gender, condition frequency). When
-`scope = "pooled"`, counts are summed across servers with suppression
+(e.g., person counts by gender, condition frequency). When `scope =
+"pooled"`, counts are summed across servers with suppression
 propagation: if any server suppressed a cell (NA), the pooled cell is
 also set to NA to prevent disclosure.
 
@@ -16,44 +16,50 @@ ds.omop.achilles.results(
   pooling_policy = "strict",
   symbol = "omop",
   conns = NULL,
-  execute = TRUE
+  execute = TRUE,
+  type = NULL
 )
 ```
 
 ## Arguments
 
-- analysis_ids:
+  - analysis\_ids:
 
-  Integer vector; the Achilles analysis IDs to retrieve (e.g.,
-  `c(1, 2, 400)` for total persons, gender breakdown, and condition
-  frequency).
+    Integer vector; the Achilles analysis IDs to retrieve (e.g.,
+    `c(1, 2, 400)` for total persons, gender breakdown, and condition
+    frequency).
 
-- scope:
+  - scope:
 
-  Character; `"per_site"` returns each server's results separately,
-  `"pooled"` additionally aggregates counts across servers.
+    Character; `"per_site"` returns each server's results separately,
+    `"pooled"` additionally aggregates counts across servers.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; controls how suppressed (NA) cells are handled during
-  pooling. `"strict"` (the default) sets the pooled value to NA if any
-  server suppressed the cell. `"pooled_only_ok"` sums only the
-  non-suppressed values.
+    Character; controls how suppressed (NA) cells are handled during
+    pooling. `"strict"` (the default) sets the pooled value to NA if any
+    server suppressed the cell. `"pooled_only_ok"` sums only the
+    non-suppressed values.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, returns a dry-run `dsomop_result` containing only
-  the reproducible R code without contacting the servers.
+    Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
+    only the reproducible R code without contacting the servers.
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. When
+    omitted, legacy `scope` behaviour is preserved.
 
 ## Value
 

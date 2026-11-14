@@ -10,14 +10,14 @@ Pool counts by summing across servers
 
 ## Arguments
 
-- per_site_counts:
+  - per\_site\_counts:
 
-  Named numeric vector or list of counts
+    Named numeric vector or list of counts
 
-- policy:
+  - policy:
 
-  Character; "strict" or "pooled_only_ok"
+    Character; "strict" or "pooled\_only\_ok"
 
 ## Value
 
-List with \$result and \$warnings
+List with $result and $warnings

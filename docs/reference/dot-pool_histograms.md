@@ -10,15 +10,15 @@ Pool histograms by bin-wise sum
 
 ## Arguments
 
-- per_site_histograms:
+  - per\_site\_histograms:
 
-  Named list of histogram data frames (each with bin_start, bin_end,
-  count, suppressed)
+    Named list of histogram data frames (each with bin\_start, bin\_end,
+    count, suppressed)
 
-- policy:
+  - policy:
 
-  Character; pooling policy
+    Character; pooling policy
 
 ## Value
 
-List with \$result (data.frame) and \$warnings
+List with $result (data.frame) and $warnings

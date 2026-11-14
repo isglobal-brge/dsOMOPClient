@@ -251,14 +251,14 @@ test_that("a scalar cohort to omop_recipe is scope, not the base cohort", {
       if (is.call(expr) && identical(as.character(expr[[1L]]),
                                      "omopPlanExecuteDS")) {
         captured <<- expr
-        symbols <<- union(symbols, as.character(expr[[4L]]))
+        symbols <<- union(symbols, as.character(unlist(.decode_ds(expr[[4L]]), use.names = FALSE)))
       }
       if (is.function(success)) success("srv")
       invisible(NULL)
     },
     datashield.aggregate = function(conns, expr, success = NULL, ...) {
       report <- if (as.character(expr[[1L]]) == "omopPlanStatusDS") {
-        .publication_status(captured[[4L]])
+        .publication_status(.decode_ds(captured[[4L]]))
       } else list(levels = list(), unsafe = character(0),
                    nfilter_levels_max = 40)
       if (is.function(success)) success("srv", report)
@@ -289,6 +289,7 @@ test_that("ds.omop.plan.execute splices scope symbols into the server call", {
   plan <- recipe_to_plan(recipe, version = 1)
   # factor_concepts off so no harmonization aggregate is attempted.
   plan$options$factor_concepts <- FALSE
+  plan$options$translate_concepts <- FALSE
 
   call_expr <- .capture_exec_call(plan, out = c(study = "D_study"))
   expect_false(is.null(call_expr))
@@ -323,6 +324,7 @@ test_that("ds.omop.plan.execute omits scope args when the recipe has none", {
     outputs = omop_output(name = "study", type = "wide"))
   plan <- recipe_to_plan(recipe, version = 1)
   plan$options$factor_concepts <- FALSE
+  plan$options$translate_concepts <- FALSE
 
   call_expr <- .capture_exec_call(plan, out = c(study = "D_study"))
   args <- as.list(call_expr)
@@ -353,6 +355,7 @@ test_that("execute rejects output and scope collisions before cleanup", {
     .package = "DSI"
   )
   plan$options$factor_concepts <- FALSE
+  plan$options$translate_concepts <- FALSE
   expect_error(
     ds.omop.plan.execute(plan, out = c(study = "scope_tbl")),
     "collide with execution-scope"
@@ -366,7 +369,8 @@ test_that("recipe_execute applies an execution-time scope override", {
   .with_fake_session()
   recipe <- omop_recipe(
     variables = omop_variable_age(),
-    outputs = omop_output(name = "study", type = "wide"))
+    outputs = omop_output(name = "study", type = "wide"),
+    options = list(translate_concepts = FALSE))
   expect_null(recipe$scope)
 
   captured <- NULL
@@ -378,14 +382,14 @@ test_that("recipe_execute applies an execution-time scope override", {
       if (is.call(expr) && identical(as.character(expr[[1L]]),
                                      "omopPlanExecuteDS")) {
         captured <<- expr
-        symbols <<- union(symbols, as.character(expr[[4L]]))
+        symbols <<- union(symbols, as.character(unlist(.decode_ds(expr[[4L]]), use.names = FALSE)))
       }
       if (is.function(success)) success("srv")
       invisible(NULL)
     },
     datashield.aggregate = function(conns, expr, success = NULL, ...) {
       report <- if (as.character(expr[[1L]]) == "omopPlanStatusDS") {
-        .publication_status(captured[[4L]])
+        .publication_status(.decode_ds(captured[[4L]]))
       } else list(levels = list(), unsafe = character(0),
                    nfilter_levels_max = 40)
       if (is.function(success)) success("srv", report)
@@ -396,8 +400,7 @@ test_that("recipe_execute applies an execution-time scope override", {
     },
     datashield.symbols = function(conns, ...) list(srv = symbols),
     .package = "DSI")
-  # factor harmonization is skipped because the recipe carries no factor opts by
-  # default for a bare wide output; pass through recipe_execute directly.
+  # This scope-transport fixture explicitly requests numeric output.
   suppressWarnings(recipe_execute(recipe, out = c(study = "D_study"),
                                   cohort = "ct", tables = "inc_a",
                                   combine = "union"))

@@ -11,7 +11,8 @@ into multiple symbols: `<name>.covariates`, `<name>.covariateRef`, and
 and `<name>.personRef`. Person-period outputs additionally assign
 `<name>.personPeriods`, the complete episode-by-bin roster.
 Recurrent-event survival outputs assign `<name>.events` and
-`<name>.riskSets`.
+`<name>.riskSets`. Multi-state outputs assign `<name>.msdata` and the
+public transition dictionary `<name>.transitionRef`.
 
 ## Usage
 
@@ -21,64 +22,77 @@ ds.omop.plan.execute(
   out = NULL,
   symbol = "omop",
   conns = NULL,
-  output_mode = "memory"
+  output_mode = "memory",
+  on_small_site = c("error", "skip")
 )
 ```
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object, or a language-2 plan (`omop_plan_v2`, from
+    `recipe_to_plan`). A v2 plan needs every server to advertise recipe
+    language 2 and every operation it uses; it is sent losslessly and
+    published through the same status protocol.
 
-- out:
+  - out:
 
-  Optional output-to-symbol mapping. Three forms are accepted:
+    Optional output-to-symbol mapping. Three forms are accepted:
 
-  - **Missing or `NULL` (default):** symbol names are auto-derived for
-    *every* plan output exactly as
-    [`recipe_execute`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_execute.md)
-    does — the output's own `result_symbol` when set, otherwise
-    `D_<name>` (so an output named `baseline` becomes symbol
-    `D_baseline`). Single-output plans therefore just work with no
-    `out`.
+      - **Missing or `NULL` (default):** symbol names are auto-derived
+        for *every* plan output exactly as `recipe_execute` does — the
+        output's own `result_symbol` when set, otherwise `D_<name>` (so
+        an output named `baseline` becomes symbol `D_baseline`).
+        Single-output plans therefore just work with no `out`.
 
-  - **A bare unnamed string** (e.g. `out = "D"`): allowed only when the
-    plan has exactly *one* output, which is bound to that symbol. With
-    multiple outputs this stops with an error asking you to use the
-    named form.
+      - **A bare unnamed string** (e.g. `out = "D"`): allowed only when
+        the plan has exactly *one* output, which is bound to that
+        symbol. With multiple outputs this stops with an error asking
+        you to use the named form.
 
-  - **A named character vector** (e.g.
-    `c(baseline = "D_base", survival = "D_tte")`): maps each named plan
-    output to its server-side symbol. This advanced multi-output form is
-    unchanged and fully backward compatible.
+      - **A named character vector** (e.g. `c(baseline = "D_base",
+        survival = "D_tte")`): maps each named plan output to its
+        server-side symbol. This advanced multi-output form is unchanged
+        and fully backward compatible.
 
-- symbol:
+  - symbol:
 
-  Character; name of the OMOP session symbol on the server (default
-  `"omop"`).
+    Character; name of the OMOP session symbol on the server (default
+    `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL`, uses the connections stored in
-  the session.
+    DSI connection object(s). If `NULL`, uses the connections stored in
+    the session.
 
-- output_mode:
+  - output\_mode:
 
-  Character; `"memory"` (default, backwards compatible) or `"staged"`
-  (writes server-local files and returns descriptors). Arrow provides
-  Parquet; without it the server uses CSV.
+    Character; `"memory"` (default, backwards compatible) or `"staged"`
+    (writes server-local files and returns descriptors). Arrow provides
+    Parquet; without it the server uses CSV.
+
+  - on\_small\_site:
+
+    Character; `"error"` (default) or `"skip"`. Only insufficient final
+    person support is skippable. Skip requests an all-or-none server
+    commit: a rejected site publishes nothing and returns `NULL`. With
+    the default, a non-strict server may publish complete passing output
+    families and warn about rejected families. A strict refusal rolls
+    back the federation. Other failures always roll back and error.
+    These policies require the publication protocol on every site. If
+    any site lacks it, a v1 plan uses the 2.10.2 legacy call everywhere
+    with one warning, and `on_small_site` does not change that call; a
+    language-2 plan is refused before assignment.
 
 ## Value
 
-Invisible; the resolved `out` symbol mapping (for chaining). The
-produced symbols are also recorded on the session so subsequent
-manipulation wrappers
-([`ds.omop.merge`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.merge.md),
-[`ds.omop.filter`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.filter.md),
-[`ds.omop.select`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.select.md),
-[`ds.omop.bind_rows`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.bind_rows.md))
-can default to the last one.
+Invisibly, the resolved `out` symbol mapping for a complete ordinary
+execution. When sites publish different outputs or fresh names, a named
+per-site list of actual publication inventories; skipped sites have
+`NULL` entries. The produced symbols are also recorded on the session so
+subsequent manipulation wrappers (`ds.omop.merge`, `ds.omop.filter`,
+`ds.omop.select`, `ds.omop.bind_rows`) can default to the last one.
 
 ## Details
 
@@ -92,29 +106,24 @@ require an R-side reshape or derivation are materialized before staging.
 Descriptors are server paths readable under the server OS identity;
 other service accounts require a separately reviewed broker. They are
 not client download URLs and do not by themselves establish
-compatibility with a particular external package. Cleanup is all-or-none
-for DataSHIELD-visible symbols, not a distributed filesystem
-transaction: after a cross-node staged failure, private files may remain
-registered with a successful server handle until its cleanup or
-disconnect path runs.
+compatibility with a particular external package. Publication status is
+read before the temporary execution symbol is removed. The server
+reports the actual output inventory and allocates fresh names for
+occupied destinations. A technical or transport failure revokes and
+removes this execution's symbols and staged files across all
+participating sites.
 
 With two or more servers, execution first establishes (or revalidates) a
-strict schema/semantic harmonization contract. This binds the plan to
-the exact participating nodes, required OMOP columns and compatible type
-families; vocabulary-dependent plans additionally require one reported
-vocabulary version. All expected output components must land on every
-node. A node failure, incomplete composite output, or
-factor-harmonization failure removes the exact symbols owned by the
-attempted execution and fails closed. Every requested output family must
-be absent on every server before execution; existing workspace objects
-are never deleted or overwritten speculatively. Choose fresh `out` names
-(or explicitly remove obsolete objects through the ordinary DataSHIELD
-workspace API) when rerunning a plan.
+strict schema/semantic harmonization contract. Concept factors are
+harmonized only over the retained sites and their published components.
+
+Loading tables never depends on differential privacy. After a memory
+execution, concept columns are converted to factors harmonized across
+servers (see `ds.omop.plan.options`).
 
 ## See also
 
-[`ds.omop.plan.validate`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.validate.md),
-[`ds.omop.plan.preview`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.preview.md)
+`ds.omop.plan.validate`, `ds.omop.plan.preview`
 
 ## Examples
 

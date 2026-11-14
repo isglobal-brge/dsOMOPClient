@@ -1,12 +1,8 @@
 # Build an R call string with deparse-based argument formatting
 
-Like
-[`.build_code()`](https://isglobal-brge.github.io/dsOMOPClient/reference/dot-build_code.md)
-but escapes strings safely via
-[`.codegen_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/dot-codegen_value.md)
-and supports verbatim arguments created with
-[`.codegen_raw()`](https://isglobal-brge.github.io/dsOMOPClient/reference/dot-codegen_raw.md).
-`NULL` arguments are dropped.
+Like `.build_code()` but escapes strings safely via `.codegen_value()`
+and supports verbatim arguments created with `.codegen_raw()`. `NULL`
+arguments are dropped.
 
 ## Usage
 
@@ -16,13 +12,13 @@ and supports verbatim arguments created with
 
 ## Arguments
 
-- fn_name:
+  - fn\_name:
 
-  Character; fully qualified function name.
+    Character; fully qualified function name.
 
-- ...:
+  - ...:
 
-  Named arguments to include in the call.
+    Named arguments to include in the call.
 
 ## Value
 

@@ -26,71 +26,70 @@ ds.omop.plan.events(
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- name:
+  - name:
 
-  Character; output name used as a key in the plan's outputs list.
+    Character; output name used as a key in the plan's outputs list.
 
-- table:
+  - table:
 
-  Character; source OMOP table name (e.g. `"condition_occurrence"`,
-  `"drug_exposure"`).
+    Character; source OMOP table name (e.g. `"condition_occurrence"`,
+    `"drug_exposure"`).
 
-- columns:
+  - columns:
 
-  Character vector; columns to include from the table. If `NULL`, the
-  server selects default columns.
+    Character vector; columns to include from the table. If `NULL`, the
+    server selects default columns.
 
-- concept_set:
+  - concept\_set:
 
-  Numeric vector or concept set spec; concept IDs used to filter rows
-  via the standard concept ID column of the table.
+    Numeric vector or concept set spec; concept IDs used to filter rows
+    via the standard concept ID column of the table.
 
-- time_window:
+  - time\_window:
 
-  Named list with `start_date` and `end_date` for calendar-based
-  filtering.
+    Named list with `start_date` and `end_date` for calendar-based
+    filtering.
 
-- temporal:
+  - temporal:
 
-  An `omop_temporal_spec` object or list; temporal filtering relative to
-  a cohort index date. See
-  [`omop.temporal`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.temporal.md).
+    An `omop_temporal_spec` object or list; temporal filtering relative
+    to a cohort index date. See `omop.temporal`.
 
-- date_handling:
+  - date\_handling:
 
-  A list; date handling specification controlling how date columns are
-  transformed. See
-  [`omop.date_handling`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.date_handling.md).
+    A list; date handling specification controlling how date columns are
+    transformed. See `omop.date_handling`.
 
-- filters:
+  - filters:
 
-  Named list; additional custom filter DSL expressions (nested
-  `and`/`or` of leaves, each `list(var=, op=, value=)`). Validated
-  fail-closed server-side: leaves on identifier or blocked columns, and
-  narrow fingerprinting operators, are rejected. Use this to filter by
-  `unit_concept_id` or a `*_type_concept_id` for unit/type scoping.
+    Named list; additional custom filter DSL expressions (nested
+    `and`/`or` of leaves, each `list(var=, op=, value=)`). Validated
+    fail-closed server-side: leaves on identifier or blocked columns,
+    and narrow fingerprinting operators, are rejected. Use this to
+    filter by `unit_concept_id` or a `*_type_concept_id` for unit/type
+    scoping.
 
-- visit_filter:
+  - visit\_filter:
 
-  Named list `list(concept_ids = ...)`; restrict events to visits of
-  those `visit_concept_id` values via the `visit_occurrence_id` link.
+    Named list `list(concept_ids = ...)`; restrict events to visits of
+    those `visit_concept_id` values via the `visit_occurrence_id` link.
 
-- concept_col:
+  - concept\_col:
 
-  Character; override the concept column the `concept_set` scopes
-  (default: the table's domain concept), e.g. `"unit_concept_id"` to
-  extract one unit for harmonization.
+    Character; override the concept column the `concept_set` scopes
+    (default: the table's domain concept), e.g. `"unit_concept_id"` to
+    extract one unit for harmonization.
 
-- representation:
+  - representation:
 
-  Named list with `format` (one of `"long"`, `"wide"`, `"features"`, or
-  `"sparse"`) and optional format-specific settings.
-  Wide/features/sparse may set `grain` to `"person"` (default) or
-  `"episode"`; an index-relative window requires episode grain.
+    Named list with `format` (one of `"long"`, `"wide"`, `"features"`,
+    or `"sparse"`) and optional format-specific settings.
+    Wide/features/sparse may set `grain` to `"person"` (default) or
+    `"episode"`; an index-relative window requires episode grain.
 
 ## Value
 
@@ -98,9 +97,7 @@ The modified `omop_plan` with the event-level output appended.
 
 ## See also
 
-[`omop.temporal`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.temporal.md),
-[`omop.date_handling`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.date_handling.md),
-[`ds.omop.plan.features`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.features.md)
+`omop.temporal`, `omop.date_handling`, `ds.omop.plan.features`
 
 ## Examples
 

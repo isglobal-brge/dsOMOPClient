@@ -2,7 +2,7 @@
 # B1) selects the publication protocol; test-v2-protocol.R covers old sites.
 .mock_current_methods()
 
-test_that("staged execution invalidates harmonization before preparation", {
+test_that("staged execution retains translation and revalidates its binding", {
   captured <- NULL
   conns <- list(site_a = "A", site_b = "B")
   plan <- ds.omop.plan()
@@ -10,7 +10,8 @@ test_that("staged execution invalidates harmonization before preparation", {
 
   testthat::local_mocked_bindings(
     .get_session = function(...) {
-      list(conns = conns, res_symbol = "dsO_res")
+      list(conns = conns, res_symbol = "dsO_res",
+           capabilities = list(site_a = .caps(), site_b = .caps()))
     },
     .prepare_plan_for_federation = function(plan, ...) {
       captured <<- plan
@@ -23,6 +24,6 @@ test_that("staged execution invalidates harmonization before preparation", {
     ds.omop.plan.execute(plan, output_mode = "staged"),
     "captured staged plan"
   )
-  expect_identical(captured$options$translate_concepts, FALSE)
-  expect_null(captured$harmonization)
+  expect_identical(captured$options$translate_concepts, TRUE)
+  expect_identical(captured$harmonization, plan$harmonization)
 })

@@ -2,11 +2,10 @@
 
 Constructs the unevaluated DataSHIELD call for `omopAnalysisRunDS` /
 `omopAnalysisRunAssignDS`. `params` is JSON/base64-encoded for Opal
-transport
-([`.ds_encode`](https://isglobal-brge.github.io/dsOMOPClient/reference/dot-ds_encode.md));
-`scope_args` is spliced as closed, named arguments. Table scopes are
-bare symbols, never nested calls. `combine` is passed by name so absent
-scope arguments cannot shift it into the wrong positional slot.
+transport (`.ds_encode`); `scope_args` is spliced as closed, named
+arguments. Table scopes are bare symbols, never nested calls. `combine`
+is passed by name so absent scope arguments cannot shift it into the
+wrong positional slot.
 
 ## Usage
 
@@ -24,30 +23,30 @@ scope arguments cannot shift it into the wrong positional slot.
 
 ## Arguments
 
-- fn:
+  - fn:
 
-  Character; the server method name.
+    Character; the server method name.
 
-- res_symbol:
+  - res\_symbol:
 
-  Character; the server-side handle symbol.
+    Character; the server-side handle symbol.
 
-- name:
+  - name:
 
-  Character; the catalog entry name.
+    Character; the catalog entry name.
 
-- params:
+  - params:
 
-  Named list of parameter values.
+    Named list of parameter values.
 
-- scope_args:
+  - scope\_args:
 
-  `NULL` or the closed named argument list returned by
-  [`.analysis_scope_expr`](https://isglobal-brge.github.io/dsOMOPClient/reference/dot-analysis_scope_expr.md).
+    `NULL` or the closed named argument list returned by
+    `.analysis_scope_expr`.
 
-- combine:
+  - combine:
 
-  Character; `"union"` or `"intersect"`.
+    Character; `"union"` or `"intersect"`.
 
 ## Value
 

@@ -22,44 +22,39 @@ ds.omop.plan.preview(plan, symbol = "omop", conns = NULL)
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- symbol:
+  - symbol:
 
-  Character; name of the OMOP session symbol on the server (default
-  `"omop"`).
+    Character; name of the OMOP session symbol on the server (default
+    `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL`, uses the connections stored in
-  the session.
+    DSI connection object(s). If `NULL`, uses the connections stored in
+    the session.
 
 ## Value
 
 A named list (one element per server). Each server's result holds
-`$validation` (see
-[`ds.omop.plan.validate`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.validate.md)),
-`$band_width` (the count-banding granularity), and `$outputs`, a
-per-output list with `columns`, `missing_columns`, `n_persons` (banded
-when available), `n_persons_available`, `n_persons_unavailable_reason`,
+`$validation` (see `ds.omop.plan.validate`), `$band_width` (the
+count-banding granularity), and `$outputs`, a per-output list with
+`columns`, `missing_columns`, `n_persons` (banded when available),
+`n_persons_available`, `n_persons_unavailable_reason`,
 `n_persons_banded`, `disclosive`, and `representation`.
 
 ## Details
 
-Note: `ds.omop.plan.preview` and
-[`ds.omop.plan.validate`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.validate.md)
-call the same server endpoint (`omopPlanPreviewDS`) and return the same
-structure; the distinction is only intent. Read `$outputs` here for
-per-output detail, and `$validation` under
-[`ds.omop.plan.validate`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.validate.md)
-for the pass/fail check.
+Note: `ds.omop.plan.preview` and `ds.omop.plan.validate` call the same
+server endpoint (`omopPlanPreviewDS`) and return the same structure; the
+distinction is only intent. Read `$outputs` here for per-output detail,
+and `$validation` under `ds.omop.plan.validate` for the pass/fail check.
 
 ## See also
 
-[`ds.omop.plan.validate`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.validate.md),
-[`ds.omop.plan.execute`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.execute.md)
+`ds.omop.plan.validate`, `ds.omop.plan.execute`
 
 ## Examples
 

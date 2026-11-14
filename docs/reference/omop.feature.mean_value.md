@@ -17,20 +17,20 @@ omop.feature.mean_value(
 
 ## Arguments
 
-- concept_set:
+  - concept\_set:
 
-  Numeric vector of concept IDs, or an `omop_concept_set` object
-  defining the concepts to match.
+    Numeric vector of concept IDs, or an `omop_concept_set` object
+    defining the concepts to match.
 
-- value_column:
+  - value\_column:
 
-  Character; name of the numeric column to average (default
-  `"value_as_number"`).
+    Character; name of the numeric column to average (default
+    `"value_as_number"`).
 
-- name:
+  - name:
 
-  Character; optional custom name for the feature column. If `NULL`,
-  auto-generated from the concept and table context.
+    Character; optional custom name for the feature column. If `NULL`,
+    auto-generated from the concept and table context.
 
 ## Value
 
@@ -38,9 +38,8 @@ An `omop_feature_spec` object with `type = "mean_value"`.
 
 ## See also
 
-[`ds.omop.plan.features`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.features.md),
-[`omop.feature.min_value`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.min_value.md),
-[`omop.feature.max_value`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.max_value.md)
+`ds.omop.plan.features`, `omop.feature.min_value`,
+`omop.feature.max_value`
 
 ## Examples
 

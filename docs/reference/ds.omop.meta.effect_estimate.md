@@ -3,10 +3,8 @@
 The CLIENT half of OHDSI evidence synthesis: run a per-site fitted
 comparative effect estimate on every server, then INVERSE-VARIANCE
 meta-analyze the per-site log-estimates into ONE pooled estimate + 95%
-CI (the
-[`metafor::rma`](https://wviechtb.github.io/metafor/reference/rma.uni.html)
-pattern by hand — no new dependency). A single site cannot compute a
-cross-database pooled estimate, so the server-side
+CI (the `metafor::rma` pattern by hand — no new dependency). A single
+site cannot compute a cross-database pooled estimate, so the server-side
 `dsomop:cm.effect_estimate` (CohortMethod HR/RR; the `es_cm_result`
 delegate) and `dsomop:sccs.incidence_rate_ratio` (SCCS IRR; the
 `es_sccs_result` delegate) each emit only the disclosure-safe per-site
@@ -23,51 +21,56 @@ ds.omop.meta.effect_estimate(
   combine = "union",
   pooling_policy = "strict",
   symbol = "omop",
-  conns = NULL
+  conns = NULL,
+  type = "both"
 )
 ```
 
 ## Arguments
 
-- name:
+  - name:
 
-  Character; the per-site effect-estimate analysis id. Default
-  `"dsomop:cm.effect_estimate"` (CohortMethod). Use
-  `"dsomop:sccs.incidence_rate_ratio"` for SCCS, or the `es_cm_result` /
-  `es_sccs_result` evidence-synthesis ids.
+    Character; the per-site effect-estimate analysis id. Default
+    `"dsomop:cm.effect_estimate"` (CohortMethod). Use
+    `"dsomop:sccs.incidence_rate_ratio"` for SCCS, or the `es_cm_result`
+    / `es_sccs_result` evidence-synthesis ids.
 
-- params:
+  - params:
 
-  Named list of analysis params (e.g. `outcome_concept_id`,
-  `model_type`); passed through to the per-site analysis unchanged.
+    Named list of analysis params (e.g. `outcome_concept_id`,
+    `model_type`); passed through to the per-site analysis unchanged.
 
-- cohort:
+  - cohort:
 
-  For CohortMethod, the two-population target+comparator scope (a
-  length-2 set of cohort handles / ids / table names); for SCCS, the
-  scoped case population.
+    For CohortMethod, the two-population target+comparator scope (a
+    length-2 set of cohort handles / ids / table names); for SCCS, the
+    scoped case population.
 
-- tables:
+  - tables:
 
-  Optional `omop.table` symbol scope (see
-  [`ds.omop.analysis.run`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.run.md)).
+    Optional `omop.table` symbol scope (see `ds.omop.analysis.run`).
 
-- combine:
+  - combine:
 
-  Character; `"union"` (default) or `"intersect"` for multi-source scope
-  folding.
+    Character; `"union"` (default) or `"intersect"` for multi-source
+    scope folding.
 
-- pooling_policy:
+  - pooling\_policy:
 
-  Character; `"strict"` (default) or `"pooled_only_ok"`.
+    Character; `"strict"` (default) or `"pooled_only_ok"`.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default `"omop"`).
+    Character; the session symbol (default `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s) or `NULL` to use the session default.
+    DSI connection object(s) or `NULL` to use the session default.
+
+  - type:
+
+    Result view: `"both"` (default), `"split"`, or `"combine"`; see
+    `ds.omop.analysis.run`.
 
 ## Value
 
@@ -78,7 +81,7 @@ HR/RR + CI under both models, `n_databases`, `i2`, `tau2`).
 ## Details
 
 Both a FIXED-effect and a random-effects (DerSimonian-Laird) pooled
-estimate are returned, with Cochran's Q, \\I^2\\, and \\\tau^2\\
+estimate are returned, with Cochran's Q, \\(I^2\\), and \\(\\tau^2\\)
 heterogeneity. No patient data crosses sites — only the already-gated
 per-site sufficient statistics. A site whose per-site estimate the
 server suppressed (small/empty arm) is ABSENT from the pool: under
@@ -88,7 +91,7 @@ warns.
 
 ## See also
 
-[`ds.omop.analysis.run`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.analysis.run.md)
+`ds.omop.analysis.run`
 
 ## Examples
 

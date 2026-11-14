@@ -30,42 +30,42 @@ ds.omop.plan.person_period(
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- table:
+  - table:
 
-  OMOP event table used for covariates.
+    OMOP event table used for covariates.
 
-- concept_set:
+  - concept\_set:
 
-  Optional concept IDs or an OHDSI-style concept-set spec. `NULL`
-  requests all observed concepts subject to the server cap.
+    Optional concept IDs or an OHDSI-style concept-set spec. `NULL`
+    requests all observed concepts subject to the server cap.
 
-- bin_width:
+  - bin\_width:
 
-  Positive integer bin width in days.
+    Positive integer bin width in days.
 
-- window_start, window_end:
+  - window\_start, window\_end:
 
-  Inclusive integer days from index.
+    Inclusive integer days from index.
 
-- analyses:
+  - analyses:
 
-  Unique subset of `"binary"` and `"count"`.
+    Unique subset of `"binary"` and `"count"`.
 
-- grain:
+  - grain:
 
-  Must be `"episode"`.
+    Must be `"episode"`.
 
-- time_origin:
+  - time\_origin:
 
-  Must be `"index"`.
+    Must be `"index"`.
 
-- name:
+  - name:
 
-  Output name.
+    Output name.
 
 ## Value
 
@@ -73,4 +73,4 @@ The modified `omop_plan`.
 
 ## See also
 
-[`ds.omop.plan.temporal_covariates`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.temporal_covariates.md)
+`ds.omop.plan.temporal_covariates`

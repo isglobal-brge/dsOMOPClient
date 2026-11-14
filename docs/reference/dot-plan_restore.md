@@ -15,14 +15,14 @@ byte-identical transport JSON. Mirrors `.recipe_restore_params`.
 
 ## Arguments
 
-- x:
+  - x:
 
-  A parsed plan substructure.
+    A parsed plan substructure.
 
-- key:
+  - key:
 
-  Character; the name this node was stored under (drives integer
-  coercion). `NULL` at the top level.
+    Character; the name this node was stored under (drives integer
+    coercion). `NULL` at the top level.
 
 ## Value
 

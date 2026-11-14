@@ -12,9 +12,9 @@ variable names that avoid collisions across sessions.
 
 ## Arguments
 
-- prefix:
+  - prefix:
 
-  Character; prefix for the generated symbol.
+    Character; prefix for the generated symbol.
 
 ## Value
 

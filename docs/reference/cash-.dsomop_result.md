@@ -1,4 +1,4 @@
-# Access dsomop_result elements with backward compatibility
+# Access dsomop\_result elements with backward compatibility
 
 Custom `$` operator for `dsomop_result` objects. Top-level fields
 (`per_site`, `pooled`, `meta`) are returned directly. Any other name
@@ -15,13 +15,13 @@ x$name
 
 ## Arguments
 
-- x:
+  - x:
 
-  A `dsomop_result` object.
+    A `dsomop_result` object.
 
-- name:
+  - name:
 
-  Character; the element name to access.
+    Character; the element name to access.
 
 ## Value
 

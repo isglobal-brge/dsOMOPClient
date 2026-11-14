@@ -10,13 +10,13 @@ recipe_remove_variable(recipe, name)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object.
+    An `omop_recipe` object.
 
-- name:
+  - name:
 
-  Character; variable name to remove.
+    Character; variable name to remove.
 
 ## Value
 
@@ -24,4 +24,4 @@ The modified `omop_recipe` object.
 
 ## See also
 
-[`omop_recipe`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.md)
+`omop_recipe`

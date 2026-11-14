@@ -1,4 +1,4 @@
-# Get descendant concepts via the concept_ancestor table
+# Get descendant concepts via the concept\_ancestor table
 
 Traverses the OMOP `concept_ancestor` hierarchy on each connected server
 and returns all descendant concepts for the given ancestor IDs. This is
@@ -19,30 +19,30 @@ ds.omop.concept.descendants(
 
 ## Arguments
 
-- ancestor_ids:
+  - ancestor\_ids:
 
-  Integer or numeric vector of ancestor concept IDs to expand (e.g.,
-  `c(201820)`).
+    Integer or numeric vector of ancestor concept IDs to expand (e.g.,
+    `c(201820)`).
 
-- include_self:
+  - include\_self:
 
-  Logical; if `TRUE` (the default), the ancestor concepts themselves are
-  included in the result alongside their descendants.
+    Logical; if `TRUE` (the default), the ancestor concepts themselves
+    are included in the result alongside their descendants.
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol used when the OMOP connection was
-  initialised (default: `"omop"`).
+    Character; the session symbol used when the OMOP connection was
+    initialised (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL` (the default), the connections
-  stored in the active session are used.
+    DSI connection object(s). If `NULL` (the default), the connections
+    stored in the active session are used.
 
-- execute:
+  - execute:
 
-  Logical; if `FALSE`, returns a dry-run `dsomop_result` containing only
-  the reproducible R code without contacting the servers.
+    Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
+    only the reproducible R code without contacting the servers.
 
 ## Value
 

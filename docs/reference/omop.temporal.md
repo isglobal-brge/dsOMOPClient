@@ -18,31 +18,32 @@ omop.temporal(
 
 ## Arguments
 
-- index_window:
+  - index\_window:
 
-  Named list with `start` and `end` (integer days relative to the cohort
-  index date). Negative values denote time before the index date.
+    Named list with `start` and `end` (integer days relative to the
+    cohort index date). Negative values denote time before the index
+    date.
 
-- calendar:
+  - calendar:
 
-  Named list with `start` and `end` (character ISO 8601 dates, e.g.
-  `"2020-01-01"`).
+    Named list with `start` and `end` (character ISO 8601 dates, e.g.
+    `"2020-01-01"`).
 
-- event_select:
+  - event\_select:
 
-  Named list with `order` (`"first"` or `"last"`), `n` (integer; number
-  of events), and optional `by = "grain"` (default) or `by = "concept"`.
-  Concept mode keeps the first/last N independently for each concept
-  within a cohort episode when `index_window` is present, otherwise
-  within each person.
+    Named list with `order` (`"first"` or `"last"`), `n` (integer;
+    number of events), and optional `by = "grain"` (default) or `by =
+    "concept"`. Concept mode keeps the first/last N independently for
+    each concept within a cohort episode when `index_window` is present,
+    otherwise within each person.
 
-- min_gap:
+  - min\_gap:
 
-  Positive integer days, or a named list with `days`, optional
-  `by = "concept"` or `"grain"`, and optional `keep = "first"` or
-  `"last"`. Adjacent events no more than `days` apart form one chain.
-  The normalized policy defaults to concept-specific chains represented
-  by their first event.
+    Positive integer days, or a named list with `days`, optional `by =
+    "concept"` or `"grain"`, and optional `keep = "first"` or `"last"`.
+    Adjacent events no more than `days` apart form one chain. The
+    normalized policy defaults to concept-specific chains represented by
+    their first event.
 
 ## Value
 
@@ -51,8 +52,7 @@ An `omop_temporal_spec` object (a list with class
 
 ## See also
 
-[`ds.omop.plan.events`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.events.md),
-[`omop.date_handling`](https://isglobal-brge.github.io/dsOMOPClient/reference/omop.date_handling.md)
+`ds.omop.plan.events`, `omop.date_handling`
 
 ## Examples
 

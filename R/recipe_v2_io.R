@@ -7,7 +7,7 @@
 # import (the constructor is called again, so imported objects are validated
 # exactly like hand-written ones) and the generated R code.
 
-.V2_TAGGED_CLASSES <- c("omop_concept_set", "omop_event", "omop_predicate", "omop_unit",
+.V2_TAGGED_CLASSES <- c("omop_date_spec", "omop_date_source", "omop_variable_bundle", "omop_concept_set", "omop_event", "omop_predicate", "omop_unit",
                         "omop_criterion", "omop_window", "omop_bound", "omop_anchor",
                         "omop_index", "omop_any_of", "omop_end", "omop_coverage",
                         "omop_interval", "omop_censor", "omop_reducer", "omop_match",
@@ -21,18 +21,31 @@
 
 # Constructor name and arguments that rebuild a language-2 object.
 .v2_ctor_spec <- function(x) {
+  if(inherits(x,"omop_date_spec")) return(list(ctor="omop_date_spec",args=unclass(x)))
+  if(inherits(x,"omop_date_source")) {
+    a<-unclass(x);a$kind<-NULL
+    for(k in c("year","month","day")) if(!is.null(a[[k]])) a[[k]]<-if(a[[k]]$kind=="integer")a[[k]]$value else a[[k]]$name
+    return(list(ctor="omop_date_components",args=a))
+  }
+  if(inherits(x,"omop_variable_bundle")) return(list(ctor="omop_date_parts",args=unclass(x)))
   if (.v2_is_v2_variable(x)) {
     if (identical(x$kind, "reducer")) {
       return(list(ctor = "omop_variable",
                   args = list(name = x$name, event = x$event, reducer = x$reducer,
                               where = x$where, visit = x$visit,
-                              broadcast = if (isTRUE(x$broadcast)) TRUE)))
+                              broadcast = if (isTRUE(x$broadcast)) TRUE, date_spec=x$date_spec)))
     }
     if (identical(x$kind, "population_column")) {
       return(list(ctor = "omop_population_column", args = list(name = x$population_column),
                   name = x$name))
     }
     d <- x$derived
+    if((d$kind %||% "") %in% .DATE_KINDS) {
+      kind<-d$kind;d$kind<-NULL
+      if(kind=="date_part") {d$parts<-if(is.null(x$name)) d$part else setNames(d$part,x$name);d$part<-NULL}
+      d$date_spec<-x$date_spec;d$broadcast<-x$broadcast
+      return(list(ctor=switch(kind,calendar_date="omop_date",date_part="omop_date_parts",time_between="omop_time_between",age_at="omop_age_at"),args=d,name=x$name))
+    }
     spec <- switch(d$kind,
       age = list(ctor = "omop_age", args = list(reference = d$reference,
                  reference_date = d$reference_date, bands = d$bands, age_breaks = d$age_breaks)),
@@ -219,7 +232,7 @@
     return(out)
   }
   ctor <- as.character(ctor)[[1L]]
-  allowed <- c("omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
+  allowed <- c("omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
                "omop_ethnicity", "omop_birth_year_band", "omop_died", "omop_days_to_death",
                "omop_n_observation_periods", "omop_obs_duration", "omop_prior_obs",
                "omop_followup", "omop_observed_days", "omop_score", "omop_concept_set",
@@ -263,6 +276,7 @@
   }
   # A NULL stored argument always equals its constructor default.
   if (!is.null(names(args))) args <- args[!vapply(args, is.null, logical(1))]
+  if (ctor == "omop_date_parts" && is.list(args$parts)) args$parts <- unlist(args$parts, use.names = TRUE)
   obj <- do.call(ctor, args)
   if (!is.null(numeric_storage)) {
     if (!identical(ctor, "omop_where_tree") || !is.list(numeric_storage)) {
@@ -272,6 +286,9 @@
     # members together. Validate the resulting tree through the same grammar.
     tree <- .v2_restore_predicate_storage(obj$tree, numeric_storage)
     obj <- .v2_predicate(tree)
+  }
+  if (!is.null(variable_name) && inherits(obj, "omop_variable_bundle")) {
+    obj <- .dateExpandBundles(setNames(list(obj), variable_name))[[1L]]
   }
   if (!is.null(variable_name)) obj$name <- variable_name
   if (!is.null(simple)) {

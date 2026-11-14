@@ -29,57 +29,58 @@ ds.omop.plan.intervals(
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- tables:
+  - tables:
 
-  Character vector; OMOP tables to extract intervals from. Defaults to
-  observation_period, visit_occurrence, drug_exposure, and
-  condition_occurrence.
+    Character vector; OMOP tables to extract intervals from. Defaults to
+    observation\_period, visit\_occurrence, drug\_exposure, and
+    condition\_occurrence.
 
-- concept_filter:
+  - concept\_filter:
 
-  Named list; each table maps to concept IDs or a standard concept-set
-  specification with `concepts`, optional descendant/mapped expansion,
-  and exclusions. If `NULL`, no concept filtering is applied.
+    Named list; each table maps to concept IDs or a standard concept-set
+    specification with `concepts`, optional descendant/mapped expansion,
+    and exclusions. If `NULL`, no concept filtering is applied.
 
-- filters:
+  - filters:
 
-  Optional uniquely named per-table list of reviewed filter DSL trees.
-  Each tree applies only to its named source table.
+    Optional uniquely named per-table list of reviewed filter DSL trees.
+    Each tree applies only to its named source table.
 
-- window:
+  - window:
 
-  Optional index-relative window. Supply start/end offsets for overlap,
-  start, or end matching, or an at offset for active-at matching.
+    Optional index-relative window. Supply start/end offsets for
+    overlap, start, or end matching, or an at offset for active-at
+    matching.
 
-- interval_match:
+  - interval\_match:
 
-  Interval relationship: `"overlaps"`, `"starts_in"`, `"ends_in"`, or
-  `"active_at"`. Without an explicit window, matching is against the
-  cohort episode itself.
+    Interval relationship: `"overlaps"`, `"starts_in"`, `"ends_in"`, or
+    `"active_at"`. Without an explicit window, matching is against the
+    cohort episode itself.
 
-- event_select:
+  - event\_select:
 
-  Repeated-event policy: `"all"`, `"first"`, `"last"`, or `"nearest"`.
+    Repeated-event policy: `"all"`, `"first"`, `"last"`, or `"nearest"`.
 
-- select_n:
+  - select\_n:
 
-  Positive number of intervals retained per selection group.
+    Positive number of intervals retained per selection group.
 
-- select_by:
+  - select\_by:
 
-  Group selection by episode and source, optionally also by concept.
+    Group selection by episode and source, optionally also by concept.
 
-- anchor:
+  - anchor:
 
-  Integer days from index used by nearest-event selection.
+    Integer days from index used by nearest-event selection.
 
-- name:
+  - name:
 
-  Character; output name used as a key in the plan's outputs list.
+    Character; output name used as a key in the plan's outputs list.
 
 ## Value
 
@@ -87,8 +88,7 @@ The modified `omop_plan` with the intervals output appended.
 
 ## See also
 
-[`ds.omop.plan.events`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.events.md),
-[`ds.omop.plan.temporal_covariates`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.temporal_covariates.md)
+`ds.omop.plan.events`, `ds.omop.plan.temporal_covariates`
 
 ## Examples
 

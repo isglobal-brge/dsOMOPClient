@@ -17,18 +17,19 @@ ds.omop.plan.concept_dictionary(
 
 ## Arguments
 
-- plan:
+  - plan:
 
-  An `omop_plan` object.
+    An `omop_plan` object.
 
-- source_outputs:
+  - source\_outputs:
 
-  Character vector; names of outputs to scan for concept IDs. If `NULL`
-  (the default), all non-dictionary outputs in the plan are scanned.
+    Character vector; names of outputs to scan for concept IDs. If
+    `NULL` (the default), all non-dictionary outputs in the plan are
+    scanned.
 
-- name:
+  - name:
 
-  Character; output name used as a key in the plan's outputs list.
+    Character; output name used as a key in the plan's outputs list.
 
 ## Value
 
@@ -36,7 +37,7 @@ The modified `omop_plan` with the concept dictionary output appended.
 
 ## See also
 
-[`ds.omop.plan.options`](https://isglobal-brge.github.io/dsOMOPClient/reference/ds.omop.plan.options.md)
+`ds.omop.plan.options`
 
 ## Examples
 

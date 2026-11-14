@@ -11,13 +11,13 @@ omop.feature.gap_mean_days(concept_set, name = NULL)
 
 ## Arguments
 
-- concept_set:
+  - concept\_set:
 
-  Numeric vector of concept IDs.
+    Numeric vector of concept IDs.
 
-- name:
+  - name:
 
-  Character; optional custom column name.
+    Character; optional custom column name.
 
 ## Value
 

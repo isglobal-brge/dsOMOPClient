@@ -1,6 +1,6 @@
-# Print an omop_filter
+# Print an omop\_filter
 
-Print an omop_filter
+Print an omop\_filter
 
 ## Usage
 
@@ -11,13 +11,13 @@ print(x, ...)
 
 ## Arguments
 
-- x:
+  - x:
 
-  An `omop_filter` object.
+    An `omop_filter` object.
 
-- ...:
+  - ...:
 
-  Additional arguments (ignored).
+    Additional arguments (ignored).
 
 ## Value
 

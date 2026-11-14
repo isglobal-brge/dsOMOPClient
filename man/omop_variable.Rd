@@ -29,7 +29,10 @@ omop_variable(
   reducer = NULL,
   where = NULL,
   visit = NULL,
-  broadcast = FALSE
+  broadcast = FALSE,
+  labels = NULL,
+  column_names = NULL,
+  date_spec = NULL
 )
 }
 \arguments{
@@ -100,6 +103,13 @@ both is an error).}
 
 \item{broadcast}{(2.10.3) Logical; allow this reducer column in a
 \code{long} output (broadcast per episode).}
+
+\item{labels}{Named character map from concept IDs to category labels.}
+
+\item{column_names}{Named character map from stable untranslated generated
+column keys to complete, valid R names. Variable maps override recipe maps.}
+
+\item{date_spec}{Native date presentation; variable fields override recipe defaults.}
 }
 \value{
 An \code{omop_variable} object (a named list with class

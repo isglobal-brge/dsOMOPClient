@@ -2,12 +2,11 @@
 
 Walks an `omop_recipe` and returns a tidy report of problems without
 contacting any server. The first and most important check is whether the
-recipe even compiles:
-[`recipe_to_plan`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_plan.md)
-is run inside `tryCatch` and any compile error becomes the `no_compile`
-lint. Remaining rules inspect outputs, variables, and population filters
-for structural and disclosure-safety issues that would otherwise surface
-only at execution time on the server.
+recipe even compiles: `recipe_to_plan` is run inside `tryCatch` and any
+compile error becomes the `no_compile` lint. Remaining rules inspect
+outputs, variables, and population filters for structural and
+disclosure-safety issues that would otherwise surface only at execution
+time on the server.
 
 ## Usage
 
@@ -17,9 +16,9 @@ recipe_lint(recipe)
 
 ## Arguments
 
-- recipe:
+  - recipe:
 
-  An `omop_recipe` object, or `NULL`.
+    An `omop_recipe` object, or `NULL`.
 
 ## Value
 
@@ -31,67 +30,88 @@ rows if the recipe is clean).
 Severities are `"ERROR"` (will fail), `"WARNING"` (likely rejected or
 wrong), and `"INFO"` (advisory). Rules:
 
-- no_compile (ERROR):
+  - no\_compile (ERROR):
 
-  [`recipe_to_plan()`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_plan.md)
-  throws.
+    `recipe_to_plan()` throws.
 
-- empty_output (ERROR):
+  - empty\_output (ERROR):
 
-  an output resolves to zero variables.
+    an output resolves to zero variables.
 
-- dup_output (ERROR):
+  - dup\_output (ERROR):
 
-  duplicate output names.
+    duplicate output names.
 
-- concept_zero (ERROR):
+  - concept\_zero (ERROR):
 
-  a non-derived variable has an unmapped `concept_id` (0 or NA).
+    a non-derived variable has an unmapped `concept_id` (0 or NA).
 
-- concept_unnamed (WARNING):
+  - concept\_unnamed (WARNING):
 
-  `concept_id` present but `concept_name` missing.
+    `concept_id` present but `concept_name` missing.
 
-- time_since_spec (ERROR):
+  - time\_since\_spec (ERROR):
 
-  a `time_since` variable lacks a valid fixed ISO
-  `derived$reference_date` or `derived$unit`.
+    a `time_since` variable lacks a valid fixed ISO
+    `derived$reference_date` or `derived$unit`.
 
-- age_no_index (WARNING):
+  - age\_no\_index (WARNING):
 
-  `format = "age"` with index reference but the base population has
-  neither a cohort nor a date filter.
+    `format = "age"` with index reference but the base population has
+    neither a cohort nor a date filter.
 
-- narrow_filter (WARNING):
+  - highcard\_factor (WARNING):
 
-  population `age_range` width \< 5 years (server rejects).
-  Calendar-window width is server policy and is therefore not hard-coded
-  by this client lint.
+    a raw `_concept_id` column with `factor_concepts = TRUE`, or a
+    categorical format on a high-cardinality domain.
 
-- highcard_factor (WARNING):
+  - window\_inverted (WARNING):
 
-  a raw `_concept_id` column with `factor_concepts = TRUE`, or a
-  categorical format on a high-cardinality domain.
+    a variable `time_window` with `start > end`.
 
-- window_inverted (WARNING):
+  - long\_split (INFO):
 
-  a variable `time_window` with `start > end`.
+    a `"long"` output spanning \> 1 table.
 
-- long_split (INFO):
+  - no\_value\_source (INFO):
 
-  a `"long"` output spanning \> 1 table.
+    an aggregate format with no `value_source`.
 
-- no_value_source (INFO):
+  - tar\_default, censoring\_default, age\_group\_default, coverage,
+    collapse, representation, missing\_skip (INFO):
 
-  an aggregate format with no `value_source`.
+    a default the recipe relies on, stated (e.g. "follow-up ends 730
+    days after index").
 
-Edge cases: a `NULL` recipe returns a single `empty_recipe` info row; a
-recipe with no outputs adds a `no_output` warning.
+  - quasi\_identifier (INFO):
+
+    a permitted birth component, age, age band, birth-year band or date
+    column, one row per variable; final publication support and the
+    absolute-date policy still apply. Aggregate admission is unchanged.
+
+  - measurement\_pair (INFO):
+
+    `has_measurement` / `missing_measurement` are not complements.
+
+  - parent\_inheritance (INFO):
+
+    a `parent_id` now restricts the child population.
+
+  - language\_2\_only (INFO):
+
+    a recipe of 2.10.1 constructors whose shape 2.10.3 newly permits
+    (e.g. a NOT group) has no v1 plan and runs as its language-2 plan on
+    dsOMOP 2.10.3 servers only.
+
+The lint has no mirror of server disclosure gates (no width floors, no
+mandatory bins): from 2.10.3 the server's final publication rule is the
+only release criterion on assign paths. Edge cases: a `NULL` recipe
+returns a single `empty_recipe` info row; a recipe with no outputs adds
+a `no_output` warning.
 
 ## See also
 
-[`recipe_to_plan`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_to_plan.md),
-[`recipe_validate`](https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_validate.md)
+`recipe_to_plan`, `recipe_validate`
 
 ## Examples
 

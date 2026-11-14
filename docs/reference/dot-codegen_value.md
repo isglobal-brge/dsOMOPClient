@@ -1,8 +1,6 @@
 # Format an R value for recipe code generation
 
-Deparse-based replacement for
-[`.format_r_value()`](https://isglobal-brge.github.io/dsOMOPClient/reference/dot-format_r_value.md):
-[`deparse()`](https://rdrr.io/r/base/deparse.html) escapes
+Deparse-based replacement for `.format_r_value()`: `deparse()` escapes
 quotes/backslashes in strings correctly, keeps the `L` suffix on
 integers, and emits valid literals for (nested) named lists.
 
@@ -14,10 +12,9 @@ integers, and emits valid literals for (nested) named lists.
 
 ## Arguments
 
-- x:
+  - x:
 
-  An R value, or a string wrapped with
-  [`.codegen_raw()`](https://isglobal-brge.github.io/dsOMOPClient/reference/dot-codegen_raw.md).
+    An R value, or a string wrapped with `.codegen_raw()`.
 
 ## Value
 

@@ -6,18 +6,23 @@ servers, including tool identification and row counts.
 ## Usage
 
 ``` r
-ds.omop.ohdsi.tables(symbol = "omop", conns = NULL)
+ds.omop.ohdsi.tables(symbol = "omop", conns = NULL, type = NULL)
 ```
 
 ## Arguments
 
-- symbol:
+  - symbol:
 
-  Character; the session symbol (default: `"omop"`).
+    Character; the session symbol (default: `"omop"`).
 
-- conns:
+  - conns:
 
-  DSI connection object(s). If `NULL`, uses active session.
+    DSI connection object(s). If `NULL`, uses active session.
+
+  - type:
+
+    Optional result view: `"split"`, `"combine"`, or `"both"`. The
+    historical default is `"both"`.
 
 ## Value
 
