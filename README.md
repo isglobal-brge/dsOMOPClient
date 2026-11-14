@@ -126,7 +126,7 @@ aggregate controls remain. Re-run recipes after upgrading to recreate factors;
 use explicit numeric representations for date arithmetic. See
 [release notes](https://isglobal-brge.github.io/dsOMOPClient/news/index.html) for migrations and the client extraction vignette for examples.
 
-Release verification covers recipe/publication contracts and end-to-end execution.
+The release candidate passed recipe/publication and end-to-end checks for fresh installations and upgrades on Opal 5.7.6 and 6.1.3. These checks do not establish live execution on every supported SQL dialect.
 
 ## Recipe language 2 in 2.10.4
 
