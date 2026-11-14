@@ -353,6 +353,7 @@
           }
         }
       }
+      rows <- rows[.presentationVariableOrder(names(rows),plan$variables,node$columns)]
       # Execution appends native endpoints after variable covariates, presents
       # them, then projects copies. Reference components have no roster index.
       if (grains[[component]] != "none") {
