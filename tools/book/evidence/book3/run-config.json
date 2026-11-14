@@ -1,0 +1,57 @@
+{
+  "client_test_commit": "ab53ddabacbd9cbae39f5ff8c222d5be84417e4b",
+  "server_commit": "18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9",
+  "filter": "^book-examples$",
+  "test_files": [
+    "tests/testthat/test-book-examples.R"
+  ],
+  "server_version": "2.10.4",
+  "client_version": "2.10.4",
+  "numeric_loader_origin": "server 184bd6b:tests/fixtures/numeric/load.R",
+  "numeric_loader_sha256": "0195fe28ed3e82eda9453f0c4b201c6d3dba17b4b7d25ea5da0981e36f891cd0",
+  "dataset_sha256": "cdd3971be325e17b0e872bf4560711ab4c346917ecb079e2faf32badb55cb693",
+  "full_suites_run": false,
+  "reason": "COMMON.md Test economy reserves full suites for integration/release",
+  "commands": [
+    "RTEST_WITH='/workspace/dsomop/wt/book/dsOMOP /workspace/dsomop/wt/book/dsOMOPClient' RTEST_ENV=R_LIBS_USER=/root/rt/labels-deps /workspace/dsomop/tools/rtest.sh /workspace/dsomop/wt/book/dsOMOPClient '^book-examples$' 1200",
+    "Rscript tools/book/verify-numeric-loader.R /root/rt/wt/book/practice-data",
+    "Rscript tools/book/build-site.R",
+    "Rscript tools/book/verify-bundle.R",
+    "python3 tools/book/audit-content.py",
+    "python3 tools/book/audit-outputs.py",
+    "PLAYWRIGHT_BROWSERS_PATH=/home/dev/.cache/ms-playwright NODE_PATH=/usr/local/lib/node_modules node tools/book/audit-site.js"
+  ],
+  "source_sha256": {
+    "tools/book/connection.R": "f4c7c0a51e9a67d73a631db7c798a6be22844843ba87a5c7f7179004f5b728f5",
+    "tools/book/load-numeric.R": "0195fe28ed3e82eda9453f0c4b201c6d3dba17b4b7d25ea5da0981e36f891cd0",
+    "tools/book/load-practice.R": "c91f70488eda562518d40daa6021049b11aa1197ca235d35d4b297a43122aaa4",
+    "tools/book/practice.R": "6e9db106eed67990b0da5597d747918e5a15f3beb7dffa8e7bdfac2e92e288a9",
+    "tools/book/verify-book3.R": "286fef43aa2ce5caa8d69270efdc7fa2f02d075c5c2888f81f580158ad122b2a",
+    "vignettes/book-00-start.Rmd.orig": "2aa39b76dc1b6ef13d2e3f42604226c6c7e2ba89f769d2d1112de3aa0e9a4a3a",
+    "vignettes/book-01-mental-model.Rmd.orig": "03f456b560cb0529084a268b1fb935d2c104d4200d3bec5fbf43a1d6813784fe",
+    "vignettes/book-02-connect.Rmd.orig": "75186368019d3adfb9fcb8b69737a87da711e2dbf8999ac41e18cdbe98fec253",
+    "vignettes/book-03-explore.Rmd.orig": "f893aad87237ff7fa3b4cd384a3e7d21cfcd5d1353f825ce8e5005605d9142e6",
+    "vignettes/book-04-vocabulary.Rmd.orig": "93f84f9a853da11448dabea8a36e2348ca5c6b0d06de6050ceba82662614d1d6",
+    "vignettes/book-05-recipe.Rmd.orig": "0a33dbd9498096f77005bd5215d49f2dcafe0cee59cd432b3535141bc284331e",
+    "vignettes/book-06-events.Rmd.orig": "47ab1c1f47f6b3a079a088e3c75ef93f4ac3094d4f8b3b2460c1425542a9bd37",
+    "vignettes/book-06-visits.Rmd.orig": "3ac382b0dd99f4ab16eb5103a9103b7d7a65237076dd623bff74f13677601493",
+    "vignettes/book-07-populations.Rmd.orig": "49a5b81b0482bbdd0e1cfb421aa9496625841688715ef645c80077ea15b881e3",
+    "vignettes/book-07-verbal-autopsy.Rmd.orig": "629e845a1d8b781c9aa25f4fb8f46da9e3b1ea3bc9fccd57089c8093d6ebcf52",
+    "vignettes/book-08-harmonise.Rmd.orig": "1675c5f8415e0e80414e37a2863e18c253506d79ed9b420744465c7ffea5d500",
+    "vignettes/book-08-outputs.Rmd.orig": "2f58c8cef007cf49d3e30fa3c27a9243b83b9e811403cf91a589e08d19fc0cac",
+    "vignettes/book-09-dates.Rmd.orig": "1651c1de31fb76576993319ef985b2df14c21917ac0d7edf355ed29490507d51",
+    "vignettes/book-09-reproduce.Rmd.orig": "b6c3b4f53a365bd8a1c38056acd91475083eefe9e0c28b6aec36f96bef1de56d",
+    "vignettes/book-11-parameters.Rmd.orig": "97c47c6144fd7faebeb610ce326acc8fb337e81a5116785b250595aa0ed51d71",
+    "vignettes/book-12-privacy.Rmd.orig": "00119177c7c55c60282a4badbc1755ee08c0fa8ca9449778af016e83b91bae1f",
+    "vignettes/book-15-labs.Rmd.orig": "1e7aec6a47f4504cdb4805ee76fa6368c06718ca10abd0d4eb812aab8b660416"
+  },
+  "targeted_result": {
+    "passed": 1,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executed_chapters": 17
+  },
+  "lab_executed_chunks": 39,
+  "post_test_changes": "Precompute indentation only; browser screenshot coverage; generated outputs and evidence."
+}

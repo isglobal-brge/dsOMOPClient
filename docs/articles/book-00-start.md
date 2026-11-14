@@ -28,7 +28,7 @@ sources.
 ``` r
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "resourcer", "withr", "openssl", "jsonlite", "knitr",
-                   "rmarkdown", "pkgdown", "bslib", "opalr"))
+                   "rmarkdown", "pkgdown", "bslib", "opalr", "duckdb"))
 remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
 remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
 remotes::install_github("isglobal-brge/dsOMOP@2.10.4", upgrade = "never")
@@ -103,17 +103,26 @@ alone does not prove that the server has the matching methods.
 
 The practice server has two resources. **GiBleed** supports the
 introductory schema and vocabulary lessons. **Synthea27Nj** supplies
-hemoglobin and other numeric measurements with units. Both contain
-fictional patients; “numeric” means populated numeric fields, not real
-patient records. GiBleed has 44,053 measurement rows but no populated
-`value_as_number`, so it cannot teach lab-value reducers on its own.
+hemoglobin and other numeric measurements with units for [Working with
+lab
+values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md).
+Both contain fictional patients; “numeric” means populated numeric
+fields, not real patient records. GiBleed has 44,053 measurement rows
+but no populated `value_as_number`, so it cannot teach lab-value
+reducers on its own.
 
 The administrator loader is
 [tools/book/load-practice.R](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-practice.R).
 It downloads pinned [Eunomia
 datasets](https://github.com/OHDSI/EunomiaDatasets), verifies archive
-checksums and loads two SQLite files. From your `book-work` R session,
-run the loader once:
+checksums and loads two SQLite files. For Synthea it calls the [numeric
+validation
+loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-numeric.R)
+unchanged, then copies its typed DuckDB tables into portable SQLite,
+checking all 39 row counts. Dates retain ISO calendar text and numeric
+values retain numeric types. The temporary DuckDB copy is removed. This
+adds the `duckdb` package to the installation block above. From your
+`book-work` R session, run the loader once:
 
 ``` r
 system2(file.path(R.home("bin"), "Rscript"),
@@ -122,8 +131,8 @@ stopifnot(file.exists("../practice-data/gibleed.sqlite"),
           file.exists("../practice-data/numeric.sqlite"))
 ```
 
-It uses the installed DBI, RSQLite, openssl and jsonlite packages. The
-source data are Apache-2.0 licensed; keep their
+It uses the installed DBI, RSQLite, duckdb, withr, openssl and jsonlite
+packages. The source data are Apache-2.0 licensed; keep their
 [license](https://github.com/OHDSI/EunomiaDatasets/blob/3d349dcdd79cc346b8e36eb837e49feffe7f7497/LICENSE)
 with redistributed copies. The recorded loader results are in the
 reproduction notes.

@@ -36,7 +36,7 @@ const path = require('path');
       }
       if(slug==='articles/book-07-verbal-autopsy' && !result.headings.some(x=>x.startsWith('14.')))
         throw new Error('Stale capstone number');
-      if(slug==='articles/book-06-events') {
+      if(['articles/book-06-events','articles/book-15-labs'].includes(slug)) {
         await page.locator('div.sourceCode').first().hover();
         await page.locator('.btn-copy-ex').first().click();
         const copied=await page.evaluate(()=>navigator.clipboard.readText());
@@ -49,6 +49,15 @@ const path = require('path');
         if(await full.count()!==1 || await full.getAttribute('open')!==null)
           throw new Error('Full aggregate response must be collapsed initially: '+slug);
       }
+      if(slug==='articles/book-15-labs') {
+        const warnings=page.locator('details.model-warnings');
+        if(await warnings.count()!==1 || await warnings.getAttribute('open')!==null)
+          throw new Error('Recorded fitting warnings must start collapsed');
+        await warnings.locator('summary').click();
+        if(!await warnings.innerText().then(x=>x.includes('glm.fit: algorithm did not converge')))
+          throw new Error('Recorded fitting warnings were lost');
+        await warnings.locator('summary').click();
+      }
       if(result.overflow) throw new Error('Page horizontal overflow: '+slug+' '+width);
       results.push({slug,...result});
       if(['articles/book-15-labs','articles/book-00-start','articles/book-05-recipe','articles/book-06-events','articles/book-08-outputs','articles/book-08-harmonise','articles/book-07-verbal-autopsy'].includes(slug)) {
@@ -56,6 +65,11 @@ const path = require('path');
         await page.screenshot({path:`tools/book/evidence/book3/${slug.split('/')[1]}-${width}.png`,fullPage:false});
       }
     }
+    await page.goto('file://'+path.resolve('docs/articles/book-15-labs.html'));
+    await page.locator('h2').filter({hasText:'Pool across two connections'}).scrollIntoViewIfNeeded();
+    await page.screenshot({path:`tools/book/evidence/book3/lab-pooling-${width}.png`,fullPage:false});
+    await page.locator('main table').last().scrollIntoViewIfNeeded();
+    await page.screenshot({path:`tools/book/evidence/book3/lab-model-${width}.png`,fullPage:false});
     await page.goto('file://'+path.resolve('docs/articles/book-06-events.html'));
     await page.locator('h2').filter({hasText:'Value bins and explicit high/low flags'}).scrollIntoViewIfNeeded();
     await page.screenshot({path:`tools/book/evidence/book3/numeric-bins-${width}.png`,fullPage:false});

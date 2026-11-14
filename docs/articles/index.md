@@ -32,6 +32,8 @@
     time](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-visits.md):
   - [14. Capstone: a verbal-autopsy wide
     table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md):
+  - [15. Working with lab
+    values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md):
 
 ### Reproduction and migration
 

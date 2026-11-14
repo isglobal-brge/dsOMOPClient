@@ -3,6 +3,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const main = document.querySelector('main');
   if (!main || !document.querySelector('.learn-box')) return;
   document.body.classList.add('book-page');
+  // Preserve every recorded warning, with an explicit expandable label on the
+  // one lesson that explains dsBase's single-iteration local setup fits.
+  if (location.pathname.endsWith('/book-15-labs.html')) {
+    main.querySelectorAll('pre:not(.sourceCode)').forEach(pre => {
+      const lines = pre.textContent.trim().split('\n');
+      if (!lines.length || !lines.every(line => line.trim() ===
+          '#> Warning: glm.fit: algorithm did not converge')) return;
+      const details = document.createElement('details');
+      details.className = 'model-warnings';
+      const summary = document.createElement('summary');
+      summary.textContent = `Recorded local fitting warnings (${lines.length})`;
+      pre.before(details); details.append(summary, pre);
+    });
+  }
   const links = [...document.querySelectorAll('.navbar .dropdown-menu a')]
     .filter(a => /book-.*\.html$/.test(a.getAttribute('href') || ''));
   const nav = document.createElement('nav');

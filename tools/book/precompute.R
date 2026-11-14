@@ -19,27 +19,27 @@ if (!"--chapter-worker" %in% args) {
   }
   message("All chapters passed in separate R processes using visible setup")
 } else {
-for (input in inputs) {
-  message("PRECOMPUTE ", input)
-  render <- function() {
-    on.exit({
-      if (exists("conns", inherits=FALSE)) {
-        try(ds.omop.disconnect(conns=conns), silent=TRUE)
-        try(DSI::datashield.logout(conns), silent=TRUE)
-      }
-      if (exists("practice", inherits=FALSE)) unlink(practice$path)
-      if (exists("two_conns", inherits=FALSE)) {
-        try(ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-15-labs",input)) "book_pool" else "omop"), silent=TRUE)
-        try(DSI::datashield.logout(two_conns), silent=TRUE)
-      }
-      if (exists("pair", inherits=FALSE)) unlink(pair$path)
-    })
-    knitr::opts_chunk$set(error=FALSE, warning=TRUE, message=FALSE, comment="#>", collapse=FALSE)
-    tryCatch(knitr::knit(input, output=sub("\\.orig$", "", input), envir=environment(), quiet=TRUE), error=function(e) { print(DSI::datashield.errors()); stop(e) })
-    verify_chapter(input, environment())
+  for (input in inputs) {
+    message("PRECOMPUTE ", input)
+    render <- function() {
+      on.exit({
+        if (exists("conns", inherits=FALSE)) {
+          try(ds.omop.disconnect(conns=conns), silent=TRUE)
+          try(DSI::datashield.logout(conns), silent=TRUE)
+        }
+        if (exists("practice", inherits=FALSE)) unlink(practice$path)
+        if (exists("two_conns", inherits=FALSE)) {
+          try(ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-15-labs",input)) "book_pool" else "omop"), silent=TRUE)
+          try(DSI::datashield.logout(two_conns), silent=TRUE)
+        }
+        if (exists("pair", inherits=FALSE)) unlink(pair$path)
+      })
+      knitr::opts_chunk$set(error=FALSE, warning=TRUE, message=FALSE, comment="#>", collapse=FALSE)
+      tryCatch(knitr::knit(input, output=sub("\\.orig$", "", input), envir=environment(), quiet=TRUE), error=function(e) { print(DSI::datashield.errors()); stop(e) })
+      verify_chapter(input, environment())
+    }
+    render()
   }
-  render()
-}
-message("All chapter chunks executed successfully")
-writeLines(capture.output(sessionInfo()),"tools/book/evidence/session-info.txt")
+  message("All chapter chunks executed successfully")
+  writeLines(capture.output(sessionInfo()),"tools/book/evidence/session-info.txt")
 }

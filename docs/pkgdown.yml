@@ -18,6 +18,7 @@ articles:
   book-09-reproduce: book-09-reproduce.html
   book-11-parameters: book-11-parameters.html
   book-12-privacy: book-12-privacy.html
+  book-15-labs: book-15-labs.html
   v01_getting_started: v01_getting_started.html
   v02_exploration: v02_exploration.html
   v03_cohorts: v03_cohorts.html
@@ -25,7 +26,7 @@ articles:
   v05_multi_server: v05_multi_server.html
   v06_security: v06_security.html
   v07_querylibrary_sticky: v07_querylibrary_sticky.html
-last_built: 2026-11-14T03:12Z
+last_built: 2026-11-14T05:09Z
 urls:
   reference: https://isglobal-brge.github.io/dsOMOPClient/reference
   article: https://isglobal-brge.github.io/dsOMOPClient/articles

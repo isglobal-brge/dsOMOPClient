@@ -817,6 +817,13 @@ covariate. Fit last hemoglobin as the outcome and first hemoglobin as the
 covariate, both in g/dL. The servers keep the person-level data; the analyst sees
 model coefficients and diagnostics.
 
+With the pinned dsBase 6.3.5, the call emits the warnings shown below: its local
+setup fits use `maxit = 1`. The distributed algorithm then iterates across sites;
+this example finishes in three iterations. The book's independent checks compare
+its final coefficients, standard errors and deviance with a central Gaussian fit
+on the public synthetic source. Do not ignore an unexplained warning in a new study.
+
+<!-- expected-glm-warning:start -->
 
 ``` r
 pooled_model <- dsBaseClient::ds.glm(formula = "last ~ first", data = "D_pool_labs",
@@ -844,6 +851,7 @@ knitr::kable(pooled_model$coefficients)
 |:-----------|----------:|----------:|----------:|--------:|---------:|----------:|
 |(Intercept) | 15.6082485|  2.0915966|  7.4623606| 0.000000| 11.508794| 19.7077026|
 |first       | -0.0511516|  0.1479754| -0.3456763| 0.729586| -0.341178|  0.2388749|
+<!-- expected-glm-warning:end -->
 
 The `first` coefficient is the fitted difference in last hemoglobin for a
 one-g/dL difference in first hemoglobin. The intercept is the prediction at
@@ -957,4 +965,3 @@ and time window before releasing summaries. Declare conversions, distinguish
 teaching cutoffs from recorded reference bounds, and distinguish change from
 slope. Pool only compatible variables from nonoverlapping sites, and interpret
 `ds.quantileMean` according to its weighted-site definition.
-

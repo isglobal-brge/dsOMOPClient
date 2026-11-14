@@ -49,6 +49,7 @@
     <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. Privacy</a></li>
     <li><a class="dropdown-item" href="../articles/book-06-visits.html">13. Visit walkthrough</a></li>
     <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">14. Verbal-autopsy capstone</a></li>
+    <li><a class="dropdown-item" href="../articles/book-15-labs.html">15. Working with lab values</a></li>
     <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">Appendix A. Reproduction and migration</a></li>
   </ul>
 </li>
@@ -1031,6 +1032,70 @@
 <span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean </span></span>
 <span><span class="co">#&gt; 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143</span></span></code></pre>
 </details><p>Compare the released summaries: records on the same day would count separately as rows, but once as a day. Their equality or difference is a data property, not a guarantee of the reducers.</p>
+</details>
+</div>
+<div class="section level2">
+<h2 id="another-numeric-exercise">Another numeric exercise<a class="anchor" aria-label="anchor" href="#another-numeric-exercise"></a>
+</h2>
+<p>Using the Synthea columns already assigned, calculate last minus first and summarise the differences. Is this the same quantity as a slope?</p>
+<details><p><summary>Solution</summary></p>
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_reducers"</span>, change <span class="op">=</span> <span class="va">last</span> <span class="op">-</span> <span class="va">first</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_event_change"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "D_event_change"</span></span></code></pre>
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">event_change</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_event_change$change"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">event_change</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Site</th>
+<th align="left">Statistic</th>
+<th align="right">Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">5%</td>
+<td align="right">-2.8950000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">10%</td>
+<td align="right">-2.4900000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">25%</td>
+<td align="right">-0.9500000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">50%</td>
+<td align="right">0.9000000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">75%</td>
+<td align="right">2.1750000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">90%</td>
+<td align="right">3.2000000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">95%</td>
+<td align="right">3.6550000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">Mean</td>
+<td align="right">0.9071429</td>
+</tr>
+</tbody>
+</table>
+<p>This is change in g/dL, without dividing by elapsed time. A fitted slope uses all eligible dates and values and has units per day. Continue with <a href="book-15-labs.html">Working with lab values</a> for both methods and pooled analyses.</p>
 </details>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

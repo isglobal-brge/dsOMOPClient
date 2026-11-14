@@ -14,6 +14,7 @@ book_resource_names <- function(driver, project, resources) {
 }
 resource_names <- book_resource_names(book_driver, opal_project, opal_resources)
 book_connect <- function(resource = c("gibleed", "numeric"), env = parent.frame()) {
+  force(env)
   resource <- match.arg(resource)
   if (book_driver == "DSLite") {
     source("tools/book/practice.R", local = TRUE)

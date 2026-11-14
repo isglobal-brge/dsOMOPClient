@@ -49,6 +49,7 @@
     <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. Privacy</a></li>
     <li><a class="dropdown-item" href="../articles/book-06-visits.html">13. Visit walkthrough</a></li>
     <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">14. Verbal-autopsy capstone</a></li>
+    <li><a class="dropdown-item" href="../articles/book-15-labs.html">15. Working with lab values</a></li>
     <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">Appendix A. Reproduction and migration</a></li>
   </ul>
 </li>
@@ -629,6 +630,66 @@
 <span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
 <span><span class="co">#&gt;  11.75000  16.40000  23.75000  45.00000  75.25000 117.60000 152.20000  61.96429</span></span></code></pre>
 </details><p>Both use the same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.</p>
+</details>
+</div>
+<div class="section level2">
+<h2 id="another-numeric-exercise">Another numeric exercise<a class="anchor" aria-label="anchor" href="#another-numeric-exercise"></a>
+</h2>
+<p>Summarise the person-level hemoglobin mean in the wide output. Would an average of a long table’s measurement rows give each person equal weight?</p>
+<details><p><summary>Solution</summary></p>
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">output_lab</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_fmt_wide$hemoglobin"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">output_lab</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Site</th>
+<th align="left">Statistic</th>
+<th align="right">Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">5%</td>
+<td align="right">12.90500</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">10%</td>
+<td align="right">13.14667</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">25%</td>
+<td align="right">13.78500</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">50%</td>
+<td align="right">14.32500</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">75%</td>
+<td align="right">15.33542</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">90%</td>
+<td align="right">15.70000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">95%</td>
+<td align="right">15.92375</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">Mean</td>
+<td align="right">14.46679</td>
+</tr>
+</tbody>
+</table>
+<p>The wide table gives each included person one mean in g/dL. An average over measurement rows would give more weight to people with more measurements. <a href="book-15-labs.html">Working with lab values</a> builds this distinction into a two-connection analysis. Neither shape grants access to individual rows.</p>
 </details>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
