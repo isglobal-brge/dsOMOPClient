@@ -111,7 +111,11 @@ test_that("C12 C13 C14 ICD10 rollup deduplicates reverse maps and follows exact 
     maps<-expand.grid(concept_id_1=45000401:45000402,concept_id_2=45000123:45000125);maps$relationship_id<-"Maps to"
     edges<-data.frame(concept_id_1=c(45000401L,45000410L,45000410L),concept_id_2=c(45000410L,45000402L,45000420L),relationship_id=c("Is a","Subsumes","Is a"))
     rel<-rbind(maps,edges);rel$valid_start_date<-"2000-01-01";rel$valid_end_date<-"2099-12-31";rel$invalid_reason<-NA_character_
-    DBI::dbWriteTable(con,"concept_relationship",rel,append=TRUE);DBI::dbDisconnect(con)
+    bad<-concepts[4L,];bad$concept_id<-45000430L;bad$concept_name<-"Excluded chapter"
+    DBI::dbWriteTable(con,"concept",bad,append=TRUE)
+    ignored<-rel[rep(1L,6L),];ignored$concept_id_1<-45000430L;ignored$concept_id_2<-rep(45000123:45000125,2L)
+    ignored$relationship_id<-rep(c("Maps to","Maps to value"),each=3L);ignored$invalid_reason<-rep(c("D",NA_character_),each=3L)
+    DBI::dbWriteTable(con,"concept_relationship",rbind(rel,ignored),append=TRUE);DBI::dbDisconnect(con)
   }
   e<-omop_event("observation",45000120L);v<-omop_variable(event=e,reducer=omop_reduce("last_value",value="value_as_concept_id"))
   variables<-setNames(lapply(c("block","chapter"),function(level)omop_category(v,omop_category_spec(rollup=omop_category_rollup("icd10",level=level,vocabulary="ICD10",domain=paste0("concept:",45000123:45000125))))),c("block","chapter"))
