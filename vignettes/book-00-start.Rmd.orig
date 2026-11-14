@@ -18,25 +18,40 @@ This chapter creates the public synthetic GiBleed practice connection.
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
-## Your R workspace
+## Before you start
 
-You need R 4.1 or newer, an internet connection for installation, and access to
-an Opal with dsOMOP 2.10.4. RStudio is a convenient editor, but ordinary R works.
-The *client* is the package you install. The *server* runs the requests near the data.
+You need R 4.1 or newer (the recorded run used R 4.6.2), internet access for
+installation, and either an Opal with dsOMOP 2.10.4 or the local DSLite practice
+server below. RStudio is a convenient editor; ordinary R also works. Keep a copy
+of this book's checkout: the helper scripts live in `tools/book/`.
 
-Install `remotes`, `DSI` and `DSOpal` with `install.packages(c("remotes", "DSI", "DSOpal"))`.
-Install dsBaseClient using `remotes::install_github("datashield/dsBaseClient")`.
-Install the matching release using
-`remotes::install_github("isglobal-brge/dsOMOPClient@2.10.4")`.
-The tag must be published before this GitHub command can work; this book was built
-from the **locally tagged** sources. Installation commands change your library and
-are not rerun when the site builds. The versions actually used are in the
-[reproduction notes](book-09-reproduce.html).
+Run this **installation block once**, before the examples. It installs every
+package used by the lessons, the offline server and the reproduction tools.
+Installation changes your library and is not executed during the book build.
+The two dsOMOP tags must be available on GitHub; this book's recorded run used
+the matching locally tagged sources.
+
+```r
+install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
+                   "resourcer", "withr", "openssl", "jsonlite", "knitr",
+                   "rmarkdown", "pkgdown", "bslib"))
+remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
+remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOP@2.10.4", upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOPClient@2.10.4", upgrade = "never")
+```
+
+The *client* is the package on your computer. The *server* runs requests near the
+data; DSLite lets you run it locally for practice. Pandoc is also needed to rebuild
+the site (RStudio includes it). The [reproduction notes](book-09-reproduce.html)
+record the dependency versions used for this book.
 
 ## Check the client
 
 ```{r client-version}
 library(dsOMOPClient)
+vapply(c("dsOMOPClient", "dsOMOP", "DSI", "DSLite", "dsBaseClient"),
+       function(package) as.character(packageVersion(package)), character(1))
 ds.omop.client.version()
 ```
 

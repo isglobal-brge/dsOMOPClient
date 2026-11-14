@@ -15,6 +15,9 @@ Choose a table shape for your question and run one small example of every format
 </div>
 
 This chapter uses the public synthetic Synthea27Nj numeric connection from [Getting started](book-00-start.html).
+
+**You need:** the packages and the matching practice connection described in
+[Before you start](book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.

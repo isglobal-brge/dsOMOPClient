@@ -15,6 +15,9 @@ Separate date sources from presentation, choose factor/number/date periods, extr
 </div>
 
 This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
+
+**You need:** the packages and the matching practice connection described in
+[Before you start](book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.

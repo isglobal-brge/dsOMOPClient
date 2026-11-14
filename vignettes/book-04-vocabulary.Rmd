@@ -15,6 +15,8 @@ Find meanings, look up names and define a reusable concept set.
 </div>
 
 This chapter uses the public synthetic GiBleed practice connection from [Getting started](book-00-start.html).
+**You need:** the packages and the matching practice connection described in
+[Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 

@@ -15,6 +15,8 @@ Attach a resource and learn the two kinds of name used in a session.
 </div>
 
 This chapter uses the public synthetic GiBleed practice connection from [Getting started](book-00-start.html).
+**You need:** the packages and the matching practice connection described in
+[Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
@@ -30,13 +32,31 @@ Most calls accept `conns`. Passing it explicitly makes clear where a request goe
 
 ## The Opal login path
 
-**Requires a real Opal.** In your R session load `DSOpal`. Build a login with
-`DSI::newDSLoginBuilder()`, then call its `append()` method with
-`server = "site"`, your Opal `url`, `user`, `password`, and `driver = "OpalDriver"`.
-Pass `builder$build()` to `DSI::datashield.login(..., assign = FALSE)` and save the
-result as `conns`. Retrieve credentials from your secure local configuration;
-do not paste a password into a shared notebook. The book's recorded login uses
-`DSLiteDriver` instead; its executed implementation is in `tools/book/practice.R`.
+**Requires a real Opal.** This is the single connection configuration to change
+when moving to another practice host. Use it instead of the DSLite login from
+chapter 0. Set the three `BOOK_OPAL_*` environment variables in your secure local
+configuration; the URL comes from your administrator or easy-opal setup.
+This deployment block is not part of the recorded DSLite execution.
+
+```r
+opal_url <- Sys.getenv("BOOK_OPAL_URL")
+opal_project <- "practice"
+opal_resources <- c(gibleed = "gibleed", numeric = "numeric")
+lesson_resource <- "gibleed"  # choose "numeric" for numeric chapters
+library(DSOpal)
+builder <- DSI::newDSLoginBuilder()
+builder$append(server = "site", url = opal_url,
+               user = Sys.getenv("BOOK_OPAL_USER"),
+               password = Sys.getenv("BOOK_OPAL_PASSWORD"), driver = "OpalDriver")
+conns <- DSI::datashield.login(builder$build(), assign = FALSE)
+ds.omop.connect(resource = paste(opal_project, opal_resources[[lesson_resource]],
+                                 sep = "."), conns = conns)
+```
+
+Reuse this login for every practice lesson, choosing its named resource. The
+questionnaire-fixture chapters explicitly use their separate local helper.
+Credentials belong in secure configuration, never a shared notebook. The executed
+DSLite login is in `tools/book/practice.R`.
 
 ## A resource is a route to a database
 
