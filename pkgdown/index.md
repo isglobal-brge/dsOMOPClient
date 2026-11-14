@@ -27,10 +27,13 @@ with its solution.
 | [13. Visit walkthrough](articles/book-06-visits.html) | Combine offsets, dates and event rows |
 | [14. Verbal-autopsy capstone](articles/book-07-verbal-autopsy.html) | Combine answers, age, visit periods and cause |
 
+| [15. Working with lab values](articles/book-15-labs.html) | Reduce, convert and pool synthetic lab values |
+
 The main lessons use one DataSHIELD connection at a time. GiBleed teaches the
 basics; Synthea27Nj supplies numeric labs. Both have synthetic people. A separately
 labelled 24-person test fixture supplies the colleague’s questionnaire examples. Chapter 10 includes
-a two-connection vocabulary harmonisation demonstration.
+a two-connection vocabulary harmonisation demonstration. Chapter 15 pools numeric
+summaries and a Gaussian model across disjoint synthetic sites.
 [Reproduction and migration notes](articles/book-09-reproduce.html) explain how
 the examples run and how older recipe conventions differ. The visit walkthrough
 and capstone retain their original URLs so earlier links continue to work.

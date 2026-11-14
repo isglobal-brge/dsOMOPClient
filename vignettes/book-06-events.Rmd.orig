@@ -432,3 +432,24 @@ solution_result
 Compare the released summaries: records on the same day would count separately as rows, but once as a day. Their equality or difference is a data property, not a guarantee of the reducers.
 
 </details>
+
+
+## Another numeric exercise
+
+Using the Synthea columns already assigned, calculate last minus first and
+summarise the differences. Is this the same quantity as a slope?
+
+<details><summary>Solution</summary>
+
+```{r numeric-change-exercise}
+print(ds.omop.mutate("D_reducers", change = last - first,
+  newobj = "D_event_change", conns = conns))
+event_change <- dsBaseClient::ds.summary("D_event_change$change", datasources = conns)
+knitr::kable(book_summary(event_change))
+```
+
+This is change in g/dL, without dividing by elapsed time. A fitted slope uses
+all eligible dates and values and has units per day. Continue with
+[Working with lab values](book-15-labs.html) for both methods and pooled analyses.
+
+</details>

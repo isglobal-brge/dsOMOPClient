@@ -30,3 +30,42 @@ book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
   # The permanent public database is not a temporary per-chapter fixture.
   list(conns=conns,server=server,path=character(),database=paths[[resource]],resource=resource)
 }
+
+# Offline-only administrator fixture: disjoint halves of public synthetic people.
+# No records are invented. The permanent practice resources are never modified.
+book_numeric_pair <- function(env=parent.frame()) {
+  base <- book_practice("numeric", env=env)
+  ds.omop.disconnect(conns=base$conns)
+  DSI::datashield.logout(base$conns)
+  source_db <- DBI::dbConnect(RSQLite::SQLite(), base$database)
+  ids <- sort(DBI::dbReadTable(source_db, "person")$person_id)
+  DBI::dbDisconnect(source_db)
+  groups <- split(ids, rep(c("north", "south"), length.out=length(ids)))
+  paths <- setNames(vapply(groups, function(x) tempfile("book-numeric-", fileext=".sqlite"), ""), names(groups))
+  withr::defer(unlink(paths), envir=env)
+  servers <- lapply(names(groups), function(site) {
+    stopifnot(file.copy(base$database, paths[[site]]))
+    db <- DBI::dbConnect(RSQLite::SQLite(), paths[[site]])
+    tryCatch({
+      for (table in DBI::dbListTables(db)) {
+        if ("person_id" %in% DBI::dbListFields(db, table)) {
+          DBI::dbExecute(db, paste0("DELETE FROM ", DBI::dbQuoteIdentifier(db, table),
+            " WHERE person_id NOT IN (", paste(groups[[site]], collapse=","), ") OR person_id IS NULL"))
+        }
+      }
+    }, finally=DBI::dbDisconnect(db))
+    resource <- resourcer::newResource(name="numeric",
+      url=paste0("omop+dbi:sqlite://", paths[[site]]), format="omop.dbi.db")
+    config <- DSLite::defaultDSConfiguration(include=c("dsOMOP", "dsBase"))
+    config$Options$nfilter.subset <- 5
+    config$Options$default.nfilter.subset <- 5
+    DSLite::newDSLiteServer(resources=list(numeric=resource), config=config)
+  })
+  north <- servers[[1L]]; south <- servers[[2L]]
+  withr::local_options(list(datashield.env=environment()), .local_envir=env)
+  builder <- DSI::newDSLoginBuilder()
+  for (site in names(groups)) builder$append(server=site, url=site, driver="DSLiteDriver")
+  conns <- DSI::datashield.login(builder$build(), assign=FALSE)
+  ds.omop.connect(resource="numeric", conns=conns)
+  list(conns=conns, path=paths, groups=groups)
+}

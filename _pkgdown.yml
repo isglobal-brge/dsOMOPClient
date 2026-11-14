@@ -59,6 +59,8 @@ navbar:
           href: articles/book-06-visits.html
         - text: 14. Verbal-autopsy capstone
           href: articles/book-07-verbal-autopsy.html
+        - text: 15. Working with lab values
+          href: articles/book-15-labs.html
         - text: Appendix A. Reproduction and migration
           href: articles/book-09-reproduce.html
 articles:
@@ -80,6 +82,7 @@ articles:
       - book-12-privacy
       - book-06-visits
       - book-07-verbal-autopsy
+      - book-15-labs
   - title: Reproduction and migration
     navbar: ~
     contents:

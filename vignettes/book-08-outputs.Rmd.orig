@@ -327,3 +327,23 @@ solution_result
 Both use the same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.
 
 </details>
+
+
+## Another numeric exercise
+
+Summarise the person-level hemoglobin mean in the wide output. Would an average
+of a long table's measurement rows give each person equal weight?
+
+<details><summary>Solution</summary>
+
+```{r numeric-output-exercise}
+output_lab <- dsBaseClient::ds.summary("D_fmt_wide$hemoglobin", datasources = conns)
+knitr::kable(book_summary(output_lab))
+```
+
+The wide table gives each included person one mean in g/dL. An average over
+measurement rows would give more weight to people with more measurements.
+[Working with lab values](book-15-labs.html) builds this distinction into a
+two-connection analysis. Neither shape grants access to individual rows.
+
+</details>

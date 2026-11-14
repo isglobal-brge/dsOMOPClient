@@ -53,7 +53,7 @@ practice_dir <- normalizePath(Sys.getenv("BOOK_PRACTICE_DIR", "../practice-data"
 stopifnot(all(file.exists(file.path(practice_dir,
   c("gibleed.sqlite", "numeric.sqlite", "manifest.json")))))
 inputs <- sort(list.files("vignettes", "^book-.*\\.Rmd\\.orig$", full.names=TRUE))
-stopifnot(length(inputs) == 16L)
+stopifnot(length(inputs) == 17L)
 local({
   scratch <- tempfile("book-reader-")
   dir.create(scratch)
@@ -92,6 +92,6 @@ local({
   for (input in inputs) run_chapter(input)
   # No ../practice-data exists in this case: the override must actually be used.
   run_chapter(inputs[grepl("book-09-reproduce", inputs)], custom=TRUE)
-  message("PASS: 16 complete chapters in fresh R processes from the final ZIP; ",
+  message("PASS: 17 complete chapters in fresh R processes from the final ZIP; ",
           "Appendix A also passed with BOOK_PRACTICE_DIR and no default data path")
 })
