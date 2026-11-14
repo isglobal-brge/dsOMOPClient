@@ -93,8 +93,8 @@ test_that("R3 hierarchy defaults are inactive for flags and numeric/date categor
   e <- omop_event("observation",45000120L)
   flag <- omop_variable(name="flag",event=e,reducer=omop_reduce("binary"))
   defaults <- omop_category_spec(rollup=omop_category_rollup("snomed",separation=0L,domain="concept:45000124",multiple="all"))
-  for (as in c("integer","logical","factor")) {
-    v <- omop_category(flag,omop_category_spec(binary=omop_category_binary(as)))
+  for (as in c("default","integer","logical","factor")) {
+    v <- if(as=="default")flag else omop_category(flag,omop_category_spec(binary=omop_category_binary(as)))
     r <- omop_recipe(variables=list(flag=v),category_spec=defaults)
     books <- .category_review_books(r,ctx,paste0("Inactive_",as))
     expect_identical(books$prospective$r_type,books$published$r_type)
@@ -109,6 +109,11 @@ test_that("R3 hierarchy defaults are inactive for flags and numeric/date categor
   r <- omop_recipe(variables=list(n=count,bins=bins,date=date),category_spec=defaults)
   books <- .category_review_books(r,ctx,"InactiveCategories")
   expect_identical(books$prospective$r_type,books$published$r_type)
+  for (f in .clf_frames(ctx,"InactiveCategories")) {
+    expect_true(all(f$n==1L))
+    expect_true(all(as.character(f$bins)=="[0,2)"))
+    expect_true(all(as.character(f$date)=="2020-01"))
+  }
   # Even an unavailable vocabulary domain must not activate an irrelevant default.
   defaults$rollup$domain <- "concept:999999999"
   r <- omop_recipe(variables=list(n=count,bins=bins,date=date),category_spec=defaults)
