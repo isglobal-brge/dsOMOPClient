@@ -197,6 +197,18 @@ test_that("A-24 indexed per-variable windows execute through ordinary capability
   result <- withr::with_options(list(nfilter.subset = 3L),
     recipe_execute(r, out = c(features = "D_ws8_features"),
                    symbol = "omop_ws8_features", conns = conns))
-  expect_identical(unname(result), "D_ws8_features")
+  # Native execution now includes the A-30 codebook receipt. Verify that
+  # metadata independently, while retaining strict symbol/attribute equality.
+  receipt <- attr(result, "omop_codebook")
+  expect_type(receipt, "list")
+  expect_identical(.plan_v2_digest(receipt$plan)$sha256,
+                   .plan_v2_digest(selected)$sha256)
+  expect_named(receipt$components, "features/features")
+  fields <- c("stable_key", "r_type")
+  expect_identical(recipe_codebook(result)[[1L]]$columns[fields],
+                   recipe_codebook(r)[[1L]]$columns[fields])
+  expect_identical(recipe_codebook(result)[[1L]]$columns$storage_type,
+                   c("character", "character", "character", "integer", "integer"))
+  expect_identical(unname(result), structure("D_ws8_features", omop_codebook = receipt))
   expect_true("D_ws8_features" %in% unlist(DSI::datashield.symbols(conns), use.names = FALSE))
 })
