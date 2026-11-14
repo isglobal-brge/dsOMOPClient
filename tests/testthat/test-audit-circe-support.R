@@ -273,11 +273,12 @@ test_that("nested groups report independent clauses at every depth without echoi
 test_that("Circe export refuses unrepresentable native coverage while native edits compile", {
   r <- omop_recipe(populations = recipe_import_circe(.audit_support_definition(), id = "p"),
     outputs = omop_output("o", rows = "p", format = "wide"))
+  r$populations <- r$populations["p"]
   r$populations$p$coverage <- omop_coverage("earliest")
   check <- recipe_circe_check(r, "export")
   expect_false(check$supported)
   expect_true(any(check$issues$construct == "Coverage"))
-  expect_error(recipe_export_circe(r), "observation policy.*recipe_save")
+  expect_error(recipe_export_circe(r, population_id = "p"), "observation policy.*recipe_save")
   r$populations$p$index_event$concept_id <- 201826L
   expect_identical(recipe_to_plan(r)$populations$p$coverage$policy, "earliest")
   r$populations$p$coverage <- omop_coverage("unique")

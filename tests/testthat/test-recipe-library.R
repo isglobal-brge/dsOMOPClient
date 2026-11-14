@@ -35,9 +35,16 @@ for (.library_id in c("demographics.baseline", "demographics.death_cause",
       r <- .library_test_recipe(id)
       p <- recipe_to_plan(r, version = 2L)
       frozen <- .library_test_json(file.path(dir, "plan.json"))
+      # Frozen definitions retain their original compiler provenance. A package
+      # upgrade changes only this advisory version, never template meaning.
+      # Check the real emitted version separately before comparing the fixture.
+      expect_identical(p$meta$client_version, as.character(utils::packageVersion("dsOMOPClient")))
+      frozen$meta$client_version <- p$meta$client_version
       expect_identical(.library_test_canonical(dsOMOPClient:::.v2_plain(p)), .library_test_canonical(frozen))
       normal <- dsOMOPClient:::.planNormalizeV2(p)
-      expect_identical(.library_test_canonical(normal), .library_test_canonical(.library_test_json(file.path(dir, "normalized.json"))))
+      frozen_normal <- .library_test_json(file.path(dir, "normalized.json"))
+      frozen_normal$meta$client_version <- p$meta$client_version
+      expect_identical(.library_test_canonical(normal), .library_test_canonical(frozen_normal))
       expect_identical(.library_test_canonical(normal), .library_test_canonical(dsOMOPClient:::.planNormalizeV2(normal)))
       digest <- .library_test_digest(p)
       expect_identical(digest$sha256, readLines(file.path(dir, "semantic.sha256")))
