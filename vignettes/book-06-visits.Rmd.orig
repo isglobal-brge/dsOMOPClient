@@ -1,8 +1,8 @@
 ---
-title: "6. Visit dates, one idea at a time"
+title: "13. Visit dates, one idea at a time"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{6. Visit dates, one idea at a time}
+  %\VignetteIndexEntry{13. Visit dates, one idea at a time}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

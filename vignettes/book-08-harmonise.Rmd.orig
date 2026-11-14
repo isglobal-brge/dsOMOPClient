@@ -1,8 +1,8 @@
 ---
-title: "8. Appendix: two vocabularies, one category set"
+title: "10. Concepts as categories"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{8. Appendix: two vocabularies, one category set}
+  %\VignetteIndexEntry{10. Concepts as categories}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

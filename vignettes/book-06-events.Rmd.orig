@@ -1,0 +1,188 @@
+---
+title: "6. Events, windows and reducers"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{6. Events, windows and reducers}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Select records, set inclusive time windows, and reduce them to first, last, count, ever, closest, any and all values.
+</div>
+
+This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+Run its sections in order. Each chapter starts from a fresh practice connection;
+all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
+The numbers describe teaching data, not clinical findings.
+
+## Define the records once
+
+An *event* describes which records the server should read. This practice measurement
+has numeric values recorded in kilograms. Concept IDs here are vocabulary inputs;
+they are not patient identifiers.
+
+```{r measurement}
+measure <- omop_event("measurement", concepts = 950002L,
+  value = "value_as_number", where = omop_where(unit_concept_id == 9529L))
+class(measure)
+```
+
+The unit predicate keeps values recorded in that unit; it does not convert units.
+Use an `omop_unit()` conversion when your study needs conversion.
+
+## Set a public time window
+
+A *window* is an inclusive range of days around an *anchor*, the reference date.
+A fixed date works even when the population has no index event.
+
+```{r window}
+history <- omop_window(-366, 0, anchor = "2021-01-01")
+class(history)
+```
+
+This includes 2020-01-01 through 2021-01-01. Both endpoints count.
+An omitted window on an advanced reducer reads all history; a simple-layer
+shortcut usually defaults to history through the index. Choose explicitly.
+
+## First and last values
+
+A *reducer* turns many records into one value per person or episode.
+
+```{r first-last}
+first <- omop_variable(event = measure,
+  reducer = omop_reduce("first_value", window = history))
+last <- omop_variable(event = measure,
+  reducer = omop_reduce("last_value", window = history))
+class(last)
+```
+
+These select by date, source and record key, not by the size of the value.
+By default they skip missing values. `missing = "keep"` chooses the row first,
+so the selected row can give a missing value. With no records, both give `NA`.
+
+## Count and ever
+
+```{r count-ever}
+n <- omop_variable(event = measure,
+  reducer = omop_reduce("count", window = history, distinct = "day"))
+ever <- omop_variable(event = measure,
+  reducer = omop_reduce("binary", window = history))
+class(n)
+```
+
+Count measures distinct measurement days here; `distinct = "row"` counts records.
+Ever is 1 when any record exists and 0 otherwise. Neither requires a nonmissing
+numeric value. In a defined empty window both count and ever are zero.
+
+## Any and all test the values
+
+```{r any-all}
+any_high <- omop_variable(event = measure,
+  reducer = omop_reduce("any", window = history,
+    predicate = omop_where(value >= 70)))
+all_high <- omop_variable(event = measure,
+  reducer = omop_reduce("all", window = history,
+    predicate = omop_where(value >= 70)))
+class(any_high)
+```
+
+Ever tests whether a record exists. Any and all test a condition on its values.
+A missing value makes its comparison unknown; a true value settles any, and a
+false value settles all. Otherwise an unknown remains missing. Empty windows
+give any = 0 and all = NA: without measurements there is no all-value result.
+
+## Assign the columns privately
+
+```{r reducers-recipe}
+reducers <- omop_recipe(variables = list(first = first, last = last,
+  days = n, ever = ever, any_high = any_high, all_high = all_high),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(reducers, conns = conns)$selected == "v2")
+print(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
+```
+
+Only the symbol mapping returns. Request one approved aggregate at a time:
+
+```{r first-result}
+dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
+```
+
+This summarises the first nonmissing measurement per person.
+
+```{r last-result}
+dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
+```
+
+The later value changes the last-value summary. Missing people remain in the roster.
+
+```{r days-result}
+dsBaseClient::ds.table("D_reducers$days", useNA = "no", datasources = conns)
+```
+
+These are people grouped by their number of measurement days, not event counts pooled directly.
+
+```{r ever-result}
+dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
+```
+
+The people with no measurements have ever = 0.
+
+```{r any-result}
+dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
+```
+
+A known high measurement is enough for any, even alongside an unknown value.
+
+```{r all-result}
+dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = conns)
+```
+
+All distinguishes unknown comparisons from an empty set of records.
+
+## Value at the index
+
+Now let the first visit set a different anchor for each person. *Value at index*
+means closest within a chosen tolerance; it need not occur on the index day.
+
+```{r at-index}
+at_index <- omop_study(omop_event("visit_occurrence"), outputs = "baseline",
+  baseline = list(weight = omop_value_at_index("measurement", 950002L,
+    tolerance = c(-30, 0), unit = 9529L)))
+stopifnot(recipe_explain(at_index, conns = conns)$selected == "v2")
+print(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
+```
+
+The tolerance excludes later measurements. The shortcut uses `closest_value`;
+its default tolerance would include 90 days before and 30 days after.
+
+```{r at-index-result}
+dsBaseClient::ds.summary("D_at_index$weight", datasources = conns)
+```
+
+Only people with a visit enter this indexed study. If a required anchor is missing,
+a window is undefined and every reducer gives `NA`, including count and ever.
+
+## Recap
+
+An event chooses records, a window chooses time, and a reducer answers one question. Empty records and an undefined anchor are different.
+
+## Try it
+
+Add a count of measurement rows and compare it with the count of distinct days.
+
+<details><summary>Solution</summary>
+
+```{r solution}
+row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
+  reducer = omop_reduce("count", window = history, distinct = "row"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(row_count, conns = conns)$selected == "v2")
+print(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
+dsBaseClient::ds.table("D_row_count$rows", useNA = "no", datasources = conns)
+```
+They agree in this fixture because there is at most one measurement per person per day. That is a property of these data, not of the reducers.
+
+</details>

@@ -14,7 +14,7 @@ verify_chapter <- function(input, env) {
     a <- get_data("D_answers")
     stopifnot(identical(as.character(a$fever),rep(c("yes","no",NA,NA),6)))
   }
-  if (grepl("book-06", input)) {
+  if (grepl("book-06-visits", input)) {
     d <- get_data("D_offsets")
     stopifnot(identical(d$first_days,rep(c(166L,73L,201L,NA_integer_),6)),
               identical(d$last_days,rep(c(1369L,439L,201L,NA_integer_),6)))
@@ -30,7 +30,7 @@ verify_chapter <- function(input, env) {
     stopifnot(nrow(get_data("D_visit_study"))==18,
               all(get_data("D_visit_study")$first_days==0))
   }
-  if (grepl("book-07", input)) {
+  if (grepl("book-07-verbal-autopsy", input)) {
     d <- get_data("D_va")
     stopifnot(nrow(d)==24L, length(unique(d$person_id))==24L,
       all(grepl("^p2",d$person_id)),

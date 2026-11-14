@@ -1,0 +1,284 @@
+---
+title: "8. Choosing an output format"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{8. Choosing an output format}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Choose a table shape for your question and run one small example of every format, including explicit survival censoring.
+</div>
+
+This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+Run its sections in order. Each chapter starts from a fresh practice connection;
+all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
+The numbers describe teaching data, not clinical findings.
+
+## Choose the shape for the analysis
+
+An output controls the shape of a private server table. It never grants a row
+download. *Grain* means what one row represents: a person, an indexed episode,
+an event or a time period. More rows do not create more independent people.
+
+| Format | Use it for | Main row meaning |
+|---|---|---|
+| wide | A few named variables, models | Person or episode |
+| long | Event sequences | Event within a population episode |
+| features | A feature table preset | Wide person or episode |
+| baseline | Entry characteristics preset | Wide person or episode |
+| person_period / panel | Repeated measurements over follow-up | Episode and time bin |
+| temporal_covariates | Sparse changes over time | Nonzero covariate and time bin |
+| survival | Time until an outcome or censoring | Follow-up record |
+| intervals | Exposure or event spans | Interval |
+| sparse | Many mostly absent covariates | Nonzero covariate |
+| membership | Reuse population episodes | Population member episode |
+| dictionary | Describe concepts used by outputs | Vocabulary entry |
+| joined | Combine compatible private outputs | Declared join grain |
+
+`features` and `baseline` are `type` presets which lower to native wide outputs;
+`panel` is the simple-layer name for `person_period`. We check every resulting
+recipe selects language 2. Use `format` for the native formats.
+
+## Prepare one small study
+
+We will reuse these definitions so each example changes only the output.
+
+```{r format-events}
+visits <- omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "visits")
+rx <- omop_event("drug_exposure", concepts = 950001L, name = "rx")
+inpatient <- omop_event("visit_occurrence", concepts = 9201L, name = "inpatient")
+visitors <- omop_population("visitors", index = omop_index(visits))
+class(visitors)
+```
+
+Each first visit begins one episode. A later inpatient visit will be our outcome.
+
+```{r format-template}
+base <- omop_recipe(events = list(visits, rx, inpatient),
+  populations = list(visitors), variables = list(
+    visits = omop_variable(event = visits, reducer = omop_reduce("count")),
+    age = omop_age_at("index")),
+  outputs = omop_output("wide", rows = "visitors", format = "wide"))
+recipe_explain(base)$selected
+```
+
+The visit count reads all history here. Age uses completed birthdays at entry.
+The template already contains an executable wide output.
+
+## Wide: named columns
+
+```{r wide}
+stopifnot(recipe_explain(base, conns = conns)$selected == "v2")
+print(recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_wide", datasources = conns)
+```
+
+There is one row per episode and one column per requested variable. A person's
+pseudonym and episode keys are supplied by the server.
+
+## Long: keep event records
+
+Use long when event order and repeated records matter. Select a named source instead of reducing it.
+
+```{r long}
+long <- base
+long$outputs <- list(long = omop_output("long", rows = "visitors", format = "long",
+  sources = "visits"))
+stopifnot(recipe_explain(long, conns = conns)$selected == "v2")
+print(recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_long", datasources = conns)
+```
+
+The source columns become a normalised schema, including `concept_id` and `start_date`. Dates default to offsets from the index. One source makes the event-row meaning clear; multiple sources need an explicit event-log design.
+
+## Features: a wide preset
+
+Use the features preset when a downstream analysis expects a feature table. Native typed variables preserve their declared values.
+
+```{r features}
+features <- base
+features$outputs <- list(features = omop_output("features", rows = "visitors", type = "features"))
+stopifnot(recipe_explain(features, conns = conns)$selected == "v2")
+print(recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_features", datasources = conns)
+```
+
+This is a wide table, not the sparse coordinate representation shown below. The native selection check prevents an accidental older-language execution.
+
+## Baseline: characteristics at entry
+
+Use baseline to name an entry-characteristics table. Define the time windows of its variables explicitly.
+
+```{r baseline}
+baseline <- base
+baseline$outputs <- list(baseline = omop_output("baseline", rows = "visitors", type = "baseline"))
+stopifnot(recipe_explain(baseline, conns = conns)$selected == "v2")
+print(recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_baseline", datasources = conns)
+```
+
+The preset does not turn an all-history count into a pre-index count. Here `omop_age_at()` explicitly asks for completed age; the older `omop_age()` preset has separate annual-age/banding defaults. The simple study layer makes baseline an ordinary wide output.
+
+## Panels: one row per follow-up bin
+
+A *bin* is a time interval. These are three 30-day bins after entry, not calendar months.
+
+```{r panel}
+panel <- base
+panel$outputs <- list(panel = omop_output("panel", rows = "visitors", format = "person_period",
+  options = list(sources = list(visits), bins = list(width = 30L),
+    window = omop_window(1, 90), analyses = "count", representation = "dense")))
+stopifnot(recipe_explain(panel, conns = conns)$selected == "v2")
+print(recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_panel", datasources = conns)
+```
+
+A dense panel retains the empty bins with zero event counts. `bins = list(calendar = "month")` instead aligns to calendar months, whose lengths vary. Account for repeated rows per person in downstream analysis.
+
+## Temporal covariates: sparse time bins
+
+Use temporal covariates when you need nonzero covariate values with a time index. Including day zero gives this example actual nonzero entries.
+
+```{r temporal}
+temporal <- base
+temporal$outputs <- list(temporal = omop_output("temporal", rows = "visitors", format = "temporal_covariates",
+  options = list(sources = list(visits), bin_width = 30L,
+    window = omop_window(0, 89), analyses = "count")))
+stopifnot(recipe_explain(temporal, conns = conns)$selected == "v2")
+print(recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_temporal", datasources = conns)
+```
+
+The returned mapping also names the covariate and time reference tables. Keep those companions: numeric covariate/time keys need their definitions. Missing records and missing measurements are not automatically interchangeable.
+
+## Survival: state the censoring rule
+
+A *time-at-risk window* says when outcomes count. *Censoring* ends follow-up without recording the outcome. Here follow-up starts the day after entry and has no fixed upper limit.
+
+```{r survival}
+survival <- base
+survival$outputs <- list(survival = omop_output("survival", rows = "visitors", format = "survival",
+  options = list(outcomes = list(admission = inpatient),
+    tar = omop_window(1, NULL), censor = list("observation_end", "death"))))
+stopifnot(recipe_explain(survival, conns = conns)$selected == "v2")
+print(recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_survival", datasources = conns)
+```
+
+Only the named censor sources cap follow-up: observation end and death here. The window also limits follow-up when its upper bound is finite. An episode end is not an extra censor unless requested. A censor is not a “no outcome ever” assertion. Always state the window: omitting it would use the 730-day compatibility default.
+
+```{r survival-result}
+dsBaseClient::ds.table("D_fmt_survival$status", useNA = "no", datasources = conns)
+```
+
+Status counts distinguish observed outcomes from censored follow-up in this one-outcome example.
+
+## Intervals: keep a start and an end
+
+Use intervals for exposure spans. Each prescription has a recorded start and end in this fixture.
+
+```{r intervals}
+intervals <- base
+intervals$outputs <- list(intervals = omop_output("intervals", rows = "visitors", format = "intervals",
+  options = list(sources = list(rx), window = omop_window(0, NULL))))
+stopifnot(recipe_explain(intervals, conns = conns)$selected == "v2")
+print(recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_intervals", datasources = conns)
+```
+
+Both bounds remain private, normally as index-relative days. Overlapping prescription intervals are not automatically a union of treatment days; define an era or a coverage reducer for that question.
+
+## Sparse: nonzero covariates plus a reference
+
+Use sparse for many covariates when most combinations have no contribution.
+
+```{r sparse}
+sparse <- base
+sparse$outputs <- list(sparse = omop_output("sparse", rows = "visitors", format = "sparse",
+  options = list(sources = list(visits), analyses = c("binary", "count"))))
+stopifnot(recipe_explain(sparse, conns = conns)$selected == "v2")
+print(recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_sparse", datasources = conns)
+```
+
+The data contain a covariate key and value. The reference companion maps keys to source, concept and analysis. A missing sparse row is not a missing person roster: retain membership separately. Each published patient component must meet its own support rule.
+
+## Membership: retain the population roster
+
+Use membership to keep entry/end dates and keys for every episode independently of its measurements.
+
+```{r membership}
+membership <- base
+membership$outputs <- list(membership = omop_output("membership", rows = "visitors", format = "membership"))
+stopifnot(recipe_explain(membership, conns = conns)$selected == "v2")
+print(recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_membership", datasources = conns)
+```
+
+This is still a patient-linked private object. It is not a public list of participants.
+
+## Dictionary: describe the concepts
+
+Use dictionary to describe the vocabulary concepts used by the plan. It does not contain patient rows.
+
+```{r dictionary}
+dictionary <- base
+dictionary$outputs <- list(dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary"))
+stopifnot(recipe_explain(dictionary, conns = conns)$selected == "v2")
+print(recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_dictionary", datasources = conns)
+```
+
+The schema contains vocabulary fields, not frequencies. A dictionary does not certify that a concept occurred in a particular person, and it is not a replacement for the sparse covariate reference.
+
+## Joined: combine private outputs
+
+A native joined output combines declared output dependencies, using their
+protected keys and a checked cardinality. It is not an arbitrary database join.
+Keep input columns disjoint and state how many rows can match.
+
+```{r join-inputs}
+joined <- base
+joined$outputs <- list(
+  counts = omop_output("counts", rows = "visitors", format = "wide", columns = "visits"),
+  ages = omop_output("ages", rows = "visitors", format = "wide", columns = "age"),
+  joined = omop_output("joined", rows = "visitors", format = "joined",
+    options = list(from = list(list(output = "counts"), list(output = "ages")),
+      how = "left", cardinality = "one_to_one")))
+joined$publish <- "joined"
+recipe_explain(joined)$selected
+```
+
+Only the final joined output is published. The two input outputs are private
+intermediate steps and do not each need a separately published symbol.
+
+```{r join-run}
+stopifnot(recipe_explain(joined, conns = conns)$selected == "v2")
+print(recipe_execute(joined, out = c(joined = "D_fmt_joined"), conns = conns))
+dsBaseClient::ds.colnames("D_fmt_joined", datasources = conns)
+```
+
+A left join retains the first input's rows. Here each episode has exactly one
+counts row and one ages row. Repeated event rows would require a different,
+explicit cardinality; do not silently multiply a study population.
+
+## Recap
+
+Choose the population and row meaning before the format. Outputs stay private; multi-component outputs carry reference companions. Censoring and join cardinality are study decisions.
+
+## Try it
+
+Summarise the visit-count column of the joined output. Why is it the same as the wide count?
+
+<details><summary>Solution</summary>
+
+```{r solution}
+dsBaseClient::ds.summary("D_fmt_joined$visits", datasources = conns)
+```
+Both use the same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.
+
+</details>

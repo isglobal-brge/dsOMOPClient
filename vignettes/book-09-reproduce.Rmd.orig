@@ -1,8 +1,8 @@
 ---
-title: "9. Reproduction and migration notes"
+title: "Appendix A. Reproduction and migration notes"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{9. Reproduction and migration notes}
+  %\VignetteIndexEntry{Appendix A. Reproduction and migration notes}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

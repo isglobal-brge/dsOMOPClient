@@ -82,6 +82,35 @@ DBI::dbWriteTable(db,"concept_ancestor",data.frame(
   ancestor_concept_id=c(900100L,900100L),descendant_concept_id=c(900101L,900102L),
   min_levels_of_separation=1L,max_levels_of_separation=1L))
 DBI::dbWriteTable(db,"vocabulary",data.frame(vocabulary_id="Fixture",vocabulary_version="2025-01-01"))
+# Book 2 adds independent synthetic numeric measurements, prescriptions and a
+# pre-existing results cohort. The original book-1 records are unchanged.
+measurements <- data.frame(measurement_id=1:5, person_id=c(1L,1L,2L,2L,3L),
+  measurement_concept_id=950002L,
+  measurement_date=c("2020-06-14","2020-06-16","2020-03-13","2020-03-14","2020-07-19"),
+  measurement_type_concept_id=0L, value_as_number=c(60,66,80,NA,100),
+  unit_concept_id=9529L)
+drugs <- data.frame(drug_exposure_id=1:3, person_id=1:3,
+  drug_concept_id=950001L, drug_exposure_start_date="2020-08-01",
+  drug_exposure_end_date="2020-08-30", drug_type_concept_id=0L, days_supply=30L)
+cohort <- data.frame(cohort_definition_id=1L, subject_id=c(1L,3L),
+  cohort_start_date="2020-01-01", cohort_end_date="2025-12-31")
+for (tab in c("measurement", "drug_exposure", "cohort")) {
+  base <- switch(tab, measurement=measurements, drug_exposure=drugs, cohort=cohort)
+  rows <- lapply(0:5, function(i) {
+    d <- base
+    key <- if (tab == "cohort") "subject_id" else "person_id"
+    d[[key]] <- d[[key]] + i*4L
+    if (tab != "cohort") d[[paste0(tab,"_id")]] <- d[[paste0(tab,"_id")]] + i*nrow(base)
+    d
+  })
+  DBI::dbWriteTable(db, tab, do.call(rbind, rows))
+}
+extra <- DBI::dbReadTable(db,"concept")[rep(1,3),]
+extra$concept_id <- c(950001L,950002L,9529L)
+extra$concept_name <- c("Practice medicine","Practice measurement","kilogram")
+extra$domain_id <- c("Drug","Measurement","Unit")
+extra$concept_code <- as.character(extra$concept_id)
+DBI::dbWriteTable(db,"concept",extra,append=TRUE)
 DBI::dbDisconnect(db)
 
 config <- DSLite::defaultDSConfiguration(include = c("dsOMOP","dsBase"))
