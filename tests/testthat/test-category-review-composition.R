@@ -98,3 +98,51 @@ test_that("R5 copies retain missing sentinels and upstream category admission", 
   r$outputs$w$columns <- "copy"
   expect_error(recipe_execute(r,out="UnsafeReducedCopy",symbol="labels",conns=ctx$conns),"unsafe|Unsafe|disclosure|levels|admi")
 })
+
+test_that("R4 R5 unwrapped selector copies support copy-only expanded projection", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  rows <- omop_category_rows(omop_event("observation",45000120L),"value_as_concept_id")
+  for (fn in c("mode","nth_value")) {
+    reducer <- if(fn=="mode")omop_reduce(fn) else omop_reduce(fn,n=c(1L,3L))
+    source <- if(fn=="mode")"answer" else "answer_1"
+    selected <- if(fn=="mode")c("copy","answer") else c("copy","answer_3")
+    r <- omop_recipe(variables=list(answer=omop_category_reduce(rows,reducer)),
+      outputs=omop_output("w",columns=selected,category_columns=list(copy=omop_category_column(source))))
+    symbol <- paste0("UnwrappedCopy_",fn)
+    books <- .composition_books(r,ctx,symbol)
+    expect_identical(books$prospective$name,c("person_id",selected))
+    expect_identical(books$prospective$name,books$published$name)
+    for (f in .clf_frames(ctx,symbol)) {
+      expect_s3_class(f$copy,"factor")
+      if(fn=="mode")expect_identical(f$answer,f$copy) else expect_true(all(is.na(f$answer_3)))
+    }
+    r$outputs$w$columns <- "copy"
+    books <- .composition_books(r,ctx,paste0(symbol,"_only"))
+    expect_identical(books$prospective$name,c("person_id","copy"))
+    expect_identical(books$prospective$name,books$published$name)
+  }
+})
+
+test_that("R5 unavailable and undefined reductions stay NA through independently styled copies", {
+  ctx <- .clf_setup(drop_tables="device_exposure"); .numeric_lexer()
+  absent <- omop_event("device_exposure",on_missing_table="unavailable")
+  empty <- omop_event("observation",999999L,name="empty")
+  available <- omop_event("observation",45000120L)
+  spec <- omop_category_spec(missing=omop_category_missing("level","level"))
+  reduce <- function(event,window=NULL)omop_category_reduce(
+    omop_category_rows(event,"concept_id",spec),omop_reduce("mode",window=window))
+  r <- omop_recipe(events=list(empty),variables=list(unavailable=reduce(absent),
+    undefined=reduce(available,omop_window(-7,7,anchor=omop_anchor(empty)))),
+    outputs=omop_output("w",category_columns=list(
+      unavailable_copy=omop_category_column("unavailable",category_spec=spec),
+      undefined_copy=omop_category_column("undefined",category_spec=spec))))
+  for (mode in c("memory","staged")) {
+    symbol <- paste0("UndefinedReducedCopy_",mode)
+    .composition_books(r,ctx,symbol,mode)
+    for (f in .clf_frames(ctx,symbol)) for (key in c("unavailable","undefined")) {
+      expect_true(all(is.na(f[[key]])))
+      expect_identical(as.character(f[[key]]),as.character(f[[paste0(key,"_copy")]]))
+      expect_true(all(c("Missing","Unknown") %in% levels(f[[paste0(key,"_copy")]])))
+    }
+  }
+})
