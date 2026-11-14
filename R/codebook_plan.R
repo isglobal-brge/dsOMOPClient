@@ -170,7 +170,7 @@
   contracts <- list()
   if(!is.null(attr(value,"omop_date_contract"))) frame <- .dateCapture(frame,list(value=column))
   else if(representation %in% c("bins","category") && is.factor(value)) {
-    attr(column,"number_contract") <- list(pipeline=pipeline)
+    attr(column,"number_contract") <- list(pipeline=.numberWireFinite(pipeline))
     frame <- .numberCapture(frame,list(value=column))
   } else if(!is.null(inherited$levels) && is.factor(value)) {
     keys <- unlist(inherited$levels$keys,use.names=FALSE)
@@ -181,7 +181,7 @@
   }
   if(semantic=="flag") {
     attr(column,"semantic_flag") <- TRUE
-    attr(column,"number_contract") <- list(pipeline=pipeline)
+    attr(column,"number_contract") <- list(pipeline=.numberWireFinite(pipeline))
     if(!.categoryFlag(variable,column))semantic <- if(is.factor(value))representation else "numeric"
   }
   input <- list(frame=frame,column=column)
