@@ -76,7 +76,7 @@ test_that("R6 multi-TAR and joined dependents retain each component's final sche
   copies <- setNames(lapply(components,function(component)omop_category_column("answer",component=component)),paste0("copy",seq_along(components)))
   output <- omop_output("surv",format="survival",rows="p",columns=c(names(copies),"answer"),
     options=list(format="recurrent_events",outcomes=list(lab=e),
-      tars=list(early=omop_window(0,100),late=omop_window(101,365)),censor=list("observation_end")),category_columns=copies)
+      tars=list(early=omop_window(0,100),late=omop_window(0,365)),censor=list("observation_end")),category_columns=copies)
   .schema_books(.schema_recipe(e,output,list(answer=answer)),ctx,"MultiTar")
   panel <- omop_output("panel",format="person_period",rows="p",columns=c("yesno","e_binary"),
     options=list(sources=list(e),window=omop_window(0,20),bins=list(width=10),analyses=c("binary","count")),
@@ -93,7 +93,7 @@ test_that("R6 unprojected panels enumerate closed source analyses and generated 
   e <- omop_event("observation",c(45000120L,45000121L),name="e")
   output <- omop_output("panel",format="person_period",rows="p",columns=character(),
     options=list(sources=list(e),window=omop_window(0,20),bins=list(width=10),analyses=c("count","binary","mean"),
-      source_analyses=list(e=c("binary","count")),outcomes=list(lab=e),exposures=list(active=e),
+      source_analyses=list(e=c("binary","count")),outcomes=list(lab=e),exposures=list(active=omop_era(e,end="start",fallback="none")),
       carry_forward=list(e=list(lookback=30)),partition=list(age_bands=10,calendar="month")))
   recipe <- .schema_recipe(e,output)
   recipe$options$translate_concepts <- FALSE
