@@ -216,8 +216,17 @@ resource names, and `opal_profile <- "default"`. These are the same settings all
 public practice chapters read. In your local R environment set
 `BOOK_OPAL_ADMIN_PASSWORD` to the generated password, `BOOK_OPAL_USER` to a new
 analyst name (for example `bookreader`) and `BOOK_OPAL_PASSWORD` to its password.
-Use RStudio's environment editor or your private `.Renviron`, then restart R;
-do not put passwords in a shared notebook.
+Run `file.edit(path.expand("~/.Renviron"))` and add these lines, replacing the
+placeholders with your values (retain quotes around passwords). This is a private
+local file, not a shared notebook:
+
+```text
+BOOK_OPAL_ADMIN_PASSWORD="<password printed by easy-opal>"
+BOOK_OPAL_USER=bookreader
+BOOK_OPAL_PASSWORD="<choose a password of at least eight characters>"
+```
+
+Save the file and restart R so those environment variables are loaded.
 
 From an R session in `book-work`, run:
 
