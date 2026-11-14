@@ -47,8 +47,9 @@
   withr::defer(ds.omop.disconnect("numeric", conns = conns), envir = env)
   list(conns = conns, servers = servers, pg = pg, schemas = schemas)
 }
-.numeric_frames <- function(ctx, symbol) lapply(ctx$servers, function(server) {
+.numeric_frames <- function(ctx, symbol, mode = "memory") lapply(ctx$servers, function(server) {
   x <- server$getSessionData(server$getSessionIds()[[1L]], symbol)
+  testthat::expect_s3_class(x, if (mode == "staged") "FlowerDatasetDescriptor" else "omop.table")
   if (inherits(x, "FlowerDatasetDescriptor")) {
     testthat::expect_identical(x$metadata$format, "parquet")
     chunks <- list(); dsOMOP:::.publishReadChunks(x, function(c) chunks[[length(chunks) + 1L]] <<- c)

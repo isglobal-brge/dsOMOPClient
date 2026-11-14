@@ -14,8 +14,9 @@ test_that("numeric recipes preserve baseline/features aliases, A27 categories an
       variables = vars, outputs = omop_output("o", type = format, rows = "p", grain = "episode"))
     previous <- NULL
     for (mode in c("memory", "staged")) {
-      recipe_execute(r, out = c(o = "Numeric"), symbol = "numeric", conns = ctx$conns, output_mode = mode)
-      frames <- .numeric_frames(ctx, "Numeric")
+      destination <- paste("Numeric", format, mode, sep = "_")
+      recipe_execute(r, out = c(o = destination), symbol = "numeric", conns = ctx$conns, output_mode = mode)
+      frames <- .numeric_frames(ctx, destination, mode)
       for (i in seq_along(frames)) {
         f <- frames[[i]]; d <- numeric_measurements(ctx$pg, ctx$schemas[[i]])
         want <- numeric_oracle(d)
@@ -39,8 +40,9 @@ test_that("numeric plans execute every format at three DSLite sites in both mode
   out <- stats::setNames(paste0("Numeric_", unlist(p$publish)), unlist(p$publish))
   previous <- NULL
   for (mode in c("memory", "staged")) {
-    ds.omop.plan.execute(p, out = out, symbol = "numeric", conns = ctx$conns, output_mode = mode)
-    frames <- lapply(out, function(s) .numeric_frames(ctx, s))
+    destinations <- stats::setNames(paste0(out, "_", mode), names(out))
+    ds.omop.plan.execute(p, out = destinations, symbol = "numeric", conns = ctx$conns, output_mode = mode)
+    frames <- lapply(destinations, function(s) .numeric_frames(ctx, s, mode))
     for (i in seq_along(ctx$servers)) {
       d <- numeric_measurements(ctx$pg, ctx$schemas[[i]]); want <- numeric_oracle(d)
       for (col in setdiff(names(want), "pid")) {
@@ -95,8 +97,9 @@ test_that("public recipes convert units before half-open value bins and predicat
       variables = list(value = omop_variable("value", event = "lab", reducer = omop_reduce("mean"))),
       outputs = omop_output("o", format = "wide", rows = "p", grain = "episode"))
     for (mode in c("memory", "staged")) {
-      recipe_execute(r, out = c(o = "Converted"), symbol = "numeric", conns = ctx$conns, output_mode = mode)
-      frames <- .numeric_frames(ctx, "Converted")
+      destination <- paste("Converted", selection, mode, sep = "_")
+      recipe_execute(r, out = c(o = destination), symbol = "numeric", conns = ctx$conns, output_mode = mode)
+      frames <- .numeric_frames(ctx, destination, mode)
       for (i in seq_along(frames)) {
         d <- numeric_measurements(ctx$pg, ctx$schemas[[i]])
         d <- d[d$value_as_number >= 12 & (selection == "threshold" | d$value_as_number < 15), ]
