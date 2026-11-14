@@ -135,7 +135,7 @@
 
 # Full product of type-changing presentation axes; matrices participate in all
 # numeric-compatible cells (bins are explicitly forbidden by their contract).
-.equivalence_matrix <- function(dn) for(scope in c("recipe","variable")) local({
+.equivalence_matrix <- function(dn,categories=c("none","nominal","flags")) for(scope in c("recipe","variable")) local({
   scope <- scope
   test_that(paste("prospective execution equivalence matrix",scope,dn), {
     ctx <- .clf_setup(); .numeric_lexer()
@@ -143,7 +143,7 @@
     # exercise all three heterogeneous sites and both transport implementations.
     ctx$conns <- ctx$conns[1L]; ctx$servers <- ctx$servers[1L]
     for(nn in c("identity","round","bins"))
-      for(cn in c("none","nominal","flags")) {
+      for(cn in categories) {
         label <- paste(scope,dn,nn,cn)
         date <- switch(dn,day=omop_date_spec(precision="day"),
           # Include lagged counting-process starts and the observation-end
@@ -154,7 +154,8 @@
         number <- switch(nn,identity=omop_number_spec(),round=omop_number_spec(rounding=omop_number_round("floor")),
           bins=omop_number_spec(representation="bins",breaks=c(-Inf,2,Inf),labels=c("few","many")))
         category <- switch(cn,none=NULL,nominal=omop_category_spec(ordered=FALSE),
-          flags=omop_category_spec(binary=omop_category_binary("factor")))
+          flags=omop_category_spec(binary=omop_category_binary("factor")),
+          logical=omop_category_spec(binary=omop_category_binary("logical")))
         recipe <- .equivalence_recipe(date,number,category,scope,matrices=nn!="bins"||scope=="variable")
         tryCatch(.equivalence_books(recipe,ctx,"memory",paste(label,"memory")),
           error=function(e) {message(label,": ",conditionMessage(e)); stop(e)})
