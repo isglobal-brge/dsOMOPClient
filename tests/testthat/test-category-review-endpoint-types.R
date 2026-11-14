@@ -36,26 +36,31 @@
         expect_identical(a$contrasts[[i]],b$contrasts[[i]],info=key)
       } else expect_null(a$levels[[i]],info=key)
     }
-    frames <- .clf_frames(ctx,target)
     for (site in names(ctx$servers)) {
+      server <- ctx$servers[[site]]
+      value <- server$getSessionData(server$getSessionIds()[[1L]],target)
       if (mode=="staged") {
-        server <- ctx$servers[[site]]
-        descriptor <- server$getSessionData(server$getSessionIds()[[1L]],target)
-        expect_s3_class(descriptor,"FlowerDatasetDescriptor")
-        expect_identical(descriptor$metadata$format,"parquet")
-      }
-      frame <- frames[[site]]
-      expect_identical(names(frame),a$name,info=paste(key,site))
-      for (i in dates) {
-        column <- frame[[a$name[[i]]]]
-        expect_true(is.factor(column),info=paste(key,site))
-        expect_identical(is.ordered(column),ordered,info=paste(key,site))
-        expect_identical(levels(column),unlist(b$levels[[i]]$labels,use.names=FALSE),info=paste(key,site))
-        if (public_domain) {
-          keys <- unlist(a$levels[[i]]$keys,use.names=FALSE)
-          expected <- if(ordered)stats::contr.poly(length(keys)) else
-            stats::contr.treatment(length(keys),base=match(a$reference[[i]],keys))
-          expect_equal(unname(stats::contrasts(column)),unname(expected),info=paste(key,site))
+        expect_s3_class(value,"FlowerDatasetDescriptor")
+        expect_identical(value$metadata$format,"parquet")
+        # Inspect the publication reader's chunks directly. rbind.data.frame
+        # discards factor contrast attributes even when binding a single chunk.
+        frames <- list()
+        dsOMOP:::.publishReadChunks(value,function(frame)frames[[length(frames)+1L]] <<- frame)
+      } else frames <- list(value)
+      expect_gt(length(frames),0L)
+      for (frame in frames) {
+        expect_identical(names(frame),a$name,info=paste(key,site))
+        for (i in dates) {
+          column <- frame[[a$name[[i]]]]
+          expect_true(is.factor(column),info=paste(key,site))
+          expect_identical(is.ordered(column),ordered,info=paste(key,site))
+          expect_identical(levels(column),unlist(b$levels[[i]]$labels,use.names=FALSE),info=paste(key,site))
+          if (public_domain) {
+            keys <- unlist(a$levels[[i]]$keys,use.names=FALSE)
+            expected <- if(ordered)stats::contr.poly(length(keys)) else
+              stats::contr.treatment(length(keys),base=match(a$reference[[i]],keys))
+            expect_equal(unname(stats::contrasts(column)),unname(expected),info=paste(key,site))
+          }
         }
       }
     }
