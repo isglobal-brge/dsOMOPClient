@@ -6111,7 +6111,7 @@ recipe_to_code <- function(recipe) {
     # Schema version. Only bump this on a real BREAKING schema change (a change
     # that an older reader could not load); additive fields do not bump it.
     version     = "1",
-    populations = .recipe_strip_classes(recipe$populations),
+    populations = .recipe_strip_classes(lapply(recipe$populations, .circe_refresh_provenance)),
     blocks      = .recipe_strip_classes(recipe$blocks),
     variables   = .recipe_strip_classes(recipe$variables),
     filters     = .recipe_strip_classes(recipe$filters),
@@ -6334,6 +6334,10 @@ recipe_to_code <- function(recipe) {
       }
       if (!is.null(p$simple)) {
         recipe$populations[[pid]]$simple <- .v2_restore(p$simple)
+      }
+      if (!is.null(p$circe_provenance)) {
+        recipe$populations[[pid]]$circe_provenance <- p$circe_provenance
+        recipe$populations[[pid]] <- .circe_refresh_provenance(recipe$populations[[pid]])
       }
     }
   }
@@ -6995,6 +6999,10 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   if (is.null(pop))
     stop("Population '", population_id, "' not found in recipe.", call. = FALSE)
 
+  selected <- recipe
+  selected$populations <- list(pop)
+  .circe_require_supported(recipe_circe_check(selected, "export"))
+
   if (!is.null(pop$setop)) {
     stop("Circe export: set-operation populations are person-set operations ",
          "and are not equivalent to one Circe entry-event expression.",
@@ -7302,7 +7310,7 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
          "domain criterion.", call. = FALSE)
   }
   domain <- domains[[1]]
-  spec <- primary[[domain]]
+  spec <- .circe_primary_spec(domain, primary[[domain]])
   unknown <- setdiff(names(spec) %||% character(0), "CodesetId")
   if (length(unknown) > 0L) {
     stop("Circe import: unsupported PrimaryCriteria field(s): ",
@@ -7369,9 +7377,23 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
 #' recipe <- omop_recipe(populations = pop,
 #'                       outputs = omop_output(population_id = pop$id))
 #' }
-#' @seealso \code{\link{recipe_export_circe}}, \code{\link{omop_population}}
+#' @param origin Optional public provenance list with uri, phenotype_id, release,
+#'   review_status and deprecation_status. URI credentials/query/fragment are
+#'   stripped; no URI is fetched. Original JSON bytes/hash and adapter/digests
+#'   stay client-side and survive recipe serialization. Edited populations are
+#'   marked derivative when serialized; the original definition is retained.
+#' @seealso \code{\link{recipe_export_circe}}, \code{\link{omop_population}},
+#'   \code{\link{recipe_circe_check}}
 #' @export
-recipe_import_circe <- function(file_or_json, id = NULL, label = NULL) {
+recipe_import_circe <- function(file_or_json, id = NULL, label = NULL, origin = NULL) {
+  expr <- .ohdsi_read_definition(file_or_json)
+  .circe_require_supported(recipe_circe_check(expr))
+  pop <- .circe_import_unchecked(expr, id = id, label = label)
+  pop$circe_provenance <- .circe_provenance(file_or_json, expr, pop, origin)
+  pop
+}
+
+.circe_import_unchecked <- function(file_or_json, id = NULL, label = NULL) {
   expr <- .ohdsi_read_definition(file_or_json)
   concept_sets <- expr$ConceptSets %||% list()
   # Validate ALL definitions, including unreferenced and excluded items, before

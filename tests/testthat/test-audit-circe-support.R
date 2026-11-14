@@ -1,0 +1,97 @@
+.audit_support_definition <- function() {
+  list(ConceptSets = list(list(id = 0L, name = "condition",
+    expression = list(items = list(list(concept = list(CONCEPT_ID = 201820L)))))),
+    PrimaryCriteria = list(CriteriaList = list(list(ConditionOccurrence = list(CodesetId = 0L))),
+      PrimaryCriteriaLimit = list(Type = "First"),
+      ObservationWindow = list(PriorDays = 0L, PostDays = 0L)))
+}
+
+test_that("Circe support inspection distinguishes directions without server calls", {
+  support <- recipe_circe_support()
+  expect_named(support, c("construct", "import", "legacy_export", "native_export",
+    "conditions", "reason_code", "remedy", "adapter_version"))
+  expect_true(all(c("Death", "DrugEra", "ConditionEra", "ObservationPeriod", "VisitDetail",
+    unlist(.circe_domain_map)) %in% support$construct))
+  expect_true(all(support$native_export == "unsupported"))
+  for (domain in unlist(.circe_domain_map)) {
+    x <- .audit_support_definition()
+    names(x$PrimaryCriteria$CriteriaList[[1L]]) <- domain
+    check <- recipe_circe_check(x)
+    expect_true(check$supported, info = domain)
+    expect_equal(nrow(check$issues), 0L)
+    expect_s3_class(recipe_import_circe(x), "omop_population")
+  }
+  expect_error(recipe_circe_check(list(), "IMPORT"), "invalid_direction")
+})
+
+test_that("Circe checking reports independent clauses in structural path order", {
+  x <- .audit_support_definition()
+  x$PrimaryCriteria$CriteriaList <- list(list(Death = list()), list(DrugEra = list()))
+  x$PrimaryCriteria$PrimaryCriteriaLimit$Type <- "All"
+  x$AdditionalCriteria <- list(Type = "ANY")
+  x$CensoringCriteria <- list(list(Death = list()))
+  x$CensorWindow <- list(StartDate = "SENTINEL_PRIVATE_TEXT")
+  x$InclusionRules <- list(list(name = "SENTINEL_PRIVATE_TEXT", expression = list(
+    Type = "ALL", Groups = list(list(Type = "ANY")), CriteriaList = list(
+      list(Criteria = list(VisitDetail = list()), EndWindow = list(Start = 1L), RestrictVisit = TRUE),
+      list(Criteria = list(ObservationPeriod = list()))))))
+  check <- recipe_circe_check(x)
+  expect_false(check$supported)
+  expect_true(all(c("Death", "DrugEra", "VisitDetail", "ObservationPeriod", "EntryCardinality",
+    "FirstLast", "AdditionalCriteria", "CensoringCriteria", "CensorWindow", "Groups",
+    "EndWindow", "RestrictVisit") %in% check$issues$construct))
+  expect_identical(check$issues$path, sort(check$issues$path, method = "radix"))
+  expect_false(any(grepl("SENTINEL", unlist(check), fixed = TRUE)))
+  expect_error(recipe_import_circe(x), "recipe_circe_check")
+  x$SENTINEL_PRIVATE_FIELD <- TRUE
+  expect_false(any(grepl("SENTINEL", unlist(recipe_circe_check(x)), fixed = TRUE)))
+})
+
+test_that("malformed and oversized structural input receives a bounded root report", {
+  deep <- list()
+  for (i in 1:70) deep <- list(child = deep)
+  for (x in list('{"broken":', '{"x":1,"x":2}', deep, TRUE,
+                 list(PrimaryCriteria = TRUE), list(ConceptSets = 42))) {
+    check <- recipe_circe_check(x)
+    expect_false(check$supported)
+    expect_true(nrow(check$issues) >= 1L)
+    expect_lt(nchar(paste(unlist(check), collapse = "")), 2000L)
+  }
+})
+
+test_that("native export cannot fall back to a stale legacy index", {
+  pop <- recipe_import_circe(.audit_support_definition())
+  pop$index <- omop_index(omop_event("condition_occurrence", 201826L))
+  r <- omop_recipe(populations = pop)
+  check <- recipe_circe_check(r, "export")
+  expect_false(check$supported)
+  expect_true("unsupported_native_export" %in% check$issues$reason_code)
+  expect_error(recipe_export_circe(r, "imported"), "unsupported_native_export")
+})
+
+test_that("Circe provenance preserves supplied bytes, sanitized origin and derivative identity", {
+  x <- .audit_support_definition()
+  bytes <- paste0(as.character(jsonlite::toJSON(x, auto_unbox = TRUE, pretty = TRUE)), "\n")
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path))
+  writeBin(charToRaw(bytes), path)
+  origin <- list(uri = "https://user:password@example.org/phenotype?token=secret#secret",
+    phenotype_id = "fixture", release = "pinned", review_status = "unknown")
+  pop <- recipe_import_circe(path, origin = origin)
+  p <- pop$circe_provenance
+  expect_identical(p$original_json, bytes)
+  expect_identical(p$original_sha256, .circe_hash(bytes))
+  expect_identical(p$origin$uri, "https://example.org/phenotype")
+  expect_false(p$derivative)
+  expect_identical(recipe_import_circe(x)$circe_provenance$origin_form, "list")
+  r <- omop_recipe(populations = pop)
+  loaded <- recipe_import_json(recipe_export_json(r))
+  expect_identical(loaded$populations$imported$circe_provenance, p)
+  r$populations$imported$index_event$concept_id <- 201826L
+  edited <- recipe_import_json(recipe_export_json(r))$populations$imported$circe_provenance
+  expect_true(edited$derivative)
+  expect_identical(edited$original_sha256, p$original_sha256)
+  expect_identical(edited$original_recipe_digest, p$original_recipe_digest)
+  expect_false(identical(edited$recipe_digest, p$recipe_digest))
+  expect_error(recipe_import_circe(x, origin = list(password = "secret")), "invalid_origin")
+})
