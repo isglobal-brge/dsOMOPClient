@@ -20,6 +20,23 @@ This chapter uses the public synthetic GiBleed practice connection from [Getting
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in
+[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+
+```{r chapter-setup}
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
+conns <- practice$conns
+names(conns)
+```
+
+The `site` connection is ready. The shared `connection.R` selects DSLite or Opal and resolves the resource names.
+
 ## A shared table structure
 
 OMOP is a common data model (CDM): a shared set of tables and column meanings.
@@ -49,7 +66,9 @@ Ask for safe information about the person table:
 ds.omop.table.stats("person", conns = conns)$per_site$site
 ```
 
-Read the reported count bands as bands, not exact counts. A later categorical
+The displayed `2690` is the lower end of a five-person band: from 2690
+through 2694 people. This endpoint rounds down to a multiple of five in the
+practice configuration; it has not told you the exact count. A later categorical
 table may release exact supported cells through its own checks. Different
 endpoints answer different questions and have different disclosure rules.
 

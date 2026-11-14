@@ -34,11 +34,13 @@ const path = require('path');
           await contents.locator('summary').click();
         }
       }
+      if(slug==='articles/book-07-verbal-autopsy' && !result.headings.some(x=>x.startsWith('14.')))
+        throw new Error('Stale capstone number');
       if(slug==='articles/book-06-events') {
         await page.locator('div.sourceCode').first().hover();
         await page.locator('.btn-copy-ex').first().click();
         const copied=await page.evaluate(()=>navigator.clipboard.readText());
-        if(!copied.includes('measure <- omop_event')||copied.includes('#>'))
+        if(!copied.includes('library(dsOMOPClient)')||copied.includes('#>'))
           throw new Error('Code copy included wrong text or recorded output');
         result.copyTest='passed';
       }

@@ -22,6 +22,23 @@ Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in
+[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+
+```{r chapter-setup}
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("numeric") else book_connect("numeric")
+conns <- practice$conns
+names(conns)
+```
+
+The `site` connection is ready. The shared `connection.R` selects DSLite or Opal and resolves the resource names.
+
 ## Define the records once
 
 An *event* describes which records the server should read. These simulated hemoglobin measurements
@@ -101,7 +118,7 @@ numeric value. In a defined empty window both count and ever are zero.
 ```{r any-all}
 any_high <- omop_variable(event = measure,
   reducer = omop_reduce("any", window = history,
-    predicate = omop_where(value >= 14)))
+    predicate = omop_where(value >= 16)))
 all_high <- omop_variable(event = measure,
   reducer = omop_reduce("all", window = history,
     predicate = omop_where(value >= 14)))
@@ -109,7 +126,8 @@ class(any_high)
 ```
 
 Ever tests whether a record exists. Any and all test a condition on its values.
-Here 14 is an arbitrary teaching cutoff, not a clinical reference limit.
+Here any asks about readings at least 16 g/dL; all asks whether every reading is
+at least 14 g/dL. Both are arbitrary teaching cutoffs, not clinical reference limits.
 A missing value makes its comparison unknown; a true value settles any, and a
 false value settles all. Otherwise an unknown remains missing. Empty windows
 give any = 0 and all = NA: without measurements there is no all-value result.
@@ -127,48 +145,117 @@ print(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
 Only the symbol mapping returns. Request one approved aggregate at a time:
 
 ```{r first-result}
-dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
+first_result <- dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
+knitr::kable(book_summary(first_result))
 ```
+
+<details><summary>Full aggregate response</summary>
+
+```{r first-result-full}
+first_result
+```
+
+</details>
 
 This summarises the first nonmissing measurement per person.
 
 ```{r last-result}
-dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
+last_result <- dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
+knitr::kable(book_summary(last_result))
 ```
+
+<details><summary>Full aggregate response</summary>
+
+```{r last-result-full}
+last_result
+```
+
+</details>
 
 Later readings can change the last-value summary. The source dataset contains
 hemoglobin measurements for all 28 fictional people.
 
 ```{r days-result}
-dsBaseClient::ds.table("D_reducers$days", useNA = "no", datasources = conns)
+days_result <- dsBaseClient::ds.summary("D_reducers$days", datasources = conns)
+knitr::kable(book_summary(days_result))
 ```
 
-These are people grouped by their number of measurement days, not event counts pooled directly.
+<details><summary>Full aggregate response</summary>
+
+```{r days-result-full}
+days_result
+```
+
+</details>
+
+This summarises one measurement-day count per person. A frequency table of each
+exact count is withheld on this dataset because some nonzero cells are below
+`nfilter.tab` (3); the entire table is withheld, not just its small cells.
+An approved numeric summary answers the comparison without requesting that table.
 
 ```{r ever-result}
-dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
+ever_result <- dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
+knitr::kable(book_counts(ever_result))
 ```
+
+<details><summary>Full aggregate response</summary>
+
+```{r ever-result-full}
+ever_result
+```
+
+</details>
 
 Everyone in this public dataset has a hemoglobin measurement. A person without
 one would have ever = 0 in this defined window.
 
 ```{r any-result}
-dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
+any_result <- dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
+knitr::kable(book_counts(any_result))
 ```
 
-A known high measurement is enough for any, even alongside an unknown value.
+<details><summary>Full aggregate response</summary>
+
+```{r any-result-full}
+any_result
+```
+
+</details>
+
+The released counts show 19 people with at least one reading at or above 16 g/dL
+and 9 without one. A known qualifying measurement is enough for any, even
+alongside an unknown value.
 
 ```{r all-result}
-dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = conns)
+all_result <- dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = conns)
+knitr::kable(book_counts(all_result))
 ```
 
+<details><summary>Full aggregate response</summary>
+
+```{r all-result-full}
+all_result
+```
+
+</details>
+
+Four people have all readings at or above 14 g/dL; 24 do not.
 All distinguishes unknown comparisons from an empty set of records.
 
 ## Read the mean summary
 
 ```{r mean-result}
-dsBaseClient::ds.summary("D_reducers$mean", datasources = conns)
+mean_result <- dsBaseClient::ds.summary("D_reducers$mean", datasources = conns)
+knitr::kable(book_summary(mean_result))
 ```
+
+<details><summary>Full aggregate response</summary>
+
+```{r mean-result-full}
+mean_result
+```
+
+</details>
 
 This summarises one mean per person. It is not the pooled mean of all measurement
 rows, which would give more weight to people measured more often.
@@ -190,8 +277,17 @@ The tolerance excludes later measurements. The shortcut uses `closest_value`;
 its default tolerance would include 90 days before and 30 days after.
 
 ```{r at-index-result}
-dsBaseClient::ds.summary("D_at_index$hemoglobin", datasources = conns)
+at_index_result <- dsBaseClient::ds.summary("D_at_index$hemoglobin", datasources = conns)
+knitr::kable(book_summary(at_index_result))
 ```
+
+<details><summary>Full aggregate response</summary>
+
+```{r at-index-result-full}
+at_index_result
+```
+
+</details>
 
 Only people with an eligible hemoglobin measurement enter this indexed study. If a required anchor is missing,
 a window is undefined and every reducer gives `NA`, including count and ever.
@@ -226,8 +322,17 @@ print(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
 ```
 
 ```{r conversion-result}
-dsBaseClient::ds.summary("D_converted$mean_gl", datasources = conns)
+conversion_result <- dsBaseClient::ds.summary("D_converted$mean_gl", datasources = conns)
+knitr::kable(book_summary(conversion_result))
 ```
+
+<details><summary>Full aggregate response</summary>
+
+```{r conversion-result-full}
+conversion_result
+```
+
+</details>
 
 The means are ten times the g/dL means. This run uses the dataset's unchanged
 recorded units; it does not pretend that the source already had mixed units.
@@ -240,17 +345,28 @@ We apply them to each person's mean, privately.
 
 ```{r bins}
 print(ds.omop.mutate("D_reducers",
-  band = cut(mean, breaks = c(0, 12, 16, 100),
-    labels = c("below 12", "12 to below 16", "16 or above"), right = FALSE),
-  high = ifelse(mean >= 16, 1L, 0L), low = ifelse(mean < 12, 1L, 0L),
+  band = cut(mean, breaks = c(0, 14, 15, 100),
+    labels = c("below 14", "14 to below 15", "15 or above"), right = FALSE),
+  high = ifelse(mean >= 15, 1L, 0L), low = ifelse(mean < 14, 1L, 0L),
   newobj = "D_lab_bins", conns = conns))
 ```
 
 ```{r bins-result}
-dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
+bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
+knitr::kable(book_counts(bins_result))
 ```
 
-Small cells may be suppressed. You see the checked table, never the private rows.
+<details><summary>Full aggregate response</summary>
+
+```{r bins-result-full}
+bins_result
+```
+
+</details>
+
+All nonzero cells in this worked example meet the release threshold. You see
+the checked counts, never the private rows. A different set of bins can cause
+the entire table to be withheld; a refusal is not an empty or zero table.
 The left boundary is included and the right boundary excluded in these bins.
 
 ## Recorded abnormal-high and abnormal-low counts
@@ -268,8 +384,17 @@ print(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
 ```
 
 ```{r ranges-result}
-dsBaseClient::ds.table("D_lab_ranges$high_count", useNA = "no", datasources = conns)
+ranges_result <- dsBaseClient::ds.table("D_lab_ranges$high_count", useNA = "no", datasources = conns)
+knitr::kable(book_counts(ranges_result))
 ```
+
+<details><summary>Full aggregate response</summary>
+
+```{r ranges-result-full}
+ranges_result
+```
+
+</details>
 
 Synthea27Nj has no recorded hemoglobin reference bounds. Zero here means no
 recorded comparable abnormal-high result; it is **not evidence of normality**.
@@ -282,7 +407,8 @@ An event chooses records, a window chooses time, and a reducer answers one quest
 
 ## Try it
 
-Add a count of measurement rows and compare it with the count of distinct days.
+Add a count of measurement rows and compare its released mean and quantiles
+with the measurement-day summary above.
 
 <details><summary>Solution</summary>
 
@@ -292,8 +418,17 @@ row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   outputs = omop_output("people", format = "wide", grain = "person"))
 stopifnot(recipe_explain(row_count, conns = conns)$selected == "v2")
 print(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
-dsBaseClient::ds.table("D_row_count$rows", useNA = "no", datasources = conns)
+solution_result <- dsBaseClient::ds.summary("D_row_count$rows", datasources = conns)
+knitr::kable(book_summary(solution_result))
 ```
-Compare the released tables: records on the same day would count separately as rows, but once as a day. Their equality or difference is a data property, not a guarantee of the reducers.
+
+<details><summary>Full aggregate response</summary>
+
+```{r solution-full}
+solution_result
+```
+
+</details>
+Compare the released summaries: records on the same day would count separately as rows, but once as a day. Their equality or difference is a data property, not a guarantee of the reducers.
 
 </details>

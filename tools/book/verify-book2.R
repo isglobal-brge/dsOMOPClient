@@ -4,7 +4,7 @@ verify_book2 <- function(input, env, get_data) {
   same_values <- function(x, expected) stopifnot(isTRUE(all.equal(
     sort(as.numeric(x), na.last=TRUE), sort(as.numeric(expected), na.last=TRUE))))
   if (grepl("book-06-events", input)) {
-    db <- DBI::dbConnect(RSQLite::SQLite(),env$f$database)
+    db <- DBI::dbConnect(RSQLite::SQLite(),env$practice$database)
     on.exit(DBI::dbDisconnect(db),add=TRUE)
     source <- DBI::dbGetQuery(db,"SELECT person_id,measurement_id,measurement_date,value_as_number FROM measurement WHERE measurement_concept_id=3000963 AND unit_concept_id=8713 ORDER BY person_id,measurement_date,measurement_id")
     people <- split(source,source$person_id)
@@ -13,7 +13,7 @@ verify_book2 <- function(input, env, get_data) {
     oracle <- lapply(people,function(x) {
       v<-x$value_as_number;v<-v[!is.na(v)]
       c(first=v[1],last=tail(v,1),mean=mean(v),days=length(unique(x$measurement_date)),
-        ever=1L,any_high=as.integer(any(v>=14)),all_high=as.integer(all(v>=14)))
+        ever=1L,any_high=as.integer(any(v>=16)),all_high=as.integer(all(v>=14)))
     })
     oracle <- do.call(rbind,oracle)
     for (name in colnames(oracle)) same_values(d[[name]],oracle[,name])
@@ -23,8 +23,44 @@ verify_book2 <- function(input, env, get_data) {
     stopifnot(all(get_data("D_lab_ranges")$high_count==0L),
       all(get_data("D_lab_ranges")$low_count==0L))
     bins<-get_data("D_lab_bins")
-    stopifnot(identical(as.integer(bins$high),as.integer(d$mean>=16)),
-      identical(as.integer(bins$low),as.integer(d$mean<12)))
+    stopifnot(identical(as.integer(bins$high),as.integer(d$mean>=15)),
+      identical(as.integer(bins$low),as.integer(d$mean<14)))
+    # Test actual released objects, including the exercise, against independent
+    # queries of the PUBLIC synthetic data (never an analyst workflow).
+    summaries <- list(first = env$first_result, last = env$last_result,
+      mean = env$mean_result, days = env$days_result,
+      rows = env$solution_result, converted = env$conversion_result,
+      at_index = env$at_index_result)
+    expected <- list(first = oracle[,"first"], last = oracle[,"last"],
+      mean = oracle[,"mean"], days = oracle[,"days"],
+      rows = vapply(people,nrow,integer(1)), converted = 10*oracle[,"mean"],
+      at_index = oracle[,"first"])
+    for (name in names(summaries)) {
+      released <- book_summary(summaries[[name]])
+      stopifnot(nrow(released) == 8L,
+        isTRUE(all.equal(released$Value, unname(c(quantile(expected[[name]],
+          probs=c(.05,.1,.25,.5,.75,.9,.95)), Mean=mean(expected[[name]]))))))
+    }
+    tables <- list(any = env$any_result, all = env$all_result,
+      ever = env$ever_result, bins = env$bins_result,
+      ranges = env$ranges_result)
+    expected_counts <- list(any = c(9,19,0), all = c(24,4,0), ever = 28,
+      bins = as.numeric(table(factor(as.character(cut(oracle[,"mean"], c(0,14,15,100),
+        labels=c("below 14","14 to below 15","15 or above"), right=FALSE)),
+        levels=c("14 to below 15","15 or above","below 14")))),
+      ranges = 28)
+    expected_counts$bins <- c(expected_counts$bins, 0)
+    for (name in names(tables)) {
+      counts <- book_counts(tables[[name]])$Count
+      stopifnot(identical(counts, as.numeric(expected_counts[[name]])), sum(counts)==28)
+    }
+    # A normal-return refusal must never be formatted as successful/empty data.
+    message("EXPECTED REFUSAL PROBE: exact measurement-day frequency table")
+    refused <- dsBaseClient::ds.table("D_reducers$days", useNA="no", datasources=env$conns)
+    stopifnot(grepl("All studies failed", refused$validity.message),
+      inherits(try(book_counts(refused), silent=TRUE), "try-error"))
+    message("AGGREGATES PASS: seven summaries, five tables, refusal formatter guard")
+
   }
   if (grepl("book-07-populations", input)) {
     stopifnot(nrow(get_data("D_members"))==18L,
@@ -56,7 +92,7 @@ verify_book2 <- function(input, env, get_data) {
     s <- get_data("D_fmt_survival")
     stopifnot(nrow(s)==28L, all(s$entry_days_from_index==1L),
       all(s$follow_up_days==s$exit_days_from_index-s$entry_days_from_index))
-    db<-DBI::dbConnect(RSQLite::SQLite(),env$f$database)
+    db<-DBI::dbConnect(RSQLite::SQLite(),env$practice$database)
     on.exit(DBI::dbDisconnect(db),add=TRUE)
     visits<-DBI::dbGetQuery(db,"SELECT person_id,visit_concept_id,visit_start_date FROM visit_occurrence WHERE visit_concept_id IN (9201,9202)")
     obs<-DBI::dbReadTable(db,"observation_period");deaths<-DBI::dbReadTable(db,"death")

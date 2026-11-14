@@ -22,6 +22,23 @@ Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in
+[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+
+```{r chapter-setup}
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("numeric") else book_connect("numeric")
+conns <- practice$conns
+names(conns)
+```
+
+The `site` connection is ready. The shared `connection.R` selects DSLite or Opal and resolves the resource names.
+
 ## Choose the shape for the analysis
 
 An output controls the shape of a private server table. It never grants a row
@@ -178,8 +195,17 @@ dsBaseClient::ds.colnames("D_fmt_survival", datasources = conns)
 Only the named censor sources cap follow-up: observation end and death here. The window also limits follow-up when its upper bound is finite. An episode end is not an extra censor unless requested. A censor is not a “no outcome ever” assertion. Always state the window: omitting it would use the 730-day compatibility default.
 
 ```{r survival-result}
-dsBaseClient::ds.table("D_fmt_survival$event", useNA = "no", datasources = conns)
+survival_result <- dsBaseClient::ds.table("D_fmt_survival$event", useNA = "no", datasources = conns)
+knitr::kable(book_counts(survival_result))
 ```
+
+<details><summary>Full aggregate response</summary>
+
+```{r survival-result-full}
+survival_result
+```
+
+</details>
 
 Counts of the `event` flag distinguish observed outcomes from censored follow-up in this one-outcome example.
 
@@ -287,8 +313,17 @@ Summarise the visit-count column of the joined output. Why is it the same as the
 <details><summary>Solution</summary>
 
 ```{r solution}
-dsBaseClient::ds.summary("D_fmt_joined$visits", datasources = conns)
+solution_result <- dsBaseClient::ds.summary("D_fmt_joined$visits", datasources = conns)
+knitr::kable(book_summary(solution_result))
 ```
+
+<details><summary>Full aggregate response</summary>
+
+```{r solution-full}
+solution_result
+```
+
+</details>
 Both use the same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.
 
 </details>

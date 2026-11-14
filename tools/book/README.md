@@ -9,8 +9,10 @@ library `/root/rt/labels-deps`), DSLite, DBI, RSQLite, resourcer, knitr and with
 The source is `vignettes/book-*.Rmd.orig`. Knitr executes it against the
 synthetic SQLite fixture and writes `.Rmd` containing ordinary fenced code and
 recorded output. Thus `pkgdown::build_site()` needs no live database. Each chapter
-gets a fresh connection; its hidden setup establishes only the documented
-prerequisites. Assertions in `verify.R` inspect synthetic server memory only;
+executes its visible fresh-session setup; the precompute runner never creates
+`conns` or selects a dataset for the reader. The downloadable helper ZIP supports
+readers without a source checkout. `connection.R` is the sole public-practice
+driver/project/resource configuration. Assertions in `verify.R` inspect synthetic server memory only;
 none of those row-reading calls is an analyst lesson.
 
 The fixture extends the released `helper-dates-va.R`: 24 synthetic people,
@@ -71,3 +73,16 @@ with its native system font stack, navy/orange/blue palette, and a Bootstrap 5
 bslib theme. The chapter navigation and in-page contents remain accessible on
 phones. Code and recorded outputs are separate fences; pkgdown supplies code-copy
 buttons. Author bylines and the book footer are site metadata; DESCRIPTION is unchanged.
+
+Review-1 fixes: `verify-book2.R` checks the actual released numeric summaries and
+count tables against the public synthetic oracle, including the count exercise.
+`display.R` formats only successful releases; full responses are retained in
+expandable details. `audit-content.py` rejects normal-return failure lists unless
+visibly delimited as an expected refusal lesson. The deliberately refused table
+in the verification probe must make the formatter stop.
+
+Run `Rscript tools/book/verify-setup.R` with the same pod library after installation.
+It executes chapter 2's actual attach/switch chunks against renamed resources in
+DSLite and checks the Opal scripts' API signatures. This is not a live Opal test.
+The optional provisioning scripts and Compose mount are shipped in the helper
+ZIP; chapter 0 states the live-deployment validation limit explicitly.

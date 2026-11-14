@@ -1,0 +1,7 @@
+services:
+  rock:
+    volumes:
+      - type: bind
+        source: ${BOOK_DATA_DIR:?Set BOOK_DATA_DIR through book-compose.sh}
+        target: /data/practice
+        read_only: true

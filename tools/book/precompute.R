@@ -2,8 +2,6 @@
 stopifnot(as.character(packageVersion("dsOMOP")) == "2.10.4",
           as.character(packageVersion("dsOMOPClient")) == "2.10.4")
 library(dsOMOPClient)
-source("tools/book/fixture.R")
-source("tools/book/practice.R")
 source("tools/book/verify-book2.R")
 source("tools/book/verify.R")
 options(width=88)
@@ -12,21 +10,23 @@ inputs <- sort(list.files("vignettes", "\\.Rmd\\.orig$", full.names=TRUE))
 args <- if (sys.nframe() == 0L) commandArgs(trailingOnly=TRUE) else character()
 if (length(args)) inputs <- inputs[grepl(args[[1L]], basename(inputs))]
 stopifnot(length(inputs) > 0L)
+if (!"--chapter-worker" %in% args) {
+  for (input in inputs) {
+    status <- system2(file.path(R.home("bin"), "Rscript"),
+      c("tools/book/precompute.R", shQuote(basename(input)), "--chapter-worker"))
+    if (status != 0L) stop("Fresh-process chapter failed: ", input)
+  }
+  message("All chapters passed in separate R processes using visible setup")
+  quit(save="no", status=0L)
+}
 for (input in inputs) {
   message("PRECOMPUTE ", input)
   render <- function() {
-    if (!grepl("book-00", input)) {
-      f <- if (grepl("book-0[1234]-", input)) book_practice("gibleed",env=environment()) else
-           if (grepl("book-06-events|book-08-outputs|book-11-parameters",input))
-             book_practice("numeric",env=environment()) else book_fixture(env=environment())
-      conns <- f$conns
-    }
     on.exit({
       if (exists("conns", inherits=FALSE)) {
         try(ds.omop.disconnect(conns=conns), silent=TRUE)
         try(DSI::datashield.logout(conns), silent=TRUE)
       }
-      if (exists("f", inherits=FALSE)) unlink(f$path)
       if (exists("practice", inherits=FALSE)) unlink(practice$path)
       if (exists("two_conns", inherits=FALSE)) {
         try(ds.omop.disconnect(conns=two_conns), silent=TRUE)
