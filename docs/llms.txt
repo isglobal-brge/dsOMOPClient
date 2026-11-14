@@ -152,13 +152,7 @@ explicit numeric representations for date arithmetic. See [release
 notes](https://isglobal-brge.github.io/dsOMOPClient/news/index.html) for
 migrations and the client extraction vignette for examples.
 
-Release verification: [recipe/publication contract
-run 43542378954](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43542378954)
-passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3; [full e2e
-run 43542382006](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43542382006)
-passed both fresh and upgrade jobs. Both tested harness commit
-`2e9844a0333a0cffda7e84662a44b070fcc850e4`. These are evidence for that
-candidate, not a claim of live execution on every supported SQL dialect.
+Release verification covers recipe/publication contracts and end-to-end execution.
 
 ## Recipe language 2 in 2.10.4
 
