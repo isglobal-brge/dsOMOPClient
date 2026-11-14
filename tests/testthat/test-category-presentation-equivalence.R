@@ -1,4 +1,11 @@
 # Compare independent published/actual oracles, not one descriptor helper to itself.
+# Fail at the first mismatched component so a large matrix does not repeat one
+# defect hundreds of times before reporting its exact declared/actual schema.
+.equivalence_identical <- function(expected,actual,info=NULL) {
+  expect_identical(expected,actual,info=info)
+  if(!identical(expected,actual))stop(paste(info,"expected",paste(capture.output(dput(expected)),collapse=" "),
+    "actual",paste(capture.output(dput(actual)),collapse=" ")))
+}
 .equivalence_books <- function(recipe,ctx,mode,label) {
   plan <- recipe_to_plan(recipe,version=2)
   server <- ctx$servers[[1L]]
@@ -19,7 +26,7 @@
       rejection <<- unique(c(rejection,message))
       if(is.function(callback))callback(server,message)
     }
-    do.call(assign_expr,args)
+    do.call(assign_expr,args,quote=TRUE)
   },.package="DSI")
   result <- tryCatch(ds.omop.plan.execute(plan,out=symbols,symbol="labels",conns=ctx$conns,output_mode=mode),
     error=function(e)stop(paste(c(conditionMessage(e),rejection),collapse="\n")))
@@ -28,17 +35,17 @@
       datashield.assign.expr=function(...)stop("unexpected network"),.package="DSI")
     list(recipe_codebook(recipe),recipe_codebook(result))
   })
-  expect_identical(names(books[[1L]]),names(books[[2L]]),info=label)
+  .equivalence_identical(names(books[[1L]]),names(books[[2L]]),info=label)
   for(key in names(books[[1L]])) {
     a <- books[[1L]][[key]]$columns; b <- books[[2L]][[key]]$columns
     info <- paste(label,key)
     # Long has an explicitly open source schema; all declared columns must be
     # correct, while its complete published inventory must match every frame.
     if(startsWith(key,"long/"))expect_true(all(a$name %in% b$name),info=info)
-    else expect_identical(a$name,b$name,info=info)
+    else .equivalence_identical(a$name,b$name,info=info)
     at <- match(a$name,b$name)
     expect_false(anyNA(at),info=info)
-    expect_identical(a$r_type,b$r_type[at],info=info)
+    .equivalence_identical(a$r_type,b$r_type[at],info=info)
     parts <- strsplit(key,"/",fixed=TRUE)[[1L]]
     target <- paste0(symbols[[parts[1L]]],if(parts[2L]!=parts[1L])paste0(".",parts[2L]))
     for(site in names(ctx$servers)) {
@@ -46,26 +53,26 @@
       object <- server$getSessionData(server$getSessionIds()[[1L]],target)
       if(mode=="staged") {
         expect_s3_class(object,"FlowerDatasetDescriptor")
-        expect_identical(object$metadata$format,"parquet")
+        .equivalence_identical(object$metadata$format,"parquet")
         frames <- list()
         dsOMOP:::.publishReadChunks(object,function(x)frames[[length(frames)+1L]] <<- x)
       } else frames <- list(object)
       for(frame in frames) {
-        expect_identical(names(frame),b$name,info=info)
+        .equivalence_identical(names(frame),b$name,info=info)
         for(i in seq_len(nrow(a))) {
           x <- frame[[a$name[i]]]
           type <- if(is.ordered(x))"ordered_factor" else if(is.factor(x))"factor" else
             if(inherits(x,"Date"))"Date" else if(inherits(x,"integer64"))"integer64" else typeof(x)
-          expect_identical(a$r_type[i],type,info=paste(info,a$name[i],site))
+          .equivalence_identical(a$r_type[i],type,info=paste(info,a$name[i],site))
           if(is.factor(x)) {
-            expect_identical(a$ordered[[i]],is.ordered(x),info=info)
-            expect_identical(levels(x),unlist(b$levels[[at[i]]]$labels,use.names=FALSE),info=info)
+            .equivalence_identical(a$ordered[[i]],is.ordered(x),info=info)
+            .equivalence_identical(levels(x),unlist(b$levels[[at[i]]]$labels,use.names=FALSE),info=info)
             if(!is.null(a$levels[[i]])) {
-              expect_identical(unlist(a$levels[[i]]$keys,use.names=FALSE),unlist(b$levels[[at[i]]]$keys,use.names=FALSE),info=info)
-              expect_identical(unlist(a$levels[[i]]$labels,use.names=FALSE),levels(x),info=info)
+              .equivalence_identical(unlist(a$levels[[i]]$keys,use.names=FALSE),unlist(b$levels[[at[i]]]$keys,use.names=FALSE),info=info)
+              .equivalence_identical(unlist(a$levels[[i]]$labels,use.names=FALSE),levels(x),info=info)
             }
-            if(!is.null(a$reference[[i]])&&!is.na(a$reference[[i]]))expect_identical(a$reference[[i]],b$reference[[at[i]]],info=info)
-            expect_identical(a$contrasts[[i]]$kind,if(is.ordered(x))"polynomial" else "treatment",info=info)
+            if(!is.null(a$reference[[i]])&&!is.na(a$reference[[i]])).equivalence_identical(a$reference[[i]],b$reference[[at[i]]],info=info)
+            .equivalence_identical(a$contrasts[[i]]$kind,if(is.ordered(x))"polynomial" else "treatment",info=info)
             if(length(levels(x))>1L) {
               ref <- match(a$reference[[i]],unlist(a$levels[[i]]$keys,use.names=FALSE))
               expected <- if(is.ordered(x))stats::contr.poly(nlevels(x)) else

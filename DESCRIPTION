@@ -29,6 +29,7 @@ Imports:
     yaml,
     openssl
 Suggests:
+    bit64,
     DSLite,
     DSOpal,
     dsBaseClient,
