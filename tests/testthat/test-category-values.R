@@ -53,7 +53,7 @@ test_that("C02 C05 C65 effective order and inherited aliases survive grouping", 
     a<-attr(f$explicit,"omop_category_contract");b<-attr(f$metadata,"omop_category_contract")
     expect_identical(a$category,b$category)
     expect_identical(a$reference,"concept:45000123")
-    expect_identical(unname(a$aliases["concept:45000124"]),"concept:45000123")
+    expect_identical(unname(unlist(a$aliases["concept:45000124"])),"concept:45000123")
   }
   expect_true(any(vapply(book$aliases,function(x)"concept:45000124" %in% names(x),logical(1))))
   r$variables$explicit<-omop_category(v,omop_category_spec(order=omop_category_order(keys[c(1,3,2)])))

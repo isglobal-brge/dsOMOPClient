@@ -14,6 +14,16 @@ for(dataset in c("GiBleed","Synthea27Nj"))local({
       result<-ds.omop.plan.execute(plan,out=destinations,symbol="numeric",conns=ctx$conns,output_mode=mode)
       book<-recipe_codebook(result)
       expect_gte(length(book),length(plan$outputs))
+      if(mode=="staged")for(root in names(destinations))for(i in seq_along(ctx$servers)) {
+        server<-ctx$servers[[i]];descriptor<-server$getSessionData(server$getSessionIds()[[1L]],destinations[[root]])
+        if(inherits(descriptor,"FlowerDatasetDescriptor"))dsOMOP:::.publishReadChunks(descriptor,function(chunk) {
+          for(n in names(chunk))if(is.factor(prior[[root]][[i]][[n]])) {
+            expect_identical(levels(chunk[[n]]),levels(prior[[root]][[i]][[n]]))
+            expect_identical(is.ordered(chunk[[n]]),is.ordered(prior[[root]][[i]][[n]]))
+            expect_equal(attr(chunk[[n]],"contrasts"),attr(prior[[root]][[i]][[n]],"contrasts"))
+          }
+        })
+      }
       frames<-lapply(names(destinations),function(root) {
         symbol<-destinations[[root]]
         if(root!="dictionary")return(.numeric_frames(ctx,symbol,mode))
@@ -26,7 +36,10 @@ for(dataset in c("GiBleed","Synthea27Nj"))local({
       for(root in names(frames))for(i in seq_along(frames[[root]])) {
         f<-frames[[root]][[i]]
         expect_true(nrow(f)>0L,info=paste(dataset,root,mode))
-        if(!is.null(prior))for(column in names(f))expect_equal(f[[column]],prior[[root]][[i]][[column]],info=paste(dataset,root,column))
+        if(!is.null(prior))for(column in names(f)) {
+          if(is.factor(f[[column]]))expect_identical(as.character(f[[column]]),as.character(prior[[root]][[i]][[column]]))
+          else expect_equal(f[[column]],prior[[root]][[i]][[column]],info=paste(dataset,root,column))
+        }
         if(root=="wide") {
           expect_type(f$flag,"logical");expect_true(is.factor(f$band))
           expect_true(is.factor(f$repeated_value_baseline));expect_true(is.factor(f$repeated_value_m6))

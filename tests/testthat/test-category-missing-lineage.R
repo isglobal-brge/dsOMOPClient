@@ -5,7 +5,7 @@ test_that("C28 C29 C30 C31 unavailable and undefined inputs never become ordinar
   available<-omop_event("observation",45000120L)
   missing<-omop_category_spec(missing=omop_category_missing("level"))
   cat<-function(e,window=NULL)omop_category(omop_variable(event=e,reducer=omop_reduce("last_value",value="concept_id",window=window)),missing)
-  r<-omop_recipe(events=list(empty),variables=list(unavailable=cat(absent),empty=cat(empty),
+  r<-omop_recipe(events=list(empty),variables=list(unavailable=cat(absent),unavailable_both=omop_category(cat(absent),omop_category_spec(missing=omop_category_missing("level","level"))),empty=cat(empty),
     undefined=cat(available,omop_window(-7,7,anchor=omop_anchor(empty))),
     logical=omop_category(omop_variable(event=absent,reducer=omop_reduce("binary")),omop_category_spec(binary=omop_category_binary("logical")))))
   for(mode in c("memory","staged")) {
@@ -14,6 +14,7 @@ test_that("C28 C29 C30 C31 unavailable and undefined inputs never become ordinar
       expect_true(all(is.na(f$unavailable)));expect_true(all(is.na(f$undefined)))
       expect_true(all(f$empty=="Missing"));expect_true(all(is.na(f$logical)));expect_type(f$logical,"logical")
       expect_identical(levels(f$unavailable),"Missing")
+      expect_true(all(is.na(f$unavailable_both)));expect_identical(levels(f$unavailable_both),c("Missing","Unknown"))
     }
   }
   quantity<-omop_variable(event=available,reducer=omop_reduce("count"))

@@ -72,7 +72,7 @@ test_that("C49 staged category metadata tampering fails before materialisation",
   r<-.clf_recipe();r$variables$education<-omop_category(r$variables$education,omop_category_spec(ordered=TRUE))
   recipe_execute(r,out="Tamper",symbol="labels",conns=ctx$conns,output_mode="staged")
   server<-ctx$servers[[1L]];d<-server$getSessionData(server$getSessionIds()[[1L]],"Tamper")
-  spec<-.conceptUnionReports(list(site=dsOMOP:::.conceptStageReport(d)))
+  spec<-.conceptUnionReports(DSI::datashield.aggregate(ctx$conns,call("omopFactorLevelsDS",as.symbol("Tamper"))))
   original<-d$metadata$concept_presentation
   meta<-dsOMOP:::.ds_arg(original)
   meta$contracts$education$category$spec$ordered<-FALSE

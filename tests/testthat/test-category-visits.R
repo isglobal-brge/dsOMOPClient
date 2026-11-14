@@ -12,18 +12,26 @@ test_that("C39 C40 C41 C42 visit ranking precedes the measurement join", {
     observations$observation_id<-seq_len(nrow(observations));observations$observation_concept_id<-45000120L
     observations$observation_date<-visits$visit_start_date[visits$position!=2]
     observations$observation_type_concept_id<-0L;observations$value_as_number<-visits$position[visits$position!=2]*10
+    observations$value_as_concept_id<-NA_integer_
+    later<-observations;later$observation_id<-later$observation_id+1000L
+    later$observation_date<-as.character(as.Date(later$observation_date)+1)
+    later$value_as_number<-later$value_as_number+1;later$value_as_concept_id<-45000124L
     visits$position<-NULL
-    DBI::dbWriteTable(con,"visit_occurrence",visits,append=TRUE);DBI::dbWriteTable(con,"observation",observations,append=TRUE);DBI::dbDisconnect(con)
+    DBI::dbWriteTable(con,"visit_occurrence",visits,append=TRUE);DBI::dbWriteTable(con,"observation",rbind(observations,later),append=TRUE);DBI::dbDisconnect(con)
   }
   e<-omop_event("observation",45000120L);visits<-omop_event("visit_occurrence")
   bundle<-omop_repeated(e,list(value=omop_number_rows(e),present=omop_number_present(omop_number_rows(e))),visits=omop_visits(c(1L,2L,3L,5L),visits,select="closest"))
-  r<-omop_recipe(variables=list(lab=bundle,nth=omop_variable(event=e,reducer=omop_reduce("nth_value",n=2L))))
+  last<-omop_repeated(e,list(value=omop_number_rows(e)),visits=omop_visits(c(1L,2L,3L),visits,select="last"))
+  skipped<-omop_repeated(e,list(value=omop_number_rows(e),answer=omop_category_rows(e,"value_as_concept_id")),visits=omop_visits(c(1L,2L,3L),visits,select="closest"),missing="skip_any")
+  r<-omop_recipe(variables=list(lab=bundle,last=last,skipped=skipped,nth=omop_variable(event=e,reducer=omop_reduce("nth_value",n=2L))))
   for(mode in c("memory","staged")) {
     symbol<-paste0("Visits_",mode);recipe_execute(r,out=symbol,symbol="labels",conns=ctx$conns,output_mode=mode)
     for(f in .clf_frames(ctx,symbol)) {
       expect_equal(nrow(f),18L);expect_true(all(f$lab_value_visit_1==10));expect_true(all(f$lab_value_visit_3==30))
       expect_true(all(is.na(f$lab_value_visit_2)));expect_true(all(is.na(f$lab_value_visit_5)))
-      expect_true(all(f$lab_present_visit_2==0L));expect_true(all(f$lab_present_visit_5==0L));expect_true(all(f$nth==30))
+      expect_true(all(f$lab_present_visit_2==0L));expect_true(all(f$lab_present_visit_5==0L));expect_true(all(f$nth==11))
+      expect_true(all(f$last_value_visit_1==11));expect_true(all(f$last_value_visit_3==31))
+      expect_true(all(f$skipped_value_visit_1==11));expect_true(all(f$skipped_value_visit_3==31));expect_true(all(is.na(f$skipped_value_visit_2)))
     }
   }
 })

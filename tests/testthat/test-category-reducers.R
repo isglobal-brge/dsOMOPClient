@@ -71,3 +71,24 @@ test_that("C05 C63 category reducers use declared equivalence, sentinel identity
     expect_true(all(f$empty_any==0L));expect_true(all(is.na(f$empty_all)));expect_true(all(f$empty_sum==0L))
   }
 })
+
+test_that("C63 mode ties use typed identity rather than display order", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path);DBI::dbExecute(con,"DELETE FROM observation")
+    rows<-expand.grid(position=1:2,person_id=1:18)
+    rows$observation_id<-seq_len(nrow(rows));rows$observation_concept_id<-45000120L
+    rows$observation_date<-"2020-01-01";rows$observation_type_concept_id<-0L
+    rows$value_as_concept_id<-c(2L,10L)[rows$position];rows$value_as_number<-c(1.5,9.5)[rows$position];rows$position<-NULL
+    DBI::dbWriteTable(con,"observation",rows[nrow(rows):1,],append=TRUE);DBI::dbDisconnect(con)
+  }
+  e<-omop_event("observation",45000120L)
+  concepts<-omop_category_rows(e,"value_as_concept_id")
+  bins<-omop_category(omop_number_bins(omop_number_rows(e),breaks=0:10),omop_category_spec(order=omop_category_order(paste0("bin:",10:1))))
+  mixed<-omop_category(concepts,omop_category_spec(recode=omop_category_recode(c(`concept:2`="category:alpha"),c("category:alpha","concept:10"))))
+  r<-omop_recipe(variables=list(concept=omop_category_reduce(concepts,omop_reduce("mode")),bin=omop_category_reduce(bins,omop_reduce("mode")),mixed=omop_category_reduce(mixed,omop_reduce("mode"))),labels=c(`2`="Z",`10`="A"))
+  recipe_execute(r,out="CanonicalTies",symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"CanonicalTies")) {
+    expect_true(all(f$concept=="Z"));expect_true(all(f$bin=="[1,2)"));expect_true(all(f$mixed=="10"))
+  }
+})

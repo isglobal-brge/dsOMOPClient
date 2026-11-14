@@ -21,7 +21,7 @@ test_that("C45 C47 generated panel flags and matrix reference copies retain type
   ctx<-.clf_setup();.numeric_lexer()
   e<-omop_event("observation",45000120L,name="e")
   base<-function(output)omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),outputs=output)
-  panel<-omop_output("panel",format="person_period",rows="p",columns=character(),options=list(sources=list(e),window=omop_window(0,20),bins=list(width=10),analyses=c("binary","count")),category_columns=list(yesno=omop_category_column("e_binary",category_spec=omop_category_spec(binary=omop_category_binary("factor")))))
+  panel<-omop_output("panel",format="person_period",rows="p",columns=c("e_binary","yesno"),options=list(sources=list(e),window=omop_window(0,20),bins=list(width=10),analyses=c("binary","count")),category_columns=list(yesno=omop_category_column("e_binary",category_spec=omop_category_spec(binary=omop_category_binary("factor")))))
   recipe_execute(base(panel),out="PanelCopy",symbol="labels",conns=ctx$conns)
   for(f in .clf_frames(ctx,"PanelCopy")) {
     expect_type(f$e_binary,"integer");expect_s3_class(f$yesno,"factor")

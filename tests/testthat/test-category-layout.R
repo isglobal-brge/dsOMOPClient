@@ -26,7 +26,7 @@ test_that("C46 C54 multi-state covariates and transition references have separat
   ctx<-.clf_setup();.numeric_lexer()
   e<-omop_event("observation",45000120L,name="e")
   v<-omop_category(omop_variable(event=e,reducer=omop_reduce("last_value",value="value_as_concept_id")),omop_category_spec(ordered=FALSE))
-  output<-omop_output("course",format="survival",rows="p",columns="education",options=list(format="multi_state",outcomes=list(lab=e),transitions=list(index="lab"),initial_state="index",tar=omop_window(0,365),censor=list("observation_end")))
+  output<-omop_output("course",format="survival",rows="p",columns="education",options=list(format="multi_state",outcomes=list(lab=e),transitions=list(list(from="index",to="lab")),initial_state="index",tar=omop_window(0,365),censor=list("observation_end")))
   r<-omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),variables=list(education=v),outputs=output)
   expected<-recipe_codebook(r)
   expect_setequal(names(expected),c("course/course","course/transitionRef"))

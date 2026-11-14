@@ -35,7 +35,7 @@ test_that("C20 C23 code styles and deterministic language candidates preserve ze
   }
 })
 
-test_that("C10 C15 C16 hierarchy ambiguity and exact separation are public contracts", {
+test_that("C10 C15 C16 C19 C60 hierarchy ambiguity and exact separation are public contracts", {
   ctx<-.clf_setup();.numeric_lexer()
   for(path in ctx$paths) {
     con<-DBI::dbConnect(RSQLite::SQLite(),path)
@@ -64,6 +64,28 @@ test_that("C10 C15 C16 hierarchy ambiguity and exact separation are public contr
     expect_true(all(f$priority=="Ancestor45000302"))
     expect_true(all(f$flags_a==1L));expect_true(all(f$flags_b==1L));expect_equal(nrow(f),18L)
   }
+  flags<-omop_category_indicators(omop_category_rows(e,"value_as_concept_id",roll(separation=3,distance="max",multiple="all")),c(a="concept:45000301",b="concept:45000302"))
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"INSERT INTO observation (observation_id,person_id,observation_concept_id,observation_date,observation_type_concept_id,value_as_concept_id) SELECT observation_id+1000,person_id,observation_concept_id,observation_date,observation_type_concept_id,value_as_concept_id FROM observation WHERE observation_concept_id=45000120")
+    DBI::dbDisconnect(con)
+  }
+  bool<-function(x)omop_category(omop_category_reduce(x,omop_reduce("any")),omop_category_spec(binary=omop_category_binary("factor")))
+  pooled<-omop_recipe(variables=list(a=bool(flags$a),b=bool(flags$b),total=omop_category_reduce(flags$a,omop_reduce("sum"))))
+  recipe_execute(pooled,out="Overlapping",symbol="labels",conns=ctx$conns)
+  for(column in c("a","b")) {
+    tab<-ds.omop.table("Overlapping",column,ctx$conns)
+    expect_equal(as.integer(tab),c(0L,54L))
+  }
+  fit<-dsBaseClient::ds.glm(formula="total ~ 1",data="Overlapping",family="gaussian",datasources=ctx$conns)
+  expect_equal(unname(fit$coefficients[1L,1L]),2,tolerance=1e-6)
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"UPDATE concept SET vocabulary_id='SNOMED' WHERE concept_id IN (45000123,45000124,45000125)");DBI::dbDisconnect(con)
+  }
+  self<-omop_recipe(variables=list(zero=omop_category(v,roll(separation=0)),named=omop_category(v,roll(ancestors=paste0("concept:",45000123:45000125)))))
+  recipe_execute(self,out="NamedSelf",symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"NamedSelf"))expect_identical(as.character(f$zero),as.character(f$named))
 })
 
 test_that("C12 C13 C14 ICD10 rollup deduplicates reverse maps and follows exact class edges", {
