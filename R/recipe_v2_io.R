@@ -7,7 +7,7 @@
 # import (the constructor is called again, so imported objects are validated
 # exactly like hand-written ones) and the generated R code.
 
-.V2_TAGGED_CLASSES <- c("omop_date_spec", "omop_date_source", "omop_variable_bundle", "omop_concept_set", "omop_event", "omop_predicate", "omop_unit",
+.V2_TAGGED_CLASSES <- c("omop_number_spec", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_date_spec", "omop_date_source", "omop_variable_bundle", "omop_concept_set", "omop_event", "omop_predicate", "omop_unit",
                         "omop_criterion", "omop_window", "omop_bound", "omop_anchor",
                         "omop_index", "omop_any_of", "omop_end", "omop_coverage",
                         "omop_interval", "omop_censor", "omop_reducer", "omop_match",
@@ -21,6 +21,7 @@
 
 # Constructor name and arguments that rebuild a language-2 object.
 .v2_ctor_spec <- function(x) {
+  if(inherits(x,c("omop_number_spec","omop_number_unit","omop_number_transform","omop_number_round","omop_number_expr","omop_number_input"))) return(list(ctor=class(x)[1L],args=unclass(x)))
   if(inherits(x,"omop_date_spec")) return(list(ctor="omop_date_spec",args=unclass(x)))
   if(inherits(x,"omop_date_source")) {
     a<-unclass(x);a$kind<-NULL
@@ -33,13 +34,21 @@
       return(list(ctor = "omop_variable",
                   args = list(name = x$name, event = x$event, reducer = x$reducer,
                               where = x$where, visit = x$visit,
-                              broadcast = if (isTRUE(x$broadcast)) TRUE, date_spec=x$date_spec)))
+                              broadcast = if (isTRUE(x$broadcast)) TRUE, date_spec=x$date_spec, number_spec=x$number_spec)))
     }
     if (identical(x$kind, "population_column")) {
       return(list(ctor = "omop_population_column", args = list(name = x$population_column),
                   name = x$name))
     }
     d <- x$derived
+    if((d$kind %||% "") %in% .NUMBER_KINDS) {
+      ctor <- paste0("omop_",d$kind);d$kind<-NULL
+      if(!is.null(d$source)){d$event<-d$source;d$source<-NULL}
+      if(!is.null(d$count_kind)){d$kind<-d$count_kind;d$count_kind<-NULL}
+      d$number_spec<-x$number_spec
+      if(!ctor %in% c("omop_number_rows","omop_number_column")) d$broadcast<-x$broadcast
+      return(list(ctor=ctor,args=d,name=x$name))
+    }
     if((d$kind %||% "") %in% .DATE_KINDS) {
       kind<-d$kind;d$kind<-NULL
       if(kind=="date_part") {d$parts<-if(is.null(x$name)) d$part else setNames(d$part,x$name);d$part<-NULL}
@@ -232,7 +241,7 @@
     return(out)
   }
   ctor <- as.character(ctor)[[1L]]
-  allowed <- c("omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
+  allowed <- c("omop_number_spec", "omop_number_pipeline", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_number_rows", "omop_number_column", "omop_number_count", "omop_number_change", "omop_number_derive", "omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
                "omop_ethnicity", "omop_birth_year_band", "omop_died", "omop_days_to_death",
                "omop_n_observation_periods", "omop_obs_duration", "omop_prior_obs",
                "omop_followup", "omop_observed_days", "omop_score", "omop_concept_set",

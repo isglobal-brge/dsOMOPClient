@@ -105,6 +105,7 @@
 .plan_v2_operations <- function(plan) {
   x <- .planNormalizeV2(plan)
   ops <- if (.conceptNeedsPresentation(plan)) "output.concept_labels" else character(0)
+  ops <- c(ops, .numberCapabilities(x))
   date_vars <- x$variables
   if (!is.null(x$options$date_spec) || any(vapply(date_vars, function(v) !is.null(v$date_spec) || (v$derived$kind %||% "") %in% c("calendar_date", "date_part"), logical(1)))) ops <- c(ops, "date.presentation")
   if (any(vapply(date_vars, function(v) (v$derived$kind %||% "") %in% c("time_between", "age_at"), logical(1)))) ops <- c(ops, "date.elapsed")
@@ -221,7 +222,8 @@
 #' Language-2 constructs of a recipe (no v1 equivalent)
 #' @keywords internal
 .recipe_v2_constructs <- function(recipe) {
-  c(if (.conceptHasMaps(recipe)) "concept labels/column_names",
+  c(if (.numberHas(recipe)) "number_spec/numeric declarations (use native language 2)",
+    if (.conceptHasMaps(recipe)) "concept labels/column_names",
     if (!is.null(recipe$options$date_spec) || any(vapply(recipe$variables, function(v) !is.null(v$date_spec), logical(1)))) "date_spec", .recipe_v2_constructs_base(recipe))
 }
 

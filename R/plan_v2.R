@@ -781,6 +781,7 @@
 
 .v2w_variable <- function(ctx, v, name) {
   out <- .v2w_variable_base(ctx, v, name)
+  if (!is.null(v$number_spec)) out$number_spec <- .numberWireSpec(ctx, v$number_spec, name)
   if (!is.null(v$date_spec)) out$date_spec <- .dateWireSpec(ctx, v$date_spec, name)
   for (key in c("labels", "column_names")) {
     map <- .conceptMap(v[[key]], paste0("variables.", name, ".", key), key == "column_names")
@@ -802,6 +803,7 @@
     },
     derived = {
       d <- .v2_resolve_params(v$derived, context)
+      if (d$kind %in% .NUMBER_KINDS) return(list(derived=.numberWireDerived(ctx,d,context),broadcast=isTRUE(v$broadcast)))
       if (d$kind %in% .DATE_KINDS) {
         wire <- d[!vapply(d, is.null, logical(1))]
         for (key in intersect(names(wire), c("reference", "from", "to"))) wire[[key]] <- .dateWireSource(ctx, wire[[key]], context)
@@ -1250,6 +1252,7 @@
   rows <- out$rows %||% out$population_id %||% "base"
   ctx$referenced_pops <- union(ctx$referenced_pops, rows)
   wire <- list(rows = rows, format = format)
+  if (!is.null(out$number_columns)) wire$number_columns <- lapply(out$number_columns,function(v) .v2w_variable(ctx,v,name))
   grain <- out$grain
   if (legacy) {
     grain <- grain %||% out$options$grain
@@ -1419,6 +1422,7 @@
                            client_version = as.character(utils::packageVersion("dsOMOPClient"))))
   opts <- recipe$options %||% list()
   plan_opts <- list()
+  if (!is.null(opts$number_spec)) plan_opts$number_spec <- .numberWireSpec(ctx, opts$number_spec, "recipe number_spec")
   if (!is.null(opts$date_spec)) plan_opts$date_spec <- .dateWireSpec(ctx, opts$date_spec, "recipe date_spec")
   for (nm in c("translate_concepts", "block_sensitive", "factor_concepts")) {
     if (!is.null(opts[[nm]]) && !isTRUE(opts[[nm]])) plan_opts[[nm]] <- FALSE
