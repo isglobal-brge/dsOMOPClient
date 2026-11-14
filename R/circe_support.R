@@ -119,6 +119,11 @@ recipe_circe_check <- function(x, direction = "import") {
             "unsupported_native_export")
         next
       }
+      coverage <- pop$coverage %||% pop$circe_v2$coverage
+      if (!is.null(coverage)) probe({
+        stopifnot(identical(.v2w_coverage(coverage), .v2w_coverage(omop_coverage("unique"))))
+      }, paste0(path, ".coverage"), "Coverage",
+        "This observation policy has no Circe export adapter; retain the native recipe with recipe_save() or recipe_to_code().")
       if (!is.null(pop$setop)) add(paste0(path, ".setop"), "SetOperation", "Circe cannot export set-operation populations.")
       if (!is.null(pop$cohort_definition_id)) add(paste0(path, ".cohort_definition_id"), "CohortReference", "Use a portable definition instead of cohort_definition_id.")
       if (is.null(pop$setop) && is.null(pop$cohort_definition_id)) probe(
@@ -393,7 +398,9 @@ recipe_circe_check <- function(x, direction = "import") {
   }
   # The public exporter/checker refuses any edit outside its supported subset.
   # This is local translation only: no server, patient query or remote fetch.
-  recipe <- omop_recipe(populations = pop)
+  legacy_pop <- pop
+  legacy_pop$coverage <- NULL
+  recipe <- omop_recipe(populations = legacy_pop)
   translated <- .circe_import_unchecked(recipe_export_circe(recipe, pop$id),
                                         id = pop$id, label = pop$label)
   pop$circe_v2 <- translated$circe_v2
