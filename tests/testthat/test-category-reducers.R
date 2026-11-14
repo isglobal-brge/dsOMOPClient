@@ -63,12 +63,13 @@ test_that("C05 C63 category reducers use declared equivalence, sentinel identity
   never<-omop_category_indicators(raw,c(k="concept:45000126"))[["k"]]
   empty_flag<-omop_category_indicators(omop_category_rows(empty,"value_as_concept_id"),c(k="concept:45000124"))[["k"]]
   reduce<-function(v,fn)omop_category_reduce(v,omop_reduce(fn))
-  r<-omop_recipe(variables=list(distinct=reduce(raw,"n_distinct"),count=reduce(raw,"count"),missing=reduce(miss,"sum"),any=reduce(known,"any"),all=reduce(known,"all"),unknown=reduce(never,"any"),empty_any=reduce(empty_flag,"any"),empty_all=reduce(empty_flag,"all"),empty_sum=reduce(empty_flag,"sum")),labels=c(`45000124`="shared",`45000125`="shared"))
+  r<-omop_recipe(variables=list(distinct=reduce(raw,"n_distinct"),count=reduce(raw,"count"),missing=reduce(miss,"sum"),any=reduce(known,"any"),all=reduce(known,"all"),unknown=reduce(never,"any"),false_all=reduce(never,"all"),empty_count=reduce(omop_category_rows(empty,"value_as_concept_id"),"count"),empty_distinct=reduce(omop_category_rows(empty,"value_as_concept_id"),"n_distinct"),empty_any=reduce(empty_flag,"any"),empty_all=reduce(empty_flag,"all"),empty_sum=reduce(empty_flag,"sum")),labels=c(`45000124`="shared",`45000125`="shared"))
   recipe_execute(r,out="ThreeValued",symbol="labels",conns=ctx$conns)
   for(f in .clf_frames(ctx,"ThreeValued")) {
     expect_true(all(f$distinct==1L));expect_true(all(f$count==3L));expect_true(all(f$missing==1L))
     expect_true(all(f$any==1L));expect_true(all(is.na(f$all)));expect_true(all(is.na(f$unknown)))
     expect_true(all(f$empty_any==0L));expect_true(all(is.na(f$empty_all)));expect_true(all(f$empty_sum==0L))
+    expect_true(all(f$false_all==0L));expect_true(all(f$empty_count==0L));expect_true(all(f$empty_distinct==0L))
   }
 })
 

@@ -91,6 +91,8 @@ test_that("C52 C61 label merges cannot borrow support or rescue a sparse family"
   v<-omop_variable(event=e,reducer=omop_reduce("last_value",value="value_as_concept_id"))
   r<-omop_recipe(variables=list(x=omop_category(v,omop_category_spec(ordered=FALSE))),labels=c(`45000124`="merged",`45000125`="merged"))
   expect_error(recipe_execute(r,out="RareMerge",symbol="labels",conns=ctx$conns),"disclosure|factor-level")
+  r$variables$x<-omop_category_reduce(omop_category_rows(e,"value_as_concept_id"),omop_reduce("mode"))
+  expect_error(recipe_execute(r,out="RareGrouped",symbol="labels",conns=ctx$conns),"disclosure|factor-level")
   for(path in ctx$paths) {
     con<-DBI::dbConnect(RSQLite::SQLite(),path)
     DBI::dbExecute(con,"DELETE FROM observation WHERE person_id<>1");DBI::dbDisconnect(con)

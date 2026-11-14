@@ -19,10 +19,21 @@ test_that("C05 C26 C27 C65 merges and zero sentinel semantics stay distinct", {
       expect_equal(sum(is.na(f$answer)),if(na=="level")0L else if(unknown=="missing")12L else 6L)
     }
   }
+  ordinary<-omop_category_spec(recode=omop_category_recode(c(`concept:0`="category:zero"),c("category:zero","concept:45000123"),labels=c("Unknown","Known")),missing=omop_category_missing("level","level"))
+  r<-omop_recipe(variables=list(answer=omop_category(v,ordinary)),labels=c(`0`="shared",`45000123`="shared"))
+  recipe_execute(r,out="ZeroRecode",symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"ZeroRecode")) {
+    expect_equal(sum(f$answer=="Unknown"),6L)
+    expect_equal(sum(f$answer=="Known"),6L)
+    expect_equal(sum(f$answer=="Missing"),6L)
+    expect_true("Unknown [unknown]" %in% levels(f$answer))
+  }
   for(unknown in c("level","missing")) {
     r<-omop_recipe(variables=list(answer=omop_category(v,omop_category_spec(missing=omop_category_missing("level",unknown)))),labels=c(`0`="shared",`45000123`="shared"))
     p<-recipe_to_plan(r,version=2)
     expect_error(ds.omop.plan.execute(p,out=setNames("Mixed",names(p$outputs)),symbol="labels",conns=ctx$conns),"category_spec_invalid")
+    r$variables$answer$event<-omop_event("observation",999999L)
+    expect_error(recipe_execute(r,out="EmptyMixed",symbol="labels",conns=ctx$conns),"category_spec_invalid")
   }
 })
 test_that("C06 bins admit an explicit subsequent nominal recode", {
