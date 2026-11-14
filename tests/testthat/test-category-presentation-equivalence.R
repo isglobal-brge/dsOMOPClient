@@ -143,7 +143,9 @@ for(scope in c("recipe","variable")) local({
       for(cn in c("none","nominal","flags")) {
         label <- paste(scope,dn,nn,cn)
         date <- switch(dn,day=omop_date_spec(precision="day"),
-          month=omop_date_spec(precision="month",level_range=c("2020-01-01","2021-12-31")),
+          # Include the fixture's observation-end anchors as well as events;
+          # level_range declares extra levels, it does not clip observed dates.
+          month=omop_date_spec(precision="month",level_range=c("2020-01-01","2025-12-31")),
           relative=omop_date_spec(precision="relative_days",anchor="index"))
         number <- switch(nn,identity=omop_number_spec(),round=omop_number_spec(rounding=omop_number_round("floor")),
           bins=omop_number_spec(representation="bins",breaks=c(-Inf,2,Inf),labels=c("few","many")))
