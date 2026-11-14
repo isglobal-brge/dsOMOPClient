@@ -31,7 +31,7 @@
     ref<-.bundleText(role[[refs]],"/study/roles")
     if(!ref %in% names(plan[[if(refs=="population")"populations" else "outputs"]]))
       .bundleReject("/study/roles","use a reference declared by the bound plan.")
-    if(!is.null(role$outcome_kind)&&!role$outcome_kind %in% c("concept-filter","cohort"))
+    if(!is.null(role$outcome_kind)&&(!is.character(role$outcome_kind)||length(role$outcome_kind)!=1L||is.na(role$outcome_kind)||!role$outcome_kind %in% c("concept-filter","cohort")))
       .bundleReject("/study/roles/outcome_kind","declare concept-filter or cohort; integer IDs do not identify a definition kind.")
     if(!is.null(role$cohort_definition_id)) {
       id<-role$cohort_definition_id
@@ -88,7 +88,7 @@ recipe_study_bundle <- function(x,study,file=NULL) {
     phenotype_origins=if(prospective).bundleOrigins(x) else receipt$study_provenance$phenotype_origins %||% list(status="unresolved"),
     codebooks=books,versions=list(client=as.character(utils::packageVersion("dsOMOPClient")),server="unresolved",
       required_capabilities=as.list(.plan_v2_operations(plan)),cdm="unresolved",vocabulary="unresolved",references=study$reference_versions %||% list(status="unresolved")),
-    publication=list(status=if(prospective)"prospective" else "published",components=as.list(names(books)),sites=if(prospective)"unresolved" else receipt$publication_sites %||% "unresolved"),
+    publication=list(status=if(prospective)"prospective" else "published",components=as.list(names(books)),sites=if(prospective)"unresolved" else .bundlePublicationSites(receipt$publication_sites,names(books))),
     snapshot=if(is.null(study$source_snapshot_id))list(status="unknown") else c(list(status="known"),study$source_snapshot_id))
   # Reconstruct a plain public artifact, dropping all R attributes/environments.
   out<-.categoryMetadataPlain(out)
@@ -123,4 +123,13 @@ recipe_study_bundle <- function(x,study,file=NULL) {
     books[[key]]$columns<-columns
   }
   books
+}
+
+.bundlePublicationSites <- function(sites,allowed) {
+  if(is.null(sites))return("unresolved")
+  lapply(sites,function(s) {
+    status<-s$status
+    if(!is.character(status)||length(status)!=1L||is.na(status)||!status %in% c("ok","partial","refused","error","skipped","unavailable","unresolved"))status<-"unresolved"
+    list(status=status,components=as.list(intersect(as.character(s$components %||% character()),allowed)))
+  })
 }
