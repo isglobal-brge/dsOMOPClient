@@ -97,13 +97,16 @@
 
 # Full product of type-changing presentation axes; matrices participate in all
 # numeric-compatible cells (bins are explicitly forbidden by their contract).
-for(scope in c("recipe","variable")) for(date_name in c("day","month","relative"))
-  for(number_name in c("identity","round","bins")) for(category_name in c("none","nominal","flags")) {
-    local({
-      scope <- scope; dn <- date_name; nn <- number_name; cn <- category_name
-      label <- paste(scope,dn,nn,cn)
-      test_that(paste("prospective execution equivalence",label), {
-        ctx <- .clf_setup(); .numeric_lexer()
+for(scope in c("recipe","variable")) local({
+  scope <- scope
+  test_that(paste("prospective execution equivalence matrix",scope), {
+    ctx <- .clf_setup(); .numeric_lexer()
+    # The full product is site-local; the independent endpoint regressions
+    # exercise all three heterogeneous sites and both transport implementations.
+    ctx$conns <- ctx$conns[1L]; ctx$servers <- ctx$servers[1L]
+    for(dn in c("day","month","relative")) for(nn in c("identity","round","bins"))
+      for(cn in c("none","nominal","flags")) {
+        label <- paste(scope,dn,nn,cn)
         date <- switch(dn,day=omop_date_spec(precision="day"),
           month=omop_date_spec(precision="month",level_range=c("2020-01-01","2021-12-31")),
           relative=omop_date_spec(precision="relative_days",anchor="index"))
@@ -113,6 +116,6 @@ for(scope in c("recipe","variable")) for(date_name in c("day","month","relative"
           flags=omop_category_spec(binary=omop_category_binary("factor")))
         recipe <- .equivalence_recipe(date,number,category,scope,matrices=nn!="bins"||scope=="variable")
         .equivalence_books(recipe,ctx,"memory",paste(label,"memory"))
-      })
-    })
-  }
+      }
+  })
+})

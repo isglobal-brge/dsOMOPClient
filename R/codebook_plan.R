@@ -64,6 +64,7 @@
 }
 
 .codebookPlanColumn <- function(key,type="unresolved",semantic="unresolved",variable=NULL,defaults=NULL,plan=list(),output_node=NULL,original=NULL) {
+  if(type=="flag") {type<-"integer";semantic<-"flag"}
   spec<-.categoryEffective(variable$category_spec,defaults)
   category_present <- length(spec)>0L
   d<-variable$derived;inherited<-original
@@ -87,7 +88,7 @@
       text="ordered_factor",date="Date",integer="integer",numeric="double")
   }
 
-  was_flag <- FALSE
+  was_flag <- semantic=="flag"
   if(is.null(variable) && semantic=="date" && is.null(plan$options$date_spec)) {
     mode <- output_node$options$date_handling$mode %||% "relative"
     date <- NULL
@@ -100,7 +101,7 @@
   fn <- variable$reducer$fn %||% d$reducer$fn %||% ""
   generated_numeric <- is.null(variable) && type %in% c("integer","double") && !semantic %in% c("key","concept","date") &&
     !key %in% .numberStructuralColumns(output_node$format %||% "wide") &&
-    !identical(output_node$format,"survival")
+    (!identical(output_node$format,"survival") || key %in% .numberOutputDurations("survival"))
   numeric <- (generated_numeric || !is.null(variable)) && !concept && !type %in% c("factor","ordered_factor","Date") &&
     (generated_numeric || nzchar(fn) || (d$kind %||% "") %in% c(.NUMBER_KINDS,"category_indicators","died") || semantic %in% c("numeric","date") && type %in% c("integer","double") || identical(inherited$semantic_type,"numeric") || identical(inherited$semantic_type,"flag"))
   pipeline<-if(numeric && (!is.null(number)||!is.null(plan$options$number_spec))) .numberEffective(number,plan$options$number_spec)$pipeline else list()
@@ -111,10 +112,10 @@
     flag<-fn %in% c("binary","any","all","abnormal","abnormal_low","abnormal_high") ||
       identical(variable$derived$kind,"category_indicators") || identical(variable$derived$kind,"died") || identical(inherited$semantic_type,"flag")
     was_flag<-flag
-    for(step in pipeline) {
-      if(step$kind %in% c("flag","present","missing"))flag<-TRUE
-      else if(!(step$kind=="transform" && step$method=="identity" || step$kind=="round" && step$method=="none" || step$kind=="fixed_unit" && step$factor==1 && (step$offset %||% 0)==0))flag<-FALSE
-    }
+    flag_column <- list()
+    attr(flag_column,"semantic_flag") <- flag
+    attr(flag_column,"number_contract") <- list(pipeline=pipeline)
+    flag <- .categoryFlag(variable,flag_column)
     if(was_flag&&!flag) {semantic<-"numeric";type<-"double"}
     if(flag) {semantic<-"flag";type<-spec$binary$as %||% "integer"}
     else if(concept) {semantic<-"concept";type<-if(isFALSE(plan$options$translate_concepts))"integer" else inherited$r_type %||% "factor"}
@@ -179,8 +180,9 @@
     attr(frame,"omop_concepts") <- list(value=list(kind="category",category=contract,records=records,ids=character(),declared=keys))
   }
   if(semantic=="flag") {
-    frame$value <- integer()
     attr(column,"semantic_flag") <- TRUE
+    attr(column,"number_contract") <- list(pipeline=pipeline)
+    if(!.categoryFlag(variable,column))semantic <- if(is.factor(value))representation else "numeric"
   }
   input <- list(frame=frame,column=column)
   if(!is.null(original) && identical(d$kind,"category_column")) {
@@ -227,7 +229,7 @@
   if (identical(opts$bins$calendar,"year") || identical(opts$partition$calendar,"year"))
     columns <- c(columns, calendar_year="integer")
   if (identical(opts$partition$calendar,"month")) columns <- c(columns, calendar_month="integer")
-  for (key in names(opts$exposures)) columns <- c(columns, setNames(c("integer","integer"),c(paste0("exposed_",key),paste0("active_",key))))
+  for (key in names(opts$exposures)) columns <- c(columns, setNames(c("integer","flag"),c(paste0("exposed_",key),paste0("active_",key))))
   for (key in names(opts$outcomes)) columns <- c(columns, setNames("integer",paste0("n_",key)))
   concepts <- function(cs) {
     if (is.character(cs) || is.list(cs) && length(cs)==1L && is.character(cs[[1L]]))
@@ -261,7 +263,7 @@
     stems <- if (length(ids)==1L) key else paste0(key,"_",ids)
     if (!length(ids)) stems <- character()
     for (stem in stems) {
-      if (length(selected)) columns <- c(columns,setNames(ifelse(selected %in% c("mean","last"),"double","integer"),paste0(stem,"_",selected)))
+      if (length(selected)) columns <- c(columns,setNames(ifelse(selected=="binary","flag",ifelse(selected %in% c("mean","last"),"double","integer")),paste0(stem,"_",selected)))
       if (!is.null(opts$carry_forward[[key]])) columns <- c(columns,setNames("double",paste0(stem,"_carry")))
     }
   }
