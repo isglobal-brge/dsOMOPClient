@@ -12,7 +12,7 @@
     omop_output("intervals",format="intervals",rows="p",options=list(sources=list(lab))),
     omop_output("membership",format="membership",rows="p"),
     omop_output("dictionary",format="dictionary",rows="p",options=list(source_outputs=c("long"))),
-    omop_output("panel",format="person_period",rows="p",columns=character(),options=list(sources=list(lab),window=omop_window(0,3650),bins=list(width=365L),analyses=c("binary","count"))),
+    omop_output("panel",format="person_period",rows="p",columns=character(),options=list(sources=list(lab),window=omop_window(0,30),bins=list(width=31L),analyses=c("binary","count"))),
     omop_output("sparse",format="sparse",rows="p",columns=character(),options=list(sources=list(lab),analyses=c("binary","count"))),
     omop_output("temporal",format="temporal_covariates",rows="p",options=list(sources=list(lab),analyses=c("binary","count"),bin_width=3651L,window=omop_window(0,3650))),
     omop_output("survival",format="survival",rows="p",options=list(outcomes=list(lab=lab),tar=omop_window(1,3650),censor=list("observation_end"))),

@@ -3,6 +3,11 @@ for(dataset in c("GiBleed","Synthea27Nj"))local({
   dataset<-dataset
   test_that(paste("C46 C48 C53 C54 C56 C64",dataset,"runs all native formats and codebooks at three sites"), {
     .numeric_lexer()
+    reconcile<-.harmonizeOneSymbol
+    testthat::local_mocked_bindings(.harmonizeOneSymbol=function(sym,conns,...) {
+      message("CDM reconciliation: ",unique(unname(sym)))
+      reconcile(sym,conns,...)
+    },.package="dsOMOPClient")
     ctx<-if(dataset=="GiBleed").category_gibleed_sites() else .numeric_sites()
     recipe<-.category_format_recipe(if(dataset=="GiBleed")3006322L else 3000963L)
     plan<-recipe_to_plan(recipe,version=2)
