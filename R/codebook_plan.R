@@ -118,11 +118,14 @@
     spec <- .categoryApplicableVocabulary(spec,variable$category_spec,concept_kind)
     if (!flag) spec$binary <- NULL
   }
-  # Native date endpoints have no variable node, but publication applies the
-  # same effective category presentation as it does to declared date factors.
-  if (is.null(variable) && semantic=="date") {
-    spec <- .categoryApplicableVocabulary(spec,NULL,FALSE)
-    spec$binary <- NULL
+  # Structural producers have no variable node. Only concept/date factors
+  # consume category defaults; keys and ordinary measures have no category
+  # lineage. Vocabulary fields require concepts and binary requires a flag.
+  if (is.null(variable)) {
+    if (semantic %in% c("date","concept") && type %in% c("factor","ordered_factor")) {
+      spec <- .categoryApplicableVocabulary(spec,NULL,semantic=="concept")
+      spec$binary <- NULL
+    } else spec <- list()
   }
   if(type %in% c("factor","ordered_factor")) {
     if(!is.null(spec$ordered))type<-if(spec$ordered)"ordered_factor" else "factor"
@@ -230,6 +233,19 @@
   columns
 }
 
+# Every declared native roster (including unindexed persons and inherited/set
+# rosters) carries nullable index provenance. Membership publishes it after the
+# dates, even when all its values are NULL; no patient/schema lookup is needed.
+.codebookMembershipColumns <- function(plan, node) {
+  population <- plan$populations[[node$rows]]
+  columns <- c(if ("legacy_cohort_definition_id" %in% names(node$options))
+    c(cohort_definition_id="integer"),
+    cohort_start_date="unresolved",cohort_end_date="unresolved")
+  if ((population$kind %||% "") %in% c("index","criteria","setop","match"))
+    columns <- c(columns,index_source="character")
+  columns
+}
+
 .codebookPlanSchemas <- function(plan) {
   schemas<-list();visiting<-character()
   build<-function(output) {
@@ -268,7 +284,7 @@
       }
       add(output,setNames(vapply(rows,function(c)c$r_type,""),names(rows)));origins[[output]]<-rows
     } else {
-      extra<-switch(fmt,wide=character(),membership=c(cohort_start_date="unresolved",cohort_end_date="unresolved"),
+      extra<-switch(fmt,wide=character(),membership=.codebookMembershipColumns(plan,node),
         dictionary=c(concept_id="factor",concept_name="character",domain_id="character",vocabulary_id="character",concept_class_id="character",source="character"),
         long=c(concept_id="factor",start_date="unresolved",end_date="unresolved"),
         intervals=c(interval_type="character",concept_id="factor",start_days_from_index="integer",end_days_from_index="integer"),
@@ -277,7 +293,7 @@
     }
     for(component in names(definitions)) {
       types<-definitions[[component]]
-      rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural",plan=plan))
+      rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural",defaults=plan$options$category_spec,plan=plan))
       names(rows)<-names(types)
       structural <- names(rows)
       selected <- unlist(node$columns,use.names=FALSE)

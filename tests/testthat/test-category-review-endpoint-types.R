@@ -1,5 +1,5 @@
 # R8: generated date factors consume recipe category defaults without a variable.
-.endpoint_books <- function(recipe, ctx, symbol, mode, ordered, public_domain=FALSE) {
+.endpoint_books <- function(recipe, ctx, symbol, mode, ordered, public_domain=FALSE, whole_schema=TRUE, schema_types=FALSE) {
   plan <- recipe_to_plan(recipe,version=2)
   symbols <- setNames(paste0(symbol,"_",names(plan$outputs)),names(plan$outputs))
   result <- ds.omop.plan.execute(plan,out=symbols,symbol="labels",conns=ctx$conns,output_mode=mode)
@@ -12,7 +12,15 @@
   checked <- 0L
   for (key in names(books$prospective)) {
     a <- books$prospective[[key]]$columns; b <- books$published[[key]]$columns
-    expect_identical(a$name,b$name,info=key)
+    published_names <- b$name
+    if (whole_schema) expect_identical(a$name,b$name,info=key)
+    else {
+      # Long source-specific columns remain open prospectively. Its declared
+      # dates must still match, and every actual column must match publication.
+      expect_true(all(a$name %in% b$name),info=key)
+      b <- b[match(a$name,b$name),,drop=FALSE]
+    }
+    if (schema_types) expect_identical(a$r_type,b$r_type,info=key)
     dates <- which(a$semantic_type=="date")
     checked <- checked+length(dates)
     parts <- strsplit(key,"/",fixed=TRUE)[[1L]]
@@ -49,7 +57,14 @@
       } else frames <- list(value)
       expect_gt(length(frames),0L)
       for (frame in frames) {
-        expect_identical(names(frame),a$name,info=paste(key,site))
+        expect_identical(names(frame),published_names,info=paste(key,site))
+        if (schema_types) {
+          types <- vapply(frame,function(column) {
+            if (inherits(column,"integer64")) "integer64" else if (inherits(column,"Date")) "Date" else
+              if (is.ordered(column)) "ordered_factor" else if (is.factor(column)) "factor" else typeof(column)
+          },"")
+          expect_identical(unname(types),a$r_type,info=paste(key,site))
+        }
         for (i in dates) {
           column <- frame[[a$name[[i]]]]
           expect_true(is.factor(column),info=paste(key,site))
@@ -127,5 +142,68 @@ test_that("R8 generated public date domains apply order, recode, reference and c
     recipe <- omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),outputs=output,
       date_spec=omop_date_spec(precision="month",level_range=c("2020-01-01","2020-03-31")),category_spec=specs[[i]])
     .endpoint_books(recipe,ctx,paste0("PublicEndpoint_",mode,"_",i),mode,i==3L,public_domain=TRUE)
+  }
+})
+
+
+test_that("R9 R10 membership and long dates consume defaults in both transports", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  e <- omop_event("observation",45000120L,name="e")
+  for (fmt in c("membership","long")) for (mode in c("memory","staged")) for (unordered in c(FALSE,TRUE)) {
+    recipe <- omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),
+      outputs=omop_output("panel",format=fmt,rows="p",sources=if(fmt=="long")list(e),columns=character()),
+      date_spec=omop_date_spec(precision="month"),
+      category_spec=if(unordered)omop_category_spec(ordered=FALSE))
+    book <- .endpoint_books(recipe,ctx,paste0("Existing_",fmt,"_",mode,"_",unordered),mode,!unordered,
+      whole_schema=fmt=="membership",schema_types=fmt=="membership")
+    if (fmt=="membership") expect_identical(book[[1L]]$columns$name,
+      c("row_id","cohort_row_id","person_id","cohort_start_date","cohort_end_date","index_source"))
+  }
+})
+
+test_that("R9 existing date domains apply public order recode and inactive defaults", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  e <- omop_event("observation",45000120L,name="e")
+  keys <- paste0("period:2020-0",1:3)
+  specs <- list(
+    omop_category_spec(ordered=FALSE,order=omop_category_order(rev(keys)),reference=keys[[2L]]),
+    omop_category_spec(recode=omop_category_recode(setNames(c("category:early","category:late","category:late"),keys),
+      levels=c("category:early","category:late"),labels=c("Early","Late")),reference="category:late"),
+    omop_category_spec(ordered=TRUE,recode=omop_category_recode(setNames(c("category:early","category:late","category:late"),keys),
+      levels=c("category:early","category:late"),labels=c("Early","Late")),reference="category:late"),
+    omop_category_spec(ordered=FALSE,label_style="code",language=omop_category_language(4180186L),
+      rollup=omop_category_rollup("snomed",separation=0L,domain="concept:45000124",multiple="all"),
+      binary=omop_category_binary("logical")))
+  for (fmt in c("membership","long")) for (mode in c("memory","staged")) for (i in seq_along(specs)) {
+    recipe <- omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e,end=omop_end("fixed",days=20))),
+      outputs=omop_output("panel",format=fmt,rows="p",sources=if(fmt=="long")list(e),columns=character()),
+      date_spec=omop_date_spec(precision="month",level_range=c("2020-01-01","2020-03-31")),category_spec=specs[[i]])
+    # Period order/recode defaults describe dates. Keep long's concept IDs
+    # numeric so those declarations do not apply to a second, unrelated domain.
+    if (fmt=="long") recipe$options$translate_concepts <- FALSE
+    book <- .endpoint_books(recipe,ctx,paste0("PublicExisting_",fmt,"_",mode,"_",i),mode,i==3L,
+      public_domain=TRUE,whole_schema=fmt=="membership",schema_types=fmt=="membership")
+    dates <- book[[1L]]$columns
+    for (column in dates$derivation[dates$semantic_type=="date"]) {
+      expect_false(any(c("label_style","language","rollup","binary") %in% names(column$category_spec)))
+    }
+  }
+})
+
+test_that("R10 membership provenance follows native rosters and person collapse", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  e <- omop_event("observation",45000120L,name="e")
+  populations <- list(omop_population("p",index=omop_index(e)),
+    omop_population("child",parent="p"),omop_population("people"),
+    omop_population("cohort",index=omop_index(list(cohort_definition_id=1L))),
+    omop_population("combined",union=c("p","child")))
+  for (mode in c("memory","staged")) for (grain in c("episode","person")) {
+    outputs <- lapply(populations,function(p)omop_output(p$id,format="membership",rows=p$id,
+      grain=grain,columns=character()))
+    recipe <- omop_recipe(events=list(e),populations=populations,outputs=outputs,
+      date_spec=omop_date_spec(precision="month"))
+    book <- .endpoint_books(recipe,ctx,paste0("Roster_",mode,"_",grain),mode,TRUE,schema_types=TRUE)
+    for (table in book) expect_identical(table$columns$name,c(if(grain=="episode")c("row_id","cohort_row_id"),
+      "person_id","cohort_start_date","cohort_end_date","index_source"))
   }
 })
