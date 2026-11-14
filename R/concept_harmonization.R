@@ -6,6 +6,8 @@
   if (any(vapply(per_server, function(x) length(x$unsafe) > 0L, logical(1)))) {
     stop("Concept reconciliation refused by the existing factor-level disclosure policy.", call. = FALSE)
   }
+  numbers <- per_server[[1L]]$numbers %||% list()
+  for(site in per_server) .numberValidateShared(numbers,site$numbers)
   columns <- names(per_server[[1L]]$concepts)
   if (any(!vapply(per_server, function(x) setequal(names(x$concepts), columns), logical(1)))) {
     stop("Incompatible concept-column schemas across retained sites.", call. = FALSE)
@@ -29,7 +31,7 @@
         if (length(candidates)>1L) paste0("; vocabulary conflict: ",paste(candidates,collapse=" / ")),
         if (!is.null(decision$version)) paste0("; version ",decision$version), "; ",decision$rule))
     }
-    shared <- resolved[intersect(names(resolved), c("ids", "labels", "levels", "vocabulary", "kind", "calendar"))]
+    shared <- resolved[intersect(names(resolved), c("ids", "labels", "levels", "vocabulary", "kind", "calendar", "number"))]
     naming_ids <- unique(unlist(lapply(per_server,function(x) x$reference_names[[col]]),use.names=FALSE))
     if (length(naming_ids)) shared$naming_ids <- naming_ids[.conceptIdOrder(naming_ids)]
     shared
@@ -55,7 +57,7 @@
     explanation <- c(explanation, paste0("Generated key ",key,": ",choice$name %||% generated[[key]]$id,
       if (!is.null(choice$version)) paste0("; version ",choice$version),"; ",choice$rule))
   }
-  spec <- list(concept_protocol = 1L, columns = result,
+  spec <- list(concept_protocol = 1L, columns = result, numbers = numbers,
        evidence = unique(unlist(lapply(per_server, function(x) x$evidence), use.names = FALSE)),
        names = if (length(generated)) as.list(.conceptGeneratedNames(keys, generated)) else list())
   attr(spec,"concept_explain") <- explanation

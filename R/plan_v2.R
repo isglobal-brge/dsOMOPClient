@@ -1275,7 +1275,7 @@
                               "person_period", "sparse")) {
     # The preset's variables are its event sources (design 2.9, B-22).
     take <- columns %||% names(recipe_vars)
-    missing <- setdiff(take, names(recipe_vars))
+    missing <- setdiff(take, c(names(recipe_vars),names(out$number_columns)))
     if (length(missing)) {
       .v2_stop(context, " references unknown variable(s): ", paste(missing, collapse = ", "), ".")
     }
@@ -1286,11 +1286,11 @@
     take <- if (is.null(columns)) {
       if (identical(format, "wide")) names(recipe_vars) else character(0)
     } else columns
-    missing <- setdiff(take, names(recipe_vars))
+    missing <- setdiff(take, c(names(recipe_vars),names(out$number_columns)))
     if (length(missing)) {
       .v2_stop(context, " references unknown variable(s): ", paste(missing, collapse = ", "), ".")
     }
-    for (vn in take) {
+    for (vn in intersect(take,names(recipe_vars))) {
       v <- recipe_vars[[vn]]
       if (.v2_is_v2_variable(v)) next
       if (identical(out$type, "baseline") && identical(v$format, "age")) {
@@ -1612,7 +1612,7 @@
     if (!is.null(o$collapse) && !identical(o$grain, "person")) {
       .v2_stop(context, ": collapse applies only to person grain.")
     }
-    missing <- setdiff(unlist(o$columns), names(vars))
+    missing <- setdiff(unlist(o$columns), c(names(vars),names(o$number_columns)))
     if (length(missing)) .v2_stop(context, " references unknown variable(s): ",
                                   paste(missing, collapse = ", "), ".")
     if (identical(o$format, "survival")) {

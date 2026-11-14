@@ -106,7 +106,7 @@
   x <- .planNormalizeV2(plan)
   ops <- if (.conceptNeedsPresentation(plan)) "output.concept_labels" else character(0)
   ops <- c(ops, .numberCapabilities(x))
-  date_vars <- x$variables
+  date_vars <- .numberVariables(x)
   if (!is.null(x$options$date_spec) || any(vapply(date_vars, function(v) !is.null(v$date_spec) || (v$derived$kind %||% "") %in% c("calendar_date", "date_part"), logical(1)))) ops <- c(ops, "date.presentation")
   if (any(vapply(date_vars, function(v) (v$derived$kind %||% "") %in% c("time_between", "age_at"), logical(1)))) ops <- c(ops, "date.elapsed")
   add <- function(...) ops <<- c(ops, ...)
@@ -157,7 +157,7 @@
     add("window.anchor.source")
   }
   reducers <- character(0)
-  for (v in x$variables %||% list()) {
+  for (v in .numberVariables(x)) {
     if (!is.null(v$reducer)) {
       add("variable.reducer")
       reducers <- c(reducers, v$reducer$fn)
@@ -429,7 +429,7 @@
     !is.null(p$index$source$cohort_definition_id) || !is.null(p$cohort_definition_id)
   }, logical(1))
   if (any(pops_cohort)) tables <- c(tables, "cohort")
-  for (v in x$variables %||% list()) {
+  for (v in .numberVariables(x)) {
     k <- v$derived$kind %||% ""
     if (k %in% c("charlson", "chads2", "chadsvasc", "dcsi", "hfrs")) {
       tables <- c(tables, "condition_occurrence")

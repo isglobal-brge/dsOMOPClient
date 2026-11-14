@@ -21,6 +21,10 @@
 
 # Constructor name and arguments that rebuild a language-2 object.
 .v2_ctor_spec <- function(x) {
+  if(inherits(x,"omop_variable") && !is.null(x$number_spec) && !identical(x$kind,"reducer") && !(x$derived$kind %||% "") %in% .NUMBER_KINDS) {
+    s<-x$number_spec;x$number_spec<-NULL
+    return(list(ctor="omop_number",args=list(variable=x,number_spec=s)))
+  }
   if(inherits(x,c("omop_number_spec","omop_number_unit","omop_number_transform","omop_number_round","omop_number_expr","omop_number_input"))) return(list(ctor=class(x)[1L],args=unclass(x)))
   if(inherits(x,"omop_date_spec")) return(list(ctor="omop_date_spec",args=unclass(x)))
   if(inherits(x,"omop_date_source")) {
@@ -135,7 +139,7 @@
       source = x$source, which = x$which, offset = x$offset, search = x$search,
       missing = x$missing, when_index_source = x$when_index_source)),
     omop_reducer = list(ctor = "omop_reduce", args = list(
-      fn = x$fn, value = x$value, window = x$window, which = x$which, n = x$n,
+      fn = x$fn, value = if(isFALSE(attr(x,"number_value_explicit"))) NULL else x$value, window = x$window, which = x$which, n = x$n,
       side = x$side, missing = x$missing, distinct = x$distinct, p = x$p, agg = x$agg,
       reference = x$reference, predicate = x$predicate, reference_date = x$reference_date,
       unit = x$unit, coverage = x$coverage, fills = x$fills,
@@ -241,7 +245,7 @@
     return(out)
   }
   ctor <- as.character(ctor)[[1L]]
-  allowed <- c("omop_number_spec", "omop_number_pipeline", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_number_rows", "omop_number_column", "omop_number_count", "omop_number_change", "omop_number_derive", "omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
+  allowed <- c("omop_number", "omop_number_spec", "omop_number_pipeline", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_number_rows", "omop_number_column", "omop_number_count", "omop_number_change", "omop_number_derive", "omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
                "omop_ethnicity", "omop_birth_year_band", "omop_died", "omop_days_to_death",
                "omop_n_observation_periods", "omop_obs_duration", "omop_prior_obs",
                "omop_followup", "omop_observed_days", "omop_score", "omop_concept_set",
