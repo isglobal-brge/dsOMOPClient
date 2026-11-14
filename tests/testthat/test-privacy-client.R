@@ -819,7 +819,7 @@ test_that("federated DP release rejects incompatible date semantics", {
                     counts = c(3, 8))
   )
   disclosures <- list(a = .dp_disclosure(timezone = "UTC"),
-                      b = .dp_disclosure(timezone = "Europe/Madrid"))
+                      b = .dp_disclosure(timezone = "Etc/GMT-1"))
   .with_dp_backend(statuses, releases, function(datasources, sent) {
     expect_error(
       ds.omop.dp.release("analysis_table", privacy, datasources),
@@ -1499,7 +1499,7 @@ test_that("an incoherent seed-only contract is refused", {
   })
 })
 
-test_that("Astra: new client old server remains explicitly legacy in metadata", {
+test_that("regression: new client old server remains explicitly legacy in metadata", {
   statuses <- list(old = .dp_stateless_status())
   releases <- list(old = .dp_release("count", noisy_count=2000))
   releases$old$privacy_contract <- .DP_STATELESS_PRIVACY_CONTRACT
@@ -1513,8 +1513,8 @@ test_that("Astra: new client old server remains explicitly legacy in metadata", 
     expect_identical(out$meta$privacy$unpatched_servers, "old")
     expect_match(paste(out$meta$warnings, collapse = " "),
                  "cannot repair them")
-    message("ASTRA new-client/old-server warnings: ",paste(out$meta$warnings,collapse=" | "))
-    message("ASTRA new-client/old-server contract: ",out$meta$privacy$privacy_contract)
+    message("regression new-client/old-server warnings: ",paste(out$meta$warnings,collapse=" | "))
+    message("regression new-client/old-server contract: ",out$meta$privacy$privacy_contract)
   })
 })
 

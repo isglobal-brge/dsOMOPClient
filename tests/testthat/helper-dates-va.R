@@ -5,7 +5,7 @@ library(DSLite)
 library(DBI)
 withr::local_options(list(nfilter.subset = 5, default.nfilter.subset = 5,
         dsomop.pseudonym_provider = "injected",
-        dsomop.pseudonym_root = as.raw(openssl::sha256(charToRaw("synthetic-colleague-fixture")))),
+        dsomop.pseudonym_root = as.raw(openssl::sha256(charToRaw("synthetic-survey-fixture")))),
         .local_envir = env)
 fixture_path <- tempfile(fileext = ".sqlite")
 db <- DBI::dbConnect(RSQLite::SQLite(), fixture_path)
@@ -37,7 +37,7 @@ DBI::dbWriteTable(db, "concept", data.frame(
   vocabulary_id = "Fixture", concept_class_id = "Fixture", standard_concept = "S",
   concept_code = as.character(c(900001L, 900002L, 900101L, 900102L, 900201L, 900202L, 900301L)),
   valid_start_date = "1970-01-01", valid_end_date = "2099-12-31", invalid_reason = NA_character_))
-DBI::dbWriteTable(db, "cdm_source", data.frame(cdm_source_name = "Synthetic colleague fixture",
+DBI::dbWriteTable(db, "cdm_source", data.frame(cdm_source_name = "Synthetic survey fixture",
   cdm_source_abbreviation = "fixture", cdm_holder = "test", source_description = "Synthetic only",
   source_documentation_reference = "", cdm_etl_reference = "", source_release_date = "2025-01-01",
   cdm_release_date = "2025-01-01", cdm_version = "5.4", cdm_version_concept_id = 0L,

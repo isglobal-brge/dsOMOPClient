@@ -97,7 +97,7 @@ test_that("missing or semantically different site metadata fails closed", {
                "missing disclosure metadata")
   expect_error(.federated_harmonization_contract(list(
     a = .harm_settings(timezone = "UTC"),
-    b = .harm_settings(timezone = "Europe/Madrid"))),
+    b = .harm_settings(timezone = "Etc/GMT-1"))),
     "semantics or contract versions differ")
 })
 

@@ -164,12 +164,7 @@ choose the native date/age helpers explicitly for new semantics. The protected
 release protocol introduced in 2.10.3 is unchanged; pooling still requires
 compatible contracts and logical source identities.
 
-Release verification: [recipe/publication contract run 43542378954](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43542378954)
-passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3;
-[full e2e run 43542382006](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43542382006)
-passed both fresh and upgrade jobs. Both tested harness commit
-`2e9844a0333a0cffda7e84662a44b070fcc850e4`. These are evidence for that
-candidate, not a claim of live execution on every supported SQL dialect.
+Release verification covers recipe/publication contracts and end-to-end execution.
 
 # dsOMOPClient 2.10.3 (2026-11-13)
 

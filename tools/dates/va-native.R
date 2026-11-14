@@ -1,4 +1,4 @@
-# A-28 native colleague recipe. Question IDs below are synthetic fixture IDs;
+# A-28 native survey recipe. Question IDs below are synthetic fixture IDs;
 # replace them with the corresponding questions in the study CDM.
 # First visit means the earliest visit; latest answers are independent per
 # question across available history. Missing anchors retain the person.

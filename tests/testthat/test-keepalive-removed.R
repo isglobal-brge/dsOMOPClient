@@ -55,8 +55,8 @@ test_that("ds.omop.status (the documented manual connectivity probe) still exist
 test_that("session resource-map resolution is unaffected by the removal", {
   # A representative non-UI session helper still behaves correctly.
   m <- dsOMOPClient:::.resolve_resource_map(
-    "proj.omop", c("nairobi", "douala", "dakar"))
-  expect_equal(names(m), c("nairobi", "douala", "dakar"))
+    "proj.omop", c("site_a", "site_b", "site_c"))
+  expect_equal(names(m), c("site_a", "site_b", "site_c"))
   expect_true(all(unlist(m) == "proj.omop"))
 })
 
