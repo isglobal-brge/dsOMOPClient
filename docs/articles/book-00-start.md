@@ -55,21 +55,25 @@ dir.create(book_dir, recursive = TRUE, showWarnings = FALSE)
 unzip(file.choose(), exdir = book_dir)
 setwd(book_dir)
 stopifnot(all(file.exists(file.path("tools/book",
-  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R")))))
+  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R")))),
+  file.exists("tools/dates/va-native.R"))
 getwd()
 ```
 
 The last line prints your home directory followed by `/book-work`. In
 every new R session run `setwd(path.expand("~/book-work"))` before the
-chapter setup. The ZIP preserves `tools/book/` automatically.
-Alternatively, save the individual
+chapter setup. The ZIP preserves `tools/book/` and `tools/dates/`
+automatically. Alternatively, save the individual
 [practice](https://isglobal-brge.github.io/dsOMOPClient/downloads/practice.R),
 [fixture](https://isglobal-brge.github.io/dsOMOPClient/downloads/fixture.R),
 [connection](https://isglobal-brge.github.io/dsOMOPClient/downloads/connection.R),
 [display](https://isglobal-brge.github.io/dsOMOPClient/downloads/display.R)
 and
 [loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-practice.R)
-files under `book-work/tools/book/`.
+files under `book-work/tools/book/`. Also create
+`book-work/tools/dates/` and save the [released capstone
+helper](https://isglobal-brge.github.io/dsOMOPClient/downloads/va-native.R)
+there as `va-native.R`; chapter 14’s solution uses it.
 
 `connection.R` is the one place to select DSLite or Opal and set the
 Opal URL, project, profile and two resource names. Leave its defaults

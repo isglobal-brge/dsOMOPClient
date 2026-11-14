@@ -1,0 +1,21 @@
+PASS: all chunks and byte-identical output: book-00-start.Rmd.orig
+PASS: all chunks and byte-identical output: book-01-mental-model.Rmd.orig
+PASS: all chunks and byte-identical output: book-02-connect.Rmd.orig
+PASS: all chunks and byte-identical output: book-03-explore.Rmd.orig
+PASS: all chunks and byte-identical output: book-04-vocabulary.Rmd.orig
+PASS: all chunks and byte-identical output: book-05-recipe.Rmd.orig
+PASS: all chunks and byte-identical output: book-06-events.Rmd.orig
+PASS: all chunks and byte-identical output: book-06-visits.Rmd.orig
+PASS: all chunks and byte-identical output: book-07-populations.Rmd.orig
+PASS: capstone native plan, assigned table and cause categories
+PASS: all chunks and byte-identical output: book-07-verbal-autopsy.Rmd.orig
+PASS: all chunks and byte-identical output: book-08-harmonise.Rmd.orig
+PASS: all chunks and byte-identical output: book-08-outputs.Rmd.orig
+PASS: all chunks and byte-identical output: book-09-dates.Rmd.orig
+PASS: Appendix A reads the loader manifest
+PASS: all chunks and byte-identical output: book-09-reproduce.Rmd.orig
+PASS: all chunks and byte-identical output: book-11-parameters.Rmd.orig
+PASS: all chunks and byte-identical output: book-12-privacy.Rmd.orig
+PASS: Appendix A reads the loader manifest
+PASS: all chunks and byte-identical output: book-09-reproduce.Rmd.orig
+PASS: 16 complete chapters in fresh R processes from the final ZIP; Appendix A also passed with BOOK_PRACTICE_DIR and no default data path

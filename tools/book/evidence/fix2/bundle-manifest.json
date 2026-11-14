@@ -1,0 +1,17 @@
+{
+  "entries": {
+    "tools/book/load-practice.R": "8e536c756668200c50d818ad405d37287cb01d3dc1291ca5a74077e6556a118a",
+    "tools/book/practice.R": "793be3948f41b3705b94210a836800d1a18b7c5d23b06f3de9f06d9f40aac030",
+    "tools/book/fixture.R": "400c0c8d06a157137c160d4be88640833d206bf0b8ac9c830d23df51b24406c3",
+    "tools/book/connection.R": "cb31ede6e15e92d79e43dadafd1f749ccc95e1f4dc5b930d44e7080e24782479",
+    "tools/book/display.R": "7d9f311ecfba237508ca1c0ce8e22c9f88242a3441bee7496c60eb935b38386b",
+    "tools/book/opal-admin.R": "8b3213d213519065c294e55164afd8f32f85e2caa72ca774afb2852afda081d6",
+    "tools/book/check-opal.R": "d11da2f555b79ce95a13381d98ac714e169bfce6933615c31fe21dbee325917f",
+    "tools/book/book-compose.sh": "7bde52c6283863f89aead3940ed9fd1702b47a8bf1efe5c502d0dba3f484d8e5",
+    "tools/book/book-rock.yml": "62b2e6be2a0457a82804c4d1bc5abb69d125d3da408ae23b3734285db3aa9a69",
+    "tools/dates/va-native.R": "e862838958a5d5c3cb4bcb266e1cfc05485d7efa35204c8245df26bab512ac9d"
+  },
+  "zip_sha256": "07de71a53c3a09c94725ee05db0dba7bdd8fff91028ba7515f20a0da945241b2",
+  "all_match_sources_and_individual_downloads": true,
+  "capstone_matches_released_2.10.4": true
+}

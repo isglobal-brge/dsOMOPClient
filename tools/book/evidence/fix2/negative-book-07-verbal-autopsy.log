@@ -1,0 +1,9 @@
+Error in `file()`:
+! cannot open the connection
+Backtrace:
+    ▆
+ 1. └─base::source("tools/dates/va-native.R")
+ 2.   └─base::file(filename, "r", encoding = encoding)
+
+Quitting from book-07-verbal-autopsy.Rmd.orig:237-244 [solution]
+Execution halted

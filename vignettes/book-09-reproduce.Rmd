@@ -50,7 +50,9 @@ fences, so the website does not connect to a database when it builds.
 
 From the book client checkout, run `tools/book/run-pod.sh` in this workspace, or
 run `Rscript tools/book/precompute.R` in an R environment containing the matching
-packages and fixture dependencies. Then call `pkgdown::build_site()`.
+packages and fixture dependencies. Then run `Rscript tools/book/build-site.R`
+to build the site and its helper downloads, followed by
+`Rscript tools/book/verify-bundle.R` to execute every chapter from the final ZIP.
 The pod driver is workspace-specific; the R scripts and fixture are portable.
 
 ## Record the software versions
@@ -73,13 +75,18 @@ source hashes and test logs are retained under `tools/book/evidence`.
 
 Run `Rscript tools/book/load-practice.R ../practice-data`. The loader pins the
 EunomiaDatasets source revision and verifies SHA-256 for both archives. It creates
-`gibleed.sqlite`, `numeric.sqlite` and a manifest. These are administrator-side
+`gibleed.sqlite`, `numeric.sqlite` and `manifest.json` in `../practice-data`.
+If you chose a different loader directory, set `BOOK_PRACTICE_DIR` to that
+directory before running the lessons. These are administrator-side
 operations on public synthetic data, separate from analyst DataSHIELD calls.
-The following table reads the manifest recorded by the actual completed loader:
+The following table reads your loader's manifest from that same directory.
+The checkout's `tools/book/evidence/book2/practice-manifest.json` is historical
+build evidence; readers do not need it.
 
 
 ``` r
-manifest <- jsonlite::read_json("tools/book/evidence/book2/practice-manifest.json")
+practice_dir <- Sys.getenv("BOOK_PRACTICE_DIR", file.path("..", "practice-data"))
+manifest <- jsonlite::read_json(file.path(practice_dir, "manifest.json"))
 loaded <- do.call(rbind, lapply(manifest, function(x) data.frame(
   Dataset = x$dataset, Measurements = x$measurements$rows,
   Numeric = x$measurements$numeric_values,

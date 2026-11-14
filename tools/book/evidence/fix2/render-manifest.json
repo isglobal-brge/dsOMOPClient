@@ -1,0 +1,66 @@
+{
+  "book-00-start.Rmd": {
+    "unchanged_from_reviewed_render": false,
+    "sha256": "ba327b7b2398caa921ad7a7e075282999b7b9671f1a570d819633b7dd8111ae8"
+  },
+  "book-01-mental-model.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "947362aeddcebc0b83bf8bec7ed433ad506b29d72591a5ea4193e437b3be2844"
+  },
+  "book-02-connect.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "6ca3687f3f3057455e95ec90d33a5c2f36956aff035732d2d04e5c26b88e4c7b"
+  },
+  "book-03-explore.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "0f7d3124938aa7f87af47c5fb30609b76cf09f1a50c97e4a16ba2a5f4555c384"
+  },
+  "book-04-vocabulary.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "3868f076c72d76b818c58763ddaeb9782eeea7a7a82afef56515d3bf3ca83ddc"
+  },
+  "book-05-recipe.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "84615e645da77936fdf687532e8d444e8c4b18885aa695883b2899030a011a1f"
+  },
+  "book-06-events.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "cbf344417b29b8b31cb932c629357e46db10fcce5ecef76b554e9028f617939d"
+  },
+  "book-06-visits.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "4aa79a603b3a4670637dd7014839ff2cbaa10fd89269d36ed05826b63ffc73c7"
+  },
+  "book-07-populations.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "92a871d9842dbe38cfa662327be7e96f80bee593146bcb3b98637d496eff3928"
+  },
+  "book-07-verbal-autopsy.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "cca0d343cea9fabbc84da3e4672c84ad303d09bd03e23c2fb554162dd2f12f79"
+  },
+  "book-08-harmonise.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "899db63c5bcd56a50ef9fbb9f54f831a07571d081d9a3f8a73545a2680d6502a"
+  },
+  "book-08-outputs.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "b5146decf8d458082bd7204207bbee9e663e83f2cff64820bf4dffd84a870b02"
+  },
+  "book-09-dates.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "4264add85ab0329991995ac3396c67b8445fb641b76578edd5f100449aadcc17"
+  },
+  "book-09-reproduce.Rmd": {
+    "unchanged_from_reviewed_render": false,
+    "sha256": "1e9d1a3aacd8a6f78df7596e6a4f1bae0b33e95b40c2f00865ab82884e1437fb"
+  },
+  "book-11-parameters.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "f0d4267260c4c6c77ec867218aedef1419fe703222481c11554b7dbe1e95abfa"
+  },
+  "book-12-privacy.Rmd": {
+    "unchanged_from_reviewed_render": true,
+    "sha256": "8cc2976dc08ef8773394c03a58649b3be366f1085d9129ea47ea73c3448bd640"
+  }
+}
