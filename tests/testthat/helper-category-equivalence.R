@@ -146,9 +146,9 @@
       for(cn in c("none","nominal","flags")) {
         label <- paste(scope,dn,nn,cn)
         date <- switch(dn,day=omop_date_spec(precision="day"),
-          # Include the observation-end anchor without declaring every month
-          # in the intervening years (the fixture's factor-level cap is 40).
-          month=omop_date_spec(precision="month",level_range=c("2020-01-01","2021-12-31"),
+          # Include lagged counting-process starts and the observation-end
+          # anchor within the fixture's unchanged 40-level cap.
+          month=omop_date_spec(precision="month",level_range=c("2019-01-01","2021-12-31"),
             labels=c("2024-12"="2024-12")),
           relative=omop_date_spec(precision="relative_days",anchor="index"))
         number <- switch(nn,identity=omop_number_spec(),round=omop_number_spec(rounding=omop_number_round("floor")),
@@ -161,4 +161,3 @@
       }
   })
 })
-
