@@ -1,5 +1,6 @@
 ---
 title: "12. What stays private"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{12. What stays private}
@@ -13,7 +14,7 @@ vignette: >
 Distinguish a private assignment from an aggregate release, understand distinct-person support, and recognise refused identifiers and free text.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
 Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.
@@ -42,6 +43,12 @@ The mapping is the result you receive from recipe execution. Exact completed age
 stays beside the source data. This is called publication into the DataSHIELD
 session; it is not public publication on the internet or a row export.
 
+<div class="book-flow" role="img" aria-label="Your recipe goes to the server; private rows stay there; checked summaries return to you.">
+<div><strong>You</strong>Choose events, variables and outputs.</div><span aria-hidden="true">→</span>
+<div><strong>Server</strong>Compute with private records and apply release checks.</div><span aria-hidden="true">→</span>
+<div><strong>You see</strong>Symbol names, schemas and checked summaries.</div>
+</div>
+
 ## Request an aggregate
 
 ```{r aggregate}
@@ -51,6 +58,12 @@ dsBaseClient::ds.summary("D_private$age", datasources = conns)
 An approved aggregate method checks its own disclosure rules. A successfully
 assigned table does not guarantee every later summary or model will be releasable.
 The book's outputs are genuine results of those methods, not downloaded rows.
+
+<div class="book-note">
+**Note**
+
+A private assignment is not a row download. Every later aggregate uses the disclosure rules of its own method.
+</div>
 
 ## The final release rule
 

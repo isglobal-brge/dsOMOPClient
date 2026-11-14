@@ -1,5 +1,6 @@
 ---
 title: "11. Reusable studies and standalone verbs"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{11. Reusable studies and standalone verbs}
@@ -13,7 +14,7 @@ vignette: >
 Bind typed parameters, use omop_study and shortcuts, then derive and filter columns without bringing rows to your computer.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the public synthetic Synthea27Nj numeric connection from [Getting started](book-00-start.html).
 Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.
@@ -37,7 +38,7 @@ date type; give each changing input its own appropriate type.
 template <- omop_study(omop_event("visit_occurrence", concepts = setting),
   outputs = "baseline", baseline = list(
     prior_visits = omop_count("visit_occurrence", window = omop_window(-365, -1)),
-    age = omop_age_at("index")))
+    age = omop_age()))
 class(template)
 ```
 
@@ -61,7 +62,7 @@ print(recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns
 dsBaseClient::ds.summary("D_param_outpatient$age", datasources = conns)
 ```
 
-The server computes completed age at the first outpatient visit. The analyst
+The server computes annual age (index year minus birth year) at the first outpatient visit. The analyst
 receives only the approved summary.
 
 ## Read the simple-layer defaults
@@ -84,11 +85,11 @@ when you need more control. `before = 365` includes day zero, while `after = 365
 starts at day one. Without either, most shortcuts use all history through entry.
 
 ```{r shortcut}
-shortcuts <- omop_study(omop_event("visit_occurrence"), outputs = "baseline",
-  baseline = list(ever = omop_ever("visit_occurrence", before = 365),
-    count = omop_count("visit_occurrence", before = 365),
-    value = omop_value_at_index("measurement", 950002L,
-      tolerance = c(-30, 0), unit = 9529L)))
+shortcuts <- omop_study(omop_event("measurement", 3000963L), outputs = "baseline",
+  baseline = list(ever = omop_ever("measurement", 3000963L, before = 365),
+    count = omop_count("measurement", 3000963L, before = 365),
+    value = omop_value_at_index("measurement", 3000963L,
+      tolerance = c(-30, 0), unit = 8713L)))
 stopifnot(recipe_explain(shortcuts, conns = conns)$selected == "v2")
 print(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
 ```
@@ -96,8 +97,8 @@ print(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns
 dsBaseClient::ds.table("D_shortcuts$ever", useNA = "no", datasources = conns)
 ```
 
-Everyone has ever = 1 because the index visit itself is included. To ask about
-visits strictly before entry use `window = omop_window(-365, -1)` instead.
+Everyone has ever = 1 because the index hemoglobin measurement itself is included. To ask about
+measurements strictly before entry use `window = omop_window(-365, -1)` instead.
 First/last/mean/min/max-value shortcuts use the same event and window model.
 `omop_history()` bundles named ever variables; it does not define a new language.
 
@@ -108,7 +109,7 @@ set of arithmetic and conditional expressions, not arbitrary R functions.
 
 ```{r mutate}
 print(ds.omop.mutate("D_shortcuts", twice = count * 2L,
-  high = ifelse(value >= 70, 1L, 0L), newobj = "D_derived", conns = conns))
+  high = ifelse(value >= 14, 1L, 0L), newobj = "D_derived", conns = conns))
 dsBaseClient::ds.colnames("D_derived", datasources = conns)
 ```
 
@@ -135,7 +136,8 @@ print(ds.omop.filter("D_derived", expr = omop_where(high == 1L),
 dsBaseClient::ds.summary("D_high$value", datasources = conns)
 ```
 
-This subset is large enough in the synthetic fixture. A predicate cannot read
+The cutoff of 14 g/dL is an arbitrary teaching value, not a clinical threshold.
+This subset is large enough in Synthea27Nj. A predicate cannot read
 protected person/episode keys to target a known person. These verbs work on
 assigned `omop.table` objects, not on arbitrary database tables.
 
@@ -145,7 +147,7 @@ Parameters change declared inputs, shortcuts express common native recipes, and 
 
 ## Try it
 
-Bind the same template to inpatient visits and count prior visits. Do not alter the outpatient template in place.
+Bind the same template to inpatient visits and summarise the prior-visit count. Do not alter the outpatient template in place.
 
 <details><summary>Solution</summary>
 
@@ -153,8 +155,8 @@ Bind the same template to inpatient visits and count prior visits. Do not alter 
 inpatient <- recipe_bind(template, setting = 9201L)
 stopifnot(recipe_explain(inpatient, conns = conns)$selected == "v2")
 print(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
-dsBaseClient::ds.table("D_param_inpatient$prior_visits", useNA = "no", datasources = conns)
+dsBaseClient::ds.summary("D_param_inpatient$prior_visits", datasources = conns)
 ```
-Each binding is a separate recipe. Its own index changes which earlier records fall into the lookback window.
+Each binding is a separate recipe. Its own index changes which earlier records fall into the lookback window. A numeric summary suits these varied counts; a categorical table can be refused when it creates too many distinct levels in a small population.
 
 </details>

@@ -21,10 +21,10 @@ navbar:
     right: [search, github]
   components:
     intro:
-      text: Start here
+      text: Get started
       href: articles/book-00-start.html
     book:
-      text: Book
+      text: Tutorial chapters
       menu:
         - text: 0. Getting started
           href: articles/book-00-start.html
@@ -85,7 +85,16 @@ articles:
     navbar: ~
     contents:
       - starts_with('v0')
+footer:
+  structure:
+    left: book_author
+    right: built_with
+  components:
+    book_author: 'Book by <a href="https://github.com/davidsarratgonzalez">David Sarrat González</a>.'
 authors:
+  before: 'Tutorial book by **David Sarrat González**. Package contributors are listed below.'
+  sidebar:
+    before: 'Book author: **David Sarrat González**.'
   David Sarrat González:
     href: https://github.com/davidsarratgonzalez
   Xavier Escribà-Montagut:

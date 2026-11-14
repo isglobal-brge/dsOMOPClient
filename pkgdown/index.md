@@ -27,7 +27,9 @@ with its solution.
 | [13. Visit walkthrough](articles/book-06-visits.html) | Combine offsets, dates and event rows |
 | [14. Verbal-autopsy capstone](articles/book-07-verbal-autopsy.html) | Combine answers, age, visit periods and cause |
 
-The main lessons use one synthetic DataSHIELD connection. Chapter 10 includes
+The main lessons use one DataSHIELD connection at a time. GiBleed teaches the
+basics; Synthea27Nj supplies numeric labs. Both have synthetic people. A separately
+labelled 24-person test fixture supplies the colleague’s questionnaire examples. Chapter 10 includes
 a two-connection vocabulary harmonisation demonstration.
 [Reproduction and migration notes](articles/book-09-reproduce.html) explain how
 the examples run and how older recipe conventions differ. The visit walkthrough
@@ -36,7 +38,7 @@ and capstone retain their original URLs so earlier links continue to work.
 ## Learn with real execution
 
 The displayed results come from DSLite running the matching released server and
-client against the package's synthetic colleague CDM. The verbal-autopsy example
+client against the chapter’s stated synthetic dataset. The verbal-autopsy example
 uses the released native follow-up recipe, including exact age at death and
 calendar precision. The optional local Opal/GiBleed instructions explain the
 production-shaped connection route; GiBleed is a different dataset.

@@ -1,5 +1,6 @@
 ---
 title: "Appendix A. Reproduction and migration notes"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Appendix A. Reproduction and migration notes}
@@ -13,7 +14,7 @@ vignette: >
 Rebuild the offline book and recognise the old recipe conventions.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
@@ -38,6 +39,32 @@ vapply(c("dsOMOP", "dsOMOPClient", "DSI", "DSLite", "dsBase", "dsBaseClient"),
 
 These are the actual versions used for this rendering. Detailed assertions,
 source hashes and test logs are retained under `tools/book/evidence`.
+
+## Reproduce both practice resources
+
+Run `Rscript tools/book/load-practice.R ../practice-data`. The loader pins the
+EunomiaDatasets source revision and verifies SHA-256 for both archives. It creates
+`gibleed.sqlite`, `numeric.sqlite` and a manifest. These are administrator-side
+operations on public synthetic data, separate from analyst DataSHIELD calls.
+The following table reads the manifest recorded by the actual completed loader:
+
+```{r practice-manifest}
+manifest <- jsonlite::read_json("tools/book/evidence/book2/practice-manifest.json")
+loaded <- do.call(rbind, lapply(manifest, function(x) data.frame(
+  Dataset = x$dataset, Measurements = x$measurements$rows,
+  Numeric = x$measurements$numeric_values,
+  Numeric_with_unit = x$measurements$numeric_with_unit)))
+knitr::kable(loaded, row.names = FALSE)
+```
+
+GiBleed supplies the basics; Synthea27Nj supplies numeric labs. Its numeric values
+and mapped units come from the pinned source, without fabricated lab extensions.
+The questionnaire fixture remains separate and is explicitly named in its lessons.
+
+The [loader](../downloads/load-practice.R), [two-resource DSLite helper](../downloads/practice.R)
+and [questionnaire fixture](../downloads/fixture.R) are downloadable from this site.
+The same SQLite files can be mounted into another Rock server; their resource
+registration is shown in chapter 0. Dependencies are listed in `tools/book/README.md`.
 
 ## The local test driver
 

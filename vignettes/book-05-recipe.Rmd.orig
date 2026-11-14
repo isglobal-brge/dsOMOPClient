@@ -1,5 +1,6 @@
 ---
 title: "5. A first recipe"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{5. A first recipe}
@@ -13,7 +14,7 @@ vignette: >
 Build education and cause-of-death columns, check language 2, and request category counts.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 

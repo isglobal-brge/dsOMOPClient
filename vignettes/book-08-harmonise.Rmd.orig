@@ -1,5 +1,6 @@
 ---
 title: "10. Concepts as categories"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{10. Concepts as categories}
@@ -13,7 +14,7 @@ vignette: >
 Use translated concept answers, distinguish recodes from column renames, and harmonise two different site vocabularies.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 

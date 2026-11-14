@@ -1,5 +1,6 @@
 ---
 title: "9. Dates, periods and ages"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{9. Dates, periods and ages}
@@ -13,7 +14,7 @@ vignette: >
 Separate date sources from presentation, choose factor/number/date periods, extract parts, calculate anchored ages, and handle partial dates explicitly.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
 Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.
@@ -138,6 +139,12 @@ Weekday names use a fixed English domain, with Monday first. Month categories
 likewise include all twelve months. Year, ISO week/year, quarter, day-of-year and
 cyclic sine/cosine parts are also available. For season parts, declare the intended hemisphere (the default is north);
 using only a week number without its week-year can mix different years.
+
+<div class="book-tip">
+**Tip**
+
+Choose a calendar coordinate for a time trend and an elapsed duration for time between events. They answer different questions.
+</div>
 
 ## Ages at any anchor
 

@@ -1,5 +1,6 @@
 ---
 title: "6. Events, windows and reducers"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{6. Events, windows and reducers}
@@ -13,20 +14,20 @@ vignette: >
 Select records, set inclusive time windows, and reduce them to first, last, count, ever, closest, any and all values.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the public synthetic Synthea27Nj numeric connection from [Getting started](book-00-start.html).
 Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.
 
 ## Define the records once
 
-An *event* describes which records the server should read. This practice measurement
-has numeric values recorded in kilograms. Concept IDs here are vocabulary inputs;
+An *event* describes which records the server should read. These simulated hemoglobin measurements
+have numeric values recorded in grams per deciliter (g/dL). Concept IDs here are vocabulary inputs;
 they are not patient identifiers.
 
 ```{r measurement}
-measure <- omop_event("measurement", concepts = 950002L,
-  value = "value_as_number", where = omop_where(unit_concept_id == 9529L))
+measure <- omop_event("measurement", concepts = 3000963L,
+  value = "value_as_number", where = omop_where(unit_concept_id == 8713L))
 class(measure)
 ```
 
@@ -39,11 +40,13 @@ A *window* is an inclusive range of days around an *anchor*, the reference date.
 A fixed date works even when the population has no index event.
 
 ```{r window}
-history <- omop_window(-366, 0, anchor = "2021-01-01")
+history <- omop_window(NULL, NULL, anchor = "2020-01-01")
 class(history)
 ```
 
-This includes 2020-01-01 through 2021-01-01. Both endpoints count.
+Both ends are unbounded here, so every recorded measurement is eligible.
+For a one-year lookback use `omop_window(-365, 0, anchor = "2020-01-01")`;
+that window includes both endpoint days.
 An omitted window on an advanced reducer reads all history; a simple-layer
 shortcut usually defaults to history through the index. Choose explicitly.
 
@@ -62,6 +65,19 @@ class(last)
 These select by date, source and record key, not by the size of the value.
 By default they skip missing values. `missing = "keep"` chooses the row first,
 so the selected row can give a missing value. With no records, both give `NA`.
+
+## Mean values
+
+A mean uses all nonmissing numeric values in the window. It answers a different
+question from choosing the first or last recorded value.
+
+```{r mean-variable}
+mean_value <- omop_variable(event = measure,
+  reducer = omop_reduce("mean", window = history))
+class(mean_value)
+```
+
+The unit is still g/dL. Do not average numeric concept IDs or mixed units.
 
 ## Count and ever
 
@@ -82,10 +98,10 @@ numeric value. In a defined empty window both count and ever are zero.
 ```{r any-all}
 any_high <- omop_variable(event = measure,
   reducer = omop_reduce("any", window = history,
-    predicate = omop_where(value >= 70)))
+    predicate = omop_where(value >= 14)))
 all_high <- omop_variable(event = measure,
   reducer = omop_reduce("all", window = history,
-    predicate = omop_where(value >= 70)))
+    predicate = omop_where(value >= 14)))
 class(any_high)
 ```
 
@@ -98,7 +114,7 @@ give any = 0 and all = NA: without measurements there is no all-value result.
 
 ```{r reducers-recipe}
 reducers <- omop_recipe(variables = list(first = first, last = last,
-  days = n, ever = ever, any_high = any_high, all_high = all_high),
+  mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
 stopifnot(recipe_explain(reducers, conns = conns)$selected == "v2")
 print(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
@@ -116,7 +132,8 @@ This summarises the first nonmissing measurement per person.
 dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
 ```
 
-The later value changes the last-value summary. Missing people remain in the roster.
+Later readings can change the last-value summary. The source dataset contains
+hemoglobin measurements for all 28 fictional people.
 
 ```{r days-result}
 dsBaseClient::ds.table("D_reducers$days", useNA = "no", datasources = conns)
@@ -128,7 +145,8 @@ These are people grouped by their number of measurement days, not event counts p
 dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
 ```
 
-The people with no measurements have ever = 0.
+Everyone in this public dataset has a hemoglobin measurement. A person without
+one would have ever = 0 in this defined window.
 
 ```{r any-result}
 dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
@@ -142,15 +160,24 @@ dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = co
 
 All distinguishes unknown comparisons from an empty set of records.
 
+## Read the mean summary
+
+```{r mean-result}
+dsBaseClient::ds.summary("D_reducers$mean", datasources = conns)
+```
+
+This summarises one mean per person. It is not the pooled mean of all measurement
+rows, which would give more weight to people measured more often.
+
 ## Value at the index
 
-Now let the first visit set a different anchor for each person. *Value at index*
+Now let the first hemoglobin measurement set a different anchor for each person. *Value at index*
 means closest within a chosen tolerance; it need not occur on the index day.
 
 ```{r at-index}
-at_index <- omop_study(omop_event("visit_occurrence"), outputs = "baseline",
-  baseline = list(weight = omop_value_at_index("measurement", 950002L,
-    tolerance = c(-30, 0), unit = 9529L)))
+at_index <- omop_study(measure, outputs = "baseline",
+  baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
+    tolerance = c(-30, 0), unit = 8713L)))
 stopifnot(recipe_explain(at_index, conns = conns)$selected == "v2")
 print(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
 ```
@@ -159,11 +186,91 @@ The tolerance excludes later measurements. The shortcut uses `closest_value`;
 its default tolerance would include 90 days before and 30 days after.
 
 ```{r at-index-result}
-dsBaseClient::ds.summary("D_at_index$weight", datasources = conns)
+dsBaseClient::ds.summary("D_at_index$hemoglobin", datasources = conns)
 ```
 
-Only people with a visit enter this indexed study. If a required anchor is missing,
+Only people with an eligible hemoglobin measurement enter this indexed study. If a required anchor is missing,
 a window is undefined and every reducer gives `NA`, including count and ever.
+
+## Convert to a common unit before reducing
+
+A numeric unit filter only restricts records. An explicit conversion normalises
+the values before the reducer runs. This example converts g/dL to g/L, multiplying
+by ten. These are the vocabulary names for the input and target units:
+
+```{r unit-names}
+units <- ds.omop.concept.lookup(c(8713L, 8636L), conns = conns)
+knitr::kable(units$pooled["concept_name"])
+```
+
+```{r converted-event}
+lab_gl <- omop_event("measurement", 3000963L,
+  unit = omop_unit(8636L, convert = list("8713" = c(factor = 10, offset = 0))))
+class(lab_gl)
+```
+
+Rows already in g/L retain their value. Other undeclared units become missing by
+default; they are not guessed. A declared conversion also transforms reference
+ranges. Use the same target and conversion map across sites before pooling.
+
+```{r conversion-run}
+converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
+  reducer = omop_reduce("mean"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(converted, conns = conns)$selected == "v2")
+print(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
+```
+
+```{r conversion-result}
+dsBaseClient::ds.summary("D_converted$mean_gl", datasources = conns)
+```
+
+The means are ten times the g/dL means. This run uses the dataset's unchanged
+recorded units; it does not pretend that the source already had mixed units.
+
+## Value bins and explicit high/low flags
+
+A *bin* groups numeric values into a declared interval. These cutoffs are arbitrary
+teaching choices, **not clinical reference ranges or treatment thresholds**.
+We apply them to each person's mean, privately.
+
+```{r bins}
+print(ds.omop.mutate("D_reducers",
+  band = cut(mean, breaks = c(0, 12, 16, 100),
+    labels = c("below 12", "12 to below 16", "16 or above"), right = FALSE),
+  high = ifelse(mean >= 16, 1L, 0L), low = ifelse(mean < 12, 1L, 0L),
+  newobj = "D_lab_bins", conns = conns))
+```
+
+```{r bins-result}
+dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
+```
+
+Small cells may be suppressed. You see the checked table, never the private rows.
+The left boundary is included and the right boundary excluded in these bins.
+
+## Recorded abnormal-high and abnormal-low counts
+
+The dedicated reducers compare each measurement with its own `range_high` or
+`range_low`. They count comparable records outside those bounds.
+
+```{r recorded-ranges}
+ranges <- omop_recipe(variables = list(
+  high_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_high")),
+  low_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_low"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(ranges, conns = conns)$selected == "v2")
+print(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
+```
+
+```{r ranges-result}
+dsBaseClient::ds.table("D_lab_ranges$high_count", useNA = "no", datasources = conns)
+```
+
+Synthea27Nj has no recorded hemoglobin reference bounds. Zero here means no
+recorded comparable abnormal-high result; it is **not evidence of normality**.
+The study-defined flags above remain a separate, explicit definition. Never fill
+missing clinical reference ranges with an invented normal interval.
 
 ## Recap
 
@@ -183,6 +290,6 @@ stopifnot(recipe_explain(row_count, conns = conns)$selected == "v2")
 print(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
 dsBaseClient::ds.table("D_row_count$rows", useNA = "no", datasources = conns)
 ```
-They agree in this fixture because there is at most one measurement per person per day. That is a property of these data, not of the reducers.
+Compare the released tables: records on the same day would count separately as rows, but once as a day. Their equality or difference is a data property, not a guarantee of the reducers.
 
 </details>

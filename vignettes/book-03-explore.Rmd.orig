@@ -1,5 +1,6 @@
 ---
 title: "3. Exploring the CDM"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{3. Exploring the CDM}
@@ -13,7 +14,7 @@ vignette: >
 Read table and column metadata, then interpret safe counts.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the public synthetic GiBleed practice connection from [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
@@ -21,7 +22,7 @@ with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findin
 
 ```{r list-tables}
 available <- ds.omop.tables(conns = conns)
-available$site
+knitr::kable(available$site)
 ```
 
 Check that `observation`, `death` and `visit_occurrence` exist before designing
@@ -30,7 +31,7 @@ a recipe. A CDM may contain an empty table or omit a table altogether.
 ## Read the question and answer fields
 
 ```{r observation-columns}
-ds.omop.columns("observation", conns = conns)$site
+knitr::kable(ds.omop.columns("observation", conns = conns)$site)
 ```
 
 `observation_concept_id` identifies the question. `value_as_concept_id` identifies
@@ -51,7 +52,7 @@ exact number or a refused result as an empty table.
 ## Identify the date field
 
 ```{r visit-columns}
-ds.omop.columns("visit_occurrence", conns = conns)$site
+knitr::kable(ds.omop.columns("visit_occurrence", conns = conns)$site)
 ```
 
 `visit_start_date` records when a visit started. `visit_concept_id` describes its
@@ -70,7 +71,7 @@ Inspect the death table and locate its coded cause field.
 
 
 ```{r solution}
-ds.omop.columns("death", conns = conns)$site
+knitr::kable(ds.omop.columns("death", conns = conns)$site)
 ```
 
 </details>

@@ -1,5 +1,6 @@
 ---
 title: "8. Choosing an output format"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{8. Choosing an output format}
@@ -13,7 +14,7 @@ vignette: >
 Choose a table shape for your question and run one small example of every format, including explicit survival censoring.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the public synthetic Synthea27Nj numeric connection from [Getting started](book-00-start.html).
 Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.
@@ -49,7 +50,7 @@ We will reuse these definitions so each example changes only the output.
 
 ```{r format-events}
 visits <- omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "visits")
-rx <- omop_event("drug_exposure", concepts = 950001L, name = "rx")
+rx <- omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "spans")
 inpatient <- omop_event("visit_occurrence", concepts = 9201L, name = "inpatient")
 visitors <- omop_population("visitors", index = omop_index(visits))
 class(visitors)
@@ -61,7 +62,9 @@ Each first visit begins one episode. A later inpatient visit will be our outcome
 base <- omop_recipe(events = list(visits, rx, inpatient),
   populations = list(visitors), variables = list(
     visits = omop_variable(event = visits, reducer = omop_reduce("count")),
-    age = omop_age()),
+    age = omop_age(),
+    hemoglobin = omop_mean_value("measurement", 3000963L, unit = 8713L,
+      window = omop_window(NULL, NULL))),
   outputs = omop_output("wide", rows = "visitors", format = "wide"))
 recipe_explain(base)$selected
 ```
@@ -179,7 +182,7 @@ Counts of the `event` flag distinguish observed outcomes from censored follow-up
 
 ## Intervals: keep a start and an end
 
-Use intervals for exposure spans. Each prescription has a recorded start and end in this fixture.
+Use intervals for recorded spans. These visit intervals have recorded start and end dates. The same layout can describe drug exposures or eras.
 
 ```{r intervals}
 intervals <- base
@@ -190,7 +193,7 @@ print(recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = 
 dsBaseClient::ds.colnames("D_fmt_intervals", datasources = conns)
 ```
 
-Both bounds remain private, normally as index-relative days. Overlapping prescription intervals are not automatically a union of treatment days; define an era or a coverage reducer for that question.
+Both bounds remain private, normally as index-relative days. Overlapping intervals are not automatically a union of covered days; define an era or a coverage reducer for that question.
 
 ## Sparse: nonzero covariates plus a reference
 

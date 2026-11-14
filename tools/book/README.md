@@ -2,7 +2,8 @@
 
 Use the locally released 2.10.4 pair. From the client package root, run
 `tools/book/run-pod.sh`. It installs only the book pair in its private pod library
-and runs `precompute.R`. The pod also needs dsBase/dsBaseClient (the release test
+and runs `precompute.R`. If absent, it first loads the two pinned public practice
+databases with `load-practice.R`. The pod also needs dsBase/dsBaseClient (the release test
 library `/root/rt/labels-deps`), DSLite, DBI, RSQLite, resourcer, knitr and withr.
 
 The source is `vignettes/book-*.Rmd.orig`. Knitr executes it against the
@@ -46,3 +47,27 @@ chapter. `verify-book2.R` checks reducer values, population/episode counts, matc
 format components and joins, death censoring, date types and expected refusal
 rollback. Expected refusal messages are printed through `tryCatch`; they are
 lessons, not ignored knitting errors. Book 2 evidence lives in `evidence/book2/`.
+
+The completed Book 2 also follows the expanded 14 November brief: chapters 0–4
+use GiBleed; chapters 6, 8 and 11 use Eunomia Synthea27Nj (the numeric workstream's
+chosen dataset). The other chapters state when they use the 24-person questionnaire
+fixture. This fixture remains temporary and is not a third practice resource.
+Both practice CDMs are public synthetic data, loaded without changing their rows.
+`practice.R` registers both as `gibleed` and `numeric` on one real DSLite server.
+
+Run `Rscript tools/book/load-practice.R ../practice-data` for a portable SQLite
+installation. `BOOK_PRACTICE_DIR` can point the helper to that loaded directory.
+The same files can be mounted into Rock and registered with the resource URLs in
+chapter 0; no data changes are needed to move them to a different host.
+
+The source archive hashes, revision, counts and provenance are in
+`evidence/book2/practice-manifest.json`. The loader preserves textual vocabulary
+and device identifiers instead of guessing that every `_id` column is numeric.
+GiBleed's header-only COST.csv has an incomplete final line; the recorded loader
+warning is harmless and the empty table is created with its columns.
+
+Styling follows the [OHDSI web style guide](https://www.ohdsi.org/web/wiki/doku.php?id=development:style_guide)
+with its native system font stack, navy/orange/blue palette, and a Bootstrap 5
+bslib theme. The chapter navigation and in-page contents remain accessible on
+phones. Code and recorded outputs are separate fences; pkgdown supplies code-copy
+buttons. Author bylines and the book footer are site metadata; DESCRIPTION is unchanged.

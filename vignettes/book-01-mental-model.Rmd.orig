@@ -1,5 +1,6 @@
 ---
 title: "1. What DataSHIELD and OMOP mean"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{1. What DataSHIELD and OMOP mean}
@@ -13,7 +14,7 @@ vignette: >
 Distinguish the database, a private assignment and a released aggregate.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the public synthetic GiBleed practice connection from [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
@@ -28,7 +29,7 @@ Ask which tables are available:
 
 ```{r tables}
 tables <- ds.omop.tables(conns = conns)
-tables$site
+knitr::kable(tables$site)
 ```
 
 These are table names, not records. You can learn the structure without seeing a
@@ -49,6 +50,12 @@ ds.omop.table.stats("person", conns = conns)$per_site$site
 Read the reported count bands as bands, not exact counts. A later categorical
 table may release exact supported cells through its own checks. Different
 endpoints answer different questions and have different disclosure rules.
+
+<div class="book-flow" role="img" aria-label="Your recipe goes to the server; private rows stay there; checked summaries return to you.">
+<div><strong>You</strong>Choose events, variables and outputs.</div><span aria-hidden="true">→</span>
+<div><strong>Server</strong>Compute with private records and apply release checks.</div><span aria-hidden="true">→</span>
+<div><strong>You see</strong>Symbol names, schemas and checked summaries.</div>
+</div>
 
 ## What stays on the server
 
@@ -72,7 +79,7 @@ Find the columns of the death table without asking for its rows.
 
 
 ```{r solution}
-ds.omop.columns("death", conns = conns)$site
+knitr::kable(ds.omop.columns("death", conns = conns)$site)
 ```
 
 </details>

@@ -4,15 +4,27 @@ verify_book2 <- function(input, env, get_data) {
   same_values <- function(x, expected) stopifnot(isTRUE(all.equal(
     sort(as.numeric(x), na.last=TRUE), sort(as.numeric(expected), na.last=TRUE))))
   if (grepl("book-06-events", input)) {
+    db <- DBI::dbConnect(RSQLite::SQLite(),env$f$database)
+    on.exit(DBI::dbDisconnect(db),add=TRUE)
+    source <- DBI::dbGetQuery(db,"SELECT person_id,measurement_id,measurement_date,value_as_number FROM measurement WHERE measurement_concept_id=3000963 AND unit_concept_id=8713 ORDER BY person_id,measurement_date,measurement_id")
+    people <- split(source,source$person_id)
     d <- get_data("D_reducers")
-    stopifnot(nrow(d)==24L)
-    for (name in c("first","last","days","ever","any_high","all_high")) {
-      expected <- switch(name, first=c(60,80,100,NA), last=c(66,80,100,NA),
-        days=c(2,2,1,0), ever=c(1,1,1,0), any_high=c(0,1,1,0), all_high=c(0,NA,1,NA))
-      same_values(d[[name]], rep(expected,6))
-    }
-    same_values(get_data("D_at_index")$weight, rep(c(60,80,100),6))
-    same_values(get_data("D_row_count")$rows, d$days)
+    stopifnot(nrow(d)==28L)
+    oracle <- lapply(people,function(x) {
+      v<-x$value_as_number;v<-v[!is.na(v)]
+      c(first=v[1],last=tail(v,1),mean=mean(v),days=length(unique(x$measurement_date)),
+        ever=1L,any_high=as.integer(any(v>=14)),all_high=as.integer(all(v>=14)))
+    })
+    oracle <- do.call(rbind,oracle)
+    for (name in colnames(oracle)) same_values(d[[name]],oracle[,name])
+    same_values(get_data("D_at_index")$hemoglobin,oracle[,"first"])
+    same_values(get_data("D_row_count")$rows,vapply(people,nrow,integer(1)))
+    same_values(get_data("D_converted")$mean_gl,10*oracle[,"mean"])
+    stopifnot(all(get_data("D_lab_ranges")$high_count==0L),
+      all(get_data("D_lab_ranges")$low_count==0L))
+    bins<-get_data("D_lab_bins")
+    stopifnot(identical(as.integer(bins$high),as.integer(d$mean>=16)),
+      identical(as.integer(bins$low),as.integer(d$mean<12)))
   }
   if (grepl("book-07-populations", input)) {
     stopifnot(nrow(get_data("D_members"))==18L,
@@ -34,19 +46,32 @@ verify_book2 <- function(input, env, get_data) {
       stopifnot(is.data.frame(d), nrow(d)>0)
     }
     w <- get_data("D_fmt_wide"); j <- get_data("D_fmt_joined")
-    stopifnot(nrow(w)==18L, nrow(j)==18L,
+    stopifnot(nrow(w)==28L, nrow(j)==28L,
       identical(w$visits,j$visits), identical(w$age,j$age),
-      nrow(get_data("D_fmt_long"))==30L,
-      nrow(get_data("D_fmt_panel"))==54L,
-      nrow(get_data("D_fmt_intervals"))==18L,
-      nrow(get_data("D_fmt_membership"))==18L)
+      nrow(get_data("D_fmt_long"))==1735L,
+      nrow(get_data("D_fmt_panel"))==84L,
+      nrow(get_data("D_fmt_intervals"))==1735L,
+      nrow(get_data("D_fmt_membership"))==28L,
+      is.numeric(w$hemoglobin))
     s <- get_data("D_fmt_survival")
-    stopifnot(nrow(s)==18L, sum(s$event)==12L,
-      all(s$entry_days_from_index==1L),
+    stopifnot(nrow(s)==28L, all(s$entry_days_from_index==1L),
       all(s$follow_up_days==s$exit_days_from_index-s$entry_days_from_index))
-    # Death censors the no-admission pattern on 2024-05-10, not observation end.
-    same_values(s$exit_days_from_index[s$event==0L],
-      rep(as.integer(as.Date("2024-05-10")-as.Date("2020-07-20")),6))
+    db<-DBI::dbConnect(RSQLite::SQLite(),env$f$database)
+    on.exit(DBI::dbDisconnect(db),add=TRUE)
+    visits<-DBI::dbGetQuery(db,"SELECT person_id,visit_concept_id,visit_start_date FROM visit_occurrence WHERE visit_concept_id IN (9201,9202)")
+    obs<-DBI::dbReadTable(db,"observation_period");deaths<-DBI::dbReadTable(db,"death")
+    expected<-lapply(split(visits,visits$person_id),function(x) {
+      pid<-x$person_id[1];index<-min(as.Date(x$visit_start_date))
+      outcomes<-as.Date(x$visit_start_date[x$visit_concept_id==9201]);outcomes<-outcomes[outcomes>index]
+      censor<-min(c(as.Date(obs$observation_period_end_date[obs$person_id==pid]),
+        as.Date(deaths$death_date[deaths$person_id==pid])),na.rm=TRUE)
+      event<-length(outcomes)>0 && min(outcomes)<=censor
+      exit<-if(event) min(outcomes) else censor
+      c(event=as.integer(event),exit=as.integer(exit-index))
+    })
+    expected<-do.call(rbind,expected)
+    same_values(s$event,expected[,"event"])
+    same_values(s$exit_days_from_index,expected[,"exit"])
     for (format in c("temporal","sparse")) {
       d <- get_data(paste0("D_fmt_",format))
       ref <- get_data(paste0("D_fmt_",format,".covariateRef"))
@@ -82,11 +107,11 @@ verify_book2 <- function(input, env, get_data) {
         c("Secondary education","University education")))
   }
   if (grepl("book-11-parameters", input)) {
-    stopifnot(nrow(get_data("D_param_outpatient"))==18L,
-      nrow(get_data("D_param_inpatient"))==12L,
+    stopifnot(nrow(get_data("D_param_outpatient"))==28L,
+      nrow(get_data("D_param_inpatient"))==7L,
       all(get_data("D_shortcuts")$ever==1),
       all(get_data("D_derived")$twice==2L*get_data("D_shortcuts")$count),
-      nrow(get_data("D_high"))==12L, all(get_data("D_high")$value>=70))
+      nrow(get_data("D_high"))==13L, all(get_data("D_high")$value>=14))
   }
   if (grepl("book-12-privacy", input)) {
     stopifnot(grepl("insufficient_support|disclosure|subset|threshold",env$small_message,ignore.case=TRUE),

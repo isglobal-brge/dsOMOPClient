@@ -3,6 +3,7 @@ stopifnot(as.character(packageVersion("dsOMOP")) == "2.10.4",
           as.character(packageVersion("dsOMOPClient")) == "2.10.4")
 library(dsOMOPClient)
 source("tools/book/fixture.R")
+source("tools/book/practice.R")
 source("tools/book/verify-book2.R")
 source("tools/book/verify.R")
 options(width=88)
@@ -15,7 +16,9 @@ for (input in inputs) {
   message("PRECOMPUTE ", input)
   render <- function() {
     if (!grepl("book-00", input)) {
-      f <- book_fixture(env=environment())
+      f <- if (grepl("book-0[1234]-", input)) book_practice("gibleed",env=environment()) else
+           if (grepl("book-06-events|book-08-outputs|book-11-parameters",input))
+             book_practice("numeric",env=environment()) else book_fixture(env=environment())
       conns <- f$conns
     }
     on.exit({
@@ -31,7 +34,7 @@ for (input in inputs) {
       }
       if (exists("pair", inherits=FALSE)) unlink(pair$path)
     })
-    knitr::opts_chunk$set(error=FALSE, warning=TRUE, message=FALSE, comment="#>", collapse=TRUE)
+    knitr::opts_chunk$set(error=FALSE, warning=TRUE, message=FALSE, comment="#>", collapse=FALSE)
     tryCatch(knitr::knit(input, output=sub("\\.orig$", "", input), envir=environment(), quiet=TRUE), error=function(e) { print(DSI::datashield.errors()); stop(e) })
     verify_chapter(input, environment())
   }

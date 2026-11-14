@@ -2,3 +2,6 @@
 *-Ex.R
 inst/doc
 errorReportSql.txt
+
+# Reproducible public practice databases (tools/book/load-practice.R)
+tools/book/data/

@@ -1,5 +1,6 @@
 ---
 title: "7. Populations and index events"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{7. Populations and index events}
@@ -13,7 +14,7 @@ vignette: >
 Choose who enters a study, define episodes and observation coverage, reuse a cohort, identify new users and sample controls at case time.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
 Run its sections in order. Each chapter starts from a fresh practice connection;
 all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
 The numbers describe teaching data, not clinical findings.
