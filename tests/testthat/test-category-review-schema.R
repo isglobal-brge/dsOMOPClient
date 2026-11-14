@@ -152,3 +152,35 @@ test_that("R7 endpoint presentation keeps declared types and append order before
     }
   }
 })
+
+test_that("generated date endpoints apply effective category ordering in every transport", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  e <- omop_event("observation",45000120L,name="e")
+  panel <- omop_output("panel",format="person_period",rows="p",columns=c("yesno","e_binary"),
+    options=list(sources=list(e),window=omop_window(0,20),bins=list(width=10),analyses=c("binary","count")),
+    category_columns=list(yesno=omop_category_column("e_binary",
+      category_spec=omop_category_spec(binary=omop_category_binary("factor")))))
+  survival <- omop_output("surv",format="survival",rows="p",columns="answer",
+    options=list(format="recurrent_events",outcomes=list(lab=e),
+      tars=list(early=omop_window(0,100),late=omop_window(0,365)),censor=list("observation_end")))
+  answer <- omop_category_reduce(omop_category_rows(e,"value_as_concept_id"),omop_reduce("mode"))
+  wide <- omop_output("wide",rows="p",columns="answer")
+  joined <- omop_output("joined",format="joined",rows="p",grain="episode",columns=c("copy","e_binary"),
+    options=list(from=list(list(output="panel"),list(output="wide")),cardinality="many_to_one"),
+    category_columns=list(copy=omop_category_column("e_binary")))
+  for(default in list(NULL,omop_category_spec(ordered=FALSE))) for(mode in c("memory","staged")) {
+    for(outputs in list(panel,survival,list(panel,wide,joined))) {
+      r <- omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),
+        variables=list(answer=answer),outputs=outputs,date_spec=omop_date_spec(precision="month"),category_spec=default)
+      book <- .schema_books(r,ctx,"DateCategoryDefaults",mode)
+      for(component in book) {
+        dates <- which(component$columns$semantic_type=="date")
+        expect_true(all(component$columns$r_type[dates] == if(is.null(default))"ordered_factor" else "factor"))
+        for(i in dates) {
+          expect_identical(component$columns$ordered[[i]],is.null(default))
+          expect_identical(component$columns$contrasts[[i]]$kind,if(is.null(default))"polynomial" else "treatment")
+        }
+      }
+    }
+  }
+})

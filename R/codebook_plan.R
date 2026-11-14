@@ -117,10 +117,15 @@
     }
     spec <- .categoryApplicableVocabulary(spec,variable$category_spec,concept_kind)
     if (!flag) spec$binary <- NULL
-    if(type %in% c("factor","ordered_factor")) {
-      if(!is.null(spec$ordered))type<-if(spec$ordered)"ordered_factor" else "factor"
-      if(length(spec$recode$map))type<-if(isTRUE(spec$ordered %||% spec$recode$ordered))"ordered_factor" else "factor"
-    }
+  } else if (semantic == "date") {
+    # Generated date endpoints have producer domains but no variable node.
+    # Apply the same effective categorical defaults as publication.
+    spec <- .categoryApplicableVocabulary(spec,NULL,FALSE)
+    spec$binary <- NULL
+  }
+  if(type %in% c("factor","ordered_factor")) {
+    if(!is.null(spec$ordered))type<-if(spec$ordered)"ordered_factor" else "factor"
+    if(length(spec$recode$map))type<-if(isTRUE(spec$ordered %||% spec$recode$ordered))"ordered_factor" else "factor"
   }
   unit<-inherited$unit %||% if(!is.null(variable)&&semantic %in% c("numeric","flag","bins","category")) .categoryDeclaredUnit(plan,variable) else "not_applicable"
   for(step in pipeline) {
@@ -295,7 +300,7 @@
         endpoints <- .dateOutputEndpoints(fmt, names(rows), plan$options$date_spec)
         for (key in unname(endpoints)) {
           if (key %in% names(rows)) .dateReject("Native endpoint name collides with an explicit variable.", "date_parts_names")
-          rows[[key]] <- .codebookPlanColumn(key, "Date", "date", plan=plan)
+          rows[[key]] <- .codebookPlanColumn(key, "Date", "date", defaults=plan$options$category_spec, plan=plan)
         }
         structural <- c(structural, unname(endpoints))
       }
