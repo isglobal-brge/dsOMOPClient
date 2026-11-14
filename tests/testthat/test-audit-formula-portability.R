@@ -13,6 +13,34 @@ test_that("Q14 builders validate units, versions, mapping and calendar-age assoc
   expect_error(omop_formula_egfr_ckdepi2021(scr,x$age,x$sex,list(female="concept:0",male="concept:8507")),"formula_sex_map")
   expect_error(omop_formula_egfr_ckdepi2021(scr,x$age,x$sex,list(female="concept:8507",male="concept:8507")),"formula_sex_map")
 })
+test_that("Q14 source maps cannot silently fork the creatinine age anchor", {
+  x<-.audit_formula_inputs()
+  e<-x$event;e$unit<-NULL
+  map<-omop_unit(8554L,unknown="exclude")
+  conversion<-omop_number_unit("unit:8554","coordinate:idms_creatinine_mg_dl",1)
+  for(which in c("first","last","nth")) {
+    raw<-omop_variable(event=e,reducer=omop_reduce(paste0(which,"_value"),missing="keep"))
+    scr<-omop_number(raw,omop_number_pipeline(map,conversion))
+    age<-omop_age_at(omop_anchor(e,which,scope="episode"))
+    error<-tryCatch(omop_formula_egfr_ckdepi2021(scr,age,x$sex,x$map),error=identity)
+    expect_s3_class(error,"omop_formula_error")
+    expect_identical(error$reason,"formula_age_anchor")
+    expect_identical(error$path,"/age")
+    expect_match(conditionMessage(error),"put source-unit normalization on the shared event",fixed=TRUE)
+    # Repeating the same shared map is aligned even when lowering forks its ID.
+    shared<-e;shared$unit<-map
+    raw$event<-shared
+    age<-omop_age_at(omop_anchor(shared,which,scope="episode"))
+    for(spec in list(omop_number_spec(unit=conversion),omop_number_pipeline(map,conversion))) {
+      expect_s3_class(omop_formula_egfr_ckdepi2021(omop_number(raw,spec),age,x$sex,x$map),"omop_variable")
+    }
+  }
+  # Day-zero selections have the same calendar age even if a map removes rows.
+  raw<-omop_variable(event=e,reducer=omop_reduce("first_value",missing="keep",window=omop_window(0L,0L)))
+  expect_s3_class(omop_formula_egfr_ckdepi2021(omop_number(raw,omop_number_pipeline(map,conversion)),
+    omop_age_at("index"),x$sex,x$map),"omop_variable")
+})
+
 test_that("Q14 closed log-exp expansion and provenance survive JSON YAML and generated R", {
   x<-.audit_formula_inputs()
   v<-omop_formula_egfr_ckdepi2021(x$coordinate("coordinate:idms_creatinine_mg_dl"),x$age,x$sex,x$map)

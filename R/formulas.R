@@ -76,6 +76,9 @@
 #' Age requires completed calendar years, not annual_years or baseline age at
 #' an unrelated visit. Use a first/last/nth measurement selector with missing=keep
 #' and a matching start-date anchor, or a day-zero selector and age at index.
+#' Put source-unit normalization on the shared event used by both creatinine
+#' and its age anchor. An input-local source map must match that shared map;
+#' keep explicit numeric coordinate conversions on the creatinine input.
 #' Sex mapping is an explicit public protocol assertion, not an interpretation of
 #' a field named gender. CKD-EPI 2021 uses no race operand and is an adult estimate.
 #' @export
@@ -115,6 +118,13 @@ omop_formula_ratio <- function(numerator,denominator,unit,version="1.0.0") {
   valid<-valid&&all(identity)
   at_index<-identical(ref,"index")&&identical(r$window$anchor,"index")&&
     identical(as.numeric(r$window$start),0)&&identical(as.numeric(r$window$end),0)
+  # Source maps run before selection and can remove measurements. Comparing
+  # only the original event declarations would then accept the wrong age.
+  maps<-Filter(function(s)s$kind=="event_unit",.numberEffective(creatinine$number_spec)$pipeline)
+  if(inherits(ref,"omop_anchor")&&length(maps)&&!all(vapply(maps,function(s)
+    identical(.jcsCanonical(.v2_plain_value(s$spec)),.jcsCanonical(.v2_plain_value(ref$event$unit))),logical(1))))
+    .formulaReject("formula_age_anchor","/age",
+      "put source-unit normalization on the shared event used by creatinine and its age anchor; keep explicit numeric coordinate conversions on the creatinine input.")
   selected<-inherits(ref,"omop_anchor")&&r$fn %in% c("first_value","last_value","nth_value")&&
     identical(r$missing,"keep")&&identical(ref$field,"start")&&identical(ref$scope,"episode")&&
     identical(ref$which,switch(r$fn,first_value="first",last_value="last",nth_value="nth"))&&

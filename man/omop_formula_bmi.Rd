@@ -52,6 +52,9 @@ inputs become private typed NA; unavailable sources retain unavailability.
 Age requires completed calendar years, not annual_years or baseline age at
 an unrelated visit. Use a first/last/nth measurement selector with missing=keep
 and a matching start-date anchor, or a day-zero selector and age at index.
+Put source-unit normalization on the shared event used by both creatinine
+and its age anchor. An input-local source map must match that shared map;
+keep explicit numeric coordinate conversions on the creatinine input.
 Sex mapping is an explicit public protocol assertion, not an interpretation of
 a field named gender. CKD-EPI 2021 uses no race operand and is an adult estimate.
 }
