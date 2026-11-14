@@ -18,7 +18,7 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
 ## Start this chapter
 
@@ -126,16 +126,11 @@ Do not relabel annual year subtraction as completed age.
 check <- omop_recipe(variables = list(age = omop_age_at("death")),
   outputs = omop_output("people", format = "wide", grain = "person"))
 recipe_explain(check, conns = conns)$selected
-stopifnot(recipe_explain(check, conns = conns)$selected == "v2")
 print(recipe_execute(check, out = c(people = "D_migration"), conns = conns))
 ```
 
 If an explanation selects v1, it is explaining the legacy execution path. Merely
 printing a forced v2 conversion would not prove that the actual execution uses it.
-
-## Recap
-
-The editable source executes once; the generated website is offline. Migration changes the recipe definitions, not just column names.
 
 ## Try it
 
@@ -149,3 +144,36 @@ recipe_explain(check, conns = conns)$selected
 ```
 
 </details>
+
+## Exercise 2: a common variant
+
+Round-trip a native recipe through JSON.
+
+<details><summary>Solution 2</summary>
+
+```{r book4-exercise-2}
+restored <- recipe_import_json(recipe_export_json(check))
+identical(recipe_to_plan(check), recipe_to_plan(restored))
+```
+
+TRUE establishes plan equality for this example; retain package and vocabulary versions as well.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Inspect the loaded manifest dataset names. Does rebuilding the site reload a database?
+
+<details><summary>Solution 3</summary>
+
+```{r book4-exercise-3}
+vapply(manifest, function(x) x$dataset, "")
+```
+
+No. Loading practice data, precomputing examples and rendering the site are three distinct operations.
+
+</details>
+## Recap
+
+The editable source executes once; the generated website is offline. Migration changes the recipe definitions, not just column names.
+

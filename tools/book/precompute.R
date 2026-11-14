@@ -1,6 +1,6 @@
 # Run from package root. Execute each chapter in a fresh synthetic session.
-stopifnot(as.character(packageVersion("dsOMOP")) == "2.10.4",
-          as.character(packageVersion("dsOMOPClient")) == "2.10.4")
+stopifnot(as.character(packageVersion("dsOMOP")) == "2.10.5",
+          as.character(packageVersion("dsOMOPClient")) == "2.10.5")
 library(dsOMOPClient)
 source("tools/book/verify-book2.R")
 source("tools/book/verify.R")

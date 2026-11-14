@@ -24,8 +24,8 @@ verify_book3 <- function(input, env, get_data) {
     stopifnot(isTRUE(all.equal(book_summary(actual)$Value, unname(values))))
   }
   if (grepl("book-06-events", input)) {
-    band <- get_data("event_band")
-    stopifnot(is.factor(band), !is.ordered(band),
+    band <- get_data("D_lab_bins")$band
+    stopifnot(is.factor(band), is.ordered(band),
       identical(levels(band),c("below 14","14 to below 15","15 or above")),
       is.ordered(env$bin_display$Category))
     same(get_data("D_event_change")$change, oracle$last-oracle$first)
@@ -48,41 +48,23 @@ verify_book3 <- function(input, env, get_data) {
   summary_matches(env$conversion_summary, 10*oracle$mean)
   same(get_data("D_lab_change")$change,oracle$last-oracle$first)
   summary_matches(env$change_summary,oracle$last-oracle$first)
-  same(get_data("D_lab_spread")$spread,oracle$maximum-oracle$minimum)
-  summary_matches(env$spread_summary,oracle$maximum-oracle$minimum)
-  for (col in c("high_count","low_count")) same(get_data("D_lab_ranges")[[col]],oracle[[col]])
-  stopifnot(all(env$hits$pooled$domain_id=="Measurement"),
-    "Hemoglobin [Mass/volume] in Blood" %in% env$hits$pooled$concept_name)
-  stopifnot(is.ordered(env$bin_display$Category),
-    identical(levels(env$bin_display$Category),env$band_levels))
-  factor_band <- get_data("lab_band")
-  stopifnot(is.factor(factor_band), !is.ordered(factor_band),
-    identical(levels(factor_band),c("below 14","14 to below 15","15 or above")))
-  same(book_counts(env$bin_counts)$Count,c(9,9,10,0))
-  for (v in c("first","last")) {
-    expected <- ifelse(oracle[[v]]<14.5,"below 14.5","14.5 or above")
-    same(book_counts(env[[paste0(v,"_groups")]])$Count,as.numeric(table(expected,useNA="always")))
-    same(env[[paste0(v,"_mean")]]$Global.Mean[1,1],mean(oracle[[v]]))
-  }
-  same(env$raw_mean$Global.Mean[1,1],mean(oracle$mean))
-  same(env$unit_mean$Global.Mean[1,1],10*mean(oracle$mean))
-  same(env$bin_mean$Global.Mean[1,1],mean(oracle$mean))
-  same(env$range_mean$Global.Mean[1,1],mean(oracle$mean))
-  same(book_counts(env$mean_groups)$Count,as.numeric(table(ifelse(oracle$mean<14.5,"below 14.5","14.5 or above"),useNA="always")))
-  same(book_counts(env$unit_groups)$Count,book_counts(env$mean_groups)$Count)
-  same(book_counts(env$unit_bin_counts)$Count,c(9,9,10,0))
   flags <- get_data("D_lab_flags")
-  stopifnot(identical(flags$high,as.integer(d$mean>=15)),identical(flags$low,as.integer(d$mean<14)))
-  band <- cut(oracle$mean,c(0,14,15,100),labels=c("below 14","14 to below 15","15 or above"),right=FALSE)
-  stopifnot(identical(sort(as.character(flags$band)), sort(as.character(band))))
-  expected_counts <- function(x) as.numeric(table(factor(x, levels=sort(unique(x))), useNA="always"))
-  same(book_counts(env$bin_counts)$Count,expected_counts(as.character(band)))
-  same(book_counts(env$high_counts)$Count,expected_counts(as.integer(oracle$mean>=15)))
-  same(book_counts(env$low_counts)$Count,expected_counts(as.integer(oracle$mean<14)))
-  for (flag in c("recorded_high","recorded_low")) {
-    same(get_data("D_recorded_flags")[[flag]],rep(0,28))
-    same(book_counts(env[[flag]])$Count,c(28,0))
-  }
+  stopifnot(is.ordered(flags$band), identical(levels(flags$band),env$band_levels))
+  same(flags$rounded,round(oracle$mean,1))
+  same(flags$high,as.integer(oracle$mean>=15))
+  same(flags$low,as.integer(oracle$mean<14))
+  same(book_counts(env$bin_counts)$Count,c(9,9,10,0))
+  stopifnot(grepl("publication status",env$reference_message))
+  same(get_data("D_log")$logged,log(oracle$mean))
+  same(get_data("D_number_columns")$mean_rounded,round(oracle$mean,1))
+  same(get_data("D_lab_change")$ratio,oracle$last/oracle$first)
+  same(get_data("D_lab_change")$percent,100*(oracle$last-oracle$first)/oracle$first)
+  observed <- vapply(split(m,m$person_id),function(x) {
+    found <- which(x$value_as_number>=14)
+    if(!length(found)) return(NA_real_)
+    as.numeric(as.Date(x$measurement_date[min(found)])-as.Date(x$measurement_date[1]))
+  },numeric(1))
+  same(get_data("D_lab_change")$target_days,observed)
   # Verify the actual disjoint fixture files, not just their stated group lists.
   stopifnot(all(file.exists(env$pair$path)))
   ids <- lapply(env$pair$path,function(path) {

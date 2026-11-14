@@ -18,7 +18,7 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
 ## Start this chapter
 
@@ -99,7 +99,7 @@ class(people)
 `person_id` is included automatically as a pseudonym. Missing records produce
 missing values. We did not add a legacy raw-ID variable to keep the roster.
 
-## Check the language before running
+## Predict: read the recipe explanation
 
 ```{r explain}
 explained <- recipe_explain(people, conns = conns)
@@ -107,8 +107,8 @@ stopifnot(explained$selected == "v2")
 explained$selected
 ```
 
-The selected plan is language 2. This check is made for every executable recipe
-in the book. With no time restriction, each variable reads all available history
+The selected plan is language 2. Before running, predict one private row per
+person, two named categorical variables, and a pseudonymous key. With no time restriction, each variable reads all available history
 independently. That is a teaching definition to choose explicitly in a real study.
 
 <details><summary>Full plan explanation (optional)</summary>
@@ -119,6 +119,11 @@ makes those categories agree across sites. A bytewise tie compares the bytes of
 text to make a repeated choice deterministic. You do not need to configure these
 for this first recipe.
 
+Read the lines in order: the selected language is the execution route; the
+population defines the row; each variable identifies its source and reducer;
+output defaults determine the shape; category reconciliation determines names.
+The explanation contains declarations, not observed patient frequencies.
+
 Print all the chosen defaults:
 
 ```{r explain-full}
@@ -127,7 +132,7 @@ recipe_explain(people)
 
 </details>
 
-## Assign the result
+## Run: assign the result
 
 ```{r execute}
 print(recipe_execute(people, out = c(people = "D_people"), conns = conns))
@@ -135,7 +140,29 @@ print(recipe_execute(people, out = c(people = "D_people"), conns = conns))
 
 The reply is a mapping of output names to server symbols. `D_people` is still on
 the server. Concept-valued columns are labelled factors because of their declared
-type. In 2.10.4 the names `education` and `cause_of_death` need no `_concept_id` suffix.
+type. In 2.10.5 the names `education` and `cause_of_death` need no `_concept_id` suffix.
+
+## Verify: check what you got
+
+Do this complete check once while learning a new extraction. `ds.ls` lists
+server symbols; `ds.dim` describes the result dimensions; `ds.colnames` names
+its columns; `ds.class` checks types. Then inspect one summary or table and
+missingness with `ds.numNA`. Every method applies its own release rules. None
+of these calls retrieves patient rows.
+
+```{r full-output-check}
+dsBaseClient::ds.ls(datasources = conns)
+dsBaseClient::ds.dim("D_people", datasources = conns)
+dsBaseClient::ds.colnames("D_people", datasources = conns)
+dsBaseClient::ds.class("D_people$education", datasources = conns)
+dsBaseClient::ds.numNA("D_people$education", datasources = conns)
+```
+
+The category table in the next step completes the check. Compare it with your
+prediction. Later lessons use at most one helpful schema or variable check per
+extraction; type checks recur only when the lesson is about types. Explain a
+recipe again when a new default, censoring, matching or presentation rule matters.
+This is the **predict, run, verify** habit of a careful federated analyst.
 
 ## Count the education categories
 
@@ -187,7 +214,6 @@ is selected. Missing fever answers remain missing; they do not become “no”.
 answers <- omop_recipe(
   variables = list(education = education, fever = fever, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(answers, conns = conns)$selected == "v2")
 print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
 ```
 
@@ -207,10 +233,6 @@ yes_no_result
 The table contains your lower-case labels. See [chapter 10](book-08-harmonise.html)
 for the same operation across two different vocabularies.
 
-## Recap
-
-An event selects records, a reducer selects a value, and a wide output arranges private rows. Only the aggregate returns to you.
-
 ## Try it
 
 Count education using the complete-contract helper instead of calling ds.table directly.
@@ -223,3 +245,35 @@ ds.omop.table("D_people", "education", conns = conns)
 ```
 
 </details>
+
+## Exercise 2: a common variant
+
+Count causes with dsBase directly, preserving missing causes.
+
+<details><summary>Solution 2</summary>
+
+```{r book4-exercise-2}
+knitr::kable(book_counts(dsBaseClient::ds.table("D_people$cause_of_death", useNA = "always", datasources = conns)))
+```
+
+Missing cause is not another coded cause and not proof that a person survived.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Verify the combined answer table has the three intended variables.
+
+<details><summary>Solution 3</summary>
+
+```{r book4-exercise-3}
+dsBaseClient::ds.colnames("D_answers", datasources = conns)
+```
+
+The pseudonymous person key is automatic. The education, fever and cause columns come from separate declarations.
+
+</details>
+## Recap
+
+An event selects records, a reducer selects a value, and a wide output arranges private rows. Only the aggregate returns to you.
+

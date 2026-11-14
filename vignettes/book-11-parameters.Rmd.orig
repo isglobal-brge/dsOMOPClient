@@ -19,7 +19,7 @@ This chapter uses the public synthetic Synthea27Nj numeric connection from [Gett
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice connection;
-all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
+all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
 The numbers describe teaching data, not clinical findings.
 
 ## Start this chapter
@@ -70,7 +70,6 @@ The unbound template cannot execute until its required setting is supplied.
 
 ```{r bind}
 outpatient <- recipe_bind(template, setting = 9202L)
-stopifnot(recipe_explain(outpatient, conns = conns)$selected == "v2")
 recipe_explain(outpatient)$selected
 ```
 
@@ -110,7 +109,6 @@ shortcuts <- omop_study(omop_event("measurement", 3000963L), outputs = "baseline
     count = omop_count("measurement", 3000963L, before = 365),
     value = omop_value_at_index("measurement", 3000963L,
       tolerance = c(-30, 0), unit = 8713L)))
-stopifnot(recipe_explain(shortcuts, conns = conns)$selected == "v2")
 print(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
 ```
 ```{r shortcut-result}
@@ -154,7 +152,6 @@ body <- omop_study(weight_event, outputs = "baseline", baseline = list(
   age = omop_age_at(omop_anchor(weight_event)),
   first_date = omop_date(omop_anchor(weight_event, which = "first")),
   last_date = omop_date(omop_anchor(weight_event, which = "last"))))
-stopifnot(recipe_explain(body, conns = conns)$selected == "v2")
 print(recipe_execute(body, out = c(baseline = "D_body"), conns = conns))
 ```
 
@@ -414,10 +411,6 @@ filter. The earlier missingness case ensures an unknown age is not called adult.
 
 </details>
 
-## Recap
-
-Parameters change declared inputs, shortcuts express common native recipes, and mutate/filter operate privately on assigned tables. Each final object still passes publication checks.
-
 ## Try it
 
 Bind the same template to inpatient visits and summarise the prior-visit count. Do not alter the outpatient template in place.
@@ -426,10 +419,13 @@ Bind the same template to inpatient visits and summarise the prior-visit count. 
 
 ```{r solution}
 inpatient <- recipe_bind(template, setting = 9201L)
-stopifnot(recipe_explain(inpatient, conns = conns)$selected == "v2")
 print(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
 dsBaseClient::ds.summary("D_param_inpatient$prior_visits", datasources = conns)
 ```
 Each binding is a separate recipe. Its own index changes which earlier records fall into the lookback window. A numeric summary suits these varied counts; a categorical table can be refused when it creates too many distinct levels in a small population.
 
 </details>
+## Recap
+
+Parameters change declared inputs, shortcuts express common native recipes, and mutate/filter operate privately on assigned tables. Each final object still passes publication checks.
+

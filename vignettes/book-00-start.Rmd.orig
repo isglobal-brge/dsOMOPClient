@@ -16,12 +16,12 @@ Install the client, choose a practice environment, and check both package versio
 
 This chapter creates the public synthetic GiBleed practice connection.
 Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
 ## Before you start
 
 You need R 4.1 or newer (the recorded run used R 4.6.2), internet access for
-installation, and either an Opal with dsOMOP 2.10.4 or the local DSLite practice
+installation, and either an Opal with dsOMOP 2.10.5 or the local DSLite practice
 server below. RStudio is a convenient editor; ordinary R also works. Download the book helpers below; you do not need a Git checkout.
 
 Run this **installation block once**, before the examples. It installs every
@@ -36,8 +36,8 @@ install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "rmarkdown", "pkgdown", "bslib", "opalr", "duckdb"))
 remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
 remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
-remotes::install_github("isglobal-brge/dsOMOP@2.10.4", upgrade = "never")
-remotes::install_github("isglobal-brge/dsOMOPClient@2.10.4", upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never")
 ```
 
 The *client* is the package on your computer. The *server* runs requests near the
@@ -47,7 +47,7 @@ record the dependency versions used for this book.
 
 ## Get the book helpers
 
-The released 2.10.4 package archive does **not** contain `tools/book/`.
+The released 2.10.5 package archive does **not** contain `tools/book/`.
 Download [book-helpers.zip](../downloads/book-helpers.zip) from this site, leaving
 it zipped in your Downloads folder. In R, run this block and select that ZIP
 when the file chooser opens:
@@ -245,7 +245,7 @@ source("tools/book/opal-admin.R")
 ```
 
 This downloadable [administrator script](../downloads/opal-admin.R) logs in as
-`administrator` (or `BOOK_OPAL_ADMIN_USER`), installs dsBase 6.3.5 and dsOMOP 2.10.4
+`administrator` (or `BOOK_OPAL_ADMIN_USER`), installs dsBase 6.3.5 and dsOMOP 2.10.5
 in the configured profile with `dsadmin.install_github_package()`, then calls
 `dsadmin.publish_package()` for both. Publishing registers their assign/aggregate
 methods and package options. It creates the named analyst if absent, grants
@@ -263,7 +263,7 @@ SQLite needs no database credentials. The script declares `package = "dsOMOP"`
 on each resource so its resolver loads when assigned. It prints the installed
 package versions and resource definitions for checking. In the Opal browser UI,
 log in as the administrator using the same URL, open **Administration → DataSHIELD**,
-and verify the selected profile lists dsBase 6.3.5 and dsOMOP 2.10.4 with published
+and verify the selected profile lists dsBase 6.3.5 and dsOMOP 2.10.5 with published
 methods. Resources remain database references; do not import them as downloadable
 patient tables.
 
@@ -286,7 +286,7 @@ PASS: practice.gibleed connected; measurement schema returned
 PASS: practice.numeric connected; measurement schema returned
 ```
 
-Confirm installed and published server versions are 2.10.4 in the version reply.
+Confirm installed and published server versions are 2.10.5 in the version reply.
 A failed login, missing driver, unpublished method, unreadable mount or wrong
 resource name stops the checks; do not proceed to the lessons until both pass.
 The script disconnects and logs out. Start the chapter's visible setup to log in
@@ -296,10 +296,6 @@ To move to a future demo Opal, transfer the same two SQLite files to its Rock
 mount, run the resource provisioning with that host's administrator, and update
 only `connection.R`. No database TLS setting or study-specific privacy setting
 is needed.
-
-## Recap
-
-You can distinguish your client installation from the server installation and have a practice connection.
 
 ## Try it
 
@@ -314,3 +310,36 @@ ds.omop.server.version(conns = conns)
 ```
 
 </details>
+
+## Exercise 2: a common variant
+
+Which packages run locally?
+
+<details><summary>Solution 2</summary>
+
+```{r book4-exercise-2}
+vapply(c("DSI", "DSOpal", "dsOMOPClient"), function(x) as.character(packageVersion(x)), "")
+```
+
+These are client packages. The server installs dsOMOP and dsBase separately.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Check that the shared resource configuration names both practice datasets.
+
+<details><summary>Solution 3</summary>
+
+```{r book4-exercise-3}
+source("tools/book/connection.R")
+resource_names
+```
+
+Both named resources are required. Changing a host belongs in this one file, not in each lesson.
+
+</details>
+## Recap
+
+You can distinguish your client installation from the server installation and have a practice connection.
+

@@ -18,7 +18,7 @@ This chapter uses the public synthetic GiBleed practice connection from [Getting
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
 ## Start this chapter
 
@@ -88,10 +88,6 @@ it does not grant permission to fetch rows.
 The practical sequence is: choose events, describe variables, assign a table,
 then request an aggregate. Chapters 5–7 walk through it one small step at a time.
 
-## Recap
-
-OMOP makes data structures familiar. DataSHIELD keeps patient rows at the server and checks released summaries.
-
 ## Try it
 
 Find the columns of the death table without asking for its rows.
@@ -104,3 +100,35 @@ knitr::kable(ds.omop.columns("death", conns = conns)$site)
 ```
 
 </details>
+
+## Exercise 2: a common variant
+
+Find the visit date column without asking for visits.
+
+<details><summary>Solution 2</summary>
+
+```{r book4-exercise-2}
+knitr::kable(ds.omop.columns("visit_occurrence", conns = conns)$site)
+```
+
+A schema describes fields, not people. A date field can exist in an empty table.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Ask for protected person-table statistics. Why is this different from a row download?
+
+<details><summary>Solution 3</summary>
+
+```{r book4-exercise-3}
+ds.omop.table.stats("person", conns = conns)$per_site$site
+```
+
+This returns the service’s protected summary; no person identifier is released.
+
+</details>
+## Recap
+
+OMOP makes data structures familiar. DataSHIELD keeps patient rows at the server and checks released summaries.
+

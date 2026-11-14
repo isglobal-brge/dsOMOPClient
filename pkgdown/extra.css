@@ -78,3 +78,14 @@ main .table { display: block; max-width: 100%; overflow-x: auto; }
   box-shadow: 0 4px 18px #00314208; min-width: 0; }
 .capability-card h2 { margin-top: .25rem; }
 @media (max-width: 767px) { .capability-card { padding: .8rem; } }
+
+/* Keep short blocks natural; long code and recorded output scroll at any width. */
+.book-page main pre {
+  max-height: 400px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.book-page main div.sourceCode { max-height: none; }
+@media (max-width: 575.98px) {
+  .book-page main pre { max-height: min(400px, 60vh); }
+}
