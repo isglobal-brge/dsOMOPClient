@@ -170,6 +170,13 @@ test_that("editing imported populations changes the executable declaration and p
   expect_true(merged$populations$copy_p$circe_provenance$derivative)
   expect_identical(merged$populations$copy_p$circe_provenance$original_sha256,
     pop$circe_provenance$original_sha256)
+  merged_plan <- recipe_to_plan(merged)
+  expect_true(all(vapply(merged_plan$concept_sets, function(cs) {
+    201826L %in% unlist(cs$concepts) && identical(cs$validity_policy, "ohdsi-import-1")
+  }, logical(1))))
+  rebuilt <- eval(parse(text = recipe_to_code(merged)))
+  expect_identical(.plan_v2_digest(recipe_to_plan(rebuilt))$sha256,
+    .plan_v2_digest(merged_plan)$sha256)
   # A native override is an explicit choice and must not execute stale Circe.
   r$populations$p$index <- omop_index(omop_event("condition_occurrence", 201821L))
   native <- recipe_to_plan(r)
