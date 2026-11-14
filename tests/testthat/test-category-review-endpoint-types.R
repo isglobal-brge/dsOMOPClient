@@ -194,16 +194,17 @@ test_that("R10 membership provenance follows native rosters and person collapse"
   ctx <- .clf_setup(); .numeric_lexer()
   e <- omop_event("observation",45000120L,name="e")
   populations <- list(omop_population("p",index=omop_index(e)),
-    omop_population("child",parent="p"),omop_population("people"),
+    omop_population("child",parent_id="p"),omop_population("people"),
     omop_population("cohort",index=omop_index(list(cohort_definition_id=1L))),
     omop_population("combined",union=c("p","child")))
   for (mode in c("memory","staged")) for (grain in c("episode","person")) {
     outputs <- lapply(populations,function(p)omop_output(p$id,format="membership",rows=p$id,
-      grain=grain,columns=character()))
+      grain=if(p$id=="people")"person" else grain,columns=character(),
+      collapse=if(grain=="person" && p$id!="people")"first_episode"))
     recipe <- omop_recipe(events=list(e),populations=populations,outputs=outputs,
       date_spec=omop_date_spec(precision="month"))
     book <- .endpoint_books(recipe,ctx,paste0("Roster_",mode,"_",grain),mode,TRUE,schema_types=TRUE)
-    for (table in book) expect_identical(table$columns$name,c(if(grain=="episode")c("row_id","cohort_row_id"),
+    for (table in book) expect_identical(table$columns$name,c(if(table$row_grain=="episode")c("row_id","cohort_row_id"),
       "person_id","cohort_start_date","cohort_end_date","index_source"))
   }
 })

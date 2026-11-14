@@ -253,7 +253,9 @@
     if(output %in% visiting) .categoryReject("Cyclic output dependency.","codebook_metadata_missing")
     visiting<<-c(visiting,output);on.exit(visiting<<-setdiff(visiting,output))
     node<-plan$outputs[[output]];opts<-node$options %||% list();fmt<-node$format
-    id<-if(identical(node$grain,"person"))c(person_id="character") else c(row_id="integer64",cohort_row_id="integer64",person_id="character")
+    # Native reducer transport preserves BIGINT row keys as exact decimal
+    # text; publication also exposes person pseudonyms as character strings.
+    id<-if(identical(node$grain,"person"))c(person_id="character") else c(row_id="character",cohort_row_id="character",person_id="character")
     definitions<-list();grains<-list();origins<-list()
     add<-function(component,types,grain=node$grain %||% "episode") {definitions[[component]]<<-types;grains[[component]]<<-grain}
     if(fmt=="survival") {

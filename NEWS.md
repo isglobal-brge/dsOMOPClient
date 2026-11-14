@@ -3,6 +3,7 @@
 - Corrected (membership/long codebook review): prospective existing date columns
   honor recipe category defaults, with producer-specific applicability. Membership
   schemas also include the declared roster's index provenance in publication order.
+  Native row keys are declared as the lossless character strings actually released.
   Rebuild affected codebooks; recipe declarations and published data do not change.
 
 - Corrected (generated date factor review): prospective codebooks apply recipe
