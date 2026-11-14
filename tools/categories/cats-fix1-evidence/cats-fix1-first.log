@@ -5,5 +5,5 @@ FAILURES BY FILE
 FAILING TESTS
 test-category-review-fixes.R | R3 hierarchy defaults are inactive for flags and numeric/date categories | failed=0 error=TRUE
 
-RESULT failed: 0 errors: 1 skipped: 0 passed: 62 
-RESULT failed: 0 errors: 1 skipped: 0 passed: 62 
+RESULT failed: 0 errors: 1 skipped: 0 passed: 62
+RESULT failed: 0 errors: 1 skipped: 0 passed: 62

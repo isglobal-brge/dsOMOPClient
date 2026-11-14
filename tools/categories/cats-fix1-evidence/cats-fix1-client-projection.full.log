@@ -1,6 +1,6 @@
 category-review-fixes: Registered S3 method overwritten by 'gamlss':
   method   from
-  print.ri bit 
+  print.ri bit
 
 Logging into the collaborating servers
 [dsomop-audit] 2026-11-14T12:15:19+0000 method=omopPlanExecuteDS detail={"outputs":"wide","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"events":{"obs_45000120":{"table":"observation","concept_set":{"concepts":[45000120],"include_descendants":false},"value":{"column":"value_as_number"}}},"populations":{"base":{"kind":"criteria"}},"variables":{"answer":{"derived":{"kind":"category_reduce","variable":{"derived":{"kind":"category_rows","source":{"event":"obs_45000120"},"value":"value_as_concept_id"},"broadcast":false},"reducer":{"fn":"nth_value","n":3}},"broadcast":false}},"outputs":{"wide":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_wide"}},"publish":["wide"]},"scope_present":false,"scope_table_count":0}
@@ -190,4 +190,4 @@ Logging into the collaborating servers
 ══ DONE ════════════════════════════════════════════════════════════════════════
 Woot!
 
-RESULT failed: 0 errors: 0 skipped: 0 passed: 116 
+RESULT failed: 0 errors: 0 skipped: 0 passed: 116

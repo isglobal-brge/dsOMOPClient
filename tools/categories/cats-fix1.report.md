@@ -127,5 +127,6 @@ logs were retained. Sizes measured immediately before deletion
 
 The requested report is outside a Git repository. An identical copy is committed
 in the client at `tools/categories/cats-fix1.report.md`; all job logs are archived
-at `tools/categories/cats-fix1-evidence/`. That documentation/evidence commit
+at `tools/categories/cats-fix1-evidence/` (trailing whitespace removed only;
+original logs remain beside this report). That documentation/evidence commit
 changes no tested implementation or tests.

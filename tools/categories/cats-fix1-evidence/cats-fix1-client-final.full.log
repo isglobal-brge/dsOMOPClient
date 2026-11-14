@@ -1,6 +1,6 @@
 category-codebook: ..Registered S3 method overwritten by 'gamlss':
   method   from
-  print.ri bit 
+  print.ri bit
 
 Logging into the collaborating servers
 [dsomop-audit] 2026-11-14T12:05:08+0000 method=omopPlanExecuteDS detail={"outputs":"output","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"events":{"obs_45000120":{"table":"observation","concept_set":{"concepts":[45000120],"include_descendants":false},"value":{"column":"value_as_number"}}},"populations":{"base":{"kind":"criteria"}},"variables":{"flag":{"source":{"event":"obs_45000120"},"reducer":{"fn":"binary"},"category_spec":{"binary":{"kind":"category_binary","as":"logical","labels":["no","yes"]}}}},"outputs":{"output":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_output"}},"publish":["output"]},"scope_present":false,"scope_table_count":0}
@@ -24,7 +24,7 @@ Logging into the collaborating servers
 [dsomop-audit] 2026-11-14T12:05:19+0000 method=omopPlanExecuteDS detail={"outputs":"output","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"options":{"translate_concepts":false},"events":{"obs_45000120":{"table":"observation","concept_set":{"concepts":[45000120],"include_descendants":false},"value":{"column":"value_as_number"}}},"populations":{"base":{"kind":"criteria"}},"variables":{"n":{"source":{"event":"obs_45000120"},"reducer":{"fn":"count"}}},"outputs":{"output":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_output"}},"publish":["output"]},"scope_present":false,"scope_table_count":0}
 [dsomop-audit] 2026-11-14T12:05:20+0000 method=publication detail={"output":"output","component":"output","passed":true}
 ......
-category-review-fixes: 
+category-review-fixes:
 Logging into the collaborating servers
 [dsomop-audit] 2026-11-14T12:05:29+0000 method=omopPlanExecuteDS detail={"outputs":"wide","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"events":{"obs_45000120":{"table":"observation","concept_set":{"concepts":[45000120],"include_descendants":false},"value":{"column":"value_as_number"}}},"populations":{"base":{"kind":"criteria"}},"variables":{"answer":{"derived":{"kind":"category_reduce","variable":{"derived":{"kind":"category_rows","source":{"event":"obs_45000120"},"value":"value_as_concept_id"},"broadcast":false},"reducer":{"fn":"nth_value","n":3}},"broadcast":false}},"outputs":{"wide":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_wide"}},"publish":["wide"]},"scope_present":false,"scope_table_count":0}
 [dsomop-audit] 2026-11-14T12:05:30+0000 method=publication detail={"output":"wide","component":"wide","passed":true}
@@ -176,7 +176,7 @@ Logging into the collaborating servers
 [dsomop-audit] 2026-11-14T12:06:31+0000 method=omopPlanExecuteDS detail={"outputs":"output","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"events":{"obs_45000120":{"table":"observation","concept_set":{"concepts":[45000120],"include_descendants":false},"value":{"column":"value_as_number"}}},"populations":{"base":{"kind":"criteria"}},"variables":{"n":{"source":{"event":"obs_45000120"},"reducer":{"fn":"count"},"number_spec":{"representation":"bins","breaks":[0,2,10],"labels":["few","many"]},"category_spec":{"recode":{"kind":"category_recode","map":{"bin:1":"category:few","bin:2":"category:many"},"levels":["category:few","category:many"],"labels":["Few","Many"],"ordered":false,"unmatched":"keep"},"missing":{"kind":"category_missing","na":"level","unknown":"keep","labels":{"missing":"Missing","unknown":"Unknown"}}}}},"outputs":{"output":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_output"}},"publish":["output"]},"scope_present":false,"scope_table_count":0}
 [dsomop-audit] 2026-11-14T12:06:31+0000 method=publication detail={"output":"output","component":"output","passed":true}
 ...
-category-values: 
+category-values:
 Logging into the collaborating servers
 [dsomop-audit] 2026-11-14T12:06:34+0000 method=omopPlanExecuteDS detail={"outputs":"output","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.5"},"options":{"labels":{"45000123":"Missing"}},"events":{"obs_45000120":{"table":"observation","concept_set":{"concepts":[45000120],"include_descendants":false},"value":{"column":"value_as_number"}}},"populations":{"base":{"kind":"criteria"}},"variables":{"answer":{"source":{"event":"obs_45000120"},"reducer":{"fn":"last_value","value":"value_as_concept_id","missing":"keep"},"category_spec":{"missing":{"kind":"category_missing","na":"keep","unknown":"keep","labels":{"missing":"Missing","unknown":"Unknown"}}}}},"outputs":{"output":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_output"}},"publish":["output"]},"scope_present":false,"scope_table_count":0}
 [dsomop-audit] 2026-11-14T12:06:35+0000 method=publication detail={"output":"output","component":"output","passed":true}
@@ -363,4 +363,4 @@ ws0-normalize: .................................................................
 
 ══ DONE ════════════════════════════════════════════════════════════════════════
 
-RESULT failed: 0 errors: 0 skipped: 0 passed: 578 
+RESULT failed: 0 errors: 0 skipped: 0 passed: 578
