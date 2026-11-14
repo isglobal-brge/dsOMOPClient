@@ -22,6 +22,16 @@ const path = require('path');
         outputs:document.querySelectorAll('main pre:not(.sourceCode)').length,
         footer:document.querySelector('footer')?.textContent.includes('Book by'),
         headings:[...document.querySelectorAll('h1')].map(x=>x.textContent.trim())}));
+      if (slug === 'articles/book-00-showcase') {
+        const cards = await page.locator('.capability-card').evaluateAll(cards => cards.map(card => ({
+          border: getComputedStyle(card).borderTopWidth,
+          accent: getComputedStyle(card).borderTopColor,
+          radius: getComputedStyle(card).borderTopLeftRadius
+        })));
+        if (cards.length !== 6 || cards.some(c => c.border !== '4px' || c.accent !== 'rgb(241, 145, 25)' || c.radius !== '10px'))
+          throw new Error('Capability card styles missing: '+JSON.stringify(cards));
+        result.capabilityCards = cards.length;
+      }
       if(book) {
         if(!result.numericNoWrap||result.learnBoxes!==1||result.chapterLinks!==19||!result.byline||!result.copyButtons||!result.footer)
           throw new Error('Book presentation incomplete: '+JSON.stringify({slug,...result}));

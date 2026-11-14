@@ -13,3 +13,7 @@ stopifnot(all(file.copy(helpers, "docs/downloads", overwrite=TRUE)))
 # Recreate the archive so removed helpers cannot linger from an earlier build.
 unlink("docs/downloads/book-helpers.zip")
 utils::zip("docs/downloads/book-helpers.zip", helpers)
+
+# Some pkgdown stages restore cached assets after init_site(). Ship the exact
+# reviewed book assets, including new capability-card styles, at the end.
+stopifnot(all(file.copy(c("pkgdown/extra.css", "pkgdown/extra.js"), "docs", overwrite=TRUE)))

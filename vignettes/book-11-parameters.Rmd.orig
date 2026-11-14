@@ -213,7 +213,7 @@ adult_counts <- dsBaseClient::ds.table("D_adults$adult", useNA = "always",
 knitr::kable(book_counts(adult_counts))
 ```
 
-A missing age stays missing rather than becoming “no”. The adult count combines
+A missing age stays missing rather than becoming “no”. The adult count equals
 the 18-to-120 band; the under-18 band becomes “no”.
 
 </details>
