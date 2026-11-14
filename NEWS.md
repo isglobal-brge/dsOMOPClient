@@ -1,5 +1,18 @@
 # dsOMOPClient 2.10.5 (2026-11-14)
 
+- Corrected (A-29 review): independently normalized numeric siblings retain
+  their original event-row binding in long and intervals outputs. BIGINT
+  longitudinal arithmetic now checks exact conversion before calculation;
+  retain raw/count identity when a binary64 conversion is refused.
+- Corrected: expression types follow each selected canonical/presented input
+  prefix, preserving fractional values and exact integers. Slope reducers and
+  generated relation-day columns retain class-2 provenance through copies,
+  categories and transport. Supply roles use days; unrelated numeric roles
+  do not inherit measurement units. Re-run affected numeric recipes.
+- Newly refused: scalar formulas in long output, including nested formulas,
+  require explicit `broadcast = TRUE`, just like direct scalar reducers.
+
+
 - Corrected: shared numeric contracts retain full binary64 precision through
   DataSHIELD JSON transport, including fractional conversion factors and
   adjacent breakpoints. Re-execute recipes to reconcile those contracts.

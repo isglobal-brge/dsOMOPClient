@@ -144,3 +144,15 @@ test_that("N45 N49 numeric JSON and YAML preserve adjacent boundaries and recipe
     expect_identical(.planNormalizedDigest(recipe_to_plan(restored,version=2))$sha256,expected)
   }
 })
+
+test_that("selected numeric roles resolve independent declared coordinates", {
+  plan<-list(events=list(drug=list(table="drug_exposure"),lab=list(table="measurement",unit=list(target=8840L))))
+  rows<-function(event,value)list(derived=list(kind="number_rows",source=list(event=event),value=value))
+  expect_identical(.numberDeclaredUnit(plan,rows("drug","days_supply")),"days")
+  expect_identical(.numberDeclaredUnit(plan,rows("drug","quantity")),"1")
+  expect_identical(.numberDeclaredUnit(plan,rows("lab","value_as_number")),"unit:8840")
+  expect_identical(.numberDeclaredUnit(plan,rows("lab","unit_unknown")),"1")
+  expect_identical(.numberDeclaredUnit(plan,rows("lab","value_source")),"unresolved_source")
+  change<-rows("drug","days_supply");change$derived$kind<-"number_change";change$derived$method<-"slope"
+  expect_identical(.numberDeclaredUnit(plan,change),"days/days")
+})
