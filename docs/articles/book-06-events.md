@@ -627,17 +627,69 @@ print(ds.omop.mutate("D_reducers",
 
     #> [1] "D_lab_bins"
 
+`cut()` in dsOMOP 2.10.4 produces character labels. Make a server-side
+factor with explicitly sequenced levels before tabulating it:
+
 ``` r
-bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
-knitr::kable(book_counts(bins_result))
+band_levels <- c("below 14", "14 to below 15", "15 or above")
+dsBaseClient::ds.asFactor("D_lab_bins$band", newobj.name = "event_band",
+  forced.factor.levels = band_levels, datasources = conns)
+```
+
+    #> $all.unique.levels
+    #> [1] "below 14"       "14 to below 15" "15 or above"   
+    #> 
+    #> $return.message
+    #> [1] "Data object <event_band> correctly created in all specified data sources"
+
+``` r
+dsBaseClient::ds.levels("event_band", datasources = conns)
+```
+
+    #> $site
+    #> $site$Levels
+    #> [1] "below 14"       "14 to below 15" "15 or above"   
+    #> 
+    #> $site$ValidityMessage
+    #> [1] "VALID ANALYSIS"
+
+The levels now run from low to high on the server and in the count
+table. This is a factor with a declared level sequence, **not R’s
+`ordered` class**: `ds.asFactor()` uses ordinary categorical contrasts,
+with the first level as reference. Sorting a displayed table alone would
+not change those model semantics. Do not pass `ordered_result` to
+`ds.omop.mutate()`; that argument is unsupported. For an ordinal
+display, apply `ordered()` only to the released category labels; it does
+not make private values available or change the server model.
+
+``` r
+bins_result <- dsBaseClient::ds.table("event_band", useNA = "always", datasources = conns)
+bin_display <- book_counts(bins_result)
+bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
+knitr::kable(bin_display[order(bin_display$Category, na.last = TRUE), ])
 ```
 
 | Category       | Count |
 | :------------- | ----: |
+| below 14       |     9 |
 | 14 to below 15 |     9 |
 | 15 or above    |    10 |
-| below 14       |     9 |
 | NA             |     0 |
+
+``` r
+dsBaseClient::ds.mean("D_lab_bins$mean", type = "combine", datasources = conns)
+```
+
+    #> $Global.Mean
+    #>                 EstimatedMean Nmissing Nvalid Ntotal
+    #> studiesCombined      14.46679        0     28     28
+    #> 
+    #> $Nstudies
+    #> [1] 1
+    #> 
+    #> $ValidityMessage
+    #>      ValidityMessage 
+    #> site "VALID ANALYSIS"
 
 Full aggregate response
 
@@ -648,37 +700,37 @@ bins_result
     #> $output.list
     #> $output.list$TABLE_rvar.by.study_row.props
     #>                 study
-    #> D_lab_bins$band  site
+    #> event_band       site
+    #>   below 14          1
     #>   14 to below 15    1
     #>   15 or above       1
-    #>   below 14          1
     #>   NA              NaN
     #> 
     #> $output.list$TABLE_rvar.by.study_col.props
     #>                 study
-    #> D_lab_bins$band       site
+    #> event_band            site
+    #>   below 14       0.3214286
     #>   14 to below 15 0.3214286
     #>   15 or above    0.3571429
-    #>   below 14       0.3214286
     #>   NA             0.0000000
     #> 
     #> $output.list$TABLE_rvar.by.study_counts
     #>                 study
-    #> D_lab_bins$band  site
+    #> event_band       site
+    #>   below 14          9
     #>   14 to below 15    9
     #>   15 or above      10
-    #>   below 14          9
     #>   NA                0
     #> 
     #> $output.list$TABLES.COMBINED_all.sources_proportions
-    #> D_lab_bins$band
-    #> 14 to below 15    15 or above       below 14             NA 
-    #>          0.321          0.357          0.321          0.000 
+    #> event_band
+    #>       below 14 14 to below 15    15 or above             NA 
+    #>          0.321          0.321          0.357          0.000 
     #> 
     #> $output.list$TABLES.COMBINED_all.sources_counts
-    #> D_lab_bins$band
-    #> 14 to below 15    15 or above       below 14             NA 
-    #>              9             10              9              0 
+    #> event_band
+    #>       below 14 14 to below 15    15 or above             NA 
+    #>              9              9             10              0 
     #> 
     #> 
     #> $validity.message

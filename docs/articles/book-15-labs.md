@@ -43,18 +43,17 @@ it does not identify a patient. Hemoglobin is the vocabulary’s spelling
 of haemoglobin.
 
 ``` r
-hits <- ds.omop.concept.search("Hemoglobin", conns = conns)
+hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)
 knitr::kable(head(hits$pooled[c("concept_name", "domain_id", "vocabulary_id")], 6))
 ```
 
-| concept\_name                             | domain\_id | vocabulary\_id |
-| :---------------------------------------- | :--------- | :------------- |
-| international unit per gram of hemoglobin | Unit       | UCUM           |
-| microgram per gram of hemoglobin          | Unit       | UCUM           |
-| unit per gram of hemoglobin               | Unit       | UCUM           |
-| micromole per gram of hemoglobin          | Unit       | UCUM           |
-| micromole per hour and gram of hemoglobin | Unit       | UCUM           |
-| micromole per mole of hemoglobin          | Unit       | UCUM           |
+| concept\_name                                                                        | domain\_id  | vocabulary\_id |
+| :----------------------------------------------------------------------------------- | :---------- | :------------- |
+| Hemoglobin and Hematocrit panel - Blood                                              | Measurement | LOINC          |
+| Hemoglobin A1c/Hemoglobin.total in Blood                                             | Measurement | LOINC          |
+| Hemoglobin.gastrointestinal.lower \[Presence\] in Stool by Immunoassay –1st specimen | Measurement | LOINC          |
+| Hemoglobin \[Presence\] in Urine by Test strip                                       | Measurement | LOINC          |
+| Hemoglobin \[Mass/volume\] in Blood                                                  | Measurement | LOINC          |
 
 Select the blood mass-concentration concept deliberately. Other
 hemoglobin concepts can describe a different test. IDs in code select
@@ -278,6 +277,70 @@ nonmissing values exist. Zero would claim a measured value. The
 person-grain table still includes that person; this particular dataset
 has hemoglobin for everyone.
 
+## Compare reducers and their groupings
+
+Keep the raw number and its grouping together. Use the same teaching
+threshold for first and last; grouping hides the size of differences
+within each category. The repeated mean in each row below is the
+**overall mean of that raw column**, not a category-specific mean. Only
+released aggregates are combined locally.
+
+``` r
+print(ds.omop.mutate("D_labs",
+  first_group = ifelse(first < 14.5, "below 14.5", "14.5 or above"),
+  last_group = ifelse(last < 14.5, "below 14.5", "14.5 or above"),
+  newobj = "D_reducer_groups", conns = conns))
+```
+
+    #> [1] "D_reducer_groups"
+
+``` r
+first_groups <- dsBaseClient::ds.table("D_reducer_groups$first_group", datasources = conns)
+first_mean <- dsBaseClient::ds.mean("D_reducer_groups$first", type = "combine", datasources = conns)
+last_groups <- dsBaseClient::ds.table("D_reducer_groups$last_group", datasources = conns)
+last_mean <- dsBaseClient::ds.mean("D_reducer_groups$last", type = "combine", datasources = conns)
+knitr::kable(rbind(book_group_comparison(first_groups, first_mean, "first", "g/dL"),
+                  book_group_comparison(last_groups, last_mean, "last", "g/dL")))
+```
+
+| Category      | Count | Number | Unit |     Mean |
+| :------------ | ----: | :----- | :--- | -------: |
+| 14.5 or above |    12 | first  | g/dL | 13.98571 |
+| below 14.5    |    16 | first  | g/dL | 13.98571 |
+| NA            |     0 | first  | g/dL | 13.98571 |
+| 14.5 or above |    18 | last   | g/dL | 14.89286 |
+| below 14.5    |    10 | last   | g/dL | 14.89286 |
+| NA            |     0 | last   | g/dL | 14.89286 |
+
+**Exercise.** Group the per-person mean using the same cutoff and show
+its raw mean.
+
+Solution
+
+``` r
+print(ds.omop.mutate("D_labs",
+  mean_group = ifelse(mean < 14.5, "below 14.5", "14.5 or above"),
+  newobj = "D_mean_groups", conns = conns))
+```
+
+    #> [1] "D_mean_groups"
+
+``` r
+mean_groups <- dsBaseClient::ds.table("D_mean_groups$mean_group", datasources = conns)
+raw_mean <- dsBaseClient::ds.mean("D_mean_groups$mean", type = "combine", datasources = conns)
+knitr::kable(book_group_comparison(mean_groups, raw_mean, "person mean", "g/dL"))
+```
+
+| Category      | Count | Number      | Unit |     Mean |
+| :------------ | ----: | :---------- | :--- | -------: |
+| 14.5 or above |    13 | person mean | g/dL | 14.46679 |
+| below 14.5    |    15 | person mean | g/dL | 14.46679 |
+| NA            |     0 | person mean | g/dL | 14.46679 |
+
+Every person still contributes once; reducing their readings and then
+grouping the result answers a different question from grouping each
+measurement first.
+
 ## Anchor a value and estimate a slope
 
 An *index date* is the reference date for each study episode. For this
@@ -459,6 +522,77 @@ Every displayed quantile and the mean is ten times its earlier value.
 Use the same target unit and declared conversion map at every site
 before pooling.
 
+## Group before and after converting units
+
+A cutoff must change with its unit. Below 14.5 g/dL means below 145 g/L.
+Compare the grouped counts and raw means side by side; the membership is
+unchanged.
+
+``` r
+print(ds.omop.mutate("D_lab_gl",
+  unit_group = ifelse(mean_gl < 145, "below 145", "145 or above"),
+  newobj = "D_unit_groups", conns = conns))
+```
+
+    #> [1] "D_unit_groups"
+
+``` r
+unit_groups <- dsBaseClient::ds.table("D_unit_groups$unit_group", datasources = conns)
+unit_mean <- dsBaseClient::ds.mean("D_unit_groups$mean_gl", type = "combine", datasources = conns)
+knitr::kable(rbind(book_group_comparison(mean_groups, raw_mean, "person mean", "g/dL"),
+                  book_group_comparison(unit_groups, unit_mean, "converted mean", "g/L")))
+```
+
+| Category      | Count | Number         | Unit |      Mean |
+| :------------ | ----: | :------------- | :--- | --------: |
+| 14.5 or above |    13 | person mean    | g/dL |  14.46679 |
+| below 14.5    |    15 | person mean    | g/dL |  14.46679 |
+| NA            |     0 | person mean    | g/dL |  14.46679 |
+| 145 or above  |    13 | converted mean | g/L  | 144.66786 |
+| below 145     |    15 | converted mean | g/L  | 144.66786 |
+| NA            |     0 | converted mean | g/L  | 144.66786 |
+
+**Exercise.** Use equivalent three-bin cutoffs in g/L. What should
+happen to counts?
+
+Solution
+
+``` r
+print(ds.omop.mutate("D_lab_gl",
+  band_gl = cut(mean_gl, breaks = c(0, 140, 150, 1000),
+    labels = c("below 140", "140 to below 150", "150 or above"), right = FALSE),
+  newobj = "D_unit_bins", conns = conns))
+```
+
+    #> [1] "D_unit_bins"
+
+``` r
+dsBaseClient::ds.asFactor("D_unit_bins$band_gl", newobj.name = "unit_band",
+  forced.factor.levels = c("below 140", "140 to below 150", "150 or above"), datasources = conns)
+```
+
+    #> $all.unique.levels
+    #> [1] "below 140"        "140 to below 150" "150 or above"    
+    #> 
+    #> $return.message
+    #> [1] "Data object <unit_band> correctly created in all specified data sources"
+
+``` r
+unit_bin_counts <- dsBaseClient::ds.table("unit_band", datasources = conns)
+knitr::kable(book_group_comparison(unit_bin_counts, unit_mean, "converted mean", "g/L"))
+```
+
+| Category         | Count | Number         | Unit |     Mean |
+| :--------------- | ----: | :------------- | :--- | -------: |
+| below 140        |     9 | converted mean | g/L  | 144.6679 |
+| 140 to below 150 |     9 | converted mean | g/L  | 144.6679 |
+| 150 or above     |    10 | converted mean | g/L  | 144.6679 |
+| NA               |     0 | converted mean | g/L  | 144.6679 |
+
+They match the g/dL bins in the next section: 9, 9 and 10 people.
+Converting values without converting the cutoffs would change the
+question accidentally.
+
 ## Form bins and high or low flags
 
 A *bin* groups values into an interval. Apply it to each person’s mean,
@@ -479,17 +613,66 @@ Left boundaries are included; right boundaries are excluded. Values
 outside the declared range and missing means have a missing bin. Release
 the bin counts:
 
+`cut()` in dsOMOP 2.10.4 produces character labels. Make a server-side
+factor with explicitly sequenced levels before tabulating it:
+
 ``` r
-bin_counts <- dsBaseClient::ds.table("D_lab_flags$band", useNA = "always", datasources = conns)
-knitr::kable(book_counts(bin_counts))
+band_levels <- c("below 14", "14 to below 15", "15 or above")
+dsBaseClient::ds.asFactor("D_lab_flags$band", newobj.name = "lab_band",
+  forced.factor.levels = band_levels, datasources = conns)
+```
+
+    #> $all.unique.levels
+    #> [1] "below 14"       "14 to below 15" "15 or above"   
+    #> 
+    #> $return.message
+    #> [1] "Data object <lab_band> correctly created in all specified data sources"
+
+``` r
+dsBaseClient::ds.levels("lab_band", datasources = conns)
+```
+
+    #> $site
+    #> $site$Levels
+    #> [1] "below 14"       "14 to below 15" "15 or above"   
+    #> 
+    #> $site$ValidityMessage
+    #> [1] "VALID ANALYSIS"
+
+The levels now run from low to high on the server and in the count
+table. This is a factor with a declared level sequence, **not R’s
+`ordered` class**: `ds.asFactor()` uses ordinary categorical contrasts,
+with the first level as reference. Sorting a displayed table alone would
+not change those model semantics. Do not pass `ordered_result` to
+`ds.omop.mutate()`; that argument is unsupported. For an ordinal
+display, apply `ordered()` only to the released category labels; it does
+not make private values available or change the server model.
+
+``` r
+bin_counts <- dsBaseClient::ds.table("lab_band", useNA = "always", datasources = conns)
+bin_display <- book_counts(bin_counts)
+bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
+knitr::kable(bin_display[order(bin_display$Category, na.last = TRUE), ])
 ```
 
 | Category       | Count |
 | :------------- | ----: |
+| below 14       |     9 |
 | 14 to below 15 |     9 |
 | 15 or above    |    10 |
-| below 14       |     9 |
 | NA             |     0 |
+
+``` r
+bin_mean <- dsBaseClient::ds.mean("D_lab_flags$mean", type = "combine", datasources = conns)
+knitr::kable(book_group_comparison(bin_counts, bin_mean, "person mean", "g/dL"))
+```
+
+| Category       | Count | Number      | Unit |     Mean |
+| :------------- | ----: | :---------- | :--- | -------: |
+| below 14       |     9 | person mean | g/dL | 14.46679 |
+| 14 to below 15 |     9 | person mean | g/dL | 14.46679 |
+| 15 or above    |    10 | person mean | g/dL | 14.46679 |
+| NA             |     0 | person mean | g/dL | 14.46679 |
 
 These nonzero cells meet the release threshold. Smaller cells may cause
 the whole table to be withheld. A refusal is not a zero count.
@@ -539,6 +722,24 @@ knitr::kable(rbind(transform(book_counts(recorded_high), Flag = "recorded high")
 | 0        |    28 | recorded low  |
 | NA       |     0 | recorded low  |
 
+Show each recorded-range grouping beside the raw lab mean. Zero recorded
+flags with no bounds mean “not established”, not “normal”. The numeric
+mean remains informative about the measured values; neither flag can
+serve as a useful model predictor here because it is constant.
+
+``` r
+range_mean <- dsBaseClient::ds.mean("D_labs$mean", type = "combine", datasources = conns)
+knitr::kable(rbind(book_group_comparison(recorded_high, range_mean, "mean; recorded high", "g/dL"),
+                  book_group_comparison(recorded_low, range_mean, "mean; recorded low", "g/dL")))
+```
+
+| Category | Count | Number              | Unit |     Mean |
+| :------- | ----: | :------------------ | :--- | -------: |
+| 0        |    28 | mean; recorded high | g/dL | 14.46679 |
+| NA       |     0 | mean; recorded high | g/dL | 14.46679 |
+| 0        |    28 | mean; recorded low  | g/dL | 14.46679 |
+| NA       |     0 | mean; recorded low  | g/dL | 14.46679 |
+
 **Exercise.** Summarise the two flags based on the explicit teaching
 cutoffs. Why do they differ from the recorded-range flags?
 
@@ -547,18 +748,18 @@ Solution
 ``` r
 high_counts <- dsBaseClient::ds.table("D_lab_flags$high", useNA = "always", datasources = conns)
 low_counts <- dsBaseClient::ds.table("D_lab_flags$low", useNA = "always", datasources = conns)
-knitr::kable(rbind(transform(book_counts(high_counts), Flag = "mean at least 15"),
-                  transform(book_counts(low_counts), Flag = "mean below 14")))
+knitr::kable(rbind(book_group_comparison(high_counts, bin_mean, "mean at least 15", "g/dL"),
+                  book_group_comparison(low_counts, bin_mean, "mean below 14", "g/dL")))
 ```
 
-| Category | Count | Flag             |
-| :------- | ----: | :--------------- |
-| 0        |    18 | mean at least 15 |
-| 1        |    10 | mean at least 15 |
-| NA       |     0 | mean at least 15 |
-| 0        |    19 | mean below 14    |
-| 1        |     9 | mean below 14    |
-| NA       |     0 | mean below 14    |
+| Category | Count | Number           | Unit |     Mean |
+| :------- | ----: | :--------------- | :--- | -------: |
+| 0        |    18 | mean at least 15 | g/dL | 14.46679 |
+| 1        |    10 | mean at least 15 | g/dL | 14.46679 |
+| NA       |     0 | mean at least 15 | g/dL | 14.46679 |
+| 0        |    19 | mean below 14    | g/dL | 14.46679 |
+| 1        |     9 | mean below 14    | g/dL | 14.46679 |
+| NA       |     0 | mean below 14    | g/dL | 14.46679 |
 
 The explicit flags compare a person’s mean with declared cutoffs. The
 dedicated reducers compare individual readings with their own source

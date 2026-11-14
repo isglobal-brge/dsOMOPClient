@@ -17,3 +17,15 @@ book_summary <- function(result) {
   if (!length(rows)) stop("No released numeric summary.")
   do.call(rbind, rows)
 }
+
+# Put released category counts beside the corresponding released numeric mean.
+book_group_comparison <- function(counts, mean_result, number, unit) {
+  out <- book_counts(counts)
+  values <- mean_result$Global.Mean
+  if (!is.matrix(values) || !is.finite(values[1L, 1L]))
+    stop("Numeric mean was withheld or incomplete; inspect the original result.")
+  out$Number <- number
+  out$Unit <- unit
+  out$Mean <- as.numeric(values[1L, 1L])
+  out
+}

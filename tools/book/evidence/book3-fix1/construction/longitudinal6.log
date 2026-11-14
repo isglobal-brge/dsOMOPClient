@@ -1,0 +1,7 @@
+PRECOMPUTE vignettes/book-16-longitudinal.Rmd.orig
+Error in same(fit$SLMA.pooled.ests.matrix[, "pooled.FE"], rowSums(beta *  :
+  isTRUE(all.equal(unname(as.numeric(x)), unname(as.numeric(y)),  .... is not TRUE
+Calls: render ... verify_chapter -> verify_longitudinal -> same -> stopifnot
+Execution halted
+Error: Fresh-process chapter failed: vignettes/book-16-longitudinal.Rmd.orig
+Execution halted

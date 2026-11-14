@@ -42,7 +42,7 @@ class Rendered(HTMLParser):
                 self.outputs.append(normalize(self.pre))
             self.pre = None
         if tag in ('td', 'th') and self.cell is not None:
-            self.row.append(self.cell.strip())
+            self.row.append(table_punctuation(self.cell.strip()))
             self.cell = None
         if tag == 'tr' and self.row is not None:
             self.table.append(self.row)
@@ -58,9 +58,15 @@ def normalize(text):
     return '\n'.join(line.rstrip() for line in text.strip('\n').splitlines())
 
 
+def table_punctuation(text):
+    # Pandoc smart typography changes a double hyphen in a vocabulary name to
+    # an en dash. Normalize that presentation change on both sides only.
+    return text.replace('–', '--')
+
+
 def cell_text(text):
     text = re.sub(r'\[([^\]]+)\]\([^)]*\)', r'\1', text)
-    return text.replace('`', '').replace('**', '').strip()
+    return table_punctuation(text.replace('`', '').replace('**', '').strip())
 
 
 root = Path(__file__).resolve().parents[2]

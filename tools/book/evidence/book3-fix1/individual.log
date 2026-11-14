@@ -1,0 +1,93 @@
+Filesystem      Size  Used Avail Use% Mounted on
+overlay          30G  4.9G   26G  17% /
+duckdb keeps downloaded extensions and secrets in a temporary directory:
+ℹ /tmp/Rtmpz34Ppw/duckdb
+This is removed when the R session ends.
+• Extensions are re-downloaded each session.
+• Secrets are lost.
+ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users).
+ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message).
+ℹ See ?duckdb_storage for details and alternatives.
+$dataset
+[1] "Synthea27Nj"
+
+$archive_bytes
+[1] 3351707
+
+$measurements
+$measurements$rows
+[1] 10040
+
+$measurements$numeric
+[1] 9107
+
+$measurements$mapped_unit
+[1] 8403
+
+$measurements$numeric_and_mapped_unit
+[1] 8403
+
+$measurements$numeric_fraction
+[1] 0.9070717
+
+$measurements$mapped_unit_fraction
+[1] 0.8369522
+
+$measurements$both_fraction
+[1] 0.8369522
+
+$measurements$reference_ranges
+[1] 0
+
+
+duckdb keeps downloaded extensions and secrets in a temporary directory:
+ℹ /tmp/Rtmpz34Ppw/duckdb
+This is removed when the R session ends.
+• Extensions are re-downloaded each session.
+• Secrets are lost.
+ℹ Run duckdb(shared_home = TRUE) (or create ~/.duckdb) to keep them (suitable for most users).
+ℹ Run duckdb(shared_home = FALSE) to accept the temporary directory (and silence this message).
+ℹ See ?duckdb_storage for details and alternatives.
+$gibleed
+$gibleed$dataset
+[1] "GiBleed"
+
+$gibleed$sha256
+[1] "081b82e84c90e2904e02c26546e46412b01cce566071c77e0c4a355c2d0612f9"
+
+$gibleed$measurements
+$gibleed$measurements$rows
+[1] 44053
+
+$gibleed$measurements$numeric_values
+[1] 0
+
+$gibleed$measurements$numeric_with_unit
+[1] 0
+
+
+
+$numeric
+$numeric$dataset
+[1] "Synthea27Nj"
+
+$numeric$sha256
+[1] "cdd3971be325e17b0e872bf4560711ab4c346917ecb079e2faf32badb55cb693"
+
+$numeric$measurements
+$numeric$measurements$rows
+[1] 10040
+
+$numeric$measurements$numeric_values
+[1] 9107
+
+$numeric$measurements$numeric_with_unit
+[1] 8403
+
+
+
+Warning message:
+In read.table(file = file, header = header, sep = sep, quote = quote,  :
+  incomplete final line found by readTableHeader on '../practice-data/book-csv-ff50d78a49b6/GiBleed_5.3/COST.csv'
+PASS: pinned loader -> DuckDB -> SQLite; all 39 tables, every scalar and manifest count; 9,107 numeric values, 8,403 with units
+PASS: documented individual-file placement, setup checks, fresh two-resource loader and all 39 numeric tables/scalars

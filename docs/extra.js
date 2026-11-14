@@ -3,9 +3,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const main = document.querySelector('main');
   if (!main || !document.querySelector('.learn-box')) return;
   document.body.classList.add('book-page');
+  // Keep scientific notation and other numeric results on one line on phones.
+  main.querySelectorAll('td').forEach(cell => {
+    if (/^(?:[<>]\s*)?[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(cell.textContent.trim()))
+      cell.classList.add('book-number');
+  });
   // Preserve every recorded warning, with an explicit expandable label on the
   // one lesson that explains dsBase's single-iteration local setup fits.
-  if (location.pathname.endsWith('/book-15-labs.html')) {
+  if (/book-(15-labs|16-longitudinal)\.html$/.test(location.pathname)) {
     main.querySelectorAll('pre:not(.sourceCode)').forEach(pre => {
       const lines = pre.textContent.trim().split('\n');
       if (!lines.length || !lines.every(line => line.trim() ===

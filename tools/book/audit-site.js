@@ -18,11 +18,12 @@ const path = require('path');
         chapterLinks:document.querySelectorAll('.chapter-sidebar a').length,
         byline:document.querySelector('.page-header')?.innerText.includes('David Sarrat González'),
         copyButtons:document.querySelectorAll('.btn-copy-ex').length,
+        numericNoWrap:[...document.querySelectorAll('td.book-number')].every(td=>getComputedStyle(td).whiteSpace==='nowrap'),
         outputs:document.querySelectorAll('main pre:not(.sourceCode)').length,
         footer:document.querySelector('footer')?.textContent.includes('Book by'),
         headings:[...document.querySelectorAll('h1')].map(x=>x.textContent.trim())}));
       if(book) {
-        if(result.learnBoxes!==1||result.chapterLinks!==18||!result.byline||!result.copyButtons||!result.footer)
+        if(!result.numericNoWrap||result.learnBoxes!==1||result.chapterLinks!==18||!result.byline||!result.copyButtons||!result.footer)
           throw new Error('Book presentation incomplete: '+JSON.stringify({slug,...result}));
         const solution=page.locator('details').filter({has:page.locator('summary',{hasText:'Solution'})}).first();
         await solution.locator(':scope > summary').click();
@@ -36,7 +37,7 @@ const path = require('path');
       }
       if(slug==='articles/book-07-verbal-autopsy' && !result.headings.some(x=>x.startsWith('14.')))
         throw new Error('Stale capstone number');
-      if(['articles/book-06-events','articles/book-15-labs'].includes(slug)) {
+      if(['articles/book-06-events','articles/book-15-labs','articles/book-16-longitudinal'].includes(slug)) {
         await page.locator('div.sourceCode').first().hover();
         await page.locator('.btn-copy-ex').first().click();
         const copied=await page.evaluate(()=>navigator.clipboard.readText());

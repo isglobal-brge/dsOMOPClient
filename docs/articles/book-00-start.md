@@ -55,7 +55,7 @@ dir.create(book_dir, recursive = TRUE, showWarnings = FALSE)
 unzip(file.choose(), exdir = book_dir)
 setwd(book_dir)
 stopifnot(all(file.exists(file.path("tools/book",
-  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R")))),
+  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R", "load-numeric.R")))),
   file.exists("tools/dates/va-native.R"))
 getwd()
 ```
@@ -68,9 +68,12 @@ automatically. Alternatively, save the individual
 [fixture](https://isglobal-brge.github.io/dsOMOPClient/downloads/fixture.R),
 [connection](https://isglobal-brge.github.io/dsOMOPClient/downloads/connection.R),
 [display](https://isglobal-brge.github.io/dsOMOPClient/downloads/display.R)
-and
-[loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-practice.R)
-files under `book-work/tools/book/`. Also create
+and [practice
+loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-practice.R)
+and [numeric
+loader](https://isglobal-brge.github.io/dsOMOPClient/downloads/load-numeric.R)
+files under `book-work/tools/book/`. Keep the numeric loader filename
+`load-numeric.R`; the practice loader sources it. Also create
 `book-work/tools/dates/` and save the [released capstone
 helper](https://isglobal-brge.github.io/dsOMOPClient/downloads/va-native.R)
 there as `va-native.R`; chapter 14’s solution uses it.

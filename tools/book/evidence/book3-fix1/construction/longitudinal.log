@@ -1,0 +1,13 @@
+PRECOMPUTE vignettes/book-16-longitudinal.Rmd.orig
+
+Quitting from vignettes/book-16-longitudinal.Rmd.orig:138-153 [window-variables]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error: omop_recipe(): variable name must be one name matching ^[A-Za-z][A-Za-z0-9_]{0,63}$ (a letter, then up to 63 letters, digits or underscores).
+Execution halted
+Error: Fresh-process chapter failed: vignettes/book-16-longitudinal.Rmd.orig
+Execution halted

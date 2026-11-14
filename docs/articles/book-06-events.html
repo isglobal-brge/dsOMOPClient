@@ -50,6 +50,7 @@
     <li><a class="dropdown-item" href="../articles/book-06-visits.html">13. Visit walkthrough</a></li>
     <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">14. Verbal-autopsy capstone</a></li>
     <li><a class="dropdown-item" href="../articles/book-15-labs.html">15. Working with lab values</a></li>
+    <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data</a></li>
     <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">Appendix A. Reproduction and migration</a></li>
   </ul>
 </li>
@@ -818,9 +819,30 @@
 <span>  high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">mean</span> <span class="op">&gt;=</span> <span class="fl">15</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>, low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">mean</span> <span class="op">&lt;</span> <span class="fl">14</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_lab_bins"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "D_lab_bins"</span></span></code></pre>
+<p><code><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut()</a></code> in dsOMOP 2.10.4 produces character labels. Make a server-side factor with explicitly sequenced levels before tabulating it:</p>
 <div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bins_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_lab_bins$band"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">bins_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">band_levels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"below 14"</span>, <span class="st">"14 to below 15"</span>, <span class="st">"15 or above"</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.asFactor.html" class="external-link">ds.asFactor</a></span><span class="op">(</span><span class="st">"D_lab_bins$band"</span>, newobj.name <span class="op">=</span> <span class="st">"event_band"</span>,</span>
+<span>  forced.factor.levels <span class="op">=</span> <span class="va">band_levels</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $all.unique.levels</span></span>
+<span><span class="co">#&gt; [1] "below 14"       "14 to below 15" "15 or above"   </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $return.message</span></span>
+<span><span class="co">#&gt; [1] "Data object &lt;event_band&gt; correctly created in all specified data sources"</span></span></code></pre>
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.levels.html" class="external-link">ds.levels</a></span><span class="op">(</span><span class="st">"event_band"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$Levels</span></span>
+<span><span class="co">#&gt; [1] "below 14"       "14 to below 15" "15 or above"   </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $site$ValidityMessage</span></span>
+<span><span class="co">#&gt; [1] "VALID ANALYSIS"</span></span></code></pre>
+<p>The levels now run from low to high on the server and in the count table. This is a factor with a declared level sequence, <strong>not R’s <code>ordered</code> class</strong>: <code>ds.asFactor()</code> uses ordinary categorical contrasts, with the first level as reference. Sorting a displayed table alone would not change those model semantics. Do not pass <code>ordered_result</code> to <code><a href="../reference/ds.omop.mutate.html">ds.omop.mutate()</a></code>; that argument is unsupported. For an ordinal display, apply <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">ordered()</a></code> only to the released category labels; it does not make private values available or change the server model.</p>
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bins_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"event_band"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">bin_display</span> <span class="op">&lt;-</span> <span class="fu">book_counts</span><span class="op">(</span><span class="va">bins_result</span><span class="op">)</span></span>
+<span><span class="va">bin_display</span><span class="op">$</span><span class="va">Category</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">ordered</a></span><span class="op">(</span><span class="va">bin_display</span><span class="op">$</span><span class="va">Category</span>, levels <span class="op">=</span> <span class="va">band_levels</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">bin_display</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">bin_display</span><span class="op">$</span><span class="va">Category</span>, na.last <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Category</th>
@@ -828,16 +850,16 @@
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">14 to below 15</td>
+<td align="left">below 14</td>
 <td align="right">9</td>
 </tr>
 <tr class="even">
-<td align="left">15 or above</td>
-<td align="right">10</td>
+<td align="left">14 to below 15</td>
+<td align="right">9</td>
 </tr>
 <tr class="odd">
-<td align="left">below 14</td>
-<td align="right">9</td>
+<td align="left">15 or above</td>
+<td align="right">10</td>
 </tr>
 <tr class="even">
 <td align="left">NA</td>
@@ -845,43 +867,55 @@
 </tr>
 </tbody>
 </table>
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_lab_bins$mean"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $Global.Mean</span></span>
+<span><span class="co">#&gt;                 EstimatedMean Nmissing Nvalid Ntotal</span></span>
+<span><span class="co">#&gt; studiesCombined      14.46679        0     28     28</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $Nstudies</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $ValidityMessage</span></span>
+<span><span class="co">#&gt;      ValidityMessage </span></span>
+<span><span class="co">#&gt; site "VALID ANALYSIS"</span></span></code></pre>
 <details><p><summary>Full aggregate response</summary></p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bins_result</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $output.list</span></span>
 <span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_row.props</span></span>
 <span><span class="co">#&gt;                 study</span></span>
-<span><span class="co">#&gt; D_lab_bins$band  site</span></span>
+<span><span class="co">#&gt; event_band       site</span></span>
+<span><span class="co">#&gt;   below 14          1</span></span>
 <span><span class="co">#&gt;   14 to below 15    1</span></span>
 <span><span class="co">#&gt;   15 or above       1</span></span>
-<span><span class="co">#&gt;   below 14          1</span></span>
 <span><span class="co">#&gt;   NA              NaN</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_col.props</span></span>
 <span><span class="co">#&gt;                 study</span></span>
-<span><span class="co">#&gt; D_lab_bins$band       site</span></span>
+<span><span class="co">#&gt; event_band            site</span></span>
+<span><span class="co">#&gt;   below 14       0.3214286</span></span>
 <span><span class="co">#&gt;   14 to below 15 0.3214286</span></span>
 <span><span class="co">#&gt;   15 or above    0.3571429</span></span>
-<span><span class="co">#&gt;   below 14       0.3214286</span></span>
 <span><span class="co">#&gt;   NA             0.0000000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_counts</span></span>
 <span><span class="co">#&gt;                 study</span></span>
-<span><span class="co">#&gt; D_lab_bins$band  site</span></span>
+<span><span class="co">#&gt; event_band       site</span></span>
+<span><span class="co">#&gt;   below 14          9</span></span>
 <span><span class="co">#&gt;   14 to below 15    9</span></span>
 <span><span class="co">#&gt;   15 or above      10</span></span>
-<span><span class="co">#&gt;   below 14          9</span></span>
 <span><span class="co">#&gt;   NA                0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_proportions</span></span>
-<span><span class="co">#&gt; D_lab_bins$band</span></span>
-<span><span class="co">#&gt; 14 to below 15    15 or above       below 14             NA </span></span>
-<span><span class="co">#&gt;          0.321          0.357          0.321          0.000 </span></span>
+<span><span class="co">#&gt; event_band</span></span>
+<span><span class="co">#&gt;       below 14 14 to below 15    15 or above             NA </span></span>
+<span><span class="co">#&gt;          0.321          0.321          0.357          0.000 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_counts</span></span>
-<span><span class="co">#&gt; D_lab_bins$band</span></span>
-<span><span class="co">#&gt; 14 to below 15    15 or above       below 14             NA </span></span>
-<span><span class="co">#&gt;              9             10              9              0 </span></span>
+<span><span class="co">#&gt; event_band</span></span>
+<span><span class="co">#&gt;       below 14 14 to below 15    15 or above             NA </span></span>
+<span><span class="co">#&gt;              9              9             10              0 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $validity.message</span></span>
@@ -892,7 +926,7 @@
 <h2 id="recorded-abnormal-high-and-abnormal-low-counts">Recorded abnormal-high and abnormal-low counts<a class="anchor" aria-label="anchor" href="#recorded-abnormal-high-and-abnormal-low-counts"></a>
 </h2>
 <p>The dedicated reducers compare each measurement with its own <code>range_high</code> or <code>range_low</code>. They count comparable records outside those bounds.</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ranges</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  high_count <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">measure</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"abnormal_high"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  low_count <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">measure</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"abnormal_low"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -901,7 +935,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">ranges</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_lab_ranges"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         people </span></span>
 <span><span class="co">#&gt; "D_lab_ranges"</span></span></code></pre>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ranges_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_lab_ranges$high_count"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">ranges_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -915,7 +949,7 @@
 </tr></tbody>
 </table>
 <details><p><summary>Full aggregate response</summary></p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ranges_result</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $output.list</span></span>
 <span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_row.props</span></span>
@@ -958,7 +992,7 @@
 </h2>
 <p>Add a count of measurement rows and compare its released mean and quantiles with the measurement-day summary above.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">row_count</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">measure</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"count"</span>, window <span class="op">=</span> <span class="va">history</span>, distinct <span class="op">=</span> <span class="st">"row"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
@@ -966,7 +1000,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">row_count</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_row_count"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;        people </span></span>
 <span><span class="co">#&gt; "D_row_count"</span></span></code></pre>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">solution_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_row_count$rows"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">solution_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -1019,7 +1053,7 @@
 </tbody>
 </table>
 <details><p><summary>Full aggregate response</summary></p>
-<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">solution_result</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
@@ -1039,11 +1073,11 @@
 </h2>
 <p>Using the Synthea columns already assigned, calculate last minus first and summarise the differences. Is this the same quantity as a slope?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_reducers"</span>, change <span class="op">=</span> <span class="va">last</span> <span class="op">-</span> <span class="va">first</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_event_change"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "D_event_change"</span></span></code></pre>
-<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">event_change</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_event_change$change"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">event_change</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">

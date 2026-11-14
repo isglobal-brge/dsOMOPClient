@@ -643,3 +643,7 @@ measurements. [Working with lab
 values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md)
 builds this distinction into a two-connection analysis. Neither shape
 grants access to individual rows.
+
+[Chapter 16](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md)
+develops these choices through irregular measurements, server reshaping,
+a discrete-time hazard and pooled mixed models.

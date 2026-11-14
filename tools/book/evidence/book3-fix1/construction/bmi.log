@@ -1,0 +1,289 @@
+dsOMOP v2.10.4 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+
+Logging into the collaborating servers
+[dsomop-audit] 2026-11-14T05:26:03+0000 method=omopPlanExecuteDS detail={"outputs":"long","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"hb":{"table":"measurement","concept_set":{"concepts":[3038553],"include_descendants":false},"value":{"column":"value_as_number"},"where":{"var":"unit_concept_id","op":"==","value":9531}}},"populations":{"entry":{"kind":"index","index":{"source":{"event":"hb"},"select":"first"}}},"outputs":{"long":{"rows":"entry","format":"long","grain":"episode","result_symbol":"D_long","sources":[{"event":"hb"}],"options":{"columns_derived":["value","unit","days_since_previous"]}}},"publish":["long"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T05:26:04+0000 method=publication detail={"output":"long","component":"long","passed":true}
+[dsomop-audit] 2026-11-14T05:26:04+0000 method=omopPlanExecuteDS detail={"outputs":"long","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"hb":{"table":"measurement","concept_set":{"concepts":[3038553],"include_descendants":false},"value":{"column":"value_as_number"},"where":{"var":"unit_concept_id","op":"==","value":9531}}},"populations":{"entry":{"kind":"index","index":{"source":{"event":"hb"},"select":"first"}}},"outputs":{"long":{"rows":"entry","format":"long","grain":"episode","result_symbol":"D_long","sources":[{"event":"hb"}],"options":{"columns_derived":["value","unit","days_since_previous"]}}},"publish":["long"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T05:26:05+0000 method=publication detail={"output":"long","component":"long","passed":true}
+    long
+"D_long"
+Registered S3 method overwritten by 'gamlss':
+  method   from
+  print.ri bit
+$north
+ [1] "row_id"                      "cohort_row_id"
+ [3] "person_id"                   "concept_id"
+ [5] "start_date"                  "end_date"
+ [7] "measurement_type_concept_id" "value_as_concept_id"
+ [9] "meas_event_field_concept_id" "days_since_previous"
+[11] "value"                       "unit_concept_id"
+
+$south
+ [1] "row_id"                      "cohort_row_id"
+ [3] "person_id"                   "concept_id"
+ [5] "start_date"                  "end_date"
+ [7] "measurement_type_concept_id" "value_as_concept_id"
+ [9] "meas_event_field_concept_id" "days_since_previous"
+[11] "value"                       "unit_concept_id"
+
+  row_id cohort_row_id
+1      1             1
+2      1             1
+3      1             1
+4      1             1
+5      1             1
+6      1             1
+                                                                                            person_id
+1 p2df70561554fbfd92a70ef86e301b2a57.80f85726485355a5edfe3bf69b82ff5ec3d0f2bf86c459af911d9ff2271ef3fc
+2 p2df70561554fbfd92a70ef86e301b2a57.80f85726485355a5edfe3bf69b82ff5ec3d0f2bf86c459af911d9ff2271ef3fc
+3 p2df70561554fbfd92a70ef86e301b2a57.80f85726485355a5edfe3bf69b82ff5ec3d0f2bf86c459af911d9ff2271ef3fc
+4 p2df70561554fbfd92a70ef86e301b2a57.80f85726485355a5edfe3bf69b82ff5ec3d0f2bf86c459af911d9ff2271ef3fc
+5 p2df70561554fbfd92a70ef86e301b2a57.80f85726485355a5edfe3bf69b82ff5ec3d0f2bf86c459af911d9ff2271ef3fc
+6 p2df70561554fbfd92a70ef86e301b2a57.80f85726485355a5edfe3bf69b82ff5ec3d0f2bf86c459af911d9ff2271ef3fc
+                     concept_id start_date end_date measurement_type_concept_id
+1 Body mass index (BMI) [Ratio]          0        0                    38000267
+2 Body mass index (BMI) [Ratio]        371      371                    38000267
+3 Body mass index (BMI) [Ratio]        742      742                    38000267
+4 Body mass index (BMI) [Ratio]       1113     1113                    38000267
+5 Body mass index (BMI) [Ratio]       1484     1484                    38000267
+6 Body mass index (BMI) [Ratio]       1855     1855                    38000267
+  value_as_concept_id meas_event_field_concept_id days_since_previous value
+1                   0                        <NA>                  NA  17.2
+2                   0                        <NA>                 371  16.6
+3                   0                        <NA>                 371  16.0
+4                   0                        <NA>                 371  16.3
+5                   0                        <NA>                 371  16.7
+6                   0                        <NA>                 371  16.6
+            unit_concept_id
+1 kilogram per square meter
+2 kilogram per square meter
+3 kilogram per square meter
+4 kilogram per square meter
+5 kilogram per square meter
+6 kilogram per square meter
+[dsomop-audit] 2026-11-14T05:26:07+0000 method=omopMutateDS detail={"columns":["years","high"]}
+[dsomop-audit] 2026-11-14T05:26:07+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[dsomop-audit] 2026-11-14T05:26:07+0000 method=omopMutateDS detail={"columns":["years","high"]}
+[dsomop-audit] 2026-11-14T05:26:07+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[1] "D_repeat"
+$output.summary
+$output.summary$study1
+Linear mixed model fit by REML ['lmerMod']
+Formula: value ~ years + (1 | person_id)
+   Data: dataDF
+Weights: weights.to.use
+ Offset: offset.to.use
+Control: control.obj
+
+REML criterion at convergence: 644.3
+
+Scaled residuals:
+   Min     1Q Median     3Q    Max
+    NA     NA     NA     NA     NA
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ person_id (Intercept) 23.604   4.858
+ Residual               2.072   1.439
+Number of obs: 163, groups:  person_id, 13
+
+Fixed effects:
+            Estimate Std. Error t value
+(Intercept) 21.95625    1.36685  16.063
+years        0.20081    0.02106   9.536
+
+Correlation of Fixed Effects:
+      (Intr)
+years -0.116
+
+$output.summary$study2
+Linear mixed model fit by REML ['lmerMod']
+Formula: value ~ years + (1 | person_id)
+   Data: dataDF
+Weights: weights.to.use
+ Offset: offset.to.use
+Control: control.obj
+
+REML criterion at convergence: 1227.9
+
+Scaled residuals:
+   Min     1Q Median     3Q    Max
+    NA     NA     NA     NA     NA
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ person_id (Intercept) 25.076   5.008
+ Residual               3.996   1.999
+Number of obs: 275, groups:  person_id, 14
+
+Fixed effects:
+            Estimate Std. Error t value
+(Intercept) 24.72821    1.35876  18.199
+years        0.09378    0.02245   4.178
+
+Correlation of Fixed Effects:
+      (Intr)
+years -0.137
+
+$output.summary$input.beta.matrix.for.SLMA
+            betas study 1 betas study 2
+(Intercept)    21.9562478   24.72820764
+years           0.2008079    0.09377509
+
+$output.summary$input.se.matrix.for.SLMA
+            ses study 1 ses study 2
+(Intercept)  1.36685040  1.35875726
+years        0.02105779  0.02244575
+
+
+$num.valid.studies
+[1] 2
+
+$betamatrix.all
+            betas study 1 betas study 2
+(Intercept)    21.9562478   24.72820764
+years           0.2008079    0.09377509
+
+$sematrix.all
+            ses study 1 ses study 2
+(Intercept)  1.36685040  1.35875726
+years        0.02105779  0.02244575
+
+$betamatrix.valid
+            betas study 1 betas study 2
+(Intercept)    21.9562478   24.72820764
+years           0.2008079    0.09377509
+
+$sematrix.valid
+            ses study 1 ses study 2
+(Intercept)  1.36685040  1.35875726
+years        0.02105779  0.02244575
+
+$SLMA.pooled.ests.matrix
+             pooled.ML      se.ML pooled.REML    se.REML  pooled.FE      se.FE
+(Intercept) 23.3501858 0.98000350  23.3462066 1.38597422 23.3504584 0.96363508
+years        0.1478557 0.03783761   0.1475736 0.05351567  0.1507029 0.01535735
+
+$Convergence.error.message
+[1] "Study1: no convergence error reported"
+[2] "Study2: no convergence error reported"
+
+Warning message:
+the ‘nobars’ function has moved to the reformulas package. Please update your imports, or ask an upstream package maintainer to do so.
+$output.summary
+$output.summary$study1
+Generalized linear mixed model fit by maximum likelihood (Laplace
+  Approximation) [glmerMod]
+ Family: binomial  ( logit )
+Formula: high ~ years + (1 | person_id)
+   Data: dataDF
+Weights: weights
+ Offset: offset
+Control: control.obj
+
+      AIC       BIC    logLik -2*log(L)  df.resid
+     56.5      65.8     -25.3      50.5       160
+
+Scaled residuals:
+   Min     1Q Median     3Q    Max
+    NA     NA     NA     NA     NA
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ person_id (Intercept) 299.6    17.31
+Number of obs: 163, groups:  person_id, 13
+
+Fixed effects:
+            Estimate Std. Error z value Pr(>|z|)
+(Intercept)  -9.3739     5.2843  -1.774   0.0761 .
+years         1.2806     0.6717   1.907   0.0566 .
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+      (Intr)
+years -0.540
+
+$output.summary$study2
+Generalized linear mixed model fit by maximum likelihood (Laplace
+  Approximation) [glmerMod]
+ Family: binomial  ( logit )
+Formula: high ~ years + (1 | person_id)
+   Data: dataDF
+Weights: weights
+ Offset: offset
+Control: control.obj
+
+      AIC       BIC    logLik -2*log(L)  df.resid
+    134.5     145.4     -64.3     128.5       272
+
+Scaled residuals:
+   Min     1Q Median     3Q    Max
+    NA     NA     NA     NA     NA
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ person_id (Intercept) 154.7    12.44
+Number of obs: 275, groups:  person_id, 14
+
+Fixed effects:
+            Estimate Std. Error z value Pr(>|z|)
+(Intercept)  9.25040    3.00339   3.080  0.00207 **
+years        0.00147    0.05283   0.028  0.97780
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+      (Intr)
+years -0.239
+
+$output.summary$input.beta.matrix.for.SLMA
+            betas study 1 betas study 2
+(Intercept)     -9.373853   9.250400740
+years            1.280618   0.001470181
+
+$output.summary$input.se.matrix.for.SLMA
+            ses study 1 ses study 2
+(Intercept)   5.2843351  3.00338542
+years         0.6716718  0.05283151
+
+
+$num.valid.studies
+[1] 2
+
+$betamatrix.all
+            betas study 1 betas study 2
+(Intercept)     -9.373853   9.250400740
+years            1.280618   0.001470181
+
+$sematrix.all
+            ses study 1 ses study 2
+(Intercept)   5.2843351  3.00338542
+years         0.6716718  0.05283151
+
+$betamatrix.valid
+            betas study 1 betas study 2
+(Intercept)     -9.373853   9.250400740
+years            1.280618   0.001470181
+
+$sematrix.valid
+            ses study 1 ses study 2
+(Intercept)   5.2843351  3.00338542
+years         0.6716718  0.05283151
+
+$SLMA.pooled.ests.matrix
+              pooled.ML      se.ML pooled.REML   se.REML   pooled.FE      se.FE
+(Intercept) 0.965798043 6.50449661   0.4457806 9.2982873 4.703128205 2.61111738
+years       0.009347515 0.05270945   0.4657898 0.6150939 0.009335456 0.05266884
+
+$Convergence.error.message
+[1] "Study1: no convergence error reported"
+[2] "Study2: no convergence error reported"
+
+Ran 4/4 deferred expressions

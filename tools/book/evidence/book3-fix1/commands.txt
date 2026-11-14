@@ -1,0 +1,13 @@
+Source: e2dd68d (docs/book); server: 18b096ffa72feb27dd7f99fcc2cf1ab43a10dae9 (read-only).
+RTEST_WITH='/workspace/dsomop/wt/book/dsOMOP /workspace/dsomop/wt/book/dsOMOPClient' RTEST_ENV='R_LIBS_USER=/root/rt/labels-deps' /workspace/dsomop/tools/rtest.sh /workspace/dsomop/wt/book/dsOMOPClient '^book-examples$' 1800
+Exactly tests/testthat/test-book-examples.R; no full package suites.
+On the pod, from /root/rt/wt/book/dsOMOPClient:
+  R_LIBS=/root/rt/wt/book/lib R_LIBS_USER=/root/rt/labels-deps Rscript tools/book/build-site.R
+  R_LIBS=/root/rt/wt/book/lib R_LIBS_USER=/root/rt/labels-deps Rscript tools/book/verify-bundle.R
+  R_LIBS=/root/rt/wt/book/lib R_LIBS_USER=/root/rt/labels-deps Rscript tools/book/verify-individual.R
+Locally, from /workspace/dsomop/wt/book/dsOMOPClient:
+  python3 tools/book/audit-content.py
+  python3 tools/book/audit-outputs.py
+  PLAYWRIGHT_BROWSERS_PATH=/home/dev/.cache/ms-playwright NODE_PATH=/usr/local/lib/node_modules node tools/book/audit-site.js
+The only expected lesson diagnostics are the explained dsBase local one-iteration GLM warnings (chapters 15 and 16), the explained upstream nobars deprecation (chapter 16), and the pre-existing explicitly marked privacy refusals (chapter 12).
+After the full build and screenshot review, refreshed only assets with pkgdown::init_site(), then repeated all browser and content/output checks. Numeric table cells now keep scientific notation on one line.

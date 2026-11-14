@@ -1,0 +1,63 @@
+dsOMOP v2.10.4 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+
+Logging into the collaborating servers
+[dsomop-audit] 2026-11-14T05:23:00+0000 method=omopPlanExecuteDS detail={"outputs":"long","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"hb":{"table":"measurement","concept_set":{"concepts":[3000963],"include_descendants":false},"value":{"column":"value_as_number"},"where":{"var":"unit_concept_id","op":"==","value":8713}}},"populations":{"entry":{"kind":"index","index":{"source":{"event":"hb"},"select":"first"}}},"outputs":{"long":{"rows":"entry","format":"long","grain":"episode","result_symbol":"D_long","sources":[{"event":"hb"}]}},"publish":["long"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T05:23:01+0000 method=publication detail={"output":"long","component":"long","passed":true}
+[dsomop-audit] 2026-11-14T05:23:01+0000 method=omopPlanExecuteDS detail={"outputs":"long","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"hb":{"table":"measurement","concept_set":{"concepts":[3000963],"include_descendants":false},"value":{"column":"value_as_number"},"where":{"var":"unit_concept_id","op":"==","value":8713}}},"populations":{"entry":{"kind":"index","index":{"source":{"event":"hb"},"select":"first"}}},"outputs":{"long":{"rows":"entry","format":"long","grain":"episode","result_symbol":"D_long","sources":[{"event":"hb"}]}},"publish":["long"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T05:23:02+0000 method=publication detail={"output":"long","component":"long","passed":true}
+    long
+"D_long"
+Registered S3 method overwritten by 'gamlss':
+  method   from
+  print.ri bit
+$north
+[1] "row_id"                      "cohort_row_id"
+[3] "person_id"                   "concept_id"
+[5] "start_date"                  "end_date"
+[7] "measurement_type_concept_id" "value_as_concept_id"
+[9] "meas_event_field_concept_id"
+
+$south
+[1] "row_id"                      "cohort_row_id"
+[3] "person_id"                   "concept_id"
+[5] "start_date"                  "end_date"
+[7] "measurement_type_concept_id" "value_as_concept_id"
+[9] "meas_event_field_concept_id"
+
+  row_id cohort_row_id
+1      1             1
+2      1             1
+3      1             1
+4      1             1
+5      2             2
+6      2             2
+                                                                                            person_id
+1 p2c02b13bd0aa6ac230c7cfb031829476b.992ef6c9834f04b4831ed9bc7cb0ddf389274c54c9a021ea300845b1ea259bec
+2 p2c02b13bd0aa6ac230c7cfb031829476b.992ef6c9834f04b4831ed9bc7cb0ddf389274c54c9a021ea300845b1ea259bec
+3 p2c02b13bd0aa6ac230c7cfb031829476b.992ef6c9834f04b4831ed9bc7cb0ddf389274c54c9a021ea300845b1ea259bec
+4 p2c02b13bd0aa6ac230c7cfb031829476b.992ef6c9834f04b4831ed9bc7cb0ddf389274c54c9a021ea300845b1ea259bec
+5 p27bdbb5a29d0be32a0d90ff93afb6348a.fc28887d4babed0ad473a4276142c5b9c77ec0ba9a59dc4ee0bac208fdd278bd
+6 p27bdbb5a29d0be32a0d90ff93afb6348a.fc28887d4babed0ad473a4276142c5b9c77ec0ba9a59dc4ee0bac208fdd278bd
+                         concept_id start_date end_date
+1 Hemoglobin [Mass/volume] in Blood          0        0
+2 Hemoglobin [Mass/volume] in Blood       1855     1855
+3 Hemoglobin [Mass/volume] in Blood       3710     3710
+4 Hemoglobin [Mass/volume] in Blood       5565     5565
+5 Hemoglobin [Mass/volume] in Blood          0        0
+6 Hemoglobin [Mass/volume] in Blood       2177     2177
+  measurement_type_concept_id value_as_concept_id meas_event_field_concept_id
+1                    38000267                   0                        <NA>
+2                    38000267                   0                        <NA>
+3                    38000267                   0                        <NA>
+4                    38000267                   0                        <NA>
+5                    38000267                   0                        <NA>
+6                    38000267                   0                        <NA>
+Error: No OMOP session 'omop'. Call ds.omop.connect() first.
+Execution halted
+Ran 4/4 deferred expressions

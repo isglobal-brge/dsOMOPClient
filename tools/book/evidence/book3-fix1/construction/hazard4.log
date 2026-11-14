@@ -1,0 +1,186 @@
+dsOMOP v2.10.4 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+
+Logging into the collaborating servers
+[dsomop-audit] 2026-11-14T05:30:15+0000 method=omopPlanExecuteDS detail={"outputs":"risk","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"hb":{"table":"measurement","concept_set":{"concepts":[3000963],"include_descendants":false},"value":{"column":"value_as_number"},"where":{"var":"unit_concept_id","op":"==","value":8713}},"death":{"table":"death"}},"populations":{"entry":{"kind":"index","index":{"source":{"event":"hb"},"select":"first"}}},"variables":{"next_day":{"source":{"event":"hb"},"reducer":{"fn":"first_date","window":{"start":1,"end":null,"anchor":"index"}}},"death_day":{"source":{"event":"death"},"reducer":{"fn":"first_date"}}},"outputs":{"daily":{"rows":"entry","format":"person_period","grain":"episode","result_symbol":"D_daily","options":{"sources":[{"event":"hb"}],"window":{"start":1,"end":7300,"anchor":"index"},"representation":"dense","analyses":["count"],"bins":{"width":1}}},"ends":{"rows":"entry","format":"wide","grain":"episode","result_symbol":"D_ends"},"risk":{"rows":"entry","format":"joined","grain":"episode","result_symbol":"D_risk","options":{"how":"left","cardinality":"many_to_one","from":[{"output":"daily"},{"output":"ends"}]}}},"publish":["risk"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T05:30:18+0000 method=publication detail={"output":"risk","component":"risk","passed":true}
+[dsomop-audit] 2026-11-14T05:30:18+0000 method=omopPlanExecuteDS detail={"outputs":"risk","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"hb":{"table":"measurement","concept_set":{"concepts":[3000963],"include_descendants":false},"value":{"column":"value_as_number"},"where":{"var":"unit_concept_id","op":"==","value":8713}},"death":{"table":"death"}},"populations":{"entry":{"kind":"index","index":{"source":{"event":"hb"},"select":"first"}}},"variables":{"next_day":{"source":{"event":"hb"},"reducer":{"fn":"first_date","window":{"start":1,"end":null,"anchor":"index"}}},"death_day":{"source":{"event":"death"},"reducer":{"fn":"first_date"}}},"outputs":{"daily":{"rows":"entry","format":"person_period","grain":"episode","result_symbol":"D_daily","options":{"sources":[{"event":"hb"}],"window":{"start":1,"end":7300,"anchor":"index"},"representation":"dense","analyses":["count"],"bins":{"width":1}}},"ends":{"rows":"entry","format":"wide","grain":"episode","result_symbol":"D_ends"},"risk":{"rows":"entry","format":"joined","grain":"episode","result_symbol":"D_risk","options":{"how":"left","cardinality":"many_to_one","from":[{"output":"daily"},{"output":"ends"}]}}},"publish":["risk"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T05:30:20+0000 method=publication detail={"output":"risk","component":"risk","passed":true}
+    risk
+"D_days"
+Registered S3 method overwritten by 'gamlss':
+  method   from
+  print.ri bit
+$north
+[1] "row_id"            "cohort_row_id"     "person_id"
+[4] "period_start_days" "period_end_days"   "days"
+[7] "hb_count"          "next_day"          "death_day"
+
+$south
+[1] "row_id"            "cohort_row_id"     "person_id"
+[4] "period_start_days" "period_end_days"   "days"
+[7] "hb_count"          "next_day"          "death_day"
+
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=omopMutateDS detail={"columns":["to_next","to_death"]}
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=omopMutateDS detail={"columns":["to_next","to_death"]}
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[1] "D_remaining"
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=omopFilterDS detail={"expr":true,"columns":["to_next","to_death"]}
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=omopFilterDS detail={"expr":true,"columns":["to_next","to_death"]}
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[1] "D_risk"
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=omopMutateDS detail={"columns":["event","years"]}
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=omopMutateDS detail={"columns":["event","years"]}
+[dsomop-audit] 2026-11-14T05:30:21+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[1] "D_hazard"
+
+Data in all studies were valid
+
+
+Study1: No errors reported from this study
+
+Study2: No errors reported from this study
+
+
+
+$output.list
+$output.list$TABLE_rvar.by.study_row.props
+              study
+D_hazard$event     north     south
+            0  0.4930257 0.5069743
+            1  0.4400000 0.5600000
+            NA       NaN       NaN
+
+$output.list$TABLE_rvar.by.study_col.props
+              study
+D_hazard$event       north        south
+            0  0.999540518 0.9994313566
+            1  0.000459482 0.0005686434
+            NA 0.000000000 0.0000000000
+
+$output.list$TABLE_rvar.by.study_counts
+              study
+D_hazard$event north south
+            0  23929 24606
+            1     11    14
+            NA     0     0
+
+$output.list$TABLES.COMBINED_all.sources_proportions
+D_hazard$event
+       0        1       NA
+0.999000 0.000515 0.000000
+
+$output.list$TABLES.COMBINED_all.sources_counts
+D_hazard$event
+    0     1    NA
+48535    25     0
+
+
+$validity.message
+[1] "Data in all studies were valid"
+
+Iteration 1...
+CURRENT DEVIANCE:      67318.4541759819
+Iteration 2...
+CURRENT DEVIANCE:      12450.8452740703
+Iteration 3...
+CURRENT DEVIANCE:      4317.01598720101
+Iteration 4...
+CURRENT DEVIANCE:      1711.02235236
+Iteration 5...
+CURRENT DEVIANCE:      819.206259573562
+Iteration 6...
+CURRENT DEVIANCE:      518.649166763578
+Iteration 7...
+CURRENT DEVIANCE:      421.176228174739
+Iteration 8...
+CURRENT DEVIANCE:      386.98512331722
+Iteration 9...
+CURRENT DEVIANCE:      373.694059888039
+Iteration 10...
+CURRENT DEVIANCE:      369.944719641628
+Iteration 11...
+CURRENT DEVIANCE:      369.512810840881
+Iteration 12...
+CURRENT DEVIANCE:      369.50519907875
+Iteration 13...
+CURRENT DEVIANCE:      369.505196244512
+SUMMARY OF MODEL STATE after iteration 13
+Current deviance 369.505196244512 on 48558 degrees of freedom
+Convergence criterion TRUE (7.66828394212322e-09)
+
+beta: -12.9552652677094 1.29446238286623
+
+Information matrix overall:
+            (Intercept)    years
+(Intercept)     24.9379 126.4710
+years          126.4710 659.5882
+
+Score vector overall:
+                     [,1]
+(Intercept) -1.414763e-06
+years       -4.738755e-06
+
+Current deviance: 369.505196244512
+
+$Nvalid
+[1] 48560
+
+$Nmissing
+[1] 0
+
+$Ntotal
+[1] 48560
+
+$disclosure.risk
+There were 28 warnings (use warnings() to see them)
+      RISK OF DISCLOSURE
+north                  0
+south                  0
+
+$errorMessage
+      ERROR MESSAGES
+north "No errors"
+south "No errors"
+
+$nsubs
+[1] 48560
+
+$iter
+[1] 13
+
+$family
+
+Family: binomial
+Link function: logit
+
+
+$formula
+[1] "event ~ years"
+
+$coefficients
+              Estimate Std. Error   z-value      p-value low0.95CI.LP
+(Intercept) -12.955265  1.2055591 -10.74627 6.170559e-27   -15.318118
+years         1.294462  0.2344132   5.52214 3.348959e-08     0.835021
+            high0.95CI.LP         P_OR low0.95CI.P_OR high0.95CI.P_OR
+(Intercept)    -10.592413 2.363735e-06   2.225492e-07    2.510514e-05
+years            1.753904 3.649034e+00   2.304862e+00    5.777111e+00
+
+$dev
+[1] 369.5052
+
+$df
+[1] 48558
+
+$output.information
+[1] "SEE TOP OF OUTPUT FOR INFORMATION ON MISSING DATA AND ERROR MESSAGES"
+
+Ran 4/4 deferred expressions

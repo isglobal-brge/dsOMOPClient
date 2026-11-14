@@ -1,0 +1,7 @@
+PRECOMPUTE vignettes/book-16-longitudinal.Rmd.orig
+linear source-fit maximum coefficient difference: 0; maximum SE difference: 0
+binary source-fit maximum coefficient difference: 0; maximum SE difference: 0
+LONGITUDINAL PASS: source windows/missingness, reshape, observation-censored first-event daily risk set, central GLM, both site mixed models and inverse-variance pooling
+ASSERTIONS PASS book-16-longitudinal.Rmd.orig
+All chapter chunks executed successfully
+All chapters passed in separate R processes using visible setup

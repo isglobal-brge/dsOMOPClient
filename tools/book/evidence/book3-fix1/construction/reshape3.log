@@ -1,0 +1,38 @@
+[1] "/tmp/RtmpN5v7t2/fileeaae351cecfb5"
+[1] "D_windows"
+$site
+[1] "omop.table" "data.frame"
+
+$site
+[1] "row_id"        "cohort_row_id" "person_id"     "first1"
+[5] "first2"        "first3"        "last1"         "last2"
+[9] "last3"
+
+[1] "first.1"
+$site
+[1] "numeric"
+
+named list()
+[1] "first.2"
+$site
+[1] "numeric"
+
+named list()
+[1] "first.3"
+$site
+[1] "numeric"
+
+named list()
+Error:
+! There are some DataSHIELD errors:
+✖ [1m[33msite[39m: argument is of length zero[22m
+Backtrace:
+    ▆
+ 1. ├─base::print(...)
+ 2. └─dsBaseClient::ds.dataFrame(...)
+ 3.   └─DSI::datashield.assign(datasources[std], newobj, cally)
+ 4.     └─DSI::datashield.assign.expr(...)
+ 5.       └─DSI:::.handle_errors(errors.print)
+ 6.         └─cli::cli_abort(...)
+ 7.           └─rlang::abort(...)
+Execution halted

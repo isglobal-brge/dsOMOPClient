@@ -69,3 +69,5 @@ main .table { display: block; max-width: 100%; overflow-x: auto; }
   .mobile-contents ul { list-style: none; padding-left: .5rem; }
   .mobile-contents li { padding: .2rem 0; }
 }
+
+.book-page td.book-number { white-space: nowrap; font-variant-numeric: tabular-nums; }

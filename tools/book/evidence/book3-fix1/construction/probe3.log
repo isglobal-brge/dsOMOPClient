@@ -1,0 +1,303 @@
+dsOMOP v2.10.4 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+
+Logging into the collaborating servers
+[dsomop-audit] 2026-11-14T05:25:21+0000 method=omopPlanExecuteDS detail={"outputs":"long","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"hb":{"table":"measurement","concept_set":{"concepts":[3000963],"include_descendants":false},"value":{"column":"value_as_number"},"where":{"var":"unit_concept_id","op":"==","value":8713}}},"populations":{"entry":{"kind":"index","index":{"source":{"event":"hb"},"select":"first"}}},"outputs":{"long":{"rows":"entry","format":"long","grain":"episode","result_symbol":"D_long","sources":[{"event":"hb"}],"options":{"columns_derived":["value","unit","days_since_previous"]}}},"publish":["long"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T05:25:22+0000 method=publication detail={"output":"long","component":"long","passed":true}
+[dsomop-audit] 2026-11-14T05:25:22+0000 method=omopPlanExecuteDS detail={"outputs":"long","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"hb":{"table":"measurement","concept_set":{"concepts":[3000963],"include_descendants":false},"value":{"column":"value_as_number"},"where":{"var":"unit_concept_id","op":"==","value":8713}}},"populations":{"entry":{"kind":"index","index":{"source":{"event":"hb"},"select":"first"}}},"outputs":{"long":{"rows":"entry","format":"long","grain":"episode","result_symbol":"D_long","sources":[{"event":"hb"}],"options":{"columns_derived":["value","unit","days_since_previous"]}}},"publish":["long"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T05:25:23+0000 method=publication detail={"output":"long","component":"long","passed":true}
+    long
+"D_long"
+Registered S3 method overwritten by 'gamlss':
+  method   from
+  print.ri bit
+$north
+ [1] "row_id"                      "cohort_row_id"
+ [3] "person_id"                   "concept_id"
+ [5] "start_date"                  "end_date"
+ [7] "measurement_type_concept_id" "value_as_concept_id"
+ [9] "meas_event_field_concept_id" "days_since_previous"
+[11] "value"                       "unit_concept_id"
+
+$south
+ [1] "row_id"                      "cohort_row_id"
+ [3] "person_id"                   "concept_id"
+ [5] "start_date"                  "end_date"
+ [7] "measurement_type_concept_id" "value_as_concept_id"
+ [9] "meas_event_field_concept_id" "days_since_previous"
+[11] "value"                       "unit_concept_id"
+
+  row_id cohort_row_id
+1      1             1
+2      1             1
+3      1             1
+4      1             1
+5      2             2
+6      2             2
+                                                                                            person_id
+1 p2ffd54436244982e7b51bfb4dc7c08983.76560d4549966fff423ffab39c97890bd2a2b4dd9af7c551c5a32c1962516c50
+2 p2ffd54436244982e7b51bfb4dc7c08983.76560d4549966fff423ffab39c97890bd2a2b4dd9af7c551c5a32c1962516c50
+3 p2ffd54436244982e7b51bfb4dc7c08983.76560d4549966fff423ffab39c97890bd2a2b4dd9af7c551c5a32c1962516c50
+4 p2ffd54436244982e7b51bfb4dc7c08983.76560d4549966fff423ffab39c97890bd2a2b4dd9af7c551c5a32c1962516c50
+5 p2e08978d3b47b893a3d58963fcaccebee.64ff3c86a9d355709c6c79c5ca25195e9335b31cd82f5bfcd56c89a78edf577f
+6 p2e08978d3b47b893a3d58963fcaccebee.64ff3c86a9d355709c6c79c5ca25195e9335b31cd82f5bfcd56c89a78edf577f
+                         concept_id start_date end_date
+1 Hemoglobin [Mass/volume] in Blood          0        0
+2 Hemoglobin [Mass/volume] in Blood       1855     1855
+3 Hemoglobin [Mass/volume] in Blood       3710     3710
+4 Hemoglobin [Mass/volume] in Blood       5565     5565
+5 Hemoglobin [Mass/volume] in Blood          0        0
+6 Hemoglobin [Mass/volume] in Blood       2177     2177
+  measurement_type_concept_id value_as_concept_id meas_event_field_concept_id
+1                    38000267                   0                        <NA>
+2                    38000267                   0                        <NA>
+3                    38000267                   0                        <NA>
+4                    38000267                   0                        <NA>
+5                    38000267                   0                        <NA>
+6                    38000267                   0                        <NA>
+  days_since_previous value    unit_concept_id
+1                  NA  13.3 gram per deciliter
+2                1855  14.4 gram per deciliter
+3                1855  16.1 gram per deciliter
+4                1855  15.3 gram per deciliter
+5                  NA  16.0 gram per deciliter
+6                2177  17.2 gram per deciliter
+[dsomop-audit] 2026-11-14T05:25:25+0000 method=omopMutateDS detail={"columns":["years","high"]}
+[dsomop-audit] 2026-11-14T05:25:25+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[dsomop-audit] 2026-11-14T05:25:25+0000 method=omopMutateDS detail={"columns":["years","high"]}
+[dsomop-audit] 2026-11-14T05:25:25+0000 method=publication detail={"output":"result","component":"result","passed":true}
+[1] "D_repeat"
+boundary (singular) fit: see help('isSingular')
+$output.summary
+$output.summary$study1
+Linear mixed model fit by REML ['lmerMod']
+Formula: value ~ years + (1 | person_id)
+   Data: dataDF
+Weights: weights.to.use
+ Offset: offset.to.use
+Control: control.obj
+
+REML criterion at convergence: 213.5
+
+Scaled residuals:
+   Min     1Q Median     3Q    Max
+    NA     NA     NA     NA     NA
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ person_id (Intercept) 0.167    0.4087
+ Residual              2.718    1.6485
+Number of obs: 54, groups:  person_id, 14
+
+Fixed effects:
+            Estimate Std. Error t value
+(Intercept) 13.96970    0.39683  35.203
+years        0.06167    0.04024   1.532
+
+Correlation of Fixed Effects:
+      (Intr)
+years -0.754
+
+$output.summary$study2
+Linear mixed model fit by REML ['lmerMod']
+Formula: value ~ years + (1 | person_id)
+   Data: dataDF
+Weights: weights.to.use
+ Offset: offset.to.use
+Control: control.obj
+
+REML criterion at convergence: 232.3
+
+Scaled residuals:
+   Min     1Q Median     3Q    Max
+    NA     NA     NA     NA     NA
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ person_id (Intercept) 0.000    0.000
+ Residual              4.087    2.022
+Number of obs: 54, groups:  person_id, 14
+
+Fixed effects:
+            Estimate Std. Error t value
+(Intercept) 14.01473    0.43247   32.41
+years        0.06954    0.04764    1.46
+
+Correlation of Fixed Effects:
+      (Intr)
+years -0.772
+optimizer (nloptwrap) convergence code: 0 (OK)
+boundary (singular) fit: see help('isSingular')
+
+
+$output.summary$input.beta.matrix.for.SLMA
+            betas study 1 betas study 2
+(Intercept)   13.96969530   14.01473301
+years          0.06166878    0.06954383
+
+$output.summary$input.se.matrix.for.SLMA
+            ses study 1 ses study 2
+(Intercept)  0.39682964  0.43247093
+years        0.04024358  0.04763907
+
+
+$num.valid.studies
+[1] 2
+
+$betamatrix.all
+            betas study 1 betas study 2
+(Intercept)   13.96969530   14.01473301
+years          0.06166878    0.06954383
+
+$sematrix.all
+            ses study 1 ses study 2
+(Intercept)  0.39682964  0.43247093
+years        0.04024358  0.04763907
+
+$betamatrix.valid
+            betas study 1 betas study 2
+(Intercept)   13.96969530   14.01473301
+years          0.06166878    0.06954383
+
+$sematrix.valid
+            ses study 1 ses study 2
+(Intercept)  0.39682964  0.43247093
+years        0.04024358  0.04763907
+
+$SLMA.pooled.ests.matrix
+              pooled.ML      se.ML pooled.REML    se.REML   pooled.FE
+(Intercept) 13.99028212 0.29239056 13.99028212 0.29239056 13.99028212
+years        0.06494826 0.03074252  0.06494826 0.03074252  0.06494826
+                 se.FE
+(Intercept) 0.29239056
+years       0.03074252
+
+$Convergence.error.message
+[1] "Study1: no convergence error reported"
+[2] "Study2: boundary (singular) fit: see help('isSingular')"
+
+Warning message:
+the ‘nobars’ function has moved to the reformulas package. Please update your imports, or ask an upstream package maintainer to do so.
+boundary (singular) fit: see help('isSingular')
+boundary (singular) fit: see help('isSingular')
+$output.summary
+$output.summary$study1
+Generalized linear mixed model fit by maximum likelihood (Laplace
+  Approximation) [glmerMod]
+ Family: binomial  ( logit )
+Formula: high ~ years + (1 | person_id)
+   Data: dataDF
+Weights: weights
+ Offset: offset
+Control: control.obj
+
+      AIC       BIC    logLik -2*log(L)  df.resid
+     78.7      84.7     -36.4      72.7        51
+
+Scaled residuals:
+   Min     1Q Median     3Q    Max
+    NA     NA     NA     NA     NA
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ person_id (Intercept) 0        0
+Number of obs: 54, groups:  person_id, 14
+
+Fixed effects:
+            Estimate Std. Error z value Pr(>|z|)
+(Intercept) -0.56820    0.47772  -1.189    0.234
+years        0.02409    0.04793   0.503    0.615
+
+Correlation of Fixed Effects:
+      (Intr)
+years -0.814
+optimizer (Nelder_Mead) convergence code: 0 (OK)
+boundary (singular) fit: see help('isSingular')
+
+
+$output.summary$study2
+Generalized linear mixed model fit by maximum likelihood (Laplace
+  Approximation) [glmerMod]
+ Family: binomial  ( logit )
+Formula: high ~ years + (1 | person_id)
+   Data: dataDF
+Weights: weights
+ Offset: offset
+Control: control.obj
+
+      AIC       BIC    logLik -2*log(L)  df.resid
+     80.1      86.1     -37.1      74.1        51
+
+Scaled residuals:
+   Min     1Q Median     3Q    Max
+    NA     NA     NA     NA     NA
+
+Random effects:
+ Groups    Name        Variance Std.Dev.
+ person_id (Intercept) 0        0
+Number of obs: 54, groups:  person_id, 14
+
+Fixed effects:
+            Estimate Std. Error z value Pr(>|z|)
+(Intercept) -0.34416    0.43290  -0.795    0.427
+years        0.03845    0.04763   0.807    0.419
+
+Correlation of Fixed Effects:
+      (Intr)
+years -0.774
+optimizer (Nelder_Mead) convergence code: 0 (OK)
+boundary (singular) fit: see help('isSingular')
+
+
+$output.summary$input.beta.matrix.for.SLMA
+            betas study 1 betas study 2
+(Intercept)   -0.56819753   -0.34416117
+years          0.02408906    0.03845332
+
+$output.summary$input.se.matrix.for.SLMA
+            ses study 1 ses study 2
+(Intercept)  0.47771665  0.43290213
+years        0.04793173  0.04763158
+
+
+$num.valid.studies
+[1] 2
+
+$betamatrix.all
+            betas study 1 betas study 2
+(Intercept)   -0.56819753   -0.34416117
+years          0.02408906    0.03845332
+
+$sematrix.all
+            ses study 1 ses study 2
+(Intercept)  0.47771665  0.43290213
+years        0.04793173  0.04763158
+
+$betamatrix.valid
+            betas study 1 betas study 2
+(Intercept)   -0.56819753   -0.34416117
+years          0.02408906    0.03845332
+
+$sematrix.valid
+            ses study 1 ses study 2
+(Intercept)  0.47771665  0.43290213
+years        0.04793173  0.04763158
+
+$SLMA.pooled.ests.matrix
+              pooled.ML      se.ML pooled.REML    se.REML   pooled.FE
+(Intercept) -0.44518043 0.32078438 -0.44518043 0.32078438 -0.44518043
+years        0.03131631 0.03378623  0.03131631 0.03378623  0.03131631
+                 se.FE
+(Intercept) 0.32078438
+years       0.03378623
+
+$Convergence.error.message
+[1] "Study1: boundary (singular) fit: see help('isSingular')"
+[2] "Study2: boundary (singular) fit: see help('isSingular')"
+
+Ran 4/4 deferred expressions

@@ -34,6 +34,8 @@
     table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md):
   - [15. Working with lab
     values](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-labs.md):
+  - [16. Longitudinal data: from events to
+    analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/book-16-longitudinal.md):
 
 ### Reproduction and migration
 
