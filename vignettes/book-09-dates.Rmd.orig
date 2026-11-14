@@ -1,0 +1,273 @@
+---
+title: "9. Dates, periods and ages"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{9. Dates, periods and ages}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Separate date sources from presentation, choose factor/number/date periods, extract parts, calculate anchored ages, and handle partial dates explicitly.
+</div>
+
+This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+Run its sections in order. Each chapter starts from a fresh practice connection;
+all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
+The numbers describe teaching data, not clinical findings.
+
+## A date source and a presentation are separate
+
+A *source* says which date to use. A *date specification* says how to represent it.
+`first_visit`, `death`, `birth`, `index`, `index_end`, observation bounds, a fixed
+ISO date and `omop_anchor(event)` are date sources. An ISO date is written
+`YYYY-MM-DD`, independently of the analyst's locale.
+
+```{r date-source}
+first_visit <- omop_date("first_visit")
+class(first_visit)
+```
+
+With no specification this is an exact R Date assigned privately on the server.
+It does not download a date vector. We can inspect the column inventory:
+
+```{r date-exact}
+exact <- omop_recipe(variables = list(visit_date = first_visit),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(exact, conns = conns)$selected == "v2")
+print(recipe_execute(exact, out = c(people = "D_date_exact"), conns = conns))
+dsBaseClient::ds.colnames("D_date_exact", datasources = conns)
+```
+
+People with no visit keep a missing date. Native `omop_date()` and ordinary
+`first_date`/`last_date` reducers differ: those reducers without a date specification
+return day offsets. The [visit walkthrough](book-06-visits.html) compares both.
+
+## Month periods as categories
+
+A *period* is a calendar block, such as a month or quarter. Its default presentation
+is an ordered factor: categories with a defined chronological order.
+
+```{r month-spec}
+month_spec <- omop_date_spec(precision = "month", representation = "factor",
+  level_range = c("2020-03-01", "2020-07-31"))
+class(month_spec)
+```
+
+The public range declares common levels, including empty months. It never filters
+observed dates. Do not derive a “public” range from private minimum/maximum dates.
+
+```{r month-recipe}
+months <- omop_recipe(variables = list(month = omop_date("first_visit", month_spec)),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(months, conns = conns)$selected == "v2")
+print(recipe_execute(months, out = c(people = "D_date_months"), conns = conns))
+```
+```{r month-table}
+ds.omop.table("D_date_months", "month", conns = conns)
+```
+
+April and May remain declared zero categories. Ordered factors have ordered-factor
+model contrasts; for a linear time trend request a number explicitly.
+
+## Periods as numbers
+
+```{r number-period}
+numbers <- omop_recipe(variables = list(month_index = omop_date("first_visit",
+  omop_date_spec(precision = "month", representation = "number",
+    numeric = "index", origin = "2020-01-01"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(numbers, conns = conns)$selected == "v2")
+print(recipe_execute(numbers, out = c(people = "D_date_numbers"), conns = conns))
+```
+```{r number-result}
+dsBaseClient::ds.summary("D_date_numbers$month_index", datasources = conns)
+```
+
+January 2020 is zero, February one and March two. These are period coordinates,
+not elapsed months since each person's birthday. Year/fiscal-year numbers instead
+use the year; `numeric = "decimal_year"` supplies a fractional period coordinate.
+
+## Periods as boundary dates
+
+```{r bounds-vars}
+month_start <- omop_date("first_visit",
+  omop_date_spec(precision = "month", representation = "start"))
+month_end <- omop_date("first_visit",
+  omop_date_spec(precision = "month", representation = "end"))
+class(month_end)
+```
+
+Start and end are Date objects, with inclusive month bounds. They deliberately
+coarsen the original day; they do not claim that the visit occurred at a boundary.
+
+```{r bounds-run}
+bounds <- omop_recipe(variables = list(start = month_start, end = month_end),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(bounds, conns = conns)$selected == "v2")
+print(recipe_execute(bounds, out = c(people = "D_date_bounds"), conns = conns))
+print(ds.omop.mutate("D_date_bounds", days = end - start + 1L,
+  newobj = "D_month_lengths", conns = conns))
+```
+```{r bounds-result}
+dsBaseClient::ds.summary("D_month_lengths$days", datasources = conns)
+```
+
+The inclusive length adds one day. Different months need different lengths;
+a fixed 30-day bin is a different definition.
+
+## Extract date parts
+
+A *part* is a component such as year, month or weekday. Named entries choose the
+final column names in this bundle.
+
+```{r parts}
+parts <- omop_recipe(variables = list(visit = omop_date_parts("first_visit",
+  c(visit_year = "year", visit_month = "month", weekday = "weekday_name"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(parts, conns = conns)$selected == "v2")
+print(recipe_execute(parts, out = c(people = "D_date_parts"), conns = conns))
+```
+```{r parts-result}
+ds.omop.table("D_date_parts", "weekday", conns = conns)
+```
+
+Weekday names use a fixed English domain, with Monday first. Month categories
+likewise include all twelve months. Year, ISO week/year, quarter, day-of-year and
+cyclic sine/cosine parts are also available. For season parts, declare the intended hemisphere (the default is north);
+using only a week number without its week-year can mix different years.
+
+## Ages at any anchor
+
+`omop_age_at()` measures completed birthdays at the chosen date. The anchor below
+selects the first education observation for each person, not the first visit.
+
+```{r age-anchor}
+education_date <- omop_anchor(omop_event("observation", concepts = 900001L))
+ages <- omop_recipe(variables = list(at_death = omop_age_at("death"),
+  at_question = omop_age_at(education_date)),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(ages, conns = conns)$selected == "v2")
+print(recipe_execute(ages, out = c(people = "D_date_ages"), conns = conns))
+```
+```{r age-death-result}
+dsBaseClient::ds.summary("D_date_ages$at_death", datasources = conns)
+```
+
+Missing death or incomplete birth dates can leave age missing. A February 29 birthday
+completes on March 1 in a non-leap year. Exact age does not equal year subtraction.
+
+```{r age-anchor-result}
+dsBaseClient::ds.summary("D_date_ages$at_question", datasources = conns)
+```
+
+The selected event sets a different age reference. An index, an observation bound
+or a fixed ISO date works through the same API.
+
+## Partial dates: retain what is known
+
+One synthetic birth pattern has a year but no month/day. The default `partial =
+"none"` keeps an invariant year but cannot invent a day or completed age.
+
+```{r partial}
+partial <- omop_recipe(variables = list(birth_year = omop_date("birth",
+  omop_date_spec(precision = "year"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(partial, conns = conns)$selected == "v2")
+print(recipe_execute(partial, out = c(people = "D_date_partial"), conns = conns))
+```
+```{r partial-result}
+ds.omop.table("D_date_partial", "birth_year", conns = conns)
+```
+
+The year is known for all four patterns. If the study permits an estimate, declare
+imputation instead of letting an implicit convention choose it.
+
+```{r estimated}
+estimated <- omop_recipe(variables = list(age = omop_age_at("death",
+  date_spec = omop_date_spec(partial = "mid"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(estimated, conns = conns)$selected == "v2")
+print(recipe_execute(estimated, out = c(people = "D_date_estimated"), conns = conns))
+```
+```{r estimated-result}
+dsBaseClient::ds.summary("D_date_estimated$age", datasources = conns)
+```
+
+The middle possible birth day supplies an **estimated** completed age. `start` and
+`end` use the first/last possible day. `unit = "annual_years"` explicitly asks
+for calendar-year subtraction instead. Invalid components stay missing even
+with imputation. `future = "na"` requires a fixed `as_of` date; do not use a moving
+“today” cutoff in a reproducible plan.
+
+## Custom labels without arbitrary date code
+
+```{r custom}
+custom <- omop_recipe(variables = list(month = omop_date("first_visit",
+  omop_date_spec(precision = "custom", pattern = "%b %Y"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(custom, conns = conns)$selected == "v2")
+print(recipe_execute(custom, out = c(people = "D_date_custom"), conns = conns))
+```
+```{r custom-result}
+ds.omop.table("D_date_custom", "month", conns = conns)
+```
+
+This uses fixed English month abbreviations and a year. The supported directives
+are `%Y`, `%m`, `%d`, `%j`, `%G`, `%V`, `%u`, `%b`, `%B`, `%a`, `%A` and `%%`,
+with simple literal text/punctuation. ISO weeks require `%G-W%V`, not `%Y-W%V`.
+Arbitrary `strftime` directives, locale-dependent code and time-of-day are refused.
+A named `labels` map may rename public date categories but must keep them unique;
+it cannot merge dates. Fine-grained factor labels still face disclosure checks.
+
+## Other calendar systems
+
+| Precision | Meaning or required declaration |
+|---|---|
+| year, semester, quarter, month | Calendar year; halves, quarters, months |
+| iso_week | Monday weeks; week 1 has at least four new-year days |
+| cdc_week | Sunday weeks; week 1 has at least four new-year days |
+| epi_week | Supply `week_start` and `week_min_days` |
+| fiscal_year, fiscal_semester, fiscal_quarter, fiscal_month | Choose `fiscal_start` (default January); labels name the starting year |
+| relative_days | Supply an anchor for day offsets |
+| day | Exact private Date |
+| custom | Restricted public pattern |
+
+For example, choose an April-start fiscal quarter explicitly:
+
+```{r fiscal}
+fiscal <- omop_recipe(variables = list(quarter = omop_date("first_visit",
+  omop_date_spec(precision = "fiscal_quarter", fiscal_start = 4L))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(fiscal, conns = conns)$selected == "v2")
+print(recipe_execute(fiscal, out = c(people = "D_date_fiscal"), conns = conns))
+```
+```{r fiscal-result}
+ds.omop.table("D_date_fiscal", "quarter", conns = conns)
+```
+
+March belongs to the preceding fiscal year. The variable's specification overrides
+the recipe's specification, which overrides the defaults.
+
+## Recap
+
+Choose a source, precision and representation. Partial information stays partial unless you declare estimation. Exact dates and ages remain private server columns.
+
+## Try it
+
+Calculate elapsed days from first visit to death and request a summary. Why are some values missing?
+
+<details><summary>Solution</summary>
+
+```{r solution}
+elapsed <- omop_recipe(variables = list(days = omop_time_between("first_visit", "death")),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(elapsed, conns = conns)$selected == "v2")
+print(recipe_execute(elapsed, out = c(people = "D_date_elapsed"), conns = conns))
+dsBaseClient::ds.summary("D_date_elapsed$days", datasources = conns)
+```
+Elapsed days need both dates. This calculation does not need a complete birth date, unlike exact age. It is a duration, not a calendar-period coordinate.
+
+</details>

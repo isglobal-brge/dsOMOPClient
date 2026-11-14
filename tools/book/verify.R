@@ -42,10 +42,11 @@ verify_chapter <- function(input, env) {
       identical(recipe_to_plan(env$va),recipe_to_plan(env$reference)),
       identical(d,get_data("D_va_reference")))
   }
+  verify_book2(input, env, get_data)
   # No native recipe accidentally executes through the legacy path.
   for(name in ls(env)) {
     obj <- get(name,env)
-    if(inherits(obj,"omop_recipe") && !name %in% c("template","harmonised")) {
+    if(inherits(obj,"omop_recipe") && !name %in% c("template","harmonised","blocked")) {
       stopifnot(recipe_explain(obj)$selected=="v2")
     }
   }

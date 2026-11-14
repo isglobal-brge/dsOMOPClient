@@ -145,7 +145,7 @@ print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
 dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
 ```
 
-The table contains your lower-case labels. See the short harmonisation appendix
+The table contains your lower-case labels. See [chapter 10](book-08-harmonise.html)
 for the same operation across two different vocabularies.
 
 ## Recap

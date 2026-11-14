@@ -5,7 +5,7 @@ from urllib.parse import unquote, urlsplit
 import json, re
 root = Path(__file__).resolve().parents[2]
 chapters = sorted((root / 'vignettes').glob('book-*.Rmd'))
-assert len(chapters) == 10
+assert len(chapters) == 16
 counts = {}
 for p in chapters:
     text = p.read_text()

@@ -1,0 +1,160 @@
+---
+title: "11. Reusable studies and standalone verbs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{11. Reusable studies and standalone verbs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Bind typed parameters, use omop_study and shortcuts, then derive and filter columns without bringing rows to your computer.
+</div>
+
+This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+Run its sections in order. Each chapter starts from a fresh practice connection;
+all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
+The numbers describe teaching data, not clinical findings.
+
+## Describe the setting as a parameter
+
+A *parameter* is a named, typed placeholder in a study definition. It lets you
+reuse a recipe without editing its logic. It is not R code or SQL text.
+
+```{r parameter}
+setting <- omop_param("setting", type = "concept_set")
+class(setting)
+```
+
+This parameter accepts concept sets. A separate date parameter would declare a
+date type; give each changing input its own appropriate type.
+
+## Build a template
+
+```{r template}
+template <- omop_study(omop_event("visit_occurrence", concepts = setting),
+  outputs = "baseline", baseline = list(
+    prior_visits = omop_count("visit_occurrence", window = omop_window(-365, -1)),
+    age = omop_age_at("index")))
+class(template)
+```
+
+`omop_study()` returns an ordinary recipe. It creates an indexed population and
+baseline output. We explicitly exclude day zero from the prior-visit count.
+The unbound template cannot execute until its required setting is supplied.
+
+## Bind and inspect
+
+```{r bind}
+outpatient <- recipe_bind(template, setting = 9202L)
+stopifnot(recipe_explain(outpatient, conns = conns)$selected == "v2")
+recipe_explain(outpatient)$selected
+```
+
+Binding fills the placeholder while preserving the template. Concept 9202 is the
+outpatient visit setting, not the record's provenance type.
+
+```{r run}
+print(recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns))
+dsBaseClient::ds.summary("D_param_outpatient$age", datasources = conns)
+```
+
+The server computes completed age at the first outpatient visit. The analyst
+receives only the approved summary.
+
+## Read the simple-layer defaults
+
+```{r defaults}
+print(outpatient)
+```
+
+The study's default index selection is `first`. The population uses the default
+coverage policy; all requirements are combined with AND. Baseline has episode
+rows. For survival, supply outcomes and an explicit follow-up definition. For
+example, `follow_up = list(start = 1, end = 365, censor = c("observation_end",
+"death"))` describes a year after entry, ending sooner at a listed censor.
+The [output chapter](book-08-outputs.html) executes the corresponding native survival format.
+
+## Shortcuts expand into ordinary variables
+
+Use a shortcut when its defaults match your question; use an explicit reducer
+when you need more control. `before = 365` includes day zero, while `after = 365`
+starts at day one. Without either, most shortcuts use all history through entry.
+
+```{r shortcut}
+shortcuts <- omop_study(omop_event("visit_occurrence"), outputs = "baseline",
+  baseline = list(ever = omop_ever("visit_occurrence", before = 365),
+    count = omop_count("visit_occurrence", before = 365),
+    value = omop_value_at_index("measurement", 950002L,
+      tolerance = c(-30, 0), unit = 9529L)))
+stopifnot(recipe_explain(shortcuts, conns = conns)$selected == "v2")
+print(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
+```
+```{r shortcut-result}
+dsBaseClient::ds.table("D_shortcuts$ever", useNA = "no", datasources = conns)
+```
+
+Everyone has ever = 1 because the index visit itself is included. To ask about
+visits strictly before entry use `window = omop_window(-365, -1)` instead.
+First/last/mean/min/max-value shortcuts use the same event and window model.
+`omop_history()` bundles named ever variables; it does not define a new language.
+
+## Mutate a protected table
+
+*Mutate* adds or replaces a column inside the server object. It accepts a closed
+set of arithmetic and conditional expressions, not arbitrary R functions.
+
+```{r mutate}
+print(ds.omop.mutate("D_shortcuts", twice = count * 2L,
+  high = ifelse(value >= 70, 1L, 0L), newobj = "D_derived", conns = conns))
+dsBaseClient::ds.colnames("D_derived", datasources = conns)
+```
+
+Bare names refer to columns. Unknown values stay unknown in the comparison.
+`newobj` makes the output explicit; omitting the input would use the most recent
+output and make a tutorial harder to follow.
+
+```{r mutate-result}
+dsBaseClient::ds.table("D_derived$high", useNA = "always", datasources = conns)
+```
+
+The high flag remains private; this table counts its values. Division by zero and
+nonfinite arithmetic results become missing. `case_when`, `coalesce` and `cut`
+are supported for declared recoding and bands; arbitrary function evaluation is refused.
+
+## Filter using a predicate
+
+A *predicate* is a condition. Only TRUE rows survive a filter; missing conditions
+are dropped. Filtering creates another private object with its own release check.
+
+```{r filter}
+print(ds.omop.filter("D_derived", expr = omop_where(high == 1L),
+  newobj = "D_high", conns = conns))
+dsBaseClient::ds.summary("D_high$value", datasources = conns)
+```
+
+This subset is large enough in the synthetic fixture. A predicate cannot read
+protected person/episode keys to target a known person. These verbs work on
+assigned `omop.table` objects, not on arbitrary database tables.
+
+## Recap
+
+Parameters change declared inputs, shortcuts express common native recipes, and mutate/filter operate privately on assigned tables. Each final object still passes publication checks.
+
+## Try it
+
+Bind the same template to inpatient visits and count prior visits. Do not alter the outpatient template in place.
+
+<details><summary>Solution</summary>
+
+```{r solution}
+inpatient <- recipe_bind(template, setting = 9201L)
+stopifnot(recipe_explain(inpatient, conns = conns)$selected == "v2")
+print(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
+dsBaseClient::ds.table("D_param_inpatient$prior_visits", useNA = "no", datasources = conns)
+```
+Each binding is a separate recipe. Its own index changes which earlier records fall into the lookback window.
+
+</details>

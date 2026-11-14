@@ -14,7 +14,8 @@ none of those row-reading calls is an analyst lesson.
 
 The fixture extends the released `helper-dates-va.R`: 24 synthetic people,
 six copies of four patterns, with inpatient/outpatient concepts and a second
-fever answer. It retains threshold 5, ordinary factor gates and pseudonyms.
+fever answer. Book 2 adds separate measurements, prescriptions and results cohort 1
+without changing the original observation/visit/death records. It retains threshold 5, ordinary factor gates and pseudonyms.
 The second optional site differs only in public vocabulary labels/version.
 It is not Eunomia GiBleed; the optional Opal deployment is described separately.
 
@@ -33,3 +34,15 @@ executed and the build itself never needs a server. Retrieve `docs/` and inspect
 it with `python3 tools/book/audit-content.py` and
 `PLAYWRIGHT_BROWSERS_PATH=/home/dev/.cache/ms-playwright NODE_PATH=/usr/local/lib/node_modules node tools/book/audit-site.js` (the latter
 needs Playwright Chromium). Copy `docs/` to the requested design/book-preview.
+
+Book 2 adds chapters 6–12, moves the visit walkthrough to chapter 13 and the
+capstone to 14, and retains the older URLs. There are 16 pages including Appendix A.
+The reading order lives in `_pkgdown.yml` and `pkgdown/index.md`; filenames retain
+stable URLs rather than encoding the current order for every page.
+
+For a focused edit, `tools/book/run-pod.sh precompute 'book-09-dates'` reuses the
+installed pair and executes only that source. The final validation executes every
+chapter. `verify-book2.R` checks reducer values, population/episode counts, matching,
+format components and joins, death censoring, date types and expected refusal
+rollback. Expected refusal messages are printed through `tryCatch`; they are
+lessons, not ignored knitting errors. Book 2 evidence lives in `evidence/book2/`.

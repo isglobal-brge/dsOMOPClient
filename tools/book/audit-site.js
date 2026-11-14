@@ -7,7 +7,7 @@ const path = require('path');
   const results=[];
   for (const width of [1365,390]) {
     const page=await browser.newPage({viewport:{width,height:1000}});
-    for (const slug of ['index','articles/book-05-recipe','articles/book-06-visits','articles/book-07-verbal-autopsy','articles/book-08-harmonise']) {
+    for (const slug of ['index', ...fs.readdirSync('docs/articles').filter(x => /^book-.*\.html$/.test(x)).map(x => 'articles/'+x.replace(/\.html$/, ''))]) {
       await page.goto('file://'+path.resolve('docs',slug+'.html'));
       const result=await page.evaluate(() => ({title:document.title,
         width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,
@@ -33,5 +33,5 @@ const path = require('path');
   }
   await browser.close();
   fs.writeFileSync('tools/book/evidence/site-browser-audit.json',JSON.stringify(results,null,2)+'\n');
-  console.log('PASS: 10 desktop/mobile pages; learning boxes, solutions and overflow checked.');
+  console.log('PASS: all book desktop/mobile pages; learning boxes, solutions and overflow checked.');
 })().catch(e=>{console.error(e);process.exit(1)});

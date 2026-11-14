@@ -61,12 +61,12 @@ Each first visit begins one episode. A later inpatient visit will be our outcome
 base <- omop_recipe(events = list(visits, rx, inpatient),
   populations = list(visitors), variables = list(
     visits = omop_variable(event = visits, reducer = omop_reduce("count")),
-    age = omop_age_at("index")),
+    age = omop_age()),
   outputs = omop_output("wide", rows = "visitors", format = "wide"))
 recipe_explain(base)$selected
 ```
 
-The visit count reads all history here. Age uses completed birthdays at entry.
+The visit count reads all history here. Age uses annual year subtraction at entry.
 The template already contains an executable wide output.
 
 ## Wide: named columns
@@ -121,7 +121,7 @@ print(recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = con
 dsBaseClient::ds.colnames("D_fmt_baseline", datasources = conns)
 ```
 
-The preset does not turn an all-history count into a pre-index count. Here `omop_age_at()` explicitly asks for completed age; the older `omop_age()` preset has separate annual-age/banding defaults. The simple study layer makes baseline an ordinary wide output.
+The preset does not turn an all-history count into a pre-index count. Here the `omop_age()` baseline preset uses its banded annual-age default. Use `omop_age_at()` in a wide table for explicit completed age. The simple study layer makes baseline an ordinary wide output.
 
 ## Panels: one row per follow-up bin
 
@@ -172,10 +172,10 @@ dsBaseClient::ds.colnames("D_fmt_survival", datasources = conns)
 Only the named censor sources cap follow-up: observation end and death here. The window also limits follow-up when its upper bound is finite. An episode end is not an extra censor unless requested. A censor is not a “no outcome ever” assertion. Always state the window: omitting it would use the 730-day compatibility default.
 
 ```{r survival-result}
-dsBaseClient::ds.table("D_fmt_survival$status", useNA = "no", datasources = conns)
+dsBaseClient::ds.table("D_fmt_survival$event", useNA = "no", datasources = conns)
 ```
 
-Status counts distinguish observed outcomes from censored follow-up in this one-outcome example.
+Counts of the `event` flag distinguish observed outcomes from censored follow-up in this one-outcome example.
 
 ## Intervals: keep a start and an end
 
@@ -223,11 +223,15 @@ This is still a patient-linked private object. It is not a public list of partic
 
 ## Dictionary: describe the concepts
 
-Use dictionary to describe the vocabulary concepts used by the plan. It does not contain patient rows.
+Use dictionary to describe vocabulary concepts used by a declared source output. Here `counts` defines those dependencies privately; only the dictionary is published. It does not contain patient rows.
 
 ```{r dictionary}
 dictionary <- base
-dictionary$outputs <- list(dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary"))
+dictionary$outputs <- list(
+  counts = omop_output("counts", rows = "visitors", format = "wide", columns = "visits"),
+  dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary",
+    options = list(source_outputs = "counts")))
+dictionary$publish <- "dictionary"
 stopifnot(recipe_explain(dictionary, conns = conns)$selected == "v2")
 print(recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_dictionary", datasources = conns)

@@ -10,16 +10,134 @@ vignette: >
 <div class="learn-box">
 **What you will learn**
 
-Check that different site vocabulary names become identical published categories.
+Use translated concept answers, distinguish recodes from column renames, and harmonise two different site vocabularies.
 </div>
 
 This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
-## A small exception to our single-server lessons
+## Translation follows the value type
 
-The main book uses one server. This short requested check uses two DSLite
+A concept-valued answer is a category, not a quantity to average. In language 2,
+the declared value column supplies that type. Your variable name does not need
+the suffix `_concept_id`.
+
+```{r category-variable}
+education <- omop_variable(
+  event = omop_event("observation", concepts = 900001L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"))
+class(education)
+```
+
+The event selects the education question; the reducer reads its last coded answer.
+Selecting the question concept as the value would answer a different question.
+
+```{r default-translation}
+categories <- omop_recipe(variables = list(education = education),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(categories, conns = conns)$selected == "v2")
+print(recipe_execute(categories, out = c(people = "D_categories"), conns = conns))
+```
+
+Translation is the default. The data values become labelled factors on the server.
+
+```{r default-table}
+ds.omop.table("D_categories", "education", conns = conns)
+```
+
+You see category names and released counts. The concept IDs used in the definition
+are vocabulary identifiers; they do not appear as numeric answers in this table.
+
+## Recode answers to yes and no
+
+An explicit label map changes categories by concept identity. It does not search
+for text in each site's database.
+
+```{r recode}
+fever <- omop_variable(
+  event = omop_event("observation", concepts = 900002L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"),
+  labels = c("900301" = "yes", "900302" = "no"))
+class(fever)
+```
+
+Only the declared answer concepts receive those labels. A missing answer stays
+missing; absence of a record is not a clinical “no”.
+
+```{r recode-run}
+answers <- omop_recipe(variables = list(fever = fever),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(answers, conns = conns)$selected == "v2")
+print(recipe_execute(answers, out = c(people = "D_category_answers"), conns = conns))
+```
+
+```{r recode-table}
+dsBaseClient::ds.table("D_category_answers$fever", useNA = "no", datasources = conns)
+```
+
+This real ds.table call excludes missing answers and shows the supplied labels.
+`ds.omop.table()` additionally retains the complete published category contract,
+including declared zero levels, and handles punctuation in labels.
+
+## Rename the column separately
+
+A column name identifies the variable; a label names one of its categories.
+Name an explicit variable in the recipe list, without changing what its answers mean.
+
+```{r column-rename}
+renamed <- omop_recipe(variables = list(schooling = education),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(renamed, conns = conns)$selected == "v2")
+print(recipe_execute(renamed, out = c(people = "D_renamed_categories"), conns = conns))
+dsBaseClient::ds.colnames("D_renamed_categories", datasources = conns)
+```
+
+The list name supplies the scalar variable name. A concept label map would instead
+change values inside that column. The visit walkthrough uses a value-preserving
+mutate alias when adding a new name to an already assigned date column.
+
+```{r renamed-table}
+ds.omop.table("D_renamed_categories", "schooling", conns = conns)
+```
+
+The education categories and counts are unchanged. Next we address differences
+between sites, where even the vocabulary names can vary.
+
+## Rename automatically generated concept columns
+
+Some layouts expand one event into separate columns for each concept. A panel
+of inpatient/outpatient counts is one example. `column_names` targets their
+stable generated keys, not the explicit scalar variable from the previous step.
+
+```{r generated-rename}
+visit_event <- omop_event("visit_occurrence", c(9201L, 9202L), name = "visits")
+visit_population <- omop_population("visitors", index = omop_index(visit_event))
+renamed_panel <- omop_recipe(events = list(visit_event),
+  populations = list(visit_population),
+  column_names = c(visits_9201_count = "admissions", visits_9202_count = "outpatient"),
+  outputs = omop_output("panel", rows = "visitors", format = "person_period",
+    options = list(sources = list(visit_event), bins = list(width = 30L),
+      window = omop_window(0, 29), analyses = "count")))
+recipe_explain(renamed_panel)$selected
+```
+
+The keys combine the source name, concept identity and analysis. They remain
+stable when a vocabulary changes its wording; your chosen column names remain
+readable. An explicit name cannot collide with a protected or another final column.
+
+```{r generated-run}
+stopifnot(recipe_explain(renamed_panel, conns = conns)$selected == "v2")
+print(recipe_execute(renamed_panel, out = c(panel = "D_renamed_panel"), conns = conns))
+dsBaseClient::ds.colnames("D_renamed_panel", datasources = conns)
+```
+
+The resulting count columns have your declared names. Using `column_names` with
+an explicit scalar name such as `education` would not rename that scalar column.
+
+## Open two practice connections
+
+The other lessons use one server. This check uses two DSLite
 connections. Both synthetic databases hold the same answer IDs. The second
 vocabulary calls University education “University qualification” and declares
 a newer vocabulary version. No patient records are downloaded.
@@ -83,7 +201,7 @@ In a real network, confirm the concept meanings as well as their labels.
 
 ## Recap
 
-Explicit concept labels can give the same categories despite vocabulary wording differences.
+Concept values translate by default. Label maps recode answers; column maps rename variables. Shared labels give common categories across vocabulary wording differences, after you confirm concept meanings.
 
 ## Try it
 
