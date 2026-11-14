@@ -6,6 +6,8 @@
   if (any(vapply(per_server, function(x) length(x$unsafe) > 0L, logical(1)))) {
     stop("Concept reconciliation refused by the existing factor-level disclosure policy.", call. = FALSE)
   }
+  numbers <- per_server[[1L]]$numbers %||% list()
+  for(site in per_server) .numberValidateShared(numbers,site$numbers)
   columns <- names(per_server[[1L]]$concepts)
   if (any(!vapply(per_server, function(x) setequal(names(x$concepts), columns), logical(1)))) {
     stop("Incompatible concept-column schemas across retained sites.", call. = FALSE)
@@ -15,7 +17,11 @@
   result <- setNames(lapply(columns, function(col) {
     records <- unlist(lapply(per_server, function(x) x$concepts[[col]]), recursive = FALSE)
     calendars <- lapply(per_server, function(x) x$calendars[[col]])
-    if (any(!vapply(calendars, is.null, logical(1)))) {
+    categories<-lapply(per_server,function(x)x$categories[[col]])
+    if(any(!vapply(categories,is.null,logical(1)))) {
+      if(any(vapply(categories,is.null,logical(1)))||length(unique(vapply(categories,.jcsCanonical,"")))!=1L) .categoryReject("Category semantics differ across retained sites.","category_domain_incompatible")
+      resolved<-.categoryResolveRecords(records,identity=categories[[1L]])
+    } else if (any(!vapply(calendars, is.null, logical(1)))) {
       if (any(vapply(calendars, is.null, logical(1))) || length(unique(vapply(calendars, .jcsCanonical, ""))) != 1L) .dateReject("Calendar/policy mismatch across retained sites.")
       resolved <- .dateResolveRecords(records, calendars[[1L]])
     } else resolved <- .conceptResolve(records)
@@ -29,7 +35,8 @@
         if (length(candidates)>1L) paste0("; vocabulary conflict: ",paste(candidates,collapse=" / ")),
         if (!is.null(decision$version)) paste0("; version ",decision$version), "; ",decision$rule))
     }
-    shared <- resolved[intersect(names(resolved), c("ids", "labels", "levels", "vocabulary", "kind", "calendar"))]
+    shared <- resolved[intersect(names(resolved), c("ids", "labels", "levels", "vocabulary", "kind", "calendar", "number", "category", "keys", "aliases", "ordered", "reference", "contrasts"))]
+    shared$provenance<-resolved$decisions
     naming_ids <- unique(unlist(lapply(per_server,function(x) x$reference_names[[col]]),use.names=FALSE))
     if (length(naming_ids)) shared$naming_ids <- naming_ids[.conceptIdOrder(naming_ids)]
     shared
@@ -55,9 +62,22 @@
     explanation <- c(explanation, paste0("Generated key ",key,": ",choice$name %||% generated[[key]]$id,
       if (!is.null(choice$version)) paste0("; version ",choice$version),"; ",choice$rule))
   }
-  spec <- list(concept_protocol = 1L, columns = result,
+  spec <- list(concept_protocol = 1L, columns = result, numbers = numbers,
        evidence = unique(unlist(lapply(per_server, function(x) x$evidence), use.names = FALSE)),
        names = if (length(generated)) as.list(.conceptGeneratedNames(keys, generated)) else list())
+  schemas<-lapply(per_server,function(x) {
+    schema<-x$schema
+    if(!is.null(schema))schema$columns<-lapply(schema$columns,function(c){c$name<-c$stable_key;c})
+    schema
+  })
+  if(any(!vapply(schemas,is.null,logical(1)))) {
+    if(any(vapply(schemas,is.null,logical(1))) || length(unique(vapply(schemas,.jcsCanonical,"")))!=1L)
+      .categoryReject("Published column types/derivations differ across retained sites.","category_domain_incompatible")
+    spec$schema<-schemas[[1L]]
+    spec$schema$columns<-lapply(spec$schema$columns,function(c) {
+      c$name<-spec$names[[c$stable_key]] %||% c$stable_key;c
+    })
+  }
   attr(spec,"concept_explain") <- explanation
   spec
 }

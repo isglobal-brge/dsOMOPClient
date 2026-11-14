@@ -168,6 +168,8 @@
 #' @param column_names Named character map from stable untranslated generated
 #'   column keys to complete, valid R names. Variable maps override recipe maps.
 #' @export
+#' @param category_spec Native category identity and presentation.
+#' @param number_spec Native numeric presentation created with omop_number_spec().
 #' @param date_spec Native date presentation; variable fields override recipe defaults.
 omop_variable <- function(name = NULL,
                           table = NULL,
@@ -205,7 +207,9 @@ omop_variable <- function(name = NULL,
                           where = NULL,
                           visit = NULL,
                           broadcast = FALSE,
-                          labels = NULL, column_names = NULL, date_spec = NULL) {
+                          labels = NULL, column_names = NULL, date_spec = NULL, number_spec = NULL, category_spec = NULL) {
+  category_spec <- .categoryArg(category_spec)
+  number_spec <- .numberSpecArg(number_spec)
   date_spec <- .dateSpecArg(date_spec)
   labels <- .conceptMap(labels, "omop_variable(): labels")
   column_names <- .conceptMap(column_names, "omop_variable(): column_names", TRUE)
@@ -229,6 +233,7 @@ omop_variable <- function(name = NULL,
       stop("omop_variable(): the event/reducer spelling needs both event and ",
            "reducer.", call. = FALSE)
     }
+    if(!is.null(reducer) && (reducer$fn %||% "") %in% c("any","all") && is.null(reducer$predicate)) stop("omop_variable(): any/all need a predicate; typed flags use omop_category_reduce().",call.=FALSE)
     event <- .v2_source(event, "omop_variable(): event")
     if (!inherits(reducer, "omop_reducer") && !.v2_is_param(reducer)) {
       stop("omop_variable(): reducer must be created with omop_reduce().",
@@ -240,7 +245,7 @@ omop_variable <- function(name = NULL,
                         broadcast = .v2_flag(broadcast, "omop_variable(): broadcast"),
                         name = .v2_name(name, "omop_variable(): name"),
                         labels = if (length(labels)) labels,
-                        column_names = if (length(column_names)) column_names, date_spec = date_spec))
+                        column_names = if (length(column_names)) column_names, date_spec = date_spec, number_spec = number_spec, category_spec = category_spec))
   }
   if (is.null(table)) {
     stop("omop_variable(): table is required (or give event = and reducer =).",
@@ -328,6 +333,8 @@ omop_variable <- function(name = NULL,
   if (isTRUE(broadcast)) obj$broadcast <- TRUE
   if (length(labels)) obj$labels <- labels
   if (length(column_names)) obj$column_names <- column_names
+  if (!is.null(category_spec)) obj$category_spec <- category_spec
+  if (!is.null(number_spec)) obj$number_spec <- number_spec
   if (!is.null(date_spec)) obj$date_spec <- date_spec
   class(obj) <- c("omop_variable", "list")
   obj
@@ -2340,6 +2347,8 @@ print.omop_variable_block <- function(x, ...) {
 #' }
 #' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_to_plan}}
 #' @export
+#' @param category_columns Named categorical copies over original typed output columns.
+#' @param number_columns Named numeric column copies/formulas over the canonical output frame.
 omop_output <- function(name = "output_1",
                         type = NULL,
                         variables = NULL,
@@ -2351,7 +2360,7 @@ omop_output <- function(name = "output_1",
                         columns = NULL,
                         format = NULL,
                         sources = NULL,
-                        collapse = NULL) {
+                        collapse = NULL, number_columns = NULL, category_columns = NULL) {
   if (!is.null(type) && !is.null(format)) {
     stop("omop_output(): type (legacy preset) and format are alternatives; ",
          "give one.", call. = FALSE)
@@ -2451,6 +2460,16 @@ omop_output <- function(name = "output_1",
   if (!is.null(grain)) obj$grain <- grain
   if (!is.null(collapse)) obj$collapse <- collapse
   if (!is.null(sources)) obj$sources <- sources
+  if (!is.null(category_columns)) {
+    category_columns<-.categoryExpandBundles(category_columns)
+    .numberNames(names(category_columns));lapply(category_columns,.numberVariableArg)
+    obj$category_columns<-category_columns
+  }
+  if (!is.null(number_columns)) {
+    .numberNames(names(number_columns))
+    lapply(number_columns, .numberVariableArg)
+    obj$number_columns <- number_columns
+  }
   class(obj) <- c("omop_output", "list")
   obj
 }
@@ -2660,6 +2679,8 @@ print.omop_output <- function(x, ...) {
 #' @param labels Recipe-wide concept-ID to category-label map; variable maps win.
 #' @param column_names Recipe-wide stable generated-column key to final-name map.
 #' @export
+#' @param category_spec Recipe-wide category presentation defaults.
+#' @param number_spec Recipe-wide numeric presentation defaults.
 #' @param date_spec Recipe-wide defaults created with omop_date_spec().
 omop_recipe <- function(variables = NULL,
                         filters = NULL,
@@ -2676,10 +2697,12 @@ omop_recipe <- function(variables = NULL,
                         intervals = NULL,
                         coverage = NULL,
                         publish = NULL,
-                        labels = NULL, column_names = NULL, date_spec = NULL) {
+                        labels = NULL, column_names = NULL, date_spec = NULL, number_spec = NULL, category_spec = NULL) {
   recipe <- .omop_recipe_empty()
+  if (!is.null(category_spec)) recipe$options$category_spec <- .categoryArg(category_spec)
+  if (!is.null(number_spec)) recipe$options$number_spec <- .numberSpecArg(number_spec)
   if (!is.null(date_spec)) recipe$options$date_spec <- .dateSpecArg(date_spec)
-  variables <- .dateExpandBundles(variables)
+  variables <- .dateExpandBundles(.categoryExpandBundles(variables))
   labels <- .conceptMap(labels, "omop_recipe(): labels")
   column_names <- .conceptMap(column_names, "omop_recipe(): column_names", TRUE)
   if (length(labels)) recipe$options$labels <- labels
@@ -5947,6 +5970,8 @@ recipe_to_code <- function(recipe) {
       factor_concepts    = o$factor_concepts    %||% TRUE)
   }
 
+  if (!is.null(o$category_spec)) slot_args$category_spec <- .codegen_raw(.v2_codegen(o$category_spec))
+  if (!is.null(o$number_spec)) slot_args$number_spec <- .codegen_raw(.v2_codegen(o$number_spec))
   if (!is.null(o$date_spec)) slot_args$date_spec <- .codegen_raw(.v2_codegen(o$date_spec))
 
   # Language-2 recipe slots.
@@ -6131,7 +6156,7 @@ recipe_to_code <- function(recipe) {
     variables   = .recipe_strip_classes(recipe$variables),
     filters     = .recipe_strip_classes(recipe$filters),
     outputs     = .recipe_strip_classes(recipe$outputs),
-    options     = recipe$options %||% list(),
+    options     = .recipe_strip_classes(recipe$options %||% list()),
     meta        = .recipe_strip_classes(recipe$meta)
   )
   # Only serialize the scope when set, so an unscoped recipe round-trips
@@ -6467,7 +6492,7 @@ recipe_to_code <- function(recipe) {
     # serialized `key: null` keeps its key (and an older export carrying a now-
     # removed option such as min_persons imports without error, simply ignored).
     recipe$options <- utils::modifyList(recipe$options %||% list(),
-                                        data$options, keep.null = TRUE)
+                                        .v2_restore(data$options), keep.null = TRUE)
   }
 
   for (cs in .v2_restore(data$concept_sets %||% list())) {
@@ -6526,10 +6551,11 @@ recipe_to_code <- function(recipe) {
 #' @seealso \code{\link{recipe_import_json}}, \code{\link{recipe_to_code}}
 #' @export
 recipe_export_json <- function(recipe, file = NULL) {
-  # digits = NA: every number keeps its full precision (unit conversion
-  # factors and value thresholds must round-trip exactly).
-  json <- jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
-                            null = "null", digits = NA)
+  # Numeric declarations use exact round-tripping scalar serialization so
+  # conversion factors and adjacent boundaries survive interchange.
+  json <- if(.numberHas(recipe)) .ds_json_lossless(.numberRecipePlain(.recipe_plain(recipe))) else
+    jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
+                    null = "null", digits = NA)
   if (is.null(file)) return(as.character(json))
   writeLines(as.character(json), file)
   invisible(file)
@@ -6580,7 +6606,7 @@ recipe_import_json <- function(json) {
 recipe_export_yaml <- function(recipe, file = NULL) {
   if (!requireNamespace("yaml", quietly = TRUE))
     stop("Package 'yaml' is required for YAML export.", call. = FALSE)
-  text <- yaml::as.yaml(.recipe_plain(recipe), precision = 15L)
+  text <- yaml::as.yaml(if(.numberHas(recipe)).numberRecipePlain(.recipe_plain(recipe)) else .recipe_plain(recipe), precision = 17L)
   if (is.null(file)) return(text)
   writeLines(text, file)
   invisible(file)

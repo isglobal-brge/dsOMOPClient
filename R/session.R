@@ -36,6 +36,7 @@
 #' @return A base64 JSON string for complex or named input; unnamed scalars unchanged.
 #' @keywords internal
 .ds_encode <- function(x) {
+  if(is.list(x)&&length(x$numbers))return(.ds_encode_lossless(.categoryMetadataPlain(.ds_coerce_names(x))))
   if (is.list(x) || (is.atomic(x) && !is.null(names(x))) ||
       (is.vector(x) && length(x) > 1)) {
     # jsonlite::toJSON serializes a named ATOMIC vector as a bare JSON array,

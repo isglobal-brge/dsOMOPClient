@@ -4,7 +4,8 @@ test_that('A27 baseline and long streams use factors in memory and staged output
   p <- ds.omop.plan.baseline(p,columns=c(education='gender_concept_id'),derived=character())
   for(mode in c('memory','staged')) {
     target <- paste0('Baseline_',mode)
-    ds.omop.plan.execute(p,out=c(baseline=target),symbol='labels',conns=ctx$conns,output_mode=mode)
+    result<-ds.omop.plan.execute(p,out=c(baseline=target),symbol='labels',conns=ctx$conns,output_mode=mode)
+    expect_null(attr(result,"omop_codebook"))
     frames <- .clf_frames(ctx,target)
     expect_true(all(vapply(frames,function(f) is.factor(f$education),logical(1))))
   }

@@ -792,6 +792,8 @@
 
 .v2w_variable <- function(ctx, v, name) {
   out <- .v2w_variable_base(ctx, v, name)
+  if (!is.null(v$number_spec)) out$number_spec <- .numberWireSpec(ctx, v$number_spec, name)
+  if (!is.null(v$category_spec)) out$category_spec <- .categoryWire(v$category_spec)
   if (!is.null(v$date_spec)) out$date_spec <- .dateWireSpec(ctx, v$date_spec, name)
   for (key in c("labels", "column_names")) {
     map <- .conceptMap(v[[key]], paste0("variables.", name, ".", key), key == "column_names")
@@ -813,6 +815,8 @@
     },
     derived = {
       d <- .v2_resolve_params(v$derived, context)
+      if (d$kind %in% c("category_rows","category_indicators","category_reduce","category_column","repeated")) return(list(derived=.categoryWireDerived(ctx,d,context),broadcast=isTRUE(v$broadcast)))
+      if (d$kind %in% .NUMBER_KINDS) return(list(derived=.numberWireDerived(ctx,d,context),broadcast=isTRUE(v$broadcast)))
       if (d$kind %in% .DATE_KINDS) {
         wire <- d[!vapply(d, is.null, logical(1))]
         for (key in intersect(names(wire), c("reference", "from", "to"))) wire[[key]] <- .dateWireSource(ctx, wire[[key]], context)
@@ -1261,6 +1265,8 @@
   rows <- out$rows %||% out$population_id %||% "base"
   ctx$referenced_pops <- union(ctx$referenced_pops, rows)
   wire <- list(rows = rows, format = format)
+  if (!is.null(out$category_columns)) wire$category_columns <- lapply(out$category_columns,function(v).v2w_variable(ctx,v,name))
+  if (!is.null(out$number_columns)) wire$number_columns <- lapply(out$number_columns,function(v) .v2w_variable(ctx,v,name))
   grain <- out$grain
   if (legacy) {
     grain <- grain %||% out$options$grain
@@ -1283,7 +1289,7 @@
                               "person_period", "sparse")) {
     # The preset's variables are its event sources (design 2.9, B-22).
     take <- columns %||% names(recipe_vars)
-    missing <- setdiff(take, names(recipe_vars))
+    missing <- if(length(out$number_columns)||length(out$category_columns)) character() else setdiff(take, names(recipe_vars))
     if (length(missing)) {
       .v2_stop(context, " references unknown variable(s): ", paste(missing, collapse = ", "), ".")
     }
@@ -1294,11 +1300,11 @@
     take <- if (is.null(columns)) {
       if (identical(format, "wide")) names(recipe_vars) else character(0)
     } else columns
-    missing <- setdiff(take, names(recipe_vars))
+    missing <- if(length(out$number_columns)||length(out$category_columns)) character() else setdiff(take, c(names(recipe_vars), unlist(lapply(names(recipe_vars), function(n) .pnv2VariableColumns(n, recipe_vars[[n]])), use.names=FALSE)))
     if (length(missing)) {
       .v2_stop(context, " references unknown variable(s): ", paste(missing, collapse = ", "), ".")
     }
-    for (vn in take) {
+    for (vn in intersect(take,names(recipe_vars))) {
       v <- recipe_vars[[vn]]
       if (.v2_is_v2_variable(v)) next
       if (identical(out$type, "baseline") && identical(v$format, "age")) {
@@ -1308,8 +1314,7 @@
                                                    bands = TRUE)))
         .v2_register_variable(ctx, vn, wire_v)
       } else {
-        .v2_register_variable(ctx, vn, .v2_lower_legacy_variable(ctx, v, vn,
-                                                                  paste0("variable '", vn, "'")))
+        .v2_register_variable(ctx, vn, .v2w_variable(ctx, v, vn))
       }
     }
   } else if (!is.null(columns)) {
@@ -1430,6 +1435,8 @@
                            client_version = as.character(utils::packageVersion("dsOMOPClient"))))
   opts <- recipe$options %||% list()
   plan_opts <- list()
+  if (!is.null(opts$number_spec)) plan_opts$number_spec <- .numberWireSpec(ctx, opts$number_spec, "recipe number_spec")
+  if (!is.null(opts$category_spec)) plan_opts$category_spec <- .categoryWire(opts$category_spec)
   if (!is.null(opts$date_spec)) plan_opts$date_spec <- .dateWireSpec(ctx, opts$date_spec, "recipe date_spec")
   for (nm in c("translate_concepts", "block_sensitive", "factor_concepts")) {
     if (!is.null(opts[[nm]]) && !isTRUE(opts[[nm]])) plan_opts[[nm]] <- FALSE
@@ -1619,7 +1626,7 @@
     if (!is.null(o$collapse) && !identical(o$grain, "person")) {
       .v2_stop(context, ": collapse applies only to person grain.")
     }
-    missing <- setdiff(unlist(o$columns), names(vars))
+    missing <- if(length(o$number_columns)||length(o$category_columns)) character() else setdiff(unlist(o$columns), c(names(vars), unlist(lapply(names(vars), function(n) .pnv2VariableColumns(n, vars[[n]])), use.names=FALSE)))
     if (length(missing)) .v2_stop(context, " references unknown variable(s): ",
                                   paste(missing, collapse = ", "), ".")
     if (identical(o$format, "survival")) {
