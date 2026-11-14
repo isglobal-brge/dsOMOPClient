@@ -24,6 +24,10 @@ verify_book3 <- function(input, env, get_data) {
     stopifnot(isTRUE(all.equal(book_summary(actual)$Value, unname(values))))
   }
   if (grepl("book-06-events", input)) {
+    band <- get_data("event_band")
+    stopifnot(is.factor(band), !is.ordered(band),
+      identical(levels(band),c("below 14","14 to below 15","15 or above")),
+      is.ordered(env$bin_display$Category))
     same(get_data("D_event_change")$change, oracle$last-oracle$first)
     summary_matches(env$event_change, oracle$last-oracle$first)
   }
@@ -49,6 +53,8 @@ verify_book3 <- function(input, env, get_data) {
   for (col in c("high_count","low_count")) same(get_data("D_lab_ranges")[[col]],oracle[[col]])
   stopifnot(all(env$hits$pooled$domain_id=="Measurement"),
     "Hemoglobin [Mass/volume] in Blood" %in% env$hits$pooled$concept_name)
+  stopifnot(is.ordered(env$bin_display$Category),
+    identical(levels(env$bin_display$Category),env$band_levels))
   factor_band <- get_data("lab_band")
   stopifnot(is.factor(factor_band), !is.ordered(factor_band),
     identical(levels(factor_band),c("below 14","14 to below 15","15 or above")))

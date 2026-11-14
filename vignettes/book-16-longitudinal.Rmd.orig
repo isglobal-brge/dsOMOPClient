@@ -333,7 +333,9 @@ public source. The warnings below are retained, not treated as evidence of succe
 ```{r hazard-model}
 hazard_fit <- dsBaseClient::ds.glm("event ~ years", data = "D_hazard",
   family = "binomial", datasources = two_conns)
-knitr::kable(hazard_fit$coefficients)
+hazard_table <- as.data.frame(hazard_fit$coefficients[, 1:4, drop = FALSE])
+hazard_table[["p-value"]] <- format.pval(hazard_table[["p-value"]], digits = 3, eps = 1e-16)
+knitr::kable(hazard_table, digits = 4)
 ```
 <!-- expected-glm-warning:end -->
 
@@ -384,6 +386,11 @@ dsBaseClient::ds.colnames("D_long", datasources = two_conns)
 `start_date` is days since first BMI under the default relative-date policy.
 The person key, all readings and their dates stay on the servers. Preserve actual
 time; coding visit numbers as equally spaced would misrepresent these records.
+Each person has exactly one indexed episode here, so `cohort_row_id` is the
+person-level grouping key for these models. Using this stable episode key also
+keeps the local teaching runs reproducible when temporary resource paths change
+pseudonym labels. With multiple episodes per person, use a person-level key to
+model their dependence instead.
 
 ```{r repeated-variables}
 print(ds.omop.mutate("D_long", years = start_date / 365.25,
@@ -412,7 +419,7 @@ singularity are checked separately rather than suppressing diagnostics.
 
 <!-- expected-mixed-warning:start -->
 ```{r linear-mixed}
-linear_mixed <- dsBaseClient::ds.lmerSLMA("value ~ years + (1|person_id)",
+linear_mixed <- dsBaseClient::ds.lmerSLMA("value ~ years + (1|cohort_row_id)",
   dataName = "D_repeat", datasources = two_conns)
 knitr::kable(linear_mixed$SLMA.pooled.ests.matrix[, c("pooled.FE", "se.FE"), drop = FALSE])
 linear_mixed$Convergence.error.message
@@ -424,7 +431,7 @@ Real growth may be nonlinear; these data do not validate a constant-slope assump
 No individual random intercepts are downloaded.
 
 ```{r binary-mixed}
-binary_mixed <- dsBaseClient::ds.glmerSLMA("above_cutoff ~ years + (1|person_id)",
+binary_mixed <- dsBaseClient::ds.glmerSLMA("above_cutoff ~ years + (1|cohort_row_id)",
   family = "binomial", dataName = "D_repeat", datasources = two_conns)
 knitr::kable(binary_mixed$SLMA.pooled.ests.matrix[, c("pooled.FE", "se.FE"), drop = FALSE])
 binary_mixed$Convergence.error.message

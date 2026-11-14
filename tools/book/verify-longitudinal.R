@@ -103,11 +103,33 @@ verify_longitudinal <- function(input, env, get_data) {
   for (site in names(env$pair$groups)) {
     d <- bmi[bmi$person_id %in% env$pair$groups[[site]],]
     a <- repeat_frames[[site]]
+    stopifnot(nrow(unique(a[c('cohort_row_id','person_id')]))==length(unique(a$person_id)),
+      length(unique(a$cohort_row_id))==length(unique(a$person_id)))
     same_values(a$value,d$value);same_values(a$years,d$years)
     same_values(a$above_cutoff,d$above_cutoff)
-    d$person_id <- factor(d$person_id)
-    estimates$linear[[site]] <- summary(lme4::lmer(value~years+(1|person_id),data=d))$coefficients[,1:2]
-    estimates$binary[[site]] <- summary(lme4::glmer(above_cutoff~years+(1|person_id),family=binomial(),data=d))$coefficients[,1:2]
+    # Recover the public source person for each episode by its complete BMI
+    # trajectory, independently checking the key grouping as well as values.
+    trajectory <- function(x) {
+      at <- order(x$years,x$value)
+      data.frame(years=as.numeric(x$years[at]),value=as.numeric(x$value[at]))
+    }
+    groups <- split(d,d$person_id)
+    d$cohort_row_id <- a$cohort_row_id[rep(NA_integer_,nrow(d))]
+    for (key in unique(a$cohort_row_id)) {
+      observed <- trajectory(a[a$cohort_row_id==key,])
+      matches <- vapply(groups,function(x)isTRUE(all.equal(observed,trajectory(x),tolerance=1e-12)),logical(1))
+      stopifnot(sum(matches)==1L)
+      d$cohort_row_id[d$person_id==names(groups)[matches]] <- key
+    }
+    stopifnot(!anyNA(d$cohort_row_id))
+    # Match the checked source records to the server's deterministic row order:
+    # floating-point Hessian differences should not be mistaken for data drift.
+    row_signature <- function(x) paste(x$cohort_row_id,sprintf("%.17g",x$years),
+      sprintf("%.17g",x$value),sep=":")
+    stopifnot(identical(sort(row_signature(a)),sort(row_signature(d))))
+    d <- d[match(row_signature(a),row_signature(d)),]
+    estimates$linear[[site]] <- summary(lme4::lmer(value~years+(1|cohort_row_id),data=d))$coefficients[,1:2]
+    estimates$binary[[site]] <- summary(lme4::glmer(above_cutoff~years+(1|cohort_row_id),family=binomial(),data=d))$coefficients[,1:2]
   }
   for(kind in names(estimates)) {
     fit <- env[[paste0(kind,'_mixed')]]
@@ -115,11 +137,11 @@ verify_longitudinal <- function(input, env, get_data) {
       all(grepl('no convergence error reported',fit$Convergence.error.message)))
     beta <- do.call(cbind,lapply(estimates[[kind]],function(x)x[,1]))
     se <- do.call(cbind,lapply(estimates[[kind]],function(x)x[,2]))
-    same(fit$betamatrix.all,beta,1e-4);same(fit$sematrix.all,se,1e-4)
     message(kind, " source-fit maximum coefficient difference: ", max(abs(fit$betamatrix.all-beta)),
       "; maximum SE difference: ",max(abs(fit$sematrix.all-se)))
+    same(fit$betamatrix.all,beta,1e-8);same(fit$sematrix.all,se,1e-8)
     # Verify pooling from the independently checked RELEASED site statistics.
-    # Reordering random-effect levels can slightly change glmer optimization.
+    # Source values, key types and row order have all been checked above.
     beta <- fit$betamatrix.all; se <- fit$sematrix.all
     weights <- 1/se^2
     same(fit$SLMA.pooled.ests.matrix[,'pooled.FE'],rowSums(beta*weights)/rowSums(weights),1e-10)
