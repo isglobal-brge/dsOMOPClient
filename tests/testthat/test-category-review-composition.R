@@ -146,3 +146,25 @@ test_that("R5 unavailable and undefined reductions stay NA through independently
     }
   }
 })
+
+test_that("R4 joined components project inherited originals and copies in requested order", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  count <- omop_variable(event=omop_event("observation",45000120L),reducer=omop_reduce("count"))
+  r <- omop_recipe(variables=list(band=omop_number_bins(count,breaks=c(0,2,10)),n=count),
+    outputs=list(omop_output("left",columns="band"),omop_output("right",columns="n"),
+      omop_output("joined",format="joined",grain="person",columns=c("copy","n","band"),
+        options=list(from=list(list(output="left"),list(output="right")),cardinality="one_to_one"),
+        category_columns=list(copy=omop_category_column("band")))))
+  for (selected in list(c("copy","n","band"),"copy")) {
+    r$outputs$joined$columns <- selected
+    result <- recipe_execute(r,out=c(left="JoinLeft",right="JoinRight",joined="JoinCopies"),symbol="labels",conns=ctx$conns)
+    local({
+      testthat::local_mocked_bindings(datashield.aggregate=function(...)stop("unexpected network"),
+        datashield.assign.expr=function(...)stop("unexpected network"),.package="DSI")
+      prospective <- recipe_codebook(r)[["joined/joined"]]$columns
+      published <- recipe_codebook(result)[["joined/joined"]]$columns
+      expect_identical(prospective$name,c("person_id",selected))
+      expect_identical(prospective$name,published$name)
+    })
+  }
+})

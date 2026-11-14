@@ -224,6 +224,9 @@
       rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural",plan=plan))
       names(rows)<-names(types)
       structural <- names(rows)
+      if (fmt == "joined" && (length(node$number_columns) || length(node$category_columns))) {
+        structural <- structural[vapply(rows, function(column) is.null(column$derivation$variable), logical(1))]
+      }
       if(component==output || fmt=="survival" && grains[[component]]!="none") {
         variables<-unique(c(.pnv2ColumnVariables(unlist(node$columns,use.names=FALSE),plan$variables),
           if(fmt=="wide" && is.null(node$columns))names(plan$variables)))
