@@ -1,5 +1,12 @@
 # dsOMOP / dsOMOPClient 2.10.5 (development)
 
+- Corrected: explicit coverage on an imported Circe population now overrides
+  the translated coverage default during compilation, including saved and
+  generated recipes. Remove the explicit coverage to restore the imported
+  policy. Original source provenance is retained and edits remain derivatives.
+- Corrected: Circe inspection reports independent unsupported clauses inside
+  nested groups at each structural path; groups remain unsupported for import.
+
 * **Corrected:** Circe inspection reports measurement bounds, occurrence,
   window, age and sex clauses independently when several are unsupported.
   Editing an imported legacy population now rebuilds its native translation;

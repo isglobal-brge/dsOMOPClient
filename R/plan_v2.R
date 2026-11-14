@@ -639,7 +639,10 @@
     shadow <- pop[["circe_v2"]]
     pop$index <- shadow$index
     pop$filters <- shadow$filters
-    pop$coverage <- shadow$coverage
+    # A public population coverage declaration overrides the imported default.
+    # Keep it separate from legacy index/filter reconciliation: translating an
+    # index edit must not reset an independently chosen observation policy.
+    pop$coverage <- pop$coverage %||% shadow$coverage
     pop$index_event <- NULL
     pop$circe_v2 <- NULL
   }

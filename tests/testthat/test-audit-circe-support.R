@@ -201,3 +201,71 @@ test_that("conflicting import edits refuse while successive reconciled edits rem
   conflict$circe_v2 <- NULL
   expect_identical(.circe_reconcile_population(conflict), conflict)
 })
+
+test_that("explicit coverage overrides imported defaults through every recipe representation", {
+  pop <- recipe_import_circe(.audit_support_definition(), id = "p")
+  r <- omop_recipe(populations = pop,
+    outputs = omop_output("o", rows = "p", format = "wide"))
+  original <- recipe_to_plan(r, version = 2)
+  expect_identical(original$populations$p$coverage$policy, "unique")
+  r$populations$p$coverage <- omop_coverage("earliest")
+  edited <- recipe_to_plan(r, version = 2)
+  digest <- function(r) .plan_v2_digest(recipe_to_plan(r, version = 2))$sha256
+  expect_identical(edited$populations$p$coverage$policy, "earliest")
+  expect_false(identical(.plan_v2_digest(original)$sha256, .plan_v2_digest(edited)$sha256))
+  for (format in c("json", "yaml")) {
+    path <- tempfile(fileext = paste0(".", format))
+    recipe_save(r, path)
+    loaded <- recipe_load(path)
+    unlink(path)
+    expect_identical(digest(loaded), digest(r))
+    prov <- loaded$populations$p$circe_provenance
+    expect_true(prov$derivative)
+    expect_identical(prov$original_json, pop$circe_provenance$original_json)
+    expect_identical(prov$original_sha256, pop$circe_provenance$original_sha256)
+    expect_identical(prov$original_recipe_digest, pop$circe_provenance$original_recipe_digest)
+    expect_identical(prov$recipe_digest, .circe_population_digest(loaded$populations$p))
+  }
+  rebuilt <- eval(parse(text = recipe_to_code(r)))
+  expect_identical(digest(rebuilt), digest(r))
+  expect_true(rebuilt$populations$p$circe_provenance$derivative)
+  # Orthogonal legacy edits cannot reset the explicit native policy.
+  r$populations$p$index_event$concept_id <- 201826L
+  expect_identical(recipe_to_plan(r)$populations$p$coverage$policy, "earliest")
+  r$populations$p$coverage <- omop_coverage("union", gap = 7L)
+  expect_identical(recipe_to_plan(r)$populations$p$coverage$policy, "union")
+  expect_equal(recipe_to_plan(r)$populations$p$coverage$gap, 7L)
+  # Even a directly changed translation is subordinate to the explicit policy.
+  r$populations$p$index_event <- pop$index_event
+  r$populations$p$circe_v2$coverage <- omop_coverage("earliest")
+  r$populations$p$coverage <- omop_coverage("unique")
+  expect_identical(recipe_to_plan(r)$populations$p$coverage$policy, "unique")
+  r$populations$p$coverage <- NULL
+  expect_identical(recipe_to_plan(r)$populations$p$coverage$policy, "earliest")
+  # Malformed overrides are validated, never quietly replaced by the cache.
+  r$populations$p$coverage <- list(policy = "PRIVATE_SENTINEL")
+  expect_error(recipe_to_plan(r))
+})
+
+test_that("nested groups report independent clauses at every depth without echoing input", {
+  x <- .audit_support_definition()
+  leaf <- list(Type = "ALL", CriteriaList = list(list(Criteria = list(Measurement = list(
+    CodesetId = 0L, ValueAsNumber = list(Op = "bt", Value = 1, Extent = 2))),
+    Occurrence = list(Type = 1L, Count = 3L), StartWindow = list(Unsupported = TRUE))),
+    DemographicCriteriaList = list(list(Age = list(Op = "unsupported", Value = 5),
+      Gender = list(list(CONCEPT_ID = 0L)), PRIVATE_SENTINEL = TRUE)))
+  x$InclusionRules <- list(list(expression = list(Type = "ALL", Groups = list(
+    leaf, list(Type = "ANY", Groups = list(leaf))))))
+  check <- recipe_circe_check(x)
+  expect_false(check$supported)
+  for (prefix in c("$.InclusionRules[1].expression.Groups[1]",
+                   "$.InclusionRules[1].expression.Groups[2].Groups[1]")) {
+    paths <- check$issues$path[startsWith(check$issues$path, prefix)]
+    for (suffix in c(".ValueAsNumber", ".Occurrence", ".StartWindow", ".Age", ".Gender")) {
+      expect_true(any(endsWith(paths, suffix)), info = paste(prefix, suffix))
+    }
+  }
+  expect_identical(check$issues$path, sort(check$issues$path, method = "radix"))
+  expect_false(any(grepl("PRIVATE_SENTINEL", unlist(check), fixed = TRUE)))
+  expect_error(recipe_import_circe(x), "recipe_circe_check")
+})

@@ -247,32 +247,43 @@ recipe_circe_check <- function(x, direction = "import") {
       identical(toupper(v$CollapseType), "ERA"), is.numeric(v$EraPad %||% 0L),
       identical(as.numeric(v$EraPad %||% 0L), 0))
   }, "$.CollapseSettings", "CollapseSettings", "Only default ERA collapse with EraPad = 0 and First/Last is supported.")
-  for (i in seq_along(expr$InclusionRules)) {
-    rule <- expr$InclusionRules[[i]]
-    at <- paste0("$.InclusionRules[", i, "]")
-    if (!fields(rule, c("name", "expression"), at)) next
-    ex <- rule$expression %||% list()
-    if (!fields(ex, c("Type", "CriteriaList", "DemographicCriteriaList", "Groups"), paste0(at, ".expression"))) next
-    if (length(ex$Groups)) add(paste0(at, ".expression.Groups"), "Groups", "The nested CriteriaGroups are not supported.")
-    if (!identical(toupper(ex$Type %||% "ALL"), "ALL") && !identical(toupper(ex$Type), "ANY")) {
-      add(paste0(at, ".expression.Type"), "InclusionRule", "Use ALL or ANY.")
+  # Inspect every independent clause even in a group with no executable
+  # adapter. The bounded definition parser has already checked size and depth.
+  scan_group <- function(ex, at) {
+    if (!fields(ex, c("Type", "CriteriaList", "DemographicCriteriaList", "Groups"), at)) return(invisible(NULL))
+    if (!is.character(ex$Type %||% "ALL") || length(ex$Type %||% "ALL") != 1L ||
+        !toupper(ex$Type %||% "ALL") %in% c("ALL", "ANY")) {
+      add(paste0(at, ".Type"), "InclusionRule", "Use ALL or ANY.")
     }
     for (j in seq_along(ex$CriteriaList)) {
-      cp <- paste0(at, ".expression.CriteriaList[", j, "]")
+      cp <- paste0(at, ".CriteriaList[", j, "]")
       scan_criterion(ex$CriteriaList[[j]], cp)
       probe(.circe_criteria_to_filter(ex$CriteriaList[[j]], sets), cp, "Occurrence",
         "Use a supported domain, at least N or exactly zero, and one-sided gte/lt measurement bounds and StartWindow.")
     }
     for (j in seq_along(ex$DemographicCriteriaList)) {
       demo <- ex$DemographicCriteriaList[[j]]
-      dp <- paste0(at, ".expression.DemographicCriteriaList[", j, "]")
+      dp <- paste0(at, ".DemographicCriteriaList[", j, "]")
       if (!fields(demo, c("Age", "Gender"), dp)) next
       for (field in intersect(c("Age", "Gender"), names(demo))) {
         probe(.circe_demographics_to_filters(list(demo[field])), paste0(dp, ".", field),
           "Demographics", "An unsupported Age operator or gender requires documented integer age bounds and one standard Female/Male concept.")
       }
     }
-    if (!length(ex$CriteriaList) && !length(ex$DemographicCriteriaList) && !length(ex$Groups)) add(at, "InclusionRule", "Empty inclusion rules are not supported.")
+    if (length(ex$Groups)) {
+      add(paste0(at, ".Groups"), "Groups", "The nested CriteriaGroups are not supported.")
+      for (j in seq_along(ex$Groups)) scan_group(ex$Groups[[j]], paste0(at, ".Groups[", j, "]"))
+    }
+    if (!length(ex$CriteriaList) && !length(ex$DemographicCriteriaList) && !length(ex$Groups)) {
+      add(at, "InclusionRule", "Empty inclusion rules are not supported.")
+    }
+    invisible(NULL)
+  }
+  for (i in seq_along(expr$InclusionRules)) {
+    rule <- expr$InclusionRules[[i]]
+    at <- paste0("$.InclusionRules[", i, "]")
+    if (!fields(rule, c("name", "expression"), at)) next
+    scan_group(rule$expression %||% list(), paste0(at, ".expression"))
   }
   # Final parser agreement catches relationships between otherwise valid clauses.
   if (!length(issues)) probe(.circe_import_unchecked(expr), "$", "Definition",
@@ -359,6 +370,8 @@ recipe_circe_check <- function(x, direction = "import") {
 # authority over later public edits. Rebuild it from an edited legacy
 # declaration, or honor an explicit native index. Conflicting edits to both
 # representations require an explicit choice instead of silently losing one.
+# Coverage is an orthogonal native override: .v2w_population always prefers the
+# explicit public declaration to the translated default, including after edits.
 .circe_reconcile_population <- function(pop) {
   if (is.null(pop$circe_v2)) return(pop)
   if (!is.null(pop[["index"]])) {
