@@ -87,3 +87,23 @@ test_that("C02 C05 C65 effective order and inherited aliases survive grouping", 
   recipe_execute(r,out="ConsumedZero",symbol="labels",conns=ctx$conns)
   for(i in 1:3)expect_equal(sum(as.character(.clf_frames(ctx,"ConsumedZero")[[i]]$x)=="ordinary"),if(i==1L)12L else 18L)
 })
+
+test_that("C18 C64 consumed recodes preserve labels of retained concept identities", {
+  ctx<-.clf_setup();.numeric_lexer()
+  e<-omop_event("observation",45000120L)
+  spec<-omop_category_spec(recode=omop_category_recode(c(`concept:45000123`="category:named"),
+    c("category:named","concept:45000124","concept:45000125"),labels=c("Named","Second","Third")))
+  rows<-omop_category_rows(e,"value_as_concept_id",spec)
+  r<-omop_recipe(variables=list(x=omop_category_reduce(rows,omop_reduce("mode"))))
+  for(mode in c("memory","staged")) {
+    symbol<-paste0("RetainedLabels_",mode)
+    result<-recipe_execute(r,out=symbol,symbol="labels",conns=ctx$conns,output_mode=mode)
+    book<-recipe_codebook(result)[[1L]]$columns
+    expect_setequal(book$levels[[match("x",book$name)]]$labels,c("Named","Second","Third"))
+    for(i in 1:3) {
+      f<-.clf_frames(ctx,symbol)[[i]]
+      expect_setequal(levels(f$x),c("Named","Second","Third"))
+      expect_identical(as.character(f$x),if(i==1L)rep(c("Named","Second","Third"),each=6L) else rep(c("Named","Second"),each=9L))
+    }
+  }
+})
