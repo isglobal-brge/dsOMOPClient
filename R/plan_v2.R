@@ -1289,7 +1289,7 @@
     take <- if (is.null(columns)) {
       if (identical(format, "wide")) names(recipe_vars) else character(0)
     } else columns
-    missing <- if(length(out$number_columns)||length(out$category_columns)) character() else setdiff(take, names(recipe_vars))
+    missing <- if(length(out$number_columns)||length(out$category_columns)) character() else setdiff(take, c(names(recipe_vars), unlist(lapply(names(recipe_vars), function(n) .pnv2VariableColumns(n, recipe_vars[[n]])), use.names=FALSE)))
     if (length(missing)) {
       .v2_stop(context, " references unknown variable(s): ", paste(missing, collapse = ", "), ".")
     }
@@ -1615,7 +1615,7 @@
     if (!is.null(o$collapse) && !identical(o$grain, "person")) {
       .v2_stop(context, ": collapse applies only to person grain.")
     }
-    missing <- if(length(o$number_columns)||length(o$category_columns)) character() else setdiff(unlist(o$columns), names(vars))
+    missing <- if(length(o$number_columns)||length(o$category_columns)) character() else setdiff(unlist(o$columns), c(names(vars), unlist(lapply(names(vars), function(n) .pnv2VariableColumns(n, vars[[n]])), use.names=FALSE)))
     if (length(missing)) .v2_stop(context, " references unknown variable(s): ",
                                   paste(missing, collapse = ", "), ".")
     if (identical(o$format, "survival")) {
