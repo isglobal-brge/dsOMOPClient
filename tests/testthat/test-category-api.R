@@ -74,3 +74,16 @@ test_that("C59 every missing category capability refuses before assignment", {
   }
   expect_error(recipe_to_plan(r,version=1),"repeated")
 })
+
+
+test_that("category reducer input context is scoped to its typed consumer", {
+  event <- omop_event("observation", 45000120L)
+  rows <- omop_category_rows(event, "value_as_concept_id")
+  flag <- omop_category_indicators(rows, c(yes = "concept:45000124"))[[1L]]
+  make_any <- function() omop_reduce("any")
+  expect_error(make_any(), "needs a predicate")
+  reduced <- omop_category_reduce(flag, make_any())
+  expect_identical(reduced$derived$reducer$fn, "any")
+  expect_error(make_any(), "needs a predicate")
+  expect_error(omop_reduce("all"), "needs a predicate")
+})

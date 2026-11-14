@@ -79,6 +79,12 @@ omop_category_column <- function(column,component=NULL,category_spec=NULL) {
 #' @return A scalar variable declaration (or the reducer's nth-value columns).
 #' @export
 omop_category_reduce <- function(variable,reducer,category_spec=NULL,broadcast=FALSE) {
+  # Evaluate the reducer promise with this typed consumer as its input context.
+  # Outside this dynamic extent, predicate-free ordinary any/all still refuse.
+  reducer <- withCallingHandlers(reducer,
+    dsomop_reducer_predicate_required = function(e) {
+      invokeRestart("dsomop_category_reducer_input")
+    })
   if(!inherits(variable,"omop_variable")||!inherits(reducer,"omop_reducer")) .categoryReject("Use a typed event category and omop_reduce().")
   if(!reducer$fn %in% c("first_value","last_value","nth_value","closest_value","mode","count","n_distinct","any","all","sum")) .categoryReject("Use a category selector/count or semantic-indicator reducer.")
   if(isTRUE(attr(reducer,"number_value_explicit"))||!is.null(reducer$predicate)) .categoryReject("Category reducers consume their typed input; omit value and predicate.")

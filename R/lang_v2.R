@@ -1522,8 +1522,17 @@ omop_reduce <- function(fn, value = NULL, window = NULL, which = NULL, n = 1L,
   if (!identical(fn, "quantile") && !is.null(p)) {
     stop("omop_reduce(): p is used only with quantile.", call. = FALSE)
   }
-  # Unbound any/all also serve typed category indicators. Ordinary event
-  # reducers still require a predicate when bound and validated.
+  # Ordinary event reducers need an explicit predicate. A typed category
+  # consumer can supply the input context through this request-local restart;
+  # no global option or caller-name inspection changes constructor validation.
+  if (fn %in% c("any", "all") && is.null(predicate)) {
+    withRestarts(
+      stop(structure(list(message = paste0("omop_reduce(): ", fn, " needs a predicate."),
+                          call = NULL),
+                     class = c("dsomop_reducer_predicate_required", "error", "condition"))),
+      dsomop_category_reducer_input = function() NULL
+    )
+  }
   if (!fn %in% c("any", "all") && !is.null(predicate)) {
     stop("omop_reduce(): predicate is used only with any/all.", call. = FALSE)
   }

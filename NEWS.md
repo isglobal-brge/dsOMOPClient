@@ -1,5 +1,10 @@
 # dsOMOPClient 2.10.5 (2026-11-14)
 
+- Corrected: ordinary `any`/`all` reducers still require a predicate at
+  construction. Within `omop_category_reduce()`, the typed category input
+  supplies that context, so indicator reductions remain available without an
+  unrelated event predicate. No process-wide validation option is used.
+
 - Corrected: mixed named and unnamed variable declarations pass through category
   bundle expansion until normal recipe naming resolves them; genuine expanded
   name collisions still refuse. Existing declaration syntax remains valid.
