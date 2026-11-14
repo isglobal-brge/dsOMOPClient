@@ -36,6 +36,7 @@
 #' @return A base64 JSON string for complex or named input; unnamed scalars unchanged.
 #' @keywords internal
 .ds_encode <- function(x) {
+  if(is.list(x)&&length(x$numbers))return(.ds_encode_lossless(x))
   if (is.list(x) || (is.atomic(x) && !is.null(names(x))) ||
       (is.vector(x) && length(x) > 1)) {
     # jsonlite::toJSON serializes a named ATOMIC vector as a bare JSON array,
@@ -46,7 +47,7 @@
     # every named atomic vector to a list so names survive transport; the
     # server-side .ds_arg() reads them back as object keys.
     x <- .ds_coerce_names(x)
-    json <- as.character(jsonlite::toJSON(x, auto_unbox = TRUE, null = "null", digits = NA))
+    json <- as.character(jsonlite::toJSON(x, auto_unbox = TRUE, null = "null"))
     # URL-safe base64: no +/= that could confuse Opal's R expression parser
     b64 <- gsub("[\r\n]", "", jsonlite::base64_enc(charToRaw(json)))
     b64 <- gsub("\\+", "-", b64)

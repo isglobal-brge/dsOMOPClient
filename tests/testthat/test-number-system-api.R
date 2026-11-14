@@ -133,3 +133,14 @@ test_that("N49 reconciliation transport retains full binary64 numeric constants"
   expect_identical(decoded$numbers$x$pipeline[[1]]$factor,1/7)
   expect_identical(unlist(decoded$numbers$x$breaks),c(1.25-2^-52,1.25,1.25+2^-52))
 })
+
+test_that("N45 N49 numeric JSON and YAML preserve adjacent boundaries and recipe defaults", {
+  v<-omop_variable(event=omop_event("measurement",3000963L,unit=omop_unit(8713L)),reducer=omop_reduce("mean"))
+  r<-omop_recipe(variables=list(band=omop_number_bins(v,breaks=c(-Inf,1.25-2^-52,1.25,1.25+2^-52,Inf))),number_spec=omop_number_spec(transform=omop_number_transform("affine",factor=1/7)))
+  expected<-.planNormalizedDigest(recipe_to_plan(r,version=2))$sha256
+  for(format in c("json","yaml")) {
+    text<-get(paste0("recipe_export_",format))(r)
+    restored<-get(paste0("recipe_import_",format))(text)
+    expect_identical(.planNormalizedDigest(recipe_to_plan(restored,version=2))$sha256,expected)
+  }
+})

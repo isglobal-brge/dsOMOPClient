@@ -6128,7 +6128,7 @@ recipe_to_code <- function(recipe) {
     variables   = .recipe_strip_classes(recipe$variables),
     filters     = .recipe_strip_classes(recipe$filters),
     outputs     = .recipe_strip_classes(recipe$outputs),
-    options     = recipe$options %||% list(),
+    options     = .recipe_strip_classes(recipe$options %||% list()),
     meta        = .recipe_strip_classes(recipe$meta)
   )
   # Only serialize the scope when set, so an unscoped recipe round-trips
@@ -6459,7 +6459,7 @@ recipe_to_code <- function(recipe) {
     # serialized `key: null` keeps its key (and an older export carrying a now-
     # removed option such as min_persons imports without error, simply ignored).
     recipe$options <- utils::modifyList(recipe$options %||% list(),
-                                        data$options, keep.null = TRUE)
+                                        .v2_restore(data$options), keep.null = TRUE)
   }
 
   for (cs in .v2_restore(data$concept_sets %||% list())) {
@@ -6520,8 +6520,9 @@ recipe_to_code <- function(recipe) {
 recipe_export_json <- function(recipe, file = NULL) {
   # digits = NA: every number keeps its full precision (unit conversion
   # factors and value thresholds must round-trip exactly).
-  json <- jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
-                            null = "null", digits = NA)
+  json <- if(.numberHas(recipe)) .ds_json_lossless(.numberRecipePlain(.recipe_plain(recipe))) else
+    jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
+                    null = "null", digits = NA)
   if (is.null(file)) return(as.character(json))
   writeLines(as.character(json), file)
   invisible(file)
@@ -6572,7 +6573,7 @@ recipe_import_json <- function(json) {
 recipe_export_yaml <- function(recipe, file = NULL) {
   if (!requireNamespace("yaml", quietly = TRUE))
     stop("Package 'yaml' is required for YAML export.", call. = FALSE)
-  text <- yaml::as.yaml(.recipe_plain(recipe), precision = 15L)
+  text <- yaml::as.yaml(if(.numberHas(recipe)).numberRecipePlain(.recipe_plain(recipe)) else .recipe_plain(recipe), precision = 17L)
   if (is.null(file)) return(text)
   writeLines(text, file)
   invisible(file)

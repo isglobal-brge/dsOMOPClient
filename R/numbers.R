@@ -297,3 +297,11 @@ omop_number_derive <- function(inputs,exprs,unit,result=NULL,reducer=NULL,number
     .numberReject("Use a closed mutate-v1 request.","number_expression_invalid")
   result %||% tail(vapply(exprs$assign,function(a)a$name,""),1L)
 }
+
+# Portable numeric recipe data retains explicit infinite bin tails as wire
+# markers while finite boundaries keep the exact lossless numeric encoding.
+.numberRecipePlain <- function(x) {
+  if(is.list(x))return(lapply(x,.numberRecipePlain))
+  if(is.numeric(x)&&any(is.infinite(x)))return(lapply(x,function(v)if(is.infinite(v))if(v<0)"-Inf" else "Inf" else v))
+  x
+}
