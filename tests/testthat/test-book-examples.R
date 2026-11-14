@@ -1,4 +1,4 @@
-test_that("book chapters execute against the released synthetic CDM", {
+test_that("book chapters execute against the A-29 synthetic CDMs", {
   for (pkg in c("dsOMOP","DSLite","dsBase","dsBaseClient","knitr","RSQLite")) {
     skip_if_not_installed(pkg)
   }

@@ -140,6 +140,11 @@ nonfinite arithmetic gives missing values. Person, episode and set keys and
 other protected columns cannot be read or written; class-1 source names are
 also refused. [Privacy](book-12-privacy.html) explains those protections.
 
+For derivation inside a new recipe, prefer the native expressions taught in
+[Derived numeric formulas](book-15-formulas.html). This chapter deliberately
+teaches standalone mutation of an **already assigned** table, including sequential
+assignments, new objects and rollback. Those remain useful operations.
+
 ## Prepare weight and height at the same date
 
 BMI is weight in kilograms divided by squared height in metres. Index each

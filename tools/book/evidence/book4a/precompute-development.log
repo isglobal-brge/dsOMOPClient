@@ -46,7 +46,7 @@ All studies failed for reasons identified below
 Study1: Failed: at least one cell has a non-zero count less than nfilter.tab i.e. 3
 
 AGGREGATES PASS: seven summaries, five tables, refusal formatter guard
-Error in same(get_data("D_event_change")$change, oracle$last - oracle$first) : 
+Error in same(get_data("D_event_change")$change, oracle$last - oracle$first) :
   isTRUE(all.equal(sort(as.numeric(x), na.last = TRUE), sort(as.numeric(y),  .... is not TRUE
 Calls: render ... verify_chapter -> verify_book3 -> same -> stopifnot
 Execution halted
@@ -81,7 +81,7 @@ PRECOMPUTE vignettes/book-12-privacy.Rmd.orig
 ASSERTIONS PASS book-12-privacy.Rmd.orig
 All chapter chunks executed successfully
 PRECOMPUTE vignettes/book-15-labs.Rmd.orig
-Error in same(get_data("D_lab_change")$change, oracle$last - oracle$first) : 
+Error in same(get_data("D_lab_change")$change, oracle$last - oracle$first) :
   isTRUE(all.equal(sort(as.numeric(x), na.last = TRUE), sort(as.numeric(y),  .... is not TRUE
 Calls: render ... verify_chapter -> verify_book3 -> same -> stopifnot
 Execution halted

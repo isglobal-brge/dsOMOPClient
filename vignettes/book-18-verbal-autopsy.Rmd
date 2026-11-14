@@ -1,9 +1,9 @@
 ---
-title: "14. Capstone: a verbal-autopsy wide table"
+title: "18. Capstone: a verbal-autopsy wide table"
 author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{14. Capstone: a verbal-autopsy wide table}
+  %\VignetteIndexEntry{18. Capstone: a verbal-autopsy wide table}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -18,7 +18,12 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -40,6 +45,44 @@ names(conns)
 ```
 
 The `site` connection is ready. This chapter creates its temporary questionnaire fixture locally.
+
+## Find the questionnaire concepts first
+
+The local catalogue is the chapter-4 questionnaire vocabulary, not GiBleed's
+clinical vocabulary. Search before selecting questions and coded answers.
+
+
+``` r
+va_catalogue <- ds.omop.concept.search(NULL, standard_only = FALSE, limit = 100, conns = conns)$pooled
+knitr::kable(va_catalogue[c("concept_name", "domain_id", "standard_concept")])
+```
+
+
+
+|concept_name          |domain_id   |standard_concept |
+|:---------------------|:-----------|:----------------|
+|Education question    |Observation |S                |
+|Fever question        |Observation |S                |
+|Secondary education   |Meas Value  |S                |
+|University education  |Meas Value  |S                |
+|Myocardial infarction |Condition   |S                |
+|Pneumonia             |Condition   |S                |
+|Yes                   |Meas Value  |S                |
+|No                    |Meas Value  |S                |
+|Inpatient Visit       |Meas Value  |S                |
+|Outpatient Visit      |Meas Value  |S                |
+|Education answer      |Meas Value  |S                |
+|Practice medicine     |Drug        |S                |
+|Practice measurement  |Measurement |S                |
+|kilogram              |Unit        |S                |
+
+``` r
+va_ids <- setNames(va_catalogue$concept_id, va_catalogue$concept_name)
+va_sets <- lapply(va_ids, omop_concept_set)
+```
+
+These local concepts have no external Maps to or ancestry. Their observed uses
+were checked in [chapter 4](book-04-vocabulary.html#find-the-colleagues-questions-answers-and-causes).
 
 ## Begin with the clinical question
 
@@ -129,7 +172,7 @@ class(visit_month)
 ```
 
 The values will be ordered categories such as year-month. No manual date-string
-mutation or fixed 64-boundary cut vector is needed in 2.10.4.
+mutation or fixed 64-boundary cut vector is needed in 2.10.5.
 
 ## Present its quarter and year
 
@@ -337,10 +380,6 @@ All shown category tables contain labels, never numeric concept IDs. The recipe
 produces person rows privately; the book deliberately shows aggregates rather than
 a row preview, even though the development fixture is synthetic.
 
-## Recap
-
-The native 2.10.4 API now supports the whole capstone: pseudonymous roster, completed age, coded answers, calendar periods and cause of death.
-
 ## Try it
 
 Use the short released helper to rebuild exactly the same recipe and verify its native plan equals the one above.
@@ -352,7 +391,6 @@ Use the short released helper to rebuild exactly the same recipe and verify its 
 ``` r
 source("tools/dates/va-native.R")
 reference <- va_native_recipe()
-stopifnot(recipe_explain(reference, conns = conns)$selected == "v2")
 identical(recipe_to_plan(va), recipe_to_plan(reference))
 ```
 
@@ -380,3 +418,86 @@ ds.omop.table("D_va_reference", "cause_of_death", conns = conns)
 ```
 
 </details>
+
+## Exercise 2: a common variant
+
+Count education in the completed verbal-autopsy table.
+
+<details><summary>Solution 2</summary>
+
+
+``` r
+ds.omop.table("D_va", "education", conns = conns)
+```
+
+```
+#> D_va$education
+#>  Secondary education University education 
+#>                    6                    6
+```
+
+This is one categorical answer per person, not one binary column for each answer.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Inspect the final table schema without downloading the table.
+
+<details><summary>Solution 3</summary>
+
+
+``` r
+dsBaseClient::ds.colnames("D_va", datasources = conns)
+```
+
+```
+#> $site
+#>  [1] "person_id"          "age_at_death"       "age_at_first_visit" "education"         
+#>  [5] "fever"              "visit_date"         "visit_month"        "visit_quarter"     
+#>  [9] "visit_year"         "visit_parts_year"   "visit_parts_month"  "death_date"        
+#> [13] "cause_of_death"
+```
+
+Its private columns combine several domains. The approved aggregate remains the analyst-facing result.
+
+</details>
+## Add a native numeric presentation
+
+Keep exact completed age private and add a broad age band with the A-29 numeric
+wrapper. Missing age stays missing. These public teaching bands do not repair
+incomplete birth dates or infer an age for a survivor.
+
+
+``` r
+va_numeric <- omop_recipe(variables = c(va$variables,
+  list(age_band = omop_number_bins(age_at_death, breaks = c(0, 40, 121),
+    labels = c("under 40", "40 and over")))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+print(recipe_execute(va_numeric, out = c(people = "D_va_numeric"), conns = conns))
+```
+
+```
+#>         people 
+#> "D_va_numeric"
+```
+
+``` r
+ds.omop.table("D_va_numeric", "age_band", conns = conns)
+```
+
+```
+#> D_va_numeric$age_band
+#>    under 40 40 and over 
+#>           6           6
+```
+
+The earlier date presentation and concept translation remain native. Custom
+category order, rollups, wide-by-time layout and codebooks await the separate
+categorical/layout update; this chapter does not invent arguments for them.
+
+## Recap
+
+The native 2.10.5 API now supports the whole capstone: pseudonymous roster, completed age, coded answers, calendar periods and cause of death.
+
+**Next:** [19. Case study: HDSS-style mortality](book-19-case-mortality.html).

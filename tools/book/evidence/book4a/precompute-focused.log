@@ -18,3 +18,43 @@ BOOK3 PASS: source oracles, released summaries/counts, disjoint 14+14 sites, wei
 ASSERTIONS PASS book-14-labs.Rmd.orig
 All chapter chunks executed successfully
 PRECOMPUTE vignettes/book-15-formulas.Rmd.orig
+BOOK4 FORMULAS PASS: BMI arithmetic, rounding, source-aligned MAP, unique episode collapse
+ASSERTIONS PASS book-15-formulas.Rmd.orig
+All chapter chunks executed successfully
+PRECOMPUTE vignettes/book-18-verbal-autopsy.Rmd.orig
+ASSERTIONS PASS book-18-verbal-autopsy.Rmd.orig
+All chapter chunks executed successfully
+PRECOMPUTE vignettes/book-19-case-mortality.Rmd.orig
+BOOK4 MORTALITY PASS: deaths, missing ages, clipped risk time and released rates
+ASSERTIONS PASS book-19-case-mortality.Rmd.orig
+All chapter chunks executed successfully
+PRECOMPUTE vignettes/book-20-case-gibleed.Rmd.orig
+Error in same(env$comparison_fit$coefficients[, 2], summary(ref)$coefficients[,  :
+  isTRUE(all.equal(as.numeric(x), as.numeric(y), tolerance = 1e-07)) is not TRUE
+Calls: render ... verify_chapter -> verify_book4 -> same -> stopifnot
+Execution halted
+PRECOMPUTE vignettes/book-21-case-glucose.Rmd.orig
+BOOK4 GLUCOSE PASS: category type, observed times and independent Gaussian fit
+ASSERTIONS PASS book-21-case-glucose.Rmd.orig
+All chapter chunks executed successfully
+PRECOMPUTE vignettes/book-22-case-drug.Rmd.orig
+
+Quitting from vignettes/book-22-case-drug.Rmd.orig:64-80 [utilisation-population]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error: variable 'covered': coverage = "effective_supply" needs a stockpiled era (omop_era(stockpile = TRUE)) as its source. It cannot execute as a v1 plan either (it uses number_spec/numeric declarations (use native language 2); population 'study': omop_index(); population 'study': omop_coverage(); population 'study': language-2 criteria; variable 'covered': event/reducer; variable 'persistence': event/reducer; variable 'pdc': event/reducer; variable 'discontinued': event/reducer; variable 'fills': event/reducer; output 'baseline': format = "wide").
+Execution halted
+PRECOMPUTE vignettes/book-23-case-table1.Rmd.orig
+BOOK4 TABLE1 PASS: identical factor domains, disjoint roster and pooled mean
+ASSERTIONS PASS book-23-case-table1.Rmd.orig
+All chapter chunks executed successfully
+PRECOMPUTE vignettes/book-showcase.Rmd.orig
+SHOWCASE PASS: two harmonised sites, ages/dates, 12 shapes, VA, numeric counts, converted/filter summaries and solution
+ASSERTIONS PASS book-showcase.Rmd.orig
+All chapter chunks executed successfully
+Error: Fresh-process chapters failed: vignettes/book-20-case-gibleed.Rmd.orig, vignettes/book-22-case-drug.Rmd.orig
+Execution halted

@@ -22,6 +22,11 @@ Start a fresh session in `book-work` and run every section in order, including s
 GiBleed and Synthea are public **synthetic** resources. Their results teach analysis
 mechanics, not clinical conclusions. This chapter uses dsBaseClient 6.3.5.
 
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+
 ## The same people, two shapes
 
 *Longitudinal* means following the same people over time. Here is a tiny invented
@@ -90,7 +95,6 @@ visitors <- omop_population("visitors", index = omop_index(visits))
 visit_recipe <- omop_recipe(events = list(visits), populations = list(visitors),
   outputs = omop_output("visits", rows = "visitors", format = "long", sources = "admission",
     options = list(columns_derived = c("days_from_index", "duration_days"))))
-stopifnot(recipe_explain(visit_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), conns = conns))
 ```
 
@@ -194,7 +198,6 @@ windows <- omop_recipe(events = list(lab), populations = list(entry), variables 
   last2 = window_value("last_value", 1000, 1999),
   last3 = window_value("last_value", 2000, 2999)),
   outputs = omop_output("wide", rows = "entry", format = "wide"))
-stopifnot(recipe_explain(windows, conns = conns)$selected == "v2")
 print(recipe_execute(windows, out = c(wide = "D_windows"), conns = conns))
 ```
 
@@ -344,7 +347,6 @@ panel <- omop_recipe(events = list(lab), populations = list(entry),
   outputs = omop_output("panel", rows = "entry", format = "person_period",
     options = list(sources = list(lab), bins = list(width = 1000L),
       window = omop_window(0, 2999), analyses = c("count", "last"), representation = "dense")))
-stopifnot(recipe_explain(panel, conns = conns)$selected == "v2")
 print(recipe_execute(panel, out = c(panel = "D_panel"), conns = conns))
 ```
 
@@ -435,7 +437,6 @@ hazard <- omop_recipe(events = list(lab, death), populations = list(entry), vari
       options = list(from = list(list(output = "daily"), list(output = "ends")),
         how = "left", cardinality = "many_to_one"))))
 hazard$publish <- "risk"
-stopifnot(recipe_explain(hazard, conns = two_conns, symbol = "book_pool")$selected == "v2")
 print(recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "book_pool"))
 ```
 
@@ -619,7 +620,6 @@ bmi_entry <- omop_population("bmi_entry", index = omop_index(bmi))
 repeated <- omop_recipe(events = list(bmi), populations = list(bmi_entry),
   outputs = omop_output("long", rows = "bmi_entry", format = "long", sources = "bmi",
     options = list(columns_derived = c("value", "unit", "days_since_previous"))))
-stopifnot(recipe_explain(repeated, conns = two_conns, symbol = "book_pool")$selected == "v2")
 print(recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "book_pool"))
 ```
 
@@ -806,3 +806,5 @@ shape when possible, and understand what information a reshape cannot recover.
 A first-event hazard needs an at-risk panel with follow-up stopped at the event.
 Repeated-measure models instead retain repeated readings and model their dependence.
 Check every site's diagnostics and distinguish joint GLM estimation from SLMA pooling.
+
+**Next:** [17. Reproduction and migration notes](book-17-reproduce.html).

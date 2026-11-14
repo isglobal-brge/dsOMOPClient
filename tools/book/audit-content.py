@@ -24,6 +24,11 @@ for p in chapters:
             cleaned = re.sub(r"#> Warning: the 'nobars' function has moved to the reformulas package\. Please update your\n#> imports, or ask an upstream package maintainer to do so\.\n", '', block)
             assert not re.search(r'#> (Error|Warning)', cleaned), f'Unexpected mixed-model diagnostic: {p}'
             diagnostics = diagnostics.replace(block, cleaned)
+    if p.name == 'book-14-labs.Rmd':
+        for block in re.findall(r'<!-- expected-reference-cleanup:start -->(.*?)<!-- expected-reference-cleanup:end -->', text, re.S):
+            cleaned = re.sub(r"#> Warning in rm\(.*?object 'dsOexec\.[^']+'\n#> not found\n", '', block)
+            assert not re.search(r'#> (Error|Warning)', cleaned), f'Unexpected reference diagnostic: {p}'
+            diagnostics = diagnostics.replace(block, cleaned)
     assert not re.search(r'#> (Error|Warning)', diagnostics), f'Unexpected diagnostic: {p}'
     # Refusals return ordinary lists, not necessarily R errors. Only a named,
     # visibly marked refusal lesson may contain a failed aggregate response.

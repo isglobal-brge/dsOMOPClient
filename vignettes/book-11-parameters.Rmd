@@ -19,8 +19,13 @@ This chapter uses the public synthetic Synthea27Nj numeric connection from [Gett
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice connection;
-all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
+all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
 The numbers describe teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -86,7 +91,6 @@ The unbound template cannot execute until its required setting is supplied.
 
 ``` r
 outpatient <- recipe_bind(template, setting = 9202L)
-stopifnot(recipe_explain(outpatient, conns = conns)$selected == "v2")
 recipe_explain(outpatient)$selected
 ```
 
@@ -176,7 +180,6 @@ shortcuts <- omop_study(omop_event("measurement", 3000963L), outputs = "baseline
     count = omop_count("measurement", 3000963L, before = 365),
     value = omop_value_at_index("measurement", 3000963L,
       tolerance = c(-30, 0), unit = 8713L)))
-stopifnot(recipe_explain(shortcuts, conns = conns)$selected == "v2")
 print(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
 ```
 
@@ -241,6 +244,11 @@ nonfinite arithmetic gives missing values. Person, episode and set keys and
 other protected columns cannot be read or written; class-1 source names are
 also refused. [Privacy](book-12-privacy.html) explains those protections.
 
+For derivation inside a new recipe, prefer the native expressions taught in
+[Derived numeric formulas](book-15-formulas.html). This chapter deliberately
+teaches standalone mutation of an **already assigned** table, including sequential
+assignments, new objects and rollback. Those remain useful operations.
+
 ## Prepare weight and height at the same date
 
 BMI is weight in kilograms divided by squared height in metres. Index each
@@ -259,7 +267,6 @@ body <- omop_study(weight_event, outputs = "baseline", baseline = list(
   age = omop_age_at(omop_anchor(weight_event)),
   first_date = omop_date(omop_anchor(weight_event, which = "first")),
   last_date = omop_date(omop_anchor(weight_event, which = "last"))))
-stopifnot(recipe_explain(body, conns = conns)$selected == "v2")
 print(recipe_execute(body, out = c(baseline = "D_body"), conns = conns))
 ```
 
@@ -351,7 +358,7 @@ knitr::kable(book_counts(age_counts))
 |NA        |     0|
 
 `cut` produces text labels in this grammar, not an ordered R factor. The table
-may display them alphabetically. [Chapter 15](book-14-labs.html) shows how to
+may display them alphabetically. [Chapter 14](book-14-labs.html) shows how to
 assign an explicit factor level sequence for modelling and display.
 
 **Exercise:** create an adult flag using the same lower boundary of 18.
@@ -739,10 +746,6 @@ filter. The earlier missingness case ensures an unknown age is not called adult.
 
 </details>
 
-## Recap
-
-Parameters change declared inputs, shortcuts express common native recipes, and mutate/filter operate privately on assigned tables. Each final object still passes publication checks.
-
 ## Try it
 
 Bind the same template to inpatient visits and summarise the prior-visit count. Do not alter the outpatient template in place.
@@ -752,7 +755,6 @@ Bind the same template to inpatient visits and summarise the prior-visit count. 
 
 ``` r
 inpatient <- recipe_bind(template, setting = 9201L)
-stopifnot(recipe_explain(inpatient, conns = conns)$selected == "v2")
 print(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
 ```
 
@@ -780,3 +782,8 @@ dsBaseClient::ds.summary("D_param_inpatient$prior_visits", datasources = conns)
 Each binding is a separate recipe. Its own index changes which earlier records fall into the lookback window. A numeric summary suits these varied counts; a categorical table can be refused when it creates too many distinct levels in a small population.
 
 </details>
+## Recap
+
+Parameters change declared inputs, shortcuts express common native recipes, and mutate/filter operate privately on assigned tables. Each final object still passes publication checks.
+
+**Next:** [12. What stays private](book-12-privacy.html).

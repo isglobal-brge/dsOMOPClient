@@ -27,8 +27,12 @@ server below. RStudio is a convenient editor; ordinary R also works. Download th
 Run this **installation block once**, before the examples. It installs every
 package used by the lessons, the offline server and the reproduction tools.
 Installation changes your library and is not executed during the book build.
-The two dsOMOP tags must be available on GitHub; this book's recorded run used
-the matching locally tagged sources.
+This is an **A-29 development preview**: no 2.10.5 release tag existed at build
+time. Obtain the matching source directories or package archives from your
+study team. In the authoring workspace the defaults below select the two local
+`feat/2.10.5-numbers` worktrees; elsewhere set the two environment variables to
+your supplied paths. A future release can replace these two local installs with
+its published tags. This preview does not ask you to install a nonexistent tag.
 
 ```r
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
@@ -36,8 +40,10 @@ install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "rmarkdown", "pkgdown", "bslib", "opalr", "duckdb"))
 remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
 remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
-remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never")
-remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never")
+server_source <- Sys.getenv("BOOK_SERVER_SOURCE", "/workspace/dsomop/wt/numbers/dsOMOP")
+client_source <- Sys.getenv("BOOK_CLIENT_SOURCE", "/workspace/dsomop/wt/numbers/dsOMOPClient")
+remotes::install_local(server_source, upgrade = "never")
+remotes::install_local(client_source, upgrade = "never")
 ```
 
 The *client* is the package on your computer. The *server* runs requests near the
@@ -47,7 +53,7 @@ record the dependency versions used for this book.
 
 ## Get the book helpers
 
-The released 2.10.5 package archive does **not** contain `tools/book/`.
+The book helpers are distributed separately from the package.
 Download [book-helpers.zip](../downloads/book-helpers.zip) from this site, leaving
 it zipped in your Downloads folder. In R, run this block and select that ZIP
 when the file chooser opens:
@@ -58,7 +64,7 @@ dir.create(book_dir, recursive = TRUE, showWarnings = FALSE)
 unzip(file.choose(), exdir = book_dir)
 setwd(book_dir)
 stopifnot(all(file.exists(file.path("tools/book",
-  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R", "load-numeric.R")))),
+  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R", "load-numeric.R", "case-helpers.R")))),
   file.exists("tools/dates/va-native.R"))
 getwd()
 ```
@@ -69,11 +75,12 @@ The ZIP preserves `tools/book/` and `tools/dates/` automatically. Alternatively,
 [practice](../downloads/practice.R), [fixture](../downloads/fixture.R),
 [connection](../downloads/connection.R), [display](../downloads/display.R) and
 [practice loader](../downloads/load-practice.R) and
-[numeric loader](../downloads/load-numeric.R) files under `book-work/tools/book/`.
+[numeric loader](../downloads/load-numeric.R) and
+[formula helpers](../downloads/case-helpers.R) files under `book-work/tools/book/`.
 Keep the numeric loader filename `load-numeric.R`; the practice loader sources it.
 Also create `book-work/tools/dates/` and save the
 [released capstone helper](../downloads/va-native.R) there as `va-native.R`;
-chapter 14's solution uses it.
+chapter 18's solution uses it.
 
 `connection.R` is the one place to select DSLite or Opal and set the Opal URL,
 project, profile and two resource names. Leave its defaults for local practice.

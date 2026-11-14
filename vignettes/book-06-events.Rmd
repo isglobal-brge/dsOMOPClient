@@ -19,8 +19,13 @@ This chapter uses the public synthetic Synthea27Nj numeric connection from [Gett
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice connection;
-all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
+all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
 The numbers describe teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -174,7 +179,6 @@ give any = 0 and all = NA: without measurements there is no all-value result.
 reducers <- omop_recipe(variables = list(first = first, last = last,
   mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(reducers, conns = conns)$selected == "v2")
 print(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
 ```
 
@@ -559,7 +563,6 @@ means closest within a chosen tolerance; it need not occur on the index day.
 at_index <- omop_study(measure, outputs = "baseline",
   baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
     tolerance = c(-30, 0), unit = 8713L)))
-stopifnot(recipe_explain(at_index, conns = conns)$selected == "v2")
 print(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
 ```
 
@@ -654,7 +657,6 @@ ranges. Use the same target and conversion map across sites before pooling.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(converted, conns = conns)$selected == "v2")
 print(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
 ```
 
@@ -715,59 +717,36 @@ We apply them to each person's mean, privately.
 
 
 ``` r
-print(ds.omop.mutate("D_reducers",
-  band = cut(mean, breaks = c(0, 14, 15, 100),
-    labels = c("below 14", "14 to below 15", "15 or above"), right = FALSE),
-  high = ifelse(mean >= 15, 1L, 0L), low = ifelse(mean < 14, 1L, 0L),
-  newobj = "D_lab_bins", conns = conns))
-```
-
-```
-#> [1] "D_lab_bins"
-```
-
-`cut()` in dsOMOP 2.10.4 produces character labels. Make a server-side
-factor with explicitly sequenced levels before tabulating it:
-
-
-``` r
+mean_value <- omop_variable(event = measure, reducer = omop_reduce("mean"))
 band_levels <- c("below 14", "14 to below 15", "15 or above")
-dsBaseClient::ds.asFactor("D_lab_bins$band", newobj.name = "event_band",
-  forced.factor.levels = band_levels, datasources = conns)
+binned <- omop_recipe(variables = list(mean = mean_value,
+  band = omop_number_bins(mean_value, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
+  high = omop_number_flag(mean_value, "ge", 15),
+  low = omop_number_flag(mean_value, "lt", 14)))
+print(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
 ```
 
 ```
-#> $all.unique.levels
-#> [1] "below 14"       "14 to below 15" "15 or above"   
-#> 
-#> $return.message
-#> [1] "Data object <event_band> correctly created in all specified data sources"
+#>       output 
+#> "D_lab_bins"
 ```
+
+The band is an ordered factor directly on the server. No mutate-plus-cut or
+subsequent factor conversion is needed. The type matters for model contrasts.
+
 
 ``` r
-dsBaseClient::ds.levels("event_band", datasources = conns)
+dsBaseClient::ds.class("D_lab_bins$band", datasources = conns)
 ```
 
 ```
 #> $site
-#> $site$Levels
-#> [1] "below 14"       "14 to below 15" "15 or above"   
-#> 
-#> $site$ValidityMessage
-#> [1] "VALID ANALYSIS"
+#> [1] "dsomop_date_factor" "ordered"            "factor"
 ```
-
-The levels now run from low to high on the server and in the count table.
-This is a factor with a declared level sequence, **not R's `ordered` class**:
-`ds.asFactor()` uses ordinary categorical contrasts, with the first level as
-reference. Sorting a displayed table alone would not change those model semantics.
-Do not pass `ordered_result` to `ds.omop.mutate()`; that argument is unsupported.
-For an ordinal display, apply `ordered()` only to the released category labels;
-it does not make private values available or change the server model.
 
 
 ``` r
-bins_result <- dsBaseClient::ds.table("event_band", useNA = "always", datasources = conns)
+bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
 bin_display <- book_counts(bins_result)
 bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
 knitr::kable(bin_display[order(bin_display$Category, na.last = TRUE), ])
@@ -810,7 +789,7 @@ bins_result
 #> $output.list
 #> $output.list$TABLE_rvar.by.study_row.props
 #>                 study
-#> event_band       site
+#> D_lab_bins$band  site
 #>   below 14          1
 #>   14 to below 15    1
 #>   15 or above       1
@@ -818,7 +797,7 @@ bins_result
 #> 
 #> $output.list$TABLE_rvar.by.study_col.props
 #>                 study
-#> event_band            site
+#> D_lab_bins$band       site
 #>   below 14       0.3214286
 #>   14 to below 15 0.3214286
 #>   15 or above    0.3571429
@@ -826,19 +805,19 @@ bins_result
 #> 
 #> $output.list$TABLE_rvar.by.study_counts
 #>                 study
-#> event_band       site
+#> D_lab_bins$band  site
 #>   below 14          9
 #>   14 to below 15    9
 #>   15 or above      10
 #>   NA                0
 #> 
 #> $output.list$TABLES.COMBINED_all.sources_proportions
-#> event_band
+#> D_lab_bins$band
 #>       below 14 14 to below 15    15 or above             NA 
 #>          0.321          0.321          0.357          0.000 
 #> 
 #> $output.list$TABLES.COMBINED_all.sources_counts
-#> event_band
+#> D_lab_bins$band
 #>       below 14 14 to below 15    15 or above             NA 
 #>              9              9             10              0 
 #> 
@@ -865,7 +844,6 @@ ranges <- omop_recipe(variables = list(
   high_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_high")),
   low_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_low"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(ranges, conns = conns)$selected == "v2")
 print(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
 ```
 
@@ -932,10 +910,6 @@ recorded comparable abnormal-high result; it is **not evidence of normality**.
 The study-defined flags above remain a separate, explicit definition. Never fill
 missing clinical reference ranges with an invented normal interval.
 
-## Recap
-
-An event chooses records, a window chooses time, and a reducer answers one question. Empty records and an undefined anchor are different.
-
 ## Try it
 
 Add a count of measurement rows and compare its released mean and quantiles
@@ -948,7 +922,6 @@ with the measurement-day summary above.
 row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(row_count, conns = conns)$selected == "v2")
 print(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
 ```
 
@@ -1010,12 +983,13 @@ summarise the differences. Is this the same quantity as a slope?
 
 
 ``` r
-print(ds.omop.mutate("D_reducers", change = last - first,
-  newobj = "D_event_change", conns = conns))
+change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
+print(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
 ```
 
 ```
-#> [1] "D_event_change"
+#>           output 
+#> "D_event_change"
 ```
 
 ``` r
@@ -1025,19 +999,68 @@ knitr::kable(book_summary(event_change))
 
 
 
-|Site |Statistic |      Value|
-|:----|:---------|----------:|
-|site |5%        | -2.8950000|
-|site |10%       | -2.4900000|
-|site |25%       | -0.9500000|
-|site |50%       |  0.9000000|
-|site |75%       |  2.1750000|
-|site |90%       |  3.2000000|
-|site |95%       |  3.6550000|
-|site |Mean      |  0.9071429|
+|Site |Statistic |  Value|
+|:----|:---------|------:|
+|site |5%        | -2.940|
+|site |10%       | -2.580|
+|site |25%       | -1.400|
+|site |50%       |  1.600|
+|site |75%       |  2.400|
+|site |90%       |  3.200|
+|site |95%       |  3.760|
+|site |Mean      |  1.016|
 
-This is change in g/dL, without dividing by elapsed time. A fitted slope uses
+This is change in g/dL, without dividing by elapsed time. Native change needs
+two eligible readings; a single reading stays missing rather than becoming zero. A fitted slope uses
 all eligible dates and values and has units per day. Continue with
 [Working with lab values](book-14-labs.html) for both methods and pooled analyses.
 
 </details>
+
+## Exercise 2: a common variant
+
+Inspect the unit declaration before executing a conversion. What changes: the patients or the measurement coordinate?
+
+<details><summary>Solution 2</summary>
+
+
+``` r
+class(lab_gl)
+```
+
+```
+#> [1] "omop_event" "list"
+```
+
+``` r
+lab_gl$unit
+```
+
+```
+#> $target
+#> [1] 8636
+#> 
+#> $convert
+#> $convert$`8713`
+#> factor offset 
+#>     10      0 
+#> 
+#> 
+#> $unknown
+#> [1] "missing"
+#> 
+#> $censored
+#> [1] "keep"
+#> 
+#> attr(,"class")
+#> [1] "omop_unit" "list"
+```
+
+It changes the numeric coordinate under the declared conversion map, not who the source records describe.
+
+</details>
+## Recap
+
+An event chooses records, a window chooses time, and a reducer answers one question. Empty records and an undefined anchor are different.
+
+**Next:** [7. Populations and index events](book-07-populations.html).

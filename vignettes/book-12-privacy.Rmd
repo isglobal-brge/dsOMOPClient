@@ -19,8 +19,13 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run its sections in order. Each chapter starts from a fresh practice connection;
-all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls.
+all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
 The numbers describe teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -60,7 +65,6 @@ not make a patient-level table suitable for download.
 ``` r
 private <- omop_recipe(variables = list(age = omop_age_at("2024-06-01")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(private, conns = conns)$selected == "v2")
 print(recipe_execute(private, out = c(people = "D_private"), conns = conns))
 ```
 
@@ -178,7 +182,6 @@ aggregates and any category labels still face the applicable release controls.
 ``` r
 date_recipe <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(date_recipe, conns = conns)$selected == "v2")
 print(recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns))
 ```
 
@@ -234,10 +237,6 @@ answers in this design.
 No chapter needs raw-row download methods, weaker thresholds, database TLS changes
 or owner configuration to make its normal protected recipe route work.
 
-## Recap
-
-A recipe creates private objects and returns their names. Final patient outputs need distinct-person support; aggregates and category metadata have further checks. Class-1 fields and protected-key expressions are refused.
-
 ## Try it
 
 After the refused small filter, confirm you can still summarise the original private age column.
@@ -264,3 +263,47 @@ dsBaseClient::ds.summary("D_private$age", datasources = conns)
 The original object remains usable. A refusal is not permission to bypass its release rule with another encoding.
 
 </details>
+
+## Exercise 2: a common variant
+
+Confirm a failed key-copy attempt left the original schema usable.
+
+<details><summary>Solution 2</summary>
+
+
+``` r
+dsBaseClient::ds.colnames("D_private", datasources = conns)
+```
+
+```
+#> $site
+#> [1] "person_id" "age"
+```
+
+The protected key was not turned into an analyst variable; the original private object remains.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Check a valid date recipe is still a local definition. Does serialisation release dates?
+
+<details><summary>Solution 3</summary>
+
+
+``` r
+is.character(recipe_export_json(date_recipe))
+```
+
+```
+#> [1] TRUE
+```
+
+No. A JSON definition is public study logic. The resulting dates remain private and aggregates still face release checks.
+
+</details>
+## Recap
+
+A recipe creates private objects and returns their names. Final patient outputs need distinct-person support; aggregates and category metadata have further checks. Class-1 fields and protected-key expressions are refused.
+
+**Next:** [13. Visit dates, one idea at a time](book-13-visits.html).

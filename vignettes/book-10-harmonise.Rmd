@@ -18,7 +18,12 @@ This chapter uses the 24-person synthetic questionnaire test fixture described i
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## Start this chapter
 
@@ -66,7 +71,6 @@ Selecting the question concept as the value would answer a different question.
 ``` r
 categories <- omop_recipe(variables = list(education = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(categories, conns = conns)$selected == "v2")
 print(recipe_execute(categories, out = c(people = "D_categories"), conns = conns))
 ```
 
@@ -116,7 +120,6 @@ missing; absence of a record is not a clinical “no”.
 ``` r
 answers <- omop_recipe(variables = list(fever = fever),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(answers, conns = conns)$selected == "v2")
 print(recipe_execute(answers, out = c(people = "D_category_answers"), conns = conns))
 ```
 
@@ -195,7 +198,6 @@ Name an explicit variable in the recipe list, without changing what its answers 
 ``` r
 renamed <- omop_recipe(variables = list(schooling = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(renamed, conns = conns)$selected == "v2")
 print(recipe_execute(renamed, out = c(people = "D_renamed_categories"), conns = conns))
 ```
 
@@ -260,7 +262,6 @@ readable. An explicit name cannot collide with a protected or another final colu
 
 
 ``` r
-stopifnot(recipe_explain(renamed_panel, conns = conns)$selected == "v2")
 print(recipe_execute(renamed_panel, out = c(panel = "D_renamed_panel"), conns = conns))
 ```
 
@@ -333,7 +334,6 @@ harmonised <- omop_recipe(variables = list(education = omop_variable(
   reducer = omop_reduce("last_value", value = "value_as_concept_id"),
   labels = c("900102" = "University education"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-stopifnot(recipe_explain(harmonised, conns = two_conns)$selected == "v2")
 print(recipe_execute(harmonised, out = c(people = "D_shared"), conns = two_conns))
 ```
 
@@ -393,10 +393,6 @@ ds.omop.table("D_shared", "education", conns = two_conns)
 The pooled counts add released cells. They do not link people across sites.
 In a real network, confirm the concept meanings as well as their labels.
 
-## Recap
-
-Concept values translate by default. Label maps recode answers; column maps rename variables. Shared labels give common categories across vocabulary wording differences, after you confirm concept meanings.
-
 ## Try it
 
 Check the selected recipe language once more, then close both temporary connections.
@@ -420,3 +416,46 @@ unlink(pair$path)
 ```
 
 </details>
+
+## Exercise 2: a common variant
+
+Does a label map change a concept set? Inspect the recipe object locally.
+
+<details><summary>Solution 2</summary>
+
+
+``` r
+class(harmonised)
+```
+
+```
+#> [1] "omop_recipe" "list"
+```
+
+A recipe definition is local. Reconciliation changes presentation; concept meaning still requires study review.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Check that the recipe remains serialisable after harmonisation.
+
+<details><summary>Solution 3</summary>
+
+
+``` r
+is.character(recipe_export_json(harmonised))
+```
+
+```
+#> [1] TRUE
+```
+
+TRUE means this definition can be recorded. It does not prove that two different concepts are clinically equivalent.
+
+</details>
+## Recap
+
+Concept values translate by default. Label maps recode answers; column maps rename variables. Shared labels give common categories across vocabulary wording differences, after you confirm concept meanings.
+
+**Next:** [11. Reusable studies and standalone verbs](book-11-parameters.html).

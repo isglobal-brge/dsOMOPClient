@@ -91,6 +91,20 @@ knitr::kable(ds.omop.columns("death", conns = conns)$site)
 
 </details>
 
+## Compare events with people
+
+A visit table can contain repeated rows per person. Request its protected summary
+before assuming a count of visits is a count of participants.
+
+```{r visit-statistics}
+ds.omop.table.stats("visit_occurrence", conns = conns)$per_site$site
+```
+
+Compare the returned row and distinct-person representations with the earlier
+observation summary. They describe different clinical events and may use bands.
+Neither a large row count nor the presence of a numeric column guarantees the
+support needed for a specific lab, category or model.
+
 ## Exercise 2: a common variant
 
 Inspect drug dates and supply fields. Which are different from a visit start?

@@ -18,7 +18,7 @@ This chapter uses the public synthetic GiBleed practice connection from [Getting
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
 ## Start this chapter
 
@@ -143,10 +143,6 @@ it does not grant permission to fetch rows.
 The practical sequence is: choose events, describe variables, assign a table,
 then request an aggregate. Chapters 5–7 walk through it one small step at a time.
 
-## Recap
-
-OMOP makes data structures familiar. DataSHIELD keeps patient rows at the server and checks released summaries.
-
 ## Try it
 
 Find the columns of the death table without asking for its rows.
@@ -172,3 +168,68 @@ knitr::kable(ds.omop.columns("death", conns = conns)$site)
 |cause_source_concept_id |integer      |real        |source_concept    |concept        |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
 
 </details>
+
+## Exercise 2: a common variant
+
+Find the visit date column without asking for visits.
+
+<details><summary>Solution 2</summary>
+
+
+``` r
+knitr::kable(ds.omop.columns("visit_occurrence", conns = conns)$site)
+```
+
+
+
+|column_name                   |cdm_datatype |db_datatype |concept_role      |semantic_class |fk_domain    |is_date |is_extension |is_untyped_identifier |is_sensitive |is_blocked |is_quasi_identifier |
+|:-----------------------------|:------------|:-----------|:-----------------|:--------------|:------------|:-------|:------------|:---------------------|:------------|:----------|:-------------------|
+|visit_occurrence_id           |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|person_id                     |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|visit_concept_id              |integer      |real        |domain_concept    |concept        |Visit        |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|visit_start_date              |date         |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|visit_start_datetime          |datetime     |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|visit_end_date                |date         |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|visit_end_datetime            |datetime     |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|visit_type_concept_id         |Integer      |real        |type_concept      |concept        |Type Concept |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|provider_id                   |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|care_site_id                  |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|visit_source_value            |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|visit_source_concept_id       |integer      |real        |source_concept    |concept        |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|admitting_source_concept_id   |integer      |real        |source_concept    |concept        |Visit        |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|admitting_source_value        |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|discharge_to_concept_id       |integer      |real        |attribute_concept |concept        |Visit        |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|discharge_to_source_value     |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|preceding_visit_occurrence_id |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+
+A schema describes fields, not people. A date field can exist in an empty table.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Ask for protected person-table statistics. Why is this different from a row download?
+
+<details><summary>Solution 3</summary>
+
+
+``` r
+ds.omop.table.stats("person", conns = conns)$per_site$site
+```
+
+```
+#> $rows
+#> [1] 2690
+#> 
+#> $persons
+#> [1] 2690
+```
+
+This returns the service’s protected summary; no person identifier is released.
+
+</details>
+## Recap
+
+OMOP makes data structures familiar. DataSHIELD keeps patient rows at the server and checks released summaries.
+
+**Next:** [2. Resources, connections and symbols](book-02-connect.html).

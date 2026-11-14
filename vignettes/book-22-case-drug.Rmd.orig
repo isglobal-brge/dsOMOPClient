@@ -52,6 +52,11 @@ knitr::kable(hits[c("concept_name", "standard_concept", "concept_class_id")])
 ingredient_id <- hits$concept_id[trimws(hits$concept_name) == "celecoxib"]
 knitr::kable(ds.omop.concept.descendants(ingredient_id, conns = conns)$pooled["concept_name"])
 knitr::kable(ds.omop.concept.prevalence("drug_exposure", top_n = 10, scope = "pooled", conns = conns)$pooled)
+mapping <- ds.omop.concept.relationships(ingredient_id, relationship_id = "Maps to",
+  conns = conns, symbol = "omop")$pooled
+children <- ds.omop.concept.descendants(ingredient_id, include_self = FALSE,
+  conns = conns, symbol = "omop")$pooled
+print(data.frame(Maps_to_rows = NROW(mapping), Descendant_rows = NROW(children)))
 drug_set <- omop_concept_set(ingredient_id, descendants = TRUE)
 ```
 
@@ -65,8 +70,8 @@ more stable patients. A real protocol may instead use each person's observed tim
 users <- omop_new_users(drug_set, washout_days = 365)
 users$filters <- c(users$filters, list(omop_observed(after = 364)))
 drug <- omop_event("drug_exposure", drug_set)
-era <- omop_era(drug, gap = 30, by = "ingredient")
-covered <- omop_variable(event = drug, reducer = omop_reduce("covered_days",
+era <- omop_era(drug, gap = 30, by = "ingredient", stockpile = TRUE)
+covered <- omop_variable(event = era, reducer = omop_reduce("covered_days",
   window = omop_window(0, 364), coverage = "effective_supply"))
 persistence <- omop_variable(event = era, reducer = omop_reduce("first_era_days",
   window = omop_window(0, 364)))
@@ -79,6 +84,7 @@ print(recipe_execute(utilisation, out = c(baseline = "D_utilisation"), conns = c
 knitr::kable(book_summary(dsBaseClient::ds.summary("D_utilisation$covered", datasources = conns)))
 ```
 
+The stockpiled era carries overlapping supply forward under the declared rule.
 Covered days count the union of effective supply days, avoiding double counting
 overlap. Era persistence tolerates a declared 30-day gap; it is not the same as
 covered days. Recorded prescribing is not proof of actual ingestion.

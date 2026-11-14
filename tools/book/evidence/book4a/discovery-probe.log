@@ -320,6 +320,6 @@ Logging into the collaborating servers
 50                                              Walnut IgE Ab [Units/volume] in Serum
 [1] "survival"
 [1] "ds.glm"        "ds.glmSummary" "ds.rbind"      "ds.glmPredict"
-[5] "ds.glmerSLMA"  "ds.glmSLMA"   
+[5] "ds.glmerSLMA"  "ds.glmSLMA"
 NULL
 Ran 6/6 deferred expressions

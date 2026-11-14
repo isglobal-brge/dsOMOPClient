@@ -283,8 +283,10 @@ knitr::kable(book_summary(slope_summary))
 <details><summary>Solution</summary>
 
 ```{r slope-exercise}
-print(ds.omop.mutate("D_lab_slopes", per_365_days = 365 * per_day,
-  newobj = "D_lab_annual", conns = conns))
+annual <- omop_recipe(variables = list(per_365_days = omop_number(
+  omop_number_change(lab, "slope", time_unit = "days"),
+  omop_number_spec(transform = omop_number_transform("affine", factor = 365)))))
+print(recipe_execute(annual, out = c(output = "D_lab_annual"), conns = conns))
 annual_summary <- dsBaseClient::ds.summary("D_lab_annual$per_365_days", datasources = conns)
 knitr::kable(book_summary(annual_summary))
 ```
@@ -396,6 +398,12 @@ The missing bounds cannot establish normality. Do not invent bounds or weaken
 the release check to obtain categories. The declared-threshold example above
 is the runnable alternative when those cutoffs are part of the protocol.
 
+The refusal can also emit the DSLite cleanup warning shown below: an internal
+execution handle has already been removed. It is a cleanup diagnostic, not a
+released patient count or a successful assignment. Its temporary handle name
+changes between sessions. Both diagnostics remain visible in this lesson.
+
+<!-- expected-reference-cleanup:start -->
 ```{r reference-categories}
 reference_recipe <- omop_recipe(variables = list(control = omop_number_category(last, range = "reference")))
 reference_message <- tryCatch({
@@ -404,6 +412,7 @@ reference_message <- tryCatch({
 }, error = function(e) conditionMessage(e))
 cat(reference_message, "\n")
 ```
+<!-- expected-reference-cleanup:end -->
 
 **Exercise (intermediate).** Count people whose mean is at least 15 g/dL.
 

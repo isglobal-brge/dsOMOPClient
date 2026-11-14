@@ -24,8 +24,15 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
     output <- sub("\\.orig$", "", input)
     knitr::knit(input, output=output, envir=environment(), quiet=TRUE)
     # Compare the entire lesson, including exercises, solutions and all outputs.
-    stopifnot(identical(unname(tools::md5sum(output)),
-                        unname(tools::md5sum(expected))))
+    canonical_lesson <- function(path) {
+      lines <- readLines(path, warn=FALSE)
+      # The explained missing-handle cleanup warning includes a random execution
+      # token. Compare every word and output except that non-patient token.
+      cleanup <- grepl("^#> Warning in rm.*object 'dsOexec[.]", lines)
+      lines[cleanup] <- gsub("dsOexec[.][A-Za-z0-9]+", "dsOexec.TEMP", lines[cleanup])
+      lines
+    }
+    stopifnot(identical(canonical_lesson(output), canonical_lesson(expected)))
     if (grepl("book-18-verbal-autopsy", input)) {
       stopifnot(identical(recipe_to_plan(va), recipe_to_plan(reference)))
       # These are public synthetic fixtures: verify the actual assigned tables too.
@@ -39,11 +46,11 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
     if (grepl("book-17-reproduce", input)) {
       stopifnot(identical(manifest, jsonlite::read_json(file.path(
         Sys.getenv("BOOK_PRACTICE_DIR", "../practice-data"), "manifest.json"))))
-      message("PASS: Appendix A reads the loader manifest")
+      message("PASS: Reproduction chapter reads the loader manifest")
     }
   }
   run()
-  message("PASS: all chunks and byte-identical output: ", basename(input))
+  message("PASS: all chunks and identical output (normalised temporary cleanup handle): ", basename(input))
   quit(save="no", status=0L)
 }
 
@@ -92,6 +99,6 @@ local({
   for (input in inputs) run_chapter(input)
   # No ../practice-data exists in this case: the override must actually be used.
   run_chapter(inputs[grepl("book-17-reproduce", inputs)], custom=TRUE)
-  message("PASS: 19 complete chapters in fresh R processes from the final ZIP; ",
-          "Appendix A also passed with BOOK_PRACTICE_DIR and no default data path")
+  message("PASS: 25 complete chapters in fresh R processes from the final ZIP; ",
+          "Reproduction chapter also passed with BOOK_PRACTICE_DIR and no default data path")
 })

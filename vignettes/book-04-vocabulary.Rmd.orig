@@ -175,7 +175,7 @@ children. Save the definition and read it back without accessing patients.
 ```{r excluded-set}
 children_only <- omop_concept_set(asthma_id, descendants = TRUE,
   exclude = omop_concept_set(asthma_id, descendants = FALSE))
-concept_file <- tempfile(fileext = ".rds")
+concept_file <- "book-concepts.rds"
 saveRDS(list(asthma = asthma, children_only = children_only), concept_file)
 saved_sets <- readRDS(concept_file)
 identical(saved_sets$children_only, children_only)
@@ -279,9 +279,14 @@ glucose_units <- ds.omop.value.counts("measurement", "unit_concept_id",
   concept_id = glucose_hits$concept_id[glucose_hits$concept_name == "Glucose [Mass/volume] in Serum or Plasma"], scope = "pooled", conns = conns)
 knitr::kable(glucose_units$pooled)
 saveRDS(list(sets = lab_sets, glucose_catalogue = glucose_hits,
-  visit_sets = visit_sets, education = education_set, causes = cause_sets), concept_file)
+  visit_sets = visit_sets, education = education_set, causes = cause_sets,
+  questionnaire_catalogue = questionnaire), concept_file)
 identical(readRDS(concept_file)$sets, lab_sets)
 ```
+
+Keep `book-concepts.rds` with your study files. In a later session,
+`readRDS("book-concepts.rds")$education` reuses the saved education definition;
+the questionnaire catalogue records the IDs used in subsequent examples.
 
 Different specimens, mass versus molar concentrations and urine versus blood
 measurements need different definitions. Preserve that decision with the set.

@@ -44,6 +44,11 @@ glucose_id <- hits$concept_id[trimws(hits$concept_name) == "Glucose [Mass/volume
 knitr::kable(ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled)
 knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = glucose_id,
   scope = "pooled", conns = conns)$pooled)
+mapping <- ds.omop.concept.relationships(glucose_id, relationship_id = "Maps to",
+  conns = conns, symbol = "omop")$pooled
+children <- ds.omop.concept.descendants(glucose_id, include_self = FALSE,
+  conns = conns, symbol = "omop")$pooled
+print(data.frame(Maps_to_rows = NROW(mapping), Descendant_rows = NROW(children)))
 glucose_set <- omop_concept_set(glucose_id)
 ```
 

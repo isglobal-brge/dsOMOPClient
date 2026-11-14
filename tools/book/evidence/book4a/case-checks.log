@@ -1,0 +1,12 @@
+PRECOMPUTE vignettes/book-20-case-gibleed.Rmd.orig
+Poisson SE actual: 0.53960614803831,0.104324316242454,0.0137415559024098; central: 0.539595542590461,0.104322044730466,0.0137412828663465
+Error in same(env$comparison_fit$coefficients[, 2], summary(ref)$coefficients[,  :
+  isTRUE(all.equal(as.numeric(x), as.numeric(y), tolerance = 1e-07)) is not TRUE
+Calls: render ... verify_chapter -> verify_book4 -> same -> stopifnot
+Execution halted
+PRECOMPUTE vignettes/book-22-case-drug.Rmd.orig
+BOOK4 UTILISATION PASS: PDC bounds and discontinuation rule
+ASSERTIONS PASS book-22-case-drug.Rmd.orig
+All chapter chunks executed successfully
+Error: Fresh-process chapters failed: vignettes/book-20-case-gibleed.Rmd.orig
+Execution halted

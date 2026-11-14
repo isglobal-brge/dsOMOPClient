@@ -18,7 +18,7 @@ This chapter uses the public synthetic GiBleed practice connection from [Getting
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
 
 ## Start this chapter
 
@@ -211,10 +211,6 @@ The numeric chapters will open their own fresh `numeric` session. Keeping resour
 selection explicit prevents accidentally running a lab recipe against GiBleed's
 empty numeric-value fields.
 
-## Recap
-
-The resource identifies a database; `omop` is its session handle; `D_people` will name a private result.
-
 ## Try it
 
 Repeat the column request without specifying the symbol.
@@ -288,3 +284,64 @@ ds.omop.columns("person", conns = conns)$site
 ```
 
 </details>
+
+## Exercise 2: a common variant
+
+Resolve resource names for an Opal project called teaching. Do you need to reconnect for this local calculation?
+
+<details><summary>Solution 2</summary>
+
+
+``` r
+book_resource_names("Opal", "teaching", c(gibleed = "bleeding", numeric = "labs"))
+```
+
+```
+#>             gibleed             numeric 
+#> "teaching.bleeding"     "teaching.labs"
+```
+
+No. Name resolution is local; attaching the resolved resource is a separate server operation.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Use an explicit handle for a different table, then verify the current server version.
+
+<details><summary>Solution 3</summary>
+
+
+``` r
+knitr::kable(ds.omop.columns("death", symbol = "omop", conns = conns)$site)
+```
+
+
+
+|column_name             |cdm_datatype |db_datatype |concept_role      |semantic_class |fk_domain    |is_date |is_extension |is_untyped_identifier |is_sensitive |is_blocked |is_quasi_identifier |
+|:-----------------------|:------------|:-----------|:-----------------|:--------------|:------------|:-------|:------------|:---------------------|:------------|:----------|:-------------------|
+|person_id               |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|death_date              |date         |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|death_datetime          |datetime     |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|death_type_concept_id   |integer      |real        |type_concept      |concept        |Type Concept |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|cause_concept_id        |integer      |real        |attribute_concept |concept        |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|cause_source_value      |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|cause_source_concept_id |integer      |real        |source_concept    |concept        |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+
+``` r
+ds.omop.server.version(conns = conns)
+```
+
+```
+#>   server published running missing ready advice recipe_language
+#> 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....
+```
+
+The same handle routes both calls to the current resource. A symbol name does not describe which dataset it contains.
+
+</details>
+## Recap
+
+The resource identifies a database; `omop` is its session handle; `D_people` will name a private result.
+
+**Next:** [3. Exploring the CDM](book-03-explore.html).

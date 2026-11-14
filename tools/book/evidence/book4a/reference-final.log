@@ -1,0 +1,5 @@
+PRECOMPUTE vignettes/book-14-labs.Rmd.orig
+BOOK3 PASS: source oracles, released summaries/counts, disjoint 14+14 sites, weighted quantiles and Gaussian coefficients
+ASSERTIONS PASS book-14-labs.Rmd.orig
+All chapter chunks executed successfully
+All chapters passed in separate R processes using visible setup

@@ -6,10 +6,10 @@ local({
   on.exit(unlink(scratch,recursive=TRUE),add=TRUE)
   reader <- file.path(scratch,'book-work');dir.create(file.path(reader,'tools/book'),recursive=TRUE)
   dir.create(file.path(reader,'tools/dates'),recursive=TRUE)
-  helpers <- c('practice.R','fixture.R','connection.R','display.R','load-practice.R','load-numeric.R')
+  helpers <- c('practice.R','fixture.R','connection.R','display.R','load-practice.R','load-numeric.R','case-helpers.R')
   # Each helper must be linked in the actual alternative list, before the capstone.
   setup <- readLines('vignettes/book-00-start.Rmd.orig')
-  alternative <- paste(setup[grep('Alternatively, save',setup):grep('chapter 14.s solution uses it',setup)],collapse='\n')
+  alternative <- paste(setup[grep('Alternatively, save',setup):grep('chapter 18.s solution uses it',setup)],collapse='\n')
   stopifnot(all(vapply(helpers,function(h) grepl(paste0('../downloads/',h),alternative,fixed=TRUE),logical(1))))
   stopifnot(all(file.copy(file.path('docs/downloads',helpers),file.path(reader,'tools/book'))),
     file.copy('docs/downloads/va-native.R',file.path(reader,'tools/dates')))
