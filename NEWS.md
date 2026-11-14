@@ -22,7 +22,6 @@
   naming an intermediate does not change admission. Legacy mutate semantics
   and the closed expression grammar are unchanged.
 
-
 - Corrected (shared codebook presentation): prospective columns use the execution
   numeric/date/category evaluators on empty public prototypes, including existing
   and generated dates, canonical numeric copies and categorical copies. Membership
@@ -48,6 +47,111 @@
   category defaults to generated date endpoints, including ordering, recodes,
   public levels, reference and contrasts in nested and joined outputs. Rebuild
   affected codebooks; recipe declarations and published data do not change.
+
+- Corrected / newly refused: CKD-EPI 2021 eGFR rejects input-local source-unit
+  maps that differ from the age anchor's shared event normalization. Such maps
+  could select creatinine from a different date and use the wrong calendar age
+  or adult eligibility. Move `omop_unit()` normalization onto the event shared
+  by creatinine and `omop_age_at()`; retain explicit numeric coordinate
+  conversions on the creatinine input. Aligned shared maps and day-zero/index
+  age inputs remain supported.
+
+- Newly permitted: four exact-version client formula constructors (BMI,
+  arithmetic MAP, ratio, and race-free CKD-EPI 2021 creatinine eGFR) expand into
+  existing typed private operations. Declare source selection, canonical units
+  or explicit conversions, and the eGFR sex mapping/calendar-age anchor. Invalid
+  values yield typed NA; structural unit/anchor/version errors refuse. Formula
+  identity and derivative provenance survive JSON, YAML and generated R.
+- Newly permitted: `omop_number_daily()` selects original events, applies input
+  presentation, collapses within recorded concept-days, then applies the outer
+  numeric reducer and final presentation. Mean/max/first and skip/propagate are
+  explicit. Use this route for equal-day weighting instead of ordinary record
+  weighting. It requires the server's `number.daily` capability; old servers
+  refuse before assignment. No absent days, reference ranges or support counts
+  are invented.
+- Corrected: YAML and generated R retain small binary64 coefficients exactly,
+  including the eGFR age factor. Regenerate affected serialized recipes from
+  their original numeric declarations; already rounded coefficients cannot be
+  recovered from saved text.
+- Scope: broader A-31 deliverables are deferred as listed in
+  `POST_2.10.5_ROADMAP.md`. Real Opal acceptance belongs to integration e2e.
+
+- Corrected (audit prerequisite integration): imported vocabulary validity
+  remains executable in category rollup domains, including exclusions.
+  Use a server advertising vocabulary.ohdsi_import_validity for these domains.
+- Corrected: prospective generated-date columns apply category ordering defaults
+  consistently with publication. Rebuild affected codebooks.
+
+- Corrected: explicit coverage on an imported Circe population now overrides
+  the translated coverage default during compilation, including saved and
+  generated recipes. Remove the explicit coverage to restore the imported
+  policy. Original source provenance is retained and edits remain derivatives.
+- Corrected: Circe inspection reports independent unsupported clauses inside
+  nested groups at each structural path; groups remain unsupported for import.
+
+* **Corrected:** Circe inspection reports measurement bounds, occurrence,
+  window, age and sex clauses independently when several are unsupported.
+  Editing an imported legacy population now rebuilds its native translation;
+  an explicit native index takes precedence. Conflicting edits to both stored
+  representations are **newly refused**: choose a native index or remove
+  `circe_v2` to execute the edited legacy declaration. Prefixed merges refresh
+  derivative provenance and retain original source hashes.
+
+* **Corrected:** imported-vocabulary capability and preflight traversal now
+  distinguishes declaration registries from advisory metadata. Event and
+  concept-set names such as `meta`, `metadata`, and `circe_provenance` retain
+  identical validation and capability requirements. Existing names remain
+  valid; use a capable server and valid vocabulary references for these plans.
+
+* **Corrected / newly refused:** both OHDSI import paths attach the executable
+  `ohdsi-import-1` vocabulary policy. Explicit included/excluded concepts must
+  exist as valid public vocabulary records (including concept 0); invalid
+  descendants and invalid mapped sources are excluded. Mapping follows valid
+  Maps-to sources toward selected targets; classification concepts are allowed.
+  Native declarations retain their existing behavior. Re-import old saved
+  definitions to opt into the stricter policy. Policy-bearing plans require
+  the paired server's `vocabulary.ohdsi_import_validity` capability; incapable
+  servers refuse without native fallback. Save/load, code generation, merge,
+  wire normalization and semantic digests retain the policy.
+
+* **Newly permitted:** `recipe_circe_support()` describes the directional
+  bridge subset, and `recipe_circe_check()` inspects definitions locally and
+  reports independent unsupported clauses with bounded structural diagnostics.
+  Import/export use the checker. Native populations without an export adapter
+  receive `unsupported_native_export`; retain their native recipe.
+* **Corrected:** Circe imports retain original JSON bytes (canonical JSON for
+  list inputs), hashes, adapter/subset versions and optional sanitized public
+  origin declarations. Save/load retains the origin and marks edited population
+  declarations as derivatives. This provenance is client-side, not a claim of
+  general phenotype equivalence. Vocabulary validity is enforced separately by
+  the executable policy described above.
+  The pinned PhenotypeLibrary 304 example has a private membership/date oracle
+  against its upstream SQL; unsupported example 10 reports structural refusals.
+  Re-import an old definition to obtain the new provenance fields.
+
+* **Newly refused:** incidence `clean_window` values other than zero and
+  `fe.prevalence` `time_windows` values other than zero now fail with a bounded
+  setting-specific remedy before patient computation on ordinary, protected
+  and alias routes. These selectors previously did not implement the requested
+  science. Use a validated native risk/window recipe when that setting matters;
+  dropping a required window is not an equivalent analysis. Explicit null,
+  nonfinite/fractional values and malformed selectors are invalid settings.
+* **Corrected:** incidence discovery describes the first-target-episode,
+  full-window person-day estimand and separates contribution bounds from risk
+  windows. FE prevalence describes all-history events among scoped members,
+  without a cohort-relative date predicate.
+
+* **Newly refused:** both OHDSI concept importers now validate concept IDs and
+  Boolean flags before coercion, exclusion or deduplication. Supply integral
+  JSON numbers in 0..2147483647 (including 0 for unknown), not numeric strings;
+  use true/false or omit flags, not null. Duplicate keys and unsupported item
+  semantics refuse. Nested concept descriptions are limited to CONCEPT_NAME,
+  STANDARD_CONCEPT, STANDARD_CONCEPT_CAPTION, INVALID_REASON,
+  INVALID_REASON_CAPTION, CONCEPT_CODE, DOMAIN_ID, VOCABULARY_ID,
+  CONCEPT_CLASS_ID, VALID_START_DATE and VALID_END_DATE; they never affect
+  membership. Circe cohort exclusions/mixed flags remain unsupported; the
+  registry retains uniform included/excluded groups. List and JSON/file inputs
+  use the same strict parser.
 
 - Corrected (date/category schema review): prospective codebooks include native
   date endpoints before final selection, with their effective presentation types
@@ -119,7 +223,6 @@
 - Newly refused: scalar formulas in long output, including nested formulas,
   require explicit `broadcast = TRUE`, just like direct scalar reducers.
 
-
 - Corrected: shared numeric contracts retain full binary64 precision through
   DataSHIELD JSON transport, including fractional conversion factors and
   adjacent breakpoints. Re-execute recipes to reconcile those contracts.
@@ -146,6 +249,15 @@
   implicit event broadcasts; and nonnumeric/foreign expression bindings.
   Use registered numeric measures, explicit numeric date representations,
   declared broadcasts/reducers, and typed wide/long companions as applicable.
+
+- Corrected with the matching server: empty active-comparator populations now
+  receive `insufficient_support` at the final gate. Default execution rolls back
+  all sites; `on_small_site = "skip"` retains both analysis roots at supported
+  sites, in memory and staged modes. This also covers populations emptied by
+  eligibility criteria. Update the server and re-run the recipe.
+
+- Fixed deferred panel source policy names during prefixed recipe merging,
+  so binding before or after a merge produces the same plan.
 
 # dsOMOPClient 2.10.4 (2026-11-13)
 

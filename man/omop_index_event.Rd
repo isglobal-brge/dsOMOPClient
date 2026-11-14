@@ -11,7 +11,8 @@ omop_index_event(
   primary_limit = c("first", "last", "all"),
   include_descendants = FALSE,
   include_mapped = FALSE,
-  end_strategy = NULL
+  end_strategy = NULL,
+  validity_policy = NULL
 )
 }
 \arguments{
@@ -38,6 +39,9 @@ OHDSI DateOffset shape \code{list(DateOffset = list(DateField =
 "StartDate"|"EndDate", Offset = <integer>))}. Use \code{EndDate} with
 offset zero to select the physical event end (capped at observation-period
 end, as in Circe).}
+
+\item{validity_policy}{NULL for native semantics, or \code{"ohdsi-import-1"}
+for the server-enforced imported-vocabulary validity contract.}
 }
 \value{
 An \code{omop_index_event} object.

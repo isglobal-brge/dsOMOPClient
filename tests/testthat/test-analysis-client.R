@@ -721,8 +721,10 @@ test_that("ds.omop.prevalence delegates to fe.prevalence with mapped params", {
       # entry name (3rd positional) is the fe.prevalence catalog id.
       expect_equal(run[[3]], "dsomop:fe.prevalence")
       # params (4th positional) carry the mapped domain_code + top_n.
-      params <- jsonlite::fromJSON(rawToChar(jsonlite::base64_dec(
-        gsub("_", "/", gsub("-", "+", sub("^B64:", "", run[[4]]))))))
+      encoded <- gsub("_", "/", gsub("-", "+", sub("^B64:", "", run[[4]])))
+      encoded <- paste0(encoded, strrep("=", (4L - nchar(encoded) %% 4L) %% 4L))
+      params <- jsonlite::fromJSON(rawToChar(jsonlite::base64_dec(encoded)))
+      expect_identical(params$time_windows, "0")
       expect_equal(params$domain_code, "1")   # "drug" -> "1"
       expect_equal(params$top_n, 10)
     })

@@ -125,7 +125,7 @@
     if(flag) {semantic<-"flag";type<-spec$binary$as %||% "integer"}
     else if(concept) {semantic<-"concept";type<-if(isFALSE(plan$options$translate_concepts))"integer" else inherited$r_type %||% "factor"}
     else if(representation %in% c("bins","category")) {semantic<-representation;type<-"ordered_factor"}
-    else if(fn %in% c("count","n_distinct","sum","mean","min","max","median","first_value","last_value","nth_value","closest_value","mode") && is.null(inherited) || (d$kind %||% "") %in% c("number_rows","number_derive","number_change","number_count")) {semantic<-"numeric";type<-if(fn %in% c("count","n_distinct")||identical(d$kind,"number_count"))"integer" else "double"}
+    else if(fn %in% c("count","n_distinct","sum","mean","min","max","median","first_value","last_value","nth_value","closest_value","mode") && is.null(inherited) || (d$kind %||% "") %in% c("number_rows","number_derive","number_change","number_count","number_daily")) {semantic<-"numeric";type<-if(fn %in% c("count","n_distinct")||identical(d$kind,"number_count"))"integer" else "double"}
     if (numeric && !flag && !representation %in% c("bins","category")) {
       for (step in pipeline) {
         if (step$kind=="fixed_unit" || step$kind=="transform" && step$method!="identity" || step$kind=="round" && step$method!="none") type<-"double"

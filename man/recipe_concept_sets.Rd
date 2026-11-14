@@ -20,7 +20,10 @@ recipe_import_concept_sets(recipe, x)
 \item{x}{A JSON string or file with one concept-set expression
 (\code{list(items = ...)}), a named list of them, or an ATLAS
 \code{ConceptSets} array (elements with \code{name} and
-\code{expression}).}
+\code{expression}). Concept IDs must be scalar integral JSON numbers in
+0..2147483647. Present flags must be scalar Booleans; omitted means false
+and null is invalid. Duplicate object keys and unsupported item fields
+are refused before include/exclude partitioning.}
 }
 \value{
 A named list of \code{omop_concept_set} objects, a JSON string, or
