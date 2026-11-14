@@ -129,26 +129,44 @@
     if(step$kind=="expression")unit<-step$unit %||% "unresolved"
     if(step$kind %in% c("flag","present","missing"))unit<-"1"
   }
-  levels<-spec$levels %||% spec$recode$levels %||% inherited$levels$keys
-  labels<-spec$recode$labels %||% inherited$levels$labels
-  if(is.null(levels)&&representation %in% c("bins","category")) {
+  # Resolve closed producer domains with the same public identity rules as
+  # publication. Open vocabulary names still require admitted metadata.
+  levels<-inherited$levels$keys; labels<-inherited$levels$labels
+  if(representation %in% c("bins","category")) {
     labels<-.numberDeclaredLevels(terminal)
     if(length(labels))levels<-paste0(if(!category_present)"N" else if(representation=="bins")"bin:" else "category:",seq_along(labels))
   }
-  if (is.null(levels) && !is.null(date) && type %in% c("factor","ordered_factor")) {
+  if (!is.null(date) && type %in% c("factor","ordered_factor") && !representation %in% c("bins","category")) {
     public <- if (date_kind=="date_part") .datePart(as.Date(character()),d$part,date) else if (date_kind=="calendar_date") .datePresent(list(lo=as.Date(character()),hi=as.Date(character())),date) else NULL
     calendar <- attr(public,"omop_date_contract")
     if (length(calendar$levels)) {levels<-if(category_present)paste0("period:",calendar$levels) else calendar$levels;labels<-calendar$labels}
   }
   if(identical(semantic,"flag")&&type %in% c("factor","ordered_factor")) {levels<-c("flag:0","flag:1");labels<-spec$binary$labels %||% inherited$levels$labels %||% c("no","yes")}
-  if(!is.null(levels)&&identical(spec$missing$na,"level")) {levels<-c(levels,"special:missing");labels<-NULL}
-  if(!is.null(levels)&&identical(spec$missing$unknown,"level")) {levels<-c(levels,"special:unknown");labels<-NULL}
+  resolved <- NULL
+  if (category_present && length(levels) && length(labels)==length(levels) && !concept) {
+    if (semantic %in% c("bins","category")) levels<-sub("^N",if(semantic=="bins")"bin:" else "category:",levels)
+    if (semantic=="date") levels<-ifelse(startsWith(levels,"period:"),levels,paste0("period:",levels))
+    contract <- list(spec=spec,producer=list(kind=semantic),producer_order=as.list(levels),producer_ordered=type=="ordered_factor")
+    records <- setNames(lapply(seq_along(levels),function(i)list(id=levels[[i]],label=labels[[i]],origin="producer",category=contract)),levels)
+    if (length(spec$recode$map)) {
+      targets<-unlist(spec$recode$levels,use.names=FALSE)
+      target_labels<-unlist(spec$recode$labels %||% sub("^[^:]+:","",targets),use.names=FALSE)
+      for (key in setdiff(targets,names(records))) records[[key]]<-list(id=key,label=target_labels[match(key,targets)],origin="recode",domain_only=TRUE,category=contract)
+    }
+    resolved <- .categoryResolveRecords(unname(records),complete=FALSE,identity=contract)
+    levels<-resolved$keys;labels<-resolved$levels
+  } else {
+    levels<-spec$levels %||% if(length(spec$recode$map))spec$recode$levels else levels
+    labels<-spec$recode$labels %||% labels
+    if(!is.null(levels)&&identical(spec$missing$na,"level")) {levels<-c(levels,"special:missing");labels<-NULL}
+    if(!is.null(levels)&&identical(spec$missing$unknown,"level")) {levels<-c(levels,"special:unknown");labels<-NULL}
+  }
   if (!type %in% c("factor","ordered_factor")) {levels<-NULL;labels<-NULL;spec$reference<-NULL}
   list(stable_key=key,name=key,meaning=if(is.null(variable))paste("Output",semantic,"role",key) else paste("Declared variable",key),
     semantic_type=semantic,r_type=type,storage_type="unresolved",unit=unit,
     levels=if(!is.null(levels))list(keys=levels,labels=labels,completeness="declared; open producers remain unresolved"),
-    ordered=if(type %in% c("factor","ordered_factor"))type=="ordered_factor",reference=if(type %in% c("factor","ordered_factor"))spec$reference %||% inherited$reference,
-    contrasts=if(type=="ordered_factor")list(kind="polynomial") else if(type=="factor")list(kind="treatment",reference=spec$reference),
+    ordered=if(type %in% c("factor","ordered_factor"))type=="ordered_factor",reference=if(type %in% c("factor","ordered_factor"))resolved$reference %||% spec$reference %||% inherited$reference,
+    contrasts=resolved$contrasts %||% if(type=="ordered_factor")list(kind="polynomial") else if(type=="factor")list(kind="treatment",reference=spec$reference),
     derivation=list(variable=variable,category_spec=spec),privacy_class=if(!is.null(variable$date_spec)||identical(variable$derived$kind,"repeated"))2L else "unresolved",
     aggregate_policy="Existing endpoint admission; unresolved for unrequested endpoints",
     missing_policy="Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA",

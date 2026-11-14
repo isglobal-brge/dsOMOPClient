@@ -152,3 +152,25 @@ test_that("R2 date result typing uses execution semantics before numeric default
   expect_identical(books$prospective$r_type,books$published$r_type)
   expect_identical(books$prospective$r_type[-1],"ordered_factor")
 })
+
+
+test_that("R2 category ordering, recodes and resets use the public producer domain", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  v <- omop_number_bins(omop_variable(event=omop_event("observation",45000120L),reducer=omop_reduce("count")),breaks=c(0,2,10),labels=c("few","many"))
+  r <- omop_recipe(variables=list(inherited=v,reset=omop_category(v,omop_category_spec(order=omop_category_order(metadata="producer"),ordered=FALSE))),
+    category_spec=omop_category_spec(order=omop_category_order(c("bin:2","bin:1")),ordered=TRUE,reference="bin:1"))
+  books <- .category_review_books(r,ctx,"CategoryOrderDefaults")
+  expect_identical(books$prospective$r_type,books$published$r_type)
+  for (i in 2:3) {
+    expect_equal(unlist(books$prospective$levels[[i]]$keys),unlist(books$published$levels[[i]]$keys))
+    expect_equal(unlist(books$prospective$levels[[i]]$labels),unlist(books$published$levels[[i]]$labels))
+    expect_equal(books$prospective$reference[[i]],books$published$reference[[i]])
+    expect_equal(books$prospective$contrasts[[i]],books$published$contrasts[[i]])
+  }
+  spec <- omop_category_spec(recode=omop_category_recode(c(`bin:1`="category:few",`bin:2`="category:many"),c("category:few","category:many"),labels=c("Few","Many")),missing=omop_category_missing(na="level"))
+  r <- omop_recipe(variables=list(n=omop_category(v,spec)))
+  books <- .category_review_books(r,ctx,"CategoryRecode")
+  expect_identical(books$prospective$r_type,books$published$r_type)
+  expect_equal(unlist(books$prospective$levels[[2]]$keys),unlist(books$published$levels[[2]]$keys))
+  expect_equal(unlist(books$prospective$levels[[2]]$labels),unlist(books$published$levels[[2]]$labels))
+})
