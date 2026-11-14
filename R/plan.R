@@ -1890,7 +1890,6 @@ ds.omop.plan.execute <- function(plan, out = NULL,
                                harmonize_factors = TRUE,
                                on_small_site = c("error", "skip")) {
   formula_provenance <- attr(plan,"omop_formula_provenance")
-  study_provenance <- attr(plan,"omop_study_provenance")
   on_small_site <- match.arg(on_small_site)
   output_mode <- match.arg(output_mode, c("memory", "staged"))
   # A language-2 plan (recipe_to_plan(), version 2) runs through the same
@@ -2138,9 +2137,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     answer<-if (standard) out else inventories
     codebooks<-lapply(presentation,function(x)attr(x,"codebook"))
     codebooks<-Filter(Negate(is.null),codebooks)
-    if(length(codebooks))attr(answer,"omop_codebook")<-list(plan=plan,components=codebooks,formulas=formula_provenance,study_provenance=study_provenance,
-      publication_sites=setNames(lapply(names(inventories),function(site)list(status=statuses[[site]]$status,
-        components=unlist(lapply(names(inventories[[site]]),function(root)paste(root,names(inventories[[site]][[root]]),sep="/")),use.names=FALSE))),names(inventories)))
+    if(length(codebooks))attr(answer,"omop_codebook")<-list(plan=plan,components=codebooks,formulas=formula_provenance)
     answer
   }, error = function(e) {
     cleanup <- tryCatch({

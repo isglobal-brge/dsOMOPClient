@@ -35,3 +35,21 @@ test_that("formula definitions retain exact binary64 coefficients in YAML", {
   b<-.yaml_load_safe(yaml::as.yaml(a,precision=17L,handlers=list(numeric=.numberYamlNumeric)))
   expect_identical(.numberJson(a),.numberJson(b))
 })
+
+test_that("Q14 edited expansions retain immutable origin and identify derivatives", {
+  x<-.audit_formula_inputs()
+  v<-omop_formula_ratio(x$coordinate("1"),x$coordinate("1"),"1")
+  before<-.formulaProvenance(v)
+  expect_false(before$derivative)
+  v$number_spec<-omop_number_spec(round=omop_number_round("decimals",digits=2L))
+  after<-.formulaProvenance(v)
+  expect_true(after$derivative)
+  expect_identical(after$original_expansion_sha256,before$original_expansion_sha256)
+  expect_identical(after$sha256,before$sha256)
+  expect_false(identical(after$expansion_sha256,before$expansion_sha256))
+  r<-omop_recipe(variables=list(ratio=v))
+  restored<-recipe_import_json(recipe_export_json(r))
+  expect_identical(.numberJson(.formulaInventory(restored)),.numberJson(.formulaInventory(r)))
+  after$equation<-"changed"
+  expect_error(.formulaRestore(v,after),"formula_provenance_invalid")
+})

@@ -1467,7 +1467,7 @@
   .v2_validate_plan_semantics(plan)
   .v2_assert_no_class1(plan)
   .v2_assert_schema(plan)
-  structure(plan, class = c("omop_plan_v2", "list"), omop_formula_provenance=.formulaInventory(recipe),omop_study_provenance=.bundleRecipeProvenance(recipe))
+  structure(plan, class = c("omop_plan_v2", "list"), omop_formula_provenance=.formulaInventory(recipe))
 }
 
 # Class-1 columns (section 7.6) are never projected, used as value columns or
