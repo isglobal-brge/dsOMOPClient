@@ -239,7 +239,7 @@ omop_number_derive <- function(inputs,exprs,unit,result=NULL,reducer=NULL,number
 .numberWireDerived <- function(ctx,d,context) {
   d<-.numberBindParams(d,context)
   out<-d[!vapply(d,is.null,logical(1))]
-  if(!is.null(d$input))out$input<-.v2w_variable(ctx,d$input,paste0(context,"_daily"))
+  if(identical(d$kind,"number_daily"))out$input<-.v2w_variable(ctx,d$input,paste0(context,"_daily"))
   if(!is.null(d$source))out$source<-.v2c_source(ctx,d$source,context)
   if(!is.null(d$window))out$window<-.v2w_window(ctx,d$window,context)
   if(!is.null(d$reference))out$reference<-if(identical(d$reference,"first"))list(kind="first_observation") else .dateWireSource(ctx,d$reference,context)

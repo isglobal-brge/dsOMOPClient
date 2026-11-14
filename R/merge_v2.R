@@ -426,6 +426,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
       if(!is.null(x$derived$values))x$derived$values<-lapply(x$derived$values,self$any)
       if(!is.null(x$derived$timepoints))x$derived$timepoints<-self$any(x$derived$timepoints)
       if(!is.null(x$derived$visits))x$derived$visits<-self$any(x$derived$visits)
+      if (identical(x$derived$kind,"number_daily")) x$derived$input <- self$any(x$derived$input)
       if (!is.null(x$derived$inputs)) x$derived$inputs <- lapply(x$derived$inputs,self$any)
       if (!is.null(x$derived$reducer)) x$derived$reducer <- self$any(x$derived$reducer)
       return(x)

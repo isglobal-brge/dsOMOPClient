@@ -19,3 +19,12 @@ test_that("Q15 daily declarations preserve both stages through portable recipes"
   expect_error(omop_number_daily(omop_variable(event=e,reducer=omop_reduce("mean")),omop_reduce("mean")),"number_daily_input")
   expect_error(omop_number_daily(omop_number_rows(e),omop_reduce("count")),"number_expression_invalid")
 })
+
+test_that("Q15 missing capability refuses before assignment", {
+  v<-omop_number_daily(omop_number_rows(omop_event("measurement",3000963L,unit=omop_unit(8554L))),omop_reduce("mean"))
+  r<-omop_recipe(variables=list(daily=v))
+  required<-.plan_v2_operations(recipe_to_plan(r,version=2))
+  state<-.legacy_federation(new=c("one","two"),ops=setdiff(union(.V2_ALL_OPS,required),"number.daily"))
+  expect_error(recipe_execute(r),"lacks number.daily")
+  expect_identical(unname(state$assigns),c(0L,0L))
+})

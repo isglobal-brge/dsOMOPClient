@@ -17,6 +17,7 @@ recipe_codebook <- function(x,output=NULL,component=NULL) {
   if(!is.null(output)&&(!is.character(output)||length(output)!=1L||!output %in% names(plan$outputs))) .categoryReject("Unknown exact codebook output.","codebook_metadata_missing")
   available<-vapply(strsplit(names(schemas),"/",fixed=TRUE),tail,"",1L)
   if(!is.null(component)&&(!is.character(component)||length(component)!=1L||!component %in% available)) .categoryReject("Unknown exact codebook component.","codebook_metadata_missing")
+  formulas<-if(inherits(x,"omop_recipe")) .formulaInventory(x) else receipt$formulas
   digest<-.planNormalizedDigest(plan)$sha256
   result<-list()
   for(key in names(schemas)) {
@@ -34,6 +35,7 @@ recipe_codebook <- function(x,output=NULL,component=NULL) {
       category[[field]] %||% r[[field]]
     }))
     result[[key]]<-list(schema_version="codebook-1",plan_digest=digest,output=pair[1L],component=pair[2L],status=status,
+      formulas=formulas,
       row_grain=entry$row_grain %||% entry$schema$row_grain %||% plan$outputs[[pair[1L]]]$grain %||% "unresolved",row_keys=entry$schema$row_keys,
       release_contract_digest=if(status=="published")paste0(as.character(openssl::sha256(charToRaw(.jcsCanonical(.categoryMetadataPlain(entry)))))),columns=columns)
   }

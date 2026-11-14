@@ -176,7 +176,7 @@
     derivation=list(variable=variable,category_spec=spec),privacy_class=if(!is.null(variable$date_spec)||identical(variable$derived$kind,"repeated"))2L else "unresolved",
     aggregate_policy="Existing endpoint admission; unresolved for unrequested endpoints",
     missing_policy="Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA",
-    provenance=list(source="public plan; no observed schema or vocabulary lookup"),completeness="unresolved")
+    provenance=list(source="public plan; no observed schema or vocabulary lookup",interoperability=.ohdsiDeclaration(plan,variable,key)),completeness="unresolved")
 }
 
 # Closed panel identities can be enumerated without a vocabulary or patient query.
