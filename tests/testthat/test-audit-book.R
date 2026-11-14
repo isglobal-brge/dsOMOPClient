@@ -17,5 +17,6 @@ test_that("Q31 native-v2 lesson renders actual two-site published workflows", {
   expect_true(file.exists(result))
   text<-paste(readLines(result,warn=FALSE),collapse="\n")
   expect_false(grepl("SECRET_SENTINEL|PRIVATE_SENTINEL",text))
-  cat("\nRENDERED_LESSON_SHA256",paste(openssl::sha256(file(result,"rb"))),"\n")
+  con<-file(result,"rb");hash<-paste(openssl::sha256(con));close(con)
+  cat("\nRENDERED_LESSON_SHA256",hash,"\n")
 })

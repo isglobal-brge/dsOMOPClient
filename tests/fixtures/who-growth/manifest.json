@@ -1,0 +1,11 @@
+{
+  "upstream": "WorldHealthOrganization/anthro",
+  "commit": "b776d8a12b1c97369c748b561159fd2ec4f4db58",
+  "source": "https://raw.githubusercontent.com/WorldHealthOrganization/anthro/b776d8a12b1c97369c748b561159fd2ec4f4db58/data-raw/growthstandards/weianthro.txt",
+  "source_sha256": "bc15a6a623dd1d5beaeed1497666332aa54bc4ccd15ff9658c487d79694ab77b",
+  "fixture_sha256": "b859b9ef8de0ee2ce443afa7fb3e5c9f783a1ce752b57c6da36f8ca4c256d309",
+  "selection": "Both sex branches; days 0,365,1826; published M column has z=0 by the definition of median, no copied LMS computation",
+  "dsBase": "6.3.5",
+  "dsBaseClient": "6.3.5",
+  "license": "GPL-3"
+}
