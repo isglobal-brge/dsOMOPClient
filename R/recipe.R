@@ -7354,7 +7354,11 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
 #' semantics are rejected rather than warned about and dropped. See
 #' \code{\link{recipe_export_circe}} for the full supported-constructs list.
 #'
-#' @param file_or_json Character; a Circe JSON string, or a path to a JSON file.
+#' @param file_or_json A Circe JSON string, a path to a JSON file, or a parsed
+#'   list. Concept IDs must be scalar integral JSON numbers in 0..2147483647;
+#'   text, arrays and classed numbers are refused. Present expansion/exclusion
+#'   flags must be scalar Booleans; omitted flags mean false, while null is
+#'   invalid. Duplicate object keys and unsupported item fields are refused.
 #' @param id Character or \code{NULL}; population ID for the result (defaults to
 #'   the \code{.dsomop} round-trip hint, else \code{"imported"}).
 #' @param label Character or \code{NULL}; population label (defaults likewise).
