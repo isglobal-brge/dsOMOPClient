@@ -1,5 +1,6 @@
 ---
 title: "3. Exploring the CDM"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{3. Exploring the CDM}
@@ -13,7 +14,7 @@ vignette: >
 Read table and column metadata, then interpret safe counts.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the public synthetic GiBleed practice connection from [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
@@ -22,18 +23,48 @@ with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findin
 
 ``` r
 available <- ds.omop.tables(conns = conns)
-available$site
-#>            table_name schema_category has_person_id concept_prefix
-#> 1              person             CDM          TRUE           <NA>
-#> 2  observation_period             CDM          TRUE           <NA>
-#> 3    visit_occurrence             CDM          TRUE          visit
-#> 10        observation             CDM          TRUE    observation
-#> 11              death             CDM          TRUE           <NA>
-#> 27         cdm_source             CDM         FALSE           <NA>
-#> 28            concept      Vocabulary         FALSE           <NA>
-#> 29         vocabulary      Vocabulary         FALSE           <NA>
-#> 35   concept_ancestor      Vocabulary         FALSE           <NA>
+knitr::kable(available$site)
 ```
+
+
+
+|table_name            |schema_category |has_person_id |concept_prefix |
+|:---------------------|:---------------|:-------------|:--------------|
+|person                |CDM             |TRUE          |               |
+|observation_period    |CDM             |TRUE          |               |
+|visit_occurrence      |CDM             |TRUE          |visit          |
+|visit_detail          |CDM             |TRUE          |visit_detail   |
+|condition_occurrence  |CDM             |TRUE          |condition      |
+|drug_exposure         |CDM             |TRUE          |drug           |
+|procedure_occurrence  |CDM             |TRUE          |procedure      |
+|device_exposure       |CDM             |TRUE          |device         |
+|measurement           |CDM             |TRUE          |measurement    |
+|observation           |CDM             |TRUE          |observation    |
+|death                 |CDM             |TRUE          |               |
+|note                  |CDM             |TRUE          |               |
+|note_nlp              |CDM             |FALSE         |               |
+|specimen              |CDM             |TRUE          |specimen       |
+|fact_relationship     |CDM             |FALSE         |               |
+|location              |CDM             |FALSE         |               |
+|care_site             |CDM             |FALSE         |               |
+|provider              |CDM             |FALSE         |               |
+|payer_plan_period     |CDM             |TRUE          |               |
+|cost                  |CDM             |FALSE         |               |
+|drug_era              |CDM             |TRUE          |               |
+|dose_era              |CDM             |TRUE          |               |
+|condition_era         |CDM             |TRUE          |               |
+|metadata              |CDM             |FALSE         |               |
+|cdm_source            |CDM             |FALSE         |               |
+|concept               |Vocabulary      |FALSE         |               |
+|vocabulary            |Vocabulary      |FALSE         |               |
+|domain                |Vocabulary      |FALSE         |               |
+|concept_class         |Vocabulary      |FALSE         |               |
+|concept_relationship  |Vocabulary      |FALSE         |               |
+|relationship          |Vocabulary      |FALSE         |               |
+|concept_synonym       |Vocabulary      |FALSE         |               |
+|concept_ancestor      |Vocabulary      |FALSE         |               |
+|source_to_concept_map |Vocabulary      |FALSE         |               |
+|drug_strength         |Vocabulary      |FALSE         |               |
 
 Check that `observation`, `death` and `visit_occurrence` exist before designing
 a recipe. A CDM may contain an empty table or omit a table altogether.
@@ -42,32 +73,31 @@ a recipe. A CDM may contain an empty table or omit a table altogether.
 
 
 ``` r
-ds.omop.columns("observation", conns = conns)$site
-#>                   column_name cdm_datatype db_datatype      concept_role semantic_class
-#> 1              observation_id      integer     integer       non_concept       ordinary
-#> 2                   person_id      integer     integer       non_concept       ordinary
-#> 3      observation_concept_id      integer     integer    domain_concept        concept
-#> 4            observation_date         date        text       non_concept       ordinary
-#> 5 observation_type_concept_id      integer     integer      type_concept        concept
-#> 6             value_as_number        float        real       non_concept       ordinary
-#> 7         value_as_concept_id      Integer     integer attribute_concept        concept
-#>      fk_domain is_date is_extension is_untyped_identifier is_sensitive is_blocked
-#> 1                FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 2                FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 3                FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 4                 TRUE        FALSE                 FALSE        FALSE      FALSE
-#> 5 Type Concept   FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 6                FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 7                FALSE        FALSE                 FALSE        FALSE      FALSE
-#>   is_quasi_identifier
-#> 1               FALSE
-#> 2               FALSE
-#> 3               FALSE
-#> 4                TRUE
-#> 5               FALSE
-#> 6               FALSE
-#> 7               FALSE
+knitr::kable(ds.omop.columns("observation", conns = conns)$site)
 ```
+
+
+
+|column_name                   |cdm_datatype |db_datatype |concept_role      |semantic_class |fk_domain    |is_date |is_extension |is_untyped_identifier |is_sensitive |is_blocked |is_quasi_identifier |
+|:-----------------------------|:------------|:-----------|:-----------------|:--------------|:------------|:-------|:------------|:---------------------|:------------|:----------|:-------------------|
+|observation_id                |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|person_id                     |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|observation_concept_id        |integer      |real        |domain_concept    |concept        |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|observation_date              |date         |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|observation_datetime          |datetime     |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|observation_type_concept_id   |integer      |real        |type_concept      |concept        |Type Concept |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|value_as_number               |float        |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|value_as_string               |varchar(60)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|value_as_concept_id           |Integer      |real        |attribute_concept |concept        |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|qualifier_concept_id          |integer      |real        |attribute_concept |concept        |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|unit_concept_id               |integer      |real        |attribute_concept |concept        |Unit         |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|provider_id                   |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|visit_occurrence_id           |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|visit_detail_id               |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|observation_source_value      |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|observation_source_concept_id |integer      |real        |source_concept    |concept        |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|unit_source_value             |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|qualifier_source_value        |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
 
 `observation_concept_id` identifies the question. `value_as_concept_id` identifies
 a coded answer. Filtering on the question and reading the answer are two separate
@@ -78,11 +108,14 @@ choices. `value_as_number` is for numeric values; it is not our education answer
 
 ``` r
 ds.omop.table.stats("observation", conns = conns)$per_site$site
+```
+
+```
 #> $rows
-#> [1] 35
+#> [1] 1475
 #> 
 #> $persons
-#> [1] 10
+#> [1] 670
 ```
 
 An observation row is an answer, not necessarily a distinct person. Repeated
@@ -94,29 +127,30 @@ exact number or a refused result as an empty table.
 
 
 ``` r
-ds.omop.columns("visit_occurrence", conns = conns)$site
-#>             column_name cdm_datatype db_datatype   concept_role semantic_class
-#> 1   visit_occurrence_id      integer     integer    non_concept       ordinary
-#> 2             person_id      integer     integer    non_concept       ordinary
-#> 3      visit_concept_id      integer     integer domain_concept        concept
-#> 4      visit_start_date         date        text    non_concept       ordinary
-#> 5        visit_end_date         date        text    non_concept       ordinary
-#> 6 visit_type_concept_id      Integer     integer   type_concept        concept
-#>      fk_domain is_date is_extension is_untyped_identifier is_sensitive is_blocked
-#> 1                FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 2                FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 3        Visit   FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 4                 TRUE        FALSE                 FALSE        FALSE      FALSE
-#> 5                 TRUE        FALSE                 FALSE        FALSE      FALSE
-#> 6 Type Concept   FALSE        FALSE                 FALSE        FALSE      FALSE
-#>   is_quasi_identifier
-#> 1               FALSE
-#> 2               FALSE
-#> 3               FALSE
-#> 4                TRUE
-#> 5                TRUE
-#> 6               FALSE
+knitr::kable(ds.omop.columns("visit_occurrence", conns = conns)$site)
 ```
+
+
+
+|column_name                   |cdm_datatype |db_datatype |concept_role      |semantic_class |fk_domain    |is_date |is_extension |is_untyped_identifier |is_sensitive |is_blocked |is_quasi_identifier |
+|:-----------------------------|:------------|:-----------|:-----------------|:--------------|:------------|:-------|:------------|:---------------------|:------------|:----------|:-------------------|
+|visit_occurrence_id           |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|person_id                     |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|visit_concept_id              |integer      |real        |domain_concept    |concept        |Visit        |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|visit_start_date              |date         |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|visit_start_datetime          |datetime     |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|visit_end_date                |date         |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|visit_end_datetime            |datetime     |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|visit_type_concept_id         |Integer      |real        |type_concept      |concept        |Type Concept |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|provider_id                   |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|care_site_id                  |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|visit_source_value            |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|visit_source_concept_id       |integer      |real        |source_concept    |concept        |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|admitting_source_concept_id   |integer      |real        |source_concept    |concept        |Visit        |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|admitting_source_value        |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|discharge_to_concept_id       |integer      |real        |attribute_concept |concept        |Visit        |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|discharge_to_source_value     |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|preceding_visit_occurrence_id |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
 
 `visit_start_date` records when a visit started. `visit_concept_id` describes its
 setting, such as inpatient or outpatient. `visit_type_concept_id` describes the
@@ -135,22 +169,19 @@ Inspect the death table and locate its coded cause field.
 
 
 ``` r
-ds.omop.columns("death", conns = conns)$site
-#>             column_name cdm_datatype db_datatype      concept_role semantic_class
-#> 1             person_id      integer     integer       non_concept       ordinary
-#> 2            death_date         date        text       non_concept       ordinary
-#> 3 death_type_concept_id      integer     integer      type_concept        concept
-#> 4      cause_concept_id      integer     integer attribute_concept        concept
-#>      fk_domain is_date is_extension is_untyped_identifier is_sensitive is_blocked
-#> 1                FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 2                 TRUE        FALSE                 FALSE        FALSE      FALSE
-#> 3 Type Concept   FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 4                FALSE        FALSE                 FALSE        FALSE      FALSE
-#>   is_quasi_identifier
-#> 1               FALSE
-#> 2                TRUE
-#> 3               FALSE
-#> 4               FALSE
+knitr::kable(ds.omop.columns("death", conns = conns)$site)
 ```
+
+
+
+|column_name             |cdm_datatype |db_datatype |concept_role      |semantic_class |fk_domain    |is_date |is_extension |is_untyped_identifier |is_sensitive |is_blocked |is_quasi_identifier |
+|:-----------------------|:------------|:-----------|:-----------------|:--------------|:------------|:-------|:------------|:---------------------|:------------|:----------|:-------------------|
+|person_id               |integer      |real        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|death_date              |date         |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|death_datetime          |datetime     |text        |non_concept       |ordinary       |             |TRUE    |FALSE        |FALSE                 |FALSE        |FALSE      |TRUE                |
+|death_type_concept_id   |integer      |real        |type_concept      |concept        |Type Concept |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|cause_concept_id        |integer      |real        |attribute_concept |concept        |             |FALSE   |FALSE        |FALSE                 |FALSE        |FALSE      |FALSE               |
+|cause_source_value      |varchar(50)  |text        |non_concept       |ordinary       |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
+|cause_source_concept_id |integer      |real        |source_concept    |concept        |             |FALSE   |FALSE        |FALSE                 |TRUE         |TRUE       |FALSE               |
 
 </details>

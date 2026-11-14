@@ -1,5 +1,6 @@
 ---
 title: "7. Capstone: a verbal-autopsy wide table"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{7. Capstone: a verbal-autopsy wide table}
@@ -13,7 +14,7 @@ vignette: >
 Combine age at death, labelled answers, calendar periods and cause of death in one private table.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
@@ -36,6 +37,9 @@ education <- omop_variable(
   event = omop_event("observation", concepts = 900001L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 class(education)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -48,6 +52,9 @@ fever <- omop_variable(
   event = omop_event("observation", concepts = 900002L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 class(fever)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -60,6 +67,9 @@ The second question gets its own column. This capstone uses vocabulary labels
 ``` r
 age_at_death <- omop_age_at("death")
 class(age_at_death)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -74,6 +84,9 @@ No January 1 birthday is silently invented.
 ``` r
 first_visit <- omop_anchor(omop_event("visit_occurrence"), which = "first")
 class(first_visit)
+```
+
+```
 #> [1] "omop_anchor" "list"
 ```
 
@@ -86,6 +99,9 @@ selection rule; it is not a patient date returned to your R session.
 ``` r
 visit_month <- omop_date(first_visit, omop_date_spec(precision = "month"))
 class(visit_month)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -100,6 +116,9 @@ visit_quarter <- omop_date(first_visit, omop_date_spec(precision = "quarter"))
 visit_year <- omop_date(first_visit,
   omop_date_spec(precision = "year", representation = "number"))
 class(visit_quarter)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -114,6 +133,9 @@ chosen separately for each variable.
 cause <- omop_variable(event = omop_event("death"),
   reducer = omop_reduce("first_value", value = "cause_concept_id"))
 class(cause)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -140,6 +162,9 @@ va <- omop_recipe(variables = list(
   outputs = omop_output("people", format = "wide", grain = "person"),
   options = list(translate_concepts = TRUE))
 class(va)
+```
+
+```
 #> [1] "omop_recipe" "list"
 ```
 
@@ -154,12 +179,18 @@ colleague recipe, rather than the old feasibility workaround.
 explanation <- recipe_explain(va, conns = conns)
 stopifnot(explanation$selected == "v2")
 explanation$selected
+```
+
+```
 #> [1] "v2"
 ```
 
 
 ``` r
 print(recipe_execute(va, out = c(people = "D_va"), conns = conns))
+```
+
+```
 #> people 
 #> "D_va"
 ```
@@ -172,6 +203,9 @@ It does not mean that a local object named `D_va` now holds patient rows.
 
 ``` r
 dsBaseClient::ds.colnames("D_va", datasources = conns)
+```
+
+```
 #> $site
 #>  [1] "person_id"          "age_at_death"       "age_at_first_visit" "education"         
 #>  [5] "fever"              "visit_date"         "visit_month"        "visit_quarter"     
@@ -187,6 +221,9 @@ not print them or use them as local merge keys.
 
 ``` r
 dsBaseClient::ds.summary("D_va$age_at_death", datasources = conns)
+```
+
+```
 #> $site
 #> $site$class
 #> [1] "integer"
@@ -208,6 +245,9 @@ are missing. The displayed summary is the actual aggregate returned by dsBase.
 
 ``` r
 ds.omop.table("D_va", "education", conns = conns)
+```
+
+```
 #> D_va$education
 #>  Secondary education University education 
 #>                    6                    6
@@ -218,6 +258,9 @@ Each education category represents an answer, not a separate column.
 
 ``` r
 ds.omop.table("D_va", "fever", conns = conns)
+```
+
+```
 #> D_va$fever
 #> Yes  No 
 #>   6   6
@@ -231,6 +274,9 @@ not an imputation for missingness.
 
 ``` r
 ds.omop.table("D_va", "visit_month", conns = conns)
+```
+
+```
 #> D_va$visit_month
 #> 2020-03 2020-06 2020-07 
 #>       6       6       6
@@ -241,6 +287,9 @@ These month counts group people by their first visit.
 
 ``` r
 ds.omop.table("D_va", "visit_quarter", conns = conns)
+```
+
+```
 #> D_va$visit_quarter
 #> 2020-Q1 2020-Q2 2020-Q3 
 #>       6       6       6
@@ -253,6 +302,9 @@ Several months can belong to one quarter; the grouped counts reflect that.
 
 ``` r
 ds.omop.table("D_va", "cause_of_death", conns = conns)
+```
+
+```
 #> D_va$cause_of_death
 #> Myocardial infarction             Pneumonia 
 #>                    12                     6
@@ -279,11 +331,26 @@ source("tools/dates/va-native.R")
 reference <- va_native_recipe()
 stopifnot(recipe_explain(reference, conns = conns)$selected == "v2")
 identical(recipe_to_plan(va), recipe_to_plan(reference))
+```
+
+```
 #> [1] TRUE
+```
+
+``` r
 print(recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns))
+```
+
+```
 #>           people 
 #> "D_va_reference"
+```
+
+``` r
 ds.omop.table("D_va_reference", "cause_of_death", conns = conns)
+```
+
+```
 #> D_va_reference$cause_of_death
 #> Myocardial infarction             Pneumonia 
 #>                    12                     6

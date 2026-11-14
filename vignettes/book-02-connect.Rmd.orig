@@ -69,6 +69,31 @@ At the end of your own work, call `ds.omop.disconnect(conns = conns)` and then
 `DSI::datashield.logout(conns)`. Start again with the practice helper for another
 chapter. The reproduction script performs both cleanup calls after each chapter.
 
+## Switch between the two practice resources
+
+The same practice server also offers the numeric Synthea27Nj database. Disconnect
+the current OMOP handle, then attach that resource on the same login connection:
+
+```{r switch-to-numeric}
+ds.omop.disconnect(conns = conns)
+numeric_session <- ds.omop.connect(resource = "numeric", conns = conns)
+class(numeric_session)
+```
+
+This changes the database behind the OMOP handle. It does not copy or combine
+patient rows between resources. On Opal the corresponding name is `practice.numeric`.
+Return to GiBleed for the next introductory chapters:
+
+```{r switch-back}
+ds.omop.disconnect(conns = conns)
+session <- ds.omop.connect(resource = "gibleed", conns = conns)
+class(session)
+```
+
+The numeric chapters will open their own fresh `numeric` session. Keeping resource
+selection explicit prevents accidentally running a lab recipe against GiBleed's
+empty numeric-value fields.
+
 ## Recap
 
 The resource identifies a database; `omop` is its session handle; `D_people` will name a private result.

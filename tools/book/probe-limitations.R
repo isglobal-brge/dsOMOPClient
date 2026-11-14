@@ -10,7 +10,8 @@ tryCatch({
   date_result <- tryCatch({
     r <- omop_recipe(variables=list(date=omop_date("first_visit")),
       outputs=omop_output("people",format="wide",grain="person"))
-    recipe_to_plan(r)
+    stopifnot(recipe_explain(r)$selected=="v2")
+    recipe_execute(r,out=c(people="D_probe_date_name"),conns=conns)
     "Unexpected success"
   }, error=conditionMessage)
   message(date_result)

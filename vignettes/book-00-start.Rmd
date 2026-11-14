@@ -1,5 +1,6 @@
 ---
 title: "0. Getting started"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{0. Getting started}
@@ -13,7 +14,7 @@ vignette: >
 Install the client, choose a practice environment, and check both package versions.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter creates the public synthetic GiBleed practice connection.
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
@@ -38,42 +39,74 @@ are not rerun when the site builds. The versions actually used are in the
 ``` r
 library(dsOMOPClient)
 ds.omop.client.version()
+```
+
+```
 #> [1] "2.10.4"
 ```
 
 This reports the package on your computer. A correct client version alone does not
 prove that the server has the matching methods.
 
-## Choose your practice data
+## Load two public synthetic datasets
 
-The worked outputs use the package's synthetic verbal-autopsy test CDM, extended
-with visit settings and a second fever answer. There are 24 fictional people.
-Six copies of each of four patterns let us demonstrate ordinary disclosure checks.
-Education questions and answers are invented teaching concepts. Do not use their
-IDs to define a clinical study.
+The practice server has two resources. **GiBleed** supports the introductory
+schema and vocabulary lessons. **Synthea27Nj** supplies hemoglobin and other
+numeric measurements with units. Both contain fictional patients; “numeric”
+means populated numeric fields, not real patient records. GiBleed has 44,053
+measurement rows but no populated `value_as_number`, so it cannot teach lab-value
+reducers on its own.
 
-To reproduce the lessons without Opal, obtain the 2.10.4 book checkout, open its
-client directory as your R working directory, install the matching dsOMOP package
-and `DSLite`, `DBI`, `RSQLite`, `resourcer`, `withr`, `dsBase` and `dsBaseClient`.
-Then run the next chunk once. DSLite runs a real DataSHIELD session inside R.
+The administrator loader is [tools/book/load-practice.R](../downloads/load-practice.R).
+It downloads pinned [Eunomia datasets](https://github.com/OHDSI/EunomiaDatasets),
+verifies archive checksums and loads two SQLite files. From the book checkout,
+run `Rscript tools/book/load-practice.R ../practice-data` once in an R environment
+with DBI, RSQLite, openssl and jsonlite. The source data are Apache-2.0 licensed;
+keep their [license](https://github.com/OHDSI/EunomiaDatasets/blob/3d349dcdd79cc346b8e36eb837e49feffe7f7497/LICENSE)
+with redistributed copies. The recorded loader results are in the reproduction notes.
+
+<div class="book-note">
+**Note**
+
+Chapters 5, 7, 9, 10 and 12–14 also use a tiny, separately labelled questionnaire
+**test fixture** for the colleague's exact education, cause-of-death and partial-date
+examples. Its 24 fictional people and invented question concepts are not GiBleed
+or Synthea. It is created temporarily by `tools/book/fixture.R`, not installed as
+a third practice resource. Each chapter states its dataset.
+</div>
+
+## Open the practice server
+
+To reproduce without Opal, install the matching dsOMOP package and DSLite, DBI,
+RSQLite, resourcer, withr, dsBase and dsBaseClient. Open the book client directory
+as your R working directory. DSLite executes real DataSHIELD methods inside R;
+this helper creates one server with both loaded resources and attaches GiBleed.
 
 
 ``` r
-source("tools/book/fixture.R")
-practice <- book_fixture()
+source("tools/book/practice.R")
+practice <- book_practice("gibleed")
 conns <- practice$conns
 names(conns)
+```
+
+```
 #> [1] "site"
 ```
 
-`conns` holds connections, not patient records. The helper has already attached
-its resource as `omop`; chapter 2 repeats that step explicitly.
+`conns` holds connections, not patient rows. The other resource is named `numeric`.
+The numeric chapters start a fresh session with `book_practice("numeric")`.
+For a questionnaire-fixture chapter, source `tools/book/fixture.R` and use
+`practice <- book_fixture(); conns <- practice$conns` in a fresh R session.
 
 ## Check the server
 
 
 ``` r
 ds.omop.server.version(conns = conns)
+```
+
+```
 #>   server published running missing ready advice recipe_language
 #> 1   site    2.10.4  2.10.4          TRUE           2, 2.0.0....
 ```
@@ -81,11 +114,11 @@ ds.omop.server.version(conns = conns)
 The reply comes from the server. Check both the installed and published versions
 when using Opal: publishing makes the package methods available to analysts.
 
-## Optional: your own Opal with GiBleed
+## Use the same two resources on Opal
 
-**Requires a real Opal and an administrator.** This deployment route is separate
-from the recorded DSLite run. GiBleed is useful for general OMOP practice, but does
-not contain the invented education and fever questions in later chapters.
+**Requires a real Opal and an administrator.** The recorded examples run on the
+two-resource DSLite practice server. For an Opal deployment, use the same loaded
+files and change the login/resource names; the study recipes stay the same.
 
 1. Install Docker with Compose V2 and start Docker. Install easy-opal with
    `uv tool install easy-opal`, or `pipx install easy-opal`.
@@ -95,26 +128,28 @@ not contain the invented education and fever questions in later chapters.
 3. In Opal administration, select the Rock R profile used by DataSHIELD. Install
    dsBase and dsOMOP 2.10.4 in that profile and publish their DataSHIELD methods and
    options. A package installed only in your laptop's R is not installed in Rock.
-4. Install Eunomia with `install.packages("Eunomia")`. Create a persistent
-   SQLite copy with `Eunomia::getDatabaseFile("GiBleed", cdmVersion = "5.3",
-   databaseFile = "GiBleed.sqlite", overwrite = FALSE)` in an R session on your
-   practice host. This downloads and loads the public GiBleed source data; see
-   [getDatabaseFile](https://ohdsi.github.io/Eunomia/reference/getDatabaseFile.html).
-   Pinning CDM 5.3 avoids changes in Eunomia's default dataset version. Put the database file
-   in a directory mounted into Rock, for example `/data/GiBleed.sqlite`.
-   The path must exist **inside Rock**, not merely inside the Opal container.
-5. In an Opal project named `practice`, open Resources and add an OMOP DBI resource
-   named `gibleed`. Use format `omop.dbi.db` and URL
-   `omop+dbi:sqlite:///data/GiBleed.sqlite`. SQLite does not use a database username
-   or password. Test the resource in Opal, then grant your analyst account use
-   permission. See the [resource documentation](https://github.com/isglobal-brge/dsOMOP).
-6. Log in with DSOpal as shown in chapter 2, attach `practice.gibleed`, and inspect
-   the tables. The SQLite file is the loaded CDM: do not import its patient rows
-   as an ordinary downloadable Opal table.
+4. Run `Rscript tools/book/load-practice.R /data/practice` on the practice host
+   after installing the loader's R dependencies. Mount that directory into Rock
+   as `/data/practice`. The loaded `gibleed.sqlite` and `numeric.sqlite` files must
+   be visible **inside Rock**, not merely inside the Opal container.
+5. In project `practice`, create the two resources below with format `omop.dbi.db`.
+   SQLite needs no database username/password. Test each resource in Opal and
+   grant the analyst use permission.
 
-No database TLS setting or absolute-date override is required. GiBleed's counts
-will differ from this book. Keep the synthetic connection for exact reproduction
-of the verbal-autopsy exercises.
+| Opal resource | Resource URL inside Rock | Purpose |
+|---|---|---|
+| `practice.gibleed` | `omop+dbi:sqlite:///data/practice/gibleed.sqlite` | Basics |
+| `practice.numeric` | `omop+dbi:sqlite:///data/practice/numeric.sqlite` | Numeric labs and units |
+
+6. Log in with DSOpal as shown in chapter 2 and attach the resource named by the
+   lesson. Keep these as database resources; do not import patient rows as a
+   downloadable Opal table.
+
+To move the practice setup to another Opal host, including a future opal-demo
+installation, transfer the same two files into its Rock mount and register those
+resource URLs there. No study-specific database TLS or privacy switch is required.
+The checksums and source revision make the data reproducible independently of
+where the resources are hosted.
 
 ## Recap
 
@@ -130,8 +165,17 @@ Ask the client and server for their versions again. Which call needs a connectio
 
 ``` r
 ds.omop.client.version()
+```
+
+```
 #> [1] "2.10.4"
+```
+
+``` r
 ds.omop.server.version(conns = conns)
+```
+
+```
 #>   server published running missing ready advice recipe_language
 #> 1   site    2.10.4  2.10.4          TRUE           2, 2.0.0....
 ```

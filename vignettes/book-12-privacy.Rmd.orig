@@ -77,7 +77,7 @@ at final publication; a joined result's private inputs do not need separate
 published symbols. A standalone filter produces a final object and is gated.
 Here we intentionally request a subset with no qualifying rows:
 
-```{r small-refusal}
+```{r small-refusal, warning=FALSE}
 small_message <- tryCatch({
   ds.omop.filter("D_private", expr = omop_where(age > 200L),
     newobj = "D_too_small", conns = conns)
@@ -136,7 +136,7 @@ approved aggregate; do not encode a disallowed field into another name or type.
 
 ## Protected keys cannot become analyst variables
 
-```{r key-refusal}
+```{r key-refusal, warning=FALSE}
 key_message <- tryCatch({
   ds.omop.mutate("D_private", copied = person_id,
     newobj = "D_key_copy", conns = conns)

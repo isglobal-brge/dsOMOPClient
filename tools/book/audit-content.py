@@ -12,6 +12,7 @@ for p in chapters:
     assert '```{r' not in text, f'Uncomputed chunk: {p}'
     assert '#> NULL' not in text, f'Empty result displayed: {p}'
     assert not re.search(r'#> (Error|Warning)', text), f'Unexpected diagnostic: {p}'
+    assert 'author: "David Sarrat González"' in text
     assert '**What you will learn**' in text and '## Recap' in text and '<summary>Solution' in text
     # Public table outputs must use concept labels, never the fixture IDs.
     assert not re.search(r'^#>.*\b900\d{3}\b', text, re.M), f'Untranslated output: {p}'
@@ -31,5 +32,5 @@ for p in [root/'docs/index.html', *sorted((root/'docs/articles').glob('book-*.ht
 assert not missing, missing
 report={'chapters':len(chapters),'executed_visible_chunks':sum(counts.values()),'chunks_by_chapter':counts,
         'missing_local_links':missing,'uncomputed_chunks':0,'untranslated_fixture_id_outputs':0}
-(root/'tools/book/evidence/content-audit.json').write_text(json.dumps(report,indent=2)+'\n')
+(root/'tools/book/evidence/book2/content-audit.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))

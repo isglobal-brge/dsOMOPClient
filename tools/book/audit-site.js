@@ -7,7 +7,7 @@ const path = require('path');
   const results=[];
   const chapters=fs.readdirSync('docs/articles').filter(x=>/^book-.*\.html$/.test(x));
   for (const width of [1365,390]) {
-    const page=await browser.newPage({viewport:{width,height:900}});
+    const page=await browser.newPage({viewport:{width,height:900},permissions:['clipboard-read','clipboard-write']});
     for (const slug of ['index',...chapters.map(x=>'articles/'+x.replace(/\.html$/,''))]) {
       await page.goto('file://'+path.resolve('docs',slug+'.html'));
       const book=slug.includes('book-');
@@ -31,7 +31,16 @@ const path = require('path');
           const contents=page.locator('.mobile-contents');
           await contents.locator('summary').click();
           if(await contents.locator('a').count()===0) throw new Error('Missing mobile contents: '+slug);
+          await contents.locator('summary').click();
         }
+      }
+      if(slug==='articles/book-06-events') {
+        await page.locator('div.sourceCode').first().hover();
+        await page.locator('.btn-copy-ex').first().click();
+        const copied=await page.evaluate(()=>navigator.clipboard.readText());
+        if(!copied.includes('measure <- omop_event')||copied.includes('#>'))
+          throw new Error('Code copy included wrong text or recorded output');
+        result.copyTest='passed';
       }
       if(result.overflow) throw new Error('Page horizontal overflow: '+slug+' '+width);
       results.push({slug,...result});

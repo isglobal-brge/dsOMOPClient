@@ -71,7 +71,9 @@ registration is shown in chapter 0. Dependencies are listed in `tools/book/READM
 DSLite 1.5 rejects some quoted dsBase call strings containing commas. The practice
 helper applies the same scoped lexer repair used by the package's release tests.
 It changes tokenisation only: ds.table, assignments and all disclosure checks still
-run for real. It does not apply to Opal. The helper also injects a synthetic test
+run for real. It does not apply to Opal. The two intentional refusal chunks in chapter 12
+omit DSLite’s extra missing-symbol cleanup warnings; they display the actual
+policy error, and the verification checks that no refused output exists. The helper also injects a synthetic test
 pseudonym root; a deployed server manages its own private root automatically.
 
 ## Migrating older recipes

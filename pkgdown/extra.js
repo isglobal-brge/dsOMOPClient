@@ -23,8 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobile = document.createElement('details'); mobile.className='mobile-contents';
     const summary = document.createElement('summary'); summary.textContent='In this chapter';
     mobile.appendChild(summary);
-    const contents = toc.querySelector('ul');
-    if (contents) mobile.appendChild(contents.cloneNode(true));
+    // pkgdown populates its desktop TOC after DOMContentLoaded. Build the
+    // mobile list from the already-rendered headings, without a timing race.
+    const contents = document.createElement('ul');
+    main.querySelectorAll('h2[id]').forEach(h => {
+      const li=document.createElement('li'), a=document.createElement('a');
+      a.href='#'+h.id; a.textContent=h.textContent.trim();
+      li.appendChild(a); contents.appendChild(li);
+    });
+    mobile.appendChild(contents);
     main.querySelector('.page-header')?.after(mobile);
   }
   const active = links.findIndex(a => new URL(a.href).pathname === location.pathname);

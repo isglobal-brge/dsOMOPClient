@@ -1,5 +1,6 @@
 ---
 title: "5. A first recipe"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{5. A first recipe}
@@ -13,7 +14,7 @@ vignette: >
 Build education and cause-of-death columns, check language 2, and request category counts.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
@@ -26,6 +27,9 @@ not a downloaded table. Start with the question from chapter 4:
 ``` r
 education_event <- omop_event("observation", concepts = 900001L)
 class(education_event)
+```
+
+```
 #> [1] "omop_event" "list"
 ```
 
@@ -42,6 +46,9 @@ education <- omop_variable(
   event = education_event,
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 class(education)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -57,6 +64,9 @@ cause <- omop_variable(
   event = omop_event("death"),
   reducer = omop_reduce("first_value", value = "cause_concept_id"))
 class(cause)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -74,6 +84,9 @@ people <- omop_recipe(
   variables = list(education = education, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
 class(people)
+```
+
+```
 #> [1] "omop_recipe" "list"
 ```
 
@@ -87,6 +100,9 @@ missing values. We did not add a legacy raw-ID variable to keep the roster.
 explained <- recipe_explain(people, conns = conns)
 stopifnot(explained$selected == "v2")
 explained$selected
+```
+
+```
 #> [1] "v2"
 ```
 
@@ -96,6 +112,9 @@ in the book. To read all the chosen defaults, print the explanation:
 
 ``` r
 recipe_explain(people)
+```
+
+```
 #> Recipe plan (language 2.0, semantic 2.0.0)
 #> Population 'base' (criteria): none
 #> Variables:
@@ -122,6 +141,9 @@ That is a teaching definition, not an assumption to carry silently into a study.
 
 ``` r
 print(recipe_execute(people, out = c(people = "D_people"), conns = conns))
+```
+
+```
 #>     people 
 #> "D_people"
 ```
@@ -135,6 +157,9 @@ type. In 2.10.4 the names `education` and `cause_of_death` need no `_concept_id`
 
 ``` r
 dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
+```
+
+```
 #> $output.list
 #> $output.list$TABLE_rvar.by.study_row.props
 #>                       study
@@ -178,6 +203,9 @@ whether cells may be released before returning the table.
 
 ``` r
 ds.omop.table("D_people", "cause_of_death", conns = conns)
+```
+
+```
 #> D_people$cause_of_death
 #> Myocardial infarction             Pneumonia 
 #>                    12                     6
@@ -196,6 +224,9 @@ fever <- omop_variable(
   reducer = omop_reduce("last_value", value = "value_as_concept_id"),
   labels = c("900301" = "yes", "900302" = "no"))
 class(fever)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -209,6 +240,9 @@ answers <- omop_recipe(
   outputs = omop_output("people", format = "wide", grain = "person"))
 stopifnot(recipe_explain(answers, conns = conns)$selected == "v2")
 print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
+```
+
+```
 #>      people 
 #> "D_answers"
 ```
@@ -216,6 +250,9 @@ print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
 
 ``` r
 dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
+```
+
+```
 #> $output.list
 #> $output.list$TABLE_rvar.by.study_row.props
 #>                study
@@ -250,7 +287,7 @@ dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
 #> [1] "Data in all studies were valid"
 ```
 
-The table contains your lower-case labels. See the short harmonisation appendix
+The table contains your lower-case labels. See [chapter 10](book-08-harmonise.html)
 for the same operation across two different vocabularies.
 
 ## Recap
@@ -267,6 +304,9 @@ Count education using the complete-contract helper instead of calling ds.table d
 
 ``` r
 ds.omop.table("D_people", "education", conns = conns)
+```
+
+```
 #> D_people$education
 #>  Secondary education University education 
 #>                    6                    6

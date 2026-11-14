@@ -20,6 +20,9 @@ navbar:
     left: [intro, book, reference, news]
     right: [search, github]
   components:
+    news:
+      text: News
+      href: news/index.html
     intro:
       text: Get started
       href: articles/book-00-start.html

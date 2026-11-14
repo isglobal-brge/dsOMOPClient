@@ -1,8 +1,9 @@
 ---
-title: "6. Visit dates, one idea at a time"
+title: "13. Visit dates, one idea at a time"
+author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{6. Visit dates, one idea at a time}
+  %\VignetteIndexEntry{13. Visit dates, one idea at a time}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -13,7 +14,7 @@ vignette: >
 Separate day offsets from calendar dates, select visit settings and build one row per visit.
 </div>
 
-This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
@@ -27,6 +28,9 @@ date 2020-01-01. A day offset of zero means that date; negative values mean earl
 visit <- omop_event("visit_occurrence")
 all_visits <- omop_window(NULL, NULL, anchor = "2020-01-01")
 class(all_visits)
+```
+
+```
 #> [1] "omop_window" "list"
 ```
 
@@ -42,6 +46,9 @@ first <- omop_variable(event = visit,
 last <- omop_variable(event = visit,
   reducer = omop_reduce("last_date", window = all_visits))
 class(first)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -54,6 +61,9 @@ offsets <- omop_recipe(variables = list(first_days = first, last_days = last),
   outputs = omop_output("visits", format = "wide", grain = "person"))
 stopifnot(recipe_explain(offsets, conns = conns)$selected == "v2")
 print(recipe_execute(offsets, out = c(visits = "D_offsets"), conns = conns))
+```
+
+```
 #>      visits 
 #> "D_offsets"
 ```
@@ -61,6 +71,9 @@ print(recipe_execute(offsets, out = c(visits = "D_offsets"), conns = conns))
 
 ``` r
 dsBaseClient::ds.summary("D_offsets$first_days", datasources = conns)
+```
+
+```
 #> $site
 #> $site$class
 #> [1] "integer"
@@ -78,6 +91,9 @@ The summary is an aggregate of private offsets. It is not a list of visit dates.
 
 ``` r
 dsBaseClient::ds.summary("D_offsets$last_days", datasources = conns)
+```
+
+```
 #> $site
 #> $site$class
 #> [1] "integer"
@@ -106,6 +122,9 @@ visit_study <- omop_study(visit, outputs = "baseline",
                   last_days = omop_last_date("visit_occurrence")))
 stopifnot(recipe_explain(visit_study, conns = conns)$selected == "v2")
 print(recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns))
+```
+
+```
 #>        baseline 
 #> "D_visit_study"
 ```
@@ -113,6 +132,9 @@ print(recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = c
 
 ``` r
 dsBaseClient::ds.summary("D_visit_study$first_days", datasources = conns)
+```
+
+```
 #> $site
 #> $site$class
 #> [1] "integer"
@@ -137,6 +159,9 @@ calendar <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("visits", format = "wide", grain = "person"))
 stopifnot(recipe_explain(calendar, conns = conns)$selected == "v2")
 print(recipe_execute(calendar, out = c(visits = "D_calendar"), conns = conns))
+```
+
+```
 #>       visits 
 #> "D_calendar"
 ```
@@ -155,6 +180,9 @@ months <- omop_recipe(variables = list(visit_month = omop_date("first_visit",
   outputs = omop_output("visits", format = "wide", grain = "person"))
 stopifnot(recipe_explain(months, conns = conns)$selected == "v2")
 print(recipe_execute(months, out = c(visits = "D_months"), conns = conns))
+```
+
+```
 #>     visits 
 #> "D_months"
 ```
@@ -162,6 +190,9 @@ print(recipe_execute(months, out = c(visits = "D_months"), conns = conns))
 
 ``` r
 ds.omop.table("D_months", "visit_month", conns = conns)
+```
+
+```
 #> D_months$visit_month
 #> 2020-03 2020-04 2020-05 2020-06 2020-07 
 #>       6       0       0       6       6
@@ -180,6 +211,9 @@ In OMOP, these settings are concepts in `visit_concept_id`. The separate
 ``` r
 settings <- ds.omop.concept.lookup(c(9201L, 9202L), conns = conns)
 settings$pooled["concept_name"]
+```
+
+```
 #>       concept_name
 #> 1  Inpatient Visit
 #> 2 Outpatient Visit
@@ -191,6 +225,9 @@ inpatient <- omop_event("visit_occurrence", concepts = 9201L)
 setting <- omop_variable(event = inpatient,
   reducer = omop_reduce("first_value", value = "visit_concept_id"))
 class(setting)
+```
+
+```
 #> [1] "omop_variable" "list"
 ```
 
@@ -203,6 +240,9 @@ inpatient_people <- omop_recipe(variables = list(setting = setting),
   outputs = omop_output("people", format = "wide", grain = "person"))
 stopifnot(recipe_explain(inpatient_people, conns = conns)$selected == "v2")
 print(recipe_execute(inpatient_people, out = c(people = "D_inpatient"), conns = conns))
+```
+
+```
 #>        people 
 #> "D_inpatient"
 ```
@@ -210,6 +250,9 @@ print(recipe_execute(inpatient_people, out = c(people = "D_inpatient"), conns = 
 
 ``` r
 ds.omop.table("D_inpatient", "setting", conns = conns)
+```
+
+```
 #> D_inpatient$setting
 #> Inpatient Visit 
 #>              12
@@ -231,6 +274,9 @@ long_visits <- omop_recipe(
   date_spec = omop_date_spec(precision = "day"))
 stopifnot(recipe_explain(long_visits, conns = conns)$selected == "v2")
 print(recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns))
+```
+
+```
 #>     visits 
 #> "D_visits"
 ```
@@ -238,6 +284,9 @@ print(recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns))
 
 ``` r
 dsBaseClient::ds.colnames("D_visits", datasources = conns)
+```
+
+```
 #> $site
 #> [1] "row_id"                "cohort_row_id"         "person_id"            
 #> [4] "concept_id"            "start_date"            "end_date"             
@@ -252,8 +301,17 @@ the source spelling, add a value-preserving alias on the server:
 ``` r
 print(ds.omop.mutate("D_visits", visit_start_date = start_date,
                      newobj = "D_visit_dates", conns = conns))
+```
+
+```
 #> [1] "D_visit_dates"
+```
+
+``` r
 dsBaseClient::ds.colnames("D_visit_dates", datasources = conns)
+```
+
+```
 #> $site
 #> [1] "row_id"                "cohort_row_id"         "person_id"            
 #> [4] "concept_id"            "start_date"            "end_date"             
@@ -267,6 +325,9 @@ visit and returns only the new symbol name and column names.
 
 ``` r
 dsBaseClient::ds.table("D_visits$concept_id", useNA = "no", datasources = conns)
+```
+
+```
 #> $output.list
 #> $output.list$TABLE_rvar.by.study_row.props
 #>                    study
@@ -325,9 +386,18 @@ template <- omop_recipe(variables = list(setting = omop_variable(
 outpatient <- recipe_bind(template, setting = 9202L)
 stopifnot(recipe_explain(outpatient, conns = conns)$selected == "v2")
 print(recipe_execute(outpatient, out = c(people = "D_outpatient"), conns = conns))
+```
+
+```
 #>         people 
 #> "D_outpatient"
+```
+
+``` r
 ds.omop.table("D_outpatient", "setting", conns = conns)
+```
+
+```
 #> D_outpatient$setting
 #> Outpatient Visit 
 #>               18
