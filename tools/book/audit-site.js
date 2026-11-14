@@ -22,7 +22,7 @@ const path = require('path');
         footer:document.querySelector('footer')?.textContent.includes('Book by'),
         headings:[...document.querySelectorAll('h1')].map(x=>x.textContent.trim())}));
       if(book) {
-        if(result.learnBoxes!==1||result.chapterLinks!==17||!result.byline||!result.copyButtons||!result.footer)
+        if(result.learnBoxes!==1||result.chapterLinks!==18||!result.byline||!result.copyButtons||!result.footer)
           throw new Error('Book presentation incomplete: '+JSON.stringify({slug,...result}));
         const solution=page.locator('details').filter({has:page.locator('summary',{hasText:'Solution'})}).first();
         await solution.locator(':scope > summary').click();
@@ -49,7 +49,7 @@ const path = require('path');
         if(await full.count()!==1 || await full.getAttribute('open')!==null)
           throw new Error('Full aggregate response must be collapsed initially: '+slug);
       }
-      if(slug==='articles/book-15-labs') {
+      if(['articles/book-15-labs','articles/book-16-longitudinal'].includes(slug)) {
         const warnings=page.locator('details.model-warnings');
         if(await warnings.count()!==1 || await warnings.getAttribute('open')!==null)
           throw new Error('Recorded fitting warnings must start collapsed');
@@ -60,25 +60,32 @@ const path = require('path');
       }
       if(result.overflow) throw new Error('Page horizontal overflow: '+slug+' '+width);
       results.push({slug,...result});
-      if(['articles/book-15-labs','articles/book-00-start','articles/book-05-recipe','articles/book-06-events','articles/book-08-outputs','articles/book-08-harmonise','articles/book-07-verbal-autopsy'].includes(slug)) {
+      if(['articles/book-16-longitudinal','articles/book-15-labs','articles/book-00-start','articles/book-05-recipe','articles/book-06-events','articles/book-08-outputs','articles/book-08-harmonise','articles/book-07-verbal-autopsy'].includes(slug)) {
         await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
-        await page.screenshot({path:`tools/book/evidence/book3/${slug.split('/')[1]}-${width}.png`,fullPage:false});
+        await page.screenshot({path:`tools/book/evidence/book3-fix1/${slug.split('/')[1]}-${width}.png`,fullPage:false});
       }
     }
+    await page.goto('file://'+path.resolve('docs/articles/book-16-longitudinal.html'));
+    for (const [heading, name] of [['The same people, two shapes','shapes'], ['Irregular measurements','windows'], ['Ask the recipe','reshape'], ['Repeated measures','mixed']]) {
+      await page.locator('h2').filter({hasText:heading}).scrollIntoViewIfNeeded();
+      await page.screenshot({path:`tools/book/evidence/book3-fix1/longitudinal-${name}-${width}.png`,fullPage:false});
+    }
+    await page.locator('main table').last().scrollIntoViewIfNeeded();
+    await page.screenshot({path:`tools/book/evidence/book3-fix1/longitudinal-model-${width}.png`,fullPage:false});
     await page.goto('file://'+path.resolve('docs/articles/book-15-labs.html'));
     await page.locator('h2').filter({hasText:'Pool across two connections'}).scrollIntoViewIfNeeded();
-    await page.screenshot({path:`tools/book/evidence/book3/lab-pooling-${width}.png`,fullPage:false});
+    await page.screenshot({path:`tools/book/evidence/book3-fix1/lab-pooling-${width}.png`,fullPage:false});
     await page.locator('main table').last().scrollIntoViewIfNeeded();
-    await page.screenshot({path:`tools/book/evidence/book3/lab-model-${width}.png`,fullPage:false});
+    await page.screenshot({path:`tools/book/evidence/book3-fix1/lab-model-${width}.png`,fullPage:false});
     await page.goto('file://'+path.resolve('docs/articles/book-06-events.html'));
     await page.locator('h2').filter({hasText:'Value bins and explicit high/low flags'}).scrollIntoViewIfNeeded();
-    await page.screenshot({path:`tools/book/evidence/book3/numeric-bins-${width}.png`,fullPage:false});
+    await page.screenshot({path:`tools/book/evidence/book3-fix1/numeric-bins-${width}.png`,fullPage:false});
     await page.goto('file://'+path.resolve('docs/authors.html'));
     if(!await page.locator('main').innerText().then(x=>x.includes('Tutorial book by David Sarrat González')))
       throw new Error('Book credit missing on authors page');
     await page.close();
   }
   await browser.close();
-  fs.writeFileSync('tools/book/evidence/book3/site-browser-audit.json',JSON.stringify(results,null,2)+'\n');
-  console.log('PASS: all 36 desktop/mobile pages; bylines, chapter navigation, copy buttons, contents, solutions and overflow checked.');
+  fs.writeFileSync('tools/book/evidence/book3-fix1/site-browser-audit.json',JSON.stringify(results,null,2)+'\n');
+  console.log('PASS: all 38 desktop/mobile pages; bylines, chapter navigation, copy buttons, contents, solutions and overflow checked.');
 })().catch(e=>{console.error(e);process.exit(1)});

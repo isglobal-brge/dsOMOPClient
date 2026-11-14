@@ -16,7 +16,7 @@ if (length(args) && args[[1L]] == "--chapter-worker") {
       }
       if (exists("practice", inherits=FALSE)) unlink(practice$path)
       if (exists("two_conns", inherits=FALSE)) {
-        try(dsOMOPClient::ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-15-labs",input)) "book_pool" else "omop"), silent=TRUE)
+        try(dsOMOPClient::ds.omop.disconnect(conns=two_conns, symbol=if (grepl("book-15-labs|book-16-longitudinal",input)) "book_pool" else "omop"), silent=TRUE)
         try(DSI::datashield.logout(two_conns), silent=TRUE)
       }
       if (exists("pair", inherits=FALSE)) unlink(pair$path)
@@ -53,7 +53,7 @@ practice_dir <- normalizePath(Sys.getenv("BOOK_PRACTICE_DIR", "../practice-data"
 stopifnot(all(file.exists(file.path(practice_dir,
   c("gibleed.sqlite", "numeric.sqlite", "manifest.json")))))
 inputs <- sort(list.files("vignettes", "^book-.*\\.Rmd\\.orig$", full.names=TRUE))
-stopifnot(length(inputs) == 17L)
+stopifnot(length(inputs) == 18L)
 local({
   scratch <- tempfile("book-reader-")
   dir.create(scratch)
@@ -92,6 +92,6 @@ local({
   for (input in inputs) run_chapter(input)
   # No ../practice-data exists in this case: the override must actually be used.
   run_chapter(inputs[grepl("book-09-reproduce", inputs)], custom=TRUE)
-  message("PASS: 17 complete chapters in fresh R processes from the final ZIP; ",
+  message("PASS: 18 complete chapters in fresh R processes from the final ZIP; ",
           "Appendix A also passed with BOOK_PRACTICE_DIR and no default data path")
 })

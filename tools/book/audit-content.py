@@ -5,7 +5,7 @@ from urllib.parse import unquote, urlsplit
 import json, re
 root = Path(__file__).resolve().parents[2]
 chapters = sorted((root / 'vignettes').glob('book-*.Rmd'))
-assert len(chapters) == 17
+assert len(chapters) == 18
 counts = {}
 for p in chapters:
     text = p.read_text()
@@ -14,10 +14,15 @@ for p in chapters:
     diagnostics = text
     # dsBase 6.3.5 intentionally uses one local GLM iteration. Keep its
     # explained warnings visible, allowing only this exact message here.
-    if p.name == 'book-15-labs.Rmd':
+    if p.name in ('book-15-labs.Rmd', 'book-16-longitudinal.Rmd'):
         for block in re.findall(r'<!-- expected-glm-warning:start -->(.*?)<!-- expected-glm-warning:end -->', text, re.S):
             cleaned = block.replace('#> Warning: glm.fit: algorithm did not converge', '')
             assert not re.search(r'#> (Error|Warning)', cleaned), f'Unexpected GLM diagnostic: {p}'
+            diagnostics = diagnostics.replace(block, cleaned)
+    if p.name == 'book-16-longitudinal.Rmd':
+        for block in re.findall(r'<!-- expected-mixed-warning:start -->(.*?)<!-- expected-mixed-warning:end -->', text, re.S):
+            cleaned = re.sub(r"#> Warning: the 'nobars' function has moved to the reformulas package\. Please update your\n#> imports, or ask an upstream package maintainer to do so\.\n", '', block)
+            assert not re.search(r'#> (Error|Warning)', cleaned), f'Unexpected mixed-model diagnostic: {p}'
             diagnostics = diagnostics.replace(block, cleaned)
     assert not re.search(r'#> (Error|Warning)', diagnostics), f'Unexpected diagnostic: {p}'
     # Refusals return ordinary lists, not necessarily R errors. Only a named,
@@ -54,5 +59,5 @@ report={'chapters':len(chapters),
                                      for p in (root/'vignettes').glob('book-*.Rmd.orig')),
         'rendered_r_code_blocks':sum(counts.values()),'code_blocks_by_chapter':counts,
         'missing_local_links':missing,'uncomputed_chunks':0,'untranslated_fixture_id_outputs':0}
-(root/'tools/book/evidence/book3/content-audit.json').write_text(json.dumps(report,indent=2)+'\n')
+(root/'tools/book/evidence/book3-fix1/content-audit.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))

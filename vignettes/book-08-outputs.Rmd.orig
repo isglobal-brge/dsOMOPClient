@@ -347,3 +347,6 @@ measurement rows would give more weight to people with more measurements.
 two-connection analysis. Neither shape grants access to individual rows.
 
 </details>
+
+[Chapter 16](book-16-longitudinal.html) develops these choices through irregular
+measurements, server reshaping, a discrete-time hazard and pooled mixed models.

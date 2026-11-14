@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.body.classList.add('book-page');
   // Preserve every recorded warning, with an explicit expandable label on the
   // one lesson that explains dsBase's single-iteration local setup fits.
-  if (location.pathname.endsWith('/book-15-labs.html')) {
+  if (/book-(15-labs|16-longitudinal)\.html$/.test(location.pathname)) {
     main.querySelectorAll('pre:not(.sourceCode)').forEach(pre => {
       const lines = pre.textContent.trim().split('\n');
       if (!lines.length || !lines.every(line => line.trim() ===

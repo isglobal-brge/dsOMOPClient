@@ -81,7 +81,7 @@ for chapter in sorted((root / 'vignettes').glob('book-*.Rmd')):
     assert outputs == rendered.outputs, f'Console output mismatch: {chapter.name}'
     assert tables == rendered.tables, f'Table mismatch: {chapter.name}'
     report[chapter.name] = {'outputs': len(outputs), 'tables': len(tables), 'match': True}
-assert len(report) == 17
+assert len(report) == 18
 result = {'chapters': report, 'console_blocks': sum(r['outputs'] for r in report.values()),
           'tables': sum(r['tables'] for r in report.values())}
 print(json.dumps(result, indent=2))

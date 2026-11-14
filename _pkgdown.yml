@@ -61,6 +61,8 @@ navbar:
           href: articles/book-07-verbal-autopsy.html
         - text: 15. Working with lab values
           href: articles/book-15-labs.html
+        - text: 16. Longitudinal data
+          href: articles/book-16-longitudinal.html
         - text: Appendix A. Reproduction and migration
           href: articles/book-09-reproduce.html
 articles:
@@ -83,6 +85,7 @@ articles:
       - book-06-visits
       - book-07-verbal-autopsy
       - book-15-labs
+      - book-16-longitudinal
   - title: Reproduction and migration
     navbar: ~
     contents:

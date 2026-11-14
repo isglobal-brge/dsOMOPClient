@@ -26,8 +26,8 @@ with its solution.
 | [12. Privacy](articles/book-12-privacy.html) | Understand final release and refused columns |
 | [13. Visit walkthrough](articles/book-06-visits.html) | Combine offsets, dates and event rows |
 | [14. Verbal-autopsy capstone](articles/book-07-verbal-autopsy.html) | Combine answers, age, visit periods and cause |
-
 | [15. Working with lab values](articles/book-15-labs.html) | Reduce, convert and pool synthetic lab values |
+| [16. Longitudinal data](articles/book-16-longitudinal.html) | Shape events, build risk sets and model repeated measures |
 
 The main lessons use one DataSHIELD connection at a time. GiBleed teaches the
 basics; Synthea27Nj supplies numeric labs. Both have synthetic people. A separately

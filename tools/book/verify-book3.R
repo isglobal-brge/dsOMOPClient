@@ -47,6 +47,24 @@ verify_book3 <- function(input, env, get_data) {
   same(get_data("D_lab_spread")$spread,oracle$maximum-oracle$minimum)
   summary_matches(env$spread_summary,oracle$maximum-oracle$minimum)
   for (col in c("high_count","low_count")) same(get_data("D_lab_ranges")[[col]],oracle[[col]])
+  stopifnot(all(env$hits$pooled$domain_id=="Measurement"),
+    "Hemoglobin [Mass/volume] in Blood" %in% env$hits$pooled$concept_name)
+  factor_band <- get_data("lab_band")
+  stopifnot(is.factor(factor_band), !is.ordered(factor_band),
+    identical(levels(factor_band),c("below 14","14 to below 15","15 or above")))
+  same(book_counts(env$bin_counts)$Count,c(9,9,10,0))
+  for (v in c("first","last")) {
+    expected <- ifelse(oracle[[v]]<14.5,"below 14.5","14.5 or above")
+    same(book_counts(env[[paste0(v,"_groups")]])$Count,as.numeric(table(expected,useNA="always")))
+    same(env[[paste0(v,"_mean")]]$Global.Mean[1,1],mean(oracle[[v]]))
+  }
+  same(env$raw_mean$Global.Mean[1,1],mean(oracle$mean))
+  same(env$unit_mean$Global.Mean[1,1],10*mean(oracle$mean))
+  same(env$bin_mean$Global.Mean[1,1],mean(oracle$mean))
+  same(env$range_mean$Global.Mean[1,1],mean(oracle$mean))
+  same(book_counts(env$mean_groups)$Count,as.numeric(table(ifelse(oracle$mean<14.5,"below 14.5","14.5 or above"),useNA="always")))
+  same(book_counts(env$unit_groups)$Count,book_counts(env$mean_groups)$Count)
+  same(book_counts(env$unit_bin_counts)$Count,c(9,9,10,0))
   flags <- get_data("D_lab_flags")
   stopifnot(identical(flags$high,as.integer(d$mean>=15)),identical(flags$low,as.integer(d$mean<14)))
   band <- cut(oracle$mean,c(0,14,15,100),labels=c("below 14","14 to below 15","15 or above"),right=FALSE)
