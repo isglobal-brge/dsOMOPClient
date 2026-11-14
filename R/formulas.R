@@ -105,10 +105,18 @@ omop_formula_ratio <- function(numerator,denominator,unit,version="1.0.0") {
 .formulaAgeCheck <- function(age,creatinine) {
   a<-age$derived;r<-creatinine$reducer;ref<-a$reference
   valid<-identical(a$kind,"age_at")&&identical(a$unit,"years")&&!isTRUE(a$bands)
+  # A numerically transformed age is no longer the pinned calendar-age input,
+  # even if its declared unit still says years. Keep only identity presentation.
+  identity<-vapply(.numberEffective(age$number_spec)$pipeline,function(s) {
+    s$kind=="transform"&&s$method=="identity" ||
+      s$kind=="round"&&s$method=="none" ||
+      s$kind=="fixed_unit"&&s$from=="years"&&s$to=="years"&&s$factor==1&&s$offset==0
+  },logical(1))
+  valid<-valid&&all(identity)
   at_index<-identical(ref,"index")&&identical(r$window$anchor,"index")&&
     identical(as.numeric(r$window$start),0)&&identical(as.numeric(r$window$end),0)
   selected<-inherits(ref,"omop_anchor")&&r$fn %in% c("first_value","last_value","nth_value")&&
-    identical(r$missing,"keep")&&identical(ref$field,"start")&&
+    identical(r$missing,"keep")&&identical(ref$field,"start")&&identical(ref$scope,"episode")&&
     identical(ref$which,switch(r$fn,first_value="first",last_value="last",nth_value="nth"))&&
     identical(.v2_plain_value(ref$event),.v2_plain_value(creatinine$event))&&
     identical(.v2_plain_value(ref$search),.v2_plain_value(r$window))&&
