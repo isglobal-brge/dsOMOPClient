@@ -126,3 +126,10 @@ test_that("N45 N66 N67 N74 every missing numeric capability refuses before any a
     expect_identical(unname(state$assigns),c(0L,0L))
   }
 })
+
+test_that("N49 reconciliation transport retains full binary64 numeric constants", {
+  spec<-list(numbers=list(x=list(unit="weeks",pipeline=list(list(kind="fixed_unit",from="days",to="weeks",factor=1/7,offset=0)),breaks=as.list(c(1.25-2^-52,1.25,1.25+2^-52)))))
+  decoded<-dsOMOP:::.ds_arg(.ds_encode(spec))
+  expect_identical(decoded$numbers$x$pipeline[[1]]$factor,1/7)
+  expect_identical(unlist(decoded$numbers$x$breaks),c(1.25-2^-52,1.25,1.25+2^-52))
+})

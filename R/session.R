@@ -46,7 +46,7 @@
     # every named atomic vector to a list so names survive transport; the
     # server-side .ds_arg() reads them back as object keys.
     x <- .ds_coerce_names(x)
-    json <- as.character(jsonlite::toJSON(x, auto_unbox = TRUE, null = "null"))
+    json <- as.character(jsonlite::toJSON(x, auto_unbox = TRUE, null = "null", digits = NA))
     # URL-safe base64: no +/= that could confuse Opal's R expression parser
     b64 <- gsub("[\r\n]", "", jsonlite::base64_enc(charToRaw(json)))
     b64 <- gsub("\\+", "-", b64)

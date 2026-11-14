@@ -1,5 +1,9 @@
 # dsOMOPClient 2.10.5 (2026-11-14)
 
+- Corrected: shared numeric contracts retain full binary64 precision through
+  DataSHIELD JSON transport, including fractional conversion factors and
+  adjacent breakpoints. Re-execute recipes to reconcile those contracts.
+
 - Newly permitted (A-29 / CR-30): native numeric presentation with declared
   source and fixed units, ordered transforms, exact binary64 decimal rounding,
   public bins and clinical categories, flags and value presence/missingness.
