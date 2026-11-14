@@ -1,0 +1,59 @@
+also installing the dependency ‘labelled’
+
+trying URL 'https://cloud.r-project.org/src/contrib/labelled_2.16.1.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/opalr_3.7.0.tar.gz'
+trying URL 'https://cloud.r-project.org/src/contrib/DSOpal_1.5.0.tar.gz'
+begin installing package ‘labelled’
+* installing *source* package ‘labelled’ ...
+** this is package ‘labelled’ version ‘2.16.1’
+** package ‘labelled’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+*** copying figures
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (labelled)
+begin installing package ‘opalr’
+* installing *source* package ‘opalr’ ...
+** this is package ‘opalr’ version ‘3.7.0’
+** package ‘opalr’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (opalr)
+begin installing package ‘DSOpal’
+* installing *source* package ‘DSOpal’ ...
+** this is package ‘DSOpal’ version ‘1.5.0’
+** package ‘DSOpal’ successfully unpacked and MD5 sums checked
+** using staged installation
+** R
+** data
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (DSOpal)
+
+The downloaded source packages are in
+	‘/tmp/RtmpnIL06v/downloaded_packages’

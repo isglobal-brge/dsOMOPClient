@@ -16,6 +16,26 @@ Run its sections in order. Each chapter starts from a fresh practice
 connection; all the outputs below come from real dsOMOP and dsOMOPClient
 2.10.4 calls. The numbers describe teaching data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
+Run this setup first:
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/fixture.R")
+practice <- book_fixture()
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"
+
+The `site` connection is ready. This chapter creates its temporary
+questionnaire fixture locally.
+
 ## Start with an index event
 
 A *population* specifies who contributes rows. An *index* selects an

@@ -1,0 +1,26 @@
+{
+  "chapters": 16,
+  "executed_source_chunks": 228,
+  "rendered_r_code_blocks": 260,
+  "code_blocks_by_chapter": {
+    "book-00-start.Rmd": 6,
+    "book-01-mental-model.Rmd": 4,
+    "book-02-connect.Rmd": 8,
+    "book-03-explore.Rmd": 6,
+    "book-04-vocabulary.Rmd": 7,
+    "book-05-recipe.Rmd": 17,
+    "book-06-events.Rmd": 39,
+    "book-06-visits.Rmd": 22,
+    "book-07-populations.Rmd": 17,
+    "book-07-verbal-autopsy.Rmd": 21,
+    "book-08-harmonise.Rmd": 22,
+    "book-08-outputs.Rmd": 32,
+    "book-09-dates.Rmd": 28,
+    "book-09-reproduce.Rmd": 6,
+    "book-11-parameters.Rmd": 16,
+    "book-12-privacy.Rmd": 9
+  },
+  "missing_local_links": [],
+  "uncomputed_chunks": 0,
+  "untranslated_fixture_id_outputs": 0
+}

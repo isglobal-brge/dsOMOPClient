@@ -15,11 +15,43 @@ Run the sections in order in one R session. All printed results below
 were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
 data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
+Run this setup first:
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/fixture.R")
+practice <- book_fixture()
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"
+
+The `site` connection is ready. This chapter creates its temporary
+questionnaire fixture locally.
+
 ## Select the education question
 
 An *event* describes records of interest. It is a definition on your
-computer, not a downloaded table. Start with the question from chapter
-4:
+computer, not a downloaded table. We have switched from chapter 4’s
+GiBleed asthma search to the questionnaire fixture. First look up its
+education question by concept:
+
+``` r
+question <- ds.omop.concept.lookup(900001L, conns = conns)
+knitr::kable(question$pooled["concept_name"])
+```
+
+| concept\_name      |
+| :----------------- |
+| Education question |
+
+Now use that question to select observations:
 
 ``` r
 education_event <- omop_event("observation", concepts = 900001L)
@@ -94,8 +126,19 @@ explained$selected
     #> [1] "v2"
 
 The selected plan is language 2. This check is made for every executable
-recipe in the book. To read all the chosen defaults, print the
-explanation:
+recipe in the book. With no time restriction, each variable reads all
+available history independently. That is a teaching definition to choose
+explicitly in a real study.
+
+Full plan explanation (optional)
+
+The semantic version identifies the rules used to interpret the recipe.
+A label contract records the category names and their ordering.
+Federation reconciliation makes those categories agree across sites. A
+bytewise tie compares the bytes of text to make a repeated choice
+deterministic. You do not need to configure these for this first recipe.
+
+Print all the chosen defaults:
 
 ``` r
 recipe_explain(people)
@@ -118,10 +161,6 @@ recipe_explain(people)
     #> variables.education: concept origin follows reducer last_value over value_as_concept_id; explicit variable name is retained.
     #> variables.cause_of_death: concept origin follows reducer first_value over cause_concept_id; explicit variable name is retained.
 
-With no time restriction, each variable reads all available history
-independently. That is a teaching definition, not an assumption to carry
-silently into a study.
-
 ## Assign the result
 
 ``` r
@@ -139,7 +178,19 @@ of their declared type. In 2.10.4 the names `education` and
 ## Count the education categories
 
 ``` r
-dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
+education_table_result <- dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
+knitr::kable(book_counts(education_table_result))
+```
+
+| Category             | Count |
+| :------------------- | ----: |
+| Secondary education  |     6 |
+| University education |     6 |
+
+Full aggregate response
+
+``` r
+education_table_result
 ```
 
     #> $output.list
@@ -175,10 +226,14 @@ dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
-The labels are names, not numeric codes. `useNA = "no"` excludes missing
-answers; the counts therefore need not add up to the whole population.
-DataSHIELD checks whether cells may be released before returning the
-table.
+The Count column answers how many people have each answer. The full
+response also contains proportions (fractions of a row or column total);
+we select its `TABLES.COMBINED_all.sources_counts` component after
+checking that every site released a valid result. The helper stops on a
+withheld or incomplete result. The labels are names, not numeric codes.
+`useNA = "no"` excludes missing answers; the counts therefore need not
+add up to the whole population. DataSHIELD checks whether cells may be
+released before returning the table.
 
 ## Count causes
 
@@ -223,7 +278,19 @@ print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
     #> "D_answers"
 
 ``` r
-dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
+yes_no_result <- dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
+knitr::kable(book_counts(yes_no_result))
+```
+
+| Category | Count |
+| :------- | ----: |
+| yes      |     6 |
+| no       |     6 |
+
+Full aggregate response
+
+``` r
+yes_no_result
 ```
 
     #> $output.list

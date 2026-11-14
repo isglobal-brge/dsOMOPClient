@@ -88,10 +88,25 @@
 </div>
 <p>This chapter uses the public synthetic GiBleed practice connection from <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
 <div class="section level2">
+<h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
+</h2>
+<p>Start a fresh R session in the <code>book-work</code> directory created in <a href="book-00-start.html#get-the-book-helpers">Getting started</a>. Run this setup first:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/practice.R"</span><span class="op">)</span></span>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">book_driver</span> <span class="op">==</span> <span class="st">"DSLite"</span><span class="op">)</span> <span class="fu">book_practice</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span> <span class="kw">else</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
+<p>The <code>site</code> connection is ready. The shared <code>connection.R</code> selects DSLite or Opal and resolves the resource names.</p>
+</div>
+<div class="section level2">
 <h2 id="one-connection-list">One connection list<a class="anchor" aria-label="anchor" href="#one-connection-list"></a>
 </h2>
 <p>A <em>connection</em> is a logged-in session. Our DSLite helper made one, named <code>site</code>.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
 <p>Most calls accept <code>conns</code>. Passing it explicitly makes clear where a request goes.</p>
@@ -99,36 +114,28 @@
 <div class="section level2">
 <h2 id="the-opal-login-path">The Opal login path<a class="anchor" aria-label="anchor" href="#the-opal-login-path"></a>
 </h2>
-<p><strong>Requires a real Opal.</strong> This is the single connection configuration to change when moving to another practice host. Use it instead of the DSLite login from chapter 0. Set the three <code>BOOK_OPAL_*</code> environment variables in your secure local configuration; the URL comes from your administrator or easy-opal setup. This deployment block is not part of the recorded DSLite execution.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">opal_url</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_OPAL_URL"</span><span class="op">)</span></span>
-<span><span class="va">opal_project</span> <span class="op">&lt;-</span> <span class="st">"practice"</span></span>
-<span><span class="va">opal_resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>gibleed <span class="op">=</span> <span class="st">"gibleed"</span>, numeric <span class="op">=</span> <span class="st">"numeric"</span><span class="op">)</span></span>
-<span><span class="va">lesson_resource</span> <span class="op">&lt;-</span> <span class="st">"gibleed"</span>  <span class="co"># choose "numeric" for numeric chapters</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/datashield/DSOpal/" class="external-link">DSOpal</a></span><span class="op">)</span></span>
-<span><span class="va">builder</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/newDSLoginBuilder.html" class="external-link">newDSLoginBuilder</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"site"</span>, url <span class="op">=</span> <span class="va">opal_url</span>,</span>
-<span>               user <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_OPAL_USER"</span><span class="op">)</span>,</span>
-<span>               password <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_OPAL_PASSWORD"</span><span class="op">)</span>, driver <span class="op">=</span> <span class="st">"OpalDriver"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.login.html" class="external-link">datashield.login</a></span><span class="op">(</span><span class="va">builder</span><span class="op">$</span><span class="fu">build</span><span class="op">(</span><span class="op">)</span>, assign <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">opal_project</span>, <span class="va">opal_resources</span><span class="op">[[</span><span class="va">lesson_resource</span><span class="op">]</span><span class="op">]</span>,</span>
-<span>                                 sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>Reuse this login for every practice lesson, choosing its named resource. The questionnaire-fixture chapters explicitly use their separate local helper. Credentials belong in secure configuration, never a shared notebook. The executed DSLite login is in <code>tools/book/practice.R</code>.</p>
+<p>Edit <code>tools/book/connection.R</code> once to set <code>book_driver &lt;- "Opal"</code>, your <code>opal_url</code>, <code>opal_project</code>, <code>opal_resources</code> and <code>opal_profile</code>. Keep credentials in <code>BOOK_OPAL_USER</code> and <code>BOOK_OPAL_PASSWORD</code> in your local environment. Restart R and run the setup above. Every public practice chapter uses that same file.</p>
+<p><code>book_connect()</code> logs in with DSOpal when Opal is selected; with DSLite it calls <code>book_practice()</code> locally. Both return a list, so the assignment <code>conns &lt;- practice$conns</code> is essential. Questionnaire chapters use their explicitly separate local fixture. The optional <a href="book-00-start.html#use-the-same-two-resources-on-opal">administrator walkthrough</a> creates and checks both Opal resources.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">resource_names</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;   gibleed   numeric </span></span>
+<span><span class="co">#&gt; "gibleed" "numeric"</span></span></code></pre>
+<p>These are the names used by every attach and switch below. With Opal they include the configured project prefix, even when you rename either resource.</p>
 </div>
 <div class="section level2">
 <h2 id="a-resource-is-a-route-to-a-database">A resource is a route to a database<a class="anchor" aria-label="anchor" href="#a-resource-is-a-route-to-a-database"></a>
 </h2>
 <p>A <em>resource</em> stores the connection details on the server. On the practice server its name is <code>gibleed</code>. In the optional Opal setup it is <code>practice.gibleed</code>.</p>
 <p>A <em>symbol</em> is an R object name inside the DataSHIELD session. Attach the resource and deliberately name the session handle <code>omop</code>:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"gibleed"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>The server opens its database connection. This does not copy the database into R on your laptop. On Opal, replace only <code>gibleed</code> with the resource name you were given.</p>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="va">resource_names</span><span class="op">[[</span><span class="st">"gibleed"</span><span class="op">]</span><span class="op">]</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<p>The server opens its database connection. This does not copy the database into R on your laptop. The shared configuration supplies the correct resource name for either driver.</p>
 </div>
 <div class="section level2">
 <h2 id="reuse-the-handle">Reuse the handle<a class="anchor" aria-label="anchor" href="#reuse-the-handle"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"person"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;                    column_name cdm_datatype db_datatype      concept_role</span></span>
 <span><span class="co">#&gt; 1                    person_id      integer        real       non_concept</span></span>
@@ -198,15 +205,15 @@
 <h2 id="switch-between-the-two-practice-resources">Switch between the two practice resources<a class="anchor" aria-label="anchor" href="#switch-between-the-two-practice-resources"></a>
 </h2>
 <p>The same practice server also offers the numeric Synthea27Nj database. Disconnect the current OMOP handle, then attach that resource on the same login connection:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">numeric_session</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"numeric"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">numeric_session</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="va">resource_names</span><span class="op">[[</span><span class="st">"numeric"</span><span class="op">]</span><span class="op">]</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">numeric_session</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "omop_session"</span></span></code></pre>
 <p>This changes the database behind the OMOP handle. It does not copy or combine patient rows between resources. On Opal the corresponding name is <code>practice.numeric</code>. Return to GiBleed for the next introductory chapters:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">session</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"gibleed"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">session</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="va">resource_names</span><span class="op">[[</span><span class="st">"gibleed"</span><span class="op">]</span><span class="op">]</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">session</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "omop_session"</span></span></code></pre>
 <p>The numeric chapters will open their own fresh <code>numeric</code> session. Keeping resource selection explicit prevents accidentally running a lab recipe against GiBleed’s empty numeric-value fields.</p>
@@ -221,7 +228,7 @@
 </h2>
 <p>Repeat the column request without specifying the symbol.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;                    column_name cdm_datatype db_datatype      concept_role</span></span>
 <span><span class="co">#&gt; 1                    person_id      integer        real       non_concept</span></span>

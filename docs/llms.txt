@@ -421,7 +421,7 @@ theme, not an OHDSI endorsement.
     private](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md):
   - [13. Visit dates, one idea at a
     time](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-visits.md):
-  - [7. Capstone: a verbal-autopsy wide
+  - [14. Capstone: a verbal-autopsy wide
     table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md):
 
 ### Reproduction and migration

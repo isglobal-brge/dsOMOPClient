@@ -1,4 +1,4 @@
-# 7\. Capstone: a verbal-autopsy wide table
+# 14\. Capstone: a verbal-autopsy wide table
 
 **What you will learn**
 
@@ -14,6 +14,26 @@ start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#
 Run the sections in order in one R session. All printed results below
 were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
 data, not clinical findings.
+
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
+Run this setup first:
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/fixture.R")
+practice <- book_fixture()
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"
+
+The `site` connection is ready. This chapter creates its temporary
+questionnaire fixture locally.
 
 ## Begin with the clinical question
 

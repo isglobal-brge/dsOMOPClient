@@ -88,6 +88,20 @@
 </div>
 <p>This chapter uses the 24-person synthetic questionnaire test fixture described in <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
 <div class="section level2">
+<h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
+</h2>
+<p>Start a fresh R session in the <code>book-work</code> directory created in <a href="book-00-start.html#get-the-book-helpers">Getting started</a>. Run this setup first:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/fixture.R"</span><span class="op">)</span></span>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_fixture</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
+<p>The <code>site</code> connection is ready. This chapter creates its temporary questionnaire fixture locally.</p>
+</div>
+<div class="section level2">
 <h2 id="source-and-rendered-lessons">Source and rendered lessons<a class="anchor" aria-label="anchor" href="#source-and-rendered-lessons"></a>
 </h2>
 <p>The editable chapters are <code>vignettes/book-*.Rmd.orig</code>. The precompute script executes them against the synthetic fixture and writes <code>.Rmd</code> with the actual output embedded. The resulting files contain ordinary Markdown code fences, so the website does not connect to a database when it builds.</p>
@@ -96,7 +110,7 @@
 <div class="section level2">
 <h2 id="record-the-software-versions">Record the software versions<a class="anchor" aria-label="anchor" href="#record-the-software-versions"></a>
 </h2>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dsOMOP"</span>, <span class="st">"dsOMOPClient"</span>, <span class="st">"DSI"</span>, <span class="st">"DSLite"</span>, <span class="st">"dsBase"</span>, <span class="st">"dsBaseClient"</span><span class="op">)</span>,</span>
 <span>       <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;       dsOMOP dsOMOPClient          DSI       DSLite       dsBase dsBaseClient </span></span>
@@ -107,7 +121,7 @@
 <h2 id="reproduce-both-practice-resources">Reproduce both practice resources<a class="anchor" aria-label="anchor" href="#reproduce-both-practice-resources"></a>
 </h2>
 <p>Run <code>Rscript tools/book/load-practice.R ../practice-data</code>. The loader pins the EunomiaDatasets source revision and verifies SHA-256 for both archives. It creates <code>gibleed.sqlite</code>, <code>numeric.sqlite</code> and a manifest. These are administrator-side operations on public synthetic data, separate from analyst DataSHIELD calls. The following table reads the manifest recorded by the actual completed loader:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">manifest</span> <span class="op">&lt;-</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/read_json.html" class="external-link">read_json</a></span><span class="op">(</span><span class="st">"tools/book/evidence/book2/practice-manifest.json"</span><span class="op">)</span></span>
 <span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">manifest</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Dataset <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">dataset</span>, Measurements <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">measurements</span><span class="op">$</span><span class="va">rows</span>,</span>
@@ -154,12 +168,12 @@
 <div class="section level2">
 <h2 id="inspect-the-executed-language">Inspect the executed language<a class="anchor" aria-label="anchor" href="#inspect-the-executed-language"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">check</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "v2"</span></span></code></pre>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">check</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">check</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_migration"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;        people </span></span>
@@ -176,7 +190,7 @@
 </h2>
 <p>Check that the migration recipe is native before using it.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">check</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "v2"</span></span></code></pre>
 </details>

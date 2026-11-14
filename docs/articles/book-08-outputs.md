@@ -16,6 +16,27 @@ Run its sections in order. Each chapter starts from a fresh practice
 connection; all the outputs below come from real dsOMOP and dsOMOPClient
 2.10.4 calls. The numbers describe teaching data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
+Run this setup first:
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("numeric") else book_connect("numeric")
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"
+
+The `site` connection is ready. The shared `connection.R` selects DSLite
+or Opal and resolves the resource names.
+
 ## Choose the shape for the analysis
 
 An output controls the shape of a private server table. It never grants
@@ -310,7 +331,19 @@ a “no outcome ever” assertion. Always state the window: omitting it
 would use the 730-day compatibility default.
 
 ``` r
-dsBaseClient::ds.table("D_fmt_survival$event", useNA = "no", datasources = conns)
+survival_result <- dsBaseClient::ds.table("D_fmt_survival$event", useNA = "no", datasources = conns)
+knitr::kable(book_counts(survival_result))
+```
+
+| Category | Count |
+| :------- | ----: |
+| 0        |    21 |
+| 1        |     7 |
+
+Full aggregate response
+
+``` r
+survival_result
 ```
 
     #> $output.list
@@ -545,7 +578,25 @@ same as the wide count?
 Solution
 
 ``` r
-dsBaseClient::ds.summary("D_fmt_joined$visits", datasources = conns)
+solution_result <- dsBaseClient::ds.summary("D_fmt_joined$visits", datasources = conns)
+knitr::kable(book_summary(solution_result))
+```
+
+| Site | Statistic |     Value |
+| :--- | :-------- | --------: |
+| site | 5%        |  11.75000 |
+| site | 10%       |  16.40000 |
+| site | 25%       |  23.75000 |
+| site | 50%       |  45.00000 |
+| site | 75%       |  75.25000 |
+| site | 90%       | 117.60000 |
+| site | 95%       | 152.20000 |
+| site | Mean      |  61.96429 |
+
+Full aggregate response
+
+``` r
+solution_result
 ```
 
     #> $site

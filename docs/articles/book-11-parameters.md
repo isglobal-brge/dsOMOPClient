@@ -16,6 +16,27 @@ Run its sections in order. Each chapter starts from a fresh practice
 connection; all the outputs below come from real dsOMOP and dsOMOPClient
 2.10.4 calls. The numbers describe teaching data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
+Run this setup first:
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("numeric") else book_connect("numeric")
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"
+
+The `site` connection is ready. The shared `connection.R` selects DSLite
+or Opal and resolves the resource names.
+
 ## Describe the setting as a parameter
 
 A *parameter* is a named, typed placeholder in a study definition. It

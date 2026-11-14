@@ -16,6 +16,27 @@ Run its sections in order. Each chapter starts from a fresh practice
 connection; all the outputs below come from real dsOMOP and dsOMOPClient
 2.10.4 calls. The numbers describe teaching data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
+Run this setup first:
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("numeric") else book_connect("numeric")
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"
+
+The `site` connection is ready. The shared `connection.R` selects DSLite
+or Opal and resolves the resource names.
+
 ## Define the records once
 
 An *event* describes which records the server should read. These
@@ -111,7 +132,7 @@ count and ever are zero.
 ``` r
 any_high <- omop_variable(event = measure,
   reducer = omop_reduce("any", window = history,
-    predicate = omop_where(value >= 14)))
+    predicate = omop_where(value >= 16)))
 all_high <- omop_variable(event = measure,
   reducer = omop_reduce("all", window = history,
     predicate = omop_where(value >= 14)))
@@ -121,11 +142,12 @@ class(any_high)
     #> [1] "omop_variable" "list"
 
 Ever tests whether a record exists. Any and all test a condition on its
-values. Here 14 is an arbitrary teaching cutoff, not a clinical
-reference limit. A missing value makes its comparison unknown; a true
-value settles any, and a false value settles all. Otherwise an unknown
-remains missing. Empty windows give any = 0 and all = NA: without
-measurements there is no all-value result.
+values. Here any asks about readings at least 16 g/dL; all asks whether
+every reading is at least 14 g/dL. Both are arbitrary teaching cutoffs,
+not clinical reference limits. A missing value makes its comparison
+unknown; a true value settles any, and a false value settles all.
+Otherwise an unknown remains missing. Empty windows give any = 0 and all
+= NA: without measurements there is no all-value result.
 
 ## Assign the columns privately
 
@@ -144,7 +166,25 @@ Only the symbol mapping returns. Request one approved aggregate at a
 time:
 
 ``` r
-dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
+first_result <- dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
+knitr::kable(book_summary(first_result))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 11.29000 |
+| site | 10%       | 12.48000 |
+| site | 25%       | 12.97500 |
+| site | 50%       | 13.70000 |
+| site | 75%       | 15.42500 |
+| site | 90%       | 16.19000 |
+| site | 95%       | 16.85500 |
+| site | Mean      | 13.98571 |
+
+Full aggregate response
+
+``` r
+first_result
 ```
 
     #> $site
@@ -161,7 +201,25 @@ dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
 This summarises the first nonmissing measurement per person.
 
 ``` r
-dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
+last_result <- dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
+knitr::kable(book_summary(last_result))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 12.34000 |
+| site | 10%       | 12.74000 |
+| site | 25%       | 13.60000 |
+| site | 50%       | 15.00000 |
+| site | 75%       | 16.25000 |
+| site | 90%       | 16.83000 |
+| site | 95%       | 17.03000 |
+| site | Mean      | 14.89286 |
+
+Full aggregate response
+
+``` r
+last_result
 ```
 
     #> $site
@@ -179,21 +237,57 @@ Later readings can change the last-value summary. The source dataset
 contains hemoglobin measurements for all 28 fictional people.
 
 ``` r
-dsBaseClient::ds.table("D_reducers$days", useNA = "no", datasources = conns)
+days_result <- dsBaseClient::ds.summary("D_reducers$days", datasources = conns)
+knitr::kable(book_summary(days_result))
 ```
 
-    #> $validity.message
-    #> [1] "All studies failed for reasons identified below"
-    #> 
-    #> $error.messages
-    #> $error.messages$site
-    #> [1] "Failed: at least one cell has a non-zero count less than nfilter.tab i.e. 3"
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 1.000000 |
+| site | 10%       | 1.700000 |
+| site | 25%       | 3.000000 |
+| site | 50%       | 4.000000 |
+| site | 75%       | 4.000000 |
+| site | 90%       | 5.000000 |
+| site | 95%       | 5.650000 |
+| site | Mean      | 3.857143 |
 
-These are people grouped by their number of measurement days, not event
-counts pooled directly.
+Full aggregate response
 
 ``` r
-dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
+days_result
+```
+
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #> 
+    #> $site$length
+    #> [1] 28
+    #> 
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
+    #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
+
+This summarises one measurement-day count per person. A frequency table
+of each exact count is withheld on this dataset because some nonzero
+cells are below `nfilter.tab` (3); the entire table is withheld, not
+just its small cells. An approved numeric summary answers the comparison
+without requesting that table.
+
+``` r
+ever_result <- dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
+knitr::kable(book_counts(ever_result))
+```
+
+| Category | Count |
+| :------- | ----: |
+| 1        |    28 |
+
+Full aggregate response
+
+``` r
+ever_result
 ```
 
     #> $output.list
@@ -230,21 +324,77 @@ Everyone in this public dataset has a hemoglobin measurement. A person
 without one would have ever = 0 in this defined window.
 
 ``` r
-dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
+any_result <- dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
+knitr::kable(book_counts(any_result))
 ```
 
-    #> $validity.message
-    #> [1] "All studies failed for reasons identified below"
-    #> 
-    #> $error.messages
-    #> $error.messages$site
-    #> [1] "Failed: at least one cell has a non-zero count less than nfilter.tab i.e. 3"
+| Category | Count |
+| :------- | ----: |
+| 0        |     9 |
+| 1        |    19 |
+| NA       |     0 |
 
-A known high measurement is enough for any, even alongside an unknown
-value.
+Full aggregate response
 
 ``` r
-dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = conns)
+any_result
+```
+
+    #> $output.list
+    #> $output.list$TABLE_rvar.by.study_row.props
+    #>                    study
+    #> D_reducers$any_high site
+    #>                  0     1
+    #>                  1     1
+    #>                  NA  NaN
+    #> 
+    #> $output.list$TABLE_rvar.by.study_col.props
+    #>                    study
+    #> D_reducers$any_high      site
+    #>                  0  0.3214286
+    #>                  1  0.6785714
+    #>                  NA 0.0000000
+    #> 
+    #> $output.list$TABLE_rvar.by.study_counts
+    #>                    study
+    #> D_reducers$any_high site
+    #>                  0     9
+    #>                  1    19
+    #>                  NA    0
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_proportions
+    #> D_reducers$any_high
+    #>     0     1    NA 
+    #> 0.321 0.679 0.000 
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_counts
+    #> D_reducers$any_high
+    #>  0  1 NA 
+    #>  9 19  0 
+    #> 
+    #> 
+    #> $validity.message
+    #> [1] "Data in all studies were valid"
+
+The released counts show 19 people with at least one reading at or above
+16 g/dL and 9 without one. A known qualifying measurement is enough for
+any, even alongside an unknown value.
+
+``` r
+all_result <- dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = conns)
+knitr::kable(book_counts(all_result))
+```
+
+| Category | Count |
+| :------- | ----: |
+| 0        |    24 |
+| 1        |     4 |
+| NA       |     0 |
+
+Full aggregate response
+
+``` r
+all_result
 ```
 
     #> $output.list
@@ -283,12 +433,31 @@ dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = co
     #> $validity.message
     #> [1] "Data in all studies were valid"
 
-All distinguishes unknown comparisons from an empty set of records.
+Four people have all readings at or above 14 g/dL; 24 do not. All
+distinguishes unknown comparisons from an empty set of records.
 
 ## Read the mean summary
 
 ``` r
-dsBaseClient::ds.summary("D_reducers$mean", datasources = conns)
+mean_result <- dsBaseClient::ds.summary("D_reducers$mean", datasources = conns)
+knitr::kable(book_summary(mean_result))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 12.90500 |
+| site | 10%       | 13.14667 |
+| site | 25%       | 13.78500 |
+| site | 50%       | 14.32500 |
+| site | 75%       | 15.33542 |
+| site | 90%       | 15.70000 |
+| site | 95%       | 15.92375 |
+| site | Mean      | 14.46679 |
+
+Full aggregate response
+
+``` r
+mean_result
 ```
 
     #> $site
@@ -328,7 +497,25 @@ The tolerance excludes later measurements. The shortcut uses
 30 days after.
 
 ``` r
-dsBaseClient::ds.summary("D_at_index$hemoglobin", datasources = conns)
+at_index_result <- dsBaseClient::ds.summary("D_at_index$hemoglobin", datasources = conns)
+knitr::kable(book_summary(at_index_result))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 11.29000 |
+| site | 10%       | 12.48000 |
+| site | 25%       | 12.97500 |
+| site | 50%       | 13.70000 |
+| site | 75%       | 15.42500 |
+| site | 90%       | 16.19000 |
+| site | 95%       | 16.85500 |
+| site | Mean      | 13.98571 |
+
+Full aggregate response
+
+``` r
+at_index_result
 ```
 
     #> $site
@@ -388,7 +575,25 @@ print(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
     #> "D_converted"
 
 ``` r
-dsBaseClient::ds.summary("D_converted$mean_gl", datasources = conns)
+conversion_result <- dsBaseClient::ds.summary("D_converted$mean_gl", datasources = conns)
+knitr::kable(book_summary(conversion_result))
+```
+
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 129.0500 |
+| site | 10%       | 131.4667 |
+| site | 25%       | 137.8500 |
+| site | 50%       | 143.2500 |
+| site | 75%       | 153.3542 |
+| site | 90%       | 157.0000 |
+| site | 95%       | 159.2375 |
+| site | Mean      | 144.6679 |
+
+Full aggregate response
+
+``` r
+conversion_result
 ```
 
     #> $site
@@ -414,27 +619,75 @@ treatment thresholds**. We apply them to each person’s mean, privately.
 
 ``` r
 print(ds.omop.mutate("D_reducers",
-  band = cut(mean, breaks = c(0, 12, 16, 100),
-    labels = c("below 12", "12 to below 16", "16 or above"), right = FALSE),
-  high = ifelse(mean >= 16, 1L, 0L), low = ifelse(mean < 12, 1L, 0L),
+  band = cut(mean, breaks = c(0, 14, 15, 100),
+    labels = c("below 14", "14 to below 15", "15 or above"), right = FALSE),
+  high = ifelse(mean >= 15, 1L, 0L), low = ifelse(mean < 14, 1L, 0L),
   newobj = "D_lab_bins", conns = conns))
 ```
 
     #> [1] "D_lab_bins"
 
 ``` r
-dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
+bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
+knitr::kable(book_counts(bins_result))
 ```
 
-    #> $validity.message
-    #> [1] "All studies failed for reasons identified below"
-    #> 
-    #> $error.messages
-    #> $error.messages$site
-    #> [1] "Failed: at least one cell has a non-zero count less than nfilter.tab i.e. 3"
+| Category       | Count |
+| :------------- | ----: |
+| 14 to below 15 |     9 |
+| 15 or above    |    10 |
+| below 14       |     9 |
+| NA             |     0 |
 
-Small cells may be suppressed. You see the checked table, never the
-private rows. The left boundary is included and the right boundary
+Full aggregate response
+
+``` r
+bins_result
+```
+
+    #> $output.list
+    #> $output.list$TABLE_rvar.by.study_row.props
+    #>                 study
+    #> D_lab_bins$band  site
+    #>   14 to below 15    1
+    #>   15 or above       1
+    #>   below 14          1
+    #>   NA              NaN
+    #> 
+    #> $output.list$TABLE_rvar.by.study_col.props
+    #>                 study
+    #> D_lab_bins$band       site
+    #>   14 to below 15 0.3214286
+    #>   15 or above    0.3571429
+    #>   below 14       0.3214286
+    #>   NA             0.0000000
+    #> 
+    #> $output.list$TABLE_rvar.by.study_counts
+    #>                 study
+    #> D_lab_bins$band  site
+    #>   14 to below 15    9
+    #>   15 or above      10
+    #>   below 14          9
+    #>   NA                0
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_proportions
+    #> D_lab_bins$band
+    #> 14 to below 15    15 or above       below 14             NA 
+    #>          0.321          0.357          0.321          0.000 
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_counts
+    #> D_lab_bins$band
+    #> 14 to below 15    15 or above       below 14             NA 
+    #>              9             10              9              0 
+    #> 
+    #> 
+    #> $validity.message
+    #> [1] "Data in all studies were valid"
+
+All nonzero cells in this worked example meet the release threshold. You
+see the checked counts, never the private rows. A different set of bins
+can cause the entire table to be withheld; a refusal is not an empty or
+zero table. The left boundary is included and the right boundary
 excluded in these bins.
 
 ## Recorded abnormal-high and abnormal-low counts
@@ -456,7 +709,18 @@ print(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
     #> "D_lab_ranges"
 
 ``` r
-dsBaseClient::ds.table("D_lab_ranges$high_count", useNA = "no", datasources = conns)
+ranges_result <- dsBaseClient::ds.table("D_lab_ranges$high_count", useNA = "no", datasources = conns)
+knitr::kable(book_counts(ranges_result))
+```
+
+| Category | Count |
+| :------- | ----: |
+| 0        |    28 |
+
+Full aggregate response
+
+``` r
+ranges_result
 ```
 
     #> $output.list
@@ -502,8 +766,8 @@ one question. Empty records and an undefined anchor are different.
 
 ## Try it
 
-Add a count of measurement rows and compare it with the count of
-distinct days.
+Add a count of measurement rows and compare its released mean and
+quantiles with the measurement-day summary above.
 
 Solution
 
@@ -519,16 +783,38 @@ print(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
     #> "D_row_count"
 
 ``` r
-dsBaseClient::ds.table("D_row_count$rows", useNA = "no", datasources = conns)
+solution_result <- dsBaseClient::ds.summary("D_row_count$rows", datasources = conns)
+knitr::kable(book_summary(solution_result))
 ```
 
-    #> $validity.message
-    #> [1] "All studies failed for reasons identified below"
-    #> 
-    #> $error.messages
-    #> $error.messages$site
-    #> [1] "Failed: at least one cell has a non-zero count less than nfilter.tab i.e. 3"
+| Site | Statistic |    Value |
+| :--- | :-------- | -------: |
+| site | 5%        | 1.000000 |
+| site | 10%       | 1.700000 |
+| site | 25%       | 3.000000 |
+| site | 50%       | 4.000000 |
+| site | 75%       | 4.000000 |
+| site | 90%       | 5.000000 |
+| site | 95%       | 5.650000 |
+| site | Mean      | 3.857143 |
 
-Compare the released tables: records on the same day would count
+Full aggregate response
+
+``` r
+solution_result
+```
+
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #> 
+    #> $site$length
+    #> [1] 28
+    #> 
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean 
+    #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
+
+Compare the released summaries: records on the same day would count
 separately as rows, but once as a day. Their equality or difference is a
 data property, not a guarantee of the reducers.

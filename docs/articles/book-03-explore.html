@@ -88,9 +88,24 @@
 </div>
 <p>This chapter uses the public synthetic GiBleed practice connection from <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
 <div class="section level2">
+<h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
+</h2>
+<p>Start a fresh R session in the <code>book-work</code> directory created in <a href="book-00-start.html#get-the-book-helpers">Getting started</a>. Run this setup first:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/practice.R"</span><span class="op">)</span></span>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">book_driver</span> <span class="op">==</span> <span class="st">"DSLite"</span><span class="op">)</span> <span class="fu">book_practice</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span> <span class="kw">else</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
+<p>The <code>site</code> connection is ready. The shared <code>connection.R</code> selects DSLite or Opal and resolves the resource names.</p>
+</div>
+<div class="section level2">
 <h2 id="find-a-table">Find a table<a class="anchor" aria-label="anchor" href="#find-a-table"></a>
 </h2>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">available</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.tables.html">ds.omop.tables</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">available</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -318,7 +333,7 @@
 <div class="section level2">
 <h2 id="read-the-question-and-answer-fields">Read the question and answer fields<a class="anchor" aria-label="anchor" href="#read-the-question-and-answer-fields"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"observation"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -609,7 +624,7 @@
 <div class="section level2">
 <h2 id="count-safely">Count safely<a class="anchor" aria-label="anchor" href="#count-safely"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"observation"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $rows</span></span>
 <span><span class="co">#&gt; [1] 1475</span></span>
@@ -621,7 +636,7 @@
 <div class="section level2">
 <h2 id="identify-the-date-field">Identify the date field<a class="anchor" aria-label="anchor" href="#identify-the-date-field"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -905,7 +920,7 @@
 </h2>
 <p>Inspect the death table and locate its coded cause field.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
 <table style="width:100%;" class="table">
 <colgroup>

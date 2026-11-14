@@ -22,8 +22,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 7,
-    "outputs": 6,
+    "copyButtons": 14,
+    "outputs": 8,
     "footer": true,
     "headings": [
       "0. Getting started"
@@ -37,8 +37,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 3,
-    "outputs": 1,
+    "copyButtons": 4,
+    "outputs": 2,
     "footer": true,
     "headings": [
       "1. What DataSHIELD and OMOP mean"
@@ -52,8 +52,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 7,
-    "outputs": 5,
+    "copyButtons": 8,
+    "outputs": 7,
     "footer": true,
     "headings": [
       "2. Resources, connections and symbols"
@@ -67,8 +67,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 5,
-    "outputs": 1,
+    "copyButtons": 6,
+    "outputs": 2,
     "footer": true,
     "headings": [
       "3. Exploring the CDM"
@@ -82,8 +82,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 6,
-    "outputs": 4,
+    "copyButtons": 7,
+    "outputs": 5,
     "footer": true,
     "headings": [
       "4. Vocabulary and concept sets"
@@ -97,8 +97,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 13,
-    "outputs": 13,
+    "copyButtons": 17,
+    "outputs": 14,
     "footer": true,
     "headings": [
       "5. A first recipe"
@@ -112,8 +112,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 26,
-    "outputs": 25,
+    "copyButtons": 39,
+    "outputs": 26,
     "footer": true,
     "headings": [
       "6. Events, windows and reducers"
@@ -128,8 +128,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 21,
-    "outputs": 21,
+    "copyButtons": 22,
+    "outputs": 22,
     "footer": true,
     "headings": [
       "13. Visit dates, one idea at a time"
@@ -143,8 +143,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 16,
-    "outputs": 16,
+    "copyButtons": 17,
+    "outputs": 17,
     "footer": true,
     "headings": [
       "7. Populations and index events"
@@ -152,17 +152,17 @@
   },
   {
     "slug": "articles/book-07-verbal-autopsy",
-    "title": "7. Capstone: a verbal-autopsy wide table • dsOMOPClient",
+    "title": "14. Capstone: a verbal-autopsy wide table • dsOMOPClient",
     "width": 1365,
     "overflow": false,
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 20,
-    "outputs": 20,
+    "copyButtons": 21,
+    "outputs": 21,
     "footer": true,
     "headings": [
-      "7. Capstone: a verbal-autopsy wide table"
+      "14. Capstone: a verbal-autopsy wide table"
     ]
   },
   {
@@ -173,8 +173,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 20,
-    "outputs": 19,
+    "copyButtons": 22,
+    "outputs": 20,
     "footer": true,
     "headings": [
       "10. Concepts as categories"
@@ -188,8 +188,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 29,
-    "outputs": 29,
+    "copyButtons": 32,
+    "outputs": 30,
     "footer": true,
     "headings": [
       "8. Choosing an output format"
@@ -203,8 +203,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 27,
-    "outputs": 27,
+    "copyButtons": 28,
+    "outputs": 28,
     "footer": true,
     "headings": [
       "9. Dates, periods and ages"
@@ -218,8 +218,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 5,
-    "outputs": 4,
+    "copyButtons": 6,
+    "outputs": 5,
     "footer": true,
     "headings": [
       "Appendix A. Reproduction and migration notes"
@@ -233,8 +233,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 15,
-    "outputs": 15,
+    "copyButtons": 16,
+    "outputs": 16,
     "footer": true,
     "headings": [
       "11. Reusable studies and standalone verbs"
@@ -248,8 +248,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 8,
-    "outputs": 8,
+    "copyButtons": 9,
+    "outputs": 9,
     "footer": true,
     "headings": [
       "12. What stays private"
@@ -278,8 +278,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 7,
-    "outputs": 6,
+    "copyButtons": 14,
+    "outputs": 8,
     "footer": true,
     "headings": [
       "0. Getting started"
@@ -293,8 +293,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 3,
-    "outputs": 1,
+    "copyButtons": 4,
+    "outputs": 2,
     "footer": true,
     "headings": [
       "1. What DataSHIELD and OMOP mean"
@@ -308,8 +308,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 7,
-    "outputs": 5,
+    "copyButtons": 8,
+    "outputs": 7,
     "footer": true,
     "headings": [
       "2. Resources, connections and symbols"
@@ -323,8 +323,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 5,
-    "outputs": 1,
+    "copyButtons": 6,
+    "outputs": 2,
     "footer": true,
     "headings": [
       "3. Exploring the CDM"
@@ -338,8 +338,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 6,
-    "outputs": 4,
+    "copyButtons": 7,
+    "outputs": 5,
     "footer": true,
     "headings": [
       "4. Vocabulary and concept sets"
@@ -353,8 +353,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 13,
-    "outputs": 13,
+    "copyButtons": 17,
+    "outputs": 14,
     "footer": true,
     "headings": [
       "5. A first recipe"
@@ -368,8 +368,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 26,
-    "outputs": 25,
+    "copyButtons": 39,
+    "outputs": 26,
     "footer": true,
     "headings": [
       "6. Events, windows and reducers"
@@ -384,8 +384,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 21,
-    "outputs": 21,
+    "copyButtons": 22,
+    "outputs": 22,
     "footer": true,
     "headings": [
       "13. Visit dates, one idea at a time"
@@ -399,8 +399,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 16,
-    "outputs": 16,
+    "copyButtons": 17,
+    "outputs": 17,
     "footer": true,
     "headings": [
       "7. Populations and index events"
@@ -408,17 +408,17 @@
   },
   {
     "slug": "articles/book-07-verbal-autopsy",
-    "title": "7. Capstone: a verbal-autopsy wide table • dsOMOPClient",
+    "title": "14. Capstone: a verbal-autopsy wide table • dsOMOPClient",
     "width": 390,
     "overflow": false,
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 20,
-    "outputs": 20,
+    "copyButtons": 21,
+    "outputs": 21,
     "footer": true,
     "headings": [
-      "7. Capstone: a verbal-autopsy wide table"
+      "14. Capstone: a verbal-autopsy wide table"
     ]
   },
   {
@@ -429,8 +429,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 20,
-    "outputs": 19,
+    "copyButtons": 22,
+    "outputs": 20,
     "footer": true,
     "headings": [
       "10. Concepts as categories"
@@ -444,8 +444,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 29,
-    "outputs": 29,
+    "copyButtons": 32,
+    "outputs": 30,
     "footer": true,
     "headings": [
       "8. Choosing an output format"
@@ -459,8 +459,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 27,
-    "outputs": 27,
+    "copyButtons": 28,
+    "outputs": 28,
     "footer": true,
     "headings": [
       "9. Dates, periods and ages"
@@ -474,8 +474,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 5,
-    "outputs": 4,
+    "copyButtons": 6,
+    "outputs": 5,
     "footer": true,
     "headings": [
       "Appendix A. Reproduction and migration notes"
@@ -489,8 +489,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 15,
-    "outputs": 15,
+    "copyButtons": 16,
+    "outputs": 16,
     "footer": true,
     "headings": [
       "11. Reusable studies and standalone verbs"
@@ -504,8 +504,8 @@
     "learnBoxes": 1,
     "chapterLinks": 16,
     "byline": true,
-    "copyButtons": 8,
-    "outputs": 8,
+    "copyButtons": 9,
+    "outputs": 9,
     "footer": true,
     "headings": [
       "12. What stays private"

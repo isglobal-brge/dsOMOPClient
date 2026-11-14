@@ -14,6 +14,27 @@ Run the sections in order in one R session. All printed results below
 were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
 data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
+Run this setup first:
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"
+
+The `site` connection is ready. The shared `connection.R` selects DSLite
+or Opal and resolves the resource names.
+
 ## One connection list
 
 A *connection* is a logged-in session. Our DSLite helper made one, named
@@ -30,32 +51,30 @@ request goes.
 
 ## The Opal login path
 
-**Requires a real Opal.** This is the single connection configuration to
-change when moving to another practice host. Use it instead of the
-DSLite login from chapter 0. Set the three `BOOK_OPAL_*` environment
-variables in your secure local configuration; the URL comes from your
-administrator or easy-opal setup. This deployment block is not part of
-the recorded DSLite execution.
+Edit `tools/book/connection.R` once to set `book_driver <- "Opal"`, your
+`opal_url`, `opal_project`, `opal_resources` and `opal_profile`. Keep
+credentials in `BOOK_OPAL_USER` and `BOOK_OPAL_PASSWORD` in your local
+environment. Restart R and run the setup above. Every public practice
+chapter uses that same file.
+
+`book_connect()` logs in with DSOpal when Opal is selected; with DSLite
+it calls `book_practice()` locally. Both return a list, so the
+assignment `conns <- practice$conns` is essential. Questionnaire
+chapters use their explicitly separate local fixture. The optional
+[administrator
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#use-the-same-two-resources-on-opal)
+creates and checks both Opal resources.
 
 ``` r
-opal_url <- Sys.getenv("BOOK_OPAL_URL")
-opal_project <- "practice"
-opal_resources <- c(gibleed = "gibleed", numeric = "numeric")
-lesson_resource <- "gibleed"  # choose "numeric" for numeric chapters
-library(DSOpal)
-builder <- DSI::newDSLoginBuilder()
-builder$append(server = "site", url = opal_url,
-               user = Sys.getenv("BOOK_OPAL_USER"),
-               password = Sys.getenv("BOOK_OPAL_PASSWORD"), driver = "OpalDriver")
-conns <- DSI::datashield.login(builder$build(), assign = FALSE)
-ds.omop.connect(resource = paste(opal_project, opal_resources[[lesson_resource]],
-                                 sep = "."), conns = conns)
+resource_names
 ```
 
-Reuse this login for every practice lesson, choosing its named resource.
-The questionnaire-fixture chapters explicitly use their separate local
-helper. Credentials belong in secure configuration, never a shared
-notebook. The executed DSLite login is in `tools/book/practice.R`.
+    #>   gibleed   numeric 
+    #> "gibleed" "numeric"
+
+These are the names used by every attach and switch below. With Opal
+they include the configured project prefix, even when you rename either
+resource.
 
 ## A resource is a route to a database
 
@@ -68,12 +87,12 @@ resource and deliberately name the session handle `omop`:
 
 ``` r
 ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = "gibleed", symbol = "omop", conns = conns)
+ds.omop.connect(resource = resource_names[["gibleed"]], symbol = "omop", conns = conns)
 ```
 
 The server opens its database connection. This does not copy the
-database into R on your laptop. On Opal, replace only `gibleed` with the
-resource name you were given.
+database into R on your laptop. The shared configuration supplies the
+correct resource name for either driver.
 
 ## Reuse the handle
 
@@ -158,7 +177,7 @@ same login connection:
 
 ``` r
 ds.omop.disconnect(conns = conns)
-numeric_session <- ds.omop.connect(resource = "numeric", conns = conns)
+numeric_session <- ds.omop.connect(resource = resource_names[["numeric"]], conns = conns)
 class(numeric_session)
 ```
 
@@ -171,7 +190,7 @@ chapters:
 
 ``` r
 ds.omop.disconnect(conns = conns)
-session <- ds.omop.connect(resource = "gibleed", conns = conns)
+session <- ds.omop.connect(resource = resource_names[["gibleed"]], conns = conns)
 class(session)
 ```
 

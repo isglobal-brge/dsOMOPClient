@@ -89,10 +89,24 @@
 <p>This chapter uses the 24-person synthetic questionnaire test fixture described in <a href="book-00-start.html">Getting started</a>.</p>
 <p><strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run its sections in order. Each chapter starts from a fresh practice connection; all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls. The numbers describe teaching data, not clinical findings.</p>
 <div class="section level2">
+<h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
+</h2>
+<p>Start a fresh R session in the <code>book-work</code> directory created in <a href="book-00-start.html#get-the-book-helpers">Getting started</a>. Run this setup first:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/fixture.R"</span><span class="op">)</span></span>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_fixture</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
+<p>The <code>site</code> connection is ready. This chapter creates its temporary questionnaire fixture locally.</p>
+</div>
+<div class="section level2">
 <h2 id="start-with-an-index-event">Start with an index event<a class="anchor" aria-label="anchor" href="#start-with-an-index-event"></a>
 </h2>
 <p>A <em>population</em> specifies who contributes rows. An <em>index</em> selects an event date for each study episode. Here a person’s first visit starts one episode.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">visits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span><span class="op">)</span></span>
 <span><span class="va">visitors</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"visitors"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">visits</span>, select <span class="op">=</span> <span class="st">"first"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span></span></code></pre></div>
@@ -102,7 +116,7 @@
 <div class="section level2">
 <h2 id="release-membership-as-a-private-table">Release membership as a private table<a class="anchor" aria-label="anchor" href="#release-membership-as-a-private-table"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">visit_members</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"members"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"membership"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">visit_members</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
@@ -110,7 +124,7 @@
 <pre><code><span><span class="co">#&gt;     members </span></span>
 <span><span class="co">#&gt; "D_members"</span></span></code></pre>
 <p>Membership includes pseudonymous keys and episode dates. Inspect its schema, not its patient rows:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_members"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"            "cohort_row_id"     "person_id"         "cohort_start_date"</span></span>
@@ -121,7 +135,7 @@
 <h2 id="require-an-eligible-visit">Require an eligible visit<a class="anchor" aria-label="anchor" href="#require-an-eligible-visit"></a>
 </h2>
 <p>A <em>criterion</em> is an inclusion test. These criteria require an inpatient record on the index day and at least 365 days of observation before it.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inpatient</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, concepts <span class="op">=</span> <span class="fl">9201L</span><span class="op">)</span></span>
 <span><span class="va">eligible</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"eligible"</span>,</span>
 <span>  index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">visits</span>, select <span class="op">=</span> <span class="st">"first_eligible"</span><span class="op">)</span>,</span>
@@ -130,7 +144,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">eligible</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "omop_population" "list"</span></span></code></pre>
 <p><code>first_eligible</code> tests the complete criterion tree at each candidate, then selects the earliest passing visit. <code>first</code> selects a person’s first visit before testing; it would not advance to a later visit when that first one fails. Combine alternatives with <code><a href="../reference/omop_has.html">omop_any()</a></code> and joint requirements with <code><a href="../reference/omop_has.html">omop_all()</a></code>. Only TRUE survives; an unknown criterion is not evidence of eligibility.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">eligible_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">eligible</span><span class="op">)</span>,</span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>visits <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_count</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, before <span class="op">=</span> <span class="cn">Inf</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"eligible"</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span><span class="op">)</span></span>
@@ -139,7 +153,7 @@
 <pre><code><span><span class="co">#&gt;       people </span></span>
 <span><span class="co">#&gt; "D_eligible"</span></span></code></pre>
 <p>The count includes visits through the chosen index day.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_eligible$visits"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
@@ -157,7 +171,7 @@
 <h2 id="make-coverage-explicit">Make coverage explicit<a class="anchor" aria-label="anchor" href="#make-coverage-explicit"></a>
 </h2>
 <p>An <em>observation period</em> states when the data source observes a person. The default requires exactly one period covering the index and drops missing or ambiguous coverage. A union policy can join adjacent periods when that matches the study.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">covered</span> <span class="op">&lt;-</span> <span class="va">eligible</span></span>
 <span><span class="va">covered</span><span class="op">$</span><span class="va">coverage</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_index.html">omop_coverage</a></span><span class="op">(</span>policy <span class="op">=</span> <span class="st">"union"</span>, gap <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="va">coverage_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">covered</span><span class="op">)</span>,</span>
@@ -172,7 +186,7 @@
 <h2 id="reuse-an-existing-cohort">Reuse an existing cohort<a class="anchor" aria-label="anchor" href="#reuse-an-existing-cohort"></a>
 </h2>
 <p>A <em>results cohort</em> is a named definition with private membership and start/end dates already available to the resource. Practice cohort 1 contains two of the four synthetic patterns. Its ID is a definition ID, not a patient ID.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cohort_population</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"saved"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cohort_definition_id <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span>, select <span class="op">=</span> <span class="st">"all"</span>, end <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_end</a></span><span class="op">(</span><span class="st">"event_end"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">cohort_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">cohort_population</span><span class="op">)</span>,</span>
@@ -187,7 +201,7 @@
 <h2 id="identify-new-users">Identify new users<a class="anchor" aria-label="anchor" href="#identify-new-users"></a>
 </h2>
 <p>A <em>washout</em> requires an observed period without the study exposure before entry. The shortcut combines drug records into eras, selects the first eligible era, and checks both observation and absence of prior exposure.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_users</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_new_users.html">omop_new_users</a></span><span class="op">(</span><span class="fl">950001L</span>, washout_days <span class="op">=</span> <span class="fl">365</span>, by <span class="op">=</span> <span class="st">"concept"</span><span class="op">)</span></span>
 <span><span class="va">new_user_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">new_users</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>prior_fills <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_count</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, <span class="fl">950001L</span>,</span>
@@ -197,7 +211,7 @@
 <pre><code><span><span class="co">#&gt;      baseline </span></span>
 <span><span class="co">#&gt; "D_new_users"</span></span></code></pre>
 <p>The synthetic medicine uses concept grouping explicitly; ingredient grouping is the normal default when the vocabulary supplies ingredient relationships. The era uses a 30-day gap and ends at the treatment interval end. “New user” means no recorded use during this washout, not no lifetime use.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_new_users$prior_fills"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $output.list</span></span>
 <span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_row.props</span></span>
@@ -234,7 +248,7 @@
 <h2 id="define-cases-and-the-control-pool">Define cases and the control pool<a class="anchor" aria-label="anchor" href="#define-cases-and-the-control-pool"></a>
 </h2>
 <p><em>Risk-set sampling</em> selects controls who are still eligible at each case’s event time. A person who becomes a case later may serve as a control earlier. For a compact teaching example the outcome is death.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcome</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span></span>
 <span><span class="va">cases</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"cases"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">outcome</span><span class="op">)</span>,</span>
 <span>  filters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_has.html">omop_observed</a></span><span class="op">(</span>before <span class="op">=</span> <span class="fl">365</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -247,7 +261,7 @@
 <div class="section level2">
 <h2 id="match-at-case-time">Match at case time<a class="anchor" aria-label="anchor" href="#match-at-case-time"></a>
 </h2>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"matched"</span>, match <span class="op">=</span> <span class="fu"><a href="../reference/omop_match.html">omop_match</a></span><span class="op">(</span></span>
 <span>  cases <span class="op">=</span> <span class="st">"cases"</span>, controls <span class="op">=</span> <span class="st">"controls"</span>, outcome <span class="op">=</span> <span class="va">outcome</span>,</span>
 <span>  match <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"calendar_year"</span><span class="op">)</span>, controls_per_case <span class="op">=</span> <span class="fl">1L</span>, seed <span class="op">=</span> <span class="fl">42L</span>,</span>
@@ -256,7 +270,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">matched</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "omop_population" "list"</span></span></code></pre>
 <p>The seed fixes the sampling order. Controls may be reused between sets here; <code>replacement = "none"</code> forbids that reuse. If too few controls are available, this policy keeps those available; <code>drop_case</code> would discard that case’s set. Real studies may also match on sex, age bands or prior event strata.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">matched_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">cases</span>, <span class="va">controls</span>, <span class="va">matched</span><span class="op">)</span>,</span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>is_case <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_population_column</a></span><span class="op">(</span><span class="st">"is_case"</span><span class="op">)</span>,</span>
 <span>    weight <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_population_column</a></span><span class="op">(</span><span class="st">"sampling_weight"</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -266,7 +280,7 @@
 <pre><code><span><span class="co">#&gt;      sample </span></span>
 <span><span class="co">#&gt; "D_matched"</span></span></code></pre>
 <p>The match-set key stays protected on the server. Sampling weights and case status are available to approved downstream analyses.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_matched$is_case"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $output.list</span></span>
 <span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_row.props</span></span>
@@ -312,7 +326,7 @@
 </h2>
 <p>Keep every visit episode instead of just the first, and inspect the resulting private membership schema.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">all_visitors</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"visitors"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">visits</span>, select <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">all_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">all_visitors</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"members"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"membership"</span><span class="op">)</span><span class="op">)</span></span>
@@ -320,7 +334,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">all_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>members <span class="op">=</span> <span class="st">"D_all_visitors"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;          members </span></span>
 <span><span class="co">#&gt; "D_all_visitors"</span></span></code></pre>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_all_visitors"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"            "cohort_row_id"     "person_id"         "cohort_start_date"</span></span>

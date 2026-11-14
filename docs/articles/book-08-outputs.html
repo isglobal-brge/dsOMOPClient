@@ -89,6 +89,21 @@
 <p>This chapter uses the public synthetic Synthea27Nj numeric connection from <a href="book-00-start.html">Getting started</a>.</p>
 <p><strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run its sections in order. Each chapter starts from a fresh practice connection; all the outputs below come from real dsOMOP and dsOMOPClient 2.10.4 calls. The numbers describe teaching data, not clinical findings.</p>
 <div class="section level2">
+<h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
+</h2>
+<p>Start a fresh R session in the <code>book-work</code> directory created in <a href="book-00-start.html#get-the-book-helpers">Getting started</a>. Run this setup first:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/practice.R"</span><span class="op">)</span></span>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">book_driver</span> <span class="op">==</span> <span class="st">"DSLite"</span><span class="op">)</span> <span class="fu">book_practice</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span> <span class="kw">else</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
+<p>The <code>site</code> connection is ready. The shared <code>connection.R</code> selects DSLite or Opal and resolves the resource names.</p>
+</div>
+<div class="section level2">
 <h2 id="choose-the-shape-for-the-analysis">Choose the shape for the analysis<a class="anchor" aria-label="anchor" href="#choose-the-shape-for-the-analysis"></a>
 </h2>
 <p>An output controls the shape of a private server table. It never grants a row download. <em>Grain</em> means what one row represents: a person, an indexed episode, an event or a time period. More rows do not create more independent people.</p>
@@ -172,7 +187,7 @@
 <h2 id="prepare-one-small-study">Prepare one small study<a class="anchor" aria-label="anchor" href="#prepare-one-small-study"></a>
 </h2>
 <p>We will reuse these definitions so each example changes only the output.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">visits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, concepts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">9201L</span>, <span class="fl">9202L</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"visits"</span><span class="op">)</span></span>
 <span><span class="va">rx</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, concepts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">9201L</span>, <span class="fl">9202L</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"spans"</span><span class="op">)</span></span>
 <span><span class="va">inpatient</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, concepts <span class="op">=</span> <span class="fl">9201L</span>, name <span class="op">=</span> <span class="st">"inpatient"</span><span class="op">)</span></span>
@@ -180,7 +195,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "omop_population" "list"</span></span></code></pre>
 <p>Each first visit begins one episode. A later inpatient visit will be our outcome.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span>, <span class="va">rx</span>, <span class="va">inpatient</span><span class="op">)</span>,</span>
 <span>  populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visitors</span><span class="op">)</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    visits <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">visits</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"count"</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -195,12 +210,12 @@
 <div class="section level2">
 <h2 id="wide-named-columns">Wide: named columns<a class="anchor" aria-label="anchor" href="#wide-named-columns"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">base</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">base</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>wide <span class="op">=</span> <span class="st">"D_fmt_wide"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         wide </span></span>
 <span><span class="co">#&gt; "D_fmt_wide"</span></span></code></pre>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_wide"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          </span></span>
@@ -211,7 +226,7 @@
 <h2 id="long-keep-event-records">Long: keep event records<a class="anchor" aria-label="anchor" href="#long-keep-event-records"></a>
 </h2>
 <p>Use long when event order and repeated records matter. Select a named source instead of reducing it.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">long</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">long</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>long <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"long"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"long"</span>,</span>
 <span>  sources <span class="op">=</span> <span class="st">"visits"</span><span class="op">)</span><span class="op">)</span></span>
@@ -219,7 +234,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">long</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>long <span class="op">=</span> <span class="st">"D_fmt_long"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         long </span></span>
 <span><span class="co">#&gt; "D_fmt_long"</span></span></code></pre>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_long"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"                   "cohort_row_id"            "person_id"               </span></span>
@@ -231,14 +246,14 @@
 <h2 id="features-a-wide-preset">Features: a wide preset<a class="anchor" aria-label="anchor" href="#features-a-wide-preset"></a>
 </h2>
 <p>Use the features preset when a downstream analysis expects a feature table. Native typed variables preserve their declared values.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">features</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">features</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>features <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"features"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, type <span class="op">=</span> <span class="st">"features"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">features</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">features</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>features <span class="op">=</span> <span class="st">"D_fmt_features"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         features </span></span>
 <span><span class="co">#&gt; "D_fmt_features"</span></span></code></pre>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_features"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          </span></span>
@@ -249,14 +264,14 @@
 <h2 id="baseline-characteristics-at-entry">Baseline: characteristics at entry<a class="anchor" aria-label="anchor" href="#baseline-characteristics-at-entry"></a>
 </h2>
 <p>Use baseline to name an entry-characteristics table. Define the time windows of its variables explicitly.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">baseline</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">baseline</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"baseline"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, type <span class="op">=</span> <span class="st">"baseline"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">baseline</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">baseline</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_fmt_baseline"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         baseline </span></span>
 <span><span class="co">#&gt; "D_fmt_baseline"</span></span></code></pre>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_baseline"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          </span></span>
@@ -267,7 +282,7 @@
 <h2 id="panels-one-row-per-follow-up-bin">Panels: one row per follow-up bin<a class="anchor" aria-label="anchor" href="#panels-one-row-per-follow-up-bin"></a>
 </h2>
 <p>A <em>bin</em> is a time interval. These are three 30-day bins after entry, not calendar months.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">panel</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">panel</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>panel <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"panel"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"person_period"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">30L</span><span class="op">)</span>,</span>
@@ -276,7 +291,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">panel</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>panel <span class="op">=</span> <span class="st">"D_fmt_panel"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         panel </span></span>
 <span><span class="co">#&gt; "D_fmt_panel"</span></span></code></pre>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_panel"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"                        "cohort_row_id"                </span></span>
@@ -289,7 +304,7 @@
 <h2 id="temporal-covariates-sparse-time-bins">Temporal covariates: sparse time bins<a class="anchor" aria-label="anchor" href="#temporal-covariates-sparse-time-bins"></a>
 </h2>
 <p>Use temporal covariates when you need nonzero covariate values with a time index. Including day zero gives this example actual nonzero entries.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">temporal</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">temporal</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>temporal <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"temporal"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"temporal_covariates"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span><span class="op">)</span>, bin_width <span class="op">=</span> <span class="fl">30L</span>,</span>
@@ -329,7 +344,7 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$temporal$timeRef$n_columns</span></span>
 <span><span class="co">#&gt; [1] 3</span></span></code></pre>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_temporal"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"          "cohort_row_id"   "person_id"       "time_id"        </span></span>
@@ -340,7 +355,7 @@
 <h2 id="survival-state-the-censoring-rule">Survival: state the censoring rule<a class="anchor" aria-label="anchor" href="#survival-state-the-censoring-rule"></a>
 </h2>
 <p>A <em>time-at-risk window</em> says when outcomes count. <em>Censoring</em> ends follow-up without recording the outcome. Here follow-up starts the day after entry and has no fixed upper limit.</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">survival</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">survival</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>survival <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"survival"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"survival"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>outcomes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>admission <span class="op">=</span> <span class="va">inpatient</span><span class="op">)</span>,</span>
@@ -349,15 +364,35 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">survival</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>survival <span class="op">=</span> <span class="st">"D_fmt_survival"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         survival </span></span>
 <span><span class="co">#&gt; "D_fmt_survival"</span></span></code></pre>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_survival"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"                "cohort_row_id"         "person_id"            </span></span>
 <span><span class="co">#&gt; [4] "outcome_name"          "event"                 "entry_days_from_index"</span></span>
 <span><span class="co">#&gt; [7] "exit_days_from_index"  "follow_up_days"</span></span></code></pre>
 <p>Only the named censor sources cap follow-up: observation end and death here. The window also limits follow-up when its upper bound is finite. An episode end is not an extra censor unless requested. A censor is not a “no outcome ever” assertion. Always state the window: omitting it would use the 730-day compatibility default.</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_fmt_survival$event"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survival_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_fmt_survival$event"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">survival_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Category</th>
+<th align="right">Count</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">0</td>
+<td align="right">21</td>
+</tr>
+<tr class="even">
+<td align="left">1</td>
+<td align="right">7</td>
+</tr>
+</tbody>
+</table>
+<details><p><summary>Full aggregate response</summary></p>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survival_result</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $output.list</span></span>
 <span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_row.props</span></span>
 <span><span class="co">#&gt;                     study</span></span>
@@ -390,13 +425,13 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $validity.message</span></span>
 <span><span class="co">#&gt; [1] "Data in all studies were valid"</span></span></code></pre>
-<p>Counts of the <code>event</code> flag distinguish observed outcomes from censored follow-up in this one-outcome example.</p>
+</details><p>Counts of the <code>event</code> flag distinguish observed outcomes from censored follow-up in this one-outcome example.</p>
 </div>
 <div class="section level2">
 <h2 id="intervals-keep-a-start-and-an-end">Intervals: keep a start and an end<a class="anchor" aria-label="anchor" href="#intervals-keep-a-start-and-an-end"></a>
 </h2>
 <p>Use intervals for recorded spans. These visit intervals have recorded start and end dates. The same layout can describe drug exposures or eras.</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">intervals</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">intervals</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>intervals <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"intervals"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"intervals"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">rx</span><span class="op">)</span>, window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">0</span>, <span class="cn">NULL</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -404,7 +439,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">intervals</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>intervals <span class="op">=</span> <span class="st">"D_fmt_intervals"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         intervals </span></span>
 <span><span class="co">#&gt; "D_fmt_intervals"</span></span></code></pre>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_intervals"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"                "cohort_row_id"         "person_id"            </span></span>
@@ -416,7 +451,7 @@
 <h2 id="sparse-nonzero-covariates-plus-a-reference">Sparse: nonzero covariates plus a reference<a class="anchor" aria-label="anchor" href="#sparse-nonzero-covariates-plus-a-reference"></a>
 </h2>
 <p>Use sparse for many covariates when most combinations have no contribution.</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sparse</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">sparse</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sparse <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"sparse"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"sparse"</span>,</span>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">visits</span><span class="op">)</span>, analyses <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"binary"</span>, <span class="st">"count"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -444,7 +479,7 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $site$sparse$covariateRef$n_columns</span></span>
 <span><span class="co">#&gt; [1] 5</span></span></code></pre>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_sparse"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"          "cohort_row_id"   "person_id"       "covariate_id"   </span></span>
@@ -455,14 +490,14 @@
 <h2 id="membership-retain-the-population-roster">Membership: retain the population roster<a class="anchor" aria-label="anchor" href="#membership-retain-the-population-roster"></a>
 </h2>
 <p>Use membership to keep entry/end dates and keys for every episode independently of its measurements.</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">membership</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">membership</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>membership <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"membership"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"membership"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">membership</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">membership</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>membership <span class="op">=</span> <span class="st">"D_fmt_membership"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         membership </span></span>
 <span><span class="co">#&gt; "D_fmt_membership"</span></span></code></pre>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_membership"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"            "cohort_row_id"     "person_id"         "cohort_start_date"</span></span>
@@ -473,7 +508,7 @@
 <h2 id="dictionary-describe-the-concepts">Dictionary: describe the concepts<a class="anchor" aria-label="anchor" href="#dictionary-describe-the-concepts"></a>
 </h2>
 <p>Use dictionary to describe vocabulary concepts used by a declared source output. Here <code>counts</code> defines those dependencies privately; only the dictionary is published. It does not contain patient rows.</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dictionary</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">dictionary</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  counts <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"counts"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, columns <span class="op">=</span> <span class="st">"visits"</span><span class="op">)</span>,</span>
@@ -484,7 +519,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">dictionary</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>dictionary <span class="op">=</span> <span class="st">"D_fmt_dictionary"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         dictionary </span></span>
 <span><span class="co">#&gt; "D_fmt_dictionary"</span></span></code></pre>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_dictionary"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "concept_id"       "concept_name"     "domain_id"        "vocabulary_id"   </span></span>
@@ -495,7 +530,7 @@
 <h2 id="joined-combine-private-outputs">Joined: combine private outputs<a class="anchor" aria-label="anchor" href="#joined-combine-private-outputs"></a>
 </h2>
 <p>A native joined output combines declared output dependencies, using their protected keys and a checked cardinality. It is not an arbitrary database join. Keep input columns disjoint and state how many rows can match.</p>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">joined</span> <span class="op">&lt;-</span> <span class="va">base</span></span>
 <span><span class="va">joined</span><span class="op">$</span><span class="va">outputs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  counts <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"counts"</span>, rows <span class="op">=</span> <span class="st">"visitors"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, columns <span class="op">=</span> <span class="st">"visits"</span><span class="op">)</span>,</span>
@@ -507,12 +542,12 @@
 <span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">joined</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "v2"</span></span></code></pre>
 <p>Only the final joined output is published. The two input outputs are private intermediate steps and do not each need a separately published symbol.</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">joined</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">joined</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>joined <span class="op">=</span> <span class="st">"D_fmt_joined"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         joined </span></span>
 <span><span class="co">#&gt; "D_fmt_joined"</span></span></code></pre>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_fmt_joined"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"</span></span></code></pre>
@@ -528,8 +563,61 @@
 </h2>
 <p>Summarise the visit-count column of the joined output. Why is it the same as the wide count?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_fmt_joined$visits"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">solution_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_fmt_joined$visits"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">solution_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Site</th>
+<th align="left">Statistic</th>
+<th align="right">Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">5%</td>
+<td align="right">11.75000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">10%</td>
+<td align="right">16.40000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">25%</td>
+<td align="right">23.75000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">50%</td>
+<td align="right">45.00000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">75%</td>
+<td align="right">75.25000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">90%</td>
+<td align="right">117.60000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">95%</td>
+<td align="right">152.20000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">Mean</td>
+<td align="right">61.96429</td>
+</tr>
+</tbody>
+</table>
+<details><p><summary>Full aggregate response</summary></p>
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">solution_result</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; $site$class</span></span>
 <span><span class="co">#&gt; [1] "integer"</span></span>
@@ -540,7 +628,7 @@
 <span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
 <span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
 <span><span class="co">#&gt;  11.75000  16.40000  23.75000  45.00000  75.25000 117.60000 152.20000  61.96429</span></span></code></pre>
-<p>Both use the same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.</p>
+</details><p>Both use the same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.</p>
 </details>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

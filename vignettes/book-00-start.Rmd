@@ -22,8 +22,7 @@ with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findin
 
 You need R 4.1 or newer (the recorded run used R 4.6.2), internet access for
 installation, and either an Opal with dsOMOP 2.10.4 or the local DSLite practice
-server below. RStudio is a convenient editor; ordinary R also works. Keep a copy
-of this book's checkout: the helper scripts live in `tools/book/`.
+server below. RStudio is a convenient editor; ordinary R also works. Download the book helpers below; you do not need a Git checkout.
 
 Run this **installation block once**, before the examples. It installs every
 package used by the lessons, the offline server and the reproduction tools.
@@ -34,7 +33,7 @@ the matching locally tagged sources.
 ```r
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "resourcer", "withr", "openssl", "jsonlite", "knitr",
-                   "rmarkdown", "pkgdown", "bslib"))
+                   "rmarkdown", "pkgdown", "bslib", "opalr"))
 remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
 remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
 remotes::install_github("isglobal-brge/dsOMOP@2.10.4", upgrade = "never")
@@ -46,6 +45,33 @@ data; DSLite lets you run it locally for practice. Pandoc is also needed to rebu
 the site (RStudio includes it). The [reproduction notes](book-09-reproduce.html)
 record the dependency versions used for this book.
 
+## Get the book helpers
+
+The released 2.10.4 package archive does **not** contain `tools/book/`.
+Download [book-helpers.zip](../downloads/book-helpers.zip) from this site, leaving
+it zipped in your Downloads folder. In R, run this block and select that ZIP
+when the file chooser opens:
+
+```r
+book_dir <- path.expand("~/book-work")
+dir.create(book_dir, recursive = TRUE, showWarnings = FALSE)
+unzip(file.choose(), exdir = book_dir)
+setwd(book_dir)
+stopifnot(all(file.exists(file.path("tools/book",
+  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R")))))
+getwd()
+```
+
+The last line prints your home directory followed by `/book-work`. In every new
+R session run `setwd(path.expand("~/book-work"))` before the chapter setup.
+The ZIP preserves `tools/book/` automatically. Alternatively, save the individual
+[practice](../downloads/practice.R), [fixture](../downloads/fixture.R),
+[connection](../downloads/connection.R), [display](../downloads/display.R) and
+[loader](../downloads/load-practice.R) files under `book-work/tools/book/`.
+
+`connection.R` is the one place to select DSLite or Opal and set the Opal URL,
+project, profile and two resource names. Leave its defaults for local practice.
+
 ## Check the client
 
 
@@ -56,7 +82,7 @@ vapply(c("dsOMOPClient", "dsOMOP", "DSI", "DSLite", "dsBaseClient"),
 ```
 
 ```
-#> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient
+#> dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient 
 #>     "2.10.4"     "2.10.4"      "1.8.0"      "1.5.0"      "6.3.5"
 ```
 
@@ -82,9 +108,16 @@ reducers on its own.
 
 The administrator loader is [tools/book/load-practice.R](../downloads/load-practice.R).
 It downloads pinned [Eunomia datasets](https://github.com/OHDSI/EunomiaDatasets),
-verifies archive checksums and loads two SQLite files. From the book checkout,
-run `Rscript tools/book/load-practice.R ../practice-data` once in an R environment
-with DBI, RSQLite, openssl and jsonlite. The source data are Apache-2.0 licensed;
+verifies archive checksums and loads two SQLite files. From your `book-work` R session, run the loader once:
+
+```r
+system2(file.path(R.home("bin"), "Rscript"),
+        c("tools/book/load-practice.R", "../practice-data"))
+stopifnot(file.exists("../practice-data/gibleed.sqlite"),
+          file.exists("../practice-data/numeric.sqlite"))
+```
+
+It uses the installed DBI, RSQLite, openssl and jsonlite packages. The source data are Apache-2.0 licensed;
 keep their [license](https://github.com/OHDSI/EunomiaDatasets/blob/3d349dcdd79cc346b8e36eb837e49feffe7f7497/LICENSE)
 with redistributed copies. The recorded loader results are in the reproduction notes.
 
@@ -101,14 +134,15 @@ a third practice resource. Each chapter states its dataset.
 ## Open the practice server
 
 To reproduce without Opal, install the matching dsOMOP package and DSLite, DBI,
-RSQLite, resourcer, withr, dsBase and dsBaseClient. Open the book client directory
-as your R working directory. DSLite executes real DataSHIELD methods inside R;
+RSQLite, resourcer, withr, dsBase and dsBaseClient. Use `book-work` as your R working directory. DSLite executes real DataSHIELD methods inside R;
 this helper creates one server with both loaded resources and attaches GiBleed.
 
 
 ``` r
+source("tools/book/display.R")
+source("tools/book/connection.R")
 source("tools/book/practice.R")
-practice <- book_practice("gibleed")
+practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
 conns <- practice$conns
 names(conns)
 ```
@@ -118,9 +152,10 @@ names(conns)
 ```
 
 `conns` holds connections, not patient rows. The other resource is named `numeric`.
-The numeric chapters start a fresh session with `book_practice("numeric")`.
-For a questionnaire-fixture chapter, source `tools/book/fixture.R` and use
-`practice <- book_fixture(); conns <- practice$conns` in a fresh R session.
+Every chapter includes its complete fresh-session setup, including assigning
+`conns <- practice$conns`. Numeric chapters select `"numeric"` through the same
+configuration. Questionnaire chapters source `fixture.R` and call
+`practice <- book_fixture()` before assigning `conns`; this is always local DSLite.
 
 ## Check the server
 
@@ -139,40 +174,142 @@ when using Opal: publishing makes the package methods available to analysts.
 
 ## Use the same two resources on Opal
 
-**Requires a real Opal and an administrator.** The recorded examples run on the
-two-resource DSLite practice server. For an Opal deployment, use the same loaded
-files and change the login/resource names; the study recipes stay the same.
+**Optional administrator walkthrough; requires a Docker host.** Ordinary readers
+can continue with DSLite. These deployment commands were checked against the
+[easy-opal source](https://github.com/isglobal-brge/easy-opal/blob/main/src/services/rock.py)
+and [opalr resource API](https://www.obiba.org/opalr/reference/opal.resource_create.html).
+The book build tested both databases and all analyst chapters with DSLite.
+**A live easy-opal deployment was not run for this revision: Docker was unavailable.**
+The success lines below are acceptance criteria, not recorded Opal output.
 
-1. Install Docker with Compose V2 and start Docker. Install easy-opal with
-   `uv tool install easy-opal`, or `pipx install easy-opal`.
-2. Run `easy-opal setup`; choose Opal, a local host, and a practice stack name.
-   Run `easy-opal up`, then `easy-opal status`. Use the URL and credentials printed
-   by setup. These steps follow the [easy-opal guide](https://github.com/isglobal-brge/easy-opal).
-3. In Opal administration, select the Rock R profile used by DataSHIELD. Install
-   dsBase and dsOMOP 2.10.4 in that profile and publish their DataSHIELD methods and
-   options. A package installed only in your laptop's R is not installed in Rock.
-4. Run `Rscript tools/book/load-practice.R /data/practice` on the practice host
-   after installing the loader's R dependencies. Mount that directory into Rock
-   as `/data/practice`. The loaded `gibleed.sqlite` and `numeric.sqlite` files must
-   be visible **inside Rock**, not merely inside the Opal container.
-5. In project `practice`, create the two resources below with format `omop.dbi.db`.
-   SQLite needs no database username/password. Test each resource in Opal and
-   grant the analyst use permission.
+### Start the practice stack and mount the databases
 
-| Opal resource | Resource URL inside Rock | Purpose |
+On the Docker host, install Docker with Compose V2, then install easy-opal. Obtain
+the helper ZIP and load the two databases there exactly as above. The host layout
+must be `~/book-work/tools/book/` and `~/practice-data/`. Run in a terminal:
+
+```sh
+uv tool install easy-opal
+easy-opal instance create book
+easy-opal -i book setup --stack-name book --host localhost --ssl-strategy none --http-port 8080 --yes
+easy-opal -i book up
+easy-opal -i book status
+cd ~/book-work
+bash tools/book/book-compose.sh up -d --force-recreate rock
+bash tools/book/book-compose.sh exec -T rock sh -c 'test -r /data/practice/gibleed.sqlite && test -r /data/practice/numeric.sqlite'
+```
+
+Use `pipx install easy-opal` if you do not use uv. The setup prints the local
+Opal URL and administrator password; keep them for the next step. This local
+practice stack uses HTTP. For a remote deployment use your administrator's URL.
+The shell helper uses the generated instance directory
+`~/.easy-opal/instances/book`; if `easy-opal instance info book` shows another
+location, set `BOOK_OPAL_INSTANCE_DIR` to it.
+
+The ZIP includes this concrete Compose overlay, `tools/book/book-rock.yml`:
+
+```yaml
+services:
+  rock:
+    volumes:
+      - type: bind
+        source: ${BOOK_DATA_DIR}
+        target: /data/practice
+        read_only: true
+```
+
+`book-compose.sh` resolves the absolute host data directory and combines this
+overlay with easy-opal's generated `docker-compose.yml`. The original Rock
+`/srv` volume is retained. Use `bash tools/book/book-compose.sh up -d` and
+`bash tools/book/book-compose.sh stop` to manage the mounted stack thereafter.
+After an easy-opal configuration change, run `easy-opal -i book up`, then the
+`--force-recreate rock` command above again to restore the overlay. Reapply the
+package installation steps after recreating Rock if its image lacks the packages.
+
+### Install in Rock and publish the DataSHIELD methods
+
+First install the SQLite driver and GitHub installer **inside Rock**:
+
+```sh
+bash tools/book/book-compose.sh exec -T --user root rock Rscript -e 'install.packages(c("remotes", "RSQLite"), repos="https://cloud.r-project.org")'
+```
+
+In `tools/book/connection.R`, set `book_driver <- "Opal"`, set `opal_url` to the
+URL printed by setup, and retain `opal_project <- "practice"`, the two default
+resource names, and `opal_profile <- "default"`. These are the same settings all
+public practice chapters read. In your local R environment set
+`BOOK_OPAL_ADMIN_PASSWORD` to the generated password, `BOOK_OPAL_USER` to a new
+analyst name (for example `bookreader`) and `BOOK_OPAL_PASSWORD` to its password.
+Run `file.edit(path.expand("~/.Renviron"))` and add these lines, replacing the
+placeholders with your values (retain quotes around passwords). This is a private
+local file, not a shared notebook:
+
+```text
+BOOK_OPAL_ADMIN_PASSWORD="<password printed by easy-opal>"
+BOOK_OPAL_USER=bookreader
+BOOK_OPAL_PASSWORD="<choose a password of at least eight characters>"
+```
+
+Save the file and restart R so those environment variables are loaded.
+
+From an R session in `book-work`, run:
+
+```r
+source("tools/book/opal-admin.R")
+```
+
+This downloadable [administrator script](../downloads/opal-admin.R) logs in as
+`administrator` (or `BOOK_OPAL_ADMIN_USER`), installs dsBase 6.3.5 and dsOMOP 2.10.4
+in the configured profile with `dsadmin.install_github_package()`, then calls
+`dsadmin.publish_package()` for both. Publishing registers their assign/aggregate
+methods and package options. It creates the named analyst if absent, grants
+DataSHIELD and profile use, creates the project and these resources, and grants
+the analyst resource `view` permission (the permission used for DataSHIELD).
+It leaves disclosure thresholds unchanged and refuses an existing resource whose
+URL or format differs. Existing analyst passwords are not reset.
+
+| Configured resource | URL inside Rock | Format |
 |---|---|---|
-| `practice.gibleed` | `omop+dbi:sqlite:///data/practice/gibleed.sqlite` | Basics |
-| `practice.numeric` | `omop+dbi:sqlite:///data/practice/numeric.sqlite` | Numeric labs and units |
+| `practice.gibleed` | `omop+dbi:sqlite:///data/practice/gibleed.sqlite` | `omop.dbi.db` |
+| `practice.numeric` | `omop+dbi:sqlite:///data/practice/numeric.sqlite` | `omop.dbi.db` |
 
-6. Log in with DSOpal as shown in chapter 2 and attach the resource named by the
-   lesson. Keep these as database resources; do not import patient rows as a
-   downloadable Opal table.
+SQLite needs no database credentials. The script declares `package = "dsOMOP"`
+on each resource so its resolver loads when assigned. It prints the installed
+package versions and resource definitions for checking. In the Opal browser UI,
+log in as the administrator using the same URL, open **Administration → DataSHIELD**,
+and verify the selected profile lists dsBase 6.3.5 and dsOMOP 2.10.4 with published
+methods. Resources remain database references; do not import them as downloadable
+patient tables.
 
-To move the practice setup to another Opal host, including a future opal-demo
-installation, transfer the same two files into its Rock mount and register those
-resource URLs there. No study-specific database TLS or privacy switch is required.
-The checksums and source revision make the data reproducible independently of
-where the resources are hosted.
+### First analyst login and checks for both resources
+
+Keep only the analyst credentials for ordinary lessons. In a fresh R session:
+
+```r
+setwd(path.expand("~/book-work"))
+source("tools/book/check-opal.R")
+```
+
+The [check script](../downloads/check-opal.R) uses the same configuration and
+DSOpal login as the chapters, prints `site` and `ds.omop.server.version()`, then
+attaches each resource and requests its measurement schema. Both calls must
+return a nonempty schema before these success lines can print:
+
+```text
+PASS: practice.gibleed connected; measurement schema returned
+PASS: practice.numeric connected; measurement schema returned
+```
+
+Confirm installed and published server versions are 2.10.4 in the version reply.
+A failed login, missing driver, unpublished method, unreadable mount or wrong
+resource name stops the checks; do not proceed to the lessons until both pass.
+The script disconnects and logs out. Start the chapter's visible setup to log in
+again. [Chapter 2](book-02-connect.html) exercises switching on the same connection.
+
+To move to a future demo Opal, transfer the same two SQLite files to its Rock
+mount, run the resource provisioning with that host's administrator, and update
+only `connection.R`. No database TLS setting or study-specific privacy setting
+is needed.
 
 ## Recap
 

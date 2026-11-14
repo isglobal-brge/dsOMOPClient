@@ -20,6 +20,28 @@ This chapter uses the public synthetic GiBleed practice connection from [Getting
 Run the sections in order in one R session. All printed results below were computed
 with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
 
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in
+[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
+conns <- practice$conns
+names(conns)
+```
+
+```
+#> [1] "site"
+```
+
+The `site` connection is ready. The shared `connection.R` selects DSLite or Opal and resolves the resource names.
+
 ## Search a name
 
 A concept ID identifies a meaning. It is not a patient's ID. Search the GiBleed vocabulary for asthma:
