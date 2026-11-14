@@ -315,7 +315,10 @@
         while(!is.null(dep$variable))dep<-dep$variable$derived
         if(is.null(dep$component)&&length(definitions)==1L||identical(dep$component,component))rows[[key]]<-.codebookPlanColumn(key,variable=v,defaults=plan$options$category_spec,plan=plan)
       }
-      if (!is.null(node$columns) && grains[[component]] != "none") {
+      # Ordinary selected covariates already have their execution order. Only
+      # expanded keys or output copies trigger execution's final projection.
+      if (!is.null(node$columns) && grains[[component]] != "none" &&
+          (expanded || length(node$number_columns) || length(node$category_columns))) {
         rows <- rows[.categorySelectedColumns(node$columns, plan$variables, structural, names(rows))]
       }
       schemas[[paste(output,component,sep="/")]]<<-list(schema=list(columns=unname(rows),row_keys=as.list(intersect(names(id),names(rows)))),categories=list(),row_grain=grains[[component]],status="prospective")
