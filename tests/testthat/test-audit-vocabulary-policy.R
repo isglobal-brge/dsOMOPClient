@@ -68,3 +68,41 @@ test_that("an incapable server refuses the distinct policy without fallback", {
   }, .package = "dsOMOPClient")
   expect_invisible(dsOMOPClient:::.v2_assert_supported(plan, NULL, "site"))
 })
+
+test_that("all legal registry names require imported-policy capability", {
+  for (name in c("ordinary", "meta", "metadata", "circe_provenance")) {
+    for (registry in c(FALSE, TRUE)) {
+      cs <- omop_concept_set(2147483647L, validity_policy = "ohdsi-import-1",
+        name = if (registry) name else NULL)
+      recipe <- omop_recipe(events = list(omop_event("condition_occurrence", cs, name = name)),
+        outputs = omop_output("o", format = "long", sources = name))
+      plan <- recipe_to_plan(recipe, version = 2)
+      if (registry) expect_true(name %in% names(plan$concept_sets))
+      expect_true(dsOMOPClient:::.ohdsiHasImportedValidity(recipe))
+      ops <- dsOMOPClient:::.plan_v2_operations(plan)
+      expect_true("vocabulary.ohdsi_import_validity" %in% ops)
+      local({
+        testthat::local_mocked_bindings(.v2_server_language = function(session, servers) {
+          list(site = list(version = 2L, operations = setdiff(ops, "vocabulary.ohdsi_import_validity")))
+        }, .package = "dsOMOPClient")
+        expect_error(dsOMOPClient:::.v2_assert_supported(plan, NULL, "site"),
+          "vocabulary.ohdsi_import_validity")
+      })
+    }
+  }
+})
+
+test_that("Circe origin and wire meta cannot introduce executable policy requirements", {
+  decoy <- list(concepts = list(2147483647), validity_policy = "ohdsi-import-1")
+  native <- omop_recipe(events = list(omop_event("condition_occurrence", 201820L, name = "meta")),
+    outputs = omop_output("o", format = "long", sources = "meta"))
+  plan <- recipe_to_plan(native)
+  plan$meta$example <- decoy
+  expect_false(dsOMOPClient:::.ohdsiHasImportedValidity(plan))
+  pop <- omop_population(id = "circe_provenance", index_event = omop_index_event(201820L))
+  pop$circe_provenance <- decoy
+  native <- omop_recipe(populations = pop)
+  expect_false(dsOMOPClient:::.ohdsiHasImportedValidity(native))
+  native$populations$circe_provenance$index_event$validity_policy <- "ohdsi-import-1"
+  expect_true(dsOMOPClient:::.ohdsiHasImportedValidity(native))
+})
