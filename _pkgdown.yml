@@ -1,9 +1,72 @@
 url: https://isglobal-brge.github.io/dsOMOPClient/
-
 template:
-  package: dstemplate
   bootstrap: 5
-
+  bslib:
+    primary: '#005b8f'
+    secondary: '#5c6f7b'
+    success: '#4c9a2a'
+    bg: '#ffffff'
+    fg: '#233746'
+    base_font: 'Source Sans 3, Source Sans Pro, Arial, sans-serif'
+    heading_font: 'Source Sans 3, Source Sans Pro, Arial, sans-serif'
+    code_font: 'ui-monospace, SFMono-Regular, Menlo, monospace'
+    font-size-base: 1.05rem
+    border-radius: 0.3rem
+home:
+  title: Learn dsOMOPClient
+  description: A practical DataSHIELD and OMOP book with executed examples for 2.10.4.
+navbar:
+  structure:
+    left: [intro, book, reference, news]
+    right: [search, github]
+  components:
+    intro:
+      text: Start here
+      href: articles/book-00-start.html
+    book:
+      text: Book
+      menu:
+        - text: 0. Getting started
+          href: articles/book-00-start.html
+        - text: 1. DataSHIELD and OMOP
+          href: articles/book-01-mental-model.html
+        - text: 2. Connecting
+          href: articles/book-02-connect.html
+        - text: 3. Exploring the CDM
+          href: articles/book-03-explore.html
+        - text: 4. Vocabulary
+          href: articles/book-04-vocabulary.html
+        - text: 5. A first recipe
+          href: articles/book-05-recipe.html
+        - text: 6. Visit dates
+          href: articles/book-06-visits.html
+        - text: 7. Verbal-autopsy capstone
+          href: articles/book-07-verbal-autopsy.html
+        - text: 8. Two-vocabulary check
+          href: articles/book-08-harmonise.html
+        - text: 9. Reproduction and migration
+          href: articles/book-09-reproduce.html
+articles:
+  - title: Learn step by step
+    navbar: ~
+    contents:
+      - book-00-start
+      - book-01-mental-model
+      - book-02-connect
+      - book-03-explore
+      - book-04-vocabulary
+      - book-05-recipe
+      - book-06-visits
+      - book-07-verbal-autopsy
+  - title: Short appendices
+    navbar: ~
+    contents:
+      - book-08-harmonise
+      - book-09-reproduce
+  - title: Earlier reference guides
+    navbar: ~
+    contents:
+      - starts_with('v0')
 authors:
   David Sarrat González:
     href: https://github.com/davidsarratgonzalez

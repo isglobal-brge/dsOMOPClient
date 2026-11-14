@@ -4,6 +4,16 @@ library(dsOMOP)
 library(dsOMOPClient)
 library(DSLite)
 library(DBI)
+# DSLite 1.5's quoted-string lexer rejects dsBase expressions containing commas.
+# Same test-only tokenizer repair as test-concept-label-analysis.R; no method,
+# result, policy or disclosure check is replaced.
+lexer <- get("Lexer", asNamespace("DSLite"))
+old_double <- lexer$public_fields$t_DBLSTRING
+old_single <- lexer$public_fields$t_STRING
+withr::defer({ lexer$public_fields$t_DBLSTRING <- old_double
+              lexer$public_fields$t_STRING <- old_single }, envir=env)
+lexer$public_fields$t_DBLSTRING <- r"("([^"\\]|\\.)*")"
+lexer$public_fields$t_STRING <- r"('([^'\\]|\\.)*')"
 withr::local_options(list(nfilter.subset = 5, default.nfilter.subset = 5,
         dsomop.pseudonym_provider = "injected",
         dsomop.pseudonym_root = as.raw(openssl::sha256(charToRaw("synthetic-colleague-fixture")))),

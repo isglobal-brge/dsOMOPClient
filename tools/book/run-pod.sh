@@ -7,5 +7,7 @@ remote=/root/rt/wt/book
 ssh "${opts[@]}" "root@$host" "mkdir -p $remote/dsOMOPClient $remote/dsOMOP $remote/lib"
 rsync -az --exclude=.git --exclude=docs -e "ssh -i $HOME/.ssh/runpod_cover -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p $port" ./ "root@$host:$remote/dsOMOPClient/"
 rsync -az --exclude=.git --exclude=docs -e "ssh -i $HOME/.ssh/runpod_cover -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p $port" ../dsOMOP/ "root@$host:$remote/dsOMOP/"
+if [[ "${1:-}" != precompute ]]; then
 ssh "${opts[@]}" "root@$host" "R CMD INSTALL -l $remote/lib $remote/dsOMOP > $remote/install-server.log 2>&1 && R CMD INSTALL -l $remote/lib $remote/dsOMOPClient > $remote/install-client.log 2>&1"
+fi
 ssh "${opts[@]}" "root@$host" "cd $remote/dsOMOPClient && R_LIBS=$remote/lib R_LIBS_USER=/root/rt/labels-deps Rscript tools/book/precompute.R" | tee tools/book/evidence/precompute.log

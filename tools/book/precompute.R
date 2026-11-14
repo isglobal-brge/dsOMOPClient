@@ -4,15 +4,26 @@ stopifnot(as.character(packageVersion("dsOMOP")) == "2.10.4",
 library(dsOMOPClient)
 source("tools/book/fixture.R")
 options(width=88)
+knitr::opts_knit$set(root.dir = normalizePath("."))
 for (input in sort(list.files("vignettes/articles", "\\.Rmd\\.orig$", full.names=TRUE))) {
   message("PRECOMPUTE ", input)
-  local({
-    f <- book_fixture(env=environment())
-    conns <- f$conns
-    on.exit({ds.omop.disconnect(conns=conns); DSI::datashield.logout(conns); unlink(f$path)})
+  render <- function() {
+    if (!grepl("book-00", input)) {
+      f <- book_fixture(env=environment())
+      conns <- f$conns
+    }
+    on.exit({
+      if (exists("conns", inherits=FALSE)) {
+        try(ds.omop.disconnect(conns=conns), silent=TRUE)
+        try(DSI::datashield.logout(conns), silent=TRUE)
+      }
+      if (exists("f", inherits=FALSE)) unlink(f$path)
+      if (exists("practice", inherits=FALSE)) unlink(practice$path)
+    })
     knitr::opts_chunk$set(error=FALSE, warning=TRUE, message=FALSE, comment="#>", collapse=TRUE)
-    knitr::knit(input, output=sub("\\.orig$", "", input), envir=environment(), quiet=TRUE)
-  })
+    tryCatch(knitr::knit(input, output=sub("\\.orig$", "", input), envir=environment(), quiet=TRUE), error=function(e) { print(DSI::datashield.errors()); stop(e) })
+  }
+  render()
 }
 message("All chapter chunks executed successfully")
 source("tools/book/verify.R")

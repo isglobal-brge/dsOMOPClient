@@ -1,0 +1,74 @@
+---
+title: "1. What DataSHIELD and OMOP mean"
+output: rmarkdown::html_vignette
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Distinguish the database, a private assignment and a released aggregate.
+</div>
+
+This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+Run the sections in order in one R session. All printed results below were computed
+with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+
+## A shared table structure
+
+OMOP is a common data model (CDM): a shared set of tables and column meanings.
+`person` describes people; `visit_occurrence` describes visits; `observation`
+holds observations and questionnaire answers; `death` records deaths. A *concept*
+is a coded meaning, such as an education answer. A vocabulary supplies its name.
+
+Ask which tables are available:
+
+```{r tables}
+tables <- ds.omop.tables(conns = conns)
+tables$site
+```
+
+These are table names, not records. You can learn the structure without seeing a
+person's dates or answers.
+
+## Send a question to the data
+
+DataSHIELD sends approved operations to the server. An *assignment* creates a
+private object there. An *aggregate* returns a checked summary. The server can
+refuse a result that lacks enough supporting people; a refusal is not a zero.
+
+Ask for safe information about the person table:
+
+```{r safe-size}
+ds.omop.table.stats("person", conns = conns)$per_site$site
+```
+
+Read the reported count bands as bands, not exact counts. A later categorical
+table may release exact supported cells through its own checks. Different
+endpoints answer different questions and have different disclosure rules.
+
+## What stays on the server
+
+You never download this book's assigned person table through DataSHIELD.
+`person_id` becomes a pseudonym, but pseudonyms are still private row values.
+Dates and ages are also private. Coarsening dates helps define a useful analysis;
+it does not grant permission to fetch rows.
+
+The practical sequence is: choose events, describe variables, assign a table,
+then request an aggregate. Chapters 5–7 walk through it one small step at a time.
+
+## Recap
+
+OMOP makes data structures familiar. DataSHIELD keeps patient rows at the server and checks released summaries.
+
+## Try it
+
+Find the columns of the death table without asking for its rows.
+
+<details><summary>Solution</summary>
+
+
+```{r solution}
+ds.omop.columns("death", conns = conns)$site
+```
+
+</details>

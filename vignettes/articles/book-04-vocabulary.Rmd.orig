@@ -1,0 +1,86 @@
+---
+title: "4. Vocabulary and concept sets"
+output: rmarkdown::html_vignette
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Find meanings, look up names and define a reusable concept set.
+</div>
+
+This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+Run the sections in order in one R session. All printed results below were computed
+with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+
+## Search a name
+
+A concept ID identifies a meaning. It is not a patient's ID. Search our synthetic
+vocabulary for education:
+
+```{r search}
+hits <- ds.omop.concept.search("Education", conns = conns)
+hits$pooled[c("concept_name", "domain_id", "vocabulary_id")]
+```
+
+This is public vocabulary metadata. We show names in tables throughout the book;
+numeric IDs occur only in code where they specify what to select.
+
+## Look up known answer concepts
+
+```{r lookup}
+answers <- ds.omop.concept.lookup(c(900101L, 900102L), conns = conns)
+answers$pooled[c("concept_name", "domain_id")]
+```
+
+These are the possible answer meanings in our exercise. Looking them up does
+not tell you how many people gave either answer.
+
+## Include descendants deliberately
+
+A *descendant* is a more specific meaning below a parent in a vocabulary hierarchy.
+Our fixture has a small teaching hierarchy with an education-answer parent.
+
+```{r descendants}
+desc <- ds.omop.concept.descendants(900100L, include_self = FALSE, conns = conns)
+desc$pooled["concept_name"]
+```
+
+Descendants come from `concept_ancestor`. Check their clinical meaning before
+including them; a search result is not automatically a study definition.
+
+## Store a set
+
+```{r concept-set}
+education_answers <- omop_concept_set(c(900101L, 900102L))
+class(education_answers)
+```
+
+A *concept set* is a reusable selection of concepts. For the next chapter we need
+the **question** set instead. The answer set describes values; it must not replace
+the question filter in `observation_concept_id`.
+
+```{r question-set}
+education_question <- omop_concept_set(900001L)
+class(education_question)
+```
+
+Both objects are local definitions. Creating one has not selected any patient rows.
+
+## Recap
+
+Use IDs to define selections and names to understand them. Question concepts and answer concepts play different roles.
+
+## Try it
+
+Look up the two cause-of-death concepts in the fixture and show only their names.
+
+<details><summary>Solution</summary>
+
+
+```{r solution}
+causes <- ds.omop.concept.lookup(c(900201L, 900202L), conns = conns)
+causes$pooled["concept_name"]
+```
+
+</details>
