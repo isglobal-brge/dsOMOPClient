@@ -34,7 +34,8 @@ Body text is intentionally larger than the old application guide for book readin
 After precomputing, run `Rscript tools/book/build-site.R` on the pod. This invokes
 `pkgdown::build_site()` with reference examples disabled; the book code has already
 executed and the build itself never needs a server. Retrieve `docs/` and inspect
-it with `python3 tools/book/audit-content.py` and
+it with `python3 tools/book/audit-content.py`,
+`python3 tools/book/audit-outputs.py` (all console blocks and tables versus HTML), and
 `PLAYWRIGHT_BROWSERS_PATH=/home/dev/.cache/ms-playwright NODE_PATH=/usr/local/lib/node_modules node tools/book/audit-site.js` (the latter
 needs Playwright Chromium). Copy `docs/` to the requested design/book-preview.
 
