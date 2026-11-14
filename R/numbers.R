@@ -305,6 +305,9 @@ omop_number_derive <- function(inputs,exprs,unit,result=NULL,reducer=NULL,number
   if(inherits(x,"Date"))return(format(x,"%Y-%m-%d"))
   if(is.factor(x))return(as.character(x))
   if(is.list(x))return(lapply(x,.numberRecipePlain))
-  if(is.numeric(x)&&any(is.infinite(x)))return(lapply(x,function(v)if(is.infinite(v))if(v<0)"-Inf" else "Inf" else v))
+  if(is.numeric(x)&&any(is.infinite(x))) {
+    if(length(x)==1L)return(if(x<0)"-Inf" else "Inf")
+    return(lapply(x,.numberRecipePlain))
+  }
   x
 }

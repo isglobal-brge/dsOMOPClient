@@ -273,6 +273,7 @@
     # JSON arrays of scalars come back as lists: restore atomic vectors (a
     # predicate tree, match items and nested objects stay lists).
     keep_list <- c("tree", "match", "criteria", "convert")
+    if(startsWith(ctor,"omop_number"))keep_list<-c(keep_list,"breaks")
     for (nm in setdiff(names(args), keep_list)) {
       a <- args[[nm]]
       if (is.list(a) && length(a) > 0L && is.null(names(a)) &&
