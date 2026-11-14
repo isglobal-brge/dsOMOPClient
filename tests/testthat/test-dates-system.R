@@ -2,7 +2,7 @@ test_that("D43 native verbal-autopsy wide table is complete on DSLite", {
   f<-dates_va_fixture();conns<-f$conns
   on.exit({ds.omop.disconnect(conns=conns);DSI::datashield.logout(conns);unlink(f$path)},add=TRUE)
   snippet<-new.env(parent=environment())
-  sys.source(testthat::test_path("..","..","tools","dates","va-native.R"),snippet)
+  sys.source(testthat::test_path("..","fixtures","va-native.R"),snippet)
   va<-snippet$va_native_recipe()
   receipt <- recipe_execute(va,out=c(people="D_va"),conns=conns)
   expect_identical(setNames(as.character(receipt),names(receipt)), c(people="D_va"))

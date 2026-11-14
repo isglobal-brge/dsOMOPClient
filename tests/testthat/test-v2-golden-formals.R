@@ -1,7 +1,7 @@
 # WS-8 golden test (design-2.10.3 sections 2 and 10.1): every exported 2.10.1
 # function keeps its 2.10.1 positional formals; 2.10.3 arguments are only
 # appended, so positional legacy calls keep their meaning. The snapshot below
-# is the formals of the 2.10.1 exports (design/src/dsOMOPClient).
+# is the formals of the 2.10.1 exports (the released client package).
 
 .formals_2101 <- list(ds.omop.achilles.analyses = c("domain", "symbol", "conns", 
 "type"), ds.omop.achilles.catalog = c("symbol", "conns", "type"

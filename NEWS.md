@@ -86,7 +86,7 @@
   their original numeric declarations; already rounded coefficients cannot be
   recovered from saved text.
 - Scope: broader A-31 deliverables are deferred as listed in
-  `POST_2.10.5_ROADMAP.md`. Real Opal acceptance belongs to integration e2e.
+  the issue tracker. Real Opal acceptance belongs to integration e2e.
 
 - Corrected (audit prerequisite integration): imported vocabulary validity
   remains executable in category rollup domains, including exclusions.

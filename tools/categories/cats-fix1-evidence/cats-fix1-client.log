@@ -1,9 +1,0 @@
-FAILURES BY FILE
-                   file blocks failed errors
- test-category-values.R      1      0      1
-
-FAILING TESTS
-test-category-values.R | C18 C64 consumed recodes preserve labels of retained concept identities | failed=0 error=TRUE
-
-RESULT failed: 0 errors: 1 skipped: 0 passed: 534
-RESULT failed: 0 errors: 1 skipped: 0 passed: 534

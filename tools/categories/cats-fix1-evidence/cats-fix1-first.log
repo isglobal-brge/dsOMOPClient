@@ -1,9 +1,0 @@
-FAILURES BY FILE
-                         file blocks failed errors
- test-category-review-fixes.R      1      0      1
-
-FAILING TESTS
-test-category-review-fixes.R | R3 hierarchy defaults are inactive for flags and numeric/date categories | failed=0 error=TRUE
-
-RESULT failed: 0 errors: 1 skipped: 0 passed: 62
-RESULT failed: 0 errors: 1 skipped: 0 passed: 62
