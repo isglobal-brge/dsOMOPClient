@@ -4,57 +4,64 @@
 
 Find meanings, look up names and define a reusable concept set.
 
-This chapter uses the synthetic practice connection from [Getting
+This chapter uses the public synthetic GiBleed practice connection from
+[Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+**You need:** the packages and the matching practice connection
+described in [Before you
+start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below
 were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
 data, not clinical findings.
 
 ## Search a name
 
-A concept ID identifies a meaning. It is not a patient’s ID. Search our
-synthetic vocabulary for education:
+A concept ID identifies a meaning. It is not a patient’s ID. Search the
+GiBleed vocabulary for asthma:
 
 ``` r
-hits <- ds.omop.concept.search("Education", conns = conns)
-hits$pooled[c("concept_name", "domain_id", "vocabulary_id")]
-#>           concept_name   domain_id vocabulary_id
-#> 1   Education question Observation       Fixture
-#> 2  Secondary education  Meas Value       Fixture
-#> 3 University education  Meas Value       Fixture
-#> 4     Education answer  Meas Value       Fixture
+hits <- ds.omop.concept.search("Asthma", conns = conns)
+knitr::kable(head(hits$pooled[c("concept_name", "domain_id", "vocabulary_id")], 8))
 ```
+
+| concept\_name    | domain\_id | vocabulary\_id |
+| :--------------- | :--------- | :------------- |
+| Childhood asthma | Condition  | SNOMED         |
+| Asthma           | Condition  | SNOMED         |
+| Asthma screening | Procedure  | SNOMED         |
 
 This is public vocabulary metadata. We show names in tables throughout
 the book; numeric IDs occur only in code where they specify what to
 select.
 
-## Look up known answer concepts
+## Look up known diagnosis concepts
 
 ``` r
-answers <- ds.omop.concept.lookup(c(900101L, 900102L), conns = conns)
+answers <- ds.omop.concept.lookup(c(317009L, 80502L), conns = conns)
 answers$pooled[c("concept_name", "domain_id")]
-#>           concept_name  domain_id
-#> 1  Secondary education Meas Value
-#> 2 University education Meas Value
 ```
 
-These are the possible answer meanings in our exercise. Looking them up
-does not tell you how many people gave either answer.
+    #>   concept_name domain_id
+    #> 1       Asthma Condition
+    #> 2 Osteoporosis Condition
+
+These are diagnosis meanings. Looking them up does not tell you how many
+people had either diagnosis.
 
 ## Include descendants deliberately
 
 A *descendant* is a more specific meaning below a parent in a vocabulary
-hierarchy. Our fixture has a small teaching hierarchy with an
-education-answer parent.
+hierarchy. The asthma hierarchy can include more specific diagnosis
+concepts.
 
 ``` r
-desc <- ds.omop.concept.descendants(900100L, include_self = FALSE, conns = conns)
-desc$pooled["concept_name"]
-#>           concept_name
-#> 1  Secondary education
-#> 2 University education
+desc <- ds.omop.concept.descendants(317009L, include_self = FALSE, conns = conns)
+knitr::kable(head(desc$pooled["concept_name"], 8))
 ```
+
+| concept\_name    |
+| :--------------- |
+| Childhood asthma |
 
 Descendants come from `concept_ancestor`. Check their clinical meaning
 before including them; a search result is not automatically a study
@@ -63,41 +70,43 @@ definition.
 ## Store a set
 
 ``` r
-education_answers <- omop_concept_set(c(900101L, 900102L))
-class(education_answers)
-#> [1] "omop_concept_set" "list"
+diagnoses <- omop_concept_set(c(317009L, 80502L))
+class(diagnoses)
 ```
 
-A *concept set* is a reusable selection of concepts. For the next
-chapter we need the **question** set instead. The answer set describes
-values; it must not replace the question filter in
-`observation_concept_id`.
+    #> [1] "omop_concept_set" "list"
+
+A *concept set* is a reusable selection of concepts. For a focused
+asthma definition, keep a separate named set:
 
 ``` r
-education_question <- omop_concept_set(900001L)
-class(education_question)
-#> [1] "omop_concept_set" "list"
+asthma <- omop_concept_set(317009L)
+class(asthma)
 ```
+
+    #> [1] "omop_concept_set" "list"
 
 Both objects are local definitions. Creating one has not selected any
 patient rows.
 
 ## Recap
 
-Use IDs to define selections and names to understand them. Question
-concepts and answer concepts play different roles.
+Use IDs to define selections and names to understand them. Chapter 5
+switches to a small synthetic questionnaire fixture, where question and
+answer concepts have different roles.
 
 ## Try it
 
-Look up the two cause-of-death concepts in the fixture and show only
-their names.
+Look up inpatient and outpatient visit concepts and show only their
+names.
 
 Solution
 
 ``` r
-causes <- ds.omop.concept.lookup(c(900201L, 900202L), conns = conns)
-causes$pooled["concept_name"]
-#>            concept_name
-#> 1 Myocardial infarction
-#> 2             Pneumonia
+settings <- ds.omop.concept.lookup(c(9201L, 9202L), conns = conns)
+settings$pooled["concept_name"]
 ```
+
+    #>       concept_name
+    #> 1  Inpatient Visit
+    #> 2 Outpatient Visit

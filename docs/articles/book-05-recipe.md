@@ -5,8 +5,12 @@
 Build education and cause-of-death columns, check language 2, and
 request category counts.
 
-This chapter uses the synthetic practice connection from [Getting
+This chapter uses the 24-person synthetic questionnaire test fixture
+described in [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+**You need:** the packages and the matching practice connection
+described in [Before you
+start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below
 were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
 data, not clinical findings.
@@ -20,8 +24,9 @@ computer, not a downloaded table. Start with the question from chapter
 ``` r
 education_event <- omop_event("observation", concepts = 900001L)
 class(education_event)
-#> [1] "omop_event" "list"
 ```
+
+    #> [1] "omop_event" "list"
 
 The server will select observations whose question is Education
 question.
@@ -36,8 +41,9 @@ education <- omop_variable(
   event = education_event,
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 class(education)
-#> [1] "omop_variable" "list"
 ```
+
+    #> [1] "omop_variable" "list"
 
 This makes one categorical column. It does not create a separate binary
 column for every education level. A same-date tie uses the documented
@@ -50,8 +56,9 @@ cause <- omop_variable(
   event = omop_event("death"),
   reducer = omop_reduce("first_value", value = "cause_concept_id"))
 class(cause)
-#> [1] "omop_variable" "list"
 ```
+
+    #> [1] "omop_variable" "list"
 
 Here the value comes from `cause_concept_id`. Do not substitute
 `cause_source_value`: that is free source text, not the curated coded
@@ -68,8 +75,9 @@ people <- omop_recipe(
   variables = list(education = education, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
 class(people)
-#> [1] "omop_recipe" "list"
 ```
+
+    #> [1] "omop_recipe" "list"
 
 `person_id` is included automatically as a pseudonym. Missing records
 produce missing values. We did not add a legacy raw-ID variable to keep
@@ -81,8 +89,9 @@ the roster.
 explained <- recipe_explain(people, conns = conns)
 stopifnot(explained$selected == "v2")
 explained$selected
-#> [1] "v2"
 ```
+
+    #> [1] "v2"
 
 The selected plan is language 2. This check is made for every executable
 recipe in the book. To read all the chosen defaults, print the
@@ -90,23 +99,24 @@ explanation:
 
 ``` r
 recipe_explain(people)
-#> Recipe plan (language 2.0, semantic 2.0.0)
-#> Population 'base' (criteria): none
-#> Variables:
-#>   education: last_value of event 'obs_900001' (value 'value_as_concept_id') over any time; missing = "skip"
-#>   cause_of_death: first_value of event 'death' (value 'cause_concept_id') over any time; missing = "skip"
-#> Output 'people' [wide] rows 'base', grain person
-#> Published: people
-#> Defaults relied on:
-#>   - variable 'education': rows with a NULL value are skipped before the row is selected (missing = "skip")
-#>   - variable 'cause_of_death': rows with a NULL value are skipped before the row is selected (missing = "skip")
-#> Concept presentation: factors; identity is the declared concept class, preserved through aliases and value-preserving reducers.
-#> Label precedence: variable recode, recipe recode, vocabulary name, decimal ID fallback. Explicit equal recodes merge categories.
-#> Federation: permitted ID union, including declared unused levels; newest comparable vocabulary version, then bytewise name tie. Unresolved versions never establish recency.
-#> Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.
-#> variables.education: concept origin follows reducer last_value over value_as_concept_id; explicit variable name is retained.
-#> variables.cause_of_death: concept origin follows reducer first_value over cause_concept_id; explicit variable name is retained.
 ```
+
+    #> Recipe plan (language 2.0, semantic 2.0.0)
+    #> Population 'base' (criteria): none
+    #> Variables:
+    #>   education: last_value of event 'obs_900001' (value 'value_as_concept_id') over any time; missing = "skip"
+    #>   cause_of_death: first_value of event 'death' (value 'cause_concept_id') over any time; missing = "skip"
+    #> Output 'people' [wide] rows 'base', grain person
+    #> Published: people
+    #> Defaults relied on:
+    #>   - variable 'education': rows with a NULL value are skipped before the row is selected (missing = "skip")
+    #>   - variable 'cause_of_death': rows with a NULL value are skipped before the row is selected (missing = "skip")
+    #> Concept presentation: factors; identity is the declared concept class, preserved through aliases and value-preserving reducers.
+    #> Label precedence: variable recode, recipe recode, vocabulary name, decimal ID fallback. Explicit equal recodes merge categories.
+    #> Federation: permitted ID union, including declared unused levels; newest comparable vocabulary version, then bytewise name tie. Unresolved versions never establish recency.
+    #> Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.
+    #> variables.education: concept origin follows reducer last_value over value_as_concept_id; explicit variable name is retained.
+    #> variables.cause_of_death: concept origin follows reducer first_value over cause_concept_id; explicit variable name is retained.
 
 With no time restriction, each variable reads all available history
 independently. That is a teaching definition, not an assumption to carry
@@ -116,9 +126,10 @@ silently into a study.
 
 ``` r
 print(recipe_execute(people, out = c(people = "D_people"), conns = conns))
-#>     people 
-#> "D_people"
 ```
+
+    #>     people 
+    #> "D_people"
 
 The reply is a mapping of output names to server symbols. `D_people` is
 still on the server. Concept-valued columns are labelled factors because
@@ -129,39 +140,40 @@ of their declared type. In 2.10.4 the names `education` and
 
 ``` r
 dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
-#> $output.list
-#> $output.list$TABLE_rvar.by.study_row.props
-#>                       study
-#> D_people$education     site
-#>   Secondary education     1
-#>   University education    1
-#> 
-#> $output.list$TABLE_rvar.by.study_col.props
-#>                       study
-#> D_people$education     site
-#>   Secondary education   0.5
-#>   University education  0.5
-#> 
-#> $output.list$TABLE_rvar.by.study_counts
-#>                       study
-#> D_people$education     site
-#>   Secondary education     6
-#>   University education    6
-#> 
-#> $output.list$TABLES.COMBINED_all.sources_proportions
-#> D_people$education
-#>  Secondary education University education 
-#>                  0.5                  0.5 
-#> 
-#> $output.list$TABLES.COMBINED_all.sources_counts
-#> D_people$education
-#>  Secondary education University education 
-#>                    6                    6 
-#> 
-#> 
-#> $validity.message
-#> [1] "Data in all studies were valid"
 ```
+
+    #> $output.list
+    #> $output.list$TABLE_rvar.by.study_row.props
+    #>                       study
+    #> D_people$education     site
+    #>   Secondary education     1
+    #>   University education    1
+    #> 
+    #> $output.list$TABLE_rvar.by.study_col.props
+    #>                       study
+    #> D_people$education     site
+    #>   Secondary education   0.5
+    #>   University education  0.5
+    #> 
+    #> $output.list$TABLE_rvar.by.study_counts
+    #>                       study
+    #> D_people$education     site
+    #>   Secondary education     6
+    #>   University education    6
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_proportions
+    #> D_people$education
+    #>  Secondary education University education 
+    #>                  0.5                  0.5 
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_counts
+    #> D_people$education
+    #>  Secondary education University education 
+    #>                    6                    6 
+    #> 
+    #> 
+    #> $validity.message
+    #> [1] "Data in all studies were valid"
 
 The labels are names, not numeric codes. `useNA = "no"` excludes missing
 answers; the counts therefore need not add up to the whole population.
@@ -172,10 +184,11 @@ table.
 
 ``` r
 ds.omop.table("D_people", "cause_of_death", conns = conns)
-#> D_people$cause_of_death
-#> Myocardial infarction             Pneumonia 
-#>                    12                     6
 ```
+
+    #> D_people$cause_of_death
+    #> Myocardial infarction             Pneumonia 
+    #>                    12                     6
 
 `ds.omop.table()` calls the real dsBase `ds.table()` and preserves the
 complete published category contract, including declared zero
@@ -190,8 +203,9 @@ fever <- omop_variable(
   reducer = omop_reduce("last_value", value = "value_as_concept_id"),
   labels = c("900301" = "yes", "900302" = "no"))
 class(fever)
-#> [1] "omop_variable" "list"
 ```
+
+    #> [1] "omop_variable" "list"
 
 The map is keyed by answer concepts. It changes presentation, not which
 question is selected. Missing fever answers remain missing; they do not
@@ -203,48 +217,51 @@ answers <- omop_recipe(
   outputs = omop_output("people", format = "wide", grain = "person"))
 stopifnot(recipe_explain(answers, conns = conns)$selected == "v2")
 print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
-#>      people 
-#> "D_answers"
 ```
+
+    #>      people 
+    #> "D_answers"
 
 ``` r
 dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
-#> $output.list
-#> $output.list$TABLE_rvar.by.study_row.props
-#>                study
-#> D_answers$fever site
-#>             yes    1
-#>             no     1
-#> 
-#> $output.list$TABLE_rvar.by.study_col.props
-#>                study
-#> D_answers$fever site
-#>             yes  0.5
-#>             no   0.5
-#> 
-#> $output.list$TABLE_rvar.by.study_counts
-#>                study
-#> D_answers$fever site
-#>             yes    6
-#>             no     6
-#> 
-#> $output.list$TABLES.COMBINED_all.sources_proportions
-#> D_answers$fever
-#> yes  no 
-#> 0.5 0.5 
-#> 
-#> $output.list$TABLES.COMBINED_all.sources_counts
-#> D_answers$fever
-#> yes  no 
-#>   6   6 
-#> 
-#> 
-#> $validity.message
-#> [1] "Data in all studies were valid"
 ```
 
-The table contains your lower-case labels. See the short harmonisation
-appendix for the same operation across two different vocabularies.
+    #> $output.list
+    #> $output.list$TABLE_rvar.by.study_row.props
+    #>                study
+    #> D_answers$fever site
+    #>             yes    1
+    #>             no     1
+    #> 
+    #> $output.list$TABLE_rvar.by.study_col.props
+    #>                study
+    #> D_answers$fever site
+    #>             yes  0.5
+    #>             no   0.5
+    #> 
+    #> $output.list$TABLE_rvar.by.study_counts
+    #>                study
+    #> D_answers$fever site
+    #>             yes    6
+    #>             no     6
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_proportions
+    #> D_answers$fever
+    #> yes  no 
+    #> 0.5 0.5 
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_counts
+    #> D_answers$fever
+    #> yes  no 
+    #>   6   6 
+    #> 
+    #> 
+    #> $validity.message
+    #> [1] "Data in all studies were valid"
+
+The table contains your lower-case labels. See
+[chapter 10](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md)
+for the same operation across two different vocabularies.
 
 ## Recap
 
@@ -260,7 +277,8 @@ Solution
 
 ``` r
 ds.omop.table("D_people", "education", conns = conns)
-#> D_people$education
-#>  Secondary education University education 
-#>                    6                    6
 ```
+
+    #> D_people$education
+    #>  Secondary education University education 
+    #>                    6                    6

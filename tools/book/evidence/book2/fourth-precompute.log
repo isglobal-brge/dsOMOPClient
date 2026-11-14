@@ -1,0 +1,18 @@
+PRECOMPUTE vignettes/book-08-harmonise.Rmd.orig
+dsOMOP v2.10.4 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+
+Quitting from vignettes/book-08-harmonise.Rmd.orig:100-102 [renamed-table]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error: column must have a published concept level contract.
+Execution halted

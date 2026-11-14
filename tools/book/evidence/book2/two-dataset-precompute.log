@@ -1,0 +1,39 @@
+PRECOMPUTE vignettes/book-00-start.Rmd.orig
+ASSERTIONS PASS book-00-start.Rmd.orig
+PRECOMPUTE vignettes/book-01-mental-model.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-01-mental-model.Rmd.orig
+PRECOMPUTE vignettes/book-02-connect.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-02-connect.Rmd.orig
+PRECOMPUTE vignettes/book-03-explore.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-03-explore.Rmd.orig
+PRECOMPUTE vignettes/book-04-vocabulary.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-04-vocabulary.Rmd.orig
+PRECOMPUTE vignettes/book-06-events.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-06-events.Rmd.orig
+PRECOMPUTE vignettes/book-08-outputs.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-08-outputs.Rmd.orig
+PRECOMPUTE vignettes/book-11-parameters.Rmd.orig
+
+Logging into the collaborating servers
+
+Quitting from vignettes/book-11-parameters.Rmd.orig:60-63 [run]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error: Plan publication refused: site:baseline [validation_error] (date_source_invalid). Execution-owned artifacts were revoked and removed.
+Execution halted

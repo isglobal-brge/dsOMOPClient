@@ -2,6 +2,9 @@
 
 ## Authors
 
+Tutorial book by **David Sarrat González**. Package contributors are
+listed below.
+
   - **[David Sarrat González](https://github.com/davidsarratgonzalez)**.
     Author, maintainer.
 

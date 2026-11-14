@@ -1,0 +1,14 @@
+PRECOMPUTE vignettes/book-09-reproduce.Rmd.orig
+dsOMOP v2.10.4 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-09-reproduce.Rmd.orig
+PRECOMPUTE vignettes/book-12-privacy.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-12-privacy.Rmd.orig
+All chapter chunks executed successfully

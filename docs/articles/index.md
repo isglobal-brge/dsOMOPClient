@@ -14,16 +14,28 @@
     sets](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md):
   - [5. A first
     recipe](https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.md):
-  - [6. Visit dates, one idea at a
+  - [6. Events, windows and
+    reducers](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-events.md):
+  - [7. Populations and index
+    events](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-populations.md):
+  - [8. Choosing an output
+    format](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-outputs.md):
+  - [9. Dates, periods and
+    ages](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-dates.md):
+  - [10. Concepts as
+    categories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md):
+  - [11. Reusable studies and standalone
+    verbs](https://isglobal-brge.github.io/dsOMOPClient/articles/book-11-parameters.md):
+  - [12. What stays
+    private](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md):
+  - [13. Visit dates, one idea at a
     time](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-visits.md):
   - [7. Capstone: a verbal-autopsy wide
     table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md):
 
-### Short appendices
+### Reproduction and migration
 
-  - [8. Appendix: two vocabularies, one category
-    set](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md):
-  - [9. Reproduction and migration
+  - [Appendix A. Reproduction and migration
     notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-reproduce.md):
 
 ### Earlier reference guides

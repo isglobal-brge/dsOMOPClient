@@ -1,0 +1,62 @@
+dsOMOP v2.10.4 loaded. OMOP CDM resource resolver registered.
+Loading required package: DSI
+Loading required package: progress
+Loading required package: R6
+Loading required package: rly
+
+Logging into the collaborating servers
+CLIENT 2.10.4 SERVER 2.10.4
+PROBE: explicit singleton variable named date
+date_source_invalid: Use a valid Gregorian ISO date.
+[dsomop-audit] 2026-11-14T02:14:25+0000 method=omopPlanExecuteDS detail={"outputs":"people","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"visit_occurrence":{"table":"visit_occurrence"}},"populations":{"base":{"kind":"criteria"}},"variables":{"visit_date":{"derived":{"kind":"calendar_date","reference":{"source":{"event":"visit_occurrence"},"which":"first","field":"start","scope":"person"}},"broadcast":false}},"outputs":{"people":{"rows":"base","format":"wide","grain":"person","result_symbol":"D_people"}},"publish":["people"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T02:14:25+0000 method=publication detail={"output":"people","component":"people","passed":true}
+        people 
+"D_probe_date" 
+PROBE: exact-age variable carried into temporal covariates
+[dsomop-audit] 2026-11-14T02:14:25+0000 method=omopPlanExecuteDS detail={"outputs":"temporal","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"visits":{"table":"visit_occurrence","concept_set":{"concepts":[9201,9202],"include_descendants":false}}},"populations":{"visitors":{"kind":"index","index":{"source":{"event":"visits"},"select":"first"}}},"variables":{"age":{"derived":{"kind":"age_at","reference":"index","unit":"years","bands":false},"broadcast":false}},"outputs":{"temporal":{"rows":"visitors","format":"temporal_covariates","grain":"episode","result_symbol":"D_temporal","options":{"sources":[{"event":"visits"}],"window":{"start":0,"end":89,"anchor":"index"},"bin_width":30,"analyses":["count"]}}},"publish":["temporal"]},"scope_present":false,"scope_table_count":0}
+Plan publication refused: site:temporal [validation_error] (date_spec_invalid). Execution-owned artifacts were revoked and removed.
+[dsomop-audit] 2026-11-14T02:14:26+0000 method=omopPlanExecuteDS detail={"outputs":"temporal","plan":{"version":2,"meta":{"language_version":"2.0","semantic_version":"2.0.0","generated_by":"dsOMOPClient","client_version":"2.10.4"},"events":{"visits":{"table":"visit_occurrence","concept_set":{"concepts":[9201,9202],"include_descendants":false}}},"populations":{"visitors":{"kind":"index","index":{"source":{"event":"visits"},"select":"first"}}},"outputs":{"temporal":{"rows":"visitors","format":"temporal_covariates","grain":"episode","result_symbol":"D_temporal","options":{"sources":[{"event":"visits"}],"window":{"start":0,"end":89,"anchor":"index"},"bin_width":30,"analyses":["count"]}}},"publish":["temporal"]},"scope_present":false,"scope_table_count":0}
+[dsomop-audit] 2026-11-14T02:14:26+0000 method=publication detail={"output":"temporal","component":"temporal","passed":true}
+[dsomop-audit] 2026-11-14T02:14:26+0000 method=publication detail={"output":"temporal","component":"covariateRef","passed":true}
+[dsomop-audit] 2026-11-14T02:14:26+0000 method=publication detail={"output":"temporal","component":"timeRef","passed":true}
+$site
+$site$temporal
+$site$temporal$temporal
+$site$temporal$temporal$symbol
+[1] "D_probe_coordinates"
+
+$site$temporal$temporal$grain
+[1] "episode"
+
+$site$temporal$temporal$n_columns
+[1] 6
+
+
+$site$temporal$covariateRef
+$site$temporal$covariateRef$symbol
+[1] "D_probe_coordinates.covariateRef"
+
+$site$temporal$covariateRef$grain
+[1] "none"
+
+$site$temporal$covariateRef$n_columns
+[1] 5
+
+
+$site$temporal$timeRef
+$site$temporal$timeRef$symbol
+[1] "D_probe_coordinates.timeRef"
+
+$site$temporal$timeRef$grain
+[1] "none"
+
+$site$temporal$timeRef$n_columns
+[1] 3
+
+
+
+
+Warning message:
+In rm(list = c(name), envir = private$.session(sid)) :
+  object 'dsOexec.lSJIQr' not found
+Ran 3/3 deferred expressions

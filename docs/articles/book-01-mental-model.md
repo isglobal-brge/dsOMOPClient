@@ -4,8 +4,12 @@
 
 Distinguish the database, a private assignment and a released aggregate.
 
-This chapter uses the synthetic practice connection from [Getting
+This chapter uses the public synthetic GiBleed practice connection from
+[Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+**You need:** the packages and the matching practice connection
+described in [Before you
+start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below
 were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
 data, not clinical findings.
@@ -22,18 +26,46 @@ Ask which tables are available:
 
 ``` r
 tables <- ds.omop.tables(conns = conns)
-tables$site
-#>            table_name schema_category has_person_id concept_prefix
-#> 1              person             CDM          TRUE           <NA>
-#> 2  observation_period             CDM          TRUE           <NA>
-#> 3    visit_occurrence             CDM          TRUE          visit
-#> 10        observation             CDM          TRUE    observation
-#> 11              death             CDM          TRUE           <NA>
-#> 27         cdm_source             CDM         FALSE           <NA>
-#> 28            concept      Vocabulary         FALSE           <NA>
-#> 29         vocabulary      Vocabulary         FALSE           <NA>
-#> 35   concept_ancestor      Vocabulary         FALSE           <NA>
+knitr::kable(tables$site)
 ```
+
+| table\_name              | schema\_category | has\_person\_id | concept\_prefix |
+| :----------------------- | :--------------- | :-------------- | :-------------- |
+| person                   | CDM              | TRUE            |                 |
+| observation\_period      | CDM              | TRUE            |                 |
+| visit\_occurrence        | CDM              | TRUE            | visit           |
+| visit\_detail            | CDM              | TRUE            | visit\_detail   |
+| condition\_occurrence    | CDM              | TRUE            | condition       |
+| drug\_exposure           | CDM              | TRUE            | drug            |
+| procedure\_occurrence    | CDM              | TRUE            | procedure       |
+| device\_exposure         | CDM              | TRUE            | device          |
+| measurement              | CDM              | TRUE            | measurement     |
+| observation              | CDM              | TRUE            | observation     |
+| death                    | CDM              | TRUE            |                 |
+| note                     | CDM              | TRUE            |                 |
+| note\_nlp                | CDM              | FALSE           |                 |
+| specimen                 | CDM              | TRUE            | specimen        |
+| fact\_relationship       | CDM              | FALSE           |                 |
+| location                 | CDM              | FALSE           |                 |
+| care\_site               | CDM              | FALSE           |                 |
+| provider                 | CDM              | FALSE           |                 |
+| payer\_plan\_period      | CDM              | TRUE            |                 |
+| cost                     | CDM              | FALSE           |                 |
+| drug\_era                | CDM              | TRUE            |                 |
+| dose\_era                | CDM              | TRUE            |                 |
+| condition\_era           | CDM              | TRUE            |                 |
+| metadata                 | CDM              | FALSE           |                 |
+| cdm\_source              | CDM              | FALSE           |                 |
+| concept                  | Vocabulary       | FALSE           |                 |
+| vocabulary               | Vocabulary       | FALSE           |                 |
+| domain                   | Vocabulary       | FALSE           |                 |
+| concept\_class           | Vocabulary       | FALSE           |                 |
+| concept\_relationship    | Vocabulary       | FALSE           |                 |
+| relationship             | Vocabulary       | FALSE           |                 |
+| concept\_synonym         | Vocabulary       | FALSE           |                 |
+| concept\_ancestor        | Vocabulary       | FALSE           |                 |
+| source\_to\_concept\_map | Vocabulary       | FALSE           |                 |
+| drug\_strength           | Vocabulary       | FALSE           |                 |
 
 These are table names, not records. You can learn the structure without
 seeing a person’s dates or answers.
@@ -49,17 +81,28 @@ Ask for safe information about the person table:
 
 ``` r
 ds.omop.table.stats("person", conns = conns)$per_site$site
-#> $rows
-#> [1] 20
-#> 
-#> $persons
-#> [1] 20
 ```
+
+    #> $rows
+    #> [1] 2690
+    #> 
+    #> $persons
+    #> [1] 2690
 
 Read the reported count bands as bands, not exact counts. A later
 categorical table may release exact supported cells through its own
 checks. Different endpoints answer different questions and have
 different disclosure rules.
+
+**You**Choose events, variables and outputs.
+
+→
+
+**Server**Compute with private records and apply release checks.
+
+→
+
+**You see**Symbol names, schemas and checked summaries.
 
 ## What stays on the server
 
@@ -84,20 +127,15 @@ Find the columns of the death table without asking for its rows.
 Solution
 
 ``` r
-ds.omop.columns("death", conns = conns)$site
-#>             column_name cdm_datatype db_datatype      concept_role semantic_class
-#> 1             person_id      integer     integer       non_concept       ordinary
-#> 2            death_date         date        text       non_concept       ordinary
-#> 3 death_type_concept_id      integer     integer      type_concept        concept
-#> 4      cause_concept_id      integer     integer attribute_concept        concept
-#>      fk_domain is_date is_extension is_untyped_identifier is_sensitive is_blocked
-#> 1                FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 2                 TRUE        FALSE                 FALSE        FALSE      FALSE
-#> 3 Type Concept   FALSE        FALSE                 FALSE        FALSE      FALSE
-#> 4                FALSE        FALSE                 FALSE        FALSE      FALSE
-#>   is_quasi_identifier
-#> 1               FALSE
-#> 2                TRUE
-#> 3               FALSE
-#> 4               FALSE
+knitr::kable(ds.omop.columns("death", conns = conns)$site)
 ```
+
+| column\_name               | cdm\_datatype | db\_datatype | concept\_role      | semantic\_class | fk\_domain   | is\_date | is\_extension | is\_untyped\_identifier | is\_sensitive | is\_blocked | is\_quasi\_identifier |
+| :------------------------- | :------------ | :----------- | :----------------- | :-------------- | :----------- | :------- | :------------ | :---------------------- | :------------ | :---------- | :-------------------- |
+| person\_id                 | integer       | real         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| death\_date                | date          | text         | non\_concept       | ordinary        |              | TRUE     | FALSE         | FALSE                   | FALSE         | FALSE       | TRUE                  |
+| death\_datetime            | datetime      | text         | non\_concept       | ordinary        |              | TRUE     | FALSE         | FALSE                   | FALSE         | FALSE       | TRUE                  |
+| death\_type\_concept\_id   | integer       | real         | type\_concept      | concept         | Type Concept | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| cause\_concept\_id         | integer       | real         | attribute\_concept | concept         |              | FALSE    | FALSE         | FALSE                   | FALSE         | FALSE       | FALSE                 |
+| cause\_source\_value       | varchar(50)   | text         | non\_concept       | ordinary        |              | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |
+| cause\_source\_concept\_id | integer       | real         | source\_concept    | concept         |              | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |

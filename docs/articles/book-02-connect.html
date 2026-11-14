@@ -11,7 +11,7 @@
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="2. Resources, connections and symbols">
+<script src="../extra.js"></script><meta property="og:title" content="2. Resources, connections and symbols">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -30,24 +30,30 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Start here</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-book" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Book</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-book">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorial-chapters" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorial chapters</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-tutorial-chapters">
 <li><a class="dropdown-item" href="../articles/book-00-start.html">0. Getting started</a></li>
     <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. DataSHIELD and OMOP</a></li>
     <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Connecting</a></li>
     <li><a class="dropdown-item" href="../articles/book-03-explore.html">3. Exploring the CDM</a></li>
     <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Vocabulary</a></li>
     <li><a class="dropdown-item" href="../articles/book-05-recipe.html">5. A first recipe</a></li>
-    <li><a class="dropdown-item" href="../articles/book-06-visits.html">6. Visit dates</a></li>
-    <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">7. Verbal-autopsy capstone</a></li>
-    <li><a class="dropdown-item" href="../articles/book-08-harmonise.html">8. Two-vocabulary check</a></li>
-    <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">9. Reproduction and migration</a></li>
+    <li><a class="dropdown-item" href="../articles/book-06-events.html">6. Events, windows and reducers</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Output formats</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-harmonise.html">10. Concepts as categories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and verbs</a></li>
+    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. Privacy</a></li>
+    <li><a class="dropdown-item" href="../articles/book-06-visits.html">13. Visit walkthrough</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">14. Verbal-autopsy capstone</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">Appendix A. Reproduction and migration</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -67,6 +73,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>2. Resources, connections and symbols</h1>
+                        <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
       <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/book-02-connect.Rmd" class="external-link"><code>vignettes/book-02-connect.Rmd</code></a></small>
@@ -79,66 +86,130 @@
 <p><strong>What you will learn</strong></p>
 <p>Attach a resource and learn the two kinds of name used in a session.</p>
 </div>
-<p>This chapter uses the synthetic practice connection from <a href="book-00-start.html">Getting started</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
+<p>This chapter uses the public synthetic GiBleed practice connection from <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
 <div class="section level2">
 <h2 id="one-connection-list">One connection list<a class="anchor" aria-label="anchor" href="#one-connection-list"></a>
 </h2>
 <p>A <em>connection</em> is a logged-in session. Our DSLite helper made one, named <code>site</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "site"</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
 <p>Most calls accept <code>conns</code>. Passing it explicitly makes clear where a request goes.</p>
 </div>
 <div class="section level2">
 <h2 id="the-opal-login-path">The Opal login path<a class="anchor" aria-label="anchor" href="#the-opal-login-path"></a>
 </h2>
-<p><strong>Requires a real Opal.</strong> In your R session load <code>DSOpal</code>. Build a login with <code><a href="https://datashield.github.io/DSI/reference/newDSLoginBuilder.html" class="external-link">DSI::newDSLoginBuilder()</a></code>, then call its <code><a href="https://rdrr.io/r/base/append.html" class="external-link">append()</a></code> method with <code>server = "site"</code>, your Opal <code>url</code>, <code>user</code>, <code>password</code>, and <code>driver = "OpalDriver"</code>. Pass <code>builder$build()</code> to <code>DSI::datashield.login(..., assign = FALSE)</code> and save the result as <code>conns</code>. Retrieve credentials from your secure local configuration; do not paste a password into a shared notebook. The book’s recorded login uses <code>DSLiteDriver</code> instead; its executed implementation is in <code>tools/book/fixture.R</code>.</p>
+<p><strong>Requires a real Opal.</strong> This is the single connection configuration to change when moving to another practice host. Use it instead of the DSLite login from chapter 0. Set the three <code>BOOK_OPAL_*</code> environment variables in your secure local configuration; the URL comes from your administrator or easy-opal setup. This deployment block is not part of the recorded DSLite execution.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">opal_url</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_OPAL_URL"</span><span class="op">)</span></span>
+<span><span class="va">opal_project</span> <span class="op">&lt;-</span> <span class="st">"practice"</span></span>
+<span><span class="va">opal_resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>gibleed <span class="op">=</span> <span class="st">"gibleed"</span>, numeric <span class="op">=</span> <span class="st">"numeric"</span><span class="op">)</span></span>
+<span><span class="va">lesson_resource</span> <span class="op">&lt;-</span> <span class="st">"gibleed"</span>  <span class="co"># choose "numeric" for numeric chapters</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/datashield/DSOpal/" class="external-link">DSOpal</a></span><span class="op">)</span></span>
+<span><span class="va">builder</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/newDSLoginBuilder.html" class="external-link">newDSLoginBuilder</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"site"</span>, url <span class="op">=</span> <span class="va">opal_url</span>,</span>
+<span>               user <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_OPAL_USER"</span><span class="op">)</span>,</span>
+<span>               password <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_OPAL_PASSWORD"</span><span class="op">)</span>, driver <span class="op">=</span> <span class="st">"OpalDriver"</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.login.html" class="external-link">datashield.login</a></span><span class="op">(</span><span class="va">builder</span><span class="op">$</span><span class="fu">build</span><span class="op">(</span><span class="op">)</span>, assign <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">opal_project</span>, <span class="va">opal_resources</span><span class="op">[[</span><span class="va">lesson_resource</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>                                 sep <span class="op">=</span> <span class="st">"."</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<p>Reuse this login for every practice lesson, choosing its named resource. The questionnaire-fixture chapters explicitly use their separate local helper. Credentials belong in secure configuration, never a shared notebook. The executed DSLite login is in <code>tools/book/practice.R</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="a-resource-is-a-route-to-a-database">A resource is a route to a database<a class="anchor" aria-label="anchor" href="#a-resource-is-a-route-to-a-database"></a>
 </h2>
-<p>A <em>resource</em> stores the connection details on the server. In this fixture its name is <code>fixture</code>. In the optional Opal setup it is <code>practice.gibleed</code>.</p>
+<p>A <em>resource</em> stores the connection details on the server. On the practice server its name is <code>gibleed</code>. In the optional Opal setup it is <code>practice.gibleed</code>.</p>
 <p>A <em>symbol</em> is an R object name inside the DataSHIELD session. Attach the resource and deliberately name the session handle <code>omop</code>:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"fixture"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>The server opens its database connection. This does not copy the database into R on your laptop. On Opal, replace only <code>fixture</code> with the resource name you were given.</p>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"gibleed"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<p>The server opens its database connection. This does not copy the database into R on your laptop. On Opal, replace only <code>gibleed</code> with the resource name you were given.</p>
 </div>
 <div class="section level2">
 <h2 id="reuse-the-handle">Reuse the handle<a class="anchor" aria-label="anchor" href="#reuse-the-handle"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"person"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
-<span><span class="co">#&gt;            column_name cdm_datatype db_datatype      concept_role semantic_class</span></span>
-<span><span class="co">#&gt; 1            person_id      integer     integer       non_concept       ordinary</span></span>
-<span><span class="co">#&gt; 2    gender_concept_id      integer     integer attribute_concept        concept</span></span>
-<span><span class="co">#&gt; 3        year_of_birth      integer     integer       non_concept       ordinary</span></span>
-<span><span class="co">#&gt; 4       month_of_birth      integer     integer       non_concept       ordinary</span></span>
-<span><span class="co">#&gt; 5         day_of_birth      integer     integer       non_concept       ordinary</span></span>
-<span><span class="co">#&gt; 6      race_concept_id      integer     integer attribute_concept        concept</span></span>
-<span><span class="co">#&gt; 7 ethnicity_concept_id      integer     integer attribute_concept        concept</span></span>
-<span><span class="co">#&gt;   fk_domain is_date is_extension is_untyped_identifier is_sensitive is_blocked</span></span>
-<span><span class="co">#&gt; 1             FALSE        FALSE                 FALSE        FALSE      FALSE</span></span>
-<span><span class="co">#&gt; 2    Gender   FALSE        FALSE                 FALSE        FALSE      FALSE</span></span>
-<span><span class="co">#&gt; 3             FALSE        FALSE                 FALSE         TRUE       TRUE</span></span>
-<span><span class="co">#&gt; 4             FALSE        FALSE                 FALSE         TRUE       TRUE</span></span>
-<span><span class="co">#&gt; 5             FALSE        FALSE                 FALSE         TRUE       TRUE</span></span>
-<span><span class="co">#&gt; 6      Race   FALSE        FALSE                 FALSE        FALSE      FALSE</span></span>
-<span><span class="co">#&gt; 7 Ethnicity   FALSE        FALSE                 FALSE        FALSE      FALSE</span></span>
-<span><span class="co">#&gt;   is_quasi_identifier</span></span>
-<span><span class="co">#&gt; 1               FALSE</span></span>
-<span><span class="co">#&gt; 2               FALSE</span></span>
-<span><span class="co">#&gt; 3                TRUE</span></span>
-<span><span class="co">#&gt; 4                TRUE</span></span>
-<span><span class="co">#&gt; 5                TRUE</span></span>
-<span><span class="co">#&gt; 6               FALSE</span></span>
-<span><span class="co">#&gt; 7               FALSE</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"person"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;                    column_name cdm_datatype db_datatype      concept_role</span></span>
+<span><span class="co">#&gt; 1                    person_id      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 2            gender_concept_id      integer        real attribute_concept</span></span>
+<span><span class="co">#&gt; 3                year_of_birth      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 4               month_of_birth      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 5                 day_of_birth      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 6               birth_datetime     datetime        text       non_concept</span></span>
+<span><span class="co">#&gt; 7              race_concept_id      integer        real attribute_concept</span></span>
+<span><span class="co">#&gt; 8         ethnicity_concept_id      integer        real attribute_concept</span></span>
+<span><span class="co">#&gt; 9                  location_id      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 10                 provider_id      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 11                care_site_id      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 12         person_source_value  varchar(50)        text       non_concept</span></span>
+<span><span class="co">#&gt; 13         gender_source_value  varchar(50)        text       non_concept</span></span>
+<span><span class="co">#&gt; 14    gender_source_concept_id      integer        real    source_concept</span></span>
+<span><span class="co">#&gt; 15           race_source_value  varchar(50)        text       non_concept</span></span>
+<span><span class="co">#&gt; 16      race_source_concept_id      integer        real    source_concept</span></span>
+<span><span class="co">#&gt; 17      ethnicity_source_value  varchar(50)        text       non_concept</span></span>
+<span><span class="co">#&gt; 18 ethnicity_source_concept_id      integer        real    source_concept</span></span>
+<span><span class="co">#&gt;    semantic_class fk_domain is_date is_extension is_untyped_identifier is_sensitive</span></span>
+<span><span class="co">#&gt; 1        ordinary             FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 2         concept    Gender   FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 3        ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 4        ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 5        ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 6        ordinary              TRUE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 7         concept      Race   FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 8         concept Ethnicity   FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 9        ordinary             FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 10       ordinary             FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 11       ordinary             FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 12       ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 13       ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 14        concept             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 15       ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 16        concept             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 17       ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 18        concept             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt;    is_blocked is_quasi_identifier</span></span>
+<span><span class="co">#&gt; 1       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 2       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 3        TRUE                TRUE</span></span>
+<span><span class="co">#&gt; 4        TRUE                TRUE</span></span>
+<span><span class="co">#&gt; 5        TRUE                TRUE</span></span>
+<span><span class="co">#&gt; 6        TRUE                TRUE</span></span>
+<span><span class="co">#&gt; 7       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 8       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 9       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 10      FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 11      FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 12       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 13       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 14       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 15       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 16       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 17       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 18       TRUE               FALSE</span></span></code></pre>
 <p>Subsequent calls can omit <code>symbol</code> because its default is <code>omop</code>. An output symbol such as <code>D_people</code> is different: it names a table built later by a recipe.</p>
 </div>
 <div class="section level2">
 <h2 id="end-a-session-deliberately">End a session deliberately<a class="anchor" aria-label="anchor" href="#end-a-session-deliberately"></a>
 </h2>
 <p>At the end of your own work, call <code>ds.omop.disconnect(conns = conns)</code> and then <code>DSI::datashield.logout(conns)</code>. Start again with the practice helper for another chapter. The reproduction script performs both cleanup calls after each chapter.</p>
+</div>
+<div class="section level2">
+<h2 id="switch-between-the-two-practice-resources">Switch between the two practice resources<a class="anchor" aria-label="anchor" href="#switch-between-the-two-practice-resources"></a>
+</h2>
+<p>The same practice server also offers the numeric Synthea27Nj database. Disconnect the current OMOP handle, then attach that resource on the same login connection:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">numeric_session</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"numeric"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">numeric_session</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "omop_session"</span></span></code></pre>
+<p>This changes the database behind the OMOP handle. It does not copy or combine patient rows between resources. On Opal the corresponding name is <code>practice.numeric</code>. Return to GiBleed for the next introductory chapters:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">session</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"gibleed"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">session</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "omop_session"</span></span></code></pre>
+<p>The numeric chapters will open their own fresh <code>numeric</code> session. Keeping resource selection explicit prevents accidentally running a lab recipe against GiBleed’s empty numeric-value fields.</p>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
@@ -150,32 +221,65 @@
 </h2>
 <p>Repeat the column request without specifying the symbol.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
-<span><span class="co">#&gt;            column_name cdm_datatype db_datatype      concept_role semantic_class</span></span>
-<span><span class="co">#&gt; 1            person_id      integer     integer       non_concept       ordinary</span></span>
-<span><span class="co">#&gt; 2    gender_concept_id      integer     integer attribute_concept        concept</span></span>
-<span><span class="co">#&gt; 3        year_of_birth      integer     integer       non_concept       ordinary</span></span>
-<span><span class="co">#&gt; 4       month_of_birth      integer     integer       non_concept       ordinary</span></span>
-<span><span class="co">#&gt; 5         day_of_birth      integer     integer       non_concept       ordinary</span></span>
-<span><span class="co">#&gt; 6      race_concept_id      integer     integer attribute_concept        concept</span></span>
-<span><span class="co">#&gt; 7 ethnicity_concept_id      integer     integer attribute_concept        concept</span></span>
-<span><span class="co">#&gt;   fk_domain is_date is_extension is_untyped_identifier is_sensitive is_blocked</span></span>
-<span><span class="co">#&gt; 1             FALSE        FALSE                 FALSE        FALSE      FALSE</span></span>
-<span><span class="co">#&gt; 2    Gender   FALSE        FALSE                 FALSE        FALSE      FALSE</span></span>
-<span><span class="co">#&gt; 3             FALSE        FALSE                 FALSE         TRUE       TRUE</span></span>
-<span><span class="co">#&gt; 4             FALSE        FALSE                 FALSE         TRUE       TRUE</span></span>
-<span><span class="co">#&gt; 5             FALSE        FALSE                 FALSE         TRUE       TRUE</span></span>
-<span><span class="co">#&gt; 6      Race   FALSE        FALSE                 FALSE        FALSE      FALSE</span></span>
-<span><span class="co">#&gt; 7 Ethnicity   FALSE        FALSE                 FALSE        FALSE      FALSE</span></span>
-<span><span class="co">#&gt;   is_quasi_identifier</span></span>
-<span><span class="co">#&gt; 1               FALSE</span></span>
-<span><span class="co">#&gt; 2               FALSE</span></span>
-<span><span class="co">#&gt; 3                TRUE</span></span>
-<span><span class="co">#&gt; 4                TRUE</span></span>
-<span><span class="co">#&gt; 5                TRUE</span></span>
-<span><span class="co">#&gt; 6               FALSE</span></span>
-<span><span class="co">#&gt; 7               FALSE</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;                    column_name cdm_datatype db_datatype      concept_role</span></span>
+<span><span class="co">#&gt; 1                    person_id      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 2            gender_concept_id      integer        real attribute_concept</span></span>
+<span><span class="co">#&gt; 3                year_of_birth      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 4               month_of_birth      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 5                 day_of_birth      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 6               birth_datetime     datetime        text       non_concept</span></span>
+<span><span class="co">#&gt; 7              race_concept_id      integer        real attribute_concept</span></span>
+<span><span class="co">#&gt; 8         ethnicity_concept_id      integer        real attribute_concept</span></span>
+<span><span class="co">#&gt; 9                  location_id      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 10                 provider_id      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 11                care_site_id      integer        real       non_concept</span></span>
+<span><span class="co">#&gt; 12         person_source_value  varchar(50)        text       non_concept</span></span>
+<span><span class="co">#&gt; 13         gender_source_value  varchar(50)        text       non_concept</span></span>
+<span><span class="co">#&gt; 14    gender_source_concept_id      integer        real    source_concept</span></span>
+<span><span class="co">#&gt; 15           race_source_value  varchar(50)        text       non_concept</span></span>
+<span><span class="co">#&gt; 16      race_source_concept_id      integer        real    source_concept</span></span>
+<span><span class="co">#&gt; 17      ethnicity_source_value  varchar(50)        text       non_concept</span></span>
+<span><span class="co">#&gt; 18 ethnicity_source_concept_id      integer        real    source_concept</span></span>
+<span><span class="co">#&gt;    semantic_class fk_domain is_date is_extension is_untyped_identifier is_sensitive</span></span>
+<span><span class="co">#&gt; 1        ordinary             FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 2         concept    Gender   FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 3        ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 4        ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 5        ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 6        ordinary              TRUE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 7         concept      Race   FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 8         concept Ethnicity   FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 9        ordinary             FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 10       ordinary             FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 11       ordinary             FALSE        FALSE                 FALSE        FALSE</span></span>
+<span><span class="co">#&gt; 12       ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 13       ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 14        concept             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 15       ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 16        concept             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 17       ordinary             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt; 18        concept             FALSE        FALSE                 FALSE         TRUE</span></span>
+<span><span class="co">#&gt;    is_blocked is_quasi_identifier</span></span>
+<span><span class="co">#&gt; 1       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 2       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 3        TRUE                TRUE</span></span>
+<span><span class="co">#&gt; 4        TRUE                TRUE</span></span>
+<span><span class="co">#&gt; 5        TRUE                TRUE</span></span>
+<span><span class="co">#&gt; 6        TRUE                TRUE</span></span>
+<span><span class="co">#&gt; 7       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 8       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 9       FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 10      FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 11      FALSE               FALSE</span></span>
+<span><span class="co">#&gt; 12       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 13       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 14       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 15       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 16       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 17       TRUE               FALSE</span></span>
+<span><span class="co">#&gt; 18       TRUE               FALSE</span></span></code></pre>
 </details>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -185,7 +289,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
+  <p>Book by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>.</p>
 </div>
 
 <div class="pkgdown-footer-right">

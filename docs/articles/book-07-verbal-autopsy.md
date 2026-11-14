@@ -5,8 +5,12 @@
 Combine age at death, labelled answers, calendar periods and cause of
 death in one private table.
 
-This chapter uses the synthetic practice connection from [Getting
+This chapter uses the 24-person synthetic questionnaire test fixture
+described in [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+**You need:** the packages and the matching practice connection
+described in [Before you
+start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below
 were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
 data, not clinical findings.
@@ -30,8 +34,9 @@ education <- omop_variable(
   event = omop_event("observation", concepts = 900001L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 class(education)
-#> [1] "omop_variable" "list"
 ```
+
+    #> [1] "omop_variable" "list"
 
 This is the same education definition as chapter 5. Reusing it keeps one
 categorical column with vocabulary names.
@@ -41,8 +46,9 @@ fever <- omop_variable(
   event = omop_event("observation", concepts = 900002L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 class(fever)
-#> [1] "omop_variable" "list"
 ```
+
+    #> [1] "omop_variable" "list"
 
 The second question gets its own column. This capstone uses vocabulary
 labels `Yes` and `No`; chapter 5 demonstrated a user-defined lower-case
@@ -53,8 +59,9 @@ recode.
 ``` r
 age_at_death <- omop_age_at("death")
 class(age_at_death)
-#> [1] "omop_variable" "list"
 ```
+
+    #> [1] "omop_variable" "list"
 
 The default unit is completed years, using the full birth date and death
 date. It is not simply death year minus birth year. With the default
@@ -67,8 +74,9 @@ silently invented.
 ``` r
 first_visit <- omop_anchor(omop_event("visit_occurrence"), which = "first")
 class(first_visit)
-#> [1] "omop_anchor" "list"
 ```
+
+    #> [1] "omop_anchor" "list"
 
 All calendar presentations below refer to this same first visit. An
 anchor is a selection rule; it is not a patient date returned to your R
@@ -79,8 +87,9 @@ session.
 ``` r
 visit_month <- omop_date(first_visit, omop_date_spec(precision = "month"))
 class(visit_month)
-#> [1] "omop_variable" "list"
 ```
+
+    #> [1] "omop_variable" "list"
 
 The values will be ordered categories such as year-month. No manual
 date-string mutation or fixed 64-boundary cut vector is needed in
@@ -93,8 +102,9 @@ visit_quarter <- omop_date(first_visit, omop_date_spec(precision = "quarter"))
 visit_year <- omop_date(first_visit,
   omop_date_spec(precision = "year", representation = "number"))
 class(visit_quarter)
-#> [1] "omop_variable" "list"
 ```
+
+    #> [1] "omop_variable" "list"
 
 Quarter labels distinguish both year and quarter. The numeric year
 variant is included to match the released native colleague recipe
@@ -106,8 +116,9 @@ exactly. Precision is chosen separately for each variable.
 cause <- omop_variable(event = omop_event("death"),
   reducer = omop_reduce("first_value", value = "cause_concept_id"))
 class(cause)
-#> [1] "omop_variable" "list"
 ```
+
+    #> [1] "omop_variable" "list"
 
 The vocabulary supplies the label. People without death records keep
 missing cause and age, while remaining in the all-person output.
@@ -132,8 +143,9 @@ va <- omop_recipe(variables = list(
   outputs = omop_output("people", format = "wide", grain = "person"),
   options = list(translate_concepts = TRUE))
 class(va)
-#> [1] "omop_recipe" "list"
 ```
+
+    #> [1] "omop_recipe" "list"
 
 For a smaller analysis table, select only the variables your question
 needs using `columns` in `omop_output()`. The full version here is the
@@ -146,14 +158,16 @@ workaround.
 explanation <- recipe_explain(va, conns = conns)
 stopifnot(explanation$selected == "v2")
 explanation$selected
-#> [1] "v2"
 ```
+
+    #> [1] "v2"
 
 ``` r
 print(recipe_execute(va, out = c(people = "D_va"), conns = conns))
-#> people 
-#> "D_va"
 ```
+
+    #> people 
+    #> "D_va"
 
 A successful symbol mapping means the server assigned the private wide
 table. It does not mean that a local object named `D_va` now holds
@@ -163,12 +177,13 @@ patient rows.
 
 ``` r
 dsBaseClient::ds.colnames("D_va", datasources = conns)
-#> $site
-#>  [1] "person_id"          "age_at_death"       "age_at_first_visit" "education"         
-#>  [5] "fever"              "visit_date"         "visit_month"        "visit_quarter"     
-#>  [9] "visit_year"         "visit_parts_year"   "visit_parts_month"  "death_date"        
-#> [13] "cause_of_death"
 ```
+
+    #> $site
+    #>  [1] "person_id"          "age_at_death"       "age_at_first_visit" "education"         
+    #>  [5] "fever"              "visit_date"         "visit_month"        "visit_quarter"     
+    #>  [9] "visit_year"         "visit_parts_year"   "visit_parts_month"  "death_date"        
+    #> [13] "cause_of_death"
 
 The column list includes `person_id`. Its server values are pseudonyms.
 We do not print them or use them as local merge keys.
@@ -177,17 +192,18 @@ We do not print them or use them as local merge keys.
 
 ``` r
 dsBaseClient::ds.summary("D_va$age_at_death", datasources = conns)
-#> $site
-#> $site$class
-#> [1] "integer"
-#> 
-#> $site$length
-#> [1] 24
-#> 
-#> $site$`quantiles & mean`
-#>   5%  10%  25%  50%  75%  90%  95% Mean 
-#>   33   33   33   38   43   43   43   38
 ```
+
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #> 
+    #> $site$length
+    #> [1] 24
+    #> 
+    #> $site$`quantiles & mean`
+    #>   5%  10%  25%  50%  75%  90%  95% Mean 
+    #>   33   33   33   38   43   43   43   38
 
 In the synthetic patterns, supported complete birth dates give completed
 ages 33 and 43. The other patterns have incomplete birth or no death, so
@@ -198,19 +214,21 @@ returned by dsBase.
 
 ``` r
 ds.omop.table("D_va", "education", conns = conns)
-#> D_va$education
-#>  Secondary education University education 
-#>                    6                    6
 ```
+
+    #> D_va$education
+    #>  Secondary education University education 
+    #>                    6                    6
 
 Each education category represents an answer, not a separate column.
 
 ``` r
 ds.omop.table("D_va", "fever", conns = conns)
-#> D_va$fever
-#> Yes  No 
-#>   6   6
 ```
+
+    #> D_va$fever
+    #> Yes  No 
+    #>   6   6
 
 Missing responses are excluded from these counts. “No” is an observed
 answer, not an imputation for missingness.
@@ -219,19 +237,21 @@ answer, not an imputation for missingness.
 
 ``` r
 ds.omop.table("D_va", "visit_month", conns = conns)
-#> D_va$visit_month
-#> 2020-03 2020-06 2020-07 
-#>       6       6       6
 ```
+
+    #> D_va$visit_month
+    #> 2020-03 2020-06 2020-07 
+    #>       6       6       6
 
 These month counts group people by their first visit.
 
 ``` r
 ds.omop.table("D_va", "visit_quarter", conns = conns)
-#> D_va$visit_quarter
-#> 2020-Q1 2020-Q2 2020-Q3 
-#>       6       6       6
 ```
+
+    #> D_va$visit_quarter
+    #> 2020-Q1 2020-Q2 2020-Q3 
+    #>       6       6       6
 
 Several months can belong to one quarter; the grouped counts reflect
 that.
@@ -240,10 +260,11 @@ that.
 
 ``` r
 ds.omop.table("D_va", "cause_of_death", conns = conns)
-#> D_va$cause_of_death
-#> Myocardial infarction             Pneumonia 
-#>                    12                     6
 ```
+
+    #> D_va$cause_of_death
+    #> Myocardial infarction             Pneumonia 
+    #>                    12                     6
 
 All shown category tables contain labels, never numeric concept IDs. The
 recipe produces person rows privately; the book deliberately shows
@@ -268,12 +289,21 @@ source("tools/dates/va-native.R")
 reference <- va_native_recipe()
 stopifnot(recipe_explain(reference, conns = conns)$selected == "v2")
 identical(recipe_to_plan(va), recipe_to_plan(reference))
-#> [1] TRUE
-print(recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns))
-#>           people 
-#> "D_va_reference"
-ds.omop.table("D_va_reference", "cause_of_death", conns = conns)
-#> D_va_reference$cause_of_death
-#> Myocardial infarction             Pneumonia 
-#>                    12                     6
 ```
+
+    #> [1] TRUE
+
+``` r
+print(recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns))
+```
+
+    #>           people 
+    #> "D_va_reference"
+
+``` r
+ds.omop.table("D_va_reference", "cause_of_death", conns = conns)
+```
+
+    #> D_va_reference$cause_of_death
+    #> Myocardial infarction             Pneumonia 
+    #>                    12                     6

@@ -8,10 +8,16 @@ articles:
   book-03-explore: book-03-explore.html
   book-04-vocabulary: book-04-vocabulary.html
   book-05-recipe: book-05-recipe.html
+  book-06-events: book-06-events.html
   book-06-visits: book-06-visits.html
+  book-07-populations: book-07-populations.html
   book-07-verbal-autopsy: book-07-verbal-autopsy.html
   book-08-harmonise: book-08-harmonise.html
+  book-08-outputs: book-08-outputs.html
+  book-09-dates: book-09-dates.html
   book-09-reproduce: book-09-reproduce.html
+  book-11-parameters: book-11-parameters.html
+  book-12-privacy: book-12-privacy.html
   v01_getting_started: v01_getting_started.html
   v02_exploration: v02_exploration.html
   v03_cohorts: v03_cohorts.html
@@ -19,7 +25,7 @@ articles:
   v05_multi_server: v05_multi_server.html
   v06_security: v06_security.html
   v07_querylibrary_sticky: v07_querylibrary_sticky.html
-last_built: 2026-11-14T01:31Z
+last_built: 2026-11-14T02:25Z
 urls:
   reference: https://isglobal-brge.github.io/dsOMOPClient/reference
   article: https://isglobal-brge.github.io/dsOMOPClient/articles

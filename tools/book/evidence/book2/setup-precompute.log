@@ -1,0 +1,7 @@
+PRECOMPUTE vignettes/book-00-start.Rmd.orig
+ASSERTIONS PASS book-00-start.Rmd.orig
+PRECOMPUTE vignettes/book-02-connect.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-02-connect.Rmd.orig
+All chapter chunks executed successfully

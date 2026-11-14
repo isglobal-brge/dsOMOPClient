@@ -10,28 +10,39 @@ results and an exercise with its solution.
 
 ## Your path through the book
 
-| Chapter                                                                                                       | What you will do                                                 |
-| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [0. Getting started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)                  | Install the client and open a practice session                   |
-| [1. DataSHIELD and OMOP](https://isglobal-brge.github.io/dsOMOPClient/articles/book-01-mental-model.md)       | Learn what you can see and what remains private                  |
-| [2. Connecting](https://isglobal-brge.github.io/dsOMOPClient/articles/book-02-connect.md)                     | Attach a resource and use a session symbol                       |
-| [3. Exploring the CDM](https://isglobal-brge.github.io/dsOMOPClient/articles/book-03-explore.md)              | Read tables, columns and safe counts                             |
-| [4. Vocabulary](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md)                  | Find meanings and build concept sets                             |
-| [5. A first recipe](https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.md)                  | Create education and cause-of-death columns                      |
-| [6. Visit dates](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-visits.md)                     | Use offsets, calendar dates and visit rows                       |
-| [7. Verbal-autopsy capstone](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md) | Combine answers, completed age, visit periods and cause of death |
+| Chapter                                                                                                        | What you will do                                     |
+| -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| [0. Getting started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)                   | Install and open a practice session                  |
+| [1. DataSHIELD and OMOP](https://isglobal-brge.github.io/dsOMOPClient/articles/book-01-mental-model.md)        | Understand what stays private                        |
+| [2. Connecting](https://isglobal-brge.github.io/dsOMOPClient/articles/book-02-connect.md)                      | Attach a resource and use symbols                    |
+| [3. Exploring the CDM](https://isglobal-brge.github.io/dsOMOPClient/articles/book-03-explore.md)               | Read schema and safe counts                          |
+| [4. Vocabulary](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md)                   | Find concepts and build sets                         |
+| [5. A first recipe](https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.md)                   | Create education and cause columns                   |
+| [6. Events, windows and reducers](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-events.md)     | Choose records, time and one-value summaries         |
+| [7. Populations](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-populations.md)                 | Define eligibility, episodes, new users and matching |
+| [8. Output formats](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-outputs.md)                  | Choose shapes, censoring and joins                   |
+| [9. Dates](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-dates.md)                             | Use parts, periods, anchored ages and partial dates  |
+| [10. Concepts as categories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md)       | Translate, recode, rename and harmonise two sites    |
+| [11. Reusable studies and verbs](https://isglobal-brge.github.io/dsOMOPClient/articles/book-11-parameters.md)  | Bind parameters and use mutate/filter                |
+| [12. Privacy](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md)                        | Understand final release and refused columns         |
+| [13. Visit walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-visits.md)               | Combine offsets, dates and event rows                |
+| [14. Verbal-autopsy capstone](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md) | Combine answers, age, visit periods and cause        |
 
-The main lessons use one synthetic DataSHIELD connection. A short
-[two-vocabulary
-appendix](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md)
-demonstrates category harmonisation. [Reproduction and migration
+The main lessons use one DataSHIELD connection at a time. GiBleed
+teaches the basics; Synthea27Nj supplies numeric labs. Both have
+synthetic people. A separately labelled 24-person test fixture supplies
+the colleague’s questionnaire examples. Chapter 10 includes a
+two-connection vocabulary harmonisation demonstration. [Reproduction and
+migration
 notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-reproduce.md)
 explain how the examples run and how older recipe conventions differ.
+The visit walkthrough and capstone retain their original URLs so earlier
+links continue to work.
 
 ## Learn with real execution
 
 The displayed results come from DSLite running the matching released
-server and client against the package’s synthetic colleague CDM. The
+server and client against the chapter’s stated synthetic dataset. The
 verbal-autopsy example uses the released native follow-up recipe,
 including exact age at death and calendar precision. The optional local
 Opal/GiBleed instructions explain the production-shaped connection
@@ -394,16 +405,28 @@ theme, not an OHDSI endorsement.
     sets](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md):
   - [5. A first
     recipe](https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.md):
-  - [6. Visit dates, one idea at a
+  - [6. Events, windows and
+    reducers](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-events.md):
+  - [7. Populations and index
+    events](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-populations.md):
+  - [8. Choosing an output
+    format](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-outputs.md):
+  - [9. Dates, periods and
+    ages](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-dates.md):
+  - [10. Concepts as
+    categories](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md):
+  - [11. Reusable studies and standalone
+    verbs](https://isglobal-brge.github.io/dsOMOPClient/articles/book-11-parameters.md):
+  - [12. What stays
+    private](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md):
+  - [13. Visit dates, one idea at a
     time](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-visits.md):
   - [7. Capstone: a verbal-autopsy wide
     table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.md):
 
-### Short appendices
+### Reproduction and migration
 
-  - [8. Appendix: two vocabularies, one category
-    set](https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.md):
-  - [9. Reproduction and migration
+  - [Appendix A. Reproduction and migration
     notes](https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-reproduce.md):
 
 ### Earlier reference guides

@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>9. Reproduction and migration notes • dsOMOPClient</title>
+<title>Appendix A. Reproduction and migration notes • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="9. Reproduction and migration notes">
+<script src="../extra.js"></script><meta property="og:title" content="Appendix A. Reproduction and migration notes">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -30,24 +30,30 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Start here</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-book" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Book</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-book">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorial-chapters" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorial chapters</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-tutorial-chapters">
 <li><a class="dropdown-item" href="../articles/book-00-start.html">0. Getting started</a></li>
     <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. DataSHIELD and OMOP</a></li>
     <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Connecting</a></li>
     <li><a class="dropdown-item" href="../articles/book-03-explore.html">3. Exploring the CDM</a></li>
     <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Vocabulary</a></li>
     <li><a class="dropdown-item" href="../articles/book-05-recipe.html">5. A first recipe</a></li>
-    <li><a class="dropdown-item" href="../articles/book-06-visits.html">6. Visit dates</a></li>
-    <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">7. Verbal-autopsy capstone</a></li>
-    <li><a class="dropdown-item" href="../articles/book-08-harmonise.html">8. Two-vocabulary check</a></li>
-    <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">9. Reproduction and migration</a></li>
+    <li><a class="dropdown-item" href="../articles/book-06-events.html">6. Events, windows and reducers</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Output formats</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-harmonise.html">10. Concepts as categories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and verbs</a></li>
+    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. Privacy</a></li>
+    <li><a class="dropdown-item" href="../articles/book-06-visits.html">13. Visit walkthrough</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">14. Verbal-autopsy capstone</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">Appendix A. Reproduction and migration</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -66,7 +72,8 @@
 <script src="book-09-reproduce_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>9. Reproduction and migration notes</h1>
+      <h1>Appendix A. Reproduction and migration notes</h1>
+                        <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
       <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/book-09-reproduce.Rmd" class="external-link"><code>vignettes/book-09-reproduce.Rmd</code></a></small>
@@ -79,7 +86,7 @@
 <p><strong>What you will learn</strong></p>
 <p>Rebuild the offline book and recognise the old recipe conventions.</p>
 </div>
-<p>This chapter uses the synthetic practice connection from <a href="book-00-start.html">Getting started</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
+<p>This chapter uses the 24-person synthetic questionnaire test fixture described in <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
 <div class="section level2">
 <h2 id="source-and-rendered-lessons">Source and rendered lessons<a class="anchor" aria-label="anchor" href="#source-and-rendered-lessons"></a>
 </h2>
@@ -91,15 +98,51 @@
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dsOMOP"</span>, <span class="st">"dsOMOPClient"</span>, <span class="st">"DSI"</span>, <span class="st">"DSLite"</span>, <span class="st">"dsBase"</span>, <span class="st">"dsBaseClient"</span><span class="op">)</span>,</span>
-<span>       <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       dsOMOP dsOMOPClient          DSI       DSLite       dsBase dsBaseClient </span></span>
-<span><span class="co">#&gt;     "2.10.4"     "2.10.4"      "1.8.0"      "1.5.0"      "6.3.5"      "6.3.5"</span></span></code></pre></div>
+<span>       <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;       dsOMOP dsOMOPClient          DSI       DSLite       dsBase dsBaseClient </span></span>
+<span><span class="co">#&gt;     "2.10.4"     "2.10.4"      "1.8.0"      "1.5.0"      "6.3.5"      "6.3.5"</span></span></code></pre>
 <p>These are the actual versions used for this rendering. Detailed assertions, source hashes and test logs are retained under <code>tools/book/evidence</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="reproduce-both-practice-resources">Reproduce both practice resources<a class="anchor" aria-label="anchor" href="#reproduce-both-practice-resources"></a>
+</h2>
+<p>Run <code>Rscript tools/book/load-practice.R ../practice-data</code>. The loader pins the EunomiaDatasets source revision and verifies SHA-256 for both archives. It creates <code>gibleed.sqlite</code>, <code>numeric.sqlite</code> and a manifest. These are administrator-side operations on public synthetic data, separate from analyst DataSHIELD calls. The following table reads the manifest recorded by the actual completed loader:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">manifest</span> <span class="op">&lt;-</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/read_json.html" class="external-link">read_json</a></span><span class="op">(</span><span class="st">"tools/book/evidence/book2/practice-manifest.json"</span><span class="op">)</span></span>
+<span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">manifest</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Dataset <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">dataset</span>, Measurements <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">measurements</span><span class="op">$</span><span class="va">rows</span>,</span>
+<span>  Numeric <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">measurements</span><span class="op">$</span><span class="va">numeric_values</span>,</span>
+<span>  Numeric_with_unit <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">measurements</span><span class="op">$</span><span class="va">numeric_with_unit</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">loaded</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Dataset</th>
+<th align="right">Measurements</th>
+<th align="right">Numeric</th>
+<th align="right">Numeric_with_unit</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">GiBleed</td>
+<td align="right">44053</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">Synthea27Nj</td>
+<td align="right">10040</td>
+<td align="right">9107</td>
+<td align="right">8403</td>
+</tr>
+</tbody>
+</table>
+<p>GiBleed supplies the basics; Synthea27Nj supplies numeric labs. Its numeric values and mapped units come from the pinned source, without fabricated lab extensions. The questionnaire fixture remains separate and is explicitly named in its lessons.</p>
+<p>The <a href="../downloads/load-practice.R">loader</a>, <a href="../downloads/practice.R">two-resource DSLite helper</a> and <a href="../downloads/fixture.R">questionnaire fixture</a> are downloadable from this site. The same SQLite files can be mounted into another Rock server; their resource registration is shown in chapter 0. Dependencies are listed in <code>tools/book/README.md</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="the-local-test-driver">The local test driver<a class="anchor" aria-label="anchor" href="#the-local-test-driver"></a>
 </h2>
-<p>DSLite 1.5 rejects some quoted dsBase call strings containing commas. The practice helper applies the same scoped lexer repair used by the package’s release tests. It changes tokenisation only: ds.table, assignments and all disclosure checks still run for real. It does not apply to Opal. The helper also injects a synthetic test pseudonym root; a deployed server manages its own private root automatically.</p>
+<p>DSLite 1.5 rejects some quoted dsBase call strings containing commas. The practice helper applies the same scoped lexer repair used by the package’s release tests. It changes tokenisation only: ds.table, assignments and all disclosure checks still run for real. It does not apply to Opal. The two intentional refusal chunks in chapter 12 omit DSLite’s extra missing-symbol cleanup warnings; they display the actual policy error, and the verification checks that no refused output exists. The helper also injects a synthetic test pseudonym root; a deployed server manages its own private root automatically.</p>
 </div>
 <div class="section level2">
 <h2 id="migrating-older-recipes">Migrating older recipes<a class="anchor" aria-label="anchor" href="#migrating-older-recipes"></a>
@@ -111,15 +154,16 @@
 <div class="section level2">
 <h2 id="inspect-the-executed-language">Inspect the executed language<a class="anchor" aria-label="anchor" href="#inspect-the-executed-language"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">check</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">check</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span></span>
-<span><span class="co">#&gt; [1] "v2"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">check</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">check</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_migration"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;        people </span></span>
-<span><span class="co">#&gt; "D_migration"</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">check</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "v2"</span></span></code></pre>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">check</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span> <span class="op">==</span> <span class="st">"v2"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">check</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_migration"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;        people </span></span>
+<span><span class="co">#&gt; "D_migration"</span></span></code></pre>
 <p>If an explanation selects v1, it is explaining the legacy execution path. Merely printing a forced v2 conversion would not prove that the actual execution uses it.</p>
 </div>
 <div class="section level2">
@@ -132,9 +176,9 @@
 </h2>
 <p>Check that the migration recipe is native before using it.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">check</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span></span>
-<span><span class="co">#&gt; [1] "v2"</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">check</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">selected</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "v2"</span></span></code></pre>
 </details>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -144,7 +188,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
+  <p>Book by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>.</p>
 </div>
 
 <div class="pkgdown-footer-right">

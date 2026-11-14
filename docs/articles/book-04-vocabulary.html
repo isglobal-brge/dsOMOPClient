@@ -11,7 +11,7 @@
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="4. Vocabulary and concept sets">
+<script src="../extra.js"></script><meta property="og:title" content="4. Vocabulary and concept sets">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -30,24 +30,30 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Start here</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-book" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Book</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-book">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorial-chapters" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorial chapters</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-tutorial-chapters">
 <li><a class="dropdown-item" href="../articles/book-00-start.html">0. Getting started</a></li>
     <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. DataSHIELD and OMOP</a></li>
     <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Connecting</a></li>
     <li><a class="dropdown-item" href="../articles/book-03-explore.html">3. Exploring the CDM</a></li>
     <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Vocabulary</a></li>
     <li><a class="dropdown-item" href="../articles/book-05-recipe.html">5. A first recipe</a></li>
-    <li><a class="dropdown-item" href="../articles/book-06-visits.html">6. Visit dates</a></li>
-    <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">7. Verbal-autopsy capstone</a></li>
-    <li><a class="dropdown-item" href="../articles/book-08-harmonise.html">8. Two-vocabulary check</a></li>
-    <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">9. Reproduction and migration</a></li>
+    <li><a class="dropdown-item" href="../articles/book-06-events.html">6. Events, windows and reducers</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Output formats</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-harmonise.html">10. Concepts as categories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and verbs</a></li>
+    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. Privacy</a></li>
+    <li><a class="dropdown-item" href="../articles/book-06-visits.html">13. Visit walkthrough</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">14. Verbal-autopsy capstone</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">Appendix A. Reproduction and migration</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -67,6 +73,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>4. Vocabulary and concept sets</h1>
+                        <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
       <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/book-04-vocabulary.Rmd" class="external-link"><code>vignettes/book-04-vocabulary.Rmd</code></a></small>
@@ -79,74 +86,98 @@
 <p><strong>What you will learn</strong></p>
 <p>Find meanings, look up names and define a reusable concept set.</p>
 </div>
-<p>This chapter uses the synthetic practice connection from <a href="book-00-start.html">Getting started</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
+<p>This chapter uses the public synthetic GiBleed practice connection from <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.</p>
 <div class="section level2">
 <h2 id="search-a-name">Search a name<a class="anchor" aria-label="anchor" href="#search-a-name"></a>
 </h2>
-<p>A concept ID identifies a meaning. It is not a patient’s ID. Search our synthetic vocabulary for education:</p>
+<p>A concept ID identifies a meaning. It is not a patient’s ID. Search the GiBleed vocabulary for asthma:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Education"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">hits</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"domain_id"</span>, <span class="st">"vocabulary_id"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;           concept_name   domain_id vocabulary_id</span></span>
-<span><span class="co">#&gt; 1   Education question Observation       Fixture</span></span>
-<span><span class="co">#&gt; 2  Secondary education  Meas Value       Fixture</span></span>
-<span><span class="co">#&gt; 3 University education  Meas Value       Fixture</span></span>
-<span><span class="co">#&gt; 4     Education answer  Meas Value       Fixture</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Asthma"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"domain_id"</span>, <span class="st">"vocabulary_id"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">concept_name</th>
+<th align="left">domain_id</th>
+<th align="left">vocabulary_id</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Childhood asthma</td>
+<td align="left">Condition</td>
+<td align="left">SNOMED</td>
+</tr>
+<tr class="even">
+<td align="left">Asthma</td>
+<td align="left">Condition</td>
+<td align="left">SNOMED</td>
+</tr>
+<tr class="odd">
+<td align="left">Asthma screening</td>
+<td align="left">Procedure</td>
+<td align="left">SNOMED</td>
+</tr>
+</tbody>
+</table>
 <p>This is public vocabulary metadata. We show names in tables throughout the book; numeric IDs occur only in code where they specify what to select.</p>
 </div>
 <div class="section level2">
-<h2 id="look-up-known-answer-concepts">Look up known answer concepts<a class="anchor" aria-label="anchor" href="#look-up-known-answer-concepts"></a>
+<h2 id="look-up-known-diagnosis-concepts">Look up known diagnosis concepts<a class="anchor" aria-label="anchor" href="#look-up-known-diagnosis-concepts"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">answers</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">900101L</span>, <span class="fl">900102L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">answers</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"domain_id"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;           concept_name  domain_id</span></span>
-<span><span class="co">#&gt; 1  Secondary education Meas Value</span></span>
-<span><span class="co">#&gt; 2 University education Meas Value</span></span></code></pre></div>
-<p>These are the possible answer meanings in our exercise. Looking them up does not tell you how many people gave either answer.</p>
+<code class="sourceCode R"><span><span class="va">answers</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">317009L</span>, <span class="fl">80502L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">answers</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"domain_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;   concept_name domain_id</span></span>
+<span><span class="co">#&gt; 1       Asthma Condition</span></span>
+<span><span class="co">#&gt; 2 Osteoporosis Condition</span></span></code></pre>
+<p>These are diagnosis meanings. Looking them up does not tell you how many people had either diagnosis.</p>
 </div>
 <div class="section level2">
 <h2 id="include-descendants-deliberately">Include descendants deliberately<a class="anchor" aria-label="anchor" href="#include-descendants-deliberately"></a>
 </h2>
-<p>A <em>descendant</em> is a more specific meaning below a parent in a vocabulary hierarchy. Our fixture has a small teaching hierarchy with an education-answer parent.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">desc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="fl">900100L</span>, include_self <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">desc</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="st">"concept_name"</span><span class="op">]</span></span>
-<span><span class="co">#&gt;           concept_name</span></span>
-<span><span class="co">#&gt; 1  Secondary education</span></span>
-<span><span class="co">#&gt; 2 University education</span></span></code></pre></div>
+<p>A <em>descendant</em> is a more specific meaning below a parent in a vocabulary hierarchy. The asthma hierarchy can include more specific diagnosis concepts.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">desc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="fl">317009L</span>, include_self <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">desc</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="st">"concept_name"</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">concept_name</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">Childhood asthma</td>
+</tr></tbody>
+</table>
 <p>Descendants come from <code>concept_ancestor</code>. Check their clinical meaning before including them; a search result is not automatically a study definition.</p>
 </div>
 <div class="section level2">
 <h2 id="store-a-set">Store a set<a class="anchor" aria-label="anchor" href="#store-a-set"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">education_answers</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">900101L</span>, <span class="fl">900102L</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">education_answers</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "omop_concept_set" "list"</span></span></code></pre></div>
-<p>A <em>concept set</em> is a reusable selection of concepts. For the next chapter we need the <strong>question</strong> set instead. The answer set describes values; it must not replace the question filter in <code>observation_concept_id</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">education_question</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="fl">900001L</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">education_question</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "omop_concept_set" "list"</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">diagnoses</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">317009L</span>, <span class="fl">80502L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">diagnoses</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "omop_concept_set" "list"</span></span></code></pre>
+<p>A <em>concept set</em> is a reusable selection of concepts. For a focused asthma definition, keep a separate named set:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">asthma</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="fl">317009L</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">asthma</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "omop_concept_set" "list"</span></span></code></pre>
 <p>Both objects are local definitions. Creating one has not selected any patient rows.</p>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>Use IDs to define selections and names to understand them. Question concepts and answer concepts play different roles.</p>
+<p>Use IDs to define selections and names to understand them. Chapter 5 switches to a small synthetic questionnaire fixture, where question and answer concepts have different roles.</p>
 </div>
 <div class="section level2">
 <h2 id="try-it">Try it<a class="anchor" aria-label="anchor" href="#try-it"></a>
 </h2>
-<p>Look up the two cause-of-death concepts in the fixture and show only their names.</p>
+<p>Look up inpatient and outpatient visit concepts and show only their names.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">causes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">900201L</span>, <span class="fl">900202L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">causes</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="st">"concept_name"</span><span class="op">]</span></span>
-<span><span class="co">#&gt;            concept_name</span></span>
-<span><span class="co">#&gt; 1 Myocardial infarction</span></span>
-<span><span class="co">#&gt; 2             Pneumonia</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">settings</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">9201L</span>, <span class="fl">9202L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">settings</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="st">"concept_name"</span><span class="op">]</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;       concept_name</span></span>
+<span><span class="co">#&gt; 1  Inpatient Visit</span></span>
+<span><span class="co">#&gt; 2 Outpatient Visit</span></span></code></pre>
 </details>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -156,7 +187,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
+  <p>Book by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>.</p>
 </div>
 
 <div class="pkgdown-footer-right">

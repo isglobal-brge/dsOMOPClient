@@ -1,23 +1,226 @@
-# 8\. Appendix: two vocabularies, one category set
+# 10\. Concepts as categories
 
 **What you will learn**
 
-Check that different site vocabulary names become identical published
-categories.
+Use translated concept answers, distinguish recodes from column renames,
+and harmonise two different site vocabularies.
 
-This chapter uses the synthetic practice connection from [Getting
+This chapter uses the 24-person synthetic questionnaire test fixture
+described in [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+**You need:** the packages and the matching practice connection
+described in [Before you
+start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below
 were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
 data, not clinical findings.
 
-## A small exception to our single-server lessons
+## Translation follows the value type
 
-The main book uses one server. This short requested check uses two
-DSLite connections. Both synthetic databases hold the same answer IDs.
-The second vocabulary calls University education “University
-qualification” and declares a newer vocabulary version. No patient
-records are downloaded.
+A concept-valued answer is a category, not a quantity to average. In
+language 2, the declared value column supplies that type. Your variable
+name does not need the suffix `_concept_id`.
+
+``` r
+education <- omop_variable(
+  event = omop_event("observation", concepts = 900001L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"))
+class(education)
+```
+
+    #> [1] "omop_variable" "list"
+
+The event selects the education question; the reducer reads its last
+coded answer. Selecting the question concept as the value would answer a
+different question.
+
+``` r
+categories <- omop_recipe(variables = list(education = education),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(categories, conns = conns)$selected == "v2")
+print(recipe_execute(categories, out = c(people = "D_categories"), conns = conns))
+```
+
+    #>         people 
+    #> "D_categories"
+
+Translation is the default. The data values become labelled factors on
+the server.
+
+``` r
+ds.omop.table("D_categories", "education", conns = conns)
+```
+
+    #> D_categories$education
+    #>  Secondary education University education 
+    #>                    6                    6
+
+You see category names and released counts. The concept IDs used in the
+definition are vocabulary identifiers; they do not appear as numeric
+answers in this table.
+
+## Recode answers to yes and no
+
+An explicit label map changes categories by concept identity. It does
+not search for text in each site’s database.
+
+``` r
+fever <- omop_variable(
+  event = omop_event("observation", concepts = 900002L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"),
+  labels = c("900301" = "yes", "900302" = "no"))
+class(fever)
+```
+
+    #> [1] "omop_variable" "list"
+
+Only the declared answer concepts receive those labels. A missing answer
+stays missing; absence of a record is not a clinical “no”.
+
+``` r
+answers <- omop_recipe(variables = list(fever = fever),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(answers, conns = conns)$selected == "v2")
+print(recipe_execute(answers, out = c(people = "D_category_answers"), conns = conns))
+```
+
+    #>               people 
+    #> "D_category_answers"
+
+``` r
+dsBaseClient::ds.table("D_category_answers$fever", useNA = "no", datasources = conns)
+```
+
+    #> $output.list
+    #> $output.list$TABLE_rvar.by.study_row.props
+    #>                         study
+    #> D_category_answers$fever site
+    #>                      yes    1
+    #>                      no     1
+    #> 
+    #> $output.list$TABLE_rvar.by.study_col.props
+    #>                         study
+    #> D_category_answers$fever site
+    #>                      yes  0.5
+    #>                      no   0.5
+    #> 
+    #> $output.list$TABLE_rvar.by.study_counts
+    #>                         study
+    #> D_category_answers$fever site
+    #>                      yes    6
+    #>                      no     6
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_proportions
+    #> D_category_answers$fever
+    #> yes  no 
+    #> 0.5 0.5 
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_counts
+    #> D_category_answers$fever
+    #> yes  no 
+    #>   6   6 
+    #> 
+    #> 
+    #> $validity.message
+    #> [1] "Data in all studies were valid"
+
+This real ds.table call excludes missing answers and shows the supplied
+labels. `ds.omop.table()` additionally retains the complete published
+category contract, including declared zero levels, and handles
+punctuation in labels.
+
+## Rename the column separately
+
+A column name identifies the variable; a label names one of its
+categories. Name an explicit variable in the recipe list, without
+changing what its answers mean.
+
+``` r
+renamed <- omop_recipe(variables = list(schooling = education),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(renamed, conns = conns)$selected == "v2")
+print(recipe_execute(renamed, out = c(people = "D_renamed_categories"), conns = conns))
+```
+
+    #>                 people 
+    #> "D_renamed_categories"
+
+``` r
+dsBaseClient::ds.colnames("D_renamed_categories", datasources = conns)
+```
+
+    #> $site
+    #> [1] "person_id" "schooling"
+
+The list name supplies the scalar variable name. A concept label map
+would instead change values inside that column. The visit walkthrough
+uses a value-preserving mutate alias when adding a new name to an
+already assigned date column.
+
+``` r
+ds.omop.table("D_renamed_categories", "schooling", conns = conns)
+```
+
+    #> D_renamed_categories$schooling
+    #>  Secondary education University education 
+    #>                    6                    6
+
+The education categories and counts are unchanged. Next we address
+differences between sites, where even the vocabulary names can vary.
+
+## Rename automatically generated concept columns
+
+Some layouts expand one event into separate columns for each concept. A
+panel of inpatient/outpatient counts is one example. `column_names`
+targets their stable generated keys, not the explicit scalar variable
+from the previous step.
+
+``` r
+visit_event <- omop_event("visit_occurrence", c(9201L, 9202L), name = "visits")
+visit_population <- omop_population("visitors", index = omop_index(visit_event))
+renamed_panel <- omop_recipe(events = list(visit_event),
+  populations = list(visit_population),
+  column_names = c(visits_9201_count = "admissions", visits_9202_count = "outpatient"),
+  outputs = omop_output("panel", rows = "visitors", format = "person_period",
+    options = list(sources = list(visit_event), bins = list(width = 30L),
+      window = omop_window(0, 29), analyses = "count")))
+recipe_explain(renamed_panel)$selected
+```
+
+    #> [1] "v2"
+
+The keys combine the source name, concept identity and analysis. They
+remain stable when a vocabulary changes its wording; your chosen column
+names remain readable. An explicit name cannot collide with a protected
+or another final column.
+
+``` r
+stopifnot(recipe_explain(renamed_panel, conns = conns)$selected == "v2")
+print(recipe_execute(renamed_panel, out = c(panel = "D_renamed_panel"), conns = conns))
+```
+
+    #>             panel 
+    #> "D_renamed_panel"
+
+``` r
+dsBaseClient::ds.colnames("D_renamed_panel", datasources = conns)
+```
+
+    #> $site
+    #> [1] "row_id"            "cohort_row_id"     "person_id"         "period_start_days"
+    #> [5] "period_end_days"   "days"              "admissions"        "outpatient"
+
+The resulting count columns have your declared names. Using
+`column_names` with an explicit scalar name such as `education` would
+not rename that scalar column.
+
+## Open two practice connections
+
+The other lessons use one server. This check uses two DSLite
+connections. Both synthetic databases hold the same answer IDs. The
+second vocabulary calls University education “University qualification”
+and declares a newer vocabulary version. No patient records are
+downloaded.
 
 ``` r
 ds.omop.disconnect(conns = conns)
@@ -25,8 +228,9 @@ DSI::datashield.logout(conns)
 pair <- book_fixture(two_sites = TRUE)
 two_conns <- pair$conns
 names(two_conns)
-#> [1] "site"  "site2"
 ```
+
+    #> [1] "site"  "site2"
 
 Each name represents a separate DataSHIELD session with its own private
 table.
@@ -36,14 +240,15 @@ table.
 ``` r
 lookup <- ds.omop.concept.lookup(900102L, conns = two_conns)
 lapply(lookup$per_site, function(x) x["concept_name"])
-#> $site
-#>           concept_name
-#> 1 University education
-#> 
-#> $site2
-#>               concept_name
-#> 1 University qualification
 ```
+
+    #> $site
+    #>           concept_name
+    #> 1 University education
+    #> 
+    #> $site2
+    #>               concept_name
+    #> 1 University qualification
 
 This is permitted vocabulary metadata, not observed answer frequencies.
 
@@ -57,9 +262,10 @@ harmonised <- omop_recipe(variables = list(education = omop_variable(
   outputs = omop_output("people", format = "wide", grain = "person"))
 stopifnot(recipe_explain(harmonised, conns = two_conns)$selected == "v2")
 print(recipe_execute(harmonised, out = c(people = "D_shared"), conns = two_conns))
-#>     people 
-#> "D_shared"
 ```
+
+    #>     people 
+    #> "D_shared"
 
 A common explicit label resolves the known wording difference.
 Harmonisation is based on concept identity and the published label
@@ -73,31 +279,34 @@ site_tables <- lapply(names(two_conns), function(site)
   ds.omop.table("D_shared", "education", conns = two_conns[site]))
 names(site_tables) <- names(two_conns)
 site_tables
-#> $site
-#> D_shared$education
-#>  Secondary education University education 
-#>                    6                    6 
-#> 
-#> $site2
-#> D_shared$education
-#>  Secondary education University education 
-#>                    6                    6
 ```
+
+    #> $site
+    #> D_shared$education
+    #>  Secondary education University education 
+    #>                    6                    6 
+    #> 
+    #> $site2
+    #> D_shared$education
+    #>  Secondary education University education 
+    #>                    6                    6
 
 ``` r
 identical(dimnames(site_tables[[1]]), dimnames(site_tables[[2]]))
-#> [1] TRUE
 ```
+
+    #> [1] TRUE
 
 Both real executions returned the same category set. Now combine their
 counts:
 
 ``` r
 ds.omop.table("D_shared", "education", conns = two_conns)
-#> D_shared$education
-#>  Secondary education University education 
-#>                   12                   12
 ```
+
+    #> D_shared$education
+    #>  Secondary education University education 
+    #>                   12                   12
 
 The pooled counts add released cells. They do not link people across
 sites. In a real network, confirm the concept meanings as well as their
@@ -105,8 +314,9 @@ labels.
 
 ## Recap
 
-Explicit concept labels can give the same categories despite vocabulary
-wording differences.
+Concept values translate by default. Label maps recode answers; column
+maps rename variables. Shared labels give common categories across
+vocabulary wording differences, after you confirm concept meanings.
 
 ## Try it
 
@@ -117,7 +327,11 @@ Solution
 
 ``` r
 recipe_explain(harmonised, conns = two_conns)$selected
-#> [1] "v2"
+```
+
+    #> [1] "v2"
+
+``` r
 ds.omop.disconnect(conns = two_conns)
 DSI::datashield.logout(two_conns)
 unlink(pair$path)
