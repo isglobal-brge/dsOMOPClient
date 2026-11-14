@@ -1,5 +1,12 @@
 # dsOMOPClient 2.10.5 (2026-11-14)
 
+- Corrected: mixed named and unnamed variable declarations pass through category
+  bundle expansion until normal recipe naming resolves them; genuine expanded
+  name collisions still refuse. Existing declaration syntax remains valid.
+- Corrected: Circe export preflight preserves precise refusals for half-open
+  numeric ranges and authenticated safe-bin contracts. Keep these filters in
+  native recipes; neither can be represented faithfully by the Circe bridge.
+
 - Corrected (STG-R1-01): staging cleanup validates every committed descriptor
   before classifying expired or consumed output. Parseable malformed manifests
   preserve the entire directory and its ownership tracking. Re-run affected

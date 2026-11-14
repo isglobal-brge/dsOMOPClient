@@ -31,7 +31,8 @@ omop_category_indicators <- function(variable,keys,missing="propagate") {
     if(is.null(name)||is.na(name)||!nzchar(name)) .categoryReject("Category bundles require an explicit outer name.")
     for(k in names(x))out<-c(out,setNames(list(x[[k]]),paste(name,k,sep="_")))
   }
-  if(anyDuplicated(names(out))) .categoryReject("Expanded category names collide.")
+  nms <- names(out)
+  if(anyDuplicated(nms[nzchar(nms)])) .categoryReject("Expanded category names collide.")
   out
 }
 .categoryWireDerived <- function(ctx,d,context) {

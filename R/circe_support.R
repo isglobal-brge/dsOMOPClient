@@ -132,8 +132,17 @@ recipe_circe_check <- function(x, direction = "import") {
       for (j in seq_along(pop$filters)) {
         part <- pop
         part$filters <- pop$filters[j]
+        remedy <- "Use supported occurrence/demographic filters; visit_count is outside the executable subset."
+        filter <- pop$filters[[j]]
+        if (identical(filter$type, "has_measurement")) {
+          if (!is.null(filter$params$safe_scope)) {
+            remedy <- "Circe export cannot preserve an authenticated safe-bin contract; retain the native recipe."
+          } else if (!is.null(filter$params$min_value) && !is.null(filter$params$max_value)) {
+            remedy <- "Circe export cannot represent a half-open numeric range; retain the native recipe."
+          }
+        }
         probe(.circe_from_population(part, list()), paste0(path, ".filters[", j, "]"),
-          "Filter", "Use supported occurrence/demographic filters; visit_count is outside the executable subset; half-open measurement ranges cannot be exported.")
+          "Filter", remedy)
       }
     }
     return(.circe_check_result(issues))

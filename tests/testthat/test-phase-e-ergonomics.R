@@ -727,10 +727,12 @@ test_that("the YAML path errors cleanly when the 'yaml' package is missing", {
   p <- ds.omop.plan.baseline(p, name = "baseline")
   f <- withr::local_tempfile(fileext = ".yaml")
 
+  # Retain the original function before replacing its namespace binding.
+  require_namespace <- base::requireNamespace
   # Force the guard to believe 'yaml' is unavailable.
   testthat::local_mocked_bindings(
     requireNamespace = function(package, ...) {
-      if (identical(package, "yaml")) FALSE else base::requireNamespace(package, ...)
+      if (identical(package, "yaml")) FALSE else require_namespace(package, ...)
     },
     .package = "base"
   )
