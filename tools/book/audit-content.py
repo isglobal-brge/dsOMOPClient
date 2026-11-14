@@ -5,7 +5,7 @@ from urllib.parse import unquote, urlsplit
 import json, re
 root = Path(__file__).resolve().parents[2]
 chapters = sorted((root / 'vignettes').glob('book-*.Rmd'))
-assert len(chapters) == 18
+assert len(chapters) == 19
 counts = {}
 for p in chapters:
     text = p.read_text()
@@ -59,5 +59,5 @@ report={'chapters':len(chapters),
                                      for p in (root/'vignettes').glob('book-*.Rmd.orig')),
         'rendered_r_code_blocks':sum(counts.values()),'code_blocks_by_chapter':counts,
         'missing_local_links':missing,'uncomputed_chunks':0,'untranslated_fixture_id_outputs':0}
-(root/'tools/book/evidence/book3-fix1/content-audit.json').write_text(json.dumps(report,indent=2)+'\n')
+(root/'tools/book/evidence/book3-fix2/content-audit.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))

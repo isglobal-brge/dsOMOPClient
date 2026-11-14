@@ -1,0 +1,13 @@
+PRECOMPUTE vignettes/book-00-showcase.Rmd.orig
+
+Quitting from vignettes/book-00-showcase.Rmd.orig:80-88 [showcase-dates]
+ℹ Errors can now be automatically printed, rather than requiring a call to
+  datashield.errors().
+ℹ To enable this behavior, run [1m[33moptions(datashield.errors.print = TRUE)[39m[22m
+
+NULL
+This message is displayed once per session.
+Error: date_spec_invalid: Irrelevant date_spec field: pattern
+Execution halted
+Error: Fresh-process chapter failed: vignettes/book-00-showcase.Rmd.orig
+Execution halted

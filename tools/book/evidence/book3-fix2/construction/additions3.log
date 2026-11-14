@@ -1,0 +1,11 @@
+PRECOMPUTE vignettes/book-00-showcase.Rmd.orig
+SHOWCASE PASS: two harmonised sites, ages/dates, 12 shapes, VA, numeric counts, converted/filter summaries and solution
+ASSERTIONS PASS book-00-showcase.Rmd.orig
+All chapter chunks executed successfully
+PRECOMPUTE vignettes/book-11-parameters.Rmd.orig
+Error in verify_standalone_showcase(input, env, get_data) : 
+  grepl("protected", env$key_message) is not TRUE
+Calls: render ... verify_chapter -> verify_standalone_showcase -> stopifnot
+Execution halted
+Error: Fresh-process chapter failed: vignettes/book-11-parameters.Rmd.orig
+Execution halted

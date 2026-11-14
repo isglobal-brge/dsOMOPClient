@@ -6,6 +6,7 @@ source("tools/book/verify-book2.R")
 source("tools/book/verify.R")
 source("tools/book/verify-book3.R")
 source("tools/book/verify-longitudinal.R")
+source("tools/book/verify-standalone-showcase.R")
 options(width=88)
 knitr::opts_knit$set(root.dir = normalizePath("."))
 inputs <- sort(list.files("vignettes", "\\.Rmd\\.orig$", full.names=TRUE))
@@ -36,6 +37,18 @@ if (!"--chapter-worker" %in% args) {
         if (exists("pair", inherits=FALSE)) unlink(pair$path)
       })
       knitr::opts_chunk$set(error=FALSE, warning=TRUE, message=FALSE, comment="#>", collapse=FALSE)
+      chapter_env <- environment()
+      knitr::opts_hooks$set(label = function(options) {
+        if (grepl("book-11-parameters", input) && options$label == "unknown-function")
+          chapter_env$rollback_snapshot <- DSLite::getDSLiteData(chapter_env$conns, "D_bmi")$site
+        if (grepl("book-00-showcase", input) && options$label == "showcase-numeric-connection") {
+          symbols <- DSI::datashield.symbols(chapter_env$conns)$site
+          symbols <- symbols[grepl("^D_tour_", symbols)]
+          chapter_env$showcase_snapshot <- setNames(lapply(symbols, function(symbol)
+            DSLite::getDSLiteData(chapter_env$conns, symbol)$site), symbols)
+        }
+        options
+      })
       tryCatch(knitr::knit(input, output=sub("\\.orig$", "", input), envir=environment(), quiet=TRUE), error=function(e) { print(DSI::datashield.errors()); stop(e) })
       verify_chapter(input, environment())
     }

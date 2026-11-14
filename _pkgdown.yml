@@ -29,6 +29,8 @@ navbar:
     book:
       text: Tutorial chapters
       menu:
+        - text: What you can do with dsOMOP
+          href: articles/book-00-showcase.html
         - text: 0. Getting started
           href: articles/book-00-start.html
         - text: 1. DataSHIELD and OMOP
@@ -69,6 +71,7 @@ articles:
   - title: Learn step by step
     navbar: ~
     contents:
+      - book-00-showcase
       - book-00-start
       - book-01-mental-model
       - book-02-connect

@@ -145,9 +145,7 @@ verify_book2 <- function(input, env, get_data) {
   if (grepl("book-11-parameters", input)) {
     stopifnot(nrow(get_data("D_param_outpatient"))==28L,
       nrow(get_data("D_param_inpatient"))==7L,
-      all(get_data("D_shortcuts")$ever==1),
-      all(get_data("D_derived")$twice==2L*get_data("D_shortcuts")$count),
-      nrow(get_data("D_high"))==13L, all(get_data("D_high")$value>=14))
+      all(get_data("D_shortcuts")$ever==1))
   }
   if (grepl("book-12-privacy", input)) {
     stopifnot(grepl("insufficient_support|disclosure|subset|threshold",env$small_message,ignore.case=TRUE),

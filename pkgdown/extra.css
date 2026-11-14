@@ -71,3 +71,10 @@ main .table { display: block; max-width: 100%; overflow-x: auto; }
 }
 
 .book-page td.book-number { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* The capability tour uses the same reading width and palette as lessons. */
+.capability-card { border: 1px solid #c6d9e3; border-top: 4px solid var(--book-accent);
+  border-radius: 10px; padding: 1.3rem; margin: 2rem 0; background: #fff;
+  box-shadow: 0 4px 18px #00314208; min-width: 0; }
+.capability-card h2 { margin-top: .25rem; }
+@media (max-width: 767px) { .capability-card { padding: .8rem; } }

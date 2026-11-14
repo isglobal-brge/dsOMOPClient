@@ -1,5 +1,5 @@
 # The site consumes committed, precomputed Markdown; no connection is opened.
-stopifnot(length(list.files("vignettes", "^book-.*\\.Rmd$")) == 18L)
+stopifnot(length(list.files("vignettes", "^book-.*\\.Rmd$")) == 19L)
 for (path in list.files("vignettes", "^book-.*\\.Rmd$", full.names=TRUE)) {
   stopifnot(!any(grepl("^```\\{r", readLines(path))))
 }

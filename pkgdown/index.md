@@ -5,6 +5,8 @@ This book teaches the released **2.10.4 native recipe API**, one small step at a
 Every worked lesson includes executed code, real synthetic results and an exercise
 with its solution.
 
+[Explore what you can do with dsOMOP →](articles/book-00-showcase.html)
+
 [Start with chapter 0 →](articles/book-00-start.html)
 
 ## Your path through the book

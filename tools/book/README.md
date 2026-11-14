@@ -134,3 +134,11 @@ compares every scalar in all 39 adapted tables with the checksum-pinned CSVs.
 Book 3 evidence is in `tools/book/evidence/book3/`. Run only
 `test-book-examples.R` for the package-level targeted check; the full package
 suites remain the integration/release job's responsibility.
+
+Book 3 review round 2 adds the six-card capability showcase and expands chapter 11
+into a worked mutate-v1/filter lesson. There are now 19 articles. The precompute
+runner snapshots only public synthetic test objects before intentional refusal
+and connection-switch chunks; `verify-standalone-showcase.R` checks exact rollback,
+BMI from same-day kg/cm source readings, age/date/recoding solutions, 12 output
+shapes and all showcase numeric releases. The snapshots never appear in the book
+or downloadable reader runtime. Final audits/evidence use `evidence/book3-fix2/`.
