@@ -96,7 +96,7 @@ test_that("N45 expression literals, thresholds and interchange bind deterministi
 
 test_that("N74 generated original-column selection reaches declared server schema binding", {
   e<-omop_event("measurement",3000963L,name="lab")
-  r<-omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),outputs=omop_output("panel",format="person_period",rows="p",columns=c("days","copy"),sources=list(e),number_columns=list(copy=omop_number_column("days")),options=list(bins=list(width=10L),window=list(start=0L,end=20L,anchor="index"))))
+  r<-omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),outputs=omop_output("panel",format="person_period",rows="p",columns=c("days","copy"),sources=list(e),number_columns=list(copy=omop_number_column("days")),options=list(bins=list(width=10L),window=omop_window(0L,20L,anchor="index"))))
   expect_equal(unlist(recipe_to_plan(r,version=2)$outputs$panel$columns),c("days","copy"))
 })
 
