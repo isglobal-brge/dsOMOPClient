@@ -80,7 +80,7 @@ recipe_study_bundle <- function(x,study,file=NULL) {
   plan<-if(prospective)recipe_to_plan(x,version=2) else receipt$plan
   .v2_assert_schema(plan)
   study<-.bundleStudy(study,plan)
-  books<-recipe_codebook(x)
+  books<-.bundleCodebooks(x,plan)
   library<-if(prospective)lapply(x$meta$recipe_library,function(e)e[intersect(names(e),c("id","template_version","origin_template_version","definition_checksum","documentation_revision","package_version","derivative_policy"))]) else receipt$study_provenance$library %||% list(status="unresolved")
   out<-list(schema_version="study-bundle-1",study=study,
     bound_recipe=list(format="plan-v2",plan=.pnv2Plain(plan)),semantic_digest=.planNormalizedDigest(plan)$sha256,
@@ -102,3 +102,25 @@ recipe_study_bundle <- function(x,study,file=NULL) {
 .bundleRecipeProvenance <- function(recipe)list(
   library=lapply(recipe$meta$recipe_library,function(e)e[intersect(names(e),c("id","template_version","origin_template_version","definition_checksum","documentation_revision","package_version","derivative_policy"))]),
   phenotype_origins=.bundleOrigins(recipe))
+
+# Reconstruct declaration-bearing fields from the bound public plan. A receipt
+# can supply admitted types/levels, never arbitrary nested handle metadata.
+.bundleCodebooks <- function(x,plan) {
+  books<-recipe_codebook(x)
+  declarations<-.codebookPlanSchemas(plan)
+  for(key in names(books)) {
+    columns<-books[[key]]$columns
+    declared<-declarations[[key]]$schema$columns
+    keys<-vapply(declared,function(r)r$stable_key,"")
+    for(i in seq_len(nrow(columns))) {
+      at<-match(columns$stable_key[i],keys)
+      row<-if(is.na(at))list() else declared[[at]]
+      columns$provenance[[i]]<-row$provenance %||% list(source="unresolved")
+      columns$derivation[[i]]<-row$derivation %||% list(status="unresolved")
+      levels<-columns$levels[[i]]
+      if(is.list(levels))columns$levels[[i]]<-levels[intersect(names(levels),c("keys","labels","completeness"))]
+    }
+    books[[key]]$columns<-columns
+  }
+  books
+}

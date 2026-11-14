@@ -32,3 +32,17 @@ test_that("Q07 native interoperability scopes identities to public semantic defi
   expect_false(identical(.ohdsiDeclaration(p,key="covariate_id")$identity,
     .ohdsiDeclaration(other,key="covariate_id")$identity))
 })
+test_that("Q26 partial publication does not copy private receipt inventories", {
+  r<-omop_recipe(variables=list(age=omop_age_at("2020-01-01")))
+  p<-recipe_to_plan(r,version=2);schemas<-.codebookPlanSchemas(p)
+  schemas[[1]]$schema$columns[[1]]$provenance$patient_rows<-"PRIVATE_SENTINEL"
+  schemas[[1]]$private_components<-"PRIVATE_SENTINEL"
+  x<-structure(list(),omop_codebook=list(plan=p,components=schemas,
+    private_components="PRIVATE_SENTINEL",credentials="SECRET_SENTINEL",
+    publication_sites=list(siteA=list(status="ok",components=names(schemas)),siteB=list(status="refused",components=list()))))
+  b<-recipe_study_bundle(x,list(id="partial",protocol_version="1",roles=list(target=list(population="base"))))
+  expect_identical(b$publication$status,"published")
+  expect_identical(b$publication$sites$siteB$status,"refused")
+  expect_false(grepl("PRIVATE_SENTINEL|SECRET_SENTINEL",.numberJson(b)))
+  expect_identical(b$publication$components,as.list(names(schemas)))
+})

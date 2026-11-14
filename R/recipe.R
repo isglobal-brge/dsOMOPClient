@@ -5561,7 +5561,7 @@ recipe_set_options <- function(recipe,
 .codegen_value <- function(x) {
   if (is.null(x)) return("NULL")
   if (inherits(x, "codegen_raw")) return(as.character(x))
-  paste(deparse(x, width.cutoff = 500L), collapse = " ")
+  paste(deparse(x, width.cutoff = 500L, control = c("keepNA", "keepInteger", "niceNames", "showAttributes", "digits17")), collapse = " ")
 }
 
 #' Mark a string as already-generated R code
