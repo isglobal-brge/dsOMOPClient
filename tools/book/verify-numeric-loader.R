@@ -23,8 +23,11 @@ local({
     # Check every scalar, with numeric comparison only for typed numeric fields.
     for (col in names(source)) {
       expected <- source[[col]]
+      if (grepl("_date$",col)) expected <- as.character(as.Date(expected))
+      if (grepl("_datetime$",col)) expected <- as.character(as.POSIXct(expected,tz="UTC"))
       if (is.numeric(actual[[col]])) expected <- as.numeric(expected)
-      stopifnot(isTRUE(all.equal(actual[[col]],expected,check.attributes=FALSE)))
+      comparison <- all.equal(actual[[col]],expected,check.attributes=FALSE)
+      if (!isTRUE(comparison)) stop(table,".",col,": ",paste(comparison,collapse="; "))
     }
   }
   m <- DBI::dbReadTable(db,"measurement")

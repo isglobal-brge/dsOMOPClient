@@ -18,8 +18,7 @@ if (!"--chapter-worker" %in% args) {
     if (status != 0L) stop("Fresh-process chapter failed: ", input)
   }
   message("All chapters passed in separate R processes using visible setup")
-  quit(save="no", status=0L)
-}
+} else {
 for (input in inputs) {
   message("PRECOMPUTE ", input)
   render <- function() {
@@ -43,3 +42,4 @@ for (input in inputs) {
 }
 message("All chapter chunks executed successfully")
 writeLines(capture.output(sessionInfo()),"tools/book/evidence/session-info.txt")
+}

@@ -81,5 +81,9 @@ verify_book3 <- function(input, env, get_data) {
   reference <- glm(last ~ first,data=oracle,family=gaussian())
   stopifnot(isTRUE(all.equal(unname(env$pooled_model$coefficients[,1]),
     unname(coef(reference)),tolerance=1e-6)))
+  same(env$pooled_model$coefficients[,2], summary(reference)$coefficients[,2], tolerance=1e-6)
+  same(env$pooled_model$dev, deviance(reference), tolerance=1e-6)
+  stopifnot(env$pooled_model$iter < 30, env$pooled_model$Nvalid==28L,
+    all(env$pooled_model$disclosure.risk==0), all(env$pooled_model$errorMessage=="No errors"))
   message("BOOK3 PASS: source oracles, released summaries/counts, disjoint 14+14 sites, weighted quantiles and Gaussian coefficients")
 }

@@ -11,7 +11,15 @@ for p in chapters:
     text = p.read_text()
     assert '```{r' not in text, f'Uncomputed chunk: {p}'
     assert '#> NULL' not in text, f'Empty result displayed: {p}'
-    assert not re.search(r'#> (Error|Warning)', text), f'Unexpected diagnostic: {p}'
+    diagnostics = text
+    # dsBase 6.3.5 intentionally uses one local GLM iteration. Keep its
+    # explained warnings visible, allowing only this exact message here.
+    if p.name == 'book-15-labs.Rmd':
+        for block in re.findall(r'<!-- expected-glm-warning:start -->(.*?)<!-- expected-glm-warning:end -->', text, re.S):
+            cleaned = block.replace('#> Warning: glm.fit: algorithm did not converge', '')
+            assert not re.search(r'#> (Error|Warning)', cleaned), f'Unexpected GLM diagnostic: {p}'
+            diagnostics = diagnostics.replace(block, cleaned)
+    assert not re.search(r'#> (Error|Warning)', diagnostics), f'Unexpected diagnostic: {p}'
     # Refusals return ordinary lists, not necessarily R errors. Only a named,
     # visibly marked refusal lesson may contain a failed aggregate response.
     unmarked = re.sub(r'<!-- expected-refusal:start -->.*?<!-- expected-refusal:end -->',
