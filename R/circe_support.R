@@ -37,7 +37,12 @@ recipe_circe_support <- function() {
     "ERA with EraPad zero, and First/Last selection only.",
     "Native populations have no implemented export adapter.")
   status <- ifelse(constructs %in% conditional, "conditional", "unsupported")
-  data.frame(construct = constructs, import = status, legacy_export = status,
+  legacy <- status
+  legacy[constructs == "Groups"] <- "conditional"
+  conditions[constructs == "Groups"] <- "No nested import; legacy export permits one top-level OR group of supported occurrence criteria."
+  conditions[constructs == "ConditionOccurrence"] <- paste0(conditions[constructs == "ConditionOccurrence"],
+    " An absent ConditionType with ConditionTypeExclude=false is an explicit no-op; pinned PhenotypeLibrary 304 (manifest.json).")
+  data.frame(construct = constructs, import = status, legacy_export = legacy,
     native_export = "unsupported", conditions = conditions,
     reason_code = ifelse(status == "conditional", "conditional_circe_subset", "unsupported_circe_construct"),
     remedy = "Use the declared bridge subset or retain the complete definition for an implemented adapter.",

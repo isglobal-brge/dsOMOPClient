@@ -1,5 +1,19 @@
 # dsOMOP / dsOMOPClient 2.10.5 (development)
 
+* **Newly permitted:** `recipe_circe_support()` describes the directional
+  bridge subset, and `recipe_circe_check()` inspects definitions locally and
+  reports independent unsupported clauses with bounded structural diagnostics.
+  Import/export use the checker. Native populations without an export adapter
+  receive `unsupported_native_export`; retain their native recipe.
+* **Corrected:** Circe imports retain original JSON bytes (canonical JSON for
+  list inputs), hashes, adapter/subset versions and optional sanitized public
+  origin declarations. Save/load retains the origin and marks edited population
+  declarations as derivatives. This provenance is client-side, not a claim of
+  general phenotype equivalence or of vocabulary-policy enforcement.
+  The pinned PhenotypeLibrary 304 example has a private membership/date oracle
+  against its upstream SQL; unsupported example 10 reports structural refusals.
+  Re-import an old definition to obtain the new provenance fields.
+
 * **Newly refused:** incidence `clean_window` values other than zero and
   `fe.prevalence` `time_windows` values other than zero now fail with a bounded
   setting-specific remedy before patient computation on ordinary, protected

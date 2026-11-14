@@ -95,3 +95,31 @@ test_that("Circe provenance preserves supplied bytes, sanitized origin and deriv
   expect_false(identical(edited$recipe_digest, p$recipe_digest))
   expect_error(recipe_import_circe(x, origin = list(password = "secret")), "invalid_origin")
 })
+
+test_that("pinned supported and unsupported PhenotypeLibrary definitions are inspected intact", {
+  fixture <- test_path("..", "fixtures", "phenotype-library")
+  manifest <- jsonlite::fromJSON(file.path(fixture, "manifest.json"), simplifyVector = FALSE)
+  for (pin in manifest$fixtures) {
+    path <- file.path(fixture, paste0(pin$id, ".json"))
+    bytes <- rawToChar(readBin(path, "raw", n = file.info(path)$size))
+    expect_identical(.circe_hash(bytes), pin$sha256)
+    check <- recipe_circe_check(path)
+    if (pin$id == "304") {
+      expect_true(check$supported)
+      pop <- recipe_import_circe(path, origin = list(uri = pin$source, phenotype_id = pin$id,
+        release = manifest$commit, review_status = pin$status))
+      expect_identical(pop$circe_provenance$original_sha256, pin$sha256)
+      # The only additional ATLAS field admitted is an explicitly false,
+      # empty ConditionType exclusion; true/null/arrays remain unsupported.
+      x <- jsonlite::fromJSON(bytes, simplifyVector = FALSE)
+      for (v in list(TRUE, NULL, list(FALSE))) {
+        x$PrimaryCriteria$CriteriaList[[1L]]$ConditionOccurrence["ConditionTypeExclude"] <- list(v)
+        expect_false(recipe_circe_check(x)$supported)
+      }
+    } else {
+      expect_false(check$supported)
+      expect_true(all(c("EntryCardinality", "FirstLast", "ExpressionLimit", "UnknownField") %in% check$issues$construct))
+      expect_error(recipe_import_circe(path), "recipe_circe_check")
+    }
+  }
+})
