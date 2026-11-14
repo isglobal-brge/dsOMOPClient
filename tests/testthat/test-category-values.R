@@ -90,6 +90,9 @@ test_that("C02 C05 C65 effective order and inherited aliases survive grouping", 
 
 test_that("C18 C64 consumed recodes preserve labels of retained concept identities", {
   ctx<-.clf_setup();.numeric_lexer()
+  con<-DBI::dbConnect(RSQLite::SQLite(),ctx$paths[[3L]])
+  DBI::dbExecute(con,"UPDATE observation SET value_as_concept_id=45000124 WHERE value_as_concept_id=45000123")
+  DBI::dbDisconnect(con)
   e<-omop_event("observation",45000120L)
   spec<-omop_category_spec(recode=omop_category_recode(c(`concept:45000123`="category:named"),
     c("category:named","concept:45000124","concept:45000125"),labels=c("Named","Second","Third")))
@@ -104,7 +107,7 @@ test_that("C18 C64 consumed recodes preserve labels of retained concept identiti
     for(i in 1:3) {
       f<-.clf_frames(ctx,symbol)[[i]]
       expect_setequal(levels(f$x),c("Named","Second","Third"))
-      expect_identical(as.character(f$x),if(i==1L)rep(c("Named","Second","Third"),each=6L) else rep(c("Named","Second"),each=9L))
+      expect_identical(as.character(f$x),if(i==1L)rep(c("Named","Second","Third"),each=6L) else if(i==2L)rep(c("Named","Second"),each=9L) else rep("Second",18L))
       expect_identical(as.character(f$styled),as.character(f$x))
       expect_identical(levels(f$styled),levels(f$x))
     }
