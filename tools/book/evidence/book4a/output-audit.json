@@ -1,0 +1,131 @@
+{
+  "chapters": {
+    "book-00-start.Rmd": {
+      "outputs": 8,
+      "tables": 1,
+      "match": true
+    },
+    "book-01-mental-model.Rmd": {
+      "outputs": 3,
+      "tables": 3,
+      "match": true
+    },
+    "book-02-connect.Rmd": {
+      "outputs": 9,
+      "tables": 1,
+      "match": true
+    },
+    "book-03-explore.Rmd": {
+      "outputs": 4,
+      "tables": 6,
+      "match": true
+    },
+    "book-04-vocabulary.Rmd": {
+      "outputs": 7,
+      "tables": 15,
+      "match": true
+    },
+    "book-05-recipe.Rmd": {
+      "outputs": 21,
+      "tables": 4,
+      "match": true
+    },
+    "book-06-events.Rmd": {
+      "outputs": 31,
+      "tables": 14,
+      "match": true
+    },
+    "book-07-populations.Rmd": {
+      "outputs": 19,
+      "tables": 0,
+      "match": true
+    },
+    "book-08-outputs.Rmd": {
+      "outputs": 31,
+      "tables": 4,
+      "match": true
+    },
+    "book-09-dates.Rmd": {
+      "outputs": 30,
+      "tables": 1,
+      "match": true
+    },
+    "book-10-harmonise.Rmd": {
+      "outputs": 22,
+      "tables": 1,
+      "match": true
+    },
+    "book-11-parameters.Rmd": {
+      "outputs": 29,
+      "tables": 9,
+      "match": true
+    },
+    "book-12-privacy.Rmd": {
+      "outputs": 11,
+      "tables": 1,
+      "match": true
+    },
+    "book-13-visits.Rmd": {
+      "outputs": 23,
+      "tables": 1,
+      "match": true
+    },
+    "book-14-labs.Rmd": {
+      "outputs": 31,
+      "tables": 26,
+      "match": true
+    },
+    "book-15-formulas.Rmd": {
+      "outputs": 8,
+      "tables": 12,
+      "match": true
+    },
+    "book-16-longitudinal.Rmd": {
+      "outputs": 26,
+      "tables": 12,
+      "match": true
+    },
+    "book-17-reproduce.Rmd": {
+      "outputs": 9,
+      "tables": 1,
+      "match": true
+    },
+    "book-18-verbal-autopsy.Rmd": {
+      "outputs": 25,
+      "tables": 1,
+      "match": true
+    },
+    "book-19-case-mortality.Rmd": {
+      "outputs": 8,
+      "tables": 5,
+      "match": true
+    },
+    "book-20-case-gibleed.Rmd": {
+      "outputs": 9,
+      "tables": 5,
+      "match": true
+    },
+    "book-21-case-glucose.Rmd": {
+      "outputs": 6,
+      "tables": 7,
+      "match": true
+    },
+    "book-22-case-drug.Rmd": {
+      "outputs": 5,
+      "tables": 7,
+      "match": true
+    },
+    "book-23-case-table1.Rmd": {
+      "outputs": 6,
+      "tables": 4,
+      "match": true
+    },
+    "book-showcase.Rmd": {
+      "outputs": 10,
+      "tables": 7,
+      "match": true
+    }
+  },
+  "console_blocks": 391,
+  "tables": 148
+}

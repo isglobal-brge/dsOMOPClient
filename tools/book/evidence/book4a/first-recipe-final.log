@@ -1,0 +1,4 @@
+PRECOMPUTE vignettes/book-05-recipe.Rmd.orig
+ASSERTIONS PASS book-05-recipe.Rmd.orig
+All chapter chunks executed successfully
+All chapters passed in separate R processes using visible setup

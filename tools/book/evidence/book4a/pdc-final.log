@@ -1,0 +1,5 @@
+PRECOMPUTE vignettes/book-22-case-drug.Rmd.orig
+BOOK4 UTILISATION PASS: PDC bounds and discontinuation rule
+ASSERTIONS PASS book-22-case-drug.Rmd.orig
+All chapter chunks executed successfully
+All chapters passed in separate R processes using visible setup

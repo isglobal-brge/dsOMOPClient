@@ -1,0 +1,14 @@
+Reading vignettes/book-22-case-drug.Rmd
+Writing `articles/book-22-case-drug.html`
+  adding: tools/book/load-practice.R (deflated 59%)
+  adding: tools/book/load-numeric.R (deflated 58%)
+  adding: tools/book/practice.R (deflated 62%)
+  adding: tools/book/fixture.R (deflated 65%)
+  adding: tools/book/connection.R (deflated 57%)
+  adding: tools/book/display.R (deflated 57%)
+  adding: tools/book/case-helpers.R (deflated 41%)
+  adding: tools/book/opal-admin.R (deflated 63%)
+  adding: tools/book/check-opal.R (deflated 48%)
+  adding: tools/book/book-compose.sh (deflated 40%)
+  adding: tools/book/book-rock.yml (deflated 25%)
+  adding: tools/dates/va-native.R (deflated 61%)

@@ -62,7 +62,7 @@
     },
     {
       "page": "book-05-recipe",
-      "lines": 285,
+      "lines": 293,
       "solutions": 3,
       "chunks": 20
     },
@@ -116,7 +116,7 @@
     },
     {
       "page": "book-14-labs",
-      "lines": 642,
+      "lines": 649,
       "solutions": 13,
       "chunks": 45
     },
@@ -164,7 +164,7 @@
     },
     {
       "page": "book-22-case-drug",
-      "lines": 157,
+      "lines": 161,
       "solutions": 3,
       "chunks": 7
     },
