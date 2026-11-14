@@ -5,7 +5,7 @@
   handle <- server$getSessionData(server$getSessionIds()[[1L]],paste0(".dsomop_handle_",.get_session("labels")$res_symbol))
   validation <- dsOMOP:::.planValidate(handle,plan)
   if(!isTRUE(validation$valid))stop(paste(validation$errors,collapse="; "))
-  symbols <- setNames(paste0("Eq_",names(plan$outputs)),names(plan$outputs))
+  symbols <- setNames(paste0("Eq_",substr(.planNormalizedDigest(plan)$sha256,1L,8L),"_",mode,"_",names(plan$outputs)),names(plan$outputs))
   rejection <- character()
   reject_entry <- dsOMOP:::.rejectionEntry
   testthat::local_mocked_bindings(.rejectionEntry=function(e) {
@@ -81,22 +81,25 @@
     when <- omop_date(omop_anchor(e),date,broadcast=TRUE)
     if(!is.null(category))when <- omop_category(when,category)
   }
-  vars <- list(n=count,flag=flag,when=when)
+  event_value <- omop_number_rows(e)
+  if(scope=="variable")event_value <- omop_number(event_value,number)
+  vars <- list(n=count,flag=flag,when=when,event_value=event_value)
+  selected <- c("n","flag","when")
   outputs <- list(
-    omop_output("wide",format="wide",rows="p",columns=names(vars)),
-    omop_output("long",format="long",rows="p",sources=list(e),columns=names(vars)),
-    omop_output("intervals",format="intervals",rows="p",columns=names(vars),options=list(sources=list(e))),
+    omop_output("wide",format="wide",rows="p",columns=selected),
+    omop_output("long",format="long",rows="p",sources=list(e),columns=selected),
+    omop_output("intervals",format="intervals",rows="p",columns=c("event_value","when"),options=list(sources=list(e))),
     omop_output("membership",format="membership",rows="p",columns=character()),
     omop_output("dictionary",format="dictionary",rows="p",options=list(source_outputs="long")),
-    omop_output("panel",format="person_period",rows="p",columns=names(vars),
+    omop_output("panel",format="person_period",rows="p",columns="when",
       options=list(sources=list(e),window=omop_window(0,20),bins=list(width=10),analyses=c("binary","count"))))
   for(style in c("survival","competing_risk","counting_process","recurrent_events","multi_state")) {
     opts <- list(format=style,outcomes=list(lab=e),tar=omop_window(0,365),censor=list("observation_end"))
     if(style=="multi_state") {opts$transitions<-list(list(from="index",to="lab"));opts$initial_state<-"index"}
-    outputs[[length(outputs)+1L]] <- omop_output(style,format="survival",rows="p",columns=names(vars),options=opts)
+    outputs[[length(outputs)+1L]] <- omop_output(style,format="survival",rows="p",columns=selected,options=opts)
   }
-  outputs[[length(outputs)+1L]] <- omop_output("joined",format="joined",rows="p",grain="episode",columns=names(vars),
-    options=list(from=list(list(output="survival"),list(output="wide")),cardinality="one_to_one"))
+  outputs[[length(outputs)+1L]] <- omop_output("joined",format="joined",rows="p",grain="episode",
+    options=list(from=list(list(output="membership"),list(output="wide")),cardinality="one_to_one"))
   if(matrices) {
     outputs[[length(outputs)+1L]] <- omop_output("sparse",format="sparse",rows="p",columns=character(),options=list(sources=list(e),analyses=c("binary","count")))
     outputs[[length(outputs)+1L]] <- omop_output("temporal",format="temporal_covariates",rows="p",
