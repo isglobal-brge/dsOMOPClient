@@ -4,7 +4,9 @@ test_that("D43 native verbal-autopsy wide table is complete on DSLite", {
   snippet<-new.env(parent=environment())
   sys.source(testthat::test_path("..","..","tools","dates","va-native.R"),snippet)
   va<-snippet$va_native_recipe()
-  expect_identical(recipe_execute(va,out=c(people="D_va"),conns=conns),c(people="D_va"))
+  receipt <- recipe_execute(va,out=c(people="D_va"),conns=conns)
+  expect_identical(setNames(as.character(receipt),names(receipt)), c(people="D_va"))
+  expect_type(attr(receipt,"omop_codebook"),"list")
   # Test harness only: synthetic fixture rows never enter the analyst snippet.
   d<-DSLite::getDSLiteData(conns,"D_va")$site
   expect_equal(nrow(d),24L);expect_equal(length(unique(d$person_id)),24L)
@@ -161,7 +163,9 @@ test_that("D40 exact custom factors cannot bypass metadata support or rollback",
   expect_error(recipe_execute(r,out=c(o="D_unsafe"),conns=conns),"factor-level disclosure policy|certify complete")
   expect_false("D_unsafe" %in% DSI::datashield.symbols(conns)$site)
   r$variables$day$date_spec<-omop_date_spec(precision="day")
-  expect_identical(recipe_execute(r,out=c(o="D_exact"),conns=conns),c(o="D_exact"))
+  receipt <- recipe_execute(r,out=c(o="D_exact"),conns=conns)
+  expect_identical(setNames(as.character(receipt),names(receipt)), c(o="D_exact"))
+  expect_type(attr(receipt,"omop_codebook"),"list")
   expect_s3_class(DSLite::getDSLiteData(conns,"D_exact")$site$day,"Date")
 })
 
