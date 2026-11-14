@@ -223,8 +223,10 @@
       types<-definitions[[component]]
       rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural",plan=plan))
       names(rows)<-names(types)
+      structural <- names(rows)
       if(component==output || fmt=="survival" && grains[[component]]!="none") {
-        variables<-unlist(node$columns %||% if(fmt=="wide")names(plan$variables) else character(),use.names=FALSE)
+        variables<-unique(c(.pnv2ColumnVariables(unlist(node$columns,use.names=FALSE),plan$variables),
+          if(fmt=="wide" && is.null(node$columns))names(plan$variables)))
         for (selected in variables) {
           owners <- .pnv2ColumnVariables(selected, plan$variables)
           for (owner in owners) {
@@ -237,6 +239,9 @@
         v<-map[[key]];dep<-v$derived
         while(!is.null(dep$variable))dep<-dep$variable$derived
         if(is.null(dep$component)&&length(definitions)==1L||identical(dep$component,component))rows[[key]]<-.codebookPlanColumn(key,variable=v,defaults=plan$options$category_spec,plan=plan)
+      }
+      if (!is.null(node$columns) && grains[[component]] != "none") {
+        rows <- rows[.categorySelectedColumns(node$columns, plan$variables, structural, names(rows))]
       }
       schemas[[paste(output,component,sep="/")]]<<-list(schema=list(columns=unname(rows),row_keys=as.list(intersect(names(id),names(rows)))),categories=list(),row_grain=grains[[component]],status="prospective")
     }
