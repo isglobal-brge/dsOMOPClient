@@ -174,6 +174,56 @@
     provenance=list(source="public plan; no observed schema or vocabulary lookup"),completeness="unresolved")
 }
 
+# Closed panel identities can be enumerated without a vocabulary or patient query.
+# Expanded/mapped concept sets remain open until admitted release metadata exists.
+.codebookPanelColumns <- function(plan, node) {
+  opts <- node$options %||% list()
+  columns <- c(period_start_days="integer", period_end_days="integer", days="integer")
+  if (!is.null(opts$partition$age_bands)) columns <- c(columns, age="integer", age_band="integer")
+  if (identical(opts$bins$calendar,"year") || identical(opts$partition$calendar,"year"))
+    columns <- c(columns, calendar_year="integer")
+  if (identical(opts$partition$calendar,"month")) columns <- c(columns, calendar_month="integer")
+  for (key in names(opts$exposures)) columns <- c(columns, setNames(c("integer","integer"),c(paste0("exposed_",key),paste0("active_",key))))
+  for (key in names(opts$outcomes)) columns <- c(columns, setNames("integer",paste0("n_",key)))
+  concepts <- function(cs) {
+    if (is.character(cs) || is.list(cs) && length(cs)==1L && is.character(cs[[1L]]))
+      cs <- plan$concept_sets[[as.character(unlist(cs))]]
+    if (is.null(cs) || isTRUE(cs$include_descendants) || isTRUE(cs$include_mapped)) return(NULL)
+    ids <- as.character(unlist(cs$concepts,use.names=FALSE))
+    excluded <- cs$exclude
+    if (is.list(excluded) && !is.null(excluded$concepts)) {
+      excluded <- concepts(excluded)
+      if (is.null(excluded)) return(NULL)
+    }
+    setdiff(ids,as.character(unlist(excluded,use.names=FALSE)))
+  }
+  identities <- function(source) {
+    if (!is.null(source$interval)) return(NA_character_)
+    event <- plan$events[[source$event]]
+    if (!is.null(event$cost)) return(identities(event$cost$event))
+    concepts(event$concept_set)
+  }
+  analyses <- c("binary","count","mean","last","exposed_days")
+  for (source in c(node$sources,opts$sources)) {
+    key <- source$event %||% source$interval
+    event <- plan$events[[key]]
+    ids <- identities(source)
+    selected <- unlist(opts$analyses %||% list("binary"),use.names=FALSE)
+    if (!is.null(opts$source_analyses[[key]])) selected <- intersect(selected,unlist(opts$source_analyses[[key]],use.names=FALSE))
+    if (is.null(source$interval)) selected <- setdiff(selected,"exposed_days")
+    has_value <- is.null(source$interval) && (!is.null(event$cost) || !is.null(event$value$column) || event$table %in% c("measurement","observation"))
+    if (!has_value) selected <- setdiff(selected,c("mean","last"))
+    selected <- analyses[analyses %in% selected]
+    stems <- if (length(ids)==1L) key else paste0(key,"_",ids)
+    if (!length(ids)) stems <- character()
+    for (stem in stems) {
+      columns <- c(columns,setNames(ifelse(selected %in% c("mean","last"),"double","integer"),paste0(stem,"_",selected)))
+      if (!is.null(opts$carry_forward[[key]])) columns <- c(columns,setNames("double",paste0(stem,"_carry")))
+    }
+  }
+  columns
+}
+
 .codebookPlanSchemas <- function(plan) {
   schemas<-list();visiting<-character()
   build<-function(output) {
@@ -216,7 +266,7 @@
         dictionary=c(concept_id="factor",concept_name="character",domain_id="character",vocabulary_id="character",concept_class_id="character",source="character"),
         long=c(concept_id="factor",start_date="unresolved",end_date="unresolved"),
         intervals=c(interval_type="character",concept_id="factor",start_days_from_index="integer",end_days_from_index="integer"),
-        person_period=c(period_start_days="integer",period_end_days="integer",days="integer"),character())
+        person_period=.codebookPanelColumns(plan,node),character())
       add(output,c(if(fmt!="dictionary")id,extra),if(fmt=="dictionary")"none" else node$grain %||% "episode")
     }
     for(component in names(definitions)) {
@@ -224,8 +274,20 @@
       rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural",plan=plan))
       names(rows)<-names(types)
       structural <- names(rows)
-      if (fmt == "joined" && (length(node$number_columns) || length(node$category_columns))) {
-        structural <- structural[vapply(rows, function(column) is.null(column$derivation$variable), logical(1))]
+      selected <- unlist(node$columns,use.names=FALSE)
+      owners <- .pnv2ColumnVariables(selected,plan$variables)
+      declared <- unlist(lapply(owners,function(key).pnv2VariableColumns(key,plan$variables[[key]])),use.names=FALSE)
+      expanded <- any(selected %in% setdiff(declared,names(plan$variables)))
+      if (!expanded && (length(node$number_columns) || length(node$category_columns))) {
+        # Match execution's typed numeric eligibility before final projection.
+        # Keys and reserved event/status roles are required; measures are selectable.
+        analytic <- vapply(rows,function(column) column$r_type %in% c("integer","integer64","double") &&
+          !column$semantic_type %in% c("key","concept"),logical(1))
+        analytic[names(rows) %in% .numberStructuralColumns(fmt)] <- FALSE
+        structural <- setdiff(structural,names(rows)[analytic])
+      }
+      if (fmt == "joined" && (expanded || length(node$number_columns) || length(node$category_columns))) {
+        structural <- structural[vapply(rows[structural], function(column) is.null(column$derivation$variable), logical(1))]
       }
       if(component==output || fmt=="survival" && grains[[component]]!="none") {
         variables<-unique(c(.pnv2ColumnVariables(unlist(node$columns,use.names=FALSE),plan$variables),
