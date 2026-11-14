@@ -56,6 +56,20 @@
 #' identity, availability and privacy lineage. Counts and first-to-last summaries
 #' create no population. Threshold times mean first observed attainment, without
 #' interpolation. No observed range, unit inventory or failure count is released.
+#' @examples
+#' lab <- omop_event("measurement", 3000963L, unit = omop_unit(8713L))
+#' mean_lab <- omop_variable(event = lab, reducer = omop_reduce("mean"))
+#' rounded <- omop_number(mean_lab,
+#'   omop_number_spec(rounding = omop_number_round("decimals", 1)))
+#' band <- omop_number_bins(mean_lab, breaks = c(-Inf, 12, 15, Inf))
+#' # A declared arithmetic coordinate with a closed expression.
+#' doubled <- list(version = 1L, assign = list(list(name = "twice",
+#'   expr = list(op = "*", args = list(list(col = "x"), list(lit = 2))))))
+#' transformed <- omop_number_derive(list(x = mean_lab), doubled,
+#'   unit = "coordinate:doubled_lab")
+#' study <- omop_recipe(variables = list(raw = omop_number(mean_lab),
+#'   rounded = rounded, band = band, doubled = transformed))
+#' recipe_to_plan(study, version = 2)
 #' @export
 omop_number_spec <- function(unit=NULL,transform=NULL,rounding=NULL,representation=NULL,
   breaks=NULL,grid=NULL,closed=NULL,labels=NULL,range=NULL,thresholds=NULL,op=NULL,
@@ -119,8 +133,8 @@ omop_number_round <- function(method="none",digits=NULL) {
 #' @rdname omop_number_spec
 #' @export
 omop_number_expr <- function(exprs,result=NULL,unit=NULL) {
-  result<-.numberExpressionShape(exprs,result,"x")
-  if(!is.null(unit)) .numberUnitToken(unit)
+  result<-.numberPublicExpression(exprs,result,"x")
+  if(!is.null(unit)&&!.numberHasParam(unit)) .numberUnitToken(unit)
   s<-list(exprs=exprs,result=result);if(!is.null(unit))s$unit<-unit
   structure(s,class=c("omop_number_expr","list"))
 }
@@ -187,7 +201,10 @@ omop_number_count <- function(event,value=NULL,window=NULL,kind="nonmissing",num
 #' @export
 omop_number_change <- function(event,method="difference",value=NULL,window=NULL,missing="skip",reference=NULL,time_unit=NULL,threshold=NULL,op=NULL,number_spec=NULL,broadcast=FALSE) {
   d<-list(kind="number_change",source=.v2_source(event,"number_change"),value=value %||% "value",window=window,method=method,missing=missing,reference=reference,time_unit=time_unit,threshold=threshold,op=op)
-  d<-.numberChangeCheck(d[!vapply(d,is.null,logical(1))])
+  d<-d[!vapply(d,is.null,logical(1))]
+  if(.numberHasParam(d$threshold)) {
+    parameter<-d$threshold;d$threshold<-0;d<-.numberChangeCheck(d);d$threshold<-parameter
+  } else d<-.numberChangeCheck(d)
   if(!is.null(d$reference)&&!identical(d$reference,"first")) d$reference<-.dateSourceArg(d$reference)
   .numberVariable(d,number_spec,broadcast)
 }
@@ -197,7 +214,7 @@ omop_number_derive <- function(inputs,exprs,unit,result=NULL,reducer=NULL,number
   if(!is.list(inputs)||!length(inputs)) .numberReject("Declare a nonempty named input map.","number_dependency_invalid")
   .numberNames(names(inputs))
   inputs<-lapply(inputs,function(v)if(inherits(v,"omop_number_input"))v else omop_number_input(v))
-  result<-.numberExpressionShape(exprs,result,names(inputs));.numberUnitToken(unit)
+  result<-.numberPublicExpression(exprs,result,names(inputs));if(!.numberHasParam(unit)).numberUnitToken(unit)
   if(!is.null(reducer)) {
     if(!inherits(reducer,"omop_reducer")||!reducer$fn %in% c("first_value","last_value","nth_value","closest_value","mean","min","max","sum","sd","cv","median","quantile","mode","slope")||isTRUE(attr(reducer,"number_value_explicit"))||!is.null(reducer$unit)) .numberReject("Use an admitted numeric reducer with value/unit omitted.","number_expression_invalid")
   }
@@ -270,4 +287,13 @@ omop_number_derive <- function(inputs,exprs,unit,result=NULL,reducer=NULL,number
     }
   }
   result
+}
+
+# Parameter literals are bound by the recipe before the same closed validator
+# sees the wire request; no parameter object is sent to a site.
+.numberPublicExpression <- function(exprs,result,aliases) {
+  if(!.numberHasParam(exprs))return(.numberExpressionShape(exprs,result,aliases))
+  if(!is.list(exprs)||!is.list(exprs$assign)||!length(exprs$assign))
+    .numberReject("Use a closed mutate-v1 request.","number_expression_invalid")
+  result %||% tail(vapply(exprs$assign,function(a)a$name,""),1L)
 }

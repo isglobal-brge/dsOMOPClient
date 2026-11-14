@@ -75,3 +75,41 @@ test_that("N59 N66 N74 nested reducers negotiate and column copies merge with pr
   m<-recipe_to_plan(recipe_merge(r,r,prefix="b"),version=2)
   expect_identical(m$outputs$b_w$number_columns$copy$derived$column,"b_total")
 })
+
+test_that("N45 expression literals, thresholds and interchange bind deterministically", {
+  e<-omop_event("measurement",name="lab")
+  threshold<-omop_param("threshold",type="number",default=5)
+  multiplier<-omop_param("multiplier",type="number",default=2)
+  req<-list(version=1L,assign=list(list(name="y",expr=list(op="*",args=list(list(col="x"),list(lit=multiplier))))))
+  r<-omop_recipe(events=list(e),variables=list(t=omop_number_change("lab","time_to_threshold",threshold=threshold),y=omop_number_derive(list(x=omop_number_rows("lab")),req,"1",reducer=omop_reduce("sum"))))
+  bound<-recipe_bind(r,threshold=7,multiplier=3)
+  p<-recipe_to_plan(bound,version=2)
+  expect_equal(p$variables$t$derived$threshold,7)
+  expect_equal(p$variables$y$derived$exprs$assign[[1]]$expr$args[[2]]$lit,3)
+  for(format in c("json","yaml")) {
+    file<-tempfile(fileext=paste0(".",format));on.exit(unlink(file),add=TRUE)
+    get(paste0("recipe_export_",format))(bound,file)
+    restored<-get(paste0("recipe_import_",format))(file)
+    expect_equal(.planNormalizedDigest(recipe_to_plan(restored,version=2))$sha256,.planNormalizedDigest(p)$sha256)
+  }
+})
+
+test_that("N74 generated original-column selection reaches declared server schema binding", {
+  e<-omop_event("measurement",3000963L,name="lab")
+  r<-omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),outputs=omop_output("panel",format="person_period",rows="p",columns=c("days","copy"),sources=list(e),number_columns=list(copy=omop_number_column("days")),options=list(bins=list(width=10L),window=list(start=0L,end=20L,anchor="index"))))
+  expect_equal(unlist(recipe_to_plan(r,version=2)$outputs$panel$columns),c("days","copy"))
+})
+
+test_that("N44 explain and lint expose only declared numeric semantics", {
+  v<-omop_variable(event=omop_event("measurement",3000963L,unit=omop_unit(8713L)),reducer=omop_reduce("mean"))
+  r<-omop_recipe(variables=list(raw=v,band=omop_number_bins(v,breaks=c(-Inf,12,15,Inf))),number_spec=omop_number_spec(rounding=omop_number_round("decimals",1)))
+  x<-recipe_explain(r,detail="semantics")
+  text<-paste(x$text,collapse="\n")
+  expect_match(text,"specification origin: recipe")
+  expect_match(text,"specification origin: variable/wrapper")
+  expect_match(text,"complete public levels")
+  expect_match(text,"unavailable sources remain unavailable")
+  expect_match(text,"unit:|8713")
+  expect_silent(recipe_lint(r))
+  expect_silent(parse(text=recipe_to_code(r)))
+})
