@@ -278,17 +278,6 @@
       owners <- .pnv2ColumnVariables(selected,plan$variables)
       declared <- unlist(lapply(owners,function(key).pnv2VariableColumns(key,plan$variables[[key]])),use.names=FALSE)
       expanded <- any(selected %in% setdiff(declared,names(plan$variables)))
-      if (!expanded && (length(node$number_columns) || length(node$category_columns))) {
-        # Match execution's typed numeric eligibility before final projection.
-        # Keys and reserved event/status roles are required; measures are selectable.
-        analytic <- vapply(rows,function(column) column$r_type %in% c("integer","integer64","double") &&
-          !column$semantic_type %in% c("key","concept"),logical(1))
-        analytic[names(rows) %in% .numberStructuralColumns(fmt)] <- FALSE
-        structural <- setdiff(structural,names(rows)[analytic])
-      }
-      if (fmt == "joined" && (expanded || length(node$number_columns) || length(node$category_columns))) {
-        structural <- structural[vapply(rows[structural], function(column) is.null(column$derivation$variable), logical(1))]
-      }
       if(component==output || fmt=="survival" && grains[[component]]!="none") {
         variables<-unique(c(.pnv2ColumnVariables(unlist(node$columns,use.names=FALSE),plan$variables),
           if(fmt=="wide" && is.null(node$columns))names(plan$variables)))
@@ -299,6 +288,27 @@
             for (key in keys) rows[[key]] <- .codebookPlanColumn(key, variable=plan$variables[[owner]], defaults=plan$options$category_spec, plan=plan)
           }
         }
+      }
+      # Execution appends native endpoints after variable covariates, presents
+      # them, then projects copies. Reference components have no roster index.
+      if (grains[[component]] != "none") {
+        endpoints <- .dateOutputEndpoints(fmt, names(rows), plan$options$date_spec)
+        for (key in unname(endpoints)) {
+          if (key %in% names(rows)) .dateReject("Native endpoint name collides with an explicit variable.", "date_parts_names")
+          rows[[key]] <- .codebookPlanColumn(key, "Date", "date", plan=plan)
+        }
+        structural <- c(structural, unname(endpoints))
+      }
+      if (!expanded && (length(node$number_columns) || length(node$category_columns))) {
+        # Match execution's typed numeric eligibility before final projection.
+        # Keys and reserved event/status roles are required; measures are selectable.
+        analytic <- vapply(rows,function(column) column$r_type %in% c("integer","integer64","double") &&
+          !column$semantic_type %in% c("key","concept","date"),logical(1))
+        analytic[names(rows) %in% .numberStructuralColumns(fmt)] <- FALSE
+        structural <- setdiff(structural,names(rows)[analytic])
+      }
+      if (fmt == "joined" && (expanded || length(node$number_columns) || length(node$category_columns))) {
+        structural <- structural[vapply(rows[structural], function(column) is.null(column$derivation$variable), logical(1))]
       }
       for(map in list(node$number_columns,node$category_columns))for(key in names(map)) {
         v<-map[[key]];dep<-v$derived
