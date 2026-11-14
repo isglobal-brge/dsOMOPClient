@@ -353,7 +353,7 @@ test_that("protection labels print the protected routes and masked fields", {
 # --- B12: one logical source counted once -----------------------------------------
 
 test_that("regression catalogue pooling must reject repeated logical site components", {
-  # regression review probe (regression-p0-review.md, B12): the same one-site protected
+  # Repeated-source regression: the same one-site protected
   # payload under two connection names used to pool to N 20 instead of 10.
   df <- data.frame(persons = 10)
   attr(df, "dsomop_release") <- list(protocol = .DP_PROTECTED_RELEASE_PROTOCOL,
