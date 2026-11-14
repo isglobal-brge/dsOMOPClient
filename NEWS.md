@@ -1,5 +1,13 @@
 # dsOMOP / dsOMOPClient 2.10.5 (development)
 
+* **Corrected:** Circe inspection reports measurement bounds, occurrence,
+  window, age and sex clauses independently when several are unsupported.
+  Editing an imported legacy population now rebuilds its native translation;
+  an explicit native index takes precedence. Conflicting edits to both stored
+  representations are **newly refused**: choose a native index or remove
+  `circe_v2` to execute the edited legacy declaration. Prefixed merges refresh
+  derivative provenance and retain original source hashes.
+
 * **Corrected:** imported-vocabulary capability and preflight traversal now
   distinguishes declaration registries from advisory metadata. Event and
   concept-set names such as `meta`, `metadata`, and `circe_provenance` retain

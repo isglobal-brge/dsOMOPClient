@@ -40,6 +40,8 @@
 recipe_merge <- function(a, b, prefix = NULL) {
   .v2_recipe_check(a)
   .v2_recipe_check(b)
+  a$populations <- lapply(a$populations, .circe_reconcile_population)
+  b$populations <- lapply(b$populations, .circe_reconcile_population)
   a <- .merge_freeze_columns(a)
   b <- .merge_freeze_columns(b)
   if (!is.null(prefix)) {
@@ -53,7 +55,9 @@ recipe_merge <- function(a, b, prefix = NULL) {
     b <- .merge_prefix(b, prefix, share_base = share_base, defer_base = defer_base)
     if (share_base) b$filters <- a$filters
   }
-  .merge_into(a, b)
+  out <- .merge_into(a, b)
+  out$populations <- lapply(out$populations, .circe_refresh_provenance)
+  out
 }
 
 # --- shared helpers --------------------------------------------------------------------

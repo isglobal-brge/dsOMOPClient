@@ -123,3 +123,55 @@ test_that("pinned supported and unsupported PhenotypeLibrary definitions are ins
     }
   }
 })
+
+test_that("independent bounds occurrence windows and demographics all receive diagnostics", {
+  x <- .audit_support_definition()
+  x$InclusionRules <- list(list(expression = list(Type = "ALL",
+    CriteriaList = list(list(Criteria = list(Measurement = list(CodesetId = 0L,
+      ValueAsNumber = list(Op = "bt", Value = 1, Extent = 2))),
+      Occurrence = list(Type = 1L, Count = 3L), StartWindow = list(Unsupported = TRUE))),
+    DemographicCriteriaList = list(list(Age = list(Op = "unsupported", Value = 5),
+      Gender = list(list(CONCEPT_ID = 0L)), Unsupported = "PRIVATE_SENTINEL")))))
+  check <- recipe_circe_check(x)
+  expect_false(check$supported)
+  paths <- check$issues$path
+  expect_true(any(endsWith(paths, ".ValueAsNumber")))
+  expect_true(any(endsWith(paths, ".Occurrence")))
+  expect_true(any(endsWith(paths, ".StartWindow")))
+  expect_true(any(endsWith(paths, ".Age")))
+  expect_true(any(endsWith(paths, ".Gender")))
+  expect_true(any(grepl("field:", paths, fixed = TRUE)))
+  expect_false(any(grepl("PRIVATE_SENTINEL", unlist(check), fixed = TRUE)))
+  expect_error(recipe_import_circe(x), "recipe_circe_check")
+})
+
+test_that("editing imported populations changes the executable declaration and provenance", {
+  pop <- recipe_import_circe(.audit_support_definition(), id = "p")
+  r <- omop_recipe(populations = pop, variables = omop_variable_sex(),
+    outputs = omop_output("o", type = "wide", population_id = "p"))
+  original <- recipe_to_plan(r)
+  r$populations$p$index_event$concept_id <- 201826L
+  edited <- recipe_to_plan(r)
+  expect_false(identical(.plan_v2_digest(original)$sha256, .plan_v2_digest(edited)$sha256))
+  expect_true(any(vapply(edited$concept_sets, function(cs) 201826L %in% unlist(cs$concepts), logical(1))))
+  for (format in c("json", "yaml")) {
+    path <- tempfile(fileext = paste0(".", format))
+    recipe_save(r, path)
+    loaded <- recipe_load(path)
+    unlink(path)
+    expect_identical(.plan_v2_digest(recipe_to_plan(loaded))$sha256, .plan_v2_digest(edited)$sha256)
+    expect_true(loaded$populations$p$circe_provenance$derivative)
+    expect_identical(loaded$populations$p$circe_provenance$original_sha256,
+      pop$circe_provenance$original_sha256)
+  }
+  generated <- eval(parse(text = recipe_to_code(r)))
+  expect_identical(.plan_v2_digest(recipe_to_plan(generated))$sha256, .plan_v2_digest(edited)$sha256)
+  merged <- recipe_merge(r, r, prefix = "copy")
+  expect_true(merged$populations$copy_p$circe_provenance$derivative)
+  expect_identical(merged$populations$copy_p$circe_provenance$original_sha256,
+    pop$circe_provenance$original_sha256)
+  # A native override is an explicit choice and must not execute stale Circe.
+  r$populations$p$index <- omop_index(omop_event("condition_occurrence", 201821L))
+  native <- recipe_to_plan(r)
+  expect_true(any(vapply(native$events, function(e) 201821L %in% unlist(e$concept_set$concepts), logical(1))))
+})

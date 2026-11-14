@@ -193,6 +193,23 @@ recipe_circe_check <- function(x, direction = "import") {
         spec <- if (entry) .circe_primary_spec(domain, inner[[k]]) else inner[[k]]
         fields(spec, c("CodesetId", if (!entry && domain == "Measurement") "ValueAsNumber"),
           paste0(path, if (entry) "" else ".Criteria", ".", domain))
+        at <- paste0(path, if (entry) "" else ".Criteria", ".", domain)
+        probe(.circe_codeset_details(spec$CodesetId, sets), paste0(at, ".CodesetId"),
+          "ConceptReference", "Use a declared concept-set ID with supported expansion semantics.")
+        if (!entry && domain == "Measurement" && !is.null(spec$ValueAsNumber)) {
+          # Probe bounds independently of occurrence, window and reference
+          # errors. A neutral supported reference prevents another clause
+          # from hiding an unsupported bound in this diagnostic pass.
+          neutral <- list(list(id = 0L, expression = list(items = list(
+            list(concept = list(CONCEPT_ID = 0L))))))
+          probe(.circe_criteria_to_filter_unchecked(list(Criteria = list(Measurement = list(
+            CodesetId = 0L, ValueAsNumber = spec$ValueAsNumber))), neutral),
+            paste0(at, ".ValueAsNumber"), "MeasurementBounds",
+            "Use one finite gte or lt bound; unsupported endpoint rules cannot be discarded.")
+        }
+        if (!entry) probe(.circe_occurrence_spec(criterion$Occurrence, domain,
+          !is.null(spec$ValueAsNumber)), paste0(path, ".Occurrence"), "Occurrence",
+          "Use at least N or exactly zero; measurement bounds require at least one.")
       }
     }
   }
@@ -246,9 +263,15 @@ recipe_circe_check <- function(x, direction = "import") {
       probe(.circe_criteria_to_filter(ex$CriteriaList[[j]], sets), cp, "Occurrence",
         "Use a supported domain, at least N or exactly zero, and one-sided gte/lt measurement bounds and StartWindow.")
     }
-    for (j in seq_along(ex$DemographicCriteriaList)) probe(.circe_demographics_to_filters(ex$DemographicCriteriaList[j]),
-      paste0(at, ".expression.DemographicCriteriaList[", j, "]"), "Demographics",
-      "An unsupported Age operator or gender requires documented integer age bounds and one standard Female/Male concept.")
+    for (j in seq_along(ex$DemographicCriteriaList)) {
+      demo <- ex$DemographicCriteriaList[[j]]
+      dp <- paste0(at, ".expression.DemographicCriteriaList[", j, "]")
+      if (!fields(demo, c("Age", "Gender"), dp)) next
+      for (field in intersect(c("Age", "Gender"), names(demo))) {
+        probe(.circe_demographics_to_filters(list(demo[field])), paste0(dp, ".", field),
+          "Demographics", "Use supported integer age bounds and one standard Female/Male concept.")
+      }
+    }
     if (!length(ex$CriteriaList) && !length(ex$DemographicCriteriaList) && !length(ex$Groups)) add(at, "InclusionRule", "Empty inclusion rules are not supported.")
   }
   # Final parser agreement catches relationships between otherwise valid clauses.
@@ -329,5 +352,39 @@ recipe_circe_check <- function(x, direction = "import") {
     pop$circe_provenance$recipe_digest <- digest
     pop$circe_provenance$derivative <- !identical(digest, pop$circe_provenance$original_recipe_digest)
   }
+  pop
+}
+
+# An import's v2 shadow is a compatibility translation, not an independent
+# authority over later public edits. Rebuild it from an edited legacy
+# declaration, or honor an explicit native index. Conflicting edits to both
+# representations require an explicit choice instead of silently losing one.
+.circe_reconcile_population <- function(pop) {
+  if (is.null(pop$circe_v2)) return(pop)
+  if (!is.null(pop[["index"]])) {
+    pop$circe_v2 <- NULL
+    return(pop)
+  }
+  provenance <- pop$circe_provenance
+  if (is.null(provenance$original_json)) return(pop)
+  baseline <- .circe_import_unchecked(provenance$original_json, id = pop$id, label = pop$label)
+  legacy <- function(p) .recipe_strip_classes(list(index_event = p$index_event, filters = p$filters))
+  legacy_digest <- .circe_hash(.jcsCanonical(legacy(pop)))
+  prior_legacy <- provenance$translation_legacy_digest %||%
+    .circe_hash(.jcsCanonical(legacy(baseline)))
+  if (identical(legacy_digest, prior_legacy)) return(pop)
+  prior_shadow <- provenance$translation_digest %||%
+    .circe_hash(.jcsCanonical(.recipe_strip_classes(baseline$circe_v2)))
+  if (!identical(.circe_hash(.jcsCanonical(.recipe_strip_classes(pop$circe_v2))), prior_shadow)) {
+    stop("ambiguous_circe_edit: both imported representations changed; choose an explicit native index or remove circe_v2 to use the edited legacy declaration.", call. = FALSE)
+  }
+  # The public exporter/checker refuses any edit outside its supported subset.
+  # This is local translation only: no server, patient query or remote fetch.
+  recipe <- omop_recipe(populations = pop)
+  translated <- .circe_import_unchecked(recipe_export_circe(recipe, pop$id),
+                                        id = pop$id, label = pop$label)
+  pop$circe_v2 <- translated$circe_v2
+  pop$circe_provenance$translation_legacy_digest <- legacy_digest
+  pop$circe_provenance$translation_digest <- .circe_hash(.jcsCanonical(.recipe_strip_classes(pop$circe_v2)))
   pop
 }

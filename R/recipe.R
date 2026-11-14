@@ -7164,6 +7164,41 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   out
 }
 
+.circe_occurrence_spec <- function(occ, domain, has_bounds = FALSE) {
+  occ <- occ %||% list(Type = 2L, Count = 1L)
+  if (!is.list(occ)) {
+    stop("Circe import: Occurrence must be an object.", call. = FALSE)
+  }
+  unknown_occ <- setdiff(names(occ) %||% character(0), c("Type", "Count"))
+  if (length(unknown_occ) > 0L) {
+    stop("Circe import: unsupported Occurrence field(s): ",
+         paste(unknown_occ, collapse = ", "), ".", call. = FALSE)
+  }
+  type_num <- suppressWarnings(as.numeric(occ$Type %||% 2L))
+  count_num <- suppressWarnings(as.numeric(occ$Count %||% 1L))
+  occurrence_type <- suppressWarnings(as.integer(occ$Type %||% 2L))
+  count <- suppressWarnings(as.integer(occ$Count %||% 1L))
+  if (length(type_num) != 1L || !is.finite(type_num) ||
+      length(occurrence_type) != 1L || is.na(occurrence_type) ||
+      type_num != occurrence_type || length(count_num) != 1L ||
+      !is.finite(count_num) || length(count) != 1L || is.na(count) ||
+      count_num != count || count < 0L) {
+    stop("Circe import: Occurrence Type/Count must be non-negative integers.",
+         call. = FALSE)
+  }
+  if (has_bounds &&
+      (!identical(occurrence_type, 2L) || count != 1L)) {
+    stop("Circe import: numeric measurement criteria require occurrence at least one.",
+         call. = FALSE)
+  }
+  if (!(identical(occurrence_type, 0L) && identical(count, 0L)) &&
+      (!identical(occurrence_type, 2L) || count < 1L ||
+       (identical(domain, "Measurement") && count != 1L))) {
+    stop("Circe import: only at least N or exactly zero is supported; measurement requires at least one.", call. = FALSE)
+  }
+  list(type = occurrence_type, count = count)
+}
+
 .circe_criteria_to_filter_unchecked <- function(crit, concept_sets) {
   allowed_wrapper <- c("Criteria", "StartWindow", "EndWindow", "Occurrence",
                        "RestrictVisit", "IgnoreObservationPeriod")
@@ -7201,32 +7236,9 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   table <- .circe_table_from_domain(domain)
   ids <- .circe_ids_for_codeset(spec$CodesetId, concept_sets)
   window <- .circe_window_to_recipe(crit$StartWindow)
-  occ <- crit$Occurrence %||% list(Type = 2L, Count = 1L)
-  if (!is.list(occ)) {
-    stop("Circe import: Occurrence must be an object.", call. = FALSE)
-  }
-  unknown_occ <- setdiff(names(occ) %||% character(0), c("Type", "Count"))
-  if (length(unknown_occ) > 0L) {
-    stop("Circe import: unsupported Occurrence field(s): ",
-         paste(unknown_occ, collapse = ", "), ".", call. = FALSE)
-  }
-  type_num <- suppressWarnings(as.numeric(occ$Type %||% 2L))
-  count_num <- suppressWarnings(as.numeric(occ$Count %||% 1L))
-  occurrence_type <- suppressWarnings(as.integer(occ$Type %||% 2L))
-  count <- suppressWarnings(as.integer(occ$Count %||% 1L))
-  if (length(type_num) != 1L || !is.finite(type_num) ||
-      length(occurrence_type) != 1L || is.na(occurrence_type) ||
-      type_num != occurrence_type || length(count_num) != 1L ||
-      !is.finite(count_num) || length(count) != 1L || is.na(count) ||
-      count_num != count || count < 0L) {
-    stop("Circe import: Occurrence Type/Count must be non-negative integers.",
-         call. = FALSE)
-  }
-  if (!is.null(spec$ValueAsNumber) &&
-      (!identical(occurrence_type, 2L) || count != 1L)) {
-    stop("Circe import: numeric measurement criteria require occurrence at least one.",
-         call. = FALSE)
-  }
+  occurrence <- .circe_occurrence_spec(crit$Occurrence, domain, !is.null(spec$ValueAsNumber))
+  occurrence_type <- occurrence$type
+  count <- occurrence$count
   if (identical(occurrence_type, 0L) && identical(count, 0L)) {
     return(omop_filter_not_has_concept(concept_id = ids, table = table,
                                        window = window))

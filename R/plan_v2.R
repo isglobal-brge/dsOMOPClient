@@ -633,6 +633,7 @@
 
 .v2w_population <- function(ctx, pop, extra_filters = list()) {
   context <- paste0("population '", pop$id, "'")
+  pop <- .circe_reconcile_population(pop)
   if (!is.null(pop[["circe_v2"]])) {
     # A Circe import carries its language-2 form (recipe_import_circe()).
     shadow <- pop[["circe_v2"]]

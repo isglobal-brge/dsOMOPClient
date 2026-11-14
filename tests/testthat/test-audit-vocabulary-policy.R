@@ -99,7 +99,7 @@ test_that("Circe origin and wire meta cannot introduce executable policy require
   plan <- recipe_to_plan(native)
   plan$meta$example <- decoy
   expect_false(dsOMOPClient:::.ohdsiHasImportedValidity(plan))
-  pop <- omop_population(id = "circe_provenance", index_event = omop_index_event(201820L))
+  pop <- omop_population(id = "circe_provenance", index_event = omop_index_event(201820L, table = "condition_occurrence"))
   pop$circe_provenance <- decoy
   native <- omop_recipe(populations = pop)
   expect_false(dsOMOPClient:::.ohdsiHasImportedValidity(native))
