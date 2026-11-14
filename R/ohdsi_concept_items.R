@@ -72,7 +72,7 @@
       fail("invalid_concept_id", paste0(at, ".concept"), "provide CONCEPT_ID and documented descriptive fields only")
     }
     id <- con$CONCEPT_ID
-    if (!typeof(id) %in% c("integer", "double") || is.object(id) ||
+    if (!typeof(id) %in% c("integer", "double") || is.object(id) || !is.null(dim(id)) ||
         length(id) != 1L || is.na(id) || !is.finite(id) ||
         id != floor(id) || id < 0 || id > 2147483647) {
       fail("invalid_concept_id", paste0(at, ".concept.CONCEPT_ID"),
@@ -81,7 +81,7 @@
     values <- lapply(flags, function(flag) {
       if (!flag %in% names(it)) return(FALSE)
       v <- it[[flag]]
-      if (!is.logical(v) || is.object(v) || length(v) != 1L || is.na(v)) {
+      if (!is.logical(v) || is.object(v) || !is.null(dim(v)) || length(v) != 1L || is.na(v)) {
         fail("invalid_concept_flag", paste0(at, ".", flag), "provide a JSON Boolean; omit the flag for false")
       }
       unname(v)

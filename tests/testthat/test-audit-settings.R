@@ -8,7 +8,7 @@
 test_that("effective audit settings are strict and normalize only supported defaults", {
   for (case in .audit_cases) {
     omitted <- .auditEffectiveSettings(case$id, list())
-    for (zero in list(0L, 0, "0", "+0", "-0")) {
+    for (zero in list(0L, 0, "0", "+0", "-0", "0.0", "0e0")) {
       explicit <- .auditEffectiveSettings(case$id, setNames(list(zero), case$parameter))
       expect_identical(explicit, omitted)
     }
@@ -16,7 +16,7 @@ test_that("effective audit settings are strict and normalize only supported defa
       expect_error(.auditEffectiveSettings(case$id, setNames(list(value), case$parameter)), case$reason)
     }
     for (value in list(NULL, NA, NaN, Inf, .5, "0.5", "NaN", "Inf", "secret-sql", TRUE,
-                       integer(0), c(0, 1), list(0), structure(0, class = "opaque"))) {
+                       integer(0), c(0, 1), matrix(0), list(0), structure(0, class = "opaque"))) {
       expect_error(.auditEffectiveSettings(case$id, setNames(list(value), case$parameter)), "invalid_setting")
     }
   }

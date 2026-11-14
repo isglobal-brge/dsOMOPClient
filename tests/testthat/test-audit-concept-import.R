@@ -14,7 +14,7 @@
 
 test_that("strict IDs reject lossy coercions in both list import paths", {
   bad <- list(201826.9, -1, NA_real_, NaN, Inf, 2147483648, "201826", TRUE,
-              NULL, c(1, 2), list(1), list(x = 1), factor("1"),
+              NULL, c(1, 2), list(1), list(x = 1), matrix(1), factor("1"),
               as.Date("2020-01-01"), structure(1, class = "opaque"))
   for (id in bad) .audit_import_both(.audit_expression(id), "invalid_concept_id")
   missing <- list(items = list(list(concept = list(CONCEPT_NAME = "name"))))
@@ -50,7 +50,7 @@ test_that("strict JSON numbers and duplicate keys cannot be normalized away", {
 
 test_that("present flags are Boolean and all items are validated before subset rules", {
   for (flag in c("isExcluded", "includeDescendants", "includeMapped")) {
-    for (value in list("false", 0, 1, NULL, logical(0), c(TRUE, FALSE), NA)) {
+    for (value in list("false", 0, 1, NULL, logical(0), c(TRUE, FALSE), matrix(TRUE), NA)) {
       expr <- .audit_expression()
       expr$items[[1L]][flag] <- list(value)
       .audit_import_both(expr, "invalid_concept_flag")
