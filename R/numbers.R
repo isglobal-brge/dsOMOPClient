@@ -239,6 +239,7 @@ omop_number_derive <- function(inputs,exprs,unit,result=NULL,reducer=NULL,number
 .numberWireDerived <- function(ctx,d,context) {
   d<-.numberBindParams(d,context)
   out<-d[!vapply(d,is.null,logical(1))]
+  if(!is.null(d$input))out$input<-.v2w_variable(ctx,d$input,paste0(context,"_daily"))
   if(!is.null(d$source))out$source<-.v2c_source(ctx,d$source,context)
   if(!is.null(d$window))out$window<-.v2w_window(ctx,d$window,context)
   if(!is.null(d$reference))out$reference<-if(identical(d$reference,"first"))list(kind="first_observation") else .dateWireSource(ctx,d$reference,context)
@@ -310,4 +311,30 @@ omop_number_derive <- function(inputs,exprs,unit,result=NULL,reducer=NULL,number
     return(lapply(x,.numberRecipePlain))
   }
   x
+}
+
+#' Collapse numeric observations by recorded calendar day
+#'
+#' @param input Numeric event rows or an unreduced same-event numeric expression.
+#' @param reducer Explicit numeric omop_reduce declaration, with value/unit omitted.
+#' @param within_day mean, max or first in canonical event order.
+#' @param missing skip or propagate within each day, independently of the outer reducer.
+#' @param number_spec Final numeric presentation after both reductions.
+#' @return An ordinary numeric variable requiring the number.daily capability.
+#' @details Selection precedes grouping by person/consumer episode, source,
+#' concept, normalized coordinate and recorded date. Input presentation precedes
+#' collapse. No absent days are filled. Selected-row ranges and visit identities
+#' are discarded, including for first. Multiple concepts require an explicitly
+#' declared common coordinate; they remain separate concept-day observations.
+#' @export
+omop_number_daily <- function(input,reducer,within_day="mean",missing="skip",number_spec=NULL) {
+  input<-.numberVariableArg(input)
+  if(!(input$derived$kind %||% "") %in% c("number_rows","number_derive") || !is.null(input$derived$reducer))
+    .numberReject("/input: use numeric event rows or an unreduced same-event derive.","number_daily_input")
+  if(!inherits(reducer,"omop_reducer")||isTRUE(attr(reducer,"number_value_explicit"))||!is.null(reducer$unit))
+    .numberReject("/reducer: use an explicit numeric omop_reduce with value/unit omitted.","number_daily_reducer")
+  reducer$value<-NULL;.numberReducerCheck(reducer)
+  .numberVariable(list(kind="number_daily",input=input,reducer=reducer,
+    within_day=.numberChoice(within_day,c("mean","max","first")),
+    missing=.numberChoice(missing,c("skip","propagate"))),number_spec)
 }

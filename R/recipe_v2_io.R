@@ -64,7 +64,7 @@
       if(!is.null(d$source)){d$event<-d$source;d$source<-NULL}
       if(!is.null(d$count_kind)){d$kind<-d$count_kind;d$count_kind<-NULL}
       d$number_spec<-x$number_spec
-      if(!ctor %in% c("omop_number_rows","omop_number_column")) d$broadcast<-x$broadcast
+      if(!ctor %in% c("omop_number_rows","omop_number_column","omop_number_daily")) d$broadcast<-x$broadcast
       return(list(ctor=ctor,args=d,name=x$name))
     }
     if((d$kind %||% "") %in% .DATE_KINDS) {
@@ -260,7 +260,7 @@
     return(out)
   }
   ctor <- as.character(ctor)[[1L]]
-  allowed <- c("omop_category_column","omop_category_reduce","omop_timepoint", "omop_timepoints", "omop_visits", ".repeatedScalar", ".categoryIndicatorScalar", "omop_category_rows", "omop_category_indicators", "omop_category", "omop_category_spec", "omop_category_order", "omop_category_recode", "omop_category_rollup", "omop_category_language", "omop_category_missing", "omop_category_binary", "omop_number", "omop_number_spec", "omop_number_pipeline", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_number_rows", "omop_number_column", "omop_number_count", "omop_number_change", "omop_number_derive", "omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
+  allowed <- c("omop_number_daily","omop_category_column","omop_category_reduce","omop_timepoint", "omop_timepoints", "omop_visits", ".repeatedScalar", ".categoryIndicatorScalar", "omop_category_rows", "omop_category_indicators", "omop_category", "omop_category_spec", "omop_category_order", "omop_category_recode", "omop_category_rollup", "omop_category_language", "omop_category_missing", "omop_category_binary", "omop_number", "omop_number_spec", "omop_number_pipeline", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_number_rows", "omop_number_column", "omop_number_count", "omop_number_change", "omop_number_derive", "omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
                "omop_ethnicity", "omop_birth_year_band", "omop_died", "omop_days_to_death",
                "omop_n_observation_periods", "omop_obs_duration", "omop_prior_obs",
                "omop_followup", "omop_observed_days", "omop_score", "omop_concept_set",
