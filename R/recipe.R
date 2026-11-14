@@ -6518,8 +6518,8 @@ recipe_to_code <- function(recipe) {
 #' @seealso \code{\link{recipe_import_json}}, \code{\link{recipe_to_code}}
 #' @export
 recipe_export_json <- function(recipe, file = NULL) {
-  # digits = NA: every number keeps its full precision (unit conversion
-  # factors and value thresholds must round-trip exactly).
+  # Numeric declarations use exact round-tripping scalar serialization so
+  # conversion factors and adjacent boundaries survive interchange.
   json <- if(.numberHas(recipe)) .ds_json_lossless(.numberRecipePlain(.recipe_plain(recipe))) else
     jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
                     null = "null", digits = NA)
