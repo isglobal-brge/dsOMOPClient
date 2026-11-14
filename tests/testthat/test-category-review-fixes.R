@@ -179,3 +179,19 @@ test_that("R2 category ordering, recodes and resets use the public producer doma
   expect_equal(unlist(books$prospective$levels[[2]]$keys),unlist(books$published$levels[[2]]$keys))
   expect_equal(unlist(books$prospective$levels[[2]]$labels),unlist(books$published$levels[[2]]$labels))
 })
+
+
+test_that("R1 expanded-column projection also preserves long output structure", {
+  ctx <- .clf_setup(); .numeric_lexer()
+  e <- omop_event("observation",45000120L,name="answers")
+  v <- omop_category_reduce(omop_category_rows(e,"value_as_concept_id"),omop_reduce("nth_value",n=c(1L,3L)),broadcast=TRUE)
+  r <- omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e,select="all")),
+    variables=list(answer=v),outputs=omop_output("long",format="long",rows="p",sources=list(e),columns="answer_3"))
+  books <- .category_review_books(r,ctx,"NthLong")
+  expect_identical(books$prospective$name[startsWith(books$prospective$name,"answer")],"answer_3")
+  expect_identical(books$published$name[startsWith(books$published$name,"answer")],"answer_3")
+  for (f in .clf_frames(ctx,"NthLong")) {
+    expect_true(all(c("row_id","cohort_row_id","person_id","concept_id") %in% names(f)))
+    expect_equal(nrow(f),18L)
+  }
+})
