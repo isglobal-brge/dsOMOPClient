@@ -34,6 +34,9 @@ exact minimum or maximum distance. Ambiguity defaults to refusal: declare a
 complete priority or request `multiple="all"` with category indicators.
 Use `omop_category_reduce()` over explicit event category rows when mapping
 must happen *before* mode/distinct/count, rather than after selecting a value.
+Reduction consumes that input stage once. An explicit outer category wrapper
+can request another applicable recode, hierarchy stage, or vocabulary style
+on the resulting identity.
 
 ```r
 lab <- omop_event("measurement", 3000963L, name = "hemoglobin")
