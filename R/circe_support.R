@@ -269,7 +269,7 @@ recipe_circe_check <- function(x, direction = "import") {
       if (!fields(demo, c("Age", "Gender"), dp)) next
       for (field in intersect(c("Age", "Gender"), names(demo))) {
         probe(.circe_demographics_to_filters(list(demo[field])), paste0(dp, ".", field),
-          "Demographics", "Use supported integer age bounds and one standard Female/Male concept.")
+          "Demographics", "An unsupported Age operator or gender requires documented integer age bounds and one standard Female/Male concept.")
       }
     }
     if (!length(ex$CriteriaList) && !length(ex$DemographicCriteriaList) && !length(ex$Groups)) add(at, "InclusionRule", "Empty inclusion rules are not supported.")
