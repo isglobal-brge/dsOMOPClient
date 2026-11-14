@@ -1,0 +1,189 @@
+---
+title: "Native study declarations — dsOMOP 2.10.5"
+output:
+  html_document:
+    self_contained: true
+params:
+  conns: null
+  resource: labels
+---
+
+```{r setup, include=FALSE}
+stopifnot(packageVersion("dsOMOPClient") == "2.10.5")
+library(dsOMOPClient)
+stopifnot(!is.null(params$conns),length(params$conns)>=2L)
+knitr::opts_chunk$set(error=FALSE,warning=FALSE,message=FALSE)
+source(system.file("examples","audit-numeric-studies.R",package="dsOMOPClient"))
+```
+
+This lesson requires the integrated 2.10.5 pair. These constructors are not
+2.10.4 APIs. The acceptance fixture is synthetic: each person has values 3, 3,
+9 on January 1 and 15 on January 2, in one declared numeric unit. It is not a
+GiBleed laboratory dataset or a clinical reference range. GiBleed is suitable
+for basic OMOP structure; numeric laboratory lessons need the versioned
+Synthea27Nj fixture or an explicitly labelled synthetic fixture such as this.
+
+Selection, calendar-day weighting and final presentation
+------------------------------------------------------
+
+The event's unit policy is explicit. Each day contributes once after its
+within-day mean. Days without observations do not appear. Multiple episodes
+still belong to their real people; they do not increase disclosure support.
+
+```{r daily-declaration}
+lab <- omop_event("measurement",3000963L,name="lab",unit=omop_unit(8554L))
+raw <- omop_variable(event=lab,reducer=omop_reduce("mean"))
+daily <- omop_number_daily(omop_number_rows(lab),omop_reduce("mean"))
+study <- omop_recipe(variables=list(raw=raw,daily=daily),
+  populations=omop_population("p",index=omop_index(lab)),
+  outputs=omop_output("o",rows="p"))
+result <- recipe_execute(study,out="AuditLesson",symbol=params$resource,
+                         conns=params$conns,output_mode="memory")
+```
+
+Only admitted aggregates are displayed. The independent hand answers are raw
+record mean 7.5 and mean of daily means 10. `ds.quantileMean` combines site
+quantiles; it does not generally compute exact pooled quantiles.
+
+```{r admitted-aggregates}
+raw_mean <- dsBaseClient::ds.mean("AuditLesson$raw",type="combine",datasources=params$conns)
+day_mean <- dsBaseClient::ds.mean("AuditLesson$daily",type="combine",datasources=params$conns)
+stopifnot(abs(raw_mean$Global.Mean[1,1]-7.5)<1e-10,
+          abs(day_mean$Global.Mean[1,1]-10)<1e-10)
+print(raw_mean)
+print(day_mean)
+day_quantiles <- dsBaseClient::ds.quantileMean("AuditLesson$daily",type="combine",datasources=params$conns)
+stopifnot(all(abs(unlist(day_quantiles)[1:7]-10)<1e-10))
+print(day_quantiles)
+```
+
+Staging uses the same final gate and declared meaning. A staged descriptor is
+not a generic R data frame; consumer compatibility requires its supported
+restoration adapter. This chunk validates the published metadata, without
+claiming a direct dsBase call on a descriptor.
+
+```{r staged-publication}
+staged <- recipe_execute(study,out="AuditLessonStaged",symbol=params$resource,
+                         conns=params$conns,output_mode="staged")
+books <- recipe_codebook(staged)
+stopifnot(length(books)==1L,books[[1]]$status=="published")
+print(books[[1]]$columns[,c("name","semantic_type","unit","privacy_class")])
+```
+
+Exercises with executable declarations
+-------------------------------------
+
+The supplied study declarations use the existing closed numeric operations.
+The server acceptance file `test-audit-study-recipes.R` executes their independent
+oracles through the normal final gate. The following chunks rebuild each public
+declaration; they do not print patient rows.
+
+```{r study-declarations}
+windows <- audit_windows()
+pre_index <- audit_windows(TRUE)
+comparisons <- audit_numeric_studies(lab)
+stopifnot(all(c("difference","ratio","percent_change","observation_fraction",
+               "previous_days_min","current_day_max","clean_mean") %in% names(comparisons)))
+length(comparisons)
+```
+
+1. Occurrence starts at offsets -366, -365, -181, -180, -31, -30, 0, 1 give
+   6/4/2 for the inclusive long/medium/short windows and 5/3/1 for pre-index
+   windows. Era-overlap selection is a different question. FE catalogue zero
+   means all-history cohort-member prevalence, not these windows.
+2. Independently selected baseline and six-month visits are not contemporaneous.
+   Baseline 10/follow-up 15 gives difference 5, ratio 1.5 and percentage change
+   50; follow-up 20 at another site's visit schedule gives 10, 2 and 100.
+3. Values 4, 6, 10, NA give eligible-observation fraction 2/3 in inclusive [4,6]
+   and one value above 6. This is not glucose elapsed time in range.
+4. Previous-calendar-days minimum [-7,-1] and current-day maximum [0,0] are
+   episode-scoped day summaries. Same-day candidates are excluded from history;
+   two recorded dates do not establish a 48-hour interval. Count distinct people,
+   not episodes or inferred incident AKI events.
+5. Heights 170/400 with declared bounds [0,250] give raw mean 285, pre-reduction
+   set-NA mean 170 and clipped mean 210. Cleaning the already-reduced mean is
+   different. Bounds here are synthetic teaching declarations.
+6. Check integer equality before ordinal pain bins: 0/10 valid, 2.5/11 invalid,
+   missing remains missing. Keep all declared levels 0 through 10, including
+   unused levels, with an explicit model contrast/reference.
+
+```{r pain-declaration}
+pain <- audit_pain_scale(omop_variable(event=lab,reducer=omop_reduce("last_value")))
+stopifnot(setequal(names(pain),c("numeric","ordinal")))
+```
+
+Formula inputs and units
+------------------------
+
+BMI uses kg/metres; MAP is the arithmetic approximation (SBP + 2 DBP)/3, not
+measured arterial pressure. eGFR uses the race-free CKD-EPI 2021 creatinine
+formula, explicit IDMS-standardized mg/dL, completed calendar years at the
+selected creatinine measurement, adult eligibility and explicit disjoint sex
+mapping. Unknown sex, age under 18 and invalid creatinine produce missing.
+A declared conversion of 88.4 µmol/L per mg/dL belongs before the formula.
+No formula infers units, assay suitability or sex from an observed value.
+
+```{r formula-declaration}
+weight <- omop_number(raw,omop_number_spec(unit=omop_number_unit("unit:8554","coordinate:kg",1)))
+height <- omop_number(raw,omop_number_spec(unit=omop_number_unit("unit:8554","coordinate:metres",1)))
+bmi <- omop_formula_bmi(weight,height)
+stopifnot(inherits(bmi,"omop_variable"))
+```
+
+The teaching declaration above illustrates explicit coordinates; the same raw
+column must not be treated as actual weight and height in a real study. The
+formula acceptance uses separate, known synthetic 80 kg and 2 m operands and
+checks BMI 20 against an independent oracle.
+
+Pooling, meaning and reproducibility
+-----------------------------------
+
+A pooled sufficient-statistic mean weights sites by eligible people. A mean of
+site estimates answers a different question. Withheld is never zero.
+
+```{r pooling-exercise}
+site_n <- c(2,8); site_mean <- c(10,20)
+stopifnot(weighted.mean(site_mean,site_n)==18,mean(site_mean)==15)
+data.frame(pooled_mean=weighted.mean(site_mean,site_n),mean_of_site_means=mean(site_mean))
+```
+
+A pooled GLM is not inverse-variance SLMA. Personal rates, episode-days and
+unioned person-days have different denominators. Repeated rows require a
+within-person dependence model. A person-period Poisson GLM must declare the
+count outcome, log link, log(person-time) offset and dependence assumptions;
+SCCS partitions alone are preparation, not a conditional SCCS estimate.
+Cross-site resource checks do not deduplicate someone attending two hospitals.
+
+Equal labels do not establish equivalent instruments, question universes,
+coverage or vocabulary expansion. Compare codebooks, full source definitions,
+unit conversions, missing/unavailable policies and reference versions. Retain
+namespace, scope digest and definition when joining covariate IDs.
+
+```{r local-bundle}
+bundle <- recipe_study_bundle(result,list(id="audit-day-weighting",protocol_version="1.0.0",
+  roles=list(target=list(population="p")),reference_versions=list(fixture="synthetic-day-values-1")))
+stopifnot(bundle$snapshot$status=="unknown")
+print(bundle$publication$status)
+```
+
+A plan digest identifies a declaration, not a database snapshot. Supply an
+already-authorized owner snapshot ID and provenance if available. Bundle
+construction makes no network calls and cannot certify equal data between runs
+or a complete Strategus study.
+
+Migration appendix and disclosure boundary
+------------------------------------------
+
+Keep historical v1 recipes in the compatibility layer. New work uses native
+language 2 and its typed declarations. Use integer JSON concept IDs and Boolean
+flags. An unsupported Circe clause refuses instead of weakening a phenotype.
+If a clinically required clean period or feature window is unsupported by a
+catalogue route, use an explicitly validated native recipe; dropping the
+scientific requirement is not an equivalent migration.
+
+Private computation may contain small groups. Final accessible components are
+gated on distinct people; protected aggregates apply their own declared
+contract. No raw-row workaround, privacy budget, per-user answer policy or
+mandatory database TLS is introduced. Deterministic noise does not guarantee
+lifetime composition privacy under adaptive queries or evolving data. Shared
+roots preserve identity/noise continuity only when the deployment retains them.
