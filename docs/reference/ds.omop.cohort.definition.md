@@ -13,19 +13,19 @@ ds.omop.cohort.definition(id, symbol = "omop", conns = NULL)
 ## Arguments
 
   - id:
-
+    
     Integer; the cohort definition ID to retrieve. An id that is unknown
     or below the disclosure threshold returns the same not-available
     result (see Disclosure control), so a usable definition requires a
     cohort that appears in `ds.omop.cohort.list`.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

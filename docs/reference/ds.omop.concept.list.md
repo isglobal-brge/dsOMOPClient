@@ -30,55 +30,55 @@ ds.omop.concept.list(
 ## Arguments
 
   - domain:
-
+    
     Character; filter by `domain_id` (e.g. `"Condition"`). `NULL` (the
     default) applies no domain filter.
 
   - vocabulary:
-
+    
     Character; filter by `vocabulary_id` (e.g. `"SNOMED"`). `NULL` (the
     default) applies no vocabulary filter.
 
   - concept\_class:
-
+    
     Character; filter by `concept_class_id`. `NULL` (the default)
     applies no class filter.
 
   - standard:
-
+    
     Character; filter by `standard_concept` value (e.g. `"S"`). `NULL`
     (the default) applies no standard filter.
 
   - valid:
-
+    
     Logical; `TRUE` keeps only currently-valid concepts, `FALSE` only
     invalidated ones. `NULL` (the default) returns both.
 
   - offset:
-
+    
     Integer; number of rows to skip (page start). Default `0`.
 
   - limit:
-
+    
     Integer; page size (default `100`; capped at 1000 server-side).
 
   - order:
-
+    
     Character; column to order by. `NULL` (the default) uses the server
     default (`concept_id`).
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - execute:
-
+    
     Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
     only the reproducible R code without contacting the servers.
 

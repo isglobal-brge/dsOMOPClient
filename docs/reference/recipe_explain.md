@@ -24,20 +24,20 @@ recipe_explain(
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe`.
 
   - detail:
-
+    
     `"summary"` (one line per node) or `"semantics"` (every default and
     rule spelled out).
 
   - conns:
-
+    
     Optional DSI connections (uses the active OMOP session).
 
   - symbol:
-
+    
     OMOP session symbol used with `conns`.
 
 ## Value

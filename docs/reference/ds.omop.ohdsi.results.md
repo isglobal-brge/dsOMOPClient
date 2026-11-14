@@ -30,47 +30,47 @@ ds.omop.ohdsi.results(
 ## Arguments
 
   - table\_name:
-
+    
     Character; which result table to query.
 
   - columns:
-
+    
     Character vector; columns to select (NULL = all safe columns).
 
   - filters:
-
+    
     Named list; WHERE conditions.
 
   - order\_by:
-
+    
     Character; ORDER BY column.
 
   - limit:
-
+    
     Integer; max rows (capped at 5000 server-side).
 
   - tool\_id:
-
+    
     Character; optional tool identifier.
 
   - scope:
-
+    
     Character; `"per_site"` or `"pooled"`.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"`.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL`, uses active session.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, legacy `scope` behaviour is preserved.
 

@@ -35,20 +35,20 @@ ds.omop.value.histogram(
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name (e.g., `"measurement"`).
 
   - value\_col:
-
+    
     Character; the numeric column to histogram (e.g.,
     `"value_as_number"`).
 
   - bins:
-
+    
     Integer; the number of histogram bins (default: 20).
 
   - concept\_id:
-
+    
     Integer or NULL; optional concept ID to restrict rows to a single
     concept of the table before binning (e.g. `value_as_number` for one
     measurement concept). Default: NULL for all rows. The server applies
@@ -58,59 +58,59 @@ ds.omop.value.histogram(
     aggregate via `ds.omop.value.quantiles()` as a fallback).
 
   - cohort\_table:
-
+    
     Character; name of a server-side cohort temp table for filtering, or
     NULL (default: NULL).
 
   - window:
-
+    
     List with `start`/`end` date strings for temporal filtering, or NULL
     (default: NULL).
 
   - cohort:
-
+    
     Cohort reference (a `dsomop_cohort_handle`, a
     `cohort_definition_id`, or a server-side cohort table name), or
     NULL. Takes precedence over `cohort_table`.
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"`.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - execute:
-
+    
     Logical; if `FALSE`, return a dry-run result containing only the
     generated call code (default: `TRUE`).
 
   - plot:
-
+    
     Logical; if `TRUE`, draw a federation-wide bar chart of the pooled,
     shared-edge bins (forces `scope = "pooled"`) and return the result
     invisibly. Default `FALSE`.
 
   - nbins:
-
+    
     Integer; number of display bins used when `plot = TRUE` (default:
     9).
 
   - xlab, main, col:
-
+    
     Axis label, title and bar colour used when `plot = TRUE`.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. A pooled
     plot requires `"combine"` or `"both"`. When omitted, legacy `scope`
     behaviour is preserved.

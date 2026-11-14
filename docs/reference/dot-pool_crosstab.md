@@ -18,11 +18,11 @@ subtraction attacks.
 ## Arguments
 
   - per\_site:
-
+    
     Named list of server cross-tab objects.
 
   - policy:
-
+    
     Character; "strict" or "pooled\_only\_ok".
 
 ## Value

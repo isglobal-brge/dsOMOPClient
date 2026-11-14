@@ -20,31 +20,31 @@ ds.omop.query.pool(
 ## Arguments
 
   - results:
-
+    
     Named list of per-server data frames, as returned by
     `ds.omop.query.exec`.
 
   - query\_id:
-
+    
     Optional character query ID; when supplied, it must match the
     analysis identity carried by `results`.
 
   - sensitive\_fields:
-
+    
     Deprecated and unsupported; must remain `NULL`.
 
   - pool\_strategy:
-
+    
     Deprecated and unsupported; must remain `"sum"`.
 
   - policy:
-
+    
     Character; suppression propagation policy. `"strict"` (the default)
     sets the pooled value to NA if any server suppressed the cell.
     `"pooled_only_ok"` sums only the non-suppressed values.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 

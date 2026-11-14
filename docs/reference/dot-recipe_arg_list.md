@@ -15,7 +15,7 @@ returned unchanged (preserving any element names, e.g. filter IDs).
 ## Arguments
 
   - x:
-
+    
     A single building-block object, a list of them, or `NULL`.
 
 ## Value

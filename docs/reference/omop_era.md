@@ -29,43 +29,43 @@ omop_era(
 ## Arguments
 
   - event:
-
+    
     An `omop_event` (or its name).
 
   - gap:
-
+    
     Tolerated uncovered days between records.
 
   - persistence:
-
+    
     Days added to each course end.
 
   - min\_days:
-
+    
     Minimum course length.
 
   - by:
-
+    
     `"event"`, `"concept"` or `"ingredient"`.
 
   - unmapped:
-
+    
     `"own_concept"` or `"drop"` (ingredient grouping).
 
   - end:
-
+    
     `"recorded_end"` or `"start"` (point records).
 
   - fallback:
-
+    
     `"days_supply"` or `"none"`.
 
   - stockpile:
-
+    
     Logical.
 
   - name:
-
+    
     Interval name.
 
 ## Value

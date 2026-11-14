@@ -8,19 +8,18 @@
 <title>Events, reducers and analysis outputs • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Events, reducers and analysis outputs">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Events, reducers and analysis outputs">
 <meta name="description" content="Build wide, longitudinal and survival outputs with the simple and advanced recipe layers.">
 <meta property="og:description" content="Build wide, longitudinal and survival outputs with the simple and advanced recipe layers.">
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
@@ -33,19 +32,23 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/v01_getting_started.html">Getting Started with dsOMOP v2</a></li>
-    <li><a class="dropdown-item" href="../articles/v02_exploration.html">Schema Exploration</a></li>
-    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Populations, index dates and study recipes</a></li>
-    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Events, reducers and analysis outputs</a></li>
-    <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
-    <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Start here</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-book" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Book</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-book">
+<li><a class="dropdown-item" href="../articles/book-00-start.html">0. Getting started</a></li>
+    <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. DataSHIELD and OMOP</a></li>
+    <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Connecting</a></li>
+    <li><a class="dropdown-item" href="../articles/book-03-explore.html">3. Exploring the CDM</a></li>
+    <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Vocabulary</a></li>
+    <li><a class="dropdown-item" href="../articles/book-05-recipe.html">5. A first recipe</a></li>
+    <li><a class="dropdown-item" href="../articles/book-06-visits.html">6. Visit dates</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-verbal-autopsy.html">7. Verbal-autopsy capstone</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-harmonise.html">8. Two-vocabulary check</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-reproduce.html">9. Reproduction and migration</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -58,7 +61,7 @@
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -66,14 +69,14 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Events, reducers and analysis outputs</h1>
-
-
+            
+      
       <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/v04_extraction.Rmd" class="external-link"><code>vignettes/v04_extraction.Rmd</code></a></small>
       <div class="d-none name"><code>v04_extraction.Rmd</code></div>
     </div>
 
-
-
+    
+    
 <p>These 2.10.4 examples use the integrated recipe-language-2 implementation. They are not evaluated during documentation builds because they need live DataSHIELD connections and study-specific vocabulary inputs. Patient tables are assigned beside the data; use reviewed DataSHIELD methods to analyse them. The previous chapter explains populations and index dates.</p>
 <div class="section level2">
 <h2 id="choose-rows-then-columns">Choose rows, then columns<a class="anchor" aria-label="anchor" href="#choose-rows-then-columns"></a>
@@ -142,7 +145,7 @@
 <p>After publishing the education recipe above, use its committed symbol for a pooled table that retains every permitted category, including unused levels:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_profile"</span>, <span class="st">"education"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>This helper preserves commas and other literal label text and excludes actual missing values. A failed or suppressed site count causes refusal, never a zero substitution. Direct <code>dsBaseClient::ds.table()</code> can omit globally unused levels. Concept factors keep their shared levels during model-frame subsetting; other packages still need their own reviewed methods and model compatibility checks.</p>
+<p>This helper preserves commas and other literal label text and excludes actual missing values. A failed or suppressed site count causes refusal, never a zero substitution. Direct <code><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">dsBaseClient::ds.table()</a></code> can omit globally unused levels. Concept factors keep their shared levels during model-frame subsetting; other packages still need their own reviewed methods and model compatibility checks.</p>
 <p>Derived sex uses the public <code>F</code>, <code>M</code> factor domain. Age bands, birth-year bands and calendar categories are ordered factors, including unused declared levels. Ordered factors use ordered contrasts in R models; choose your model coding explicitly. Use <code><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character()</a></code> for labels, not integer factor codes as values. CSV and Parquet staging preserve levels and order; read them through the staged descriptor contract rather than treating the CSV file as an ordinary download.</p>
 </div>
 <div class="section level2">
@@ -241,7 +244,7 @@
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>profile <span class="op">=</span> <span class="st">"D_profile"</span><span class="op">)</span>,</span>
 <span>                         output_mode <span class="op">=</span> <span class="st">"memory"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="co"># Use the symbols in result's committed inventory for downstream analysis.</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_profile"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_profile"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Assigned ordinary analysis columns can be transformed server-side.</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_profile"</span>, has_cause <span class="op">=</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">cause_of_death</span><span class="op">)</span>,</span>
@@ -258,9 +261,7 @@
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
 </div>
 
@@ -268,6 +269,12 @@
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

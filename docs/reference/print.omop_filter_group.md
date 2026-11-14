@@ -12,11 +12,11 @@ print(x, ...)
 ## Arguments
 
   - x:
-
+    
     An `omop_filter_group` object.
 
   - ...:
-
+    
     Additional arguments (ignored).
 
 ## Value

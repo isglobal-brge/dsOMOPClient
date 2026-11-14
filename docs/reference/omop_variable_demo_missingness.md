@@ -12,7 +12,7 @@ omop_variable_demo_missingness(name = "demo_missingness")
 ## Arguments
 
   - name:
-
+    
     Character; output column name (default `"demo_missingness"`).
 
 ## Value

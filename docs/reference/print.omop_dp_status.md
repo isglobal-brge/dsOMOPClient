@@ -12,11 +12,11 @@ print(x, ...)
 ## Arguments
 
   - x:
-
+    
     An `omop_dp_status` returned by `ds.omop.dp.status`.
 
   - ...:
-
+    
     Unused.
 
 ## Value

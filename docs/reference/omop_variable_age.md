@@ -19,20 +19,20 @@ omop_variable_age(
 ## Arguments
 
   - name:
-
+    
     Character; output column name (default `"age"`).
 
   - reference:
-
+    
     Character; `"today"` or `"index"`.
 
   - reference\_date:
-
+    
     Date or `NULL`; explicit reference date (overrides `reference`).
     Only the year is used for age.
 
   - year:
-
+    
     Integer or `NULL`; convenience shorthand for `reference_date` when
     you only care about a data-collection year (e.g. `year = 2024`).
     Overrides `reference`.

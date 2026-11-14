@@ -18,16 +18,16 @@ ds.omop.plan.validate(plan, symbol = "omop", conns = NULL)
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - symbol:
-
+    
     Character; name of the OMOP session symbol on the server (default
     `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL`, uses the connections stored in
     the session.
 

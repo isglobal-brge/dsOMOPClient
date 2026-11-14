@@ -24,40 +24,40 @@ ds.omop.achilles.results(
 ## Arguments
 
   - analysis\_ids:
-
+    
     Integer vector; the Achilles analysis IDs to retrieve (e.g.,
     `c(1, 2, 400)` for total persons, gender breakdown, and condition
     frequency).
 
   - scope:
-
+    
     Character; `"per_site"` returns each server's results separately,
     `"pooled"` additionally aggregates counts across servers.
 
   - pooling\_policy:
-
+    
     Character; controls how suppressed (NA) cells are handled during
     pooling. `"strict"` (the default) sets the pooled value to NA if any
     server suppressed the cell. `"pooled_only_ok"` sums only the
     non-suppressed values.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - execute:
-
+    
     Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
     only the reproducible R code without contacting the servers.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, legacy `scope` behaviour is preserved.
 

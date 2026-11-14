@@ -14,7 +14,7 @@ string – to the deterministic temp table name the server expects.
 ## Arguments
 
   - x:
-
+    
     A `dsomop_cohort_handle`, a numeric cohort definition ID, or a
     character table/symbol name.
 

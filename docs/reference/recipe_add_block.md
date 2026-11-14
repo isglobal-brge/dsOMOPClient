@@ -16,11 +16,11 @@ recipe_add_block(recipe, block)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - block:
-
+    
     An `omop_variable_block` object.
 
 ## Value

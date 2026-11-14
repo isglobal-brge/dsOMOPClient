@@ -18,17 +18,17 @@ omop.feature.max_value(
 ## Arguments
 
   - concept\_set:
-
+    
     Numeric vector of concept IDs, or an `omop_concept_set` object
     defining the concepts to match.
 
   - value\_column:
-
+    
     Character; name of the numeric column from which to find the maximum
     (default `"value_as_number"`).
 
   - name:
-
+    
     Character; optional custom name for the feature column. If `NULL`,
     auto-generated from the concept and table context.
 

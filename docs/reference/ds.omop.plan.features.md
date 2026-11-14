@@ -24,32 +24,32 @@ ds.omop.plan.features(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - name:
-
+    
     Character; output name used as a key in the plan's outputs list.
 
   - table:
-
+    
     Character; source OMOP table name (e.g. `"condition_occurrence"`,
     `"measurement"`).
 
   - specs:
-
+    
     Named list of `omop_feature_spec` objects created by the
     `omop.feature.*` family of functions (e.g. `omop.feature.boolean`,
     `omop.feature.count`).
 
   - grain:
-
+    
     Character; `"person"` (default) or `"episode"`. Episode grain
     preserves one row per cohort episode and requires
     `temporal$index_window`.
 
   - temporal:
-
+    
     Optional `omop.temporal()` specification. Supply an `index_window`
     when `grain = "episode"` or when feature specs contain
     episode-relative `time_window` values.

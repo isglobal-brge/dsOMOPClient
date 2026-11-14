@@ -27,20 +27,20 @@ ds.omop.value.counts(
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name (e.g., `"condition_occurrence"`).
 
   - column:
-
+    
     Character; the column to count distinct values for (e.g.,
     `"condition_type_concept_id"`).
 
   - top\_n:
-
+    
     Integer; the number of most frequent values to return (default: 20).
 
   - concept\_id:
-
+    
     Integer or NULL; optional concept ID to restrict rows to a single
     concept of the table before counting values (e.g., the
     `value_as_concept_id` categories for one measurement concept).
@@ -48,34 +48,34 @@ ds.omop.value.counts(
     controls to the concept-filtered population.
 
   - cohort:
-
+    
     Cohort reference (a `dsomop_cohort_handle`, a
     `cohort_definition_id`, or a server-side cohort table name), or
     NULL.
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"`.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - execute:
-
+    
     Logical; if `FALSE`, return a dry-run result containing only the
     generated call code (default: `TRUE`).
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, legacy `scope` behaviour is preserved.
 

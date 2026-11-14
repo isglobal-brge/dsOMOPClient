@@ -13,7 +13,7 @@ pack-prefixed name `"dsomop:<query_id>"`. This prefixes a bare legacy
 ## Arguments
 
   - query\_id:
-
+    
     Character; a legacy query id or an already-prefixed name.
 
 ## Value

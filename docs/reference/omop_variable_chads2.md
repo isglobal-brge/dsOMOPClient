@@ -13,11 +13,11 @@ omop_variable_chads2(name = "chads2", reference_date = NULL)
 ## Arguments
 
   - name:
-
+    
     Character; output column name (default `"chads2"`).
 
   - reference\_date:
-
+    
     Date or `NULL`; date for the age component. When omitted, today's
     date is recorded at construction time.
 

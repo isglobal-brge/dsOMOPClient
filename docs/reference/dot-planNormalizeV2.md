@@ -24,11 +24,11 @@ removed; the result is a fixed point.
 ## Arguments
 
   - plan:
-
+    
     A version-2 plan (a parsed JSON list or a plan object).
 
   - schema:
-
+    
     Optional parsed plan-v2 schema (the packaged one by default).
 
 ## Value

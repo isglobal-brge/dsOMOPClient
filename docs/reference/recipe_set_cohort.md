@@ -13,11 +13,11 @@ recipe_set_cohort(recipe, cohort_definition_id)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - cohort\_definition\_id:
-
+    
     Integer or `NULL`; cohort definition ID to use as the recipe base
     population. Use `NULL` to clear the reference.
 

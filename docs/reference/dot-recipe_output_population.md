@@ -17,15 +17,15 @@ outputs).
 ## Arguments
 
   - plan\_out\_name:
-
+    
     Character; a name in `plan$outputs`.
 
   - recipe\_outputs:
-
+    
     Named list of `omop_output` objects.
 
   - recipe\_out\_names:
-
+    
     Character vector; `names(recipe_outputs)`.
 
 ## Value

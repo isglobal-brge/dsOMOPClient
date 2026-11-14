@@ -12,15 +12,15 @@ ds.omop.ohdsi.tables(symbol = "omop", conns = NULL, type = NULL)
 ## Arguments
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL`, uses active session.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. The
     historical default is `"both"`.
 

@@ -26,47 +26,47 @@ ds.omop.prevalence(
 ## Arguments
 
   - concept\_id:
-
+    
     Integer vector or `NULL`; when supplied, the gated result is
     narrowed to these covariate concept id(s) (a post-gate row subset).
     `NULL` (the default) returns the domain's top covariates.
 
   - cohort:
-
+    
     Cohort reference to scope to: a `dsomop_cohort_handle`, a
     `cohort_definition_id`, or a server-side cohort table name. Required
     unless `tables` is given.
 
   - domain:
-
+    
     Character; clinical domain by name (`"condition"`, `"drug"`,
     `"procedure"`, `"measurement"`, `"observation"`) or its code
     (`"0"`-`"4"`). Default `"condition"`.
 
   - top\_n:
-
+    
     Integer; number of top covariates to return (default 50).
 
   - tables:
-
+    
     Optional character vector of `omop.table` symbol names to scope to
     (their distinct persons); may be combined with `cohort`.
 
   - plot:
-
+    
     Logical; build the entry's client-side plot over the gated data
     (default `FALSE`). See `ds.omop.analysis.run`.
 
   - symbol:
-
+    
     Character; the session symbol (default `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or `NULL` to use the session default.
 
   - type:
-
+    
     Result view: `"both"` (default), `"split"`, or `"combine"`;
     dsBaseClient-style aliases are accepted.
 

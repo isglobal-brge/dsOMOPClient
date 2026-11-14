@@ -23,40 +23,40 @@ ds.omop.table.stats(
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name (e.g., `"condition_occurrence"`,
     `"person"`).
 
   - stats:
-
+    
     Character vector; which statistics to compute. Supported values are
     `"rows"` (total row count) and `"persons"` (distinct person count).
     Default: `c("rows", "persons")`.
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) requires all servers to succeed,
     `"pooled_only_ok"` allows partial results.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - execute:
-
+    
     Logical; if `FALSE`, return a dry-run result containing only the
     generated call code (default: `TRUE`).
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`; aliases
     follow dsBaseClient conventions. When omitted, legacy `scope`
     behaviour is preserved.

@@ -17,11 +17,11 @@ omop_variable_obs_duration(
 ## Arguments
 
   - name:
-
+    
     Character; output column name (default `"obs_duration"`).
 
   - period\_policy:
-
+    
     Character; one of `"total"`, `"first"`, `"last"`, or `"longest"`.
 
 ## Value

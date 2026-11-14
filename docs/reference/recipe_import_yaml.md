@@ -12,7 +12,7 @@ recipe_import_yaml(yaml)
 ## Arguments
 
   - yaml:
-
+    
     Character; a YAML string, or a file path to a YAML file.
 
 ## Value

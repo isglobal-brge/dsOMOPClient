@@ -21,21 +21,21 @@ recipe_set_options(
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - translate\_concepts:
-
+    
     Logical; if `TRUE`, concept ID columns are translated to
     human-readable concept names in output tables.
 
   - block\_sensitive:
-
+    
     Logical; if `TRUE`, sensitive columns (e.g. exact dates, free-text
     notes) are excluded from outputs.
 
   - factor\_concepts:
-
+    
     Logical; if `TRUE`, after a memory-mode execution every
     `_concept_id` column is converted to a factor whose levels are
     harmonized across all connected servers.

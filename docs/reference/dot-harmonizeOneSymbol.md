@@ -16,15 +16,15 @@ objects use the legacy level transport.
 ## Arguments
 
   - sym:
-
+    
     Character; per-site server symbols of one retained component.
 
   - conns:
-
+    
     DSI connections restricted to that component's retained sites.
 
   - .retry:
-
+    
     Internal flag allowing one evidence refresh.
 
 ## Value

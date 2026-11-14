@@ -15,7 +15,7 @@ untouched.
 ## Arguments
 
   - out:
-
+    
     Named output-to-base-symbol mapping.
 
 ## Value

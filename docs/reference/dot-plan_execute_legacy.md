@@ -25,35 +25,35 @@ harmonisation. No publication status is read and nothing is revoked.
 ## Arguments
 
   - plan:
-
+    
     A v1 plan (after the staged-mode preparation).
 
   - out:
-
+    
     The caller's out mapping.
 
   - symbol:
-
+    
     OMOP session symbol.
 
   - session:
-
+    
     The OMOP session.
 
   - conns:
-
+    
     DSI connections.
 
   - output\_mode:
-
+    
     `"memory"` or `"staged"`.
 
   - server\_method:
-
+    
     Assign method.
 
   - harmonize\_factors:
-
+    
     Logical.
 
 ## Value

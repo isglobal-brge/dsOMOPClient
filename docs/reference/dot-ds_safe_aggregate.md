@@ -16,11 +16,11 @@ reason.
 ## Arguments
 
   - conns:
-
+    
     DSI connections object.
 
   - expr:
-
+    
     The call expression to evaluate.
 
 ## Value

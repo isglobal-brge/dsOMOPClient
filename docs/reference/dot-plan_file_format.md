@@ -12,11 +12,11 @@ extension (`.json` / `.yml` / `.yaml`). Mirrors `.recipe_file_format`.
 ## Arguments
 
   - file:
-
+    
     Character; the file path.
 
   - format:
-
+    
     Character or `NULL`; an explicit format override.
 
 ## Value

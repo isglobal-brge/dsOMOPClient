@@ -2,13 +2,13 @@ url: https://isglobal-brge.github.io/dsOMOPClient/
 template:
   bootstrap: 5
   bslib:
-    primary: '#005b8f'
-    secondary: '#5c6f7b'
-    success: '#4c9a2a'
+    primary: '#003142'
+    secondary: '#337ab7'
+    warning: '#f19119'
     bg: '#ffffff'
     fg: '#233746'
-    base_font: 'Source Sans 3, Source Sans Pro, Arial, sans-serif'
-    heading_font: 'Source Sans 3, Source Sans Pro, Arial, sans-serif'
+    base_font: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
+    heading_font: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
     code_font: 'ui-monospace, SFMono-Regular, Menlo, monospace'
     font-size-base: 1.05rem
     border-radius: 0.3rem

@@ -22,28 +22,28 @@ ds.omop.domain.coverage(
 ## Arguments
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"`.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - execute:
-
+    
     Logical; if `FALSE`, return a dry-run result containing only the
     generated call code (default: `TRUE`).
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, legacy `scope` behaviour is preserved.
 

@@ -73,113 +73,113 @@ omop_age_at(
 ## Arguments
 
   - precision:
-
+    
     Calendar period, day, relative\_days or custom.
 
   - representation:
-
+    
     auto, factor, number, start or end.
 
   - numeric:
-
+    
     index or decimal\_year period coordinate.
 
   - origin:
-
+    
     Fixed ISO origin for numeric period indices (default 1970-01-01).
 
   - anchor:
-
+    
     Relative-days anchor.
 
   - pattern:
-
+    
     Closed calendar pattern; ISO weeks require %G-W%V.
 
   - labels:
-
+    
     Named public calendar label map; labels must remain unique.
 
   - level\_range:
-
+    
     Two inclusive public ISO dates declaring factor periods.
 
   - fiscal\_start:
-
+    
     Fiscal starting month (1..12).
 
   - week\_start, week\_min\_days:
-
+    
     Explicit epidemiological week profile (1..7).
 
   - hemisphere:
-
+    
     north or south, for meteorological seasons.
 
   - partial:
-
+    
     none, start, mid or end, for incomplete dates.
 
   - invalid:
-
+    
     na (invalid row values remain missing).
 
   - future:
-
+    
     allow or na; na requires a fixed as\_of.
 
   - as\_of:
-
+    
     Fixed ISO future-policy cutoff.
 
   - reference, from, to:
-
+    
     Date sources: anchor, ISO date, index, index\_end,
     observation\_start/end, birth, death, first\_visit or last\_visit.
 
   - date\_spec:
-
+    
     Optional omop\_date\_spec declaration.
 
   - broadcast:
-
+    
     Repeat a roster value in long event rows.
 
   - year, month, day:
-
+    
     Integer literals or registered integer source columns.
 
   - event:
-
+    
     Optional event source for components (default person).
 
   - which, n, scope, search:
-
+    
     Existing anchor row-selection semantics.
 
   - parts:
-
+    
     Unique date parts; named entries supply exact final column names.
 
   - unit:
-
+    
     days, weeks, months, years or decimal\_years; age also
     annual\_years.
 
   - absolute:
-
+    
     Absolute elapsed time (default signed to minus from).
 
   - rounding:
-
+    
     none, floor, ceiling, trunc or nearest (ties to even).
 
   - bands:
-
+    
     Return ordered age bands (years/annual\_years only).
 
   - age\_breaks:
-
+    
     Integer lower bounds beginning at zero; default 0,5,...,100.
 
 ## Value

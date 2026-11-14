@@ -16,11 +16,11 @@ fail-closed and ANDs them into the extraction WHERE.
 ## Arguments
 
   - vars:
-
+    
     List of `omop_variable` objects (typically one table's).
 
   - table:
-
+    
     Character or `NULL`; source OMOP table.
 
 ## Value

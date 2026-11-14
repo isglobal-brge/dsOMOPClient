@@ -11,7 +11,7 @@ The dsOMOP methods each server's profile publishes
 ## Arguments
 
   - conns:
-
+    
     DSI connections.
 
 ## Value

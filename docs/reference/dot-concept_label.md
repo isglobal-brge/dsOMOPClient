@@ -11,11 +11,11 @@ Format a concept label for filter display (vector-safe)
 ## Arguments
 
   - concept\_id:
-
+    
     Integer scalar or vector of concept IDs
 
   - concept\_name:
-
+    
     Character or NULL; human-readable name(s)
 
 ## Value

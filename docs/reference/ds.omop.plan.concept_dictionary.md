@@ -18,17 +18,17 @@ ds.omop.plan.concept_dictionary(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - source\_outputs:
-
+    
     Character vector; names of outputs to scan for concept IDs. If
     `NULL` (the default), all non-dictionary outputs in the plan are
     scanned.
 
   - name:
-
+    
     Character; output name used as a key in the plan's outputs list.
 
 ## Value

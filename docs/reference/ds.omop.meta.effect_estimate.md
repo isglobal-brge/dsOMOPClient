@@ -29,46 +29,46 @@ ds.omop.meta.effect_estimate(
 ## Arguments
 
   - name:
-
+    
     Character; the per-site effect-estimate analysis id. Default
     `"dsomop:cm.effect_estimate"` (CohortMethod). Use
     `"dsomop:sccs.incidence_rate_ratio"` for SCCS, or the `es_cm_result`
     / `es_sccs_result` evidence-synthesis ids.
 
   - params:
-
+    
     Named list of analysis params (e.g. `outcome_concept_id`,
     `model_type`); passed through to the per-site analysis unchanged.
 
   - cohort:
-
+    
     For CohortMethod, the two-population target+comparator scope (a
     length-2 set of cohort handles / ids / table names); for SCCS, the
     scoped case population.
 
   - tables:
-
+    
     Optional `omop.table` symbol scope (see `ds.omop.analysis.run`).
 
   - combine:
-
+    
     Character; `"union"` (default) or `"intersect"` for multi-source
     scope folding.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"`.
 
   - symbol:
-
+    
     Character; the session symbol (default `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or `NULL` to use the session default.
 
   - type:
-
+    
     Result view: `"both"` (default), `"split"`, or `"combine"`; see
     `ds.omop.analysis.run`.
 

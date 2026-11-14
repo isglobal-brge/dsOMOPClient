@@ -16,17 +16,17 @@ renderers. Remote source text is never parsed or evaluated.
 ## Arguments
 
   - meta:
-
+    
     Named list; one entry's metadata from `omopAnalysisGetDS`. The plot
     recipe is read from `meta$plot` (a `list(type, mapping)`),
     tolerating a nested `meta$compute$plot` for forward compatibility.
 
   - pooled:
-
+    
     Data frame; the pooled, gate-passed aggregate to plot.
 
   - params:
-
+    
     Named list; retained for API compatibility with future local
     renderers. It is never evaluated as code.
 

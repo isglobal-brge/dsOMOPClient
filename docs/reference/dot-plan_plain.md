@@ -14,7 +14,7 @@ serializes. Preserves every field an `omop_plan` carries (`cohort`,
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
 ## Value

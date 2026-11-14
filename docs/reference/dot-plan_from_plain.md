@@ -13,7 +13,7 @@ vectors and integer types, then re-stamps the `omop_plan` class so
 ## Arguments
 
   - data:
-
+    
     A parsed plain plan (from JSON or YAML).
 
 ## Value

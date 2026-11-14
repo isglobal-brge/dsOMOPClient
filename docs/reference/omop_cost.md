@@ -23,31 +23,31 @@ omop_cost(
 ## Arguments
 
   - event:
-
+    
     A table `omop_event` (or its name).
 
   - field:
-
+    
     One cost amount column.
 
   - currency:
-
+    
     Optional currency concept ID.
 
   - cost\_type:
-
+    
     Optional cost type concept IDs.
 
   - where:
-
+    
     Optional row predicate over the cost rows.
 
   - name:
-
+    
     Event name.
 
   - on\_missing\_table:
-
+    
     `"error"` or `"unavailable"`.
 
 ## Value

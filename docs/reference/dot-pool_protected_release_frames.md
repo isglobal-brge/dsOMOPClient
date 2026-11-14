@@ -21,16 +21,16 @@ twice.
 ## Arguments
 
   - per\_site:
-
+    
     Named list of released frames.
 
   - policy:
-
+    
     `"strict"` or `"pooled_only_ok"` (record-weighted strata present on
     only some servers).
 
   - columns:
-
+    
     The entry's contracted columns (record-weighted schema).
 
 ## Value

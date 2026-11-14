@@ -14,18 +14,18 @@ omop_filter_group(..., operator = c("AND", "OR", "NOT"), label = NULL)
 ## Arguments
 
   - ...:
-
+    
     `omop_filter` or `omop_filter_group` objects to combine.
 
   - operator:
-
+    
     Character; `"AND"`, `"OR"` or (2.10.3) `"NOT"`, which negates the
     conjunction of its children: the legacy spelling of `omop_not()`. A
     NOT group has no v1 rendering; it runs as a language-2 plan on
     dsOMOP 2.10.3 servers.
 
   - label:
-
+    
     Character or `NULL`; human-readable description (auto-generated from
     children if `NULL`).
 

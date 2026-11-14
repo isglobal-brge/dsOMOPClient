@@ -1,0 +1,142 @@
+[
+  {
+    "slug": "index",
+    "title": "Learn dsOMOPClient • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 0,
+    "headings": [
+      "Learn dsOMOPClient"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  },
+  {
+    "slug": "articles/book-05-recipe",
+    "title": "5. A first recipe • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "headings": [
+      "5. A first recipe"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  },
+  {
+    "slug": "articles/book-06-visits",
+    "title": "6. Visit dates, one idea at a time • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "headings": [
+      "6. Visit dates, one idea at a time"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  },
+  {
+    "slug": "articles/book-07-verbal-autopsy",
+    "title": "7. Capstone: a verbal-autopsy wide table • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "headings": [
+      "7. Capstone: a verbal-autopsy wide table"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  },
+  {
+    "slug": "articles/book-08-harmonise",
+    "title": "8. Appendix: two vocabularies, one category set • dsOMOPClient",
+    "width": 1365,
+    "overflow": false,
+    "learnBoxes": 1,
+    "headings": [
+      "8. Appendix: two vocabularies, one category set"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  },
+  {
+    "slug": "index",
+    "title": "Learn dsOMOPClient • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 0,
+    "headings": [
+      "Learn dsOMOPClient"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  },
+  {
+    "slug": "articles/book-05-recipe",
+    "title": "5. A first recipe • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "headings": [
+      "5. A first recipe"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  },
+  {
+    "slug": "articles/book-06-visits",
+    "title": "6. Visit dates, one idea at a time • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "headings": [
+      "6. Visit dates, one idea at a time"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  },
+  {
+    "slug": "articles/book-07-verbal-autopsy",
+    "title": "7. Capstone: a verbal-autopsy wide table • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "headings": [
+      "7. Capstone: a verbal-autopsy wide table"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  },
+  {
+    "slug": "articles/book-08-harmonise",
+    "title": "8. Appendix: two vocabularies, one category set • dsOMOPClient",
+    "width": 390,
+    "overflow": false,
+    "learnBoxes": 1,
+    "headings": [
+      "8. Appendix: two vocabularies, one category set"
+    ],
+    "colors": {
+      "heading": "rgb(0, 49, 66)",
+      "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    }
+  }
+]

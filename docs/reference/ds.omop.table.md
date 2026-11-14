@@ -16,15 +16,15 @@ ds.omop.table(data, column, conns = NULL)
 ## Arguments
 
   - data:
-
+    
     Character; published server-side data frame symbol.
 
   - column:
-
+    
     Character; concept factor column in that data frame.
 
   - conns:
-
+    
     DSI connections for the retained sites. Defaults to the active
     DataSHIELD connections.
 

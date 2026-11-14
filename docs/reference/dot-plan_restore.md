@@ -16,11 +16,11 @@ byte-identical transport JSON. Mirrors `.recipe_restore_params`.
 ## Arguments
 
   - x:
-
+    
     A parsed plan substructure.
 
   - key:
-
+    
     Character; the name this node was stored under (drives integer
     coercion). `NULL` at the top level.
 

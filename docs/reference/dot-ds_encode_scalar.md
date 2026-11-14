@@ -18,7 +18,7 @@ decodes it back to the scalar.
 ## Arguments
 
   - x:
-
+    
     A length-1 character value.
 
 ## Value

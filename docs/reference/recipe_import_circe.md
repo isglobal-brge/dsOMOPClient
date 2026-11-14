@@ -17,16 +17,16 @@ recipe_import_circe(file_or_json, id = NULL, label = NULL)
 ## Arguments
 
   - file\_or\_json:
-
+    
     Character; a Circe JSON string, or a path to a JSON file.
 
   - id:
-
+    
     Character or `NULL`; population ID for the result (defaults to the
     `.dsomop` round-trip hint, else `"imported"`).
 
   - label:
-
+    
     Character or `NULL`; population label (defaults likewise).
 
 ## Value

@@ -12,7 +12,7 @@ deparsing it (used for nested constructor calls such as filter lists).
 ## Arguments
 
   - code:
-
+    
     Character; R code to inject verbatim.
 
 ## Value

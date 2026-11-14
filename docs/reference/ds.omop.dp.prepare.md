@@ -19,20 +19,20 @@ ds.omop.dp.prepare(x, out = NULL, symbol = "omop", conns = NULL)
 ## Arguments
 
   - x:
-
+    
     An `omop_recipe` or `omop_plan`.
 
   - out:
-
+    
     Output symbols, as in `recipe_execute` and `ds.omop.plan.execute`.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

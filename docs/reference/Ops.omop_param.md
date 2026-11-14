@@ -15,7 +15,7 @@ Ops(e1, e2)
 ## Arguments
 
   - e1, e2:
-
+    
     Operands.
 
 ## Value

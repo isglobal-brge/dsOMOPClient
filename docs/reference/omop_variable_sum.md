@@ -18,24 +18,24 @@ omop_variable_sum(
 ## Arguments
 
   - table:
-
+    
     Character; source OMOP CDM table.
 
   - column:
-
+    
     Character; numeric column to sum (e.g. `"days_supply"`,
     `"quantity"`).
 
   - concept\_id:
-
+    
     Integer or `NULL`; concept ID filter.
 
   - concept\_name:
-
+    
     Character or `NULL`; human-readable name.
 
   - name:
-
+    
     Character or `NULL`; output column name (auto-generated if `NULL`).
 
 ## Value

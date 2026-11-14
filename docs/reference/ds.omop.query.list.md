@@ -18,21 +18,21 @@ ds.omop.query.list(
 ## Arguments
 
   - domain:
-
+    
     Character; optional domain filter. `NULL` (the default) returns all
     domains.
 
   - provider:
-
+    
     Character; ignored (retained for back-compatibility).
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

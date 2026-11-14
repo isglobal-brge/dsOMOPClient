@@ -11,7 +11,7 @@ Generate R code string for a filter group
 ## Arguments
 
   - fg:
-
+    
     An `omop_filter_group` object.
 
 ## Value

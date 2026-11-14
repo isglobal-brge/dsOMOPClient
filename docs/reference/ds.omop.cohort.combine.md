@@ -21,35 +21,35 @@ ds.omop.cohort.combine(
 ## Arguments
 
   - op:
-
+    
     Character; the set operation to apply. One of `"intersect"`
     (patients in both cohorts), `"union"` (patients in either cohort),
     or `"setdiff"` (patients in `cohort_a` but not `cohort_b`).
 
   - cohort\_a:
-
+    
     Server-side cohort TABLE name for the first cohort (the value
     returned by `ds.omop.cohort.create()`), its `dsomop_cohort_handle`,
     or a cohort definition ID (integer).
 
   - cohort\_b:
-
+    
     Server-side cohort TABLE name for the second cohort (the value
     returned by `ds.omop.cohort.create()`), its `dsomop_cohort_handle`,
     or a cohort definition ID (integer).
 
   - new\_name:
-
+    
     Character; TABLE name for the combined result. If `NULL` (the
     default), an auto-generated name is used.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

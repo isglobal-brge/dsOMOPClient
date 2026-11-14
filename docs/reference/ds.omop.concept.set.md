@@ -19,24 +19,24 @@ ds.omop.concept.set(
 ## Arguments
 
   - concepts:
-
+    
     Integer or numeric vector of seed concept IDs that form the base of
     the concept set.
 
   - include\_descendants:
-
+    
     Logical; if `TRUE`, all descendants of the seed concepts (via
     `concept_ancestor`) will be included when the set is expanded.
     Default: `FALSE`.
 
   - include\_mapped:
-
+    
     Logical; if `TRUE`, non-standard concepts mapped to the seed
     concepts (via `concept_relationship`) will be included when the set
     is expanded. Default: `FALSE`.
 
   - exclude:
-
+    
     Integer or numeric vector of concept IDs to explicitly remove from
     the expanded set. `NULL` (the default) excludes nothing.
 

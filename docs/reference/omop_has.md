@@ -45,63 +45,63 @@ omop_in_cohort(cohort_definition_id)
 ## Arguments
 
   - event:
-
+    
     An `omop_event`, an `omop_era` or a registry name.
 
   - n:
-
+    
     Count threshold (`c(min, max)` for `between`).
 
   - op:
-
+    
     Comparison: `">="`, `"<="`, `"=="` or `"between"`.
 
   - window:
-
+    
     `NULL` (any time) or an `omop_window`.
 
   - distinct:
-
+    
     What to count: `"row"`, `"day"`, `"visit"` or `"concept"`.
 
   - nonmissing:
-
+    
     `NULL` or a column that must be non-null.
 
   - criterion:
-
+    
     A criterion.
 
   - ...:
-
+    
     Criteria to combine.
 
   - where:
-
+    
     A predicate from `omop_where`.
 
   - min, max:
-
+    
     Age bounds (inclusive; `NULL` = open).
 
   - reference:
-
+    
     `"index"`.
 
   - year:
-
+    
     Optional fixed reference year (instead of the index).
 
   - before, after:
-
+    
     Required observed days before/after the index.
 
   - gap:
-
+    
     `NULL` or tolerated unobserved days between records.
 
   - cohort\_definition\_id:
-
+    
     A results-cohort definition ID.
 
 ## Value

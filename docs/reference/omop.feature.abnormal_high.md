@@ -11,11 +11,11 @@ omop.feature.abnormal_high(concept_set, name = NULL)
 ## Arguments
 
   - concept\_set:
-
+    
     Numeric vector of concept IDs.
 
   - name:
-
+    
     Character; optional custom column name.
 
 ## Value

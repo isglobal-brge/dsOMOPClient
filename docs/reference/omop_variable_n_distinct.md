@@ -12,11 +12,11 @@ omop_variable_n_distinct(table, name = NULL)
 ## Arguments
 
   - table:
-
+    
     Character; source OMOP CDM table (e.g. `"condition_occurrence"`).
 
   - name:
-
+    
     Character or `NULL`; output column name (auto-generated as
     `"n_distinct_<table>"` if `NULL`).
 

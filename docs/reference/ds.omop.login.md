@@ -31,51 +31,51 @@ ds.omop.login(
 ## Arguments
 
   - url:
-
+    
     Character; server URL(s). A single URL or one per server.
 
   - user:
-
+    
     Character; username(s) (recycled if scalar). Ignored for a server
     whose `token` is supplied.
 
   - password:
-
+    
     Character; password(s) (recycled if scalar). Ignored for a server
     whose `token` is supplied.
 
   - resource:
-
+    
     Character; the OMOP CDM resource path(s) (e.g.
     `"project.omop_cdm"`). A single value applies to every server; a
     named vector maps server name to resource; an unnamed vector matches
     positionally.
 
   - server:
-
+    
     Character; server name(s) (default `"server1"`, or `server1..N` when
     several URLs are given).
 
   - driver:
-
+    
     Character; the DSI driver to connect with (default `"OpalDriver"`,
     from the DSOpal package). Recycled if scalar.
 
   - token:
-
+    
     Character or `NULL`; personal access token(s) used instead of
     `user`/`password` where supplied.
 
   - profile:
-
+    
     Character or `NULL`; Opal/Armadillo R server profile(s).
 
   - symbol:
-
+    
     Character; server-side OMOP session symbol (default `"omop"`).
 
   - ...:
-
+    
     Further arguments forwarded to `ds.omop.connect` (e.g. `cdm_schema`,
     `strict`).
 

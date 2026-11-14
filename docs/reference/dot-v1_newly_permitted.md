@@ -19,7 +19,7 @@ its language-2 plan. Every other v1 refusal stands.
 ## Arguments
 
   - ...:
-
+    
     Message parts.
 
 ## Value

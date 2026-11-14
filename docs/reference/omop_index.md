@@ -41,53 +41,53 @@ omop_coverage(
 ## Arguments
 
   - source:
-
+    
     An event, era, `list(cohort_definition_id = n)` or `omop_any_of()`.
 
   - select:
-
+    
     Candidate selection (see Details).
 
   - n:
-
+    
     Row for `select = "nth"`.
 
   - offset:
-
+    
     Day offset added to the source start.
 
   - end:
-
+    
     An `omop_end()`.
 
   - restrict\_to\_observation:
-
+    
     Logical; `FALSE` keeps uncovered indexes (coverage `on_missing =
     "keep"`).
 
   - ...:
-
+    
     Index sources (events or eras) for `omop_any_of()`.
 
   - order:
-
+    
     Optional character vector naming the arms in their declared
     tie-break order (default: argument order).
 
   - strategy:
-
+    
     End strategy.
 
   - days:
-
+    
     Days after the index for `strategy = "fixed"`.
 
   - pad:
-
+    
     Non-negative days added to an event/interval end.
 
   - policy, on\_ambiguous, on\_missing, gap:
-
+    
     Coverage policy.
 
 ## Value

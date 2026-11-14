@@ -12,11 +12,11 @@ recipe_export_yaml(recipe, file = NULL)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - file:
-
+    
     Character or `NULL`; file path to write. If `NULL`, returns the YAML
     string directly.
 

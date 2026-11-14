@@ -107,6 +107,10 @@
     {
       "path": "/home/dev/.cache/pip",
       "bytes": 874285
+    },
+    {
+      "path": "/tmp/write_book.py",
+      "bytes": 39479
     }
   ],
   "note": "Only permitted old sessions and pip download cache inspected/deleted. No other worktree touched. Small book build proceeds; 15 GB target not safely reachable here."

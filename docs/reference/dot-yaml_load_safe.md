@@ -15,7 +15,7 @@ to recognise tags with a regular expression).
 ## Arguments
 
   - text:
-
+    
     A length-one YAML document.
 
 ## Value

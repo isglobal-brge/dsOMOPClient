@@ -11,15 +11,15 @@ recipe_validate(recipe, symbol = "omop", conns = NULL)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - symbol:
-
+    
     Character; OMOP session symbol on the server (default `"omop"`).
 
   - conns:
-
+    
     DSI connections or `NULL` (uses active connections).
 
 ## Value

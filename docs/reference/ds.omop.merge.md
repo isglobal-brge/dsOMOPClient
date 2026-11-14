@@ -24,38 +24,38 @@ ds.omop.merge(
 ## Arguments
 
   - x:
-
+    
     Character; name of the left server-side `omop.table` symbol (e.g.
     the `newobj` returned by a previous verb, or a symbol created by
     `ds.omop.plan.execute`). If `NULL` (the default), the session's most
     recently produced output symbol is used.
 
   - y:
-
+    
     Character; name of the right server-side `omop.table` symbol.
 
   - by:
-
+    
     Character vector; the join key. Must be the person key
     (`"person_id"` or `"subject_id"`); other columns are rejected
     server-side.
 
   - type:
-
+    
     Character; `"inner"` (default) or `"left"`.
 
   - newobj:
-
+    
     Character; name of the server-side symbol to create. If `NULL`
     (default), a unique name is generated.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

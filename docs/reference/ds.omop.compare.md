@@ -17,15 +17,15 @@ ds.omop.compare(symbol = "omop", conns = NULL, tables = NULL)
 ## Arguments
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - tables:
-
+    
     Optional character vector limiting column introspection to the
     tables relevant to a plan. Table presence is still compared
     globally.

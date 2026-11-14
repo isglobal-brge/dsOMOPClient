@@ -15,17 +15,17 @@ ds.omop.tables(schema_category = NULL, symbol = "omop", conns = NULL)
 ## Arguments
 
   - schema\_category:
-
+    
     Character; optional filter to restrict results to a specific
     category: `"CDM"`, `"Vocabulary"`, or `"Results"`. NULL returns all
     tables (default: NULL).
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
 ## Value

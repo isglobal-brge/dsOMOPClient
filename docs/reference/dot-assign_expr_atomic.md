@@ -18,27 +18,27 @@ Assign one server-side symbol atomically across a federation
 ## Arguments
 
   - conns:
-
+    
     Named DataSHIELD connections.
 
   - newobj:
-
+    
     Destination symbol, which must not already exist.
 
   - expr:
-
+    
     Unevaluated assign expression.
 
   - context:
-
+    
     Human-readable operation label.
 
   - session\_symbol:
-
+    
     Optional local OMOP session name to update after commit.
 
   - required\_symbols:
-
+    
     Source symbols that must exist on every server.
 
 ## Value

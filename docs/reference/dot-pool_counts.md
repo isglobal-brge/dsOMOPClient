@@ -11,11 +11,11 @@ Pool counts by summing across servers
 ## Arguments
 
   - per\_site\_counts:
-
+    
     Named numeric vector or list of counts
 
   - policy:
-
+    
     Character; "strict" or "pooled\_only\_ok"
 
 ## Value

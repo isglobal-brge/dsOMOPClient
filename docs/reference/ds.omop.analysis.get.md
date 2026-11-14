@@ -16,24 +16,24 @@ ds.omop.analysis.get(name, symbol = "omop", conns = NULL, type = "both")
 ## Arguments
 
   - name:
-
+    
     Character; the entry id (e.g. `"dsomop:achilles.401"`) or a
     shorthand for it (native id without the `"dsomop:"` prefix, or a
     unique id suffix; an ambiguous shorthand errors with the
     candidates).
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - type:
-
+    
     Result view: `"both"` (default), `"split"`, or `"combine"`;
     dsBaseClient-style aliases are accepted. A split view can inspect
     nodes whose metadata differ; combined views require equality.

@@ -11,19 +11,19 @@ Operations a v2 plan needs that each server lacks
 ## Arguments
 
   - plan:
-
+    
     A v2 plan.
 
   - session:
-
+    
     The OMOP session.
 
   - servers:
-
+    
     Server names.
 
   - extra:
-
+    
     Additional operations required for execution.
 
 ## Value

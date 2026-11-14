@@ -38,48 +38,48 @@ omop_querylibrary_sticky(
 ## Arguments
 
   - upstream\_id:
-
+    
     Published QueryLibrary ID in the pinned catalog.
 
   - variable:
-
+    
     Value column in the protected prepared table. Not used for a
     distinct-person count.
 
   - levels:
-
+    
     Complete fixed public domain for a categorical histogram.
 
   - breaks:
-
+    
     Fixed public numeric, ISO-date, or UTC-datetime histogram breaks.
 
   - lower, upper:
-
+    
     Fixed finite bounds for a bounded person mean.
 
   - positive:
-
+    
     Fixed public values defining a positive binary outcome.
 
   - max\_contributions:
-
+    
     Public person-level contribution cap. It is required for record
     counts, record histograms, and bounded distinct cardinality; it
     defaults to one for a person/category presence histogram.
 
   - order\_by:
-
+    
     Public longitudinal ordering column. It is required for a record
     histogram. First/last date mappings use `variable` itself when it is
     omitted.
 
   - population\_id:
-
+    
     Optional public compatibility label passed to `omop_privacy`.
 
   - preparation:
-
+    
     Optional `omop_recipe` or `omop_plan` that defines the release
     population and its variables. It must compile to exactly one output.
     `ds.omop.querylibrary.sticky.release` prepares the input from it

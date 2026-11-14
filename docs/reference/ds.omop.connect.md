@@ -23,32 +23,32 @@ ds.omop.connect(
 ## Arguments
 
   - resource:
-
+    
     Character or named list; resource name(s). A single string applies
     to all servers; a named list maps server names to resource names.
 
   - symbol:
-
+    
     Character; server-side symbol name (default: "omop").
 
   - cdm\_schema:
-
+    
     Character; CDM schema override (NULL uses server default).
 
   - vocab\_schema:
-
+    
     Character; vocabulary schema override (NULL uses server default).
 
   - results\_schema:
-
+    
     Character; results schema override (NULL uses server default).
 
   - temp\_schema:
-
+    
     Character; temp schema override (NULL uses server default).
 
   - strict:
-
+    
     Logical; whether unknown/missing names in a named resource map are
     immediate mapping errors (`TRUE`) or warnings where possible.
     Transactional connection still requires a valid resource and
@@ -56,7 +56,7 @@ ds.omop.connect(
     this value.
 
   - conns:
-
+    
     DSI connections object (NULL uses default connections).
 
 ## Value

@@ -17,12 +17,12 @@ to pool against.
 ## Arguments
 
   - payloads:
-
+    
     Named list of payloads (typed releases or catalogue `dsomop_release`
     attributes).
 
   - what:
-
+    
     Description for messages.
 
 ## Value

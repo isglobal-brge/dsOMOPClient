@@ -17,7 +17,7 @@ union as federation-wide. Returns NULL when no site had data.
 ## Arguments
 
   - per\_site:
-
+    
     Named list of per-server data frames.
 
 ## Value

@@ -17,7 +17,7 @@ lists, vectors and named scalars; unnamed scalars pass through.
 ## Arguments
 
   - x:
-
+    
     An R object to encode.
 
 ## Value

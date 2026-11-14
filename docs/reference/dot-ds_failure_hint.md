@@ -11,7 +11,7 @@ What to do about a server failure an administrator can fix
 ## Arguments
 
   - message:
-
+    
     A server's error message (see `.ds_error_core`).
 
 ## Value

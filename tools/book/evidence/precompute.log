@@ -1,0 +1,41 @@
+PRECOMPUTE vignettes/book-00-start.Rmd.orig
+ASSERTIONS PASS book-00-start.Rmd.orig
+PRECOMPUTE vignettes/book-01-mental-model.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-01-mental-model.Rmd.orig
+PRECOMPUTE vignettes/book-02-connect.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-02-connect.Rmd.orig
+PRECOMPUTE vignettes/book-03-explore.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-03-explore.Rmd.orig
+PRECOMPUTE vignettes/book-04-vocabulary.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-04-vocabulary.Rmd.orig
+PRECOMPUTE vignettes/book-05-recipe.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-05-recipe.Rmd.orig
+PRECOMPUTE vignettes/book-06-visits.Rmd.orig
+
+Logging into the collaborating servers
+Long visit_start_date class: Date
+Long visit_start_date synthetic first five: 2020-06-15, 2023-10-01, 2020-03-14, 2021-03-15, 2020-07-20
+ASSERTIONS PASS book-06-visits.Rmd.orig
+PRECOMPUTE vignettes/book-07-verbal-autopsy.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-07-verbal-autopsy.Rmd.orig
+PRECOMPUTE vignettes/book-08-harmonise.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-08-harmonise.Rmd.orig
+PRECOMPUTE vignettes/book-09-reproduce.Rmd.orig
+
+Logging into the collaborating servers
+ASSERTIONS PASS book-09-reproduce.Rmd.orig
+All chapter chunks executed successfully

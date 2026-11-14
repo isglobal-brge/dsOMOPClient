@@ -14,11 +14,11 @@ code; a code passed through unchanged.
 ## Arguments
 
   - domain:
-
+    
     Character/numeric domain name or code, or `NULL`.
 
   - default:
-
+    
     Character; the code to use when `domain` is `NULL`.
 
 ## Value

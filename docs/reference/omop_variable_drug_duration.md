@@ -18,19 +18,19 @@ omop_variable_drug_duration(
 ## Arguments
 
   - concept\_id:
-
+    
     Integer; drug concept ID.
 
   - concept\_name:
-
+    
     Character or `NULL`; human-readable name.
 
   - name:
-
+    
     Character or `NULL`; output column name (auto-generated if `NULL`).
 
   - agg:
-
+    
     Character; aggregation function — `"mean"`, `"sum"`, or `"max"`.
 
 ## Value

@@ -11,11 +11,11 @@ Semantic digest of a version-2 plan over its normal form
 ## Arguments
 
   - plan:
-
+    
     A version-2 plan.
 
   - schema:
-
+    
     Optional parsed plan-v2 schema.
 
 ## Value

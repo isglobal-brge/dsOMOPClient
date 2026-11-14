@@ -24,19 +24,19 @@ recipe_set_scope(recipe, cohort = NULL, tables = NULL, combine = "union")
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - cohort:
-
+    
     Cohort reference or `NULL`.
 
   - tables:
-
+    
     Character vector of `omop.table` symbol names, or `NULL`.
 
   - combine:
-
+    
     Character; `"union"` (default) or `"intersect"`.
 
 ## Value

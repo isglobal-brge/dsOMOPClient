@@ -14,16 +14,16 @@ ds.omop.columns(table, symbol = "omop", conns = NULL)
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name to introspect (e.g.,
     `"condition_occurrence"`, `"person"`).
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
 ## Value

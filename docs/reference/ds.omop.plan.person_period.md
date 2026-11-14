@@ -31,40 +31,40 @@ ds.omop.plan.person_period(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - table:
-
+    
     OMOP event table used for covariates.
 
   - concept\_set:
-
+    
     Optional concept IDs or an OHDSI-style concept-set spec. `NULL`
     requests all observed concepts subject to the server cap.
 
   - bin\_width:
-
+    
     Positive integer bin width in days.
 
   - window\_start, window\_end:
-
+    
     Inclusive integer days from index.
 
   - analyses:
-
+    
     Unique subset of `"binary"` and `"count"`.
 
   - grain:
-
+    
     Must be `"episode"`.
 
   - time\_origin:
-
+    
     Must be `"index"`.
 
   - name:
-
+    
     Output name.
 
 ## Value

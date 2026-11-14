@@ -27,45 +27,45 @@ ds.omop.plan.events(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - name:
-
+    
     Character; output name used as a key in the plan's outputs list.
 
   - table:
-
+    
     Character; source OMOP table name (e.g. `"condition_occurrence"`,
     `"drug_exposure"`).
 
   - columns:
-
+    
     Character vector; columns to include from the table. If `NULL`, the
     server selects default columns.
 
   - concept\_set:
-
+    
     Numeric vector or concept set spec; concept IDs used to filter rows
     via the standard concept ID column of the table.
 
   - time\_window:
-
+    
     Named list with `start_date` and `end_date` for calendar-based
     filtering.
 
   - temporal:
-
+    
     An `omop_temporal_spec` object or list; temporal filtering relative
     to a cohort index date. See `omop.temporal`.
 
   - date\_handling:
-
+    
     A list; date handling specification controlling how date columns are
     transformed. See `omop.date_handling`.
 
   - filters:
-
+    
     Named list; additional custom filter DSL expressions (nested
     `and`/`or` of leaves, each `list(var=, op=, value=)`). Validated
     fail-closed server-side: leaves on identifier or blocked columns,
@@ -74,18 +74,18 @@ ds.omop.plan.events(
     scoping.
 
   - visit\_filter:
-
+    
     Named list `list(concept_ids = ...)`; restrict events to visits of
     those `visit_concept_id` values via the `visit_occurrence_id` link.
 
   - concept\_col:
-
+    
     Character; override the concept column the `concept_set` scopes
     (default: the table's domain concept), e.g. `"unit_concept_id"` to
     extract one unit for harmonization.
 
   - representation:
-
+    
     Named list with `format` (one of `"long"`, `"wide"`, `"features"`,
     or `"sparse"`) and optional format-specific settings.
     Wide/features/sparse may set `grain` to `"person"` (default) or

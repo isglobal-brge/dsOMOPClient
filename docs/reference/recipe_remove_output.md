@@ -11,11 +11,11 @@ recipe_remove_output(recipe, name)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - name:
-
+    
     Character; output name to remove.
 
 ## Value

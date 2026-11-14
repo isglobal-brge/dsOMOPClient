@@ -19,7 +19,7 @@ omop_querylibrary_sticky_catalog(include_unavailable = FALSE)
 ## Arguments
 
   - include\_unavailable:
-
+    
     Include vocabulary/reference metadata, explicitly held-back, and
     blocked upstream IDs as well as executable redesigns.
 

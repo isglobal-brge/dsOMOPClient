@@ -14,17 +14,17 @@ ds.omop.achilles.status(symbol = "omop", conns = NULL, type = NULL)
 ## Arguments
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. Status is
     site-specific, so a combined view has no value and records that
     reason.

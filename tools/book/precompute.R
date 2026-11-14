@@ -6,7 +6,7 @@ source("tools/book/fixture.R")
 source("tools/book/verify.R")
 options(width=88)
 knitr::opts_knit$set(root.dir = normalizePath("."))
-for (input in sort(list.files("vignettes/articles", "\\.Rmd\\.orig$", full.names=TRUE))) {
+for (input in sort(list.files("vignettes", "\\.Rmd\\.orig$", full.names=TRUE))) {
   message("PRECOMPUTE ", input)
   render <- function() {
     if (!grepl("book-00", input)) {

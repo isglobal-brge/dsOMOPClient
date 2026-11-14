@@ -16,19 +16,19 @@ Pool an analysis-catalog result using only its server-owned contract
 ## Arguments
 
   - per\_site:
-
+    
     Named per-server data frames.
 
   - contract:
-
+    
     Valid pooling contract from analysis metadata.
 
   - policy:
-
+    
     Suppression policy: `"strict"` or `"pooled_only_ok"`.
 
   - harmonization:
-
+    
     Optional negotiated federation contract.
 
 ## Value

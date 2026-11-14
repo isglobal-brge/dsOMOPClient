@@ -1,0 +1,146 @@
+# 3\. Exploring the CDM
+
+**What you will learn**
+
+Read table and column metadata, then interpret safe counts.
+
+This chapter uses the synthetic practice connection from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+Run the sections in order in one R session. All printed results below
+were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
+data, not clinical findings.
+
+## Find a table
+
+``` r
+available <- ds.omop.tables(conns = conns)
+available$site
+#>            table_name schema_category has_person_id concept_prefix
+#> 1              person             CDM          TRUE           <NA>
+#> 2  observation_period             CDM          TRUE           <NA>
+#> 3    visit_occurrence             CDM          TRUE          visit
+#> 10        observation             CDM          TRUE    observation
+#> 11              death             CDM          TRUE           <NA>
+#> 27         cdm_source             CDM         FALSE           <NA>
+#> 28            concept      Vocabulary         FALSE           <NA>
+#> 29         vocabulary      Vocabulary         FALSE           <NA>
+#> 35   concept_ancestor      Vocabulary         FALSE           <NA>
+```
+
+Check that `observation`, `death` and `visit_occurrence` exist before
+designing a recipe. A CDM may contain an empty table or omit a table
+altogether.
+
+## Read the question and answer fields
+
+``` r
+ds.omop.columns("observation", conns = conns)$site
+#>                   column_name cdm_datatype db_datatype      concept_role semantic_class
+#> 1              observation_id      integer     integer       non_concept       ordinary
+#> 2                   person_id      integer     integer       non_concept       ordinary
+#> 3      observation_concept_id      integer     integer    domain_concept        concept
+#> 4            observation_date         date        text       non_concept       ordinary
+#> 5 observation_type_concept_id      integer     integer      type_concept        concept
+#> 6             value_as_number        float        real       non_concept       ordinary
+#> 7         value_as_concept_id      Integer     integer attribute_concept        concept
+#>      fk_domain is_date is_extension is_untyped_identifier is_sensitive is_blocked
+#> 1                FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 2                FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 3                FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 4                 TRUE        FALSE                 FALSE        FALSE      FALSE
+#> 5 Type Concept   FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 6                FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 7                FALSE        FALSE                 FALSE        FALSE      FALSE
+#>   is_quasi_identifier
+#> 1               FALSE
+#> 2               FALSE
+#> 3               FALSE
+#> 4                TRUE
+#> 5               FALSE
+#> 6               FALSE
+#> 7               FALSE
+```
+
+`observation_concept_id` identifies the question. `value_as_concept_id`
+identifies a coded answer. Filtering on the question and reading the
+answer are two separate choices. `value_as_number` is for numeric
+values; it is not our education answer.
+
+## Count safely
+
+``` r
+ds.omop.table.stats("observation", conns = conns)$per_site$site
+#> $rows
+#> [1] 35
+#> 
+#> $persons
+#> [1] 10
+```
+
+An observation row is an answer, not necessarily a distinct person.
+Repeated answers mean that counting rows and counting people can give
+different results. Respect the returned disclosure representation; do
+not reinterpret a band as an exact number or a refused result as an
+empty table.
+
+## Identify the date field
+
+``` r
+ds.omop.columns("visit_occurrence", conns = conns)$site
+#>             column_name cdm_datatype db_datatype   concept_role semantic_class
+#> 1   visit_occurrence_id      integer     integer    non_concept       ordinary
+#> 2             person_id      integer     integer    non_concept       ordinary
+#> 3      visit_concept_id      integer     integer domain_concept        concept
+#> 4      visit_start_date         date        text    non_concept       ordinary
+#> 5        visit_end_date         date        text    non_concept       ordinary
+#> 6 visit_type_concept_id      Integer     integer   type_concept        concept
+#>      fk_domain is_date is_extension is_untyped_identifier is_sensitive is_blocked
+#> 1                FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 2                FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 3        Visit   FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 4                 TRUE        FALSE                 FALSE        FALSE      FALSE
+#> 5                 TRUE        FALSE                 FALSE        FALSE      FALSE
+#> 6 Type Concept   FALSE        FALSE                 FALSE        FALSE      FALSE
+#>   is_quasi_identifier
+#> 1               FALSE
+#> 2               FALSE
+#> 3               FALSE
+#> 4                TRUE
+#> 5                TRUE
+#> 6               FALSE
+```
+
+`visit_start_date` records when a visit started. `visit_concept_id`
+describes its setting, such as inpatient or outpatient.
+`visit_type_concept_id` describes the provenance of the record; it is
+not the field for that setting filter.
+
+## Recap
+
+Schema exploration tells you which fields exist. Safe counts describe
+support without returning records.
+
+## Try it
+
+Inspect the death table and locate its coded cause field.
+
+Solution
+
+``` r
+ds.omop.columns("death", conns = conns)$site
+#>             column_name cdm_datatype db_datatype      concept_role semantic_class
+#> 1             person_id      integer     integer       non_concept       ordinary
+#> 2            death_date         date        text       non_concept       ordinary
+#> 3 death_type_concept_id      integer     integer      type_concept        concept
+#> 4      cause_concept_id      integer     integer attribute_concept        concept
+#>      fk_domain is_date is_extension is_untyped_identifier is_sensitive is_blocked
+#> 1                FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 2                 TRUE        FALSE                 FALSE        FALSE      FALSE
+#> 3 Type Concept   FALSE        FALSE                 FALSE        FALSE      FALSE
+#> 4                FALSE        FALSE                 FALSE        FALSE      FALSE
+#>   is_quasi_identifier
+#> 1               FALSE
+#> 2                TRUE
+#> 3               FALSE
+#> 4               FALSE
+```

@@ -14,12 +14,12 @@ omop.feature.boolean(concept_set, name = NULL)
 ## Arguments
 
   - concept\_set:
-
+    
     Numeric vector of concept IDs, or an `omop_concept_set` object
     defining the concepts to match.
 
   - name:
-
+    
     Character; optional custom name for the feature column. If `NULL`,
     auto-generated from the concept and table context.
 

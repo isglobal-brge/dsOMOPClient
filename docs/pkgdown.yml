@@ -2,6 +2,16 @@ pandoc: 2.9.2.1
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  book-00-start: book-00-start.html
+  book-01-mental-model: book-01-mental-model.html
+  book-02-connect: book-02-connect.html
+  book-03-explore: book-03-explore.html
+  book-04-vocabulary: book-04-vocabulary.html
+  book-05-recipe: book-05-recipe.html
+  book-06-visits: book-06-visits.html
+  book-07-verbal-autopsy: book-07-verbal-autopsy.html
+  book-08-harmonise: book-08-harmonise.html
+  book-09-reproduce: book-09-reproduce.html
   v01_getting_started: v01_getting_started.html
   v02_exploration: v02_exploration.html
   v03_cohorts: v03_cohorts.html
@@ -9,7 +19,7 @@ articles:
   v05_multi_server: v05_multi_server.html
   v06_security: v06_security.html
   v07_querylibrary_sticky: v07_querylibrary_sticky.html
-last_built: 2026-11-13T22:59Z
+last_built: 2026-11-14T01:31Z
 urls:
   reference: https://isglobal-brge.github.io/dsOMOPClient/reference
   article: https://isglobal-brge.github.io/dsOMOPClient/articles

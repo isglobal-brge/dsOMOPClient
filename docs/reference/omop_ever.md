@@ -96,46 +96,46 @@ omop_last_date(table, concepts)
 ## Arguments
 
   - table:
-
+    
     OMOP table name, or an `omop_event` / `omop_era` (then `concepts`,
     `unit`, `value` and `...` are not used).
 
   - concepts:
-
+    
     Concept IDs, an `omop_concept_set`, the name of a registry concept
     set, or `NULL` for every row of the table.
 
   - before, after:
-
+    
     Days before (up to and including the index date) or after (from the
     day after the index date); `Inf` for no limit.
 
   - window:
-
+    
     An `omop_window`.
 
   - ...:
-
+    
     Further `omop_event` arguments (`descendants`, `mapped`, `exclude`,
     `where`, `visit`, `value`, `unit`, `concept_col`, `end`, `name`,
     `on_missing_table`).
 
   - distinct:
-
+    
     What `omop_count()` counts: `"row"`, `"day"`, `"visit"` or
     `"concept"`.
 
   - value:
-
+    
     Numeric value column of the event (default: the table's value role,
     `value_as_number`).
 
   - unit:
-
+    
     A unit concept ID (restriction) or an `omop_unit` (conversion).
 
   - tolerance:
-
+    
     Window `c(start, end)` around the index date.
 
 ## Value

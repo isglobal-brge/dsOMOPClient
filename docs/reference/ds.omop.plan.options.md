@@ -18,21 +18,21 @@ ds.omop.plan.options(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - translate\_concepts:
-
+    
     Logical; if `TRUE`, concept ID columns are automatically translated
     to human-readable concept names in output tables.
 
   - block\_sensitive:
-
+    
     Logical; if `TRUE`, sensitive columns (e.g. exact dates, free-text
     notes) are excluded from outputs.
 
   - factor\_concepts:
-
+    
     Logical; if `TRUE` (default), after a memory-mode execution every
     `_concept_id` column is converted into a factor whose levels are
     harmonized across all connected servers, so pooled

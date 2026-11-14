@@ -11,11 +11,11 @@ The language-2 event a legacy variable reads
 ## Arguments
 
   - v:
-
+    
     A legacy `omop_variable` (table/format spelling).
 
   - context:
-
+    
     Character; error context.
 
 ## Value

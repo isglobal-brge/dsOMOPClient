@@ -27,53 +27,53 @@ ds.omop.date.counts(
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name (e.g., `"condition_occurrence"`,
     `"drug_exposure"`).
 
   - date\_col:
-
+    
     Character; the date column to aggregate by, or NULL for automatic
     detection based on the table's standard date column (default: NULL).
 
   - granularity:
-
+    
     Character; the time granularity for aggregation: `"year"` (default),
     `"quarter"`, or `"month"`.
 
   - cohort\_table:
-
+    
     Character; name of a server-side cohort temp table for filtering, or
     NULL (default: NULL).
 
   - window:
-
+    
     List with `start`/`end` date strings for temporal filtering, or NULL
     (default: NULL).
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"`.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - execute:
-
+    
     Logical; if `FALSE`, return a dry-run result containing only the
     generated call code (default: `TRUE`).
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, legacy `scope` behaviour is preserved.
 

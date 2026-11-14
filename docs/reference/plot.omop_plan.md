@@ -18,16 +18,16 @@ plot(x, engine = c("dot", "base"), ...)
 ## Arguments
 
   - x:
-
+    
     An `omop_plan` object.
 
   - engine:
-
+    
     Character; `"dot"` (default) to emit Graphviz DOT text, or `"base"`
     to draw a base-graphics diagram.
 
   - ...:
-
+    
     Additional arguments (ignored).
 
 ## Value

@@ -12,11 +12,11 @@ omop.feature.gap_max_days(concept_set, name = NULL)
 ## Arguments
 
   - concept\_set:
-
+    
     Numeric vector of concept IDs.
 
   - name:
-
+    
     Character; optional custom column name.
 
 ## Value

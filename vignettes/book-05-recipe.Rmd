@@ -1,0 +1,275 @@
+---
+title: "5. A first recipe"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{5. A first recipe}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Build education and cause-of-death columns, check language 2, and request category counts.
+</div>
+
+This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+Run the sections in order in one R session. All printed results below were computed
+with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+
+## Select the education question
+
+An *event* describes records of interest. It is a definition on your computer,
+not a downloaded table. Start with the question from chapter 4:
+
+
+``` r
+education_event <- omop_event("observation", concepts = 900001L)
+class(education_event)
+#> [1] "omop_event" "list"
+```
+
+The server will select observations whose question is Education question.
+
+## Choose one answer per person
+
+A *reducer* turns possibly many records into one value. Use the latest nonmissing
+coded answer, ordered by the observation date:
+
+
+``` r
+education <- omop_variable(
+  event = education_event,
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"))
+class(education)
+#> [1] "omop_variable" "list"
+```
+
+This makes one categorical column. It does not create a separate binary column
+for every education level. A same-date tie uses the documented deterministic
+record ordering; it does not mean “largest answer ID”.
+
+## Add cause of death
+
+
+``` r
+cause <- omop_variable(
+  event = omop_event("death"),
+  reducer = omop_reduce("first_value", value = "cause_concept_id"))
+class(cause)
+#> [1] "omop_variable" "list"
+```
+
+Here the value comes from `cause_concept_id`. Do not substitute `cause_source_value`:
+that is free source text, not the curated coded cause used by this route.
+
+## Describe a wide table
+
+*Wide* means one column per variable. *Person grain* means one row per person.
+The native all-person population retains people who have neither answer nor death.
+
+
+``` r
+people <- omop_recipe(
+  variables = list(education = education, cause_of_death = cause),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+class(people)
+#> [1] "omop_recipe" "list"
+```
+
+`person_id` is included automatically as a pseudonym. Missing records produce
+missing values. We did not add a legacy raw-ID variable to keep the roster.
+
+## Check the language before running
+
+
+``` r
+explained <- recipe_explain(people, conns = conns)
+stopifnot(explained$selected == "v2")
+explained$selected
+#> [1] "v2"
+```
+
+The selected plan is language 2. This check is made for every executable recipe
+in the book. To read all the chosen defaults, print the explanation:
+
+
+``` r
+recipe_explain(people)
+#> Recipe plan (language 2.0, semantic 2.0.0)
+#> Population 'base' (criteria): none
+#> Variables:
+#>   education: last_value of event 'obs_900001' (value 'value_as_concept_id') over any time; missing = "skip"
+#>   cause_of_death: first_value of event 'death' (value 'cause_concept_id') over any time; missing = "skip"
+#> Output 'people' [wide] rows 'base', grain person
+#> Published: people
+#> Defaults relied on:
+#>   - variable 'education': rows with a NULL value are skipped before the row is selected (missing = "skip")
+#>   - variable 'cause_of_death': rows with a NULL value are skipped before the row is selected (missing = "skip")
+#> Concept presentation: factors; identity is the declared concept class, preserved through aliases and value-preserving reducers.
+#> Label precedence: variable recode, recipe recode, vocabulary name, decimal ID fallback. Explicit equal recodes merge categories.
+#> Federation: permitted ID union, including declared unused levels; newest comparable vocabulary version, then bytewise name tie. Unresolved versions never establish recency.
+#> Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.
+#> variables.education: concept origin follows reducer last_value over value_as_concept_id; explicit variable name is retained.
+#> variables.cause_of_death: concept origin follows reducer first_value over cause_concept_id; explicit variable name is retained.
+```
+
+With no time restriction, each variable reads all available history independently.
+That is a teaching definition, not an assumption to carry silently into a study.
+
+## Assign the result
+
+
+``` r
+print(recipe_execute(people, out = c(people = "D_people"), conns = conns))
+#>     people 
+#> "D_people"
+```
+
+The reply is a mapping of output names to server symbols. `D_people` is still on
+the server. Concept-valued columns are labelled factors because of their declared
+type. In 2.10.4 the names `education` and `cause_of_death` need no `_concept_id` suffix.
+
+## Count the education categories
+
+
+``` r
+dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
+#> $output.list
+#> $output.list$TABLE_rvar.by.study_row.props
+#>                       study
+#> D_people$education     site
+#>   Secondary education     1
+#>   University education    1
+#> 
+#> $output.list$TABLE_rvar.by.study_col.props
+#>                       study
+#> D_people$education     site
+#>   Secondary education   0.5
+#>   University education  0.5
+#> 
+#> $output.list$TABLE_rvar.by.study_counts
+#>                       study
+#> D_people$education     site
+#>   Secondary education     6
+#>   University education    6
+#> 
+#> $output.list$TABLES.COMBINED_all.sources_proportions
+#> D_people$education
+#>  Secondary education University education 
+#>                  0.5                  0.5 
+#> 
+#> $output.list$TABLES.COMBINED_all.sources_counts
+#> D_people$education
+#>  Secondary education University education 
+#>                    6                    6 
+#> 
+#> 
+#> $validity.message
+#> [1] "Data in all studies were valid"
+```
+
+The labels are names, not numeric codes. `useNA = "no"` excludes missing answers;
+the counts therefore need not add up to the whole population. DataSHIELD checks
+whether cells may be released before returning the table.
+
+## Count causes
+
+
+``` r
+ds.omop.table("D_people", "cause_of_death", conns = conns)
+#> D_people$cause_of_death
+#> Myocardial infarction             Pneumonia 
+#>                    12                     6
+```
+
+`ds.omop.table()` calls the real dsBase `ds.table()` and preserves the complete
+published category contract, including declared zero categories. It also protects
+labels containing punctuation. Prefer it when you need that complete contract.
+
+## Give a question your own yes/no labels
+
+
+``` r
+fever <- omop_variable(
+  event = omop_event("observation", concepts = 900002L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"),
+  labels = c("900301" = "yes", "900302" = "no"))
+class(fever)
+#> [1] "omop_variable" "list"
+```
+
+The map is keyed by answer concepts. It changes presentation, not which question
+is selected. Missing fever answers remain missing; they do not become “no”.
+
+
+``` r
+answers <- omop_recipe(
+  variables = list(education = education, fever = fever, cause_of_death = cause),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(answers, conns = conns)$selected == "v2")
+print(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
+#>      people 
+#> "D_answers"
+```
+
+
+``` r
+dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
+#> $output.list
+#> $output.list$TABLE_rvar.by.study_row.props
+#>                study
+#> D_answers$fever site
+#>             yes    1
+#>             no     1
+#> 
+#> $output.list$TABLE_rvar.by.study_col.props
+#>                study
+#> D_answers$fever site
+#>             yes  0.5
+#>             no   0.5
+#> 
+#> $output.list$TABLE_rvar.by.study_counts
+#>                study
+#> D_answers$fever site
+#>             yes    6
+#>             no     6
+#> 
+#> $output.list$TABLES.COMBINED_all.sources_proportions
+#> D_answers$fever
+#> yes  no 
+#> 0.5 0.5 
+#> 
+#> $output.list$TABLES.COMBINED_all.sources_counts
+#> D_answers$fever
+#> yes  no 
+#>   6   6 
+#> 
+#> 
+#> $validity.message
+#> [1] "Data in all studies were valid"
+```
+
+The table contains your lower-case labels. See the short harmonisation appendix
+for the same operation across two different vocabularies.
+
+## Recap
+
+An event selects records, a reducer selects a value, and a wide output arranges private rows. Only the aggregate returns to you.
+
+## Try it
+
+Count education using the complete-contract helper instead of calling ds.table directly.
+
+<details><summary>Solution</summary>
+
+
+
+``` r
+ds.omop.table("D_people", "education", conns = conns)
+#> D_people$education
+#>  Secondary education University education 
+#>                    6                    6
+```
+
+</details>

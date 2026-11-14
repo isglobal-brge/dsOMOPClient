@@ -11,7 +11,7 @@ Generate R code string for a single omop\_filter
 ## Arguments
 
   - f:
-
+    
     An `omop_filter` object.
 
 ## Value

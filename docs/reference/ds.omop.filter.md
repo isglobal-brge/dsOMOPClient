@@ -34,41 +34,41 @@ ds.omop.filter(
 ## Arguments
 
   - x:
-
+    
     Character; name of the server-side `omop.table` symbol. If `NULL`
     (the default), the session's most recently produced output symbol is
     used.
 
   - var:
-
+    
     Character; the (non-protected) column to filter on.
 
   - op:
-
+    
     Character; one of `"=="`, `"!="`, `"in"`, or `"not_in"` (other
     comparisons: `expr`).
 
   - value:
-
+    
     Category value(s).
 
   - newobj:
-
+    
     Character; name of the server-side symbol to create. If `NULL`
     (default), a unique name is generated.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - expr:
-
+    
     (2.10.3) A predicate from `omop_where` (instead of
     `var`/`op`/`value`).
 

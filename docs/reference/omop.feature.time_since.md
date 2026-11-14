@@ -19,24 +19,24 @@ omop.feature.time_since(
 ## Arguments
 
   - concept\_set:
-
+    
     Numeric vector of concept IDs, or an `omop_concept_set` object
     defining the concepts to match.
 
   - reference\_date:
-
+    
     Character/Date; fixed ISO 8601 date used as the reference point. It
     is required: cohort-index recency is episode-specific and is not
     supported by the person-level feature reducer.
 
   - unit:
-
+    
     Character; time unit for the result. One of `"day"` or `"month"`;
     months mean complete calendar months rather than fixed 30-day
     intervals.
 
   - name:
-
+    
     Character; optional custom name for the feature column. If `NULL`,
     auto-generated from the concept and table context.
 

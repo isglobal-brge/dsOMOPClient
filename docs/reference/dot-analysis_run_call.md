@@ -24,28 +24,28 @@ wrong positional slot.
 ## Arguments
 
   - fn:
-
+    
     Character; the server method name.
 
   - res\_symbol:
-
+    
     Character; the server-side handle symbol.
 
   - name:
-
+    
     Character; the catalog entry name.
 
   - params:
-
+    
     Named list of parameter values.
 
   - scope\_args:
-
+    
     `NULL` or the closed named argument list returned by
     `.analysis_scope_expr`.
 
   - combine:
-
+    
     Character; `"union"` or `"intersect"`.
 
 ## Value

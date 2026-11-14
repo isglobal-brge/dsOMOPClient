@@ -11,7 +11,7 @@ Load a JSON Schema or a JSON instance without simplification
 ## Arguments
 
   - path:
-
+    
     File path.
 
 ## Value

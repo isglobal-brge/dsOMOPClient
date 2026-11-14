@@ -1,0 +1,19 @@
+{
+  "chapters": 10,
+  "executed_visible_chunks": 82,
+  "chunks_by_chapter": {
+    "book-00-start.Rmd": 4,
+    "book-01-mental-model.Rmd": 3,
+    "book-02-connect.Rmd": 4,
+    "book-03-explore.Rmd": 5,
+    "book-04-vocabulary.Rmd": 6,
+    "book-05-recipe.Rmd": 13,
+    "book-06-visits.Rmd": 19,
+    "book-07-verbal-autopsy.Rmd": 18,
+    "book-08-harmonise.Rmd": 7,
+    "book-09-reproduce.Rmd": 3
+  },
+  "missing_local_links": [],
+  "uncomputed_chunks": 0,
+  "untranslated_fixture_id_outputs": 0
+}

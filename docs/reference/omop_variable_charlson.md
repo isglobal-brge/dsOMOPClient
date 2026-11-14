@@ -12,7 +12,7 @@ omop_variable_charlson(name = "charlson")
 ## Arguments
 
   - name:
-
+    
     Character; output column name (default `"charlson"`).
 
 ## Value

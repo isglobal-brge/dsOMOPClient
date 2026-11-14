@@ -16,7 +16,7 @@ values, not exact sums, and carry no pooled epsilon.
 ## Arguments
 
   - raw:
-
+    
     Named list of per-site frames.
 
 ## Value

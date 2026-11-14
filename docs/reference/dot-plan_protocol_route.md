@@ -15,16 +15,16 @@ Which execution protocol the participating sites support
 ## Arguments
 
   - conns:
-
+    
     DSI connections of the execution.
 
   - server\_method:
-
+    
     The assign method the execution calls (`omopPlanExecuteDS` or
     `omopDpPlanExecuteDS`).
 
   - harmonizes:
-
+    
     Whether the execution harmonises concept factors afterwards
     (`omopFactorLevelsDS`, `omopAsFactorColumnsDS`).
 

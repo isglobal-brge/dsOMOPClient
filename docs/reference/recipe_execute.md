@@ -24,30 +24,30 @@ recipe_execute(
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - out:
-
+    
     Named character vector; `output_name -> symbol_name` mapping. If
     `NULL`, auto-generates symbol names from the recipe's output
     specifications.
 
   - symbol:
-
+    
     Character; OMOP session symbol on the server (default `"omop"`).
 
   - conns:
-
+    
     DSI connections or `NULL` (uses active connections).
 
   - output\_mode:
-
+    
     Character; `"memory"` (default) or `"staged"`. Passed through to
     `ds.omop.plan.execute`.
 
   - cohort:
-
+    
     Optional recipe-level scope cohort applied at execution time: a
     `dsomop_cohort_handle`, a `cohort_definition_id`, or a server-side
     cohort table name. When supplied (with or without `tables`) it
@@ -56,18 +56,18 @@ recipe_execute(
     `combine` and intersected into every population (see `omop_recipe`).
 
   - tables:
-
+    
     Optional character vector of `omop.table` symbol names to add to the
     execution-time scope (their distinct persons). May be combined with
     `cohort`.
 
   - combine:
-
+    
     Character; how to fold the scope sources together: `"union"` (the
     default) or `"intersect"`.
 
   - on\_small\_site:
-
+    
     Character; `"error"` (default) or `"skip"`, passed to
     `ds.omop.plan.execute`. Only insufficient final person support is
     skippable: skip keeps successful sites and returns `NULL` for sites

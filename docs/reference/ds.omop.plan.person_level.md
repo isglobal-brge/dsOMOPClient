@@ -15,11 +15,11 @@ ds.omop.plan.person_level(plan, tables, name = "person_data")
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - tables:
-
+    
     Named list; each element maps a table name to a character vector of
     column names to include, e.g. `list(person = c("gender_concept_id",
     "race_concept_id"))`. Each column vector may be *named* to rename
@@ -29,7 +29,7 @@ ds.omop.plan.person_level(plan, tables, name = "person_data")
     (they are stripped server-side regardless).
 
   - name:
-
+    
     Character; output name used as a key in the plan's outputs list and
     as the default symbol name on the server.
 

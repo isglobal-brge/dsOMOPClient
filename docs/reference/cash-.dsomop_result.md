@@ -16,11 +16,11 @@ x$name
 ## Arguments
 
   - x:
-
+    
     A `dsomop_result` object.
 
   - name:
-
+    
     Character; the element name to access.
 
 ## Value

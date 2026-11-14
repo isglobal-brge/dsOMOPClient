@@ -26,37 +26,37 @@ recipe_bind(recipe, ...)
 ## Arguments
 
   - a, b:
-
+    
     Recipes to merge (`recipe_merge()`).
 
   - prefix:
-
+    
     `NULL` (one shared namespace) or a name: every node of `b` is
     renamed `<prefix>_<name>` and every reference to it is rewritten.
 
   - name:
-
+    
     Parameter name (a letter, then letters, digits or underscores).
 
   - type:
-
+    
     Parameter type (see Details).
 
   - default:
-
+    
     Optional default value of the declared type; `NULL` leaves the
     parameter unbound until `recipe_bind()`.
 
   - description:
-
+    
     Optional description.
 
   - recipe:
-
+    
     An `omop_recipe`.
 
   - ...:
-
+    
     `recipe_bind()`: values by parameter name (`name = value`).
 
 ## Value

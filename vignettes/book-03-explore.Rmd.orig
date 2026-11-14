@@ -1,0 +1,76 @@
+---
+title: "3. Exploring the CDM"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{3. Exploring the CDM}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Read table and column metadata, then interpret safe counts.
+</div>
+
+This chapter uses the synthetic practice connection from [Getting started](book-00-start.html).
+Run the sections in order in one R session. All printed results below were computed
+with dsOMOP and dsOMOPClient 2.10.4. They are teaching data, not clinical findings.
+
+## Find a table
+
+```{r list-tables}
+available <- ds.omop.tables(conns = conns)
+available$site
+```
+
+Check that `observation`, `death` and `visit_occurrence` exist before designing
+a recipe. A CDM may contain an empty table or omit a table altogether.
+
+## Read the question and answer fields
+
+```{r observation-columns}
+ds.omop.columns("observation", conns = conns)$site
+```
+
+`observation_concept_id` identifies the question. `value_as_concept_id` identifies
+a coded answer. Filtering on the question and reading the answer are two separate
+choices. `value_as_number` is for numeric values; it is not our education answer.
+
+## Count safely
+
+```{r observation-stats}
+ds.omop.table.stats("observation", conns = conns)$per_site$site
+```
+
+An observation row is an answer, not necessarily a distinct person. Repeated
+answers mean that counting rows and counting people can give different results.
+Respect the returned disclosure representation; do not reinterpret a band as an
+exact number or a refused result as an empty table.
+
+## Identify the date field
+
+```{r visit-columns}
+ds.omop.columns("visit_occurrence", conns = conns)$site
+```
+
+`visit_start_date` records when a visit started. `visit_concept_id` describes its
+setting, such as inpatient or outpatient. `visit_type_concept_id` describes the
+provenance of the record; it is not the field for that setting filter.
+
+## Recap
+
+Schema exploration tells you which fields exist. Safe counts describe support without returning records.
+
+## Try it
+
+Inspect the death table and locate its coded cause field.
+
+<details><summary>Solution</summary>
+
+
+```{r solution}
+ds.omop.columns("death", conns = conns)$site
+```
+
+</details>

@@ -11,7 +11,7 @@ Domain concept column of an event table, from the role registry
 ## Arguments
 
   - table:
-
+    
     Table name (case-insensitive), or NULL.
 
 ## Value

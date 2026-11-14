@@ -31,20 +31,20 @@ ds.omop.value.quantiles(
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name (e.g., `"measurement"`).
 
   - value\_col:
-
+    
     Character; the numeric column name (e.g., `"value_as_number"`).
 
   - probs:
-
+    
     Numeric vector; the quantile probabilities to compute (default:
     `c(0.05, 0.25, 0.5, 0.75, 0.95)`).
 
   - concept\_id:
-
+    
     Integer or NULL; optional concept ID to restrict rows to a single
     concept of the table before computing quantiles (e.g.,
     `value_as_number` for one measurement concept). Default: NULL for
@@ -53,50 +53,50 @@ ds.omop.value.quantiles(
     concept-filtered population.
 
   - cohort\_table:
-
+    
     Character; name of a server-side cohort temp table for filtering, or
     NULL (default: NULL).
 
   - window:
-
+    
     List with `start`/`end` date strings for temporal filtering, or NULL
     (default: NULL).
 
   - cohort:
-
+    
     Cohort reference (a `dsomop_cohort_handle`, a
     `cohort_definition_id`, or a server-side cohort table name), or
     NULL. Takes precedence over `cohort_table`.
 
   - rounding:
-
+    
     Integer; number of decimal places to round quantile values to
     (default: 2).
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`. Pooled quantiles
     are not computed (see Description).
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"`.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - execute:
-
+    
     Logical; if `FALSE`, return a dry-run result containing only the
     generated call code (default: `TRUE`).
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. Quantiles
     are not poolable; `"combine"` therefore returns no pooled value and
     records the reason. When omitted, legacy `scope` behaviour is

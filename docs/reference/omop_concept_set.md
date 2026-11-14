@@ -23,25 +23,25 @@ omop_concept_set(
 ## Arguments
 
   - concepts:
-
+    
     Integer vector of concept IDs (may be empty: a set that matches
     nothing).
 
   - descendants:
-
+    
     Logical; include descendants.
 
   - mapped:
-
+    
     Logical; include source concepts that map to the set.
 
   - exclude:
-
+    
     `NULL`, an integer vector of exact concept IDs, or an unnamed
     `omop_concept_set()` expanded with its own flags.
 
   - name:
-
+    
     Optional registry name.
 
 ## Value

@@ -13,11 +13,11 @@ recipe_add_population(recipe, population)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - population:
-
+    
     An `omop_population` object to add.
 
 ## Value

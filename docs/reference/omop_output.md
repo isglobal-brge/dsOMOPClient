@@ -29,11 +29,11 @@ omop_output(
 ## Arguments
 
   - name:
-
+    
     Character; output table name (used as key in the recipe).
 
   - type:
-
+    
     Character; output layout type. One of `"wide"`, `"long"`,
     `"features"`, `"survival"`, `"intervals"`, `"baseline"`,
     `"temporal_covariates"`, or `"person_period"`. A `"long"` output
@@ -46,39 +46,39 @@ omop_output(
     no v1 rendering and runs on dsOMOP 2.10.3 servers.
 
   - variables:
-
+    
     Character vector or `NULL`; variable names to include (`NULL` means
     all variables in the recipe).
 
   - population\_id:
-
+    
     Character; which population to use (default `"base"`).
 
   - options:
-
+    
     Named list; type-specific options (e.g. `tar` for survival outputs).
 
   - result\_symbol:
-
+    
     Character or `NULL`; R symbol name for the result on the server
     (auto-generated as `D_<name>` if `NULL`).
 
   - rows:
-
+    
     (2.10.3) Alias of `population_id` (give one).
 
   - grain:
-
+    
     (2.10.3) `"episode"` or `"person"`; default episode over an indexed
     population, person otherwise. Person grain over an indexed
     population needs `collapse`.
 
   - columns:
-
+    
     (2.10.3) Alias of `variables` (give one).
 
   - format:
-
+    
     (2.10.3) Language-2 format: `"wide"`, `"long"`, `"survival"`,
     `"intervals"`, `"temporal_covariates"`, `"person_period"`,
     `"sparse"`, `"membership"`, `"dictionary"` or `"joined"`. `type`
@@ -86,11 +86,11 @@ omop_output(
     keeps the legacy `type = "wide"`.
 
   - sources:
-
+    
     (2.10.3) Event/era sources of a `long` output.
 
   - collapse:
-
+    
     (2.10.3) `"first_episode"`, `"last_episode"` or `"any"`: person
     grain over an indexed population.
 

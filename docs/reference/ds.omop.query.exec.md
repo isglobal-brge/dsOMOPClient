@@ -24,26 +24,26 @@ ds.omop.query.exec(
 ## Arguments
 
   - query\_id:
-
+    
     Character; the legacy query ID (e.g., `"condition_prevalence"`).
 
   - inputs:
-
+    
     Named list; parameter values for the entry. Default: empty list.
 
   - mode:
-
+    
     Character; only `"aggregate"` is accepted. The deprecated `"assign"`
     value now fails closed; assign behavior is selected from trusted
     server catalog metadata by `ds.omop.analysis.run`.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

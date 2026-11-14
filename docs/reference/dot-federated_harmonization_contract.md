@@ -19,15 +19,15 @@ counts do not have one documented release granularity.
 ## Arguments
 
   - settings:
-
+    
     Named list of per-server disclosure settings.
 
   - expected\_servers:
-
+    
     Character vector of servers that must be represented.
 
   - fail:
-
+    
     Logical; stop when no common semantic/age contract exists.
 
 ## Value

@@ -20,11 +20,11 @@ ds.omop.plan.baseline(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - columns:
-
+    
     Character vector; person-table columns to include (e.g.
     `"gender_concept_id"`, `"race_concept_id"`). Exact birth components
     are not releasable; request `"age_at_index"` through `derived`
@@ -33,13 +33,13 @@ ds.omop.plan.baseline(
     are stripped server-side regardless).
 
   - derived:
-
+    
     Character vector; derived fields to compute. Supported values
     include `"age_at_index"`, `"prior_observation"`, and
     `"future_observation"`.
 
   - name:
-
+    
     Character; output name used as a key in the plan's outputs list and
     as the default symbol name on the server.
 

@@ -1,15 +1,15 @@
-/* OHDSI-inspired blue and green, readable local fonts, no remote font dependency. */
-:root { --book-blue: #005b8f; --book-green: #4c9a2a; }
-.navbar { border-bottom: 4px solid var(--book-green); }
+/* OHDSI navy, orange and blue, readable local fonts, no remote font dependency. */
+:root { --book-blue: #003142; --book-accent: #f19119; }
+.navbar { border-bottom: 4px solid var(--book-accent); }
 .navbar-brand { font-weight: 700; }
 .page-header { border-bottom: 1px solid #d9e5eb; padding-bottom: 1rem; }
-.contents { max-width: 54rem; line-height: 1.65; }
-.contents h2 { color: var(--book-blue); margin-top: 2.4rem; }
-.learn-box { border-left: 5px solid var(--book-green); background: #f1f7f9;
+main { max-width: 54rem; line-height: 1.65; }
+main h2 { color: var(--book-blue); margin-top: 2.4rem; }
+.learn-box { border-left: 5px solid var(--book-accent); background: #f1f7f9;
   padding: 1rem 1.4rem; margin: 1.5rem 0 2rem; border-radius: 0 6px 6px 0; }
 .learn-box p:last-child { margin-bottom: 0; }
 pre { border: 1px solid #d9e5eb; border-radius: 6px; padding: 1rem; }
 details { margin: 1rem 0; border: 1px solid #d9e5eb; border-radius: 6px; padding: 1rem; }
 summary { color: var(--book-blue); font-weight: 600; cursor: pointer; }
 a { text-underline-offset: .18em; }
-@media (max-width: 576px) { .contents { font-size: 1rem; } pre { font-size: .82rem; } }
+@media (max-width: 576px) { main { font-size: 1rem; } pre { font-size: .82rem; } }

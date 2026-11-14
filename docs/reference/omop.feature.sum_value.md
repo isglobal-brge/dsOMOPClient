@@ -13,16 +13,16 @@ omop.feature.sum_value(concept_set, value_column = "days_supply", name = NULL)
 ## Arguments
 
   - concept\_set:
-
+    
     Numeric vector of concept IDs, or an `omop_concept_set` object.
 
   - value\_column:
-
+    
     Character; name of the numeric column to sum (default
     `"days_supply"`).
 
   - name:
-
+    
     Character; optional custom name for the feature column.
 
 ## Value

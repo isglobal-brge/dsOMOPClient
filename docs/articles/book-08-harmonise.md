@@ -1,0 +1,124 @@
+# 8\. Appendix: two vocabularies, one category set
+
+**What you will learn**
+
+Check that different site vocabulary names become identical published
+categories.
+
+This chapter uses the synthetic practice connection from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+Run the sections in order in one R session. All printed results below
+were computed with dsOMOP and dsOMOPClient 2.10.4. They are teaching
+data, not clinical findings.
+
+## A small exception to our single-server lessons
+
+The main book uses one server. This short requested check uses two
+DSLite connections. Both synthetic databases hold the same answer IDs.
+The second vocabulary calls University education “University
+qualification” and declares a newer vocabulary version. No patient
+records are downloaded.
+
+``` r
+ds.omop.disconnect(conns = conns)
+DSI::datashield.logout(conns)
+pair <- book_fixture(two_sites = TRUE)
+two_conns <- pair$conns
+names(two_conns)
+#> [1] "site"  "site2"
+```
+
+Each name represents a separate DataSHIELD session with its own private
+table.
+
+## See the vocabulary difference
+
+``` r
+lookup <- ds.omop.concept.lookup(900102L, conns = two_conns)
+lapply(lookup$per_site, function(x) x["concept_name"])
+#> $site
+#>           concept_name
+#> 1 University education
+#> 
+#> $site2
+#>               concept_name
+#> 1 University qualification
+```
+
+This is permitted vocabulary metadata, not observed answer frequencies.
+
+## Declare a shared label
+
+``` r
+harmonised <- omop_recipe(variables = list(education = omop_variable(
+  event = omop_event("observation", concepts = 900001L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"),
+  labels = c("900102" = "University education"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+stopifnot(recipe_explain(harmonised, conns = two_conns)$selected == "v2")
+print(recipe_execute(harmonised, out = c(people = "D_shared"), conns = two_conns))
+#>     people 
+#> "D_shared"
+```
+
+A common explicit label resolves the known wording difference.
+Harmonisation is based on concept identity and the published label
+contract, not on matching patient records or guessing that similar words
+mean the same thing.
+
+## Compare released category sets
+
+``` r
+site_tables <- lapply(names(two_conns), function(site)
+  ds.omop.table("D_shared", "education", conns = two_conns[site]))
+names(site_tables) <- names(two_conns)
+site_tables
+#> $site
+#> D_shared$education
+#>  Secondary education University education 
+#>                    6                    6 
+#> 
+#> $site2
+#> D_shared$education
+#>  Secondary education University education 
+#>                    6                    6
+```
+
+``` r
+identical(dimnames(site_tables[[1]]), dimnames(site_tables[[2]]))
+#> [1] TRUE
+```
+
+Both real executions returned the same category set. Now combine their
+counts:
+
+``` r
+ds.omop.table("D_shared", "education", conns = two_conns)
+#> D_shared$education
+#>  Secondary education University education 
+#>                   12                   12
+```
+
+The pooled counts add released cells. They do not link people across
+sites. In a real network, confirm the concept meanings as well as their
+labels.
+
+## Recap
+
+Explicit concept labels can give the same categories despite vocabulary
+wording differences.
+
+## Try it
+
+Check the selected recipe language once more, then close both temporary
+connections.
+
+Solution
+
+``` r
+recipe_explain(harmonised, conns = two_conns)$selected
+#> [1] "v2"
+ds.omop.disconnect(conns = two_conns)
+DSI::datashield.logout(two_conns)
+unlink(pair$path)
+```

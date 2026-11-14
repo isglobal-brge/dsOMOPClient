@@ -16,7 +16,7 @@ are left untouched so they stay JSON arrays, and data frames are left to
 ## Arguments
 
   - x:
-
+    
     An R object (list, vector, or scalar).
 
 ## Value

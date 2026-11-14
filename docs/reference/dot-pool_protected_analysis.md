@@ -26,19 +26,19 @@ logical sources. The pooled components stay available as attribute
 ## Arguments
 
   - raw:
-
+    
     Named list of per-site frames.
 
   - release\_pooling:
-
+    
     The entry's `release_pooling` descriptor.
 
   - policy:
-
+    
     Pooling policy.
 
   - harmonization:
-
+    
     Harmonization contract.
 
 ## Value

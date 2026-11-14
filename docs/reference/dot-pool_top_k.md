@@ -11,19 +11,19 @@ Pool top-K concept results using two-pass merge
 ## Arguments
 
   - per\_site\_dfs:
-
+    
     Named list of data frames with concept\_id and a metric column
 
   - metric\_col:
-
+    
     Character; name of the metric column to sum
 
   - k:
-
+    
     Integer; number of top results to return
 
   - policy:
-
+    
     Character; pooling policy
 
 ## Value

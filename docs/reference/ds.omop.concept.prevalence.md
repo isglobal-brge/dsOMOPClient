@@ -31,74 +31,74 @@ ds.omop.concept.prevalence(
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name (e.g., `"condition_occurrence"`,
     `"drug_exposure"`).
 
   - concept\_col:
-
+    
     Character; the concept column name, or NULL for automatic detection
     based on the table's standard concept column (default: NULL).
 
   - metric:
-
+    
     Character; `"persons"` (default) to rank by distinct person count,
     or `"records"` to rank by total record count.
 
   - top\_n:
-
+    
     Integer; number of top concepts to return (default: 50).
 
   - cohort\_table:
-
+    
     Character; name of a server-side cohort temp table to restrict the
     analysis to a specific cohort (default: NULL).
 
   - window:
-
+    
     List with `start` and `end` date strings (ISO 8601) for temporal
     filtering, or NULL for no date restriction (default: NULL).
 
   - offset:
-
+    
     Integer; number of ranked concepts to skip for pagination (default:
     0).
 
   - global:
-
+    
     Logical; if `TRUE`, rank concepts across all supported clinical
     tables rather than only `table` (default: `FALSE`).
 
   - cohort:
-
+    
     Cohort reference (a `dsomop_cohort_handle`, a
     `cohort_definition_id`, or a server-side cohort table name), or
     NULL. Takes precedence over `cohort_table`.
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) requires all servers to succeed,
     `"pooled_only_ok"` allows partial results.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - execute:
-
+    
     Logical; if `FALSE`, return a dry-run result containing only the
     generated call code (default: `TRUE`).
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, legacy `scope` behaviour is preserved.
 

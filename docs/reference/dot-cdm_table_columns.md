@@ -11,7 +11,7 @@ Columns of one OMOP CDM table (CDM 5.3 and 5.4)
 ## Arguments
 
   - table:
-
+    
     Table name (case-insensitive).
 
 ## Value

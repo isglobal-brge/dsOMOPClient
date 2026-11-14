@@ -1,6 +1,16 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/404.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/LICENSE-text.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-01-mental-model.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-02-connect.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-03-explore.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-visits.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-verbal-autopsy.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-08-harmonise.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/book-09-reproduce.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/index.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/v01_getting_started.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/articles/v02_exploration.html</loc></url>
@@ -413,3 +423,4 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_validate.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/summary.omop_plan.html</loc></url>
 </urlset>
+

@@ -20,7 +20,7 @@ when set so a bare population stays compact.
 ## Arguments
 
   - pop:
-
+    
     An `omop_population` object.
 
 ## Value

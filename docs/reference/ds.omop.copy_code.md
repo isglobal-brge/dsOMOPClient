@@ -14,7 +14,7 @@ ds.omop.copy_code(x)
 ## Arguments
 
   - x:
-
+    
     A `dsomop_result` object.
 
 ## Value

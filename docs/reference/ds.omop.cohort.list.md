@@ -14,12 +14,12 @@ ds.omop.cohort.list(symbol = "omop", conns = NULL)
 ## Arguments
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

@@ -13,7 +13,7 @@ variable names that avoid collisions across sessions.
 ## Arguments
 
   - prefix:
-
+    
     Character; prefix for the generated symbol.
 
 ## Value

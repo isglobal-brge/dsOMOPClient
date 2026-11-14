@@ -15,7 +15,7 @@ omop_variable_dcsi(name = "dcsi")
 ## Arguments
 
   - name:
-
+    
     Character; output column name (default `"dcsi"`).
 
 ## Value

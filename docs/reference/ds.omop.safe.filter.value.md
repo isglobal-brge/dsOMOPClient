@@ -24,39 +24,39 @@ ds.omop.safe.filter.value(
 ## Arguments
 
   - table:
-
+    
     Character; the OMOP CDM table name (e.g., `"measurement"`).
 
   - column:
-
+    
     Character; the numeric column to filter on (e.g.,
     `"value_as_number"`).
 
   - threshold:
-
+    
     Numeric; the desired threshold value. The function snaps this to the
     nearest safe bin boundary.
 
   - direction:
-
+    
     Character; `"above"` (default) or `"below"`, indicating whether to
     keep values above or below the threshold.
 
   - concept\_id:
-
+    
     Integer or NULL; optional concept ID to restrict rows before
     computing cutpoints (default: NULL).
 
   - n\_bins:
-
+    
     Integer; the number of bins for cutpoint computation (default: 10).
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
 ## Value

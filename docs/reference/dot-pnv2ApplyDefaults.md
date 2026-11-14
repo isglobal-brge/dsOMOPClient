@@ -13,15 +13,15 @@ oneOf/anyOf branch, if/then/else), recursively. Nothing else is added.
 ## Arguments
 
   - schema:
-
+    
     Parsed schema node.
 
   - x:
-
+    
     Instance (as parsed with \`simplifyVector = FALSE\`).
 
   - root:
-
+    
     Root schema for \`$ref\` resolution.
 
 ## Value

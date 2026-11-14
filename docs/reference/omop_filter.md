@@ -102,7 +102,7 @@ omop_filter_missing_measurement(
 ## Arguments
 
   - type:
-
+    
     Character; executable filter type. Population filters are `"sex"`,
     `"age_range"`, `"age_group"`, `"cohort"`, `"has_concept"`,
     `"not_has_concept"`, `"concept_count"`, `"prior_observation"`,
@@ -112,141 +112,141 @@ omop_filter_missing_measurement(
     fail-closed typed `"custom"` predicate.
 
   - level:
-
+    
     Character; `"population"` or `"row"`. When omitted, the unique
     executable level for `type` is selected. Output-level filters are
     not part of the executable Recipe contract.
 
   - params:
-
+    
     Named list; filter-specific parameters (varies by type).
 
   - label:
-
+    
     Character or `NULL`; human-readable description (auto-generated from
     type and params if `NULL`).
 
   - value:
-
+    
     Character; sex value. Accepts "F", "f", "female", "Female",
     "FEMALE", "M", "m", "male", "Male", "MALE" — normalized internally
     to "F" or "M".
 
   - min:
-
+    
     Numeric; minimum age (inclusive)
 
   - max:
-
+    
     Numeric; maximum age (inclusive)
 
   - year:
-
+    
     Integer or NULL; explicit calendar-year anchor (shorthand for July 1
     of that year). A cohort index supplies the anchor when omitted.
 
   - reference\_date:
-
+    
     Date/string or `NULL`; fixed anchor for `window` when the population
     has no cohort index. An index is used when this is omitted.
 
   - groups:
-
+    
     Character vector; age group labels (e.g. c("18-24", "25-34"))
 
   - cohort\_definition\_id:
-
+    
     Integer; existing OMOP cohort\_definition\_id to require for
     membership.
 
   - concept\_id:
-
+    
     Integer scalar or vector; measurement concept ID(s) to check absence
     of (a vector requires all of them to be absent)
 
   - table:
-
+    
     Character; which OMOP table to check
 
   - concept\_name:
-
+    
     Character or NULL; human-readable name
 
   - window:
-
+    
     Named list with start/end index-relative day offsets, or NULL;
     restricts absence to that window (e.g. "no HbA1c in the prior year")
 
   - min\_count:
-
+    
     Integer; minimum number of visits
 
   - start:
-
+    
     Character or `NULL`; inclusive start date in ISO `YYYY-MM-DD` form.
     A one-sided range (only `start` or only `end`) compiles to a single
     `>=` / `<=` comparison.
 
   - end:
-
+    
     Character or `NULL`; inclusive end date in ISO `YYYY-MM-DD` form and
     not before `start`. No minimum calendar width is imposed on private
     assignment filters; publication applies final support.
 
   - date\_column:
-
+    
     Character or `NULL`; explicit OMOP date column. When `NULL`,
     `recipe_to_plan` infers the standard date column from the output's
     OMOP table.
 
   - column:
-
+    
     Character; the value-concept column (default
     `"value_as_concept_id"`)
 
   - threshold:
-
+    
     Numeric; threshold value
 
   - direction:
-
+    
     Character; "above" or "below"
 
   - safe\_bins:
-
+    
     Server-issued result for the same measurement concept from
     `ds.omop.safe.cutpoints()`. Optional for numeric criteria. If
     supplied, both bounds must be issued edges and the scope must match.
 
   - concept\_ids:
-
+    
     Integer scalar or vector; the concept(s) to keep (a record matches
     if its concept is any of them: the value concept for
     `omop_filter_value_concept()`; the table's domain concept, or
     `concept_col`, for `omop_filter_concept_set()`)
 
   - concept\_col:
-
+    
     Character or `NULL`; the concept column the set is matched on.
     `NULL` (default) uses the output table's domain concept column from
     the role registry (`condition_concept_id` for
     `condition_occurrence`, `drug_concept_id` for `drug_exposure`, ...).
 
   - min\_days:
-
+    
     Integer; minimum days of followup
 
   - visit\_concept\_id:
-
+    
     Integer scalar or vector, or NULL; visit type filter (a vector
     counts visits of any of the given types)
 
   - min\_value:
-
+    
     Numeric or NULL; inclusive minimum value
 
   - max\_value:
-
+    
     Numeric or NULL; exclusive maximum value
 
 ## Value
