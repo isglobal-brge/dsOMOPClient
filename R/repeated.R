@@ -49,8 +49,8 @@ omop_repeated <- function(event,values,timepoints=NULL,visits=NULL,missing="keep
   missing<-.categoryChoice(missing,c("keep","skip_all","skip_any"));broadcast<-.categoryBool(broadcast)
   flat<-list()
   for(n in names(values)) {
-    if(inherits(values[[n]],"omop_category_bundle"))for(k in names(values[[n]]))flat[[paste(n,k,sep="_")]]<-values[[n]][[k]]
-    else flat[[n]]<-values[[n]]
+    if(inherits(values[[n]],"omop_category_bundle"))for(k in names(values[[n]]))flat<-c(flat,setNames(list(values[[n]][[k]]),paste(n,k,sep="_")))
+    else flat<-c(flat,setNames(list(values[[n]]),n))
   }
   if(anyDuplicated(names(flat))) .categoryReject("Expanded repeated operand names collide.","repeated_spec_invalid")
   if(any(!vapply(flat,inherits,logical(1),"omop_variable"))) .categoryReject("Only typed same-event row projections are repeated.","repeated_grain_incompatible")
@@ -59,7 +59,9 @@ omop_repeated <- function(event,values,timepoints=NULL,visits=NULL,missing="keep
   for(point in points)for(value in names(flat)) {
     input<-flat[[value]]
     spec<-.categoryEffective(input$category_spec,.categoryArg(category_spec))
-    out[[paste(value,point,sep="_")]]<-.v2_variable("derived",derived=list(kind="repeated",source=event,
+    output_name<-paste(value,point,sep="_")
+    if(output_name %in% names(out)) .categoryReject("Repeated names collide.","repeated_spec_invalid")
+    out[[output_name]]<-.v2_variable("derived",derived=list(kind="repeated",source=event,
       values=flat,timepoints=timepoints,visits=visits,missing=missing,point=point,value=value),
       category_spec=if(length(spec))structure(spec,class=c("omop_category_spec","list")),number_spec=input$number_spec,broadcast=broadcast)
   }

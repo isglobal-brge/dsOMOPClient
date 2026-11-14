@@ -42,3 +42,30 @@ test_that("C18 C19 C57 C63 identity reduction follows mapping and preserves type
     }
   }
 })
+
+test_that("C05 C63 category reducers use declared equivalence, sentinel identity and three-valued flags", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"DELETE FROM observation")
+    rows<-expand.grid(position=1:3,person_id=1:18)
+    rows$observation_id<-seq_len(nrow(rows));rows$observation_concept_id<-45000120L
+    rows$observation_date<-as.character(as.Date("2020-01-01")+rows$position);rows$observation_type_concept_id<-0L
+    rows$value_as_concept_id<-c(NA_integer_,45000124L,45000125L)[rows$position];rows$position<-NULL
+    DBI::dbWriteTable(con,"observation",rows,append=TRUE);DBI::dbDisconnect(con)
+  }
+  e<-omop_event("observation",45000120L);empty<-omop_event("observation",999999L)
+  raw<-omop_category_rows(e,"value_as_concept_id")
+  miss<-omop_category_indicators(omop_category(raw,omop_category_spec(missing=omop_category_missing("level"))),c(m="special:missing"))[["m"]]
+  known<-omop_category_indicators(raw,c(k="concept:45000124"))[["k"]]
+  never<-omop_category_indicators(raw,c(k="concept:45000126"))[["k"]]
+  empty_flag<-omop_category_indicators(omop_category_rows(empty,"value_as_concept_id"),c(k="concept:45000124"))[["k"]]
+  reduce<-function(v,fn)omop_category_reduce(v,omop_reduce(fn))
+  r<-omop_recipe(variables=list(distinct=reduce(raw,"n_distinct"),count=reduce(raw,"count"),missing=reduce(miss,"sum"),any=reduce(known,"any"),all=reduce(known,"all"),unknown=reduce(never,"any"),empty_any=reduce(empty_flag,"any"),empty_all=reduce(empty_flag,"all"),empty_sum=reduce(empty_flag,"sum")),labels=c(`45000124`="shared",`45000125`="shared"))
+  recipe_execute(r,out="ThreeValued",symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"ThreeValued")) {
+    expect_true(all(f$distinct==1L));expect_true(all(f$count==3L));expect_true(all(f$missing==1L))
+    expect_true(all(f$any==1L));expect_true(all(is.na(f$all)));expect_true(all(is.na(f$unknown)))
+    expect_true(all(f$empty_any==0L));expect_true(all(is.na(f$empty_all)));expect_true(all(f$empty_sum==0L))
+  }
+})

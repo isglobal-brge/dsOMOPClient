@@ -17,7 +17,11 @@
   result <- setNames(lapply(columns, function(col) {
     records <- unlist(lapply(per_server, function(x) x$concepts[[col]]), recursive = FALSE)
     calendars <- lapply(per_server, function(x) x$calendars[[col]])
-    if (any(!vapply(calendars, is.null, logical(1)))) {
+    categories<-lapply(per_server,function(x)x$categories[[col]])
+    if(any(!vapply(categories,is.null,logical(1)))) {
+      if(any(vapply(categories,is.null,logical(1)))||length(unique(vapply(categories,.jcsCanonical,"")))!=1L) .categoryReject("Category semantics differ across retained sites.","category_domain_incompatible")
+      resolved<-.categoryResolveRecords(records,identity=categories[[1L]])
+    } else if (any(!vapply(calendars, is.null, logical(1)))) {
       if (any(vapply(calendars, is.null, logical(1))) || length(unique(vapply(calendars, .jcsCanonical, ""))) != 1L) .dateReject("Calendar/policy mismatch across retained sites.")
       resolved <- .dateResolveRecords(records, calendars[[1L]])
     } else resolved <- .conceptResolve(records)
@@ -60,11 +64,18 @@
   spec <- list(concept_protocol = 1L, columns = result, numbers = numbers,
        evidence = unique(unlist(lapply(per_server, function(x) x$evidence), use.names = FALSE)),
        names = if (length(generated)) as.list(.conceptGeneratedNames(keys, generated)) else list())
-  schemas<-lapply(per_server,function(x)x$schema)
+  schemas<-lapply(per_server,function(x) {
+    schema<-x$schema
+    if(!is.null(schema))schema$columns<-lapply(schema$columns,function(c){c$name<-c$stable_key;c})
+    schema
+  })
   if(any(!vapply(schemas,is.null,logical(1)))) {
     if(any(vapply(schemas,is.null,logical(1))) || length(unique(vapply(schemas,.jcsCanonical,"")))!=1L)
       .categoryReject("Published column types/derivations differ across retained sites.","category_domain_incompatible")
     spec$schema<-schemas[[1L]]
+    spec$schema$columns<-lapply(spec$schema$columns,function(c) {
+      c$name<-spec$names[[c$stable_key]] %||% c$stable_key;c
+    })
   }
   attr(spec,"concept_explain") <- explanation
   spec

@@ -25,3 +25,11 @@ test_that("C44 time grids reject ambiguity and keep declaration order", {
   b<-omop_repeated(e,list(x=omop_number_rows(e)),timepoints=omop_timepoints(list(m12=omop_timepoint(12,"months"),baseline=omop_timepoint())))
   expect_identical(names(b),c("x_m12","x_baseline"))
 })
+
+test_that("C44 flattened indicator and point names cannot overwrite siblings", {
+  e<-omop_event("observation",45000120L)
+  v<-omop_category_rows(e,"value_as_concept_id")
+  flags<-omop_category_indicators(v,c(a="concept:45000123"))
+  expect_error(omop_repeated(e,list(x=flags,x_a=v),timepoints=omop_timepoints(list(p=omop_timepoint()))),"collide")
+  expect_error(omop_repeated(e,list(x_a=v,x=v),timepoints=omop_timepoints(list(b=omop_timepoint(),a_b=omop_timepoint()))),"collide")
+})

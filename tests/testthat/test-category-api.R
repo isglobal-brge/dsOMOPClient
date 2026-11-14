@@ -49,3 +49,13 @@ test_that("C57 C58 nested category and repeated declarations round trip executab
   expect_error(omop_category_reduce(rows,omop_reduce("last_value",value="value_as_concept_id")),"omit value")
   expect_error(omop_category_reduce(rows,omop_reduce("last_value",unit="month")),"only with time_since")
 })
+
+
+test_that("C03 C59 explain preserves public category policies without data access", {
+  e<-omop_event("observation",45000120L)
+  r<-omop_recipe(variables=list(x=omop_category(omop_variable(event=e,reducer=omop_reduce("binary")),omop_category_spec(binary=omop_category_binary("factor")))))
+  text<-paste(recipe_explain(r,detail="semantics")$text,collapse="\n")
+  expect_match(text,"Inapplicable recipe defaults are inactive",fixed=TRUE)
+  expect_match(text,"Semantic flags retain false/true identity",fixed=TRUE)
+  expect_match(text,"Open concept and period domains remain unresolved",fixed=TRUE)
+})

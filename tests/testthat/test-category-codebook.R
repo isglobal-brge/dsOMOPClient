@@ -16,3 +16,32 @@ test_that("C53 C54 C55 codebooks are local and published types match release", {
   expect_error(recipe_codebook(result,output="absent"),"Unknown exact")
   expect_error(recipe_codebook(list()),"codebook_metadata_missing")
 })
+
+test_that("C53 prospective books contain fixed keys, declared types, domains and all families", {
+  r<-.category_format_recipe(3000963L)
+  b<-recipe_codebook(r)
+  expect_identical(b[["wide/wide"]]$columns$name[1:3],c("row_id","cohort_row_id","person_id"))
+  expect_identical(b[["wide/wide"]]$columns$r_type[b[["wide/wide"]]$columns$name=="flag"],"logical")
+  expect_identical(b[["sparse/covariateRef"]]$columns$name,c("covariate_id","source","concept_id","concept_name","analysis"))
+  expect_true(all(b[["wide/wide"]]$columns$name %in% b[["joined/joined"]]$columns$name))
+  p<-recipe_to_plan(r,version=2)
+  p$outputs$survival$options$format<-"recurrent_events"
+  p$outputs$survival$options$tars<-list(early=list(start=1,end=30),late=list(start=31,end=365))
+  schemas<-.codebookPlanSchemas(p)
+  expect_true(all(paste0("survival/",c("early_events","early_risk_sets","late_events","late_risk_sets")) %in% names(schemas)))
+})
+
+test_that("C51 hierarchy indicator mapping contracts cannot silently diverge", {
+  make<-function(map)list(concept_protocol=1L,levels=list(),concepts=list(),unsafe=character(),nfilter_levels_max=40,keys="flag",generated=list(),schema=list(columns=list(list(stable_key="flag",name="flag",r_type="integer",derivation=list(mapping=map))),row_keys=list()))
+  expect_error(.conceptUnionReports(list(a=make("concept:10"),b=make("concept:20"))),"category_domain_incompatible")
+})
+
+test_that("C48 empty category metadata encodes null without changing plan NA validation", {
+  spec<-list(numbers=list(x=list(unit="1")),columns=list(x=list(reference=NA_character_,aliases=c(a=NA_character_,b="flag:1"))))
+  got<-dsOMOP:::.ds_arg(.ds_encode(spec))
+  expect_null(got$columns$x$reference)
+  expect_identical(names(got$columns$x$aliases),c("a","b"))
+  expect_null(got$columns$x$aliases$a)
+  expect_identical(got$columns$x$aliases$b,"flag:1")
+  expect_error(.ds_encode_lossless(list(value=NA_real_)),"NA is not a JSON")
+})

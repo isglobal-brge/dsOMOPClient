@@ -83,3 +83,44 @@ test_that("C12 C13 C14 ICD10 rollup deduplicates reverse maps and follows exact 
   recipe_execute(omop_recipe(variables=variables),out="ICD",symbol="labels",conns=ctx$conns)
   for(f in .clf_frames(ctx,"ICD")) {expect_true(all(f$block=="Block"));expect_true(all(f$chapter=="Chapter"));expect_equal(nrow(f),18L)}
 })
+
+test_that("C11 C17 hierarchy cycles outside the declared input nodes fail structurally", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    ca<-data.frame(ancestor_concept_id=c(45000124L,45000125L,45000124L),descendant_concept_id=c(45000123L,45000124L,45000125L),min_levels_of_separation=1L,max_levels_of_separation=1L)
+    DBI::dbWriteTable(con,"concept_ancestor",ca,append=TRUE);DBI::dbDisconnect(con)
+  }
+  v<-omop_category_rows(omop_event("observation",999999L),"value_as_concept_id",omop_category_spec(rollup=omop_category_rollup("snomed",separation=1L,domain="concept:45000123")))
+  r<-omop_recipe(variables=list(x=omop_category_reduce(v,omop_reduce("mode"))))
+  expect_error(recipe_execute(r,out="Cycle",symbol="labels",conns=ctx$conns),"category_domain_incompatible")
+})
+
+test_that("C21 C24 C25 language candidates beat fallbacks and literal labels remain unchanged", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(i in seq_along(ctx$paths)) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),ctx$paths[[i]])
+    DBI::dbExecute(con,"UPDATE concept SET concept_code='' WHERE concept_id=45000124")
+    if(i==2L)DBI::dbWriteTable(con,"concept_synonym",data.frame(concept_id=45000124L,concept_synonym_name=c("Éducation","Alpha local"),language_concept_id=4180186L),append=TRUE)
+    DBI::dbDisconnect(con)
+  }
+  v<-omop_variable(event=omop_event("observation",45000120L),reducer=omop_reduce("last_value",value="value_as_concept_id"))
+  language<-omop_category_spec(language=omop_category_language(4180186L))
+  custom<-v;custom$labels<-c(`45000124`="Exact override")
+  r<-omop_recipe(variables=list(translated=omop_category(v,language),literal=omop_category(custom,language),code=omop_category(v,omop_category_spec(label_style="code")),vocab=omop_category(v,omop_category_spec(label_style="vocabulary_code"))))
+  recipe_execute(r,out="Fallbacks",symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"Fallbacks")) {
+    expect_true("Alpha local" %in% levels(f$translated));expect_true("Exact override" %in% levels(f$literal))
+    expect_true("45000124" %in% levels(f$code));expect_true("A27:45000124" %in% levels(f$vocab))
+  }
+})
+
+test_that("C11 C22 missing hierarchy tables and source-code requests fail without a source-value route", {
+  ctx<-.clf_setup(drop_tables="concept_ancestor");.numeric_lexer()
+  v<-omop_category_rows(omop_event("observation",999999L),"value_as_concept_id")
+  roll<-omop_category(v,omop_category_spec(rollup=omop_category_rollup("atc",level=5,domain="concept:45000123")))
+  r<-omop_recipe(variables=list(x=omop_category_reduce(roll,omop_reduce("mode"))))
+  expect_error(recipe_execute(r,out="MissingHierarchy",symbol="labels",conns=ctx$conns),"category_domain_incompatible")
+  r$variables$x<-omop_category(omop_variable(event=omop_event("observation",999999L),reducer=omop_reduce("last_value",value="concept_id")),omop_category_spec(label_style="source_code"))
+  expect_error(recipe_execute(r,out="SourceCode",symbol="labels",conns=ctx$conns),"category_source_forbidden")
+})

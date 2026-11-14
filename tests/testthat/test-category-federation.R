@@ -40,3 +40,60 @@ test_that("C29 semantic flags keep their declared binary representations", {
     expect_true(all(f$i==1L));expect_true(all(f$l));expect_true(all(f$f=="yes"))
   }
 })
+
+test_that("C04 C07 public period ranges stay open and integer grids keep unused levels", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"UPDATE observation SET observation_date=CASE WHEN person_id<=6 THEN '2020-01-01' WHEN person_id<=12 THEN '2020-03-01' ELSE '2020-04-01' END WHERE observation_concept_id=45000120")
+    DBI::dbExecute(con,"UPDATE observation SET value_as_number=CASE WHEN person_id<=9 THEN 1 ELSE 10 END WHERE observation_concept_id=45000120")
+    DBI::dbDisconnect(con)
+  }
+  e<-omop_event("observation",45000120L)
+  source<-omop_anchor(e)
+  open<-omop_date(source,omop_date_spec(precision="month"))
+  declared<-omop_date(source,omop_date_spec(precision="month",level_range=c("2020-01-01","2020-03-31")))
+  scale<-omop_variable(event=e,reducer=omop_reduce("last_value",value="value_as_number"))
+  r<-omop_recipe(variables=list(open=omop_category(open,omop_category_spec(ordered=TRUE)),declared=omop_category(declared,omop_category_spec(ordered=TRUE)),scale=scale,
+    ordinal=omop_category(omop_number_bins(scale,breaks=seq(-.5,10.5,1)),omop_category_spec(ordered=TRUE))))
+  recipe_execute(r,out="OpenPeriods",symbol="labels",conns=ctx$conns)
+  for(f in .clf_frames(ctx,"OpenPeriods")) {
+    expect_identical(levels(f$open),c("2020-01","2020-03","2020-04"))
+    expect_identical(levels(f$declared),c("2020-01","2020-02","2020-03","2020-04"))
+    expect_length(levels(f$ordinal),11L);expect_true(is.ordered(f$ordinal));expect_true(is.numeric(f$scale))
+  }
+  r$variables$declared<-omop_category(declared,omop_category_spec(order=omop_category_order(paste0("period:2020-0",1:3))))
+  expect_error(recipe_execute(r,out="IncompleteOrder",symbol="labels",conns=ctx$conns),"category_domain_incompatible")
+  for(server in ctx$servers)expect_error(server$getSessionData(server$getSessionIds()[[1L]],"IncompleteOrder"))
+})
+
+test_that("C49 staged category metadata tampering fails before materialisation", {
+  ctx<-.clf_setup();.numeric_lexer()
+  r<-.clf_recipe();r$variables$education<-omop_category(r$variables$education,omop_category_spec(ordered=TRUE))
+  recipe_execute(r,out="Tamper",symbol="labels",conns=ctx$conns,output_mode="staged")
+  server<-ctx$servers[[1L]];d<-server$getSessionData(server$getSessionIds()[[1L]],"Tamper")
+  original<-d$metadata$concept_presentation
+  meta<-dsOMOP:::.ds_arg(original)
+  meta$contracts$education$category$spec$ordered<-FALSE
+  d$metadata$concept_presentation<-dsOMOP:::.conceptEncode(meta)
+  expect_error(dsOMOP:::.publishReadChunks(d,function(chunk)NULL))
+})
+
+test_that("C52 C61 label merges cannot borrow support or rescue a sparse family", {
+  ctx<-.clf_setup();.numeric_lexer()
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"UPDATE observation SET value_as_concept_id=CASE WHEN person_id=1 THEN 45000125 ELSE 45000124 END WHERE observation_concept_id=45000120")
+    DBI::dbDisconnect(con)
+  }
+  e<-omop_event("observation",45000120L,name="e")
+  v<-omop_variable(event=e,reducer=omop_reduce("last_value",value="value_as_concept_id"))
+  r<-omop_recipe(variables=list(x=omop_category(v,omop_category_spec(ordered=FALSE))),labels=c(`45000124`="merged",`45000125`="merged"))
+  expect_error(recipe_execute(r,out="RareMerge",symbol="labels",conns=ctx$conns),"disclosure|factor-level")
+  for(path in ctx$paths) {
+    con<-DBI::dbConnect(RSQLite::SQLite(),path)
+    DBI::dbExecute(con,"DELETE FROM observation WHERE person_id<>1");DBI::dbDisconnect(con)
+  }
+  r<-omop_recipe(events=list(e),outputs=omop_output("sparse",format="sparse",columns=character(),options=list(sources=list(e),analyses="binary")),category_spec=omop_category_spec(ordered=FALSE))
+  expect_error(recipe_execute(r,out="SparseRare",symbol="labels",conns=ctx$conns),"insufficient_support|insufficient support")
+})

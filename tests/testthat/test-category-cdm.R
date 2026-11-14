@@ -1,36 +1,19 @@
-.category_format_recipe <- function(id) {
-  lab<-omop_event("measurement",id,name="lab")
-  base<-omop_variable(event=lab,reducer=omop_reduce("count"))
-  binary<-omop_variable(event=lab,reducer=omop_reduce("binary"))
-  repeat_values<-omop_number_bins(omop_number_rows(lab),breaks=c(-Inf,12,15,Inf))
-  repeated<-omop_repeated(lab,list(value=repeat_values),timepoints=omop_timepoints(list(baseline=omop_timepoint(),m6=omop_timepoint(6,"months",c(-7,7)))))
-  outputs<-list(
-    omop_output("wide",format="wide",rows="p",grain="episode"),
-    omop_output("long",format="long",rows="p",sources=list(lab),options=list(columns_derived=c("value","unit","days_from_index"))),
-    omop_output("intervals",format="intervals",rows="p",options=list(sources=list(lab))),
-    omop_output("membership",format="membership",rows="p"),
-    omop_output("dictionary",format="dictionary",rows="p",options=list(source_outputs=c("long"))),
-    omop_output("panel",format="person_period",rows="p",columns=character(),options=list(sources=list(lab),window=omop_window(0,3650),bins=list(width=365L),analyses=c("binary","count"))),
-    omop_output("sparse",format="sparse",rows="p",columns=character(),options=list(sources=list(lab),analyses=c("binary","count"))),
-    omop_output("temporal",format="temporal_covariates",rows="p",options=list(sources=list(lab),analyses=c("binary","count"),bin_width=3651L,window=omop_window(0,3650))),
-    omop_output("survival",format="survival",rows="p",options=list(outcomes=list(lab=lab),tar=omop_window(1,3650),censor=list("observation_end"))),
-    omop_output("joined",format="joined",rows="p",grain="episode",options=list(from=list(list(output="survival"),list(output="wide")),cardinality="one_to_one")))
-  omop_recipe(events=list(lab),populations=omop_population("p",index=omop_index(lab)),variables=list(
-    count=base,band=omop_number_bins(base,breaks=c(-Inf,5,10,Inf)),
-    flag=omop_category(binary,omop_category_spec(binary=omop_category_binary("logical"))),
-    repeated=repeated),outputs=outputs,category_spec=omop_category_spec(ordered=FALSE))
-}
 
 for(dataset in c("GiBleed","Synthea27Nj"))local({
   dataset<-dataset
   test_that(paste("C46 C48 C53 C54 C56 C64",dataset,"runs all native formats and codebooks at three sites"), {
-    ctx<-if(dataset=="GiBleed").category_gibleed_sites() else .numeric_sites()
     .numeric_lexer()
-    original_relevel<-dsOMOP:::.conceptRelevel
-    original_compile<-dsOMOP:::.compileOutput
-    testthat::local_mocked_bindings(
-      .conceptRelevel=function(...)withCallingHandlers(original_relevel(...),error=function(e)message("CDM relevel: ",conditionMessage(e))),
-      .compileOutput=function(...)withCallingHandlers(original_compile(...),error=function(e){message("CDM compile: ",conditionMessage(e));print(tail(sys.calls(),12L))}),.package="dsOMOP")
+    Rprof("/tmp/cats-cdm-profile.out",interval=.02)
+    withr::defer(Rprof(NULL))
+    setTimeLimit(cpu=180,elapsed=300,transient=TRUE)
+    withr::defer(setTimeLimit(cpu=Inf,elapsed=Inf,transient=FALSE))
+    diagnose<-.harmonizeOneSymbol
+    body(diagnose)<-substitute({
+      on.exit({if(exists("assign_errors",inherits=FALSE)&&length(assign_errors))message("Private contract assignment: ",paste(assign_errors,collapse="; "));if(exists("assign_condition",inherits=FALSE)&&!is.null(assign_condition))message("Private assignment condition: ",conditionMessage(assign_condition))},add=TRUE)
+      ORIGINAL
+    },list(ORIGINAL=body(diagnose)))
+    testthat::local_mocked_bindings(.harmonizeOneSymbol=diagnose,.package="dsOMOPClient")
+    ctx<-if(dataset=="GiBleed").category_gibleed_sites() else .numeric_sites()
     recipe<-.category_format_recipe(if(dataset=="GiBleed")3006322L else 3000963L)
     plan<-recipe_to_plan(recipe,version=2)
     expect_setequal(vapply(plan$outputs,function(x)x$format,""),c("wide","long","intervals","membership","dictionary","person_period","sparse","temporal_covariates","survival","joined"))
@@ -41,10 +24,18 @@ for(dataset in c("GiBleed","Synthea27Nj"))local({
       result<-ds.omop.plan.execute(plan,out=destinations,symbol="numeric",conns=ctx$conns,output_mode=mode)
       book<-recipe_codebook(result)
       expect_gte(length(book),length(plan$outputs))
-      frames<-lapply(destinations,function(symbol).numeric_frames(ctx,symbol,mode))
+      frames<-lapply(names(destinations),function(root) {
+        symbol<-destinations[[root]]
+        if(root!="dictionary")return(.numeric_frames(ctx,symbol,mode))
+        lapply(ctx$servers,function(server) {
+          f<-server$getSessionData(server$getSessionIds()[[1L]],symbol)
+          if(inherits(f,"FlowerDatasetDescriptor")) {chunks<-list();dsOMOP:::.publishReadChunks(f,function(x)chunks[[length(chunks)+1L]]<<-x);f<-do.call(rbind,chunks)}
+          expect_s3_class(f,"data.frame");f
+        })
+      });names(frames)<-names(destinations)
       for(root in names(frames))for(i in seq_along(frames[[root]])) {
         f<-frames[[root]][[i]]
-        expect_gt(nrow(f),0L,info=paste(dataset,root,mode))
+        expect_true(nrow(f)>0L,info=paste(dataset,root,mode))
         if(!is.null(prior))for(column in names(f))expect_equal(f[[column]],prior[[root]][[i]][[column]],info=paste(dataset,root,column))
         if(root=="wide") {
           expect_type(f$flag,"logical");expect_true(is.factor(f$band))
@@ -52,6 +43,16 @@ for(dataset in c("GiBleed","Synthea27Nj"))local({
         }
         key<-paste(root,root,sep="/")
         if(key %in% names(book))expect_identical(book[[key]]$columns$name,names(f))
+      }
+      if(mode=="memory") {
+        symbol<-destinations[["wide"]]
+        expected<-Reduce(`+`,lapply(frames$wide,function(f)table(f$flag_factor)))
+        names(dimnames(expected))<-paste0(symbol,"$flag_factor")
+        expect_equal(ds.omop.table(symbol,"flag_factor",ctx$conns),expected)
+        expect_equal(ds.omop.table(symbol,"flag_factor",rev(ctx$conns)),expected)
+        expected_mean<-mean(unlist(lapply(frames$wide,function(f)f$count),use.names=FALSE))
+        fit<-dsBaseClient::ds.glm(formula="count ~ 1",data=symbol,family="gaussian",datasources=ctx$conns)
+        expect_equal(unname(fit$coefficients[1L,1L]),expected_mean,tolerance=1e-6)
       }
       prior<-frames
     }

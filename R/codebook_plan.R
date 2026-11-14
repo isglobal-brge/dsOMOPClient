@@ -1,0 +1,187 @@
+# Pure public-plan schemas. Open vocabulary/source schemas stay unresolved.
+.codebookAllocateComponents <- function(readable, identities, fixed = rep(FALSE, length(readable))) {
+  out <- rep(NA_character_, length(readable))
+  out[fixed] <- readable[fixed]
+  repeated <- duplicated(readable) | duplicated(readable, fromLast = TRUE)
+  plain <- !fixed & !repeated & nchar(readable) <= 64L & grepl("^[A-Za-z][A-Za-z0-9_]{0,63}$", readable)
+  out[plain] <- readable[plain]
+  used <- out[!is.na(out)]
+  for (i in order(identities, method = "radix")) {
+    if (!is.na(out[[i]])) next
+    hash <- substr(paste0(as.character(openssl::sha256(charToRaw(enc2utf8(identities[[i]]))))),1L,10L)
+    probe <- 1L
+    repeat {
+      tail <- paste0("_", hash, if (probe > 1L) paste0("_", probe))
+      candidate <- paste0(substr(readable[[i]], 1L, 64L - nchar(tail)), tail)
+      if (!candidate %in% used) break
+      probe <- probe + 1L
+    }
+    out[[i]] <- candidate
+    used <- c(used, candidate)
+  }
+  if (anyDuplicated(out) || any(!grepl("^[A-Za-z][A-Za-z0-9_]{0,63}$", out))) {
+    stop("Output component allocation failed its distinctness check.", call. = FALSE)
+  }
+  out
+}
+
+# Keep the primary's name (and therefore its requested symbol and NULL staged
+# semantic component). Reference companions keep their documented names unless
+# the output itself uses one of them; the dynamic inventory carries that name.
+.codebookReferenceNames <- function(output, references) {
+  readable <- c(output, references)
+  identities <- c(.jcsCanonical(list(output, "primary")),
+                  vapply(references, function(ref) .jcsCanonical(list(output, "reference", ref)), ""))
+  allocated <- .codebookAllocateComponents(readable, identities,
+                                         c(TRUE, rep(FALSE, length(references))))
+  stats::setNames(allocated[-1L], references)
+}
+
+# Component names of one TAR's family, allocated against all sibling TARs.
+.codebookSurvivalFamily <- function(fmt, opts, tar, output, multi) {
+  tars <- if (multi) sort(names(opts[["tars"]]),method="radix") else tar
+  part_names <- switch(fmt, recurrent_events = c("events", "risk_sets"),
+                       multi_state = "msdata", "primary")
+  readable <- identities <- character(0)
+  fixed <- logical(0)
+  for (t in tars) for (p in part_names) {
+    readable <- c(readable, if (identical(fmt, "recurrent_events")) {
+      if (multi) paste0(t, "_", p) else p
+    } else if (multi) t else output)
+    identities <- c(identities, .jcsCanonical(list(output, t, p)))
+    fixed <- c(fixed, !identical(fmt, "recurrent_events"))
+  }
+  if (identical(fmt, "multi_state")) {
+    readable <- c(readable, "transitionRef")
+    identities <- c(identities, .jcsCanonical(list(output, "", "transition_ref")))
+    fixed <- c(fixed, FALSE)
+  }
+  allocated <- .codebookAllocateComponents(readable, identities, fixed)
+  pick <- vapply(part_names, function(p) .jcsCanonical(list(output, tar, p)), "")
+  out <- as.list(stats::setNames(allocated[match(pick, identities)], part_names))
+  if (identical(fmt, "multi_state")) out$transition_ref <- tail(allocated, 1L)
+  out
+}
+
+.codebookPlanColumn <- function(key,type="unresolved",semantic="unresolved",variable=NULL,defaults=NULL) {
+  spec<-.categoryEffective(variable$category_spec,defaults)
+  number<-variable$number_spec
+  representation<-number$representation %||% ""
+  if(!is.null(variable)) {
+    fn<-variable$reducer$fn %||% variable$derived$reducer$fn %||% ""
+    flag<-fn %in% c("binary","any","all","abnormal","abnormal_low","abnormal_high") ||
+      identical(variable$derived$kind,"category_indicators") || representation %in% c("flag","present","missing")
+    concept<-identical(variable$derived$kind,"category_rows") ||
+      identical(variable$reducer$value,"value_as_concept_id") || identical(variable$reducer$value,"concept_id")
+    if(flag) {semantic<-"flag";type<-spec$binary$as %||% "integer"}
+    else if(concept) {semantic<-"concept";type<-"factor"}
+    else if(representation %in% c("bins","category")) {semantic<-representation;type<-"ordered_factor"}
+    else if(fn %in% c("count","n_distinct","sum","mean","min","max","median")) {semantic<-"numeric";type<-if(fn %in% c("count","n_distinct"))"integer" else "double"}
+    if(type %in% c("factor","ordered_factor")) {
+      if(!is.null(spec$ordered))type<-if(spec$ordered)"ordered_factor" else "factor"
+      if(length(spec$recode$map))type<-if(isTRUE(spec$ordered %||% spec$recode$ordered))"ordered_factor" else "factor"
+    }
+  }
+  levels<-spec$levels %||% spec$recode$levels
+  labels<-spec$recode$labels
+  if(identical(semantic,"flag")&&type=="factor") {levels<-c("flag:0","flag:1");labels<-spec$binary$labels}
+  if(!is.null(levels)&&identical(spec$missing$na,"level")) {levels<-c(levels,"special:missing");labels<-NULL}
+  if(!is.null(levels)&&identical(spec$missing$unknown,"level")) {levels<-c(levels,"special:unknown");labels<-NULL}
+  list(stable_key=key,name=key,meaning=if(is.null(variable))paste("Output",semantic,"role",key) else paste("Declared variable",key),
+    semantic_type=semantic,r_type=type,storage_type="unresolved",unit=number$unit %||% "unresolved",
+    levels=if(!is.null(levels))list(keys=levels,labels=labels,completeness="declared; open producers remain unresolved"),
+    ordered=if(type %in% c("factor","ordered_factor"))type=="ordered_factor",reference=spec$reference,
+    contrasts=if(type=="ordered_factor")list(kind="polynomial") else if(type=="factor")list(kind="treatment",reference=spec$reference),
+    derivation=list(variable=variable,category_spec=spec),privacy_class=if(!is.null(variable$date_spec)||identical(variable$derived$kind,"repeated"))2L else "unresolved",
+    aggregate_policy="Existing endpoint admission; unresolved for unrequested endpoints",
+    missing_policy="Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA",
+    provenance=list(source="public plan; no observed schema or vocabulary lookup"),completeness="unresolved")
+}
+
+.codebookPlanSchemas <- function(plan) {
+  schemas<-list();visiting<-character()
+  build<-function(output) {
+    if(any(startsWith(names(schemas) %||% character(),paste0(output,"/"))))return(invisible(NULL))
+    if(output %in% visiting) .categoryReject("Cyclic output dependency.","codebook_metadata_missing")
+    visiting<<-c(visiting,output);on.exit(visiting<<-setdiff(visiting,output))
+    node<-plan$outputs[[output]];opts<-node$options %||% list();fmt<-node$format
+    id<-if(identical(node$grain,"person"))c(person_id="character") else c(row_id="integer64",cohort_row_id="integer64",person_id="character")
+    definitions<-list();grains<-list();origins<-list()
+    add<-function(component,types,grain=node$grain %||% "episode") {definitions[[component]]<<-types;grains[[component]]<<-grain}
+    if(fmt=="survival") {
+      style<-opts$format %||% "survival";multi<-length(opts$tars)>0L;tars<-if(multi)sort(names(opts$tars),method="radix") else output
+      common<-c(outcome_name="character",event="integer")
+      for(tar in tars) {
+        family<-.codebookSurvivalFamily(style,opts,tar,output,multi)
+        for(part in names(family)) {
+          extra<-switch(part,primary=if(style=="counting_process")c(common,interval_number="integer",interval_start_days="integer",interval_end_days="integer") else c(common,entry_days_from_index="integer",exit_days_from_index="integer",follow_up_days="integer"),
+            events=c(common,event_number="integer",outcome_event_number="integer",event_days_from_index="integer",entry_days_from_index="integer",exit_days_from_index="integer"),
+            risk_sets=c(entry_days_from_index="integer",exit_days_from_index="integer",follow_up_days="integer"),
+            msdata=c(from="integer",to="integer",trans="integer",Tstart="double",Tstop="double",time="double",status="integer",from_name="character",to_name="character",state_visit_number="integer"),
+            transition_ref=c(from="integer",to="integer",trans="integer",from_name="character",to_name="character",from_hierarchy_rank="integer",to_hierarchy_rank="integer",from_is_initial="logical",to_is_absorbing="logical",tie_policy="character",state_step="double"))
+          ref<-part=="transition_ref";add(family[[part]],c(if(!ref)id,extra),if(ref)"none" else "episode")
+        }
+      }
+    } else if(fmt %in% c("sparse","temporal_covariates")) {
+      add(output,c(id,if(fmt=="temporal_covariates")c(time_id="integer"),covariate_id="integer",covariate_value="double"))
+      refs<-.codebookReferenceNames(output,c("covariateRef",if(fmt=="temporal_covariates")"timeRef"))
+      add(refs[["covariateRef"]],c(covariate_id="integer",source="character",concept_id="factor",concept_name="character",analysis="character"),"none")
+      if(fmt=="temporal_covariates")add(refs[["timeRef"]],c(time_id="integer",start_day="integer",end_day="integer"),"none")
+    } else if(fmt=="joined") {
+      rows<-list()
+      for(source in opts$from) {
+        build(source$output)
+        entry<-schemas[[paste(source$output,source$component %||% source$output,sep="/")]]
+        for(column in entry$schema$columns)if(is.null(rows[[column$stable_key]]))rows[[column$stable_key]]<-column
+      }
+      add(output,setNames(vapply(rows,function(c)c$r_type,""),names(rows)));origins[[output]]<-rows
+    } else {
+      extra<-switch(fmt,wide=character(),membership=c(cohort_start_date="unresolved",cohort_end_date="unresolved"),
+        dictionary=c(concept_id="factor",concept_name="character",domain_id="character",vocabulary_id="character",concept_class_id="character",source="character"),
+        long=c(concept_id="factor",start_date="unresolved",end_date="unresolved"),
+        intervals=c(interval_type="character",concept_id="factor",start_days_from_index="integer",end_days_from_index="integer"),
+        person_period=c(period_start_days="integer",period_end_days="integer",days="integer"),character())
+      add(output,c(if(fmt!="dictionary")id,extra),if(fmt=="dictionary")"none" else node$grain %||% "episode")
+    }
+    for(component in names(definitions)) {
+      types<-definitions[[component]]
+      rows<-lapply(names(types),function(key)origins[[component]][[key]] %||% .codebookPlanColumn(key,types[[key]],if(key %in% names(id))"key" else if(key=="concept_id")"concept" else "structural"))
+      names(rows)<-names(types)
+      if(component==output) {
+        variables<-unlist(node$columns %||% if(fmt=="wide")names(plan$variables) else character(),use.names=FALSE)
+        for(key in intersect(variables,names(plan$variables)))rows[[key]]<-.codebookPlanColumn(key,variable=plan$variables[[key]],defaults=plan$options$category_spec)
+      }
+      for(map in list(node$number_columns,node$category_columns))for(key in names(map)) {
+        v<-map[[key]];dep<-v$derived
+        while(!is.null(dep$variable))dep<-dep$variable$derived
+        if(is.null(dep$component)&&length(definitions)==1L||identical(dep$component,component))rows[[key]]<-.codebookPlanColumn(key,variable=v,defaults=plan$options$category_spec)
+      }
+      schemas[[paste(output,component,sep="/")]]<<-list(schema=list(columns=unname(rows),row_keys=as.list(intersect(names(id),names(rows)))),categories=list(),row_grain=grains[[component]],status="prospective")
+    }
+  }
+  for(output in names(plan$outputs))build(output)
+  schemas[unlist(lapply(names(plan$outputs),function(output)names(schemas)[startsWith(names(schemas) %||% character(),paste0(output,"/"))]),use.names=FALSE)]
+}
+
+.categoryExplain <- function(plan) {
+  if(!length(.categoryCapabilities(plan)))return(character())
+  lines<-c("Categorical identity: rollup, explicit recode, user-label equivalence, then Missing/Unknown; labels and order never determine identity.",
+    "Precedence: wrapper/variable > bundle defaults > recipe > design; nested declarations are atomic. Inapplicable recipe defaults are inactive; explicit incompatible fields refuse.",
+    "Semantic flags retain false/true identity through integer, logical and factor presentation. Numeric arithmetic clears flag identity unless a terminal explicit flag establishes it again.",
+    "Missing applies to available ordinary NA only; unavailable sources, undefined anchors and overflow targets remain NA. Sentinels are analyst-chosen categories, not clinical severity.",
+    "Open concept and period domains remain unresolved until admitted federation metadata certifies completeness. Codebooks never attest occurrence or site support.",
+    "Repeated selection uses one canonical source row, before display; points are processed in declaration order. Month offsets clamp from the original anchor; years use February-29 to March-1.")
+  defaults<-plan$options$category_spec
+  if(!is.null(defaults))lines<-c(lines,paste0("Recipe category defaults: ",.jcsCanonical(.pnv2Plain(defaults))))
+  for(name in names(plan$variables)) {
+    v<-plan$variables[[name]];s<-.categoryEffective(v$category_spec,defaults)
+    if(length(s))lines<-c(lines,paste0("Category variable '",name,"': ",.jcsCanonical(.pnv2Plain(s)),"; applicability follows its declared producer; complete public keys are in recipe_codebook()."))
+    d<-v$derived
+    if(identical(d$kind,"repeated"))lines<-c(lines,paste0("Repeated variable '",name,"': ",.jcsCanonical(.pnv2Plain(d)),"; broadcast=",isTRUE(v$broadcast),"; date-dependent class 2."))
+    if(identical(d$kind,"category_reduce"))lines<-c(lines,paste0("Category reduction '",name,"' applies identity grouping before ",d$reducer$fn,"; consumed input operations are not repeated on the result."))
+    if(!is.null(s$rollup)&&s$rollup$kind!="none")lines<-c(lines,paste0("  Public vocabulary mapping only: ",s$rollup$kind,"; out-of-domain inputs become NA; multiple=",s$rollup$multiple,"; unmatched=",s$rollup$unmatched,
+      if(s$rollup$kind=="icd10")"; vocabulary-derived classification, not recorded source code." else "; effective adapter/domain/map digests must agree across sites."))
+  }
+  for(name in names(plan$outputs))if(length(plan$outputs[[name]]$category_columns))lines<-c(lines,paste0("Output '",name,"' category copies bind original stable keys once: ",.jcsCanonical(.pnv2Plain(plan$outputs[[name]]$category_columns))))
+  lines
+}
