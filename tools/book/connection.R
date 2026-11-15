@@ -31,15 +31,15 @@ book_connect <- function(name = "gibleed", env = parent.frame(), symbol = "omop"
   if (!is.null(.book_connection_state[[session]])) book_disconnect(session)
   if (!is.null(conns)) {
     # Use real analyst connections and their configured resource names as given.
-    if (is.null(resources) || length(resources) != length(conns) ||
+    if (is.null(resources) || is.null(names(resources)) ||
+        anyDuplicated(names(resources)) || anyNA(resources) || length(resources) != length(conns) ||
         !identical(names(resources), names(conns)) || any(!nzchar(resources)) ||
         (two_sites && length(conns) != 2L))
       stop("Supply one named resource for each connection (two for two_sites = TRUE).")
     complete <- FALSE
     on.exit(if (!complete) DSI::datashield.logout(conns), add = TRUE)
-    for (site in names(conns))
-      dsOMOPClient::ds.omop.connect(resource = resources[[site]],
-        conns = conns[site], symbol = symbol)
+    dsOMOPClient::ds.omop.connect(resource = as.list(resources),
+      conns = conns, symbol = symbol)
     practice <- list(conns = conns, path = character())
     complete <- TRUE
   } else if (book_driver == "DSLite") {
