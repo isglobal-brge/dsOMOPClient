@@ -1,5 +1,6 @@
 # Two public, synthetic Eunomia resources on one real DSLite server.
-# Run the administrator loader first; analyst lessons never read DB rows.
+# Load the practice data once with load_book_practice() before connecting.
+# Chapters enter through book_connect(); this function opens the local backend.
 book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
                           resource_names=c(gibleed="gibleed", numeric="numeric"), symbol="omop") {
   force(env)
@@ -29,7 +30,7 @@ book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
   conns<-DSI::datashield.login(builder$build(),assign=FALSE)
   ds.omop.connect(resource=resource_names[[resource]],conns=conns,symbol=symbol)
   # The permanent public database is not a temporary per-chapter fixture.
-  list(conns=conns,server=server,path=character(),database=paths[[resource]],resource=resource)
+  list(conns=conns,server=server,path=character(),database=paths[[resource]],resource=resource,symbol=symbol)
 }
 
 # Offline-only administrator fixture: disjoint halves of public synthetic people.
