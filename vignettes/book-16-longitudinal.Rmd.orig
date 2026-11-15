@@ -99,8 +99,9 @@ visit_counts <- dsBaseClient::ds.table("D_visit_long$concept_id", datasources = 
 knitr::kable(book_counts(visit_counts))
 ```
 
-The table counts 1,037 admission rows. To count people separately, reduce each
-visitor's records to a count and distinguish single from repeat visitors.
+The table counts exactly 1,037 admission rows; chapter 4's locator count was
+floored to the five-row band starting at 1,035. To count people separately,
+reduce each visitor's records to a count and distinguish single from repeat visitors.
 
 ```{r visitor-counts}
 visits_per_person <- omop_study(visits, outputs = "baseline", baseline = list(
@@ -176,7 +177,7 @@ window_results <- lapply(1:3, function(period) {
     First = first_mean$Global.Mean[1, 1], Last = last_mean$Global.Mean[1, 1],
     Observed = first_mean$Global.Mean[1, "Nvalid"], Missing = first_mean$Global.Mean[1, "Nmissing"])
 })
-knitr::kable(do.call(rbind, window_results))
+knitr::kable(do.call(rbind, window_results), digits = 3)
 ```
 
 In periods 2 and 3, first equals last (15.30 and 14.57 g/dL): each observed
@@ -240,7 +241,7 @@ lab a year away represents a clinical five-year visit.
 
 ```{r repeated-summary}
 knitr::kable(book_summary(
-  "D_timepoints$measurements_hb_year5", datasources = conns))
+  "D_timepoints$measurements_hb_year5", datasources = conns), digits = 3)
 ```
 
 The five-year point has 15 observed and 13 missing values, with a mean of
@@ -388,7 +389,6 @@ outcome. Time in years is a predictor; the outcome probability remains **per day
 The binomial GLM models log odds with a linear time trend. A study would assess
 that time specification and the assumption of noninformative censoring.
 
-dsBase's local steps may warn; check `$iter` and the final errors for convergence.
 The known local-step warnings are hidden here.
 
 ```{r hazard-model, warning=FALSE}
@@ -451,20 +451,24 @@ knitr::kable(data.frame(Column = unique(unlist(dsBaseClient::ds.colnames("D_long
 The person key, all readings and their dates stay on the servers. Preserve actual
 time; coding visit numbers as equally spaced would misrepresent these records.
 Each person has exactly one indexed episode here, so `cohort_row_id` is the
-person-level grouping key for these models. With multiple episodes per person, use a person-level key to
-model their dependence instead.
+person-level grouping key for these models. With multiple episodes per person,
+use `person_id` to group repeated observations of the same person;
+`cohort_row_id` identifies an episode.
 
 ```{r repeated-variables}
 invisible(ds.omop.mutate("D_long", years = start_date / 365.25,
   above_cutoff = ifelse(value >= 25, 1L, 0L),
   newobj = "D_repeat", conns = two_conns, symbol = "book_pool"))
-repeat_mean <- dsBaseClient::ds.mean("D_repeat$value", type = "combine", datasources = two_conns)
-repeat_counts <- dsBaseClient::ds.table("D_repeat$above_cutoff", datasources = two_conns)
-knitr::kable(book_group_comparison(repeat_counts, repeat_mean, "BMI reading", "kg/m²"))
+repeat_groups <- dsBaseClient::ds.meanSdGp("D_repeat$value", "D_repeat$above_cutoff",
+  type = "combine", datasources = two_conns)
+knitr::kable(data.frame(Band = c("below 25", "25 or above"),
+  Readings = as.numeric(repeat_groups$Nvalid_gp),
+  Mean_BMI = as.numeric(repeat_groups$Mean_gp)), digits = 3)
 ```
 
-The 438 readings split into 123 below and 315 at or above 25. Their overall
-mean is 25.77 kg/m². This mean weights readings, not people. The cutoff is a teaching rule only: this
+The 438 readings split into 123 below and 315 at or above 25. Each mean's
+denominator is the number of readings in that band, not the number of people.
+People with more readings contribute more to these means. The cutoff is a teaching rule only: this
 synthetic population includes children, and an adult BMI cutoff is not an age-specific
 clinical classification. The continuous and binary responses answer different questions.
 
@@ -475,8 +479,8 @@ coefficient. A random-effects pool allows site coefficients to differ; here use
 REML to estimate their between-site variance. With only two sites, that variance
 and the pooled interval remain uncertain.
 
-The known upstream warning is hidden. Check `Convergence.error.message` for
-each model before interpreting estimates.
+The known upstream warning is hidden. Optimizer convergence alone does not
+establish that the data support a model; the binary example below illustrates this.
 
 ```{r linear-mixed, warning=FALSE}
 linear_mixed <- dsBaseClient::ds.lmerSLMA("value ~ years + (1|cohort_row_id)",
@@ -522,7 +526,7 @@ binary_sites <- data.frame(Site = names(two_conns),
   Time_coefficient = as.numeric(binary_mixed$betamatrix.all["years", ]),
   Random_intercept_SD = vapply(binary_mixed$output.summary[c("study1", "study2")],
     function(x) as.data.frame(x$varcor)$sdcor[1], numeric(1)))
-knitr::kable(binary_sites, digits = 2)
+knitr::kable(binary_sites, digits = 2, row.names = FALSE)
 ```
 
 Site intercepts near −9.4 and +9.2 and random-intercept standard deviations near

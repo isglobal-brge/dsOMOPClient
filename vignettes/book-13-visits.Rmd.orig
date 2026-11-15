@@ -135,7 +135,7 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_quarters$last_quarter",
 ```
 
 There are 12 people in each of 2020-Q3, 2021-Q1 and 2023-Q4, and 12 with no visit.
-These later quarters distinguish the last visits from the first visits.
+Unlike the first-visit months above, these are the quarters of each person's last visit.
 Each person contributes once; this table does not count all 60 visits.
 
 </details>

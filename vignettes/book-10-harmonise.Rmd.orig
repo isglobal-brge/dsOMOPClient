@@ -35,7 +35,7 @@ The connection is ready; `conns` identifies the server used by the analysis call
 
 [Chapter 4](book-04-vocabulary.html) identifies Education question (**900001**),
 Fever question (**900002**), Secondary education (**900101**), University
-education (**900102**), Yes (**900301**) and No (**900302**. The later discovery
+education (**900102**), Yes (**900301**) and No (**900302**). The later discovery
 table in this chapter adds the concepts needed for ordering and classification.
 
 ## Translation follows the value type
@@ -191,7 +191,7 @@ catalogue <- ds.omop.concept.search(NULL, standard_only = FALSE, limit = 100,
   conns = conns)$pooled
 classification <- catalogue[catalogue$vocabulary_id %in% c("ATC", "ICD10", "Language") |
   catalogue$concept_id %in% c(900101L, 900102L, 900103L, 900201L, 900202L, 950001L), ]
-knitr::kable(classification[c("concept_id", "concept_name", "vocabulary_id", "concept_class_id")])
+knitr::kable(classification[c("concept_id", "concept_name", "vocabulary_id", "concept_class_id")], row.names = FALSE)
 ids <- setNames(catalogue$concept_id, catalogue$concept_name)
 education_ids <- ids[c("Primary education", "Secondary education", "University education")]
 education_keys <- paste0("concept:", education_ids)

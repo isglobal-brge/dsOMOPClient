@@ -49,8 +49,10 @@ height_id <- height_hits$concept_id[trimws(height_hits$concept_name) == "Body he
 body_sets <- list(weight = omop_concept_set(weight_id), height = omop_concept_set(height_id))
 ```
 
-Body weight is **3025315** and Body height is **3036277**. They are separate concepts; choosing the exact name avoids mixing
-measurements with similar wording.
+Body weight is **3025315** and Body height is **3036277**. The same panel concept,
+**40758413**, matches both searches, but the chosen individual measurement
+concepts are different. Choosing the exact name avoids mixing measurements
+with similar wording.
 
 ```{r body-units}
 weight_units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = weight_id,
@@ -92,8 +94,8 @@ height_m <- omop_number(height, omop_number_spec(unit =
 bmi <- omop_formula_bmi(weight_kg, height_m)
 body <- omop_study(weight_event, outputs = "baseline",
   baseline = list(weight = weight, height = height, bmi = bmi))
-body_result <- recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns)
-knitr::kable(book_summary("D_formula_body$bmi", datasources = conns))
+invisible(recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns))
+knitr::kable(book_summary("D_formula_body$bmi", datasources = conns), digits = 3)
 ```
 
 The mean BMI is about 22.11 kg/m². BMI is kg divided by metres squared. The helper uses the presented coordinates,
@@ -111,7 +113,7 @@ body_rounded <- omop_study(weight_event, outputs = "baseline",
   baseline = list(bmi = bmi, rounded = omop_number(bmi,
     omop_number_spec(rounding = omop_number_round("decimals", 1)))))
 invisible(recipe_execute(body_rounded, out = c(baseline = "D_formula_rounded"), conns = conns))
-knitr::kable(book_summary("D_formula_rounded$rounded", datasources = conns))
+knitr::kable(book_summary("D_formula_rounded$rounded", datasources = conns), digits = 3)
 ```
 
 The rounded BMI mean is about 22.1 kg/m². The final presentation changes; the canonical BMI expression still uses its
@@ -153,7 +155,7 @@ map <- omop_formula_map(sbp_mmhg, dbp_mmhg)
 ratio <- omop_formula_ratio(sbp_mmhg, dbp_mmhg, unit = "1")
 pressure <- omop_study(sbp_event, outputs = "baseline", baseline = list(map = map, ratio = ratio))
 invisible(recipe_execute(pressure, out = c(baseline = "D_formula_pressure"), conns = conns))
-knitr::kable(book_summary("D_formula_pressure$map", datasources = conns))
+knitr::kable(book_summary("D_formula_pressure$map", datasources = conns), digits = 3)
 ```
 
 The MAP summary describes the same-day formula, in mmHg; its mean is about
@@ -164,7 +166,7 @@ The MAP summary describes the same-day formula, in mmHg; its mean is about
 <details><summary>Solution 2</summary>
 
 ```{r pressure-ratio}
-knitr::kable(book_summary("D_formula_pressure$ratio", datasources = conns))
+knitr::kable(book_summary("D_formula_pressure$ratio", datasources = conns), digits = 3)
 ```
 
 The mean ratio is about 1.5. Its unit is not mmHg: the identical numerator and denominator units cancel. That does not make
@@ -181,7 +183,7 @@ with κ = 0.7 and α = −0.241 for female, κ = 0.9 and α = −0.302
 for male, and a further factor 1.012 for female. Scr is in mg/dL.
 See the [National Kidney Foundation equation](https://www.kidney.org/ckd-epi-creatinine-equation-2021).
 
-Do not substitute a different specimen because the correct source cannot support a release.
+Do not use urine measurements in place of serum measurements just to obtain a released result.
 This check distinguishes vocabulary availability from observed use:
 
 <!-- expected-refusal:start -->
@@ -209,7 +211,8 @@ The formula requires standardized serum creatinine in mg/dL, completed age at
 measurement, and an explicit mapping to the equation's female/male branches.
 It returns missing for children, nonpositive creatinine and unmapped sex. Save
 the intended serum definition in a named project file before moving to the
-separate questionnaire example.
+separate questionnaire example. Saving lets later work reuse exactly the same
+concept definitions.
 
 ```{r save-serum}
 formula_file <- "formula-concepts.rds"
@@ -220,8 +223,9 @@ saveRDS(formula_concepts, formula_file)
 
 ## Collapse repeated episodes deliberately
 
-A person may have several eligible measurement episodes. Requesting person grain
-requires an explicit collapse rule: first_episode, last_episode or any. This
+With `select = "all"`, every eligible weight reading starts a population episode.
+A person can therefore have several episodes. Requesting person grain requires
+an explicit collapse rule: first_episode, last_episode or any. This
 collapses repeated population episodes, not duplicate source measurements.
 
 ```{r collapse-episodes}
@@ -230,12 +234,12 @@ collapsed <- omop_recipe(populations = list(episodes), variables = list(weight =
   outputs = omop_output("people", rows = "weights", format = "wide", grain = "person",
     collapse = "first_episode"))
 invisible(recipe_execute(collapsed, out = c(people = "D_collapsed_weights"), conns = conns))
-knitr::kable(book_summary("D_collapsed_weights$weight", datasources = conns))
+knitr::kable(book_summary("D_collapsed_weights$weight", datasources = conns), digits = 3)
 ```
 
-The first-episode weight mean is 50.45 kg. A same-day tolerance still does not average duplicate readings automatically.
-Closest-value selection uses deterministic ordering; a mean weights eligible
-rows. Document whether the problem is repeated episodes or duplicated source
+The first-episode weight mean is 50.45 kg. Selecting the closest reading chooses
+one reading; averaging combines all eligible readings. A same-day window alone
+does not decide how duplicates are combined. Document whether the problem is repeated episodes or duplicated source
 records before choosing a collapse or reducer. The events chapter compares
 record counts with distinct-day counts.
 
@@ -247,11 +251,13 @@ last_episode <- omop_recipe(populations = list(episodes), variables = list(weigh
   outputs = omop_output("people", rows = "weights", format = "wide", grain = "person",
     collapse = "last_episode"))
 invisible(recipe_execute(last_episode, out = c(people = "D_last_weights"), conns = conns))
-knitr::kable(book_summary("D_last_weights$weight", datasources = conns))
+knitr::kable(book_summary("D_last_weights$weight", datasources = conns), digits = 3)
 ```
 
-The last-episode weight mean is 66.60 kg. The person roster is collapsed with a different temporal choice. This is not a
-measurement average, and it need not equal an average over all episodes.
+The last-episode weight mean is 66.60 kg, compared with 50.45 kg at the first
+episode. The Synthea population includes children growing across years, which
+helps explain this large difference. Each person contributes their selected
+episode; this is not an average over all measurements or episodes.
 
 ## Execute eGFR with declared synthetic inputs
 
@@ -281,6 +287,9 @@ Creatinine **970001** is a local teaching concept with no external mappings.
 The equation branches use Female **8532** and Male **8507**.
 The synthetic source explicitly defines standardized serum measurements in mg/dL.
 The clinical equivalents would require assay and source validation.
+With `missing = "keep"`, the first selected missing reading stays missing rather
+than being skipped. With `scope = "episode"`, the age anchor is selected within
+the current episode.
 
 ```{r egfr-run}
 serum_event <- omop_event("measurement", formula_set, unit = omop_unit(8840L))
@@ -298,7 +307,7 @@ egfr_recipe <- omop_recipe(
   variables = list(egfr = egfr),
   outputs = omop_output("people", rows = "measurements", format = "wide"))
 egfr_result <- recipe_execute(egfr_recipe, out = "D_egfr", conns = conns)
-knitr::kable(book_summary("D_egfr$egfr", datasources = conns))
+knitr::kable(book_summary("D_egfr$egfr", datasources = conns), digits = 3)
 ```
 
 Mean eGFR is 86.12 mL/min/1.73 m². There are 36 valid estimates and 12 missing because of incomplete birth dates.
@@ -343,9 +352,13 @@ daily <- omop_recipe(variables = list(
   daily_mean = omop_number_daily(rows, reducer = omop_reduce("mean"), within_day = "mean"),
   daily_max = omop_number_daily(rows, reducer = omop_reduce("mean"), within_day = "max")))
 invisible(recipe_execute(daily, out = "D_daily", conns = conns))
-knitr::kable(rbind(
-  transform(book_summary("D_daily$daily_mean", datasources = conns), Rule = "Daily mean"),
-  transform(book_summary("D_daily$daily_max", datasources = conns), Rule = "Daily maximum")))
+daily_mean <- book_summary("D_daily$daily_mean", datasources = conns)
+daily_max <- book_summary("D_daily$daily_max", datasources = conns)
+knitr::kable(data.frame(
+  Statistic = c(daily_mean$Statistic, "N valid", "N missing"),
+  `Daily mean` = c(daily_mean$Value, daily_mean$`N valid`[1], daily_mean$`N missing`[1]),
+  `Daily maximum` = c(daily_max$Value, daily_max$`N valid`[1], daily_max$`N missing`[1]),
+  check.names = FALSE), digits = 3, row.names = FALSE)
 ```
 
 The overall means are **82 and 83 kg**, each based on 36 people, with 12 missing.
@@ -355,8 +368,9 @@ question, because repeated readings can otherwise give a day extra weight.
 
 ## Recap
 
-Align meanings, units and dates before arithmetic. Native expressions preserve
-private inputs and declared units. BMI, MAP and ratios use named formula definitions; missing prerequisites are a reason to stop a formula study. Collapse
-repeated episodes explicitly instead of letting duplicate rows change an analysis.
+Align meanings, units and dates before arithmetic. Named formulas preserve
+private inputs and declared units; missing prerequisites are a reason to stop a
+formula study. Choose a collapse rule for repeated population episodes and a
+separate within-day rule for duplicate readings.
 
 **Next:** [16. Longitudinal data: from events to analysis](book-16-longitudinal.html).

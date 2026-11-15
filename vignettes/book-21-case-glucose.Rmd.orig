@@ -73,14 +73,14 @@ trajectory <- omop_recipe(populations = list(cohort), variables = list(
   target_days = omop_number_change(glucose, "time_to_threshold", threshold = 95, op = "ge")),
   outputs = omop_output("people", rows = "measured", format = "wide"))
 invisible(recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns))
-summary <- do.call(rbind, lapply(c("first", "last", "change", "per_year", "followup_days"), function(column) {
+trajectory_summary <- do.call(rbind, lapply(c("first", "last", "change", "per_year", "followup_days"), function(column) {
   x <- book_summary(paste0("D_glucose$", column), datasources = conns)
   transform(x[x$Statistic %in% c("50%", "Mean"), ], Variable = column)
 }))
-knitr::kable(summary, digits = 3, row.names = FALSE)
+knitr::kable(trajectory_summary, digits = 3, row.names = FALSE)
 ```
 
-All ten people have later values, but first and last are about 5–19 years apart.
+All ten people have later values, with median follow-up about 18 years.
 First and last means are 83.40 and 85.98 mg/dL; mean change is 2.58 mg/dL.
 Mean slope is 0.397 mg/dL per year (median 0.221). A change over many years is not a short-term treatment response, and a
 straight-line slope can miss fluctuations between readings.
@@ -96,12 +96,13 @@ It is a presentation rule, not a diagnosis or treatment goal. More detailed
 categories may be withheld in a population this small.
 
 For a separate timing question, use the first **observed** glucose ≥95 mg/dL.
-A stricter 100 mg/dL rule leaves too few qualifying people here for a useful
-numeric summary. Prespecify scientifically meaningful thresholds in a real study;
-do not search cutoffs to evade a withheld result.
+In this tiny synthetic dataset, a 100 mg/dL rule would leave too few people for a
+released summary, so the lesson uses 95 mg/dL as a teaching threshold. In a real
+study the threshold comes from the protocol, and a withheld result is reported
+as withheld, not avoided by changing the cutoff.
 
 ```{r glucose-target}
-knitr::kable(book_summary("D_glucose$target_days", datasources = conns))
+knitr::kable(book_summary("D_glucose$target_days", datasources = conns), digits = 3)
 ```
 
 Eight people have an observed attainment and two are missing. The median among
@@ -118,14 +119,13 @@ on crossing and does not estimate everyone's time to threshold.
 A Gaussian regression describes the association between first and last readings.
 With ten complete people and two coefficients, use a t interval with eight
 residual degrees of freedom rather than the large-sample z interval.
-dsBase's local steps may warn; check `$iter` and final errors for convergence.
 
 ```{r glucose-model, warning=FALSE}
 fit <- dsBaseClient::ds.glm("last ~ first", data = "D_glucose", family = "gaussian", datasources = conns)
 b <- fit$coefficients["first", "Estimate"]
 se <- fit$coefficients["first", "Std. Error"]
-knitr::kable(data.frame(Estimate = b, Lower_95 = b - qt(.975, 8) * se,
-  Upper_95 = b + qt(.975, 8) * se, P_t = 2 * pt(-abs(b / se), df = 8)), digits = 3)
+knitr::kable(data.frame(N = fit$Nvalid, df = fit$df, Estimate = b, Lower_95 = b - qt(.975, fit$df) * se,
+  Upper_95 = b + qt(.975, fit$df) * se, P_t = 2 * pt(-abs(b / se), df = fit$df)), digits = 3)
 ```
 
 The coefficient is about −0.75: a 1 mg/dL higher first value is associated with
@@ -144,7 +144,7 @@ retain the number with missing attainment.
 ```{r glucose-years}
 invisible(ds.omop.mutate("D_glucose", target_years = target_days / 365.25,
   newobj = "D_glucose_years", conns = conns))
-knitr::kable(book_summary("D_glucose_years$target_years", datasources = conns))
+knitr::kable(book_summary("D_glucose_years$target_years", datasources = conns), digits = 3)
 ```
 
 The median becomes 3.20 years and the mean 5.75 years. Divide the day summary
@@ -161,11 +161,12 @@ server and compare with the native change summary. Does agreement prove a steady
 ```{r glucose-difference}
 invisible(ds.omop.mutate("D_glucose", difference = last - first,
   newobj = "D_difference", conns = conns))
-knitr::kable(book_summary("D_difference$difference", datasources = conns))
+knitr::kable(book_summary("D_difference$difference", datasources = conns), digits = 3)
 ```
 
-The difference agrees with native change because all ten people have a later
-reading. It describes only two endpoints; intermediate values can rise and fall.
+The difference agrees with native change because both calculate last minus
+first. All ten people have later readings, so the complete-case populations also
+coincide. It describes only two endpoints; intermediate values can rise and fall.
 The slope uses those intermediate observations but still assumes a straight line.
 
 </details>

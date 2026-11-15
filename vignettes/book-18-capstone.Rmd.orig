@@ -152,7 +152,9 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_before_death$education",
 ```
 
 The counts remain 12 Secondary, 12 University and 24 missing: all observed
-answers preceded death. A survivor has no death anchor, so this definition cannot
+answers preceded death. This exercise uses the raw education variable without
+the category specification, so missing answers have the raw `NA` label instead
+of the main table's “Missing”. A survivor has no death anchor, so this definition cannot
 supply an answer for that person. The unchanged totals do not make the window irrelevant.
 
 </details>
@@ -165,7 +167,7 @@ Then check how its type differs from the exact date and month category.
 ```{r year-and-types}
 knitr::kable(book_summary("D_capstone$visit_year", datasources = conns))
 columns <- recipe_codebook(result)[[1]]$columns
-knitr::kable(columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")])
+knitr::kable(columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")], row.names = FALSE)
 ```
 
 All 36 visitors have year 2020, so its mean is 2020; 12 people have no value.

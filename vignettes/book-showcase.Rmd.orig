@@ -77,7 +77,8 @@ knitr::kable(age_summary[age_summary$Statistic %in% c("50%", "Mean"), ],
   digits = 1, row.names = FALSE)
 ```
 
-The 24 complete ages are 32, 33, 42 and 43, with mean and median 37.5 years.
+The 24 complete ages are 32, 33, 42 and 43, with mean and median 37.5 years. The median is the midpoint
+of the middle two ages, 33 and 42; it is not an observed age.
 The other 24 people lack a complete birth date or a death record. Missing age at
 death is not an age of zero. Dates can also be grouped by month, quarter or year.
 [Learn dates and ages →](book-09-dates.html)
