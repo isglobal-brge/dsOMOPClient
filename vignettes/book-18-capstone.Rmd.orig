@@ -11,329 +11,173 @@ vignette: >
 <div class="learn-box">
 **What you will learn**
 
-Combine age at death, labelled answers, calendar periods and cause of death in one private table.
+Combine ages, questionnaire answers, visit periods and causes in one private table,
+then use it to compare causes across age groups.
 </div>
 
-This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
-**You need:** the packages and the matching practice connection described in
-[Before you start](book-00-start.html#before-you-start).
-Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
-
-Concept selections refer to the searches and saved definitions in
-[chapter 4](book-04-vocabulary.html), including the separate questionnaire
-catalogue. Additional body-measurement concepts are found on screen in the
-[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
-
-## Start this chapter
-
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+**You need:** [the setup and questionnaire dataset](book-00-start.html),
+plus the date and category lessons. Start a fresh R session in `book-work`.
 
 ```{r chapter-setup}
 library(dsOMOPClient)
 source("tools/book/display.R")
-source("tools/book/fixture.R")
-practice <- book_fixture()
+source("tools/book/connection.R")
+practice <- book_connect("questionnaire")
 conns <- practice$conns
-names(conns)
 ```
 
-The `site` connection is ready. This chapter creates its temporary questionnaire dataset locally.
-
-## Find the questionnaire concepts first
-
-The local catalogue is the chapter-4 questionnaire vocabulary, not GiBleed's
-clinical vocabulary. Search before selecting questions and coded answers.
+## Find the concepts
 
 ```{r va-discovery}
-va_catalogue <- ds.omop.concept.search(NULL, standard_only = FALSE, limit = 100, conns = conns)$pooled
-knitr::kable(va_catalogue[c("concept_name", "domain_id", "standard_concept")])
-va_ids <- setNames(va_catalogue$concept_id, va_catalogue$concept_name)
-va_sets <- lapply(va_ids, omop_concept_set)
+catalogue <- ds.omop.concept.lookup(c(900001L, 900002L, 900101L, 900102L,
+  900201L, 900202L), conns = conns)$pooled
+knitr::kable(catalogue[c("concept_id", "concept_name", "domain_id")])
 ```
 
-These local concepts have no external Maps to or ancestry. Their observed uses
-were checked in [chapter 4](book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes).
+The questions are Education **900001** and Fever **900002**; answers Secondary
+**900101** and University **900102** are distinct from the questions. The coded
+causes are Myocardial infarction **900201** and Pneumonia **900202**.
+Their occurrence was established in [chapter 4](book-04-vocabulary.html).
 
-## Begin with the clinical question
+## Define one row per person
 
-We want one row per person, including people with missing information. Each row
-will contain a pseudonymous `person_id`, completed age at death, education and fever
-answers, first-visit calendar periods and cause of death. The analyst sees only
-summaries of those columns.
+Keep people without visits, answers or deaths. Read the latest nonmissing answer
+from `value_as_concept_id`, and the cause from `cause_concept_id`. These definitions
+use all recorded history; the exercise below restricts education to before death.
 
-“Latest answer” here means the latest nonmissing answer to each question across
-all available history. It is **not** automatically restricted to before death or
-to the first visit. Define those restrictions explicitly for your actual study.
-
-## Keep the question separate from its answer
-
-```{r va-education}
-education <- omop_variable(
-  event = omop_event("observation", concepts = 900001L),
+```{r answers}
+education_event <- omop_event("observation", 900001L)
+education <- omop_variable(event = education_event,
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
-class(education)
-```
-
-This is the same education definition as chapter 5. Reusing it keeps one
-categorical column with vocabulary names.
-
-```{r va-fever}
-fever <- omop_variable(
-  event = omop_event("observation", concepts = 900002L),
+fever <- omop_variable(event = omop_event("observation", 900002L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
-class(fever)
-```
-
-The second question gets its own column. This capstone uses vocabulary labels
-`Yes` and `No`; chapter 5 demonstrated a user-defined lower-case recode.
-
-## Compute completed age at death
-
-```{r va-age}
-age_at_death <- omop_age_at("death")
-class(age_at_death)
-```
-
-The default unit is completed years, using the full birth date and death date.
-It is not simply death year minus birth year. With the default partial-date policy,
-an incomplete birth date produces missing age; missing death also produces missing age.
-No January 1 birthday is silently invented.
-
-## Select the first visit once
-
-```{r va-anchor}
-first_visit <- omop_anchor(omop_event("visit_occurrence"), which = "first")
-class(first_visit)
-```
-
-All calendar presentations below refer to this same first visit. An anchor is a
-selection rule; it is not a patient date returned to your R session.
-
-## Present its month
-
-```{r va-month}
-visit_month <- omop_date(first_visit, omop_date_spec(precision = "month"))
-class(visit_month)
-```
-
-The values will be ordered year-month categories, with the declared precision
-shared across sites.
-
-## Present its quarter and year
-
-```{r va-quarter}
-visit_quarter <- omop_date(first_visit, omop_date_spec(precision = "quarter"))
-visit_year <- omop_date(first_visit,
-  omop_date_spec(precision = "year", representation = "number"))
-class(visit_quarter)
-```
-
-Quarter labels distinguish both year and quarter. The numeric year variant is
-a numeric calendar year. Precision is chosen separately for each variable.
-
-## Add the coded cause
-
-```{r va-cause}
 cause <- omop_variable(event = omop_event("death"),
   reducer = omop_reduce("first_value", value = "cause_concept_id"))
-class(cause)
 ```
 
-The vocabulary supplies the label. People without death records keep missing
-cause and age, while remaining in the all-person output.
+Completed age uses the full birth date and the chosen anchor. An incomplete birth
+date or absent anchor gives missing age; it does not silently create a birthday.
+All calendar presentations below refer to the same first visit.
 
-## Assemble the recipe
-
-The following recipe also
-includes age at first visit, exact visit/death dates and separate visit date parts
-so you can distinguish those types. Every one of these values stays on the server.
-
-```{r va-recipe}
-death <- omop_anchor(omop_event("death"), which = "first")
-va <- omop_recipe(variables = list(
-  age_at_death = age_at_death, age_at_first_visit = omop_age_at("first_visit"),
-  education = education, fever = fever,
-  visit_date = omop_date(first_visit), visit_month = visit_month,
-  visit_quarter = visit_quarter, visit_year = visit_year,
-  visit_parts = omop_date_parts(first_visit, c("year", "month")),
-  death_date = omop_date(death), cause_of_death = cause),
-  outputs = omop_output("people", format = "wide", grain = "person"),
-  options = list(translate_concepts = TRUE))
-class(va)
+```{r ages-and-dates}
+age_at_death <- omop_age_at("death")
+first_visit <- omop_anchor(omop_event("visit_occurrence"), which = "first")
+answer_keys <- c("concept:900101", "concept:900102")
+variables <- list(
+  age_at_death = age_at_death,
+  age_band = omop_number_bins(age_at_death, breaks = c(0, 40, 121),
+    labels = c("under 40", "40 and over")),
+  age_at_first_visit = omop_age_at(first_visit),
+  education = omop_category(education, omop_category_spec(levels = answer_keys,
+    order = omop_category_order(c(answer_keys, "special:missing")), ordered = TRUE,
+    missing = omop_category_missing(na = "level"))),
+  fever = fever, cause = cause,
+  visit_date = omop_date(first_visit),
+  visit_month = omop_date(first_visit, omop_date_spec(precision = "month")),
+  visit_quarter = omop_date(first_visit, omop_date_spec(precision = "quarter")),
+  visit_year = omop_date(first_visit, omop_date_spec(precision = "year", representation = "number")))
+capstone <- omop_recipe(variables = variables,
+  outputs = omop_output("people", format = "wide", grain = "person"))
+result <- recipe_execute(capstone, out = c(people = "D_capstone"), conns = conns)
 ```
 
-For a smaller analysis table, select only the variables your question needs using
-`columns` in `omop_output()`. The full version here lets you compare date types before selecting columns.
+The table stays on the server with a pseudonymous person key. Exact visit dates
+remain private; we use month and quarter categories for calendar counts.
 
-## Explain and assign
+## Check age and missingness
 
-```{r va-explain}
-explanation <- recipe_explain(va, conns = conns)
-cat(grep("date|precision|age", explanation$text, value = TRUE), sep = "\n")
+```{r age-counts}
+knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$age_at_death",
+  useNA = "always", datasources = conns)))
 ```
 
-```{r va-execute}
-book_symbols(recipe_execute(va, out = c(people = "D_va"), conns = conns))
+Ages 32, 33, 42 and 43 each occur six times. The 24 missing ages combine 12 deaths
+with incomplete birth dates and 12 survivors. Missing age is not a fifth age band.
+
+```{r first-visit-age}
+knitr::kable(book_summary("D_capstone$age_at_first_visit", datasources = conns))
 ```
 
-A successful symbol mapping means the server assigned the private wide table.
-It does not mean that a local object named `D_va` now holds patient rows.
+There are 24 valid ages and 24 missing. The valid ages are 29 and 39, with a mean
+of 34 years. These describe the age at first care, not the later age at death.
 
-## Inspect column names
+## Read the answers and calendar periods
 
-```{r va-columns}
-dsBaseClient::ds.colnames("D_va", datasources = conns)
+```{r answer-counts}
+knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$education", datasources = conns)))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$fever", useNA = "always", datasources = conns)))
 ```
 
-The column list includes `person_id`. Its server values are pseudonyms. We do
-not print them or use them as local merge keys.
+Education has 12 Secondary, 12 University and 24 Missing answers. Fever has 12
+Yes, 12 No and 24 missing answers. No is an observed response; it is not a substitute for missingness.
 
-## Summarise completed age
-
-```{r va-age-summary}
-dsBaseClient::ds.summary("D_va$age_at_death", datasources = conns)
+```{r visit-periods}
+knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$visit_month", useNA = "always", datasources = conns)))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$visit_quarter", useNA = "always", datasources = conns)))
 ```
 
-In the synthetic patterns, supported complete birth dates give completed ages
-33 and 43. The other patterns have incomplete birth or no death, so their ages
-are missing. The displayed summary is the actual aggregate returned by dsBase.
+March, June and July each contain 12 first visits, with 12 people lacking a visit.
+They fall in three different quarters, so changing precision leaves these counts
+unchanged. In other data, several months may merge into one quarter.
 
-## Show education and fever
+## Use the table: cause by age at death
 
-```{r va-education-count}
-ds.omop.table("D_va", "education", conns = conns)
+```{r cause-age}
+knitr::kable(book_table2(dsBaseClient::ds.table("D_capstone$cause",
+  "D_capstone$age_band", useNA = "always", datasources = conns)))
 ```
 
-Each education category represents an answer, not a separate column.
+The 12 pneumonia deaths are under 40. Of 24 myocardial-infarction deaths, 12 are
+40 or over and 12 have missing age. The 12 survivors have neither cause nor age
+at death. These are counts, not age-specific mortality rates: rates require age
+and person-time for survivors too, which the next chapter supplies.
+Fine cross-tabulations may be withheld when cells are too small; a withheld cell
+is not zero.
 
-```{r va-fever-count}
-ds.omop.table("D_va", "fever", conns = conns)
+## Exercises
+
+**1. Use only education recorded by death.** Keep the same people and compare
+the education counts. Explain what happens to survivors.
+
+<details><summary>Solution 1</summary>
+
+```{r education-before-death}
+before_death <- omop_variable(event = education_event,
+  reducer = omop_reduce("last_value", value = "value_as_concept_id",
+    window = omop_window(NULL, 0, anchor = omop_anchor(omop_event("death"), which = "first"))))
+restricted <- omop_recipe(variables = list(education = before_death))
+invisible(recipe_execute(restricted, out = "D_before_death", conns = conns))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_before_death$education",
+  useNA = "always", datasources = conns)))
 ```
 
-Missing responses are excluded from these counts. “No” is an observed answer,
-not an imputation for missingness.
-
-## Show the calendar periods
-
-```{r va-month-count}
-ds.omop.table("D_va", "visit_month", conns = conns)
-```
-
-These month counts group people by their first visit.
-
-```{r va-quarter-count}
-ds.omop.table("D_va", "visit_quarter", conns = conns)
-```
-
-Several months can belong to one quarter; the grouped counts reflect that.
-
-## Show the cause categories
-
-```{r va-cause-count}
-ds.omop.table("D_va", "cause_of_death", conns = conns)
-```
-
-All shown category tables contain labels, never numeric concept IDs. The recipe
-produces person rows privately; the book deliberately shows aggregates rather than
-a row preview, even though these data are synthetic.
-
-## Try it
-
-Use the short released helper to rebuild exactly the same recipe and verify its native plan equals the one above.
-
-<details><summary>Solution</summary>
-
-
-```{r solution}
-source("tools/book/capstone.R")
-reference <- book_capstone_recipe()
-identical(recipe_to_plan(va), recipe_to_plan(reference))
-book_symbols(recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns))
-ds.omop.table("D_va_reference", "cause_of_death", conns = conns)
-```
+The counts remain 12 Secondary, 12 University and 24 missing: all observed
+answers preceded death. A survivor has no death anchor, so this definition cannot
+supply an answer for that person. The unchanged totals do not make the window irrelevant.
 
 </details>
 
-## Exercise 2: a common variant
-
-Count education in the completed cause-of-death table.
+**2. Use year as a number.** Find the mean first-visit year and its denominator.
+Then check how its type differs from the exact date and month category.
 
 <details><summary>Solution 2</summary>
 
-```{r book4-exercise-2}
-ds.omop.table("D_va", "education", conns = conns)
+```{r year-and-types}
+knitr::kable(book_summary("D_capstone$visit_year", datasources = conns))
+columns <- recipe_codebook(result)[[1]]$columns
+knitr::kable(columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")])
 ```
 
-This is one categorical answer per person, not one binary column for each answer.
-
-</details>
-
-## Exercise 3: a pitfall to avoid
-
-Inspect the final table schema without downloading the table.
-
-<details><summary>Solution 3</summary>
-
-```{r book4-exercise-3}
-dsBaseClient::ds.colnames("D_va", datasources = conns)
-```
-
-Its private columns combine several domains. The approved aggregate remains the analyst-facing result.
-
-</details>
-## Add a native numeric presentation
-
-Keep exact completed age private and add a broad age band with the native numeric
-wrapper. Missing age stays missing. These public teaching bands do not repair
-incomplete birth dates or infer an age for a survivor.
-
-```{r va-native-number}
-va_numeric <- omop_recipe(variables = c(va$variables,
-  list(age_band = omop_number_bins(age_at_death, breaks = c(0, 40, 121),
-    labels = c("under 40", "40 and over")))),
-  outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(va_numeric, out = c(people = "D_va_numeric"), conns = conns))
-ds.omop.table("D_va_numeric", "age_band", conns = conns)
-```
-
-## Choose answer order and record the table contract
-
-For this table, secondary education precedes university education. Keep missing
-answers as an explicit category so that absence of an answer remains visible.
-The identities below come from the catalogue search at the start of this chapter.
-
-```{r capstone-categories}
-answer_keys <- paste0("concept:", unname(va_ids[c("Secondary education", "University education")]))
-va_presented <- va_numeric
-va_presented$variables$education <- omop_category(education, omop_category_spec(
-  levels = answer_keys, order = omop_category_order(c(answer_keys, "special:missing")), ordered = TRUE,
-  missing = omop_category_missing(na = "level")))
-capstone_result <- recipe_execute(va_presented, out = c(people = "D_capstone"), conns = conns)
-ds.omop.table("D_capstone", "education", conns = conns)
-```
-
-This changes presentation without filling in an answer or selecting a different
-person roster. The age band uses the native numeric presentation from chapter 14.
-
-**Exercise.** Keep the published codebook with the recipe. Which columns are
-numeric, categorical or calendar dates?
-
-<details><summary>Solution: document the completed table</summary>
-
-```{r capstone-codebook}
-capstone_book <- recipe_codebook(capstone_result, output = "people")
-knitr::kable(capstone_book[[1]]$columns[c("name", "semantic_type", "r_type", "unit")])
-```
-
-This is metadata about the private table, not a row preview. Exact dates retain
-their privacy class even when another column presents a coarser calendar period.
+All 36 visitors have year 2020, so its mean is 2020; 12 people have no value.
+The codebook distinguishes Date, factor and numeric representations. Averaging
+calendar years is possible, but it cannot reveal the distribution across months.
 
 </details>
 
 ## Recap
 
-The native 2.10.5 API now supports the whole capstone: pseudonymous roster, completed age, coded answers, calendar periods and cause of death.
+One person-level table can combine answers, completed ages and calendar summaries.
+Its usefulness comes from a question answered with those columns, while retaining
+missingness and keeping patient rows private.
 
 **Next:** [19. Case study: cause-specific mortality by age, sex and period](book-19-case-mortality.html).

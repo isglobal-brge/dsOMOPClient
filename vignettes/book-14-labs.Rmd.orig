@@ -11,27 +11,13 @@ vignette: >
 <div class="learn-box">
 **What you will learn**
 
-Find a lab and its units; choose one value per person; convert units; form bins
-and flags; measure change; and pool summaries and a model across two connections.
+Find a lab and its units, reduce repeated readings, present numbers without losing
+their meaning, and fit a model that requires an actual follow-up measurement.
 </div>
 
-**You need:** the packages, downloaded helpers and two loaded resources in
-[Before you start](book-00-start.html#before-you-start), plus the recipe basics
-from [chapter 6](book-06-events.html). Start a fresh R session in `book-work`.
-Run the sections in order: each uses objects defined immediately above it.
-
-This chapter uses **synthetic Synthea27Nj measurements**, described in
-[Getting started](book-00-start.html#load-two-public-synthetic-datasets).
-
-Concept selections refer to the searches and saved definitions in
-[chapter 4](book-04-vocabulary.html), including the separate questionnaire
-catalogue. Additional body-measurement concepts are found on screen in the
-[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
-
-## Connect and find a lab
-
-The shared connection file selects the driver, URL, project and resource names.
-Selecting `numeric` switches this lesson to Synthea without changing those settings.
+**You need:** [the setup and numeric resource](book-00-start.html), and
+[events and reducers](book-06-events.html). Start a fresh session in `book-work`.
+This chapter uses synthetic Synthea measurements.
 
 ```{r chapter-setup}
 library(dsOMOPClient)
@@ -40,159 +26,57 @@ source("tools/book/connection.R")
 source("tools/book/practice.R")
 practice <- book_connect("numeric")
 conns <- practice$conns
-names(conns)
 ```
 
-Search the vocabulary first. A *concept* identifies what was measured; it does
-not identify a patient. Hemoglobin is the vocabulary's spelling of haemoglobin.
+## Find haemoglobin and its unit
 
 ```{r find-lab}
-hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)
-knitr::kable(head(hits$pooled[c("concept_name", "domain_id", "vocabulary_id")], 6))
+hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)$pooled
+knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
+lab_id <- hits$concept_id[trimws(hits$concept_name) == "Hemoglobin [Mass/volume] in Blood"]
+units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = lab_id,
+  scope = "pooled", conns = conns)$pooled
+knitr::kable(units[c("value", "concept_name", "n")])
 ```
 
-Select the blood mass-concentration concept deliberately. Other hemoglobin
-concepts can describe a different test. IDs in code select public vocabulary;
-shown tables use their names.
+Choose **3000963**, Hemoglobin [Mass/volume] in Blood. The recorded unit is
+**8713**, gram per deciliter (g/dL); `value` holds that unit ID, and `n` is a
+record count rounded down to a multiple of five. Other haemoglobin concepts
+need not measure the same quantity.
 
-```{r chosen-lab}
-lab_id <- hits$pooled$concept_id[hits$pooled$concept_name == "Hemoglobin [Mass/volume] in Blood"]
-chosen <- ds.omop.concept.lookup(lab_id, conns = conns)
-knitr::kable(chosen$pooled[c("concept_name", "domain_id")])
-```
+## Choose what one person's number means
 
-Now ask which units were recorded for this concept. This is a checked aggregate,
-not a download of measurement rows.
+A unit declaration preserves the chosen unit. With the default unknown-unit
+rule, other-unit rows remain but their numeric values become missing; there is
+no automatic conversion. First and last use dates, while min and max use magnitude.
+All-history mean gives each reading equal weight within a person.
 
-```{r recorded-units}
-unit_counts <- ds.omop.value.counts("measurement", "unit_concept_id",
-  concept_id = lab_id, scope = "pooled", conns = conns)
-knitr::kable(unit_counts$pooled[c("concept_name", "n")])
-```
-
-The record count is disclosure-banded; it is not an exact patient count.
-The recorded unit is grams per deciliter (g/dL). The analyst sees
-the protected aggregate above.
-
-**Exercise.** Look up the name of unit 8713. Does a vocabulary lookup prove that
-any patient has a result in that unit?
-
-<details><summary>Solution</summary>
-
-```{r units-exercise}
-unit_names <- ds.omop.concept.lookup(8713L, conns = conns)
-knitr::kable(unit_names$pooled["concept_name"])
-```
-
-No. The lookup describes the unit; the preceding aggregate establishes recorded use.
-
-</details>
-
-## Choose one value per person
-
-An *event* selects records. Here it selects one lab and one recorded unit.
-A unit filter excludes other units; it does not convert them.
-
-```{r lab-event}
-lab <- omop_event("measurement", concepts = lab_id, value = "value_as_number",
-  unit = omop_unit(8713L))
-class(lab)
-```
-
-A *reducer* turns repeated readings into one number. First and last use the
-record dates (then source and record key for ties), whereas min and max use the
-size of the value. These reducers skip missing values by default.
-
-```{r first-last}
+```{r reducers}
+lab <- omop_event("measurement", concepts = lab_id, unit = omop_unit(8713L))
 first <- omop_variable(event = lab, reducer = omop_reduce("first_value"))
 last <- omop_variable(event = lab, reducer = omop_reduce("last_value"))
-class(first)
-```
-
-The mean weights each available reading equally **within** a person. Min and
-max show that person's observed range, not a clinical reference range.
-
-```{r mean-extremes}
 average <- omop_variable(event = lab, reducer = omop_reduce("mean"))
-minimum <- omop_variable(event = lab, reducer = omop_reduce("min"))
-maximum <- omop_variable(event = lab, reducer = omop_reduce("max"))
-class(average)
+values <- omop_recipe(variables = list(first = first, last = last, mean = average,
+  minimum = omop_variable(event = lab, reducer = omop_reduce("min")),
+  maximum = omop_variable(event = lab, reducer = omop_reduce("max"))))
+invisible(recipe_execute(values, out = "D_labs", conns = conns))
+reducer_means <- do.call(rbind, lapply(c("first", "last", "mean", "minimum", "maximum"), function(column) {
+  x <- dsBaseClient::ds.mean(paste0("D_labs$", column), type = "combine", datasources = conns)$Global.Mean
+  data.frame(Reducer = column, Mean_g_dl = x[1, "EstimatedMean"],
+    Valid = x[1, "Nvalid"], Missing = x[1, "Nmissing"])
+}))
+knitr::kable(reducer_means, digits = 3)
 ```
 
-Omitting the window on these advanced reducers uses all recorded history.
-Assign a wide table, with one private row per person. Only its symbol returns.
+The first-value mean is 13.986 g/dL and the last-value mean 14.893 g/dL.
+The mean of person means is 14.467 g/dL: each of the 28 people contributes once,
+regardless of how many readings they have. Differences between these aggregate
+means are not necessarily the average within-person change.
 
-```{r assign-values}
-values <- omop_recipe(variables = list(first = first, last = last,
-  mean = average, minimum = minimum, maximum = maximum),
-  outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(values, out = c(people = "D_labs"), conns = conns))
-```
+## Keep numbers beside their groups
 
-Ask for an approved summary of the first values. All patient-level numbers
-remain on the server; the table below contains summary statistics only.
-
-```{r first-summary}
-first_summary <- dsBaseClient::ds.summary("D_labs$first", datasources = conns)
-knitr::kable(book_summary(first_summary))
-```
-
-<details><summary>Full aggregate response</summary>
-
-```{r first-full}
-first_summary
-```
-
-</details>
-
-Compare the last-value distribution with the first-value distribution.
-A change in these summaries alone does not describe each individual's change.
-
-```{r last-summary}
-last_summary <- dsBaseClient::ds.summary("D_labs$last", datasources = conns)
-knitr::kable(book_summary(last_summary))
-```
-
-The next mean gives each person equal weight, regardless of their number of
-readings. It is not the mean over all measurement rows.
-
-```{r mean-summary}
-mean_summary <- dsBaseClient::ds.summary("D_labs$mean", datasources = conns)
-knitr::kable(book_summary(mean_summary))
-```
-
-**Exercise 1.** Summarise the minimum and maximum columns. Why can first differ
-from minimum?
-
-<details><summary>Solution 1</summary>
-
-```{r extremes-exercise}
-minimum_summary <- dsBaseClient::ds.summary("D_labs$minimum", datasources = conns)
-maximum_summary <- dsBaseClient::ds.summary("D_labs$maximum", datasources = conns)
-knitr::kable(rbind(transform(book_summary(minimum_summary), Column = "minimum"),
-                  transform(book_summary(maximum_summary), Column = "maximum")))
-```
-
-First is earliest in time; minimum is smallest in value. They answer different questions.
-
-</details>
-
-**Exercise 2.** Would a person with no eligible lab have first = 0?
-
-<details><summary>Solution 2</summary>
-
-No. First, last, mean, min and max are missing (`NA`) when no eligible nonmissing
-values exist. Zero would claim a measured value. The person-grain table still
-includes that person; this particular dataset has hemoglobin for everyone.
-
-</details>
-
-## Compare reducers and their groupings
-
-Keep the raw number and its grouping together. Use the same teaching threshold
-for first and last; grouping hides the size of differences within each category.
-The repeated mean in each row below is the **overall mean of that raw column**,
-not a category-specific mean. Only released aggregates are combined locally.
+Grouping first and last values at the same cutoff helps compare distributions.
+The count rows describe categories; the last row gives the overall mean once.
 
 ```{r reducer-groups}
 grouped <- omop_recipe(variables = list(first = first, last = last,
@@ -200,447 +84,219 @@ grouped <- omop_recipe(variables = list(first = first, last = last,
     labels = c("below 14.5", "14.5 or above")),
   last_group = omop_number_bins(last, breaks = c(-Inf, 14.5, Inf),
     labels = c("below 14.5", "14.5 or above"))))
-book_symbols(recipe_execute(grouped, out = c(output = "D_reducer_groups"), conns = conns))
-first_groups <- dsBaseClient::ds.table("D_reducer_groups$first_group", datasources = conns)
-first_mean <- dsBaseClient::ds.mean("D_reducer_groups$first", type = "combine", datasources = conns)
-last_groups <- dsBaseClient::ds.table("D_reducer_groups$last_group", datasources = conns)
-last_mean <- dsBaseClient::ds.mean("D_reducer_groups$last", type = "combine", datasources = conns)
-knitr::kable(rbind(book_group_comparison(first_groups, first_mean, "first", "g/dL"),
-                  book_group_comparison(last_groups, last_mean, "last", "g/dL")))
+invisible(recipe_execute(grouped, out = "D_groups", conns = conns))
+comparison <- lapply(c("first", "last"), function(column) {
+  counts <- dsBaseClient::ds.table(paste0("D_groups$", column, "_group"), datasources = conns)
+  mean <- dsBaseClient::ds.mean(paste0("D_groups$", column), type = "combine", datasources = conns)
+  book_group_comparison(counts, mean, column, "g/dL")
+})
+knitr::kable(do.call(rbind, comparison), digits = 3)
 ```
 
-**Exercise.** Group the per-person mean using the same cutoff and show its raw mean.
+Read the category counts to see how many first or last values fall on each side
+of 14.5. The overall means describe all 28 people, not the people in an individual category.
+These cutoffs illustrate presentation; they are not clinical reference limits.
 
-<details><summary>Solution</summary>
+## Select a nearby value and measure change
 
-```{r reducer-group-exercise}
-grouped_mean <- omop_recipe(variables = list(mean = average,
-  mean_group = omop_number_bins(average, breaks = c(-Inf, 14.5, Inf),
-    labels = c("below 14.5", "14.5 or above"))))
-book_symbols(recipe_execute(grouped_mean, out = c(output = "D_mean_groups"), conns = conns))
-mean_groups <- dsBaseClient::ds.table("D_mean_groups$mean_group", datasources = conns)
-raw_mean <- dsBaseClient::ds.mean("D_mean_groups$mean", type = "combine", datasources = conns)
-knitr::kable(book_group_comparison(mean_groups, raw_mean, "person mean", "g/dL"))
+Index seven days after first haemoglobin and look back seven days. Everyone has
+a reading in that window by construction; the nearest reading can still differ
+from the first.
+
+```{r value-at-index}
+indexed <- omop_study(omop_index(lab, offset = 7L), outputs = "baseline",
+  baseline = list(at_index = omop_value_at_index("measurement", lab_id,
+    tolerance = c(-7, 0), unit = omop_unit(8713L))))
+invisible(recipe_execute(indexed, out = c(baseline = "D_index"), conns = conns))
+knitr::kable(book_summary("D_index$at_index", datasources = conns))
 ```
 
-Every person still contributes once; reducing their readings and then grouping
-the result answers a different question from grouping each measurement first.
+All 28 values are present. The mean becomes 14.150 g/dL because one person's
+next-day reading, 11.6, replaces their first reading, 7.0. Those values belong to
+the public synthetic example; in a study, the protected summary alone would not
+identify the changed person. A narrower tolerance could leave missing values.
 
-</details>
+A slope fits value against actual date within each person. Difference is last
+minus first; percent and ratio additionally divide by first. A zero baseline
+cannot support those divisions. Two eligible readings are required for change,
+and a slope needs distinct dates.
 
-## Anchor a value and estimate a slope
-
-An *index date* is the reference date for each study episode. For this teaching
-example, choose seven days after each person's first lab. The offset makes it
-clear that “at index” can use a nearby measurement rather than an exact-date match.
-
-```{r index-definition}
-index <- omop_index(lab, offset = 7L)
-class(index)
+```{r changes}
+changes <- omop_recipe(variables = list(
+  change = omop_number_change(lab, "difference"),
+  percent = omop_number_change(lab, "percent_change"),
+  ratio = omop_number_change(lab, "ratio"),
+  per_year = omop_number(omop_number_change(lab, "slope", time_unit = "days"),
+    omop_number_spec(transform = omop_number_transform("affine", factor = 365))),
+  target_days = omop_number_change(lab, "time_to_threshold", threshold = 14,
+    op = "ge", reference = "first", time_unit = "days")))
+invisible(recipe_execute(changes, out = "D_change", conns = conns))
+knitr::kable(book_summary("D_change$change", datasources = conns))
+knitr::kable(book_summary("D_change$per_year", datasources = conns))
 ```
 
-Tolerance `c(-7, 0)` includes the preceding seven days and index day, never a
-later reading. The shortcut selects the closest eligible nonmissing value.
+There are 25 valid changes and three missing: single-reading people do not have
+observed change. Mean change is 1.016 g/dL. The median slope is about 0.081 g/dL
+per 365 days. Neither statistic implies the same change for every person, and a
+linear slope does not forecast a person's next reading.
 
-```{r index-recipe}
-indexed <- omop_study(index, outputs = "baseline", baseline = list(
-  at_index = omop_value_at_index("measurement", lab_id,
-    tolerance = c(-7, 0), unit = 8713L)))
-book_symbols(recipe_execute(indexed, out = c(baseline = "D_lab_index"), conns = conns))
-```
+## Convert, round and classify in a declared order
 
-Read its summary. If no measurement falls inside the tolerance the value is
-missing, even when that person has measurements elsewhere in their history.
+Target unit **8636** is gram per liter (g/L), found in chapter 4. Multiplication
+by ten converts g/dL to g/L. Here the conversion is applied to the person mean;
+an event-level `omop_unit(8636L, convert = list("8713" = c(factor = 10, offset = 0)))`
+would convert before reduction instead.
 
-```{r index-summary}
-index_summary <- dsBaseClient::ds.summary("D_lab_index$at_index", datasources = conns)
-knitr::kable(book_summary(index_summary))
-```
-
-A *slope* fits a straight line to value against date within each person. It uses
-all eligible readings, unlike first-to-last subtraction. The unit here is g/dL
-**per day**. At least two distinct measurement dates are needed.
-
-```{r slope-recipe}
-slopes <- omop_recipe(variables = list(per_day = omop_variable(event = lab,
-  reducer = omop_reduce("slope"))),
-  outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(slopes, out = c(people = "D_lab_slopes"), conns = conns))
-```
-
-Summarise the slopes, not the private fitted lines.
-
-```{r slope-summary}
-slope_summary <- dsBaseClient::ds.summary("D_lab_slopes$per_day", datasources = conns)
-knitr::kable(book_summary(slope_summary))
-```
-
-**Exercise.** Express the slopes per 365 days and summarise them.
-
-<details><summary>Solution</summary>
-
-```{r slope-exercise}
-annual <- omop_recipe(variables = list(per_365_days = omop_number(
-  omop_number_change(lab, "slope", time_unit = "days"),
-  omop_number_spec(transform = omop_number_transform("affine", factor = 365)))))
-book_symbols(recipe_execute(annual, out = c(output = "D_lab_annual"), conns = conns))
-annual_summary <- dsBaseClient::ds.summary("D_lab_annual$per_365_days", datasources = conns)
-knitr::kable(book_summary(annual_summary))
-```
-
-This rescales the same fitted slopes. It does not add observations or forecast
-any person's next result. The fixed 365-day interval is explicit.
-
-</details>
-
-## Declare a common unit
-
-To pool measurements, first align their meaning and units. Look up the target
-unit grams per liter (g/L).
-
-```{r target-unit}
-target_unit <- ds.omop.concept.lookup(8636L, conns = conns)
-knitr::kable(target_unit$pooled["concept_name"])
-```
-
-Declare the conversion: g/dL multiplied by ten becomes g/L. Rows already in
-g/L retain their value. Other units become missing by default; the server never
-guesses a conversion. `unknown = "exclude"` would drop those rows instead.
-
-```{r conversion-event}
-lab_gl <- omop_event("measurement", concepts = lab_id,
-  unit = omop_unit(8636L, convert = list("8713" = c(factor = 10, offset = 0))))
-class(lab_gl)
-```
-
-The conversion precedes predicates and reducers, and also transforms recorded
-reference bounds. This source only has g/dL for this lab; we are converting its
-actual values, not inventing a mixed-unit source.
-
-```{r conversion-recipe}
-converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
-  reducer = omop_reduce("mean"))),
-  outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(converted, out = c(people = "D_lab_gl"), conns = conns))
-```
-
-**Exercise.** Summarise the converted means. How should they compare with the
-g/dL summary above?
-
-<details><summary>Solution</summary>
-
-```{r conversion-exercise}
-conversion_summary <- dsBaseClient::ds.summary("D_lab_gl$mean_gl", datasources = conns)
-knitr::kable(book_summary(conversion_summary))
-```
-
-Every displayed quantile and the mean is ten times its earlier value. Use the
-same target unit and declared conversion map at every site before pooling.
-
-</details>
-
-## Round and bin without losing the raw number
-
-Keep a raw mean, a rounded mean and a band from the same declaration. Native
-bins are **ordered factors** on the server, with every declared level retained.
-The mean is reduced before rounding and binning; these are public teaching
-cutoffs, not clinical reference limits.
-
-```{r native-bins}
-band_levels <- c("below 14", "14 to below 15", "15 or above")
-flags <- omop_recipe(variables = list(mean = average,
-  rounded = omop_number(average, omop_number_spec(rounding = omop_number_round("decimals", 1))),
-  band = omop_number_bins(average, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
-  high = omop_number_flag(average, "ge", 15),
-  low = omop_number_flag(average, "lt", 14)))
-book_symbols(recipe_execute(flags, out = c(output = "D_lab_flags"), conns = conns))
-bin_counts <- dsBaseClient::ds.table("D_lab_flags$band", useNA = "always", datasources = conns)
-knitr::kable(book_counts(bin_counts))
-```
-
-The factor is ordered before release.
-That affects model contrasts: choose the raw number or explicit contrasts when
-a linear ordinal effect is not the model you intend.
-
-**Exercise (basic).** Check the factor type and summarise the rounded number.
-
-<details><summary>Solution: native types</summary>
-
-```{r native-types}
-dsBaseClient::ds.class("D_lab_flags$band", datasources = conns)
-knitr::kable(book_summary(dsBaseClient::ds.summary("D_lab_flags$rounded", datasources = conns)))
-```
-
-The type check belongs here because this lesson is about types. Rounding the
-person means does not guarantee that their pooled mean has one decimal place.
-
-</details>
-
-## Use low, normal and high explicitly
-
-For an aggregate such as a mean, supply public thresholds. “Normal” here only
-means the middle interval of this teaching rule. It is not a diagnosis.
-
-```{r categories}
-category_recipe <- omop_recipe(variables = list(control =
-  omop_number_category(average, range = "thresholds", thresholds = c(14, 15))))
-book_symbols(recipe_execute(category_recipe, out = c(output = "D_control"), conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_control$control", datasources = conns)))
-```
-
-Reference mode instead uses the bounds paired with the selected observation.
-Synthea27Nj records no bounds for haemoglobin, so this example deliberately
-shows the source-validation refusal for missing reference bounds.
-The missing bounds cannot establish normality. Do not invent bounds or weaken
-the release check to obtain categories. The declared-threshold example above
-is the runnable alternative when those cutoffs are part of the protocol.
-
-The refusal can also emit the DSLite cleanup warning shown below: an internal
-execution handle has already been removed. It is a cleanup diagnostic, not a
-released patient count or a successful assignment. Its temporary handle name
-changes between sessions. Both diagnostics remain visible in this lesson.
-
-<!-- expected-reference-cleanup:start -->
-```{r reference-categories}
-reference_recipe <- omop_recipe(variables = list(control = omop_number_category(last, range = "reference")))
-reference_message <- tryCatch({
-  recipe_execute(reference_recipe, out = c(output = "D_reference"), conns = conns)
-  "Reference output assigned"
-}, error = function(e) conditionMessage(e))
-cat(reference_message, "\n")
-```
-<!-- expected-reference-cleanup:end -->
-
-**Exercise (intermediate).** Count people whose mean is at least 15 g/dL.
-
-<details><summary>Solution: threshold flag</summary>
-
-```{r native-high}
-knitr::kable(book_counts(dsBaseClient::ds.table("D_lab_flags$high", datasources = conns)))
-```
-
-The flag is a numeric 0/1 value with missing inputs preserved. Its threshold
-belongs to the coordinate being classified, here g/dL after reduction.
-
-</details>
-
-## Compose conversion, rounding and classification
-
-A pipeline fixes the order. Convert g/dL to g/L, round to one decimal, then
-classify using cutoffs in **g/L**. Rounding can move a value across a cutoff;
-classifying before rounding answers a different question.
-
-```{r composed}
+```{r presentation}
+band_labels <- c("below 14", "14 to below 15", "15 or above")
 presentation <- omop_number_pipeline(
   omop_number_unit("unit:8713", "unit:8636", factor = 10),
   omop_number_round("decimals", 1),
   omop_number_spec(representation = "bins", breaks = c(0, 140, 150, 1000),
     labels = c("below 140", "140 to below 150", "150 or above")))
-pipeline_recipe <- omop_recipe(variables = list(band = omop_number(average, presentation)))
-explanation <- recipe_explain(pipeline_recipe, detail = "semantics")
-cat(grep("numeric|unit:|round|pipeline|levels", explanation$text, value = TRUE), sep = "\n")
+flags <- omop_recipe(variables = list(mean = average,
+  rounded = omop_number(average, omop_number_spec(rounding = omop_number_round("decimals", 1))),
+  band = omop_number_bins(average, breaks = c(-Inf, 14, 15, Inf), labels = band_labels),
+  converted_band = omop_number(average, presentation),
+  control = omop_number_category(average, range = "thresholds", thresholds = c(14, 15)),
+  high = omop_number_flag(average, "ge", 15)))
+invisible(recipe_execute(flags, out = "D_flags", conns = conns))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_flags$band", datasources = conns)))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_flags$converted_band", datasources = conns)))
 ```
 
-Read the declared coordinate, stage order and complete public level set. No
-private distribution is needed to explain a public presentation rule.
+Both presentations give category counts 9, 9 and 10 here. Bins are left-closed:
+14 belongs to the middle bin and 15 to the upper bin. The factor is ordered;
+polynomial contrasts change coefficient interpretation, but a full set of those
+contrasts gives the same fit as a full set of dummy variables.
 
-```{r composed-run}
-book_symbols(recipe_execute(pipeline_recipe, out = c(output = "D_pipeline"), conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_pipeline$band", datasources = conns)))
+The equal counts do not mean rounding can never change a category. Consider a
+public example near the boundary:
+
+```{r rounding-boundary}
+x <- 13.996
+knitr::kable(data.frame(Input_g_dl = x, Converted_g_l = 10 * x,
+  Rounded_g_l = round(10 * x, 1), Before = "below 140", After = "140 to below 150"))
 ```
 
-**Exercise (advanced).** Make a logarithmic mean column, preserving the raw mean.
+139.96 rounds to 140.0 and crosses the cutoff. Rounding uses ties-to-even;
+classifying before rounding would answer a different question.
 
-<details><summary>Solution: transform</summary>
-
-```{r transform}
-log_recipe <- omop_recipe(variables = list(raw = average,
-  logged = omop_number(average, omop_number_spec(transform = omop_number_transform("log")))))
-book_symbols(recipe_execute(log_recipe, out = c(output = "D_log"), conns = conns))
-knitr::kable(book_summary(dsBaseClient::ds.summary("D_log$logged", datasources = conns)))
+```{r category-and-flag}
+knitr::kable(book_counts(dsBaseClient::ds.table("D_flags$control", datasources = conns)))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_flags$high", datasources = conns)))
 ```
 
-This is log of each person's mean, not mean of their logged observations.
-Invalid transform inputs remain missing. Specify the scientific reason for
-transforming before fitting a model.
+The high flag is one for 10 people. The category thresholds define low <14,
+normal 14–15 **inclusive**, and high >15, whereas the flag uses ≥15. Thus a value
+exactly 15 would be normal in the category but high in the flag.
+Synthea has no haemoglobin reference bounds; missing bounds cannot establish normality.
 
-</details>
+## Fit a model only for people with follow-up
 
-## Change over time and first observed attainment
-
-Difference is last minus first. Percent change divides that difference by first;
-ratio divides last by first. A zero baseline cannot support either division.
-Slope uses actual elapsed time. Time to threshold is first **observed** attainment,
-without interpolation; missing attainment is not evidence of permanent failure.
-
-```{r native-change}
-changes <- omop_recipe(variables = list(
-  change = omop_number_change(lab, "difference"),
-  percent = omop_number_change(lab, "percent_change"),
-  ratio = omop_number_change(lab, "ratio"),
-  per_day = omop_number_change(lab, "slope", time_unit = "days"),
-  target_days = omop_number_change(lab, "time_to_threshold", threshold = 14,
-    op = "ge", reference = "first", time_unit = "days")))
-book_symbols(recipe_execute(changes, out = c(output = "D_lab_change"), conns = conns))
-change_summary <- dsBaseClient::ds.summary("D_lab_change$change", datasources = conns)
-knitr::kable(book_summary(change_summary))
-```
-
-A single observed value produces missing native change: two eligible readings
-are required. Subtracting separately reduced first and last would instead give
-zero for that person, which would falsely suggest an observed change. Measurement frequency affects observed attainment times.
-
-**Exercise.** Summarise the time to the teaching target. What does day zero mean?
-
-<details><summary>Solution: observed target</summary>
-
-```{r target-days}
-knitr::kable(book_summary(dsBaseClient::ds.summary("D_lab_change$target_days", datasources = conns)))
-```
-
-Day zero means the first eligible reading already met the threshold. A person
-who never attains it has a missing time; use an explicit censored survival design
-for a time-to-event analysis rather than dropping those people.
-
-</details>
-
-## Several columns from one output value
-
-Output-column declarations copy a numeric value privately with its row identity
-and privacy lineage. They do not join unrelated measurement rows.
-
-```{r number-columns}
-column_recipe <- omop_recipe(variables = list(mean = average),
-  outputs = omop_output("people", format = "wide", grain = "person", columns = c("mean", "mean_rounded"),
-    number_columns = list(mean_rounded = omop_number_column("mean",
-      number_spec = omop_number_spec(rounding = omop_number_round("decimals", 1))))))
-book_symbols(recipe_execute(column_recipe, out = c(people = "D_number_columns"), conns = conns))
-dsBaseClient::ds.colnames("D_number_columns", datasources = conns)
-```
-
-The stable input key is `mean`, before presentation renames. Canonical numeric
-inputs bypass display settings; explicitly presented inputs must still be numeric.
-An ordered bin cannot be fed back into arithmetic as if it were the original value.
-
-**Exercise.** Verify that the copied rounded column has the same summary as the
-earlier rounded column.
-
-<details><summary>Solution: column copy</summary>
-
-```{r copy-summary}
-knitr::kable(book_summary(dsBaseClient::ds.summary("D_number_columns$mean_rounded", datasources = conns)))
-```
-
-Compare this aggregate with the native-types solution above. The row grain and
-rounding declaration are the same.
-
-</details>
-
-## Pool across two connections
-
-This section is a **local DSLite exercise**, even if the earlier sections used
-Opal. The helper creates temporary, disjoint copies of the public Synthea data:
-14 people in `north`, 14 in `south`. It preserves their measurements and units,
-then logs into two actual DSLite servers. It never partitions a live Opal dataset.
-A real multisite analysis instead supplies its authorised connections and must
-establish that populations do not overlap.
+A last value equal to first because no second reading exists is not a follow-up
+outcome. Index on the first lab and restrict last to days 1 onward. Use two
+disjoint practice sites; their combined population is the same 28 people.
 
 ```{r two-sites}
 pair <- book_numeric_pair()
 two_conns <- pair$conns
-names(two_conns)
+followup <- omop_study(lab, outputs = "baseline", baseline = list(
+  first = omop_value_at_index("measurement", lab_id, tolerance = c(0, 0), unit = omop_unit(8713L)),
+  last = omop_variable(event = lab, reducer = omop_reduce("last_value", window = omop_window(1, NULL))),
+  mean = average))
+invisible(recipe_execute(followup, out = c(baseline = "D_pool"), conns = two_conns, symbol = "book_pool"))
+pooled_mean <- dsBaseClient::ds.mean("D_pool$mean", type = "combine", datasources = two_conns)$Global.Mean
+knitr::kable(pooled_mean, digits = 3)
 ```
 
-Run the identical native recipe at both sites. A lab column has the same meaning,
-unit, missing-value rule and person-level grain at each site.
-
-```{r two-site-recipe}
-book_symbols(recipe_execute(values, out = c(people = "D_pool_labs"), conns = two_conns, symbol = "book_pool"))
-```
-
-`ds.mean` combines nonmissing observations across sites. Here each observation
-is one person's mean lab value, so each person receives equal weight.
-
-```{r pooled-mean}
-pooled_mean <- dsBaseClient::ds.mean("D_pool_labs$mean", type = "combine", datasources = two_conns)
-pooled_mean
-```
-
-`ds.quantileMean` averages site quantiles with site-size weights. It is an
-estimate of the combined distribution, **not the exact quantiles of concatenated
-patient values**. Its mean agrees with the pooled mean here because all 28
-person-level means are present. Missing data require care with denominators.
+The pooled mean remains 14.467 g/dL across 28 people. Each nonmissing person
+receives equal weight; opening two connections to the same people would double-count them.
 
 ```{r pooled-quantiles}
-pooled_quantiles <- dsBaseClient::ds.quantileMean("D_pool_labs$mean",
-  type = "combine", datasources = two_conns)
-knitr::kable(data.frame(Statistic = names(pooled_quantiles), Value = as.numeric(pooled_quantiles)))
+quantiles <- dsBaseClient::ds.quantileMean("D_pool$mean", type = "combine", datasources = two_conns)
+knitr::kable(data.frame(Statistic = names(quantiles), Value = as.numeric(quantiles)), digits = 3)
 ```
 
-A Gaussian *generalised linear model* (GLM) relates a numeric outcome to a
-covariate. Fit last hemoglobin as the outcome and first hemoglobin as the
-covariate, both in g/dL. The servers keep the person-level data; the analyst sees
-model coefficients and diagnostics.
+These are weighted averages of site quantiles, not exact quantiles of all people
+combined. The mean always agrees with the pooled mean because this function
+weights site means by their nonmissing N.
 
-With dsBase 6.3.5, the call emits the warnings shown below: its local
-setup fits use `maxit = 1`. The distributed algorithm then iterates across sites;
-this example finishes in three iterations. The book's independent checks compare
-its final coefficients, standard errors and deviance with a central Gaussian fit
-on the public synthetic source. Do not ignore an unexplained warning in a new study.
+dsBase's local steps may warn; check `$iter` and the final errors for convergence.
+The model below relates last to first haemoglobin only among the 25 people with
+a later reading; their follow-up ranges from one day to about 18 years.
 
-<!-- expected-glm-warning:start -->
-```{r pooled-model}
-pooled_model <- dsBaseClient::ds.glm(formula = "last ~ first", data = "D_pool_labs",
-  family = "gaussian", datasources = two_conns)
-knitr::kable(pooled_model$coefficients)
-```
-<!-- expected-glm-warning:end -->
-
-The `first` coefficient is the fitted difference in last hemoglobin for a
-one-g/dL difference in first hemoglobin. The intercept is the prediction at
-first = 0, far outside these data. This small synthetic example teaches mechanics;
-it is not a causal result or a validated prediction model.
-
-<details><summary>Full model response</summary>
-
-```{r pooled-model-full}
-pooled_model
+```{r pooled-model, warning=FALSE}
+fit <- dsBaseClient::ds.glm("last ~ first", data = "D_pool", family = "gaussian", datasources = two_conns)
+b <- fit$coefficients["first", "Estimate"]
+se <- fit$coefficients["first", "Std. Error"]
+knitr::kable(data.frame(Estimate = b, Lower_95 = b - qt(.975, 23) * se,
+  Upper_95 = b + qt(.975, 23) * se), digits = 3)
 ```
 
-</details>
+The slope is about −0.159: a 1 g/dL higher first reading is associated with a
+0.159 g/dL lower last reading in this small sample. Its 95% t interval, −0.454 to 0.136, includes zero. Variable follow-up and regression to the mean limit this
+comparison; it is not an effect of treatment or a common-time trajectory.
 
-**Exercise 1.** Pool the first-value means. Would opening two connections to the
-same 28 people be a valid way to increase the sample size?
+## Exercises
+
+**1. Transform a person mean.** Calculate log(mean haemoglobin). Is this the mean
+of that person's logged readings?
 
 <details><summary>Solution 1</summary>
 
-```{r pooled-exercise}
-pooled_first <- dsBaseClient::ds.mean("D_pool_labs$first", type = "combine", datasources = two_conns)
-pooled_first
+```{r logarithm}
+logged <- omop_recipe(variables = list(log_mean = omop_number(average,
+  omop_number_spec(transform = omop_number_transform("log")))))
+invisible(recipe_execute(logged, out = "D_log", conns = conns))
+knitr::kable(book_summary("D_log$log_mean", datasources = conns))
 ```
 
-No. Duplicate people would be counted twice, and model uncertainty would be
-misleading. These temporary sites instead have disjoint people.
+The median is about 2.662, the log of the median person mean, 14.325.
+Reduction precedes the transform: log of a mean generally differs from mean of logs.
 
 </details>
 
-**Exercise 2.** Is the mean of the two site medians necessarily the median you
-would get from all 28 people together?
+**2. Interpret observed attainment.** Summarise days until the first observed
+haemoglobin ≥14. How do zero and missing differ?
 
 <details><summary>Solution 2</summary>
 
-No. These sites are equally sized, so `ds.quantileMean` averages their medians
-equally. In general that differs from the median of the combined observations;
-with unequal site sizes the function uses unequal weights.
+```{r target-days}
+knitr::kable(book_summary("D_change$target_days", datasources = conns))
+```
+
+There are 26 observed attainments and two missing; median time among observed
+attainments is 185.5 days. Zero means the first reading already meets the rule. Missing means no qualifying
+reading was observed; use follow-up and censoring for a time-to-event analysis
+rather than replacing missing with zero or discarding those people.
+
+</details>
+
+**3. Keep a rounded copy beside the original.** Request the copy from the output
+and summarise it. Must its overall mean have one decimal place?
+
+<details><summary>Solution 3</summary>
+
+```{r number-copy}
+copy <- omop_recipe(variables = list(mean = average),
+  outputs = omop_output("people", format = "wide", columns = c("mean", "rounded"),
+    number_columns = list(rounded = omop_number_column("mean",
+      number_spec = omop_number_spec(rounding = omop_number_round("decimals", 1))))))
+invisible(recipe_execute(copy, out = "D_copy", conns = conns))
+knitr::kable(book_summary("D_copy$rounded", datasources = conns))
+```
+
+The overall rounded mean is 14.457 g/dL. Each person's copy has one decimal, but averaging those values can produce more
+decimals. The original mean remains available for analysis; rounding does not
+add measurement precision.
 
 </details>
 
 ## Recap
 
-Start with a lab meaning and its recorded units. Choose the person-level reducer
-and time window before releasing summaries. Declare conversions, distinguish
-teaching cutoffs from recorded reference bounds, and distinguish change from
-slope. Pool only compatible variables from nonoverlapping sites, and interpret
-`ds.quantileMean` according to its weighted-site definition.
+Define the lab, unit, time window and person-level reducer before interpreting a
+number. Preserve missing follow-up, state threshold boundaries, and distinguish
+site-quantile averages from pooled person-level estimates.
 
 **Next:** [15. Derived numeric formulas](book-15-formulas.html).
