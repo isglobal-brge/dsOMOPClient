@@ -71,7 +71,7 @@ objects. People without visits retain missing values.
 ```{r offset-recipe}
 offsets <- omop_recipe(variables = list(first_days = first, last_days = last),
   outputs = omop_output("visits", format = "wide", grain = "person"))
-print(recipe_execute(offsets, out = c(visits = "D_offsets"), conns = conns))
+book_symbols(recipe_execute(offsets, out = c(visits = "D_offsets"), conns = conns))
 ```
 
 ```{r offset-summary}
@@ -97,14 +97,14 @@ Here each first visit is the index, so its first-visit offset is zero.
 visit_study <- omop_study(visit, outputs = "baseline",
   baseline = list(first_days = omop_first_date("visit_occurrence"),
                   last_days = omop_last_date("visit_occurrence")))
-print(recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns))
+book_symbols(recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns))
 ```
 
 ```{r simple-summary}
 dsBaseClient::ds.summary("D_visit_study$first_days", datasources = conns)
 ```
 
-This is the simple layer of the same language-2 API. It expands into an ordinary
+This is the simple layer of the same recipe API. It expands into an ordinary
 recipe. It includes people with an eligible index visit, so unlike our all-person
 wide table it excludes the people who never visited.
 
@@ -113,7 +113,7 @@ wide table it excludes the people who never visited.
 ```{r calendar}
 calendar <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("visits", format = "wide", grain = "person"))
-print(recipe_execute(calendar, out = c(visits = "D_calendar"), conns = conns))
+book_symbols(recipe_execute(calendar, out = c(visits = "D_calendar"), conns = conns))
 ```
 
 `omop_date()` defaults to day precision and assigns a Date on the server.
@@ -127,7 +127,7 @@ For a useful categorical aggregate, explicitly choose month precision:
 months <- omop_recipe(variables = list(visit_month = omop_date("first_visit",
   omop_date_spec(precision = "month", level_range = c("2020-03-01", "2020-07-31")))),
   outputs = omop_output("visits", format = "wide", grain = "person"))
-print(recipe_execute(months, out = c(visits = "D_months"), conns = conns))
+book_symbols(recipe_execute(months, out = c(visits = "D_months"), conns = conns))
 ```
 
 ```{r month-counts}
@@ -161,7 +161,7 @@ first such record. People without inpatient records have a missing setting.
 ```{r inpatient-recipe}
 inpatient_people <- omop_recipe(variables = list(setting = setting),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(inpatient_people, out = c(people = "D_inpatient"), conns = conns))
+book_symbols(recipe_execute(inpatient_people, out = c(people = "D_inpatient"), conns = conns))
 ```
 
 ```{r inpatient-count}
@@ -181,7 +181,7 @@ long_visits <- omop_recipe(
   events = list(visits = omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "visits")),
   outputs = omop_output("visits", format = "long", sources = "visits"),
   date_spec = omop_date_spec(precision = "day"))
-print(recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns))
+book_symbols(recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns))
 ```
 
 ```{r long-columns}
@@ -223,7 +223,7 @@ template <- omop_recipe(variables = list(setting = omop_variable(
   reducer = omop_reduce("first_value", value = "visit_concept_id"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
 outpatient <- recipe_bind(template, setting = 9202L)
-print(recipe_execute(outpatient, out = c(people = "D_outpatient"), conns = conns))
+book_symbols(recipe_execute(outpatient, out = c(people = "D_outpatient"), conns = conns))
 ds.omop.table("D_outpatient", "setting", conns = conns)
 ```
 

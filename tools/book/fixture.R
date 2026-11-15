@@ -1,5 +1,5 @@
 # Synthetic-only fixture derived from tests/testthat/helper-dates-va.R.
-book_fixture <- function(two_sites=FALSE, threshold=5L, levels_max=NULL, env=parent.frame()) {
+book_fixture <- function(two_sites=FALSE, threshold=5L, levels_max=NULL, categories=FALSE, env=parent.frame()) {
 library(dsOMOP)
 library(dsOMOPClient)
 library(DSLite)
@@ -111,6 +111,33 @@ extra$concept_name <- c("Practice medicine","Practice measurement","kilogram")
 extra$domain_id <- c("Drug","Measurement","Unit")
 extra$concept_code <- as.character(extra$concept_id)
 DBI::dbWriteTable(db,"concept",extra,append=TRUE)
+# Optional public vocabulary for category teaching; source patient rows are unchanged.
+if (categories) {
+  DBI::dbExecute(db,"UPDATE concept SET concept_code = CASE concept_id WHEN 900101 THEN 'secondary' WHEN 900102 THEN 'tertiary' ELSE concept_code END")
+  concepts <- data.frame(
+    concept_id=c(900103L,4180186L,960001L,960002L,960010L,960011L,960020L,960021L),
+    concept_name=c("Primary education","English language","Teaching ATC first level",
+      "Teaching ATC second level","Teaching circulatory code","Teaching respiratory code",
+      "Teaching circulatory chapter","Teaching respiratory chapter"),
+    domain_id=c("Meas Value","Language","Drug","Drug",rep("Condition",4)),
+    vocabulary_id=c("Fixture","Language","ATC","ATC",rep("ICD10",4)),
+    concept_class_id=c("Fixture","Language","ATC 1st","ATC 2nd",
+      "ICD10 Hierarchy","ICD10 Hierarchy","ICD10 Chapter","ICD10 Chapter"),
+    standard_concept=c("S","S","C","C",NA,NA,"C","C"),
+    concept_code=c("primary","en","T","T01","T-C","T-R","T-IX","T-X"),
+    valid_start_date="1970-01-01",valid_end_date="2099-12-31",invalid_reason=NA_character_)
+  DBI::dbWriteTable(db,"concept",concepts,append=TRUE)
+  DBI::dbWriteTable(db,"concept_synonym",data.frame(concept_id=c(900101L,900102L),
+    concept_synonym_name=c("Secondary schooling","Tertiary schooling"),language_concept_id=4180186L))
+  DBI::dbWriteTable(db,"concept_ancestor",data.frame(
+    ancestor_concept_id=c(960001L,960002L,960001L),descendant_concept_id=c(950001L,950001L,960002L),
+    min_levels_of_separation=c(2L,1L,1L),max_levels_of_separation=c(2L,1L,1L)),overwrite=TRUE)
+  DBI::dbWriteTable(db,"concept_relationship",data.frame(
+    concept_id_1=c(960010L,960011L,960010L,960011L),
+    concept_id_2=c(900201L,900202L,960020L,960021L),
+    relationship_id=c("Maps to","Maps to","Is a","Is a"),
+    valid_start_date="1970-01-01",valid_end_date="2099-12-31",invalid_reason=NA_character_),overwrite=TRUE)
+}
 DBI::dbDisconnect(db)
 
 config <- DSLite::defaultDSConfiguration(include = c("dsOMOP","dsBase"))

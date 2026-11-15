@@ -18,7 +18,7 @@ local({
   archives <- list.files('../practice-data','[.]zip$',full.names=TRUE)
   stopifnot(length(archives)==2L,all(file.copy(archives,data)))
   withr::with_dir(reader, {
-    stopifnot(all(file.exists(file.path('tools/book',helpers))),file.exists('tools/dates/va-native.R'))
+    stopifnot(all(file.exists(file.path('tools/book',helpers))),file.exists('tools/book/capstone.R'))
     status <- system2(file.path(R.home('bin'),'Rscript'),c('tools/book/load-practice.R','../practice-data'))
     stopifnot(status==0L,all(file.exists(file.path(data,c('gibleed.sqlite','numeric.sqlite','manifest.json')))))
   })

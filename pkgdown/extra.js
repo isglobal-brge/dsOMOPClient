@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const details = document.createElement('details');
       details.className = 'model-warnings';
       const summary = document.createElement('summary');
-      summary.textContent = `Recorded local fitting warnings (${lines.length})`;
+      summary.textContent = `Local fitting warnings (${lines.length})`;
       pre.before(details); details.append(summary, pre);
     });
   }

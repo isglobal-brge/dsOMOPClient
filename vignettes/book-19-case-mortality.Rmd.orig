@@ -1,9 +1,9 @@
 ---
-title: "19. Case study: HDSS-style mortality"
+title: "19. Case study: cause-specific mortality by age, sex and period"
 author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{19. Case study: HDSS-style mortality}
+  %\VignetteIndexEntry{19. Case study: cause-specific mortality by age, sex and period}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -23,8 +23,8 @@ public synthetic teaching data; the numerical results are not clinical evidence.
 ## Research question and data boundary
 
 How many deaths from each recorded cause occur in 2024, and how much observed
-person-time supports those counts? This APHRC-like worked example uses the
-24-person **questionnaire fixture**, not APHRC records. Every person is observed
+person-time supports those counts? This worked example uses the
+synthetic **questionnaire fixture**. Every person is observed
 throughout 2024 until death or the year end. Its sex codes are unknown, so it
 cannot supply a defensible sex-stratified mortality estimate. We show that boundary
 explicitly rather than manufacture female/male assignments.
@@ -51,7 +51,7 @@ death_prevalence <- ds.omop.concept.prevalence("death", scope = "pooled", conns 
 knitr::kable(death_prevalence[setdiff(names(death_prevalence), "concept_id")])
 ```
 
-## Define the private verbal-autopsy table
+## Define the private cause-of-death table
 
 The all-person population retains survivors. Completed age at death preserves
 missing birth components. The cause is the coded answer, not free source text.
@@ -68,11 +68,11 @@ mortality <- omop_recipe(variables = list(
   death_days = omop_time_between("2024-01-01", "death"),
   mi = omop_variable(event = mi, reducer = omop_reduce("binary")),
   pneumonia = omop_variable(event = pneumonia, reducer = omop_reduce("binary"))))
-print(recipe_execute(mortality, out = c(output = "D_mortality"), conns = conns))
+book_symbols(recipe_execute(mortality, out = c(output = "D_mortality"), conns = conns))
 ds.omop.table("D_mortality", "cause", conns = conns)
 ```
 
-The output keeps missing cause separate from an observed cause. In a real HDSS,
+The output keeps missing cause separate from an observed cause. In a mortality study,
 restrict cause events to the analysis period and intersect residency intervals
 with follow-up. Do not borrow this fixture's complete residency assumption.
 
@@ -107,7 +107,7 @@ knitr::kable(rates)
 ```
 
 These rates describe an intentionally tiny synthetic population with many deaths.
-They are not population estimates for Nairobi or any real surveillance site.
+These teaching results do not estimate mortality in a real population.
 A count divided by all enrolled people is a risk, not a person-time rate.
 
 ## Compare calendar periods without reusing the wrong denominator
@@ -125,7 +125,7 @@ earlier <- omop_recipe(variables = list(
   mi = omop_variable(event = mi_2023, reducer = omop_reduce("binary")),
   pneumonia = omop_variable(event = pneumonia_2023, reducer = omop_reduce("binary")),
   until_death = omop_time_between("2023-01-01", "death")))
-print(recipe_execute(earlier, out = c(output = "D_mortality_2023"), conns = conns))
+book_symbols(recipe_execute(earlier, out = c(output = "D_mortality_2023"), conns = conns))
 print(ds.omop.mutate("D_mortality_2023", potential_days = coalesce(until_death, 365),
   risk_days = ifelse(potential_days > 365, 365, potential_days),
   newobj = "D_risk_2023", conns = conns))
@@ -139,7 +139,7 @@ knitr::kable(rbind(earlier_rates, rates))
 ```
 
 The zero rate is a released estimate for this defined synthetic period, not a
-replacement for suppression. A general HDSS analysis must additionally remove
+replacement for suppression. A general mortality analysis must additionally remove
 people who died before the period and intersect each residency interval with it.
 
 ## Exercises

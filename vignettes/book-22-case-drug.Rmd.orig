@@ -82,7 +82,7 @@ utilisation <- omop_study(users, outputs = "baseline", baseline = list(
     book_expr(book_op("/", book_col("covered"), book_lit(365))), unit = "1"),
   discontinued = omop_number_flag(persistence, "lt", 365),
   fills = omop_variable(event = drug, reducer = omop_reduce("count", window = omop_window(0, 364)))))
-print(recipe_execute(utilisation, out = c(baseline = "D_utilisation"), conns = conns))
+book_symbols(recipe_execute(utilisation, out = c(baseline = "D_utilisation"), conns = conns))
 knitr::kable(book_summary(dsBaseClient::ds.summary("D_utilisation$covered", datasources = conns)))
 ```
 
@@ -100,7 +100,7 @@ A first era shorter than 365 days is a protocol-defined discontinuation indicato
 under this gap rule, not proof of permanent treatment cessation.
 
 ```{r utilisation-pdc}
-print(recipe_execute(utilisation, out = c(baseline = "D_utilisation_analysis"), conns = conns))
+book_symbols(recipe_execute(utilisation, out = c(baseline = "D_utilisation_analysis"), conns = conns))
 knitr::kable(book_summary(dsBaseClient::ds.summary("D_utilisation_analysis$pdc", datasources = conns)))
 ```
 

@@ -67,7 +67,7 @@ an event or a time period. More rows do not create more independent people.
 
 `features` and `baseline` are `type` presets which lower to native wide outputs;
 `panel` is the simple-layer name for `person_period`. We check every resulting
-recipe selects language 2. Use `format` for the native formats.
+recipe uses the recipe API. Use `format` for the native formats.
 
 ## Prepare one small study
 
@@ -91,7 +91,7 @@ base <- omop_recipe(events = list(visits, rx, inpatient),
     hemoglobin = omop_mean_value("measurement", 3000963L, unit = 8713L,
       window = omop_window(NULL, NULL))),
   outputs = omop_output("wide", rows = "visitors", format = "wide"))
-recipe_explain(base)$selected
+class(base)
 ```
 
 The visit count reads all history here. Age uses annual year subtraction at entry.
@@ -100,7 +100,7 @@ The template already contains an executable wide output.
 ## Wide: named columns
 
 ```{r wide}
-print(recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns))
+book_symbols(recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_wide", datasources = conns)
 ```
 
@@ -115,7 +115,7 @@ Use long when event order and repeated records matter. Select a named source ins
 long <- base
 long$outputs <- list(long = omop_output("long", rows = "visitors", format = "long",
   sources = "visits"))
-print(recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns))
+book_symbols(recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_long", datasources = conns)
 ```
 
@@ -128,7 +128,7 @@ Use the features preset when a downstream analysis expects a feature table. Nati
 ```{r features}
 features <- base
 features$outputs <- list(features = omop_output("features", rows = "visitors", type = "features"))
-print(recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns))
+book_symbols(recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_features", datasources = conns)
 ```
 
@@ -141,7 +141,7 @@ Use baseline to name an entry-characteristics table. Define the time windows of 
 ```{r baseline}
 baseline <- base
 baseline$outputs <- list(baseline = omop_output("baseline", rows = "visitors", type = "baseline"))
-print(recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns))
+book_symbols(recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_baseline", datasources = conns)
 ```
 
@@ -156,7 +156,7 @@ panel <- base
 panel$outputs <- list(panel = omop_output("panel", rows = "visitors", format = "person_period",
   options = list(sources = list(visits), bins = list(width = 30L),
     window = omop_window(1, 90), analyses = "count", representation = "dense")))
-print(recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns))
+book_symbols(recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_panel", datasources = conns)
 ```
 
@@ -171,7 +171,7 @@ temporal <- base
 temporal$outputs <- list(temporal = omop_output("temporal", rows = "visitors", format = "temporal_covariates",
   options = list(sources = list(visits), bin_width = 30L,
     window = omop_window(0, 89), analyses = "count")))
-print(recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns))
+book_symbols(recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_temporal", datasources = conns)
 ```
 
@@ -186,7 +186,7 @@ survival <- base
 survival$outputs <- list(survival = omop_output("survival", rows = "visitors", format = "survival",
   options = list(outcomes = list(admission = inpatient),
     tar = omop_window(1, NULL), censor = list("observation_end", "death"))))
-print(recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns))
+book_symbols(recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_survival", datasources = conns)
 ```
 
@@ -215,7 +215,7 @@ Use intervals for recorded spans. These visit intervals have recorded start and 
 intervals <- base
 intervals$outputs <- list(intervals = omop_output("intervals", rows = "visitors", format = "intervals",
   options = list(sources = list(rx), window = omop_window(0, NULL))))
-print(recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns))
+book_symbols(recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_intervals", datasources = conns)
 ```
 
@@ -229,7 +229,7 @@ Use sparse for many covariates when most combinations have no contribution.
 sparse <- base
 sparse$outputs <- list(sparse = omop_output("sparse", rows = "visitors", format = "sparse",
   options = list(sources = list(visits), analyses = c("binary", "count"))))
-print(recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns))
+book_symbols(recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_sparse", datasources = conns)
 ```
 
@@ -242,7 +242,7 @@ Use membership to keep entry/end dates and keys for every episode independently 
 ```{r membership}
 membership <- base
 membership$outputs <- list(membership = omop_output("membership", rows = "visitors", format = "membership"))
-print(recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns))
+book_symbols(recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_membership", datasources = conns)
 ```
 
@@ -259,7 +259,7 @@ dictionary$outputs <- list(
   dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary",
     options = list(source_outputs = "counts")))
 dictionary$publish <- "dictionary"
-print(recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns))
+book_symbols(recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_dictionary", datasources = conns)
 ```
 
@@ -280,14 +280,14 @@ joined$outputs <- list(
     options = list(from = list(list(output = "counts"), list(output = "ages")),
       how = "left", cardinality = "one_to_one")))
 joined$publish <- "joined"
-recipe_explain(joined)$selected
+class(joined)
 ```
 
 Only the final joined output is published. The two input outputs are private
 intermediate steps and do not each need a separately published symbol.
 
 ```{r join-run}
-print(recipe_execute(joined, out = c(joined = "D_fmt_joined"), conns = conns))
+book_symbols(recipe_execute(joined, out = c(joined = "D_fmt_joined"), conns = conns))
 dsBaseClient::ds.colnames("D_fmt_joined", datasources = conns)
 ```
 

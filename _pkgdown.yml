@@ -65,11 +65,11 @@ navbar:
           href: articles/book-15-formulas.html
         - text: "16. Longitudinal data: from events to analysis"
           href: articles/book-16-longitudinal.html
-        - text: "17. Reproduction and migration notes"
+        - text: "17. Checking and recording a study"
           href: articles/book-17-reproduce.html
-        - text: "18. Capstone: a verbal-autopsy wide table"
+        - text: "18. Capstone: a cause-of-death wide table"
           href: articles/book-18-verbal-autopsy.html
-        - text: "19. Case study: HDSS-style mortality"
+        - text: "19. Case study: cause-specific mortality by age, sex and period"
           href: articles/book-19-case-mortality.html
         - text: "20. Case study: celecoxib versus diclofenac"
           href: articles/book-20-case-gibleed.html

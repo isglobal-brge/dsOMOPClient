@@ -75,14 +75,14 @@ The unbound template cannot execute until its required setting is supplied.
 
 ```{r bind}
 outpatient <- recipe_bind(template, setting = 9202L)
-recipe_explain(outpatient)$selected
+class(outpatient)
 ```
 
 Binding fills the placeholder while preserving the template. Concept 9202 is the
 outpatient visit setting, not the record's provenance type.
 
 ```{r run}
-print(recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns))
+book_symbols(recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns))
 dsBaseClient::ds.summary("D_param_outpatient$age", datasources = conns)
 ```
 
@@ -114,7 +114,7 @@ shortcuts <- omop_study(omop_event("measurement", 3000963L), outputs = "baseline
     count = omop_count("measurement", 3000963L, before = 365),
     value = omop_value_at_index("measurement", 3000963L,
       tolerance = c(-30, 0), unit = 8713L)))
-print(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
+book_symbols(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
 ```
 ```{r shortcut-result}
 dsBaseClient::ds.table("D_shortcuts$ever", useNA = "no", datasources = conns)
@@ -125,10 +125,10 @@ measurements strictly before entry use `window = omop_window(-365, -1)` instead.
 First/last/mean/min/max-value shortcuts use the same event and window model.
 `omop_history()` bundles named ever variables; it does not define a new language.
 
-## What the mutate-v1 contract means
+## What the mutate contract means
 
 `ds.omop.mutate()` creates or replaces columns on a private `omop.table`.
-Although its notation looks like R, the client sends a **mutate-v1** data
+Although its notation looks like R, the client sends a **mutate** data
 request: the server validates a closed grammar and column types. It never runs
 arbitrary R code. Bare names refer to columns, including earlier assignments in
 the same call; literal numbers, strings, booleans and missing values are allowed.
@@ -162,7 +162,7 @@ body <- omop_study(weight_event, outputs = "baseline", baseline = list(
   age = omop_age_at(omop_anchor(weight_event)),
   first_date = omop_date(omop_anchor(weight_event, which = "first")),
   last_date = omop_date(omop_anchor(weight_event, which = "last"))))
-print(recipe_execute(body, out = c(baseline = "D_body"), conns = conns))
+book_symbols(recipe_execute(body, out = c(baseline = "D_body"), conns = conns))
 ```
 
 These are synthetic Synthea measurements, including children. Calculated BMI
@@ -255,7 +255,7 @@ not completed birthdays; use `omop_age_at` for completed age.
 
 ## Recode with case_when
 
-Cases are checked in order. The first true condition wins. In mutate-v1, an
+Cases are checked in order. The first true condition wins. In mutate, an
 unknown condition gives a missing result immediately, rather than falling
 through to the default. Handle missingness explicitly when your study needs it.
 
@@ -429,7 +429,7 @@ Bind the same template to inpatient visits and summarise the prior-visit count. 
 
 ```{r solution}
 inpatient <- recipe_bind(template, setting = 9201L)
-print(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
+book_symbols(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
 dsBaseClient::ds.summary("D_param_inpatient$prior_visits", datasources = conns)
 ```
 Each binding is a separate recipe. Its own index changes which earlier records fall into the lookback window. A numeric summary suits these varied counts; a categorical table can be refused when it creates too many distinct levels in a small population.

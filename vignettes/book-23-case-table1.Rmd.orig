@@ -64,7 +64,7 @@ characterise <- omop_study(hb, outputs = "baseline", baseline = list(
   age_band = omop_number_bins(omop_age(), breaks = c(0, 18, 121),
     labels = c("under 18", "adult")),
   haemoglobin = omop_variable(event = hb, reducer = omop_reduce("mean"))))
-print(recipe_execute(characterise, out = c(baseline = "D_table1"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(characterise, out = c(baseline = "D_table1"), conns = two_conns, symbol = "book_pool"))
 dsBaseClient::ds.levels("D_table1$age_band", datasources = two_conns)
 ```
 

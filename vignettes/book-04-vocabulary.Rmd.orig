@@ -201,10 +201,10 @@ visit_sets <- lapply(visit_ids, omop_concept_set)
 ds.omop.concept.locate(unname(visit_ids), scope = "pooled", conns = conns)$pooled
 ```
 
-## Find the colleague's questions, answers and causes
+## Find the questionnaire questions, answers and causes
 
 The questionnaire fixture is explicitly synthetic and separate from GiBleed.
-Its local concepts are teaching examples, not codes to use in a real HDSS.
+Its local concepts are teaching examples, not codes to copy into a clinical study.
 Search the whole small catalogue so the question, answer and cause roles are
 visible together. Later questionnaire chapters refer back to this catalogue.
 

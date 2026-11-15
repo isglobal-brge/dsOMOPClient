@@ -94,7 +94,7 @@ visitors <- omop_population("visitors", index = omop_index(visits))
 visit_recipe <- omop_recipe(events = list(visits), populations = list(visitors),
   outputs = omop_output("visits", rows = "visitors", format = "long", sources = "admission",
     options = list(columns_derived = c("days_from_index", "duration_days"))))
-print(recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), conns = conns))
+book_symbols(recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), conns = conns))
 ```
 
 The long table remains private. Release only the named visit-type counts and
@@ -153,7 +153,7 @@ windows <- omop_recipe(events = list(lab), populations = list(entry), variables 
   last2 = window_value("last_value", 1000, 1999),
   last3 = window_value("last_value", 2000, 2999)),
   outputs = omop_output("wide", rows = "entry", format = "wide"))
-print(recipe_execute(windows, out = c(wide = "D_windows"), conns = conns))
+book_symbols(recipe_execute(windows, out = c(wide = "D_windows"), conns = conns))
 ```
 
 No eligible nonmissing value gives `NA`. It never gives zero hemoglobin. Before
@@ -200,6 +200,59 @@ it remains valid and what that assumption means.
 
 </details>
 
+## Wide columns at prespecified time points
+
+A wide table can hold several scheduled values for each person. A named grid
+makes the target times, tolerances and selection rule explicit. Each value comes
+from an eligible observed event; no measurement is interpolated.
+
+```{r repeated-grid}
+points <- omop_timepoints(list(
+  baseline = omop_timepoint(),
+  year3 = omop_timepoint(3, "years", tolerance = c(-365, 365))),
+  anchor = "index", reuse = FALSE)
+repeated_hb <- omop_repeated(lab, values = list(hb = omop_number_rows(lab)),
+  timepoints = points, missing = "keep")
+repeated_recipe <- omop_recipe(events = list(lab), populations = list(entry),
+  variables = list(measurements = repeated_hb),
+  outputs = omop_output("wide", rows = "entry", format = "wide"))
+repeated_result <- recipe_execute(repeated_recipe, out = "D_timepoints", conns = conns)
+dsBaseClient::ds.colnames("D_timepoints", datasources = conns)
+```
+
+The generated names retain the measurement and time-point names. `closest` is
+the default selection; `first` or `last` would choose differently within the
+inclusive tolerance. `reuse = FALSE` prevents an event from filling two points.
+The tolerance here is a teaching choice for irregular data, not a claim that a
+lab a year away represents a clinical three-year visit.
+
+**Exercise.** Inspect the baseline column's released summary.
+
+<details><summary>Solution: a scheduled column</summary>
+
+```{r repeated-summary}
+knitr::kable(book_summary(dsBaseClient::ds.summary(
+  "D_timepoints$measurements_hb_baseline", datasources = conns)))
+```
+
+The baseline target is day zero at the first lab. Later targets without an
+eligible reading remain missing; they are not zero-valued measurements.
+
+</details>
+
+**Exercise.** Where can you check the expanded columns' types before modelling?
+
+<details><summary>Solution: the published table codebook</summary>
+
+```{r repeated-codebook}
+knitr::kable(recipe_codebook(repeated_result)[[1]]$columns[c("name", "r_type", "unit")])
+```
+
+Use the numeric columns in a model only after choosing how to handle missing
+scheduled readings. A codebook does not expose their missingness frequency.
+
+</details>
+
 ## Ask the recipe, or reshape on the server
 
 The installed `ds.reShape()` can turn existing wide columns into period rows.
@@ -238,7 +291,7 @@ panel <- omop_recipe(events = list(lab), populations = list(entry),
   outputs = omop_output("panel", rows = "entry", format = "person_period",
     options = list(sources = list(lab), bins = list(width = 1000L),
       window = omop_window(0, 2999), analyses = c("count", "last"), representation = "dense")))
-print(recipe_execute(panel, out = c(panel = "D_panel"), conns = conns))
+book_symbols(recipe_execute(panel, out = c(panel = "D_panel"), conns = conns))
 dsBaseClient::ds.colnames("D_panel", datasources = conns)
 ```
 
@@ -298,7 +351,7 @@ hazard <- omop_recipe(events = list(lab, death), populations = list(entry), vari
       options = list(from = list(list(output = "daily"), list(output = "ends")),
         how = "left", cardinality = "many_to_one"))))
 hazard$publish <- "risk"
-print(recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "book_pool"))
 ```
 
 Remove days after the first repeat or death. A missing next-day value means
@@ -379,7 +432,7 @@ bmi_entry <- omop_population("bmi_entry", index = omop_index(bmi))
 repeated <- omop_recipe(events = list(bmi), populations = list(bmi_entry),
   outputs = omop_output("long", rows = "bmi_entry", format = "long", sources = "bmi",
     options = list(columns_derived = c("value", "unit", "days_since_previous"))))
-print(recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "book_pool"))
 dsBaseClient::ds.colnames("D_long", datasources = two_conns)
 ```
 
@@ -477,4 +530,4 @@ A first-event hazard needs an at-risk panel with follow-up stopped at the event.
 Repeated-measure models instead retain repeated readings and model their dependence.
 Check every site's diagnostics and distinguish joint GLM estimation from SLMA pooling.
 
-**Next:** [17. Reproduction and migration notes](book-17-reproduce.html).
+**Next:** [17. Checking and recording a study](book-17-reproduce.html).

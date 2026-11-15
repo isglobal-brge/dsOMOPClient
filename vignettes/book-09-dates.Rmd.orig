@@ -61,7 +61,7 @@ It does not download a date vector. We can inspect the column inventory:
 ```{r date-exact}
 exact <- omop_recipe(variables = list(visit_date = first_visit),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(exact, out = c(people = "D_date_exact"), conns = conns))
+book_symbols(recipe_execute(exact, out = c(people = "D_date_exact"), conns = conns))
 dsBaseClient::ds.colnames("D_date_exact", datasources = conns)
 ```
 
@@ -86,7 +86,7 @@ observed dates. Do not derive a “public” range from private minimum/maximum 
 ```{r month-recipe}
 months <- omop_recipe(variables = list(month = omop_date("first_visit", month_spec)),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(months, out = c(people = "D_date_months"), conns = conns))
+book_symbols(recipe_execute(months, out = c(people = "D_date_months"), conns = conns))
 ```
 ```{r month-table}
 ds.omop.table("D_date_months", "month", conns = conns)
@@ -102,7 +102,7 @@ numbers <- omop_recipe(variables = list(month_index = omop_date("first_visit",
   omop_date_spec(precision = "month", representation = "number",
     numeric = "index", origin = "2020-01-01"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(numbers, out = c(people = "D_date_numbers"), conns = conns))
+book_symbols(recipe_execute(numbers, out = c(people = "D_date_numbers"), conns = conns))
 ```
 ```{r number-result}
 dsBaseClient::ds.summary("D_date_numbers$month_index", datasources = conns)
@@ -128,7 +128,7 @@ coarsen the original day; they do not claim that the visit occurred at a boundar
 ```{r bounds-run}
 bounds <- omop_recipe(variables = list(start = month_start, end = month_end),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(bounds, out = c(people = "D_date_bounds"), conns = conns))
+book_symbols(recipe_execute(bounds, out = c(people = "D_date_bounds"), conns = conns))
 print(ds.omop.mutate("D_date_bounds", days = end - start + 1L,
   newobj = "D_month_lengths", conns = conns))
 ```
@@ -148,7 +148,7 @@ final column names in this bundle.
 parts <- omop_recipe(variables = list(visit = omop_date_parts("first_visit",
   c(visit_year = "year", visit_month = "month", weekday = "weekday_name"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(parts, out = c(people = "D_date_parts"), conns = conns))
+book_symbols(recipe_execute(parts, out = c(people = "D_date_parts"), conns = conns))
 ```
 ```{r parts-result}
 ds.omop.table("D_date_parts", "weekday", conns = conns)
@@ -175,7 +175,7 @@ education_date <- omop_anchor(omop_event("observation", concepts = 900001L))
 ages <- omop_recipe(variables = list(at_death = omop_age_at("death"),
   at_question = omop_age_at(education_date)),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(ages, out = c(people = "D_date_ages"), conns = conns))
+book_symbols(recipe_execute(ages, out = c(people = "D_date_ages"), conns = conns))
 ```
 ```{r age-death-result}
 dsBaseClient::ds.summary("D_date_ages$at_death", datasources = conns)
@@ -200,7 +200,7 @@ One synthetic birth pattern has a year but no month/day. The default `partial =
 partial <- omop_recipe(variables = list(birth_year = omop_date("birth",
   omop_date_spec(precision = "year"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(partial, out = c(people = "D_date_partial"), conns = conns))
+book_symbols(recipe_execute(partial, out = c(people = "D_date_partial"), conns = conns))
 ```
 ```{r partial-result}
 ds.omop.table("D_date_partial", "birth_year", conns = conns)
@@ -213,7 +213,7 @@ imputation instead of letting an implicit convention choose it.
 estimated <- omop_recipe(variables = list(age = omop_age_at("death",
   date_spec = omop_date_spec(partial = "mid"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(estimated, out = c(people = "D_date_estimated"), conns = conns))
+book_symbols(recipe_execute(estimated, out = c(people = "D_date_estimated"), conns = conns))
 ```
 ```{r estimated-result}
 dsBaseClient::ds.summary("D_date_estimated$age", datasources = conns)
@@ -231,7 +231,7 @@ with imputation. `future = "na"` requires a fixed `as_of` date; do not use a mov
 custom <- omop_recipe(variables = list(month = omop_date("first_visit",
   omop_date_spec(precision = "custom", pattern = "%b %Y"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(custom, out = c(people = "D_date_custom"), conns = conns))
+book_symbols(recipe_execute(custom, out = c(people = "D_date_custom"), conns = conns))
 ```
 ```{r custom-result}
 ds.omop.table("D_date_custom", "month", conns = conns)
@@ -263,7 +263,7 @@ For example, choose an April-start fiscal quarter explicitly:
 fiscal <- omop_recipe(variables = list(quarter = omop_date("first_visit",
   omop_date_spec(precision = "fiscal_quarter", fiscal_start = 4L))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(fiscal, out = c(people = "D_date_fiscal"), conns = conns))
+book_symbols(recipe_execute(fiscal, out = c(people = "D_date_fiscal"), conns = conns))
 ```
 ```{r fiscal-result}
 ds.omop.table("D_date_fiscal", "quarter", conns = conns)
@@ -281,7 +281,7 @@ Calculate elapsed days from first visit to death and request a summary. Why are 
 ```{r solution}
 elapsed <- omop_recipe(variables = list(days = omop_time_between("first_visit", "death")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(elapsed, out = c(people = "D_date_elapsed"), conns = conns))
+book_symbols(recipe_execute(elapsed, out = c(people = "D_date_elapsed"), conns = conns))
 dsBaseClient::ds.summary("D_date_elapsed$days", datasources = conns)
 ```
 Elapsed days need both dates. This calculation does not need a complete birth date, unlike exact age. It is a duration, not a calendar-period coordinate.

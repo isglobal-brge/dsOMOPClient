@@ -54,7 +54,7 @@ verify_book3 <- function(input, env, get_data) {
   same(flags$high,as.integer(oracle$mean>=15))
   same(flags$low,as.integer(oracle$mean<14))
   same(book_counts(env$bin_counts)$Count,c(9,9,10,0))
-  stopifnot(grepl("publication status",env$reference_message))
+  stopifnot(grepl("Plan publication refused:.*number_source_invalid",env$reference_message))
   same(get_data("D_log")$logged,log(oracle$mean))
   same(get_data("D_number_columns")$mean_rounded,round(oracle$mean,1))
   same(get_data("D_lab_change")$ratio,ifelse(oracle$n>=2,oracle$last/oracle$first,NA_real_))

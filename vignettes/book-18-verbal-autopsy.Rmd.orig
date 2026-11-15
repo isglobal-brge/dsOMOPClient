@@ -1,9 +1,9 @@
 ---
-title: "18. Capstone: a verbal-autopsy wide table"
+title: "18. Capstone: a cause-of-death wide table"
 author: "David Sarrat González"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{18. Capstone: a verbal-autopsy wide table}
+  %\VignetteIndexEntry{18. Capstone: a cause-of-death wide table}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -54,7 +54,7 @@ va_sets <- lapply(va_ids, omop_concept_set)
 ```
 
 These local concepts have no external Maps to or ancestry. Their observed uses
-were checked in [chapter 4](book-04-vocabulary.html#find-the-colleagues-questions-answers-and-causes).
+were checked in [chapter 4](book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes).
 
 ## Begin with the clinical question
 
@@ -131,8 +131,7 @@ class(visit_quarter)
 ```
 
 Quarter labels distinguish both year and quarter. The numeric year variant is
-included to match the released native colleague recipe exactly. Precision is
-chosen separately for each variable.
+a numeric calendar year. Precision is chosen separately for each variable.
 
 ## Add the coded cause
 
@@ -145,10 +144,9 @@ class(cause)
 The vocabulary supplies the label. People without death records keep missing
 cause and age, while remaining in the all-person output.
 
-## Assemble the released native recipe
+## Assemble the recipe
 
-The following completes the exact variable set in the released follow-up
-`tools/dates/va-native.R`, which closed the earlier feasibility gaps. It also
+The following recipe also
 includes age at first visit, exact visit/death dates and separate visit date parts
 so you can distinguish those types. Every one of these values stays on the server.
 
@@ -167,19 +165,17 @@ class(va)
 ```
 
 For a smaller analysis table, select only the variables your question needs using
-`columns` in `omop_output()`. The full version here is the regression-tested
-colleague recipe, rather than the old feasibility workaround.
+`columns` in `omop_output()`. The full version here lets you compare date types before selecting columns.
 
 ## Explain and assign
 
 ```{r va-explain}
 explanation <- recipe_explain(va, conns = conns)
-stopifnot(explanation$selected == "v2")
-explanation$selected
+cat(grep("date|precision|age", explanation$text, value = TRUE), sep = "\n")
 ```
 
 ```{r va-execute}
-print(recipe_execute(va, out = c(people = "D_va"), conns = conns))
+book_symbols(recipe_execute(va, out = c(people = "D_va"), conns = conns))
 ```
 
 A successful symbol mapping means the server assigned the private wide table.
@@ -251,10 +247,10 @@ Use the short released helper to rebuild exactly the same recipe and verify its 
 
 
 ```{r solution}
-source("tools/dates/va-native.R")
-reference <- va_native_recipe()
+source("tools/book/capstone.R")
+reference <- book_capstone_recipe()
 identical(recipe_to_plan(va), recipe_to_plan(reference))
-print(recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns))
+book_symbols(recipe_execute(reference, out = c(people = "D_va_reference"), conns = conns))
 ds.omop.table("D_va_reference", "cause_of_death", conns = conns)
 ```
 
@@ -262,7 +258,7 @@ ds.omop.table("D_va_reference", "cause_of_death", conns = conns)
 
 ## Exercise 2: a common variant
 
-Count education in the completed verbal-autopsy table.
+Count education in the completed cause-of-death table.
 
 <details><summary>Solution 2</summary>
 
@@ -289,7 +285,7 @@ Its private columns combine several domains. The approved aggregate remains the 
 </details>
 ## Add a native numeric presentation
 
-Keep exact completed age private and add a broad age band with the A-29 numeric
+Keep exact completed age private and add a broad age band with the native numeric
 wrapper. Missing age stays missing. These public teaching bands do not repair
 incomplete birth dates or infer an age for a survivor.
 
@@ -298,16 +294,46 @@ va_numeric <- omop_recipe(variables = c(va$variables,
   list(age_band = omop_number_bins(age_at_death, breaks = c(0, 40, 121),
     labels = c("under 40", "40 and over")))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(va_numeric, out = c(people = "D_va_numeric"), conns = conns))
+book_symbols(recipe_execute(va_numeric, out = c(people = "D_va_numeric"), conns = conns))
 ds.omop.table("D_va_numeric", "age_band", conns = conns)
 ```
 
-The earlier date presentation and concept translation remain native. Custom
-category order, rollups, wide-by-time layout and codebooks await the separate
-categorical/layout update; this chapter does not invent arguments for them.
+## Choose answer order and record the table contract
+
+For this table, secondary education precedes university education. Keep missing
+answers as an explicit category so that absence of an answer remains visible.
+The identities below come from the catalogue search at the start of this chapter.
+
+```{r capstone-categories}
+answer_keys <- paste0("concept:", unname(va_ids[c("Secondary education", "University education")]))
+va_presented <- va_numeric
+va_presented$variables$education <- omop_category(education, omop_category_spec(
+  levels = answer_keys, order = omop_category_order(answer_keys), ordered = TRUE,
+  missing = omop_category_missing(na = "level")))
+capstone_result <- recipe_execute(va_presented, out = c(people = "D_capstone"), conns = conns)
+ds.omop.table("D_capstone", "education", conns = conns)
+```
+
+This changes presentation without filling in an answer or selecting a different
+person roster. The age band uses the native numeric presentation from chapter 14.
+
+**Exercise.** Keep the published codebook with the recipe. Which columns are
+numeric, categorical or calendar dates?
+
+<details><summary>Solution: document the completed table</summary>
+
+```{r capstone-codebook}
+capstone_book <- recipe_codebook(capstone_result, output = "people")
+knitr::kable(capstone_book[[1]]$columns[c("name", "semantic_type", "r_type", "unit")])
+```
+
+This is metadata about the private table, not a row preview. Exact dates retain
+their privacy class even when another column presents a coarser calendar period.
+
+</details>
 
 ## Recap
 
 The native 2.10.5 API now supports the whole capstone: pseudonymous roster, completed age, coded answers, calendar periods and cause of death.
 
-**Next:** [19. Case study: HDSS-style mortality](book-19-case-mortality.html).
+**Next:** [19. Case study: cause-specific mortality by age, sex and period](book-19-case-mortality.html).

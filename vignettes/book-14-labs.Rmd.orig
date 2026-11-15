@@ -20,10 +20,8 @@ and flags; measure change; and pool summaries and a model across two connections
 from [chapter 6](book-06-events.html). Start a fresh R session in `book-work`.
 Run the sections in order: each uses objects defined immediately above it.
 
-These are **public synthetic Synthea27Nj patients**, from the pinned Eunomia
-archive used by the numeric validation loader. There are 28 fictional people,
-not 27. GiBleed is the other practice resource and has no populated numeric
-measurement values. All results below were executed with dsOMOP 2.10.5.
+This chapter uses **synthetic Synthea27Nj measurements**, described in
+[Getting started](book-00-start.html#load-two-public-synthetic-datasets).
 
 Concept selections refer to the searches and saved definitions in
 [chapter 4](book-04-vocabulary.html), including the separate questionnaire
@@ -129,7 +127,7 @@ Assign a wide table, with one private row per person. Only its symbol returns.
 values <- omop_recipe(variables = list(first = first, last = last,
   mean = average, minimum = minimum, maximum = maximum),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(values, out = c(people = "D_labs"), conns = conns))
+book_symbols(recipe_execute(values, out = c(people = "D_labs"), conns = conns))
 ```
 
 Ask for an approved summary of the first values. All patient-level numbers
@@ -203,7 +201,7 @@ grouped <- omop_recipe(variables = list(first = first, last = last,
     labels = c("below 14.5", "14.5 or above")),
   last_group = omop_number_bins(last, breaks = c(-Inf, 14.5, Inf),
     labels = c("below 14.5", "14.5 or above"))))
-print(recipe_execute(grouped, out = c(output = "D_reducer_groups"), conns = conns))
+book_symbols(recipe_execute(grouped, out = c(output = "D_reducer_groups"), conns = conns))
 first_groups <- dsBaseClient::ds.table("D_reducer_groups$first_group", datasources = conns)
 first_mean <- dsBaseClient::ds.mean("D_reducer_groups$first", type = "combine", datasources = conns)
 last_groups <- dsBaseClient::ds.table("D_reducer_groups$last_group", datasources = conns)
@@ -220,7 +218,7 @@ knitr::kable(rbind(book_group_comparison(first_groups, first_mean, "first", "g/d
 grouped_mean <- omop_recipe(variables = list(mean = average,
   mean_group = omop_number_bins(average, breaks = c(-Inf, 14.5, Inf),
     labels = c("below 14.5", "14.5 or above"))))
-print(recipe_execute(grouped_mean, out = c(output = "D_mean_groups"), conns = conns))
+book_symbols(recipe_execute(grouped_mean, out = c(output = "D_mean_groups"), conns = conns))
 mean_groups <- dsBaseClient::ds.table("D_mean_groups$mean_group", datasources = conns)
 raw_mean <- dsBaseClient::ds.mean("D_mean_groups$mean", type = "combine", datasources = conns)
 knitr::kable(book_group_comparison(mean_groups, raw_mean, "person mean", "g/dL"))
@@ -249,7 +247,7 @@ later reading. The shortcut selects the closest eligible nonmissing value.
 indexed <- omop_study(index, outputs = "baseline", baseline = list(
   at_index = omop_value_at_index("measurement", lab_id,
     tolerance = c(-7, 0), unit = 8713L)))
-print(recipe_execute(indexed, out = c(baseline = "D_lab_index"), conns = conns))
+book_symbols(recipe_execute(indexed, out = c(baseline = "D_lab_index"), conns = conns))
 ```
 
 Read its summary. If no measurement falls inside the tolerance the value is
@@ -268,7 +266,7 @@ all eligible readings, unlike first-to-last subtraction. The unit here is g/dL
 slopes <- omop_recipe(variables = list(per_day = omop_variable(event = lab,
   reducer = omop_reduce("slope"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(slopes, out = c(people = "D_lab_slopes"), conns = conns))
+book_symbols(recipe_execute(slopes, out = c(people = "D_lab_slopes"), conns = conns))
 ```
 
 Summarise the slopes, not the private fitted lines.
@@ -286,7 +284,7 @@ knitr::kable(book_summary(slope_summary))
 annual <- omop_recipe(variables = list(per_365_days = omop_number(
   omop_number_change(lab, "slope", time_unit = "days"),
   omop_number_spec(transform = omop_number_transform("affine", factor = 365)))))
-print(recipe_execute(annual, out = c(output = "D_lab_annual"), conns = conns))
+book_symbols(recipe_execute(annual, out = c(output = "D_lab_annual"), conns = conns))
 annual_summary <- dsBaseClient::ds.summary("D_lab_annual$per_365_days", datasources = conns)
 knitr::kable(book_summary(annual_summary))
 ```
@@ -324,7 +322,7 @@ actual values, not inventing a mixed-unit source.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-print(recipe_execute(converted, out = c(people = "D_lab_gl"), conns = conns))
+book_symbols(recipe_execute(converted, out = c(people = "D_lab_gl"), conns = conns))
 ```
 
 **Exercise.** Summarise the converted means. How should they compare with the
@@ -356,7 +354,7 @@ flags <- omop_recipe(variables = list(mean = average,
   band = omop_number_bins(average, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
   high = omop_number_flag(average, "ge", 15),
   low = omop_number_flag(average, "lt", 14)))
-print(recipe_execute(flags, out = c(output = "D_lab_flags"), conns = conns))
+book_symbols(recipe_execute(flags, out = c(output = "D_lab_flags"), conns = conns))
 bin_counts <- dsBaseClient::ds.table("D_lab_flags$band", useNA = "always", datasources = conns)
 knitr::kable(book_counts(bin_counts))
 ```
@@ -387,7 +385,7 @@ means the middle interval of this teaching rule. It is not a diagnosis.
 ```{r categories}
 category_recipe <- omop_recipe(variables = list(control =
   omop_number_category(average, range = "thresholds", thresholds = c(14, 15))))
-print(recipe_execute(category_recipe, out = c(output = "D_control"), conns = conns))
+book_symbols(recipe_execute(category_recipe, out = c(output = "D_control"), conns = conns))
 knitr::kable(book_counts(dsBaseClient::ds.table("D_control$control", datasources = conns)))
 ```
 
@@ -448,7 +446,7 @@ Read the declared coordinate, stage order and complete public level set. No
 private distribution is needed to explain a public presentation rule.
 
 ```{r composed-run}
-print(recipe_execute(pipeline_recipe, out = c(output = "D_pipeline"), conns = conns))
+book_symbols(recipe_execute(pipeline_recipe, out = c(output = "D_pipeline"), conns = conns))
 knitr::kable(book_counts(dsBaseClient::ds.table("D_pipeline$band", datasources = conns)))
 ```
 
@@ -459,7 +457,7 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_pipeline$band", datasources =
 ```{r transform}
 log_recipe <- omop_recipe(variables = list(raw = average,
   logged = omop_number(average, omop_number_spec(transform = omop_number_transform("log")))))
-print(recipe_execute(log_recipe, out = c(output = "D_log"), conns = conns))
+book_symbols(recipe_execute(log_recipe, out = c(output = "D_log"), conns = conns))
 knitr::kable(book_summary(dsBaseClient::ds.summary("D_log$logged", datasources = conns)))
 ```
 
@@ -484,7 +482,7 @@ changes <- omop_recipe(variables = list(
   per_day = omop_number_change(lab, "slope", time_unit = "days"),
   target_days = omop_number_change(lab, "time_to_threshold", threshold = 14,
     op = "ge", reference = "first", time_unit = "days")))
-print(recipe_execute(changes, out = c(output = "D_lab_change"), conns = conns))
+book_symbols(recipe_execute(changes, out = c(output = "D_lab_change"), conns = conns))
 change_summary <- dsBaseClient::ds.summary("D_lab_change$change", datasources = conns)
 knitr::kable(book_summary(change_summary))
 ```
@@ -517,7 +515,7 @@ column_recipe <- omop_recipe(variables = list(mean = average),
   outputs = omop_output("people", format = "wide", grain = "person", columns = c("mean", "mean_rounded"),
     number_columns = list(mean_rounded = omop_number_column("mean",
       number_spec = omop_number_spec(rounding = omop_number_round("decimals", 1))))))
-print(recipe_execute(column_recipe, out = c(people = "D_number_columns"), conns = conns))
+book_symbols(recipe_execute(column_recipe, out = c(people = "D_number_columns"), conns = conns))
 dsBaseClient::ds.colnames("D_number_columns", datasources = conns)
 ```
 
@@ -558,7 +556,7 @@ Run the identical native recipe at both sites. A lab column has the same meaning
 unit, missing-value rule and person-level grain at each site.
 
 ```{r two-site-recipe}
-print(recipe_execute(values, out = c(people = "D_pool_labs"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(values, out = c(people = "D_pool_labs"), conns = two_conns, symbol = "book_pool"))
 ```
 
 `ds.mean` combines nonmissing observations across sites. Here each observation

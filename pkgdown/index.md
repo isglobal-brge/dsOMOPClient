@@ -1,9 +1,8 @@
 # Learn dsOMOPClient
 
 Build study tables while patient records stay on each server. This book teaches
-native language 2 with the **2.10.5 A-29 numeric build**, on public synthetic
-GiBleed and Synthea data. A separately labelled questionnaire fixture supplies
-the colleague's verbal-autopsy examples. Every chapter has executed examples,
+the recipe API with **dsOMOP 2.10.5**, on synthetic GiBleed, Synthea
+and questionnaire data. Every chapter has executed examples,
 real outputs and at least three exercises with collapsible solutions.
 
 [Explore what you can do →](articles/book-showcase.html)
@@ -11,7 +10,7 @@ real outputs and at least three exercises with collapsible solutions.
 ## Tutorial chapters
 
 The numbered tutorial runs from first connection through native numbers and
-reproducibility to the verbal-autopsy capstone. The case studies then combine
+reproducibility to the cause-of-death capstone. The case studies then combine
 those skills into end-to-end studies. Dataset and API limitations are shown
 explicitly where a requested analysis cannot be supported.
 
@@ -32,23 +31,21 @@ explicitly where a requested analysis cannot be supported.
 - [14. Working with lab values](articles/book-14-labs.html)
 - [15. Derived numeric formulas](articles/book-15-formulas.html)
 - [16. Longitudinal data: from events to analysis](articles/book-16-longitudinal.html)
-- [17. Reproduction and migration notes](articles/book-17-reproduce.html)
-- [18. Capstone: a verbal-autopsy wide table](articles/book-18-verbal-autopsy.html)
+- [17. Checking and recording a study](articles/book-17-reproduce.html)
+- [18. Capstone: a cause-of-death wide table](articles/book-18-verbal-autopsy.html)
 
 ## Case studies
 
-- [19. Case study: HDSS-style mortality](articles/book-19-case-mortality.html)
+- [19. Case study: cause-specific mortality by age, sex and period](articles/book-19-case-mortality.html)
 - [20. Case study: celecoxib versus diclofenac](articles/book-20-case-gibleed.html)
 - [21. Case study: glucose trajectories](articles/book-21-case-glucose.html)
 - [22. Case study: drug utilisation](articles/book-22-case-drug.html)
 - [23. Case study: a harmonised Table 1](articles/book-23-case-table1.html)
 
-## Reproduce what you read
+## Keep your study reproducible
 
-The website contains precomputed code and output; it does not open connections.
-[Reproduction](articles/book-17-reproduce.html) records software, data and study
-definitions. The downloadable helpers open fresh DSLite sessions; the shared
-connection file also supports the separately documented Opal route.
+[Checking and recording a study](articles/book-17-reproduce.html) shows how to
+save definitions and published codebooks. Start each chapter with its setup block;
+the downloadable helpers use the shared connection settings.
 
-This is an OHDSI-inspired theme, not an OHDSI endorsement. The author is David
-Sarrat González. The categorical and layout extension is outside this update.
+Book by **David Sarrat González**.

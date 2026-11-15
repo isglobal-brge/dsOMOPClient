@@ -103,7 +103,7 @@ comparison <- omop_recipe(populations = list(users),
       from = list(list(output = "baseline"), list(output = "survival")),
       how = "inner", cardinality = "one_to_one"))), publish = "analysis")
 cat(grep("censor|follow|survival", recipe_explain(comparison)$text, value = TRUE), sep = "\n")
-print(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
+book_symbols(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
 dsBaseClient::ds.colnames("D_comparison", datasources = two_conns)
 ```
 
