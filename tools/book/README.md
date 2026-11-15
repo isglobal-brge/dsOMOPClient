@@ -24,7 +24,8 @@ links share that order. `audit-structure.py`, `audit-content.py` and
 Run `audit-site.js` with Playwright Chromium for mobile and desktop geometry,
 copy controls, collapsible solutions and actual bounded output scrolling.
 
-Evidence for this job is in tools/book/evidence/book4/. The targeted package
+Keep evidence outside the repository in /workspace/dsomop/design/book-evidence/.
+The ignored tools/book/evidence/ path may point there while running the tools. The targeted package
 wrapper test-book-examples.R invokes the same chapter execution path. Full
 package suites belong to integration/release and are not run for this book job.
 

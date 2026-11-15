@@ -23,23 +23,56 @@ local({
   }
   message("PASS: exact chapter 2 attach/switch chunks with renamed project and both resources")
 })
-# Check administrator scripts parse and use installed opalr exported API signatures.
-for (path in c("tools/book/opal-admin.R", "tools/book/check-opal.R")) {
-  ast <- parse(path)
-  check <- function(x) {
-    if (is.call(x)) {
-      name <- as.character(x[[1]])[1]
-      if (grepl("^(opal[.]|oadmin[.]|dsadmin[.])", name)) {
-        fun <- getExportedValue("opalr", name)
-        if (name == "dsadmin.install_github_package" && identical(as.list(x)[[3]], "dsOMOP"))
-          stopifnot(identical(x$ref, as.character(packageVersion("dsOMOP"))))
-        supplied <- names(as.list(x)[-1])
-        stopifnot(all(supplied[nzchar(supplied)] %in% names(formals(fun))))
-      }
-    }
-    if (is.call(x) || is.expression(x) || is.pairlist(x))
-      for (child in as.list(x)) check(child)
+
+# Validate the unevaluated analyst example without installing packages or logging in.
+local({
+  lines <- readLines("vignettes/book-00-start.Rmd.orig")
+  chunk <- function(label) {
+    start <- grep(paste0("^```\\{r ", label, ", eval = FALSE\\}$"), lines)
+    stopifnot(length(start) == 1L)
+    end <- start + which(lines[(start + 1L):length(lines)] == "```")[1L]
+    parse(text=lines[(start + 1L):(end - 1L)])
   }
-  check(ast)
-}
-message("PASS: Opal scripts parsed; named arguments match installed opalr API (no live deployment)")
+  installation <- chunk("install-prerequisites")
+  stopifnot(sum(grepl("^install.packages", lines)) == 1L,
+    !any(grepl("auth_token|easy-opal|dsadmin[.]|opal-admin|check-opal|book-compose|book-rock", lines)))
+  needed <- c("DSI", "DSOpal", "DSLite", "DBI", "RSQLite", "resourcer", "withr",
+              "openssl", "jsonlite", "knitr", "rmarkdown", "duckdb", "lme4", "remotes")
+  stopifnot(all(needed %in% eval(installation[[1L]][[2L]])))
+  stopifnot(identical(vapply(as.list(installation)[-1L], function(x) x[[2L]], ""),
+    c("datashield/dsBase@6.3.5", "datashield/dsBaseClient@6.3.5",
+      "isglobal-brge/dsOMOP@2.10.5", "isglobal-brge/dsOMOPClient@2.10.5")))
+  withr::local_envvar(c(BOOK_OPAL_USER="", BOOK_OPAL_PASSWORD="", BOOK_OPAL_TOKEN=""))
+  example <- new.env(parent=globalenv())
+  for (expr in chunk("opal-login")) {
+    # Stop before the first network call; placeholders must never be sent.
+    if (is.call(expr) && identical(expr[[1L]], as.name("<-")) &&
+        identical(expr[[2L]], as.name("conns"))) break
+    eval(expr, example)
+  }
+  login <- example$builder$build()
+  stopifnot(login$server == "site", login$url == "<server-url>",
+            login$user == "<user>", login$password == "<password>",
+            login$driver == "OpalDriver", login$profile == "<profile>",
+            identical(unname(example$resource_names),
+              c("<project>.<gibleed-resource>", "<project>.<numeric-resource>")))
+  # Check the same builder settings when later lessons reconnect via the helper,
+  # for both passwords and tokens. The helper's login/attach calls remain unrun.
+  for (token in c("", "example-token")) {
+    Sys.setenv(BOOK_OPAL_TOKEN=token)
+    helper <- new.env(parent=example)
+    helper$resource <- "numeric"
+    helper$env <- helper
+    for (expr in as.list(body(example$book_connect))[-1L]) {
+      if (is.call(expr) && identical(expr[[1L]], as.name("<-")) &&
+          identical(expr[[2L]], as.name("conns"))) break
+      eval(expr, helper)
+    }
+    config <- helper$builder$build()
+    stopifnot(config$url == login$url, config$profile == login$profile,
+              config$driver == "OpalDriver")
+    if (nzchar(token)) stopifnot(config$token == token)
+    else stopifnot(config$user == login$user, config$password == login$password)
+  }
+  message("PASS: install chunk parsed only; analyst password/token login builders checked without network calls")
+})

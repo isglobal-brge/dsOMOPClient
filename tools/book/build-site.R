@@ -28,9 +28,10 @@ local({
 pkgdown::build_llm_docs()
 
 dir.create("docs/downloads",showWarnings=FALSE)
-unlink("docs/downloads/va-native.R")
+unlink(file.path("docs/downloads", c("va-native.R", "opal-admin.R", "check-opal.R",
+                                     "book-compose.sh", "book-rock.yml")))
 helpers <- c("load-practice.R", "load-numeric.R", "practice.R", "fixture.R", "connection.R",
-             "display.R", "case-helpers.R", "opal-admin.R", "check-opal.R", "book-compose.sh", "book-rock.yml")
+             "display.R", "case-helpers.R")
 helpers <- c(file.path("tools/book", helpers), "tools/book/capstone.R",
              "tools/book/EunomiaDatasets-LICENSE.txt")
 stopifnot(all(file.copy(helpers, "docs/downloads", overwrite=TRUE)))

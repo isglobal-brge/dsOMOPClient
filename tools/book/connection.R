@@ -21,12 +21,18 @@ book_connect <- function(resource = c("gibleed", "numeric"), env = parent.frame(
     return(book_practice(resource, env = env))
   }
   library(DSOpal)
-  stopifnot(nzchar(opal_url), nzchar(Sys.getenv("BOOK_OPAL_USER")),
-            nzchar(Sys.getenv("BOOK_OPAL_PASSWORD")))
+  stopifnot(nzchar(opal_url))
   builder <- DSI::newDSLoginBuilder()
-  builder$append(server = "site", url = opal_url,
-    user = Sys.getenv("BOOK_OPAL_USER"), password = Sys.getenv("BOOK_OPAL_PASSWORD"),
-    driver = "OpalDriver", profile = opal_profile)
+  token <- Sys.getenv("BOOK_OPAL_TOKEN")
+  if (nzchar(token)) {
+    builder$append(server = "site", url = opal_url, token = token,
+      driver = "OpalDriver", profile = opal_profile)
+  } else {
+    stopifnot(nzchar(Sys.getenv("BOOK_OPAL_USER")), nzchar(Sys.getenv("BOOK_OPAL_PASSWORD")))
+    builder$append(server = "site", url = opal_url,
+      user = Sys.getenv("BOOK_OPAL_USER"), password = Sys.getenv("BOOK_OPAL_PASSWORD"),
+      driver = "OpalDriver", profile = opal_profile)
+  }
   conns <- DSI::datashield.login(builder$build(), assign = FALSE)
   dsOMOPClient::ds.omop.connect(resource = resource_names[[resource]], conns = conns)
   list(conns = conns, path = character())
