@@ -25,9 +25,9 @@ public synthetic teaching data; the numerical results are not clinical evidence.
 How many deaths from each recorded cause occur in 2024, and how much observed
 person-time supports those counts? This worked example uses the
 synthetic **questionnaire fixture**. Every person is observed
-throughout 2024 until death or the year end. Its sex codes are unknown, so it
-cannot supply a defensible sex-stratified mortality estimate. We show that boundary
-explicitly rather than manufacture female/male assignments.
+throughout 2024 until death or the year end. The dataset contains equal numbers
+of female and male residents, so we can calculate each group’s person-time
+and cause-specific rate.
 
 
 ``` r
@@ -60,6 +60,8 @@ knitr::kable(catalogue[c("concept_name", "domain_id", "standard_concept")])
 |Myocardial infarction |Condition   |S                |
 |Pneumonia             |Condition   |S                |
 |Yes                   |Meas Value  |S                |
+|FEMALE                |Gender      |S                |
+|MALE                  |Gender      |S                |
 |No                    |Meas Value  |S                |
 |Inpatient Visit       |Meas Value  |S                |
 |Outpatient Visit      |Meas Value  |S                |
@@ -94,7 +96,7 @@ mi <- omop_event("death", cause_sets[["Myocardial infarction"]])
 pneumonia <- omop_event("death", cause_sets[["Pneumonia"]])
 mortality <- omop_recipe(variables = list(
   sex = omop_category(omop_variable(name = "sex", table = "person", column = "gender_concept_id"),
-    omop_category_spec(missing = omop_category_missing(unknown = "level"))),
+    omop_category_spec()),
   cause = omop_variable(event = omop_event("death"), reducer = omop_reduce("first_value", value = "cause_concept_id")),
   age_band = omop_number_bins(omop_age_at("death"), breaks = c(0, 40, 121),
     labels = c("under 40", "40 and over")),
@@ -185,10 +187,10 @@ Missing age remains visible. Dropping it would silently lose deaths with partial
 birth dates. Fine age-by-sex-by-period cells may be withheld: combine categories
 only when the study question supports the broader estimand.
 
-## Check whether sex stratification is supported
+## Count causes by sex
 
-Concept zero means unknown, not a female or male equation category. Retain it
-explicitly rather than distributing these people between invented sex groups.
+The catalogue identifies the two Gender concepts as FEMALE and MALE. Count
+the observed causes in each group before calculating its rate.
 
 
 ``` r
@@ -200,55 +202,53 @@ dsBaseClient::ds.table("D_mortality$cause", "D_mortality$sex",
 #> $output.list
 #> $output.list$TABLE.STUDY.site_row.props
 #>                        D_mortality$sex
-#> D_mortality$cause       Unknown NA
-#>   Myocardial infarction       1  0
-#>   Pneumonia                   1  0
-#>   NA                          1  0
+#> D_mortality$cause       MALE FEMALE NA
+#>   Myocardial infarction  0.5    0.5  0
+#>   Pneumonia              0.5    0.5  0
+#>   NA                     0.5    0.5  0
 #> 
 #> $output.list$TABLE.STUDY.site_col.props
 #>                        D_mortality$sex
-#> D_mortality$cause       Unknown  NA
-#>   Myocardial infarction    0.50 NaN
-#>   Pneumonia                0.25 NaN
-#>   NA                       0.25 NaN
+#> D_mortality$cause       MALE FEMALE  NA
+#>   Myocardial infarction 0.50   0.50 NaN
+#>   Pneumonia             0.25   0.25 NaN
+#>   NA                    0.25   0.25 NaN
 #> 
 #> $output.list$TABLES.COMBINED_all.sources_row.props
 #>                        D_mortality$sex
-#> D_mortality$cause       Unknown NA
-#>   Myocardial infarction       1  0
-#>   Pneumonia                   1  0
-#>   NA                          1  0
+#> D_mortality$cause       MALE FEMALE NA
+#>   Myocardial infarction  0.5    0.5  0
+#>   Pneumonia              0.5    0.5  0
+#>   NA                     0.5    0.5  0
 #> 
 #> $output.list$TABLES.COMBINED_all.sources_col.props
 #>                        D_mortality$sex
-#> D_mortality$cause       Unknown  NA
-#>   Myocardial infarction    0.50 NaN
-#>   Pneumonia                0.25 NaN
-#>   NA                       0.25 NaN
+#> D_mortality$cause       MALE FEMALE  NA
+#>   Myocardial infarction 0.50   0.50 NaN
+#>   Pneumonia             0.25   0.25 NaN
+#>   NA                    0.25   0.25 NaN
 #> 
 #> $output.list$TABLE_STUDY.site_counts
 #>                        D_mortality$sex
-#> D_mortality$cause       Unknown NA
-#>   Myocardial infarction      12  0
-#>   Pneumonia                   6  0
-#>   NA                          6  0
+#> D_mortality$cause       MALE FEMALE NA
+#>   Myocardial infarction    6      6  0
+#>   Pneumonia                3      3  0
+#>   NA                       3      3  0
 #> 
 #> $output.list$TABLES.COMBINED_all.sources_counts
 #>                        D_mortality$sex
-#> D_mortality$cause       Unknown NA
-#>   Myocardial infarction      12  0
-#>   Pneumonia                   6  0
-#>   NA                          6  0
+#> D_mortality$cause       MALE FEMALE NA
+#>   Myocardial infarction    6      6  0
+#>   Pneumonia                3      3  0
+#>   NA                       3      3  0
 #> 
 #> 
 #> $validity.message
 #> [1] "Data in all studies were valid"
 ```
 
-All the recorded causes fall under Unknown sex. The table therefore supports a
-cause-specific overall rate, but no female/male comparison. A study with known
-sex can use the same cross-tabulation and compute rates within each prespecified
-stratum using its own observed person-time.
+Each sex-specific denominator must use that group’s own observed person-time.
+Survivors contribute time even though they have no death cause.
 
 ## Calculate the period rate
 
@@ -287,6 +287,42 @@ knitr::kable(rates)
 These rates describe an intentionally tiny synthetic population with many deaths.
 These teaching results do not estimate mortality in a real population.
 A count divided by all enrolled people is a risk, not a person-time rate.
+
+## Calculate female and male rates
+
+Filter the same private table for each sex. Each group retains its survivors;
+the numerator and denominator use the same complete roster within that group.
+Only the protected means are returned for the rate calculation.
+
+
+``` r
+sex_rates <- do.call(rbind, lapply(c("FEMALE", "MALE"), function(sex_label) {
+  symbol <- paste0("D_risk_", tolower(sex_label))
+  ds.omop.filter("D_mortality_rate", var = "sex", op = "==", value = sex_label,
+    newobj = symbol, conns = conns)
+  days <- dsBaseClient::ds.mean(paste0(symbol, "$risk_days"), type = "combine", datasources = conns)$Global.Mean
+  mi_mean <- dsBaseClient::ds.mean(paste0(symbol, "$mi"), type = "combine", datasources = conns)$Global.Mean
+  pneumonia_mean <- dsBaseClient::ds.mean(paste0(symbol, "$pneumonia"), type = "combine", datasources = conns)$Global.Mean
+  stopifnot(mi_mean[1,"Nvalid"] == days[1,"Nvalid"],
+    pneumonia_mean[1,"Nvalid"] == days[1,"Nvalid"])
+  data.frame(Period = "2024", Sex = sex_label, Cause = rates$Cause,
+    Per_1000_person_years = 1000 * 365.25 * c(mi_mean[1,1], pneumonia_mean[1,1]) / days[1,1])
+}))
+knitr::kable(sex_rates)
+```
+
+
+
+|Period |Sex    |Cause                 | Per_1000_person_years|
+|:------|:------|:---------------------|---------------------:|
+|2024   |FEMALE |Myocardial infarction |             1013.1761|
+|2024   |FEMALE |Pneumonia             |              506.5881|
+|2024   |MALE   |Myocardial infarction |             1013.1761|
+|2024   |MALE   |Pneumonia             |              506.5881|
+
+The rates are equal because this synthetic dataset repeats the same death and
+follow-up patterns in both groups. A real study can use the same calculation
+without assuming equal rates or equal follow-up.
 
 ## Compare calendar periods without reusing the wrong denominator
 

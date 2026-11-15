@@ -308,6 +308,8 @@ knitr::kable(catalogue[c("concept_name", "vocabulary_id", "concept_class_id", "s
 |Myocardial infarction        |Fixture       |Fixture          |S                |
 |Pneumonia                    |Fixture       |Fixture          |S                |
 |Yes                          |Fixture       |Fixture          |S                |
+|FEMALE                       |Gender        |Gender           |S                |
+|MALE                         |Gender        |Gender           |S                |
 |No                           |Fixture       |Fixture          |S                |
 |Inpatient Visit              |Fixture       |Fixture          |S                |
 |Outpatient Visit             |Fixture       |Fixture          |S                |
@@ -461,11 +463,12 @@ ds.omop.table("D_missing_categories", "education", conns = conns)
 
 Missing answers are now visible as Missing. The public Unknown level may have
 zero count; declaring it does not assert that anyone has an unknown answer.
-The questionnaire's sex codes, in contrast, are all concept zero.
+The sex column contains FEMALE and MALE; its declared Missing and Unknown levels
+remain empty.
 
-**Exercise.** Confirm the distinction by counting sex.
+**Exercise.** Check which declared sex levels are actually observed.
 
-<details><summary>Solution: Unknown is a recorded code</summary>
+<details><summary>Solution: declared and observed levels</summary>
 
 
 ``` r
@@ -474,12 +477,12 @@ ds.omop.table("D_missing_categories", "sex", conns = conns)
 
 ```
 #> D_missing_categories$sex
-#> Missing Unknown 
-#>       0      24
+#>    MALE  FEMALE Missing Unknown 
+#>      12      12       0       0
 ```
 
-Unknown is not a justified female/male assignment. It cannot supply the sex input
-for a sex-specific formula or an informative sex comparison.
+The two observed levels each contain twelve people. A declared Unknown level
+does not turn an observed FEMALE or MALE value into an unknown value.
 
 </details>
 

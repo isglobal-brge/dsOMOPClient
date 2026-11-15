@@ -31,11 +31,14 @@ package used by the lessons, the offline server and the helpers.
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "resourcer", "withr", "openssl", "jsonlite", "knitr",
                    "rmarkdown", "pkgdown", "bslib", "opalr", "duckdb"))
-remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never", auth_token = "")
-remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never", auth_token = "")
-remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never", auth_token = "")
-remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never", auth_token = "")
+remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never", auth_token = NULL)
 ```
+
+These public repositories need no GitHub credentials; `auth_token = NULL` prevents
+an expired stored token from interrupting installation.
 
 The *client* is the package on your computer. The *server* runs requests near the
 data; DSLite lets you run it locally for practice. Record the installed versions with your study, as shown in
@@ -169,12 +172,12 @@ configuration. Questionnaire chapters source `fixture.R` and call
 
 
 ``` r
-ds.omop.server.version(conns = conns)
+ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
 ```
 
 ```
-#>   server published running missing ready advice recipe_language
-#> 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....
+#>   server published running ready
+#> 1   site    2.10.5  2.10.5  TRUE
 ```
 
 The reply comes from the server. Check both the installed and published versions
@@ -329,12 +332,12 @@ ds.omop.client.version()
 ```
 
 ``` r
-ds.omop.server.version(conns = conns)
+ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
 ```
 
 ```
-#>   server published running missing ready advice recipe_language
-#> 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....
+#>   server published running ready
+#> 1   site    2.10.5  2.10.5  TRUE
 ```
 
 </details>

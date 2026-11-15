@@ -358,6 +358,8 @@ knitr::kable(questionnaire[c("concept_name", "domain_id", "standard_concept")])
 |Myocardial infarction |Condition   |S                |
 |Pneumonia             |Condition   |S                |
 |Yes                   |Meas Value  |S                |
+|FEMALE                |Gender      |S                |
+|MALE                  |Gender      |S                |
 |No                    |Meas Value  |S                |
 |Inpatient Visit       |Meas Value  |S                |
 |Outpatient Visit      |Meas Value  |S                |
