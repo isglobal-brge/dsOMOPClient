@@ -11,220 +11,168 @@ vignette: >
 <div class="learn-box">
 **What you will learn**
 
-Save the recipe, its explanation, the codebook, software versions and plan digest,
-then run the same definition on another connection.
+Save a study definition and its data-source information, repeat it at another
+site, and inspect unsupported cohort rules before running them.
 </div>
 
-This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
-**You need:** the packages and the matching practice connection described in
-[Before you start](book-00-start.html#before-you-start).
-Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
-
-Concept selections refer to the searches and saved definitions in
-[chapter 4](book-04-vocabulary.html), including the separate questionnaire
-catalogue. Additional body-measurement concepts are found on screen in the
-[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
-
-## Start this chapter
-
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+**You need:** [the setup and questionnaire dataset](book-00-start.html).
+Start a fresh R session in `book-work`. The two questionnaire sites have different
+education answers and vocabulary dates, so identical recipes need not give identical results.
 
 ```{r chapter-setup}
 library(dsOMOPClient)
 source("tools/book/display.R")
-source("tools/book/fixture.R")
-practice <- book_fixture(two_sites = TRUE)
+source("tools/book/connection.R")
+practice <- book_connect("questionnaire", two_sites = TRUE)
 conns <- practice$conns
-names(conns)
 ```
 
-The `site` and `site2` connections are ready. Both use the questionnaire dataset;
-the second catalogue uses a different label for one education answer.
+## Record the data actually used
 
-## Keep a reproducible study record
+Keep the vocabulary and source information returned by these connections.
+A record for another dataset would not document this study.
 
-Save the recipe and its concept definitions with the software versions used to
-execute them. Record the chosen vocabulary release and dataset resource as well:
-a repeatable definition does not guarantee that a database has stayed unchanged.
-
-```{r versions}
-package_versions <- vapply(c("dsOMOP", "dsOMOPClient", "DSI", "DSLite", "dsBase", "dsBaseClient"),
-       function(p) as.character(packageVersion(p)), character(1))
-package_versions
+```{r source-record}
+vocabularies <- ds.omop.vocab.vocabularies(conns = conns)$per_site
+sources <- ds.omop.cdm.source(conns = conns)$per_site
+vocabulary_rows <- do.call(rbind, lapply(names(vocabularies), function(site) {
+  x <- vocabularies[[site]]
+  x <- x[x$vocabulary_id == "Questionnaire", c("vocabulary_id", "vocabulary_version"), drop = FALSE]
+  data.frame(Site = site, x)
+}))
+knitr::kable(vocabulary_rows)
 ```
 
-The practice loader records both datasets in a manifest. Readers who chose a
-custom data directory can set `BOOK_PRACTICE_DIR` to that directory.
+The questionnaire vocabulary dates are 2025-01-01 and 2026-01-01. Retain both:
+newer wording can change labels even when concept IDs stay the same.
 
-```{r practice-manifest}
-practice_dir <- Sys.getenv("BOOK_PRACTICE_DIR", file.path("..", "practice-data"))
-manifest <- jsonlite::read_json(file.path(practice_dir, "manifest.json"))
-vapply(manifest, function(x) x$dataset, "")
-```
+## Define and inspect the study
 
-## Predict the schema, then retain the published codebook
-
-A codebook describes each output component. Before execution it is prospective;
-after execution it reflects the admitted column contract. Date precision,
-category representation and renaming can affect several fields at once.
+Education question **900001** was found in [chapter 4](book-04-vocabulary.html).
+Include education so that a repeated run can reveal differences between sites.
+Death year is an ordered calendar category; age is completed age at death.
 
 ```{r study-codebook}
-check <- omop_recipe(variables = list(
+education <- omop_variable(event = omop_event("observation", 900001L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"))
+check <- omop_recipe(variables = list(education = education,
   age = omop_age_at("death"),
   death_period = omop_date("death", omop_date_spec(precision = "year"))),
-  outputs = omop_output("people", format = "wide", grain = "person"),
-  category_spec = omop_category_spec(ordered = TRUE))
-prospective <- recipe_codebook(check)
+  outputs = omop_output("people", format = "wide", grain = "person"))
 result <- recipe_execute(check, out = c(people = "D_documented"), conns = conns["site"])
 published <- recipe_codebook(result)
-print(c(before = prospective[[1]]$status, after = published[[1]]$status))
-knitr::kable(published[[1]]$columns[c("name", "semantic_type", "r_type", "unit",
-  "privacy_class", "aggregate_policy", "missing_policy", "completeness")])
+knitr::kable(published[[1]]$columns[c("name", "semantic_type", "r_type", "unit")])
 ```
 
-Completed age is numeric; a calendar year presentation is an ordered factor.
-`privacy_class` and `aggregate_policy` describe the admitted column policy.
-`completeness` describes metadata resolution, not the percentage of people with
-nonmissing values. A codebook never replaces a protected aggregate check.
-
-**Exercise 1.** Save and restore the definition. Does the plan stay equal?
-
-<details><summary>Solution 1</summary>
-
-```{r recipe-roundtrip}
-recipe_file <- tempfile(fileext = ".json")
-recipe_save(check, recipe_file)
-restored <- recipe_load(recipe_file)
-identical(recipe_to_plan(check), recipe_to_plan(restored))
-```
-
-TRUE means the definition survived the round trip. Keep the published codebook
-with it so that later analysis can distinguish planned and actual types.
-
-</details>
+Read `r_type`: age is numeric, while education and death period are factors.
+Keep this codebook to interpret the assigned columns later; it does not report
+how many people have missing values.
 
 ## Save the study record
 
-Create a directory for the study definition and its public metadata. The recipe
-contains the selection and presentation rules; the explanation records their
-meaning. Keep the actual published codebook, rather than only the prospective one.
+The recipe stores the selection rules. Its explanation makes those rules readable,
+and its digest identifies the definition. Save the codebook, software information,
+and both sites' source metadata alongside it. These files contain definitions and
+metadata, not patient rows.
 
 ```{r save-study-record}
-record_dir <- "study-record"
+record_dir <- "questionnaire-study"
 dir.create(record_dir, showWarnings = FALSE)
 recipe_save(check, file.path(record_dir, "recipe.json"))
 explanation <- recipe_explain(check)
 writeLines(explanation$text, file.path(record_dir, "explanation.txt"))
-saveRDS(published, file.path(record_dir, "codebook.rds"))
-write.csv(data.frame(package = names(package_versions), version = unname(package_versions)),
-  file.path(record_dir, "packages.csv"), row.names = FALSE)
 writeLines(explanation$digest, file.path(record_dir, "plan-digest.txt"))
-jsonlite::write_json(manifest, file.path(record_dir, "datasets.json"), pretty = TRUE, auto_unbox = TRUE)
+saveRDS(published, file.path(record_dir, "codebook-site.rds"))
+saveRDS(vocabularies, file.path(record_dir, "vocabularies.rds"))
+saveRDS(sources, file.path(record_dir, "sources.rds"))
+package_versions <- vapply(c("dsOMOPClient", "DSI", "dsBaseClient"),
+  function(p) as.character(packageVersion(p)), character(1))
+write.csv(data.frame(Package = names(package_versions), Release = unname(package_versions)),
+  file.path(record_dir, "client-packages.csv"), row.names = FALSE)
+saveRDS(ds.omop.server.version(conns = conns), file.path(record_dir, "server-packages.rds"))
 list.files(record_dir)
 ```
 
-The plan digest identifies the normalized definition. Matching digests do not
-prove matching data: retain the resource and vocabulary information alongside
-it, and check the second connection’s published codebook.
+The filenames identify the definition, software and data sources needed to repeat
+the study. Matching digests establish matching rules; they cannot establish that
+a database has stayed unchanged.
 
-## Run the saved recipe on another connection
-
-Use the second connection from the setup. In a study, substitute the connection
-to your next participating site without editing the saved recipe.
+## Run the saved definition at the second site
 
 ```{r rerun-study}
-second_recipe <- recipe_load(file.path(record_dir, "recipe.json"))
-second_result <- recipe_execute(second_recipe, out = c(people = "D_repeated"),
-  conns = conns["site2"])
-second_codebook <- recipe_codebook(second_result)
-c(same_definition = identical(recipe_explain(second_recipe)$digest,
-    readLines(file.path(record_dir, "plan-digest.txt"))),
-  same_columns = identical(published[[1]]$columns$name, second_codebook[[1]]$columns$name))
-ds.omop.table("D_repeated", "death_period", conns = conns["site2"])
+restored <- recipe_load(file.path(record_dir, "recipe.json"))
+second_result <- recipe_execute(restored, out = c(people = "D_repeated"), conns = conns["site2"])
+saveRDS(recipe_codebook(second_result), file.path(record_dir, "codebook-site2.rds"))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_repeated$death_period",
+  useNA = "always", datasources = conns["site2"])))
 ```
 
-Both checks concern the definition and schema. The protected table confirms the
-calendar-period categories on this connection; it does not retrieve patient rows.
+The second site has 18 deaths in 2023, 18 in 2024, and 12 people without a death
+year. The counts describe its data; the saved recipe describes how those categories were obtained.
 
-## Strict Circe imports preserve the question
+## Exercises
 
-Circe JSON describes an OHDSI cohort. Import translates supported cohort rules
-into a recipe. An unsupported criterion must not disappear silently.
-This deliberately invalid example has an unsupported additional criterion:
+**1. Compare data, not just definitions.** Tabulate education at each site after
+the separate runs. What changed?
 
-```{r circe-refusal}
-circe_message <- tryCatch(recipe_import_circe(jsonlite::toJSON(list(
-  AdditionalCriteria = list(Type = "ALL", CriteriaList = list(list(unsupported = TRUE)))),
-  auto_unbox = TRUE)), error = function(e) conditionMessage(e))
-cat(circe_message, "\n")
+<details><summary>Solution 1</summary>
+
+```{r compare-education}
+first_counts <- book_counts(dsBaseClient::ds.table("D_documented$education",
+  useNA = "always", datasources = conns["site"]))
+second_counts <- book_counts(dsBaseClient::ds.table("D_repeated$education",
+  useNA = "always", datasources = conns["site2"]))
+knitr::kable(rbind(transform(first_counts, Site = "site"),
+                  transform(second_counts, Site = "site2")))
 ```
 
-Read the named path in the refusal. Translate the intended rule into supported
-recipe constructs and verify its population meaning; do not delete a criterion
-just to make the import succeed. Retain the original JSON for review.
+Site has 12 Secondary and 12 University answers; site2 has 24 University answers.
+Both have 24 missing answers. The newer catalogue calls University education
+“University qualification”. Because these were separate executions, their labels
+were resolved separately; a joint execution reconciles them as shown in chapter 10.
 
-**Exercise 2.** Can a successful export/import prove that a source cohort used
-only supported criteria?
+</details>
+
+**2. Inspect an unsupported cohort rule.** Circe JSON describes an OHDSI cohort.
+Does a successful strict import establish the intended clinical meaning?
 
 <details><summary>Solution 2</summary>
 
 ```{r circe-check}
-is.character(circe_message) && nchar(circe_message) > 0L
+circe_json <- jsonlite::toJSON(list(AdditionalCriteria = list(Type = "ALL",
+  CriteriaList = list(list(unsupported = TRUE)))), auto_unbox = TRUE)
+circe_check <- recipe_circe_check(circe_json)
+knitr::kable(circe_check$issues[c("path", "remedy")])
 ```
 
-No. The message above is an import refusal, not a usable cohort. Inspect the
-source criteria and the translated definition before any extraction.
+The check identifies structural problems in this example, so it is not ready for
+extraction. A successful strict import means every construct had an adapter;
+you must still compare the translated population with the intended inclusion and
+exclusion rules. Never delete a scientific criterion merely to make an import succeed.
 
 </details>
 
-## Unsupported settings are refused
-
-Constructors reject settings that have no meaning for the chosen operation.
-A square-root transform cannot also take an affine multiplier:
-
-```{r setting-refusal}
-setting_message <- tryCatch(omop_number_transform("sqrt", factor = 2),
-  error = function(e) conditionMessage(e))
-cat(setting_message, "\n")
-```
-
-If the protocol intends both steps, declare an affine transform followed by a
-square-root transform in a numeric pipeline. Their order changes the result.
-A category hierarchy also cannot take a distance rule without a separation:
-
-```{r rollup-setting-refusal}
-cat(tryCatch(omop_category_rollup("snomed", distance = "max"),
-  error = function(e) conditionMessage(e)), "\n")
-```
-
-These failures happen while constructing the definition, before server data are
-assigned. They prevent a supplied setting from being quietly ignored.
-
-**Exercise 3.** Select only the exact `people` table's codebook and inspect its
-category ordering and contrasts. Why is this preferable to guessing from a name?
+**3. Read the actual calendar levels.** Which years can the assigned death-period
+column represent, and are they ordered?
 
 <details><summary>Solution 3</summary>
 
 ```{r codebook-fields}
 columns <- recipe_codebook(result, output = "people", component = "people")[[1]]$columns
 period <- match("death_period", columns$name)
-print(list(ordered = columns$ordered[[period]], contrasts = columns$contrasts[[period]],
-  levels = columns$levels[[period]]$labels))
+knitr::kable(data.frame(Year = columns$levels[[period]]$labels,
+  Type = columns$r_type[[period]]))
 ```
 
-The metadata records the actual category contract. A column called “year” could
-instead have been numeric or a Date under a different presentation declaration.
-For multi-component outputs, select each exact component in the same way.
+The levels are 2023 and 2024 in chronological order. A column called “year” could
+instead be numeric or a Date under a different declaration; its name alone is insufficient.
 
 </details>
 
 ## Recap
 
-Keep the recipe, explanation, plan digest, software and vocabulary versions, and
-published codebooks. Reload the saved recipe to repeat it on another connection.
-Read import and constructor refusals as unresolved study decisions. Metadata
-explains the table's contract; protected summaries describe its data.
+Keep the rules, codebook, software and actual source metadata together. Repeating
+a definition at another site is an opportunity to check data differences, not a
+reason to assume identical answers.
 
 **Next:** [18. Capstone: a cause-of-death wide table](book-18-capstone.html).

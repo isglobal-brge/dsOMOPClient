@@ -11,224 +11,200 @@ vignette: >
 <div class="learn-box">
 **What you will learn**
 
-Define the mortality denominator, retain missing causes and ages, and report
-cause-specific rates for a calendar period.
+Define a calendar-year risk set, calculate cause-specific deaths and person-years,
+and compare crude rates by sex, age at period start and year.
 </div>
 
-**You need:** [the installed packages and practice resources](book-00-start.html#before-you-start),
-[concept discovery](book-04-vocabulary.html), and the preceding tutorial chapters.
-Run these sections in order in a fresh `book-work` session. All observations are
-public synthetic teaching data; the numerical results are not clinical evidence.
+**You need:** [the setup and questionnaire dataset](book-00-start.html), and
+[the cause-of-death capstone](book-18-capstone.html). Start a fresh R session in `book-work`.
 
-## Research question and data boundary
+## Research question
 
-How many deaths from each recorded cause occur in 2024, and how much observed
-person-time supports those counts? This worked example uses the
-synthetic **questionnaire dataset**. Every person is observed
-throughout 2024 until death or the year end. The dataset contains equal numbers
-of female and male residents, so we can calculate each group’s person-time
-and cause-specific rate.
+How do recorded cause-specific mortality rates differ between 2023 and 2024?
+The questionnaire data have deaths in both years. Everyone is observed from
+2019 through 2025, with observation for this analysis stopping at death. Thus the
+population alive at each year's start can contribute the whole year or time up
+to death. In a dataset with gaps or later entry, intersect each observation
+interval with the analysis year as well.
 
 ```{r chapter-setup}
 library(dsOMOPClient)
 source("tools/book/display.R")
-source("tools/book/fixture.R")
-practice <- book_fixture()
+source("tools/book/connection.R")
+practice <- book_connect("questionnaire")
 conns <- practice$conns
 ```
 
-## Find the cause and answer concepts
-
-Repeat chapter 4's local catalogue search. These fixture concepts have no external
-Maps to or ancestry contract. Their domain separates question, answer and cause.
+## Find the causes
 
 ```{r find-causes}
-catalogue <- ds.omop.concept.search(NULL, standard_only = FALSE, limit = 100, conns = conns)$pooled
-knitr::kable(catalogue[c("concept_name", "domain_id", "standard_concept")])
-ids <- setNames(catalogue$concept_id, catalogue$concept_name)
-cause_sets <- lapply(ids[c("Myocardial infarction", "Pneumonia")], omop_concept_set)
-death_prevalence <- ds.omop.concept.prevalence("death", scope = "pooled", conns = conns)$pooled
-knitr::kable(death_prevalence[setdiff(names(death_prevalence), "concept_id")])
+catalogue <- ds.omop.concept.lookup(c(900301L, 900302L), conns = conns)$pooled
+knitr::kable(catalogue[c("concept_id", "concept_name", "domain_id")])
+knitr::kable(ds.omop.concept.prevalence("death", scope = "pooled", conns = conns)$pooled)
+mi <- omop_event("death", 900301L)
+pneumonia <- omop_event("death", 900302L)
 ```
 
-## Define the private cause-of-death table
+Myocardial infarction is **900301** and Pneumonia is **900302**. The inventory's
+person counts are rounded down to multiples of five: 20 and 10 indicate bands
+20–24 and 10–14. They are not period-specific numerators; we calculate those next.
 
-The all-person population retains survivors. Completed age at death preserves
-missing birth components. The cause is the coded answer, not free source text.
-The two flags count cause-specific deaths; all deaths in this fixture occur in 2024.
+## Define age for everyone at risk
 
-```{r mortality-recipe}
-mi <- omop_event("death", cause_sets[["Myocardial infarction"]])
-pneumonia <- omop_event("death", cause_sets[["Pneumonia"]])
-mortality <- omop_recipe(variables = list(
-  sex = omop_category(omop_variable(name = "sex", table = "person", column = "gender_concept_id"),
-    omop_category_spec()),
-  cause = omop_variable(event = omop_event("death"), reducer = omop_reduce("first_value", value = "cause_concept_id")),
-  age_band = omop_number_bins(omop_age_at("death"), breaks = c(0, 40, 121),
-    labels = c("under 40", "40 and over")),
-  period = omop_date("death", omop_date_spec(precision = "year")),
-  death_days = omop_time_between("2024-01-01", "death"),
-  mi = omop_variable(event = mi, reducer = omop_reduce("binary")),
-  pneumonia = omop_variable(event = pneumonia, reducer = omop_reduce("binary"))))
-book_symbols(recipe_execute(mortality, out = c(output = "D_mortality"), conns = conns))
-ds.omop.table("D_mortality", "cause", conns = conns)
+Age at death cannot classify survivors' person-time. Use completed age at the
+**start of the year**, preserving missing age where the birth date is incomplete.
+Each binary cause indicator looks only within the selected year. A missing cause
+is distinct from no recorded death from that cause.
+
+```{r period-definition}
+period_recipe <- function(start, days) {
+  window <- omop_window(0, days - 1, anchor = start)
+  omop_recipe(variables = list(
+    sex = omop_sex(),
+    age = omop_age_at(start),
+    death_days = omop_time_between(start, "death"),
+    cause = omop_variable(event = omop_event("death"),
+      reducer = omop_reduce("first_value", value = "cause_concept_id", window = window)),
+    mi = omop_variable(event = mi, reducer = omop_reduce("binary", window = window)),
+    pneumonia = omop_variable(event = pneumonia, reducer = omop_reduce("binary", window = window))))
+}
+invisible(recipe_execute(period_recipe("2024-01-01", 366), out = "D_2024", conns = conns))
+invisible(ds.omop.filter("D_2024", expr = omop_where(is.na(death_days) | death_days >= 0),
+  newobj = "D_alive_2024", conns = conns))
+invisible(ds.omop.mutate("D_alive_2024", potential_days = coalesce(death_days, 366),
+  risk_days = ifelse(potential_days > 366, 366, potential_days),
+  age_group = ifelse(is.na(age), "Missing", ifelse(age < 40, "under 40", "40 and over")),
+  newobj = "D_risk_2024", conns = conns))
 ```
 
-The output keeps missing cause separate from an observed cause. In a mortality study,
-restrict cause events to the analysis period and intersect residency intervals
-with follow-up. Do not borrow this dataset’s complete residency assumption.
+Remove people already dead before January 1. A survivor contributes 366 days in
+2024; someone who dies contributes elapsed days to death, excluding the death
+day. We convert days to person-years using **365.25**, a fixed unit conversion;
+it does not change the actual 366-day calendar boundary.
 
-## Count causes by age band
+## Look at deaths before calculating rates
 
-```{r mortality-cross-table}
-dsBaseClient::ds.table("D_mortality$cause", "D_mortality$age_band",
-  useNA = "always", datasources = conns)
+```{r cause-by-sex}
+knitr::kable(book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
+  "D_risk_2024$sex", useNA = "always", datasources = conns)))
 ```
 
-Missing age remains visible. Dropping it would silently lose deaths with partial
-birth dates. Fine age-by-sex-by-period cells may be withheld: combine categories
-only when the study question supports the broader estimand.
+F means female and M means male. In 2024 there are four female and eight male myocardial-infarction deaths, and
+three pneumonia deaths in each sex. Six people of each sex survive the year.
+The denominators must include those survivors' time.
 
-## Count causes by sex
-
-The catalogue identifies the two Gender concepts as FEMALE and MALE. Count
-the observed causes in each group before calculating its rate.
-
-```{r mortality-sex}
-dsBaseClient::ds.table("D_mortality$cause", "D_mortality$sex",
-  useNA = "always", datasources = conns)
+```{r cause-by-age}
+knitr::kable(book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
+  "D_risk_2024$age_group", useNA = "always", datasources = conns)))
 ```
 
-Each sex-specific denominator must use that group’s own observed person-time.
-Survivors contribute time even though they have no death cause.
+Six pneumonia deaths are under 40 at period start. Six myocardial-infarction
+deaths are 40 or over and six have missing age. Keep the missing-age group in
+the calculation so that these deaths and their person-time do not disappear.
 
-## Calculate the period rate
+## Calculate crude rates and uncertainty
 
-2024 has 366 days. Stop each deceased person's contribution at death and each
-survivor's contribution at the end of the year. Divide released mean indicators
-by released mean follow-up: the common person count cancels. This works because
-both means use the same complete roster, not different nonmissing subsets.
+The following function combines only released aggregates. Multiplying a released
+mean by its valid N obtains the total for that same column. Every cause indicator
+and the time column must describe the same complete roster. The exact Poisson
+interval treats person-time as fixed and deaths as a Poisson count.
 
-```{r mortality-rate}
-print(ds.omop.mutate("D_mortality", risk_days = coalesce(death_days, 366),
-  newobj = "D_mortality_rate", conns = conns))
-mean_days <- dsBaseClient::ds.mean("D_mortality_rate$risk_days", type = "combine", datasources = conns)
-mean_mi <- dsBaseClient::ds.mean("D_mortality_rate$mi", type = "combine", datasources = conns)
-mean_pneumonia <- dsBaseClient::ds.mean("D_mortality_rate$pneumonia", type = "combine", datasources = conns)
-rates <- data.frame(Period = "2024", Cause = c("Myocardial infarction", "Pneumonia"),
-  Per_1000_person_years = 1000 * 365.25 * c(mean_mi$Global.Mean[1,1],
-    mean_pneumonia$Global.Mean[1,1]) / mean_days$Global.Mean[1,1])
-knitr::kable(rates)
+```{r rate-function}
+released_rates <- function(table, group, year) {
+  days <- dsBaseClient::ds.mean(paste0(table, "$risk_days"),
+    type = "combine", datasources = conns)$Global.Mean
+  py <- days[1, "EstimatedMean"] * days[1, "Nvalid"] / 365.25
+  do.call(rbind, lapply(c(mi = "Myocardial infarction", pneumonia = "Pneumonia"), function(cause) {
+    variable <- if (cause == "Pneumonia") "pneumonia" else "mi"
+    x <- dsBaseClient::ds.mean(paste0(table, "$", variable),
+      type = "combine", datasources = conns)$Global.Mean
+    stopifnot(x[1, "Nvalid"] == days[1, "Nvalid"], x[1, "Nmissing"] == 0,
+      days[1, "Nmissing"] == 0)
+    deaths <- round(x[1, "EstimatedMean"] * x[1, "Nvalid"])
+    ci <- stats::poisson.test(deaths, T = py)$conf.int * 1000
+    data.frame(Year = year, Group = group, Cause = cause, People = days[1, "Nvalid"],
+      Deaths = deaths, Person_years = py, Rate_per_1000 = 1000 * deaths / py,
+      Lower_95 = ci[1], Upper_95 = ci[2])
+  }))
+}
+rates_2024 <- released_rates("D_risk_2024", "All", 2024)
+knitr::kable(rates_2024, digits = 2, row.names = FALSE)
 ```
 
-These rates describe an intentionally tiny synthetic population with many deaths.
-These teaching results do not estimate mortality in a real population.
-A count divided by all enrolled people is a risk, not a person-time rate.
+Read each rate as deaths per 1,000 observed person-years, with its 95% interval.
+These are **crude** rates: they do not adjust for the age distribution. The
+intentionally high mortality in this small synthetic population is a teaching
+example, not an estimate for a clinical population.
 
-## Calculate female and male rates
+## Use each group's own denominator
 
-Filter the same private table for each sex. Each group retains its survivors;
-the numerator and denominator use the same complete roster within that group.
-Only the protected means are returned for the rate calculation.
-
-```{r mortality-sex-rates}
-sex_rates <- do.call(rbind, lapply(c("FEMALE", "MALE"), function(sex_label) {
-  symbol <- paste0("D_risk_", tolower(sex_label))
-  ds.omop.filter("D_mortality_rate", var = "sex", op = "==", value = sex_label,
-    newobj = symbol, conns = conns)
-  days <- dsBaseClient::ds.mean(paste0(symbol, "$risk_days"), type = "combine", datasources = conns)$Global.Mean
-  mi_mean <- dsBaseClient::ds.mean(paste0(symbol, "$mi"), type = "combine", datasources = conns)$Global.Mean
-  pneumonia_mean <- dsBaseClient::ds.mean(paste0(symbol, "$pneumonia"), type = "combine", datasources = conns)$Global.Mean
-  stopifnot(mi_mean[1,"Nvalid"] == days[1,"Nvalid"],
-    pneumonia_mean[1,"Nvalid"] == days[1,"Nvalid"])
-  data.frame(Period = "2024", Sex = sex_label, Cause = rates$Cause,
-    Per_1000_person_years = 1000 * 365.25 * c(mi_mean[1,1], pneumonia_mean[1,1]) / days[1,1])
+```{r stratified-rates}
+sex_rates <- do.call(rbind, lapply(c("F", "M"), function(label) {
+  invisible(ds.omop.filter("D_risk_2024", var = "sex", op = "==", value = label,
+    newobj = paste0("D_sex_", label), conns = conns))
+  released_rates(paste0("D_sex_", label), if (label == "F") "Female" else "Male", 2024)
 }))
-knitr::kable(sex_rates)
+age_rates <- do.call(rbind, lapply(c("under 40", "40 and over", "Missing"), function(label) {
+  object <- paste0("D_age_", match(label, c("under 40", "40 and over", "Missing")))
+  invisible(ds.omop.filter("D_risk_2024", var = "age_group", op = "==", value = label,
+    newobj = object, conns = conns))
+  released_rates(object, label, 2024)
+}))
+knitr::kable(sex_rates, digits = 2, row.names = FALSE)
+knitr::kable(age_rates, digits = 2, row.names = FALSE)
 ```
 
-The rates are equal because this synthetic dataset repeats the same death and
-follow-up patterns in both groups. A real study can use the same calculation
-without assuming equal rates or equal follow-up.
-
-## Compare calendar periods without reusing the wrong denominator
-
-In the preceding year, 2023, all 24 fixture residents remain alive and observed
-through the year end. Apply a period predicate to each cause event and cap risk
-time at the 365-day year. This example deliberately has zero deaths in that period.
-
-```{r mortality-earlier-period}
-mi_2023 <- omop_event("death", cause_sets[["Myocardial infarction"]],
-  where = omop_where(death_date >= "2023-01-01", death_date < "2024-01-01"))
-pneumonia_2023 <- omop_event("death", cause_sets[["Pneumonia"]],
-  where = omop_where(death_date >= "2023-01-01", death_date < "2024-01-01"))
-earlier <- omop_recipe(variables = list(
-  mi = omop_variable(event = mi_2023, reducer = omop_reduce("binary")),
-  pneumonia = omop_variable(event = pneumonia_2023, reducer = omop_reduce("binary")),
-  until_death = omop_time_between("2023-01-01", "death")))
-book_symbols(recipe_execute(earlier, out = c(output = "D_mortality_2023"), conns = conns))
-print(ds.omop.mutate("D_mortality_2023", potential_days = coalesce(until_death, 365),
-  risk_days = ifelse(potential_days > 365, 365, potential_days),
-  newobj = "D_risk_2023", conns = conns))
-earlier_days <- dsBaseClient::ds.mean("D_risk_2023$risk_days", type = "combine", datasources = conns)
-earlier_mi <- dsBaseClient::ds.mean("D_risk_2023$mi", type = "combine", datasources = conns)
-earlier_pneumonia <- dsBaseClient::ds.mean("D_risk_2023$pneumonia", type = "combine", datasources = conns)
-earlier_rates <- data.frame(Period = "2023", Cause = rates$Cause,
-  Per_1000_person_years = 1000 * 365.25 * c(earlier_mi$Global.Mean[1,1],
-    earlier_pneumonia$Global.Mean[1,1]) / earlier_days$Global.Mean[1,1])
-knitr::kable(rbind(earlier_rates, rates))
-```
-
-The zero rate is a released estimate for this defined synthetic period, not a
-replacement for suppression. A general mortality analysis must additionally remove
-people who died before the period and intersect each residency interval with it.
+The male myocardial-infarction rate exceeds the female rate, but their uncertainty
+intervals overlap. Age-specific rates use the age group's own time, including
+survivors. A zero observed count has a positive upper confidence limit; it does
+not establish that the underlying rate is zero. Small cells may be withheld in
+other datasets; never replace a withheld result with zero.
 
 ## Exercises
 
-**1 (basic).** Count the calendar-period labels.
+**1. Repeat the analysis for 2023.** Use 365 calendar days. Does the same number
+of deaths imply the same rate?
 
 <details><summary>Solution 1</summary>
 
-```{r mortality-period}
-ds.omop.table("D_mortality", "period", conns = conns)
+```{r earlier-period}
+invisible(recipe_execute(period_recipe("2023-01-01", 365), out = "D_2023", conns = conns))
+invisible(ds.omop.filter("D_2023", expr = omop_where(is.na(death_days) | death_days >= 0),
+  newobj = "D_alive_2023", conns = conns))
+invisible(ds.omop.mutate("D_alive_2023", potential_days = coalesce(death_days, 365),
+  risk_days = ifelse(potential_days > 365, 365, potential_days),
+  newobj = "D_risk_2023", conns = conns))
+rates_2023 <- released_rates("D_risk_2023", "All", 2023)
+knitr::kable(rbind(rates_2023, rates_2024), digits = 2, row.names = FALSE)
 ```
 
-Observed deaths belong to 2024; survivors have no death-period label.
+Both years have 12 myocardial-infarction and six pneumonia deaths. The 2023 risk
+set contains 48 people; the 2024 risk set contains 30 after excluding 18 earlier
+deaths. More person-time in 2023 gives lower rates despite equal numerators.
 
 </details>
 
-**2 (intermediate).** Report the same rates per 100,000 person-years.
+**2. Distinguish a risk from a rate.** What fraction of those alive at the start
+of 2024 die from each cause during that year?
 
 <details><summary>Solution 2</summary>
 
-```{r mortality-scale}
-knitr::kable(transform(rates, Per_100000_person_years = 100 * Per_1000_person_years))
+```{r risks}
+knitr::kable(data.frame(Cause = rates_2024$Cause,
+  Deaths = rates_2024$Deaths, People_at_start = rates_2024$People,
+  Percent = 100 * rates_2024$Deaths / rates_2024$People))
 ```
 
-Only public aggregate arithmetic changed. Person-time did not change.
-
-</details>
-
-**3 (advanced).** Check that the numerator and denominator used the same valid
-population size before cancelling their denominators.
-
-<details><summary>Solution 3</summary>
-
-```{r mortality-denominator}
-c(same_mi_roster = mean_mi$Global.Mean[1,"Nvalid"] == mean_days$Global.Mean[1,"Nvalid"],
-  same_pneumonia_roster = mean_pneumonia$Global.Mean[1,"Nvalid"] == mean_days$Global.Mean[1,"Nvalid"])
-```
-
-Both must be TRUE. Also establish the same person membership from the definition;
-equal counts alone would not prove identical rosters in arbitrary tables.
+The risks are 40% for myocardial infarction and 20% for pneumonia over 2024.
+Their denominator is 30 people, whereas the rate denominator is person-years.
+This simple risk calculation relies on complete follow-up to death or year end.
 
 </details>
 
 ## Recap
 
-Define causes and residency before computing rates. Keep unknown age and cause
-visible, stop risk time at death, and state when missing sex or small cells prevent
-the requested stratification. The same period-specific definition must be rerun
-for each calendar period; a death-year label is not a person-time denominator.
+Restrict both deaths and person-time to the same year. Define age for survivors
+as well as decedents, preserve missing-age time, and report counts, denominators,
+rates and uncertainty together.
 
 **Next:** [20. Case study: celecoxib versus diclofenac](book-20-case-gibleed.html).
