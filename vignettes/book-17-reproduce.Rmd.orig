@@ -146,7 +146,9 @@ Does a successful strict import establish the intended clinical meaning?
 circe_json <- jsonlite::toJSON(list(AdditionalCriteria = list(Type = "ALL",
   CriteriaList = list(list(unsupported = TRUE)))), auto_unbox = TRUE)
 circe_check <- recipe_circe_check(circe_json)
-print(circe_check$issues[c("path", "remedy")], row.names = FALSE)
+issues <- circe_check$issues[c("path", "remedy")]
+issues$path <- paste0("`", issues$path, "`")
+knitr::kable(issues, row.names = FALSE)
 ```
 
 The check identifies structural problems in this example, so it is not ready for
