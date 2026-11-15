@@ -25,14 +25,11 @@ every package used by the lessons, the offline server and the helpers.
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "resourcer", "withr", "openssl", "jsonlite", "knitr",
                    "rmarkdown", "pkgdown", "bslib", "opalr", "duckdb"))
-remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never", auth_token = NULL)
-remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never", auth_token = NULL)
-remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never", auth_token = NULL)
-remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
+remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never")
 ```
-
-These public repositories need no GitHub credentials; `auth_token =
-NULL` prevents an expired stored token from interrupting installation.
 
 The *client* is the package on your computer. The *server* runs requests
 near the data; DSLite lets you run it locally for practice. Record the
@@ -189,11 +186,7 @@ to analysts.
 ## Use the same two resources on Opal
 
 **Optional administrator walkthrough; requires a Docker host.** Ordinary
-readers can continue with DSLite. These deployment commands were checked
-against the [easy-opal
-source](https://github.com/isglobal-brge/easy-opal/blob/main/src/services/rock.py)
-and [opalr resource
-API](https://www.obiba.org/opalr/reference/opal.resource_create.html).
+readers can continue with DSLite.
 
 ### Start the practice stack and mount the databases
 
