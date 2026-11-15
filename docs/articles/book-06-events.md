@@ -5,27 +5,18 @@
 Select records, set inclusive time windows, and reduce them to first,
 last, count, ever, closest, any and all values.
 
-This chapter uses the public synthetic Synthea27Nj numeric connection
-from [Getting
+**You need:** the client packages and the Opal login from [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-
-**You need:** the packages and helpers from [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work`
-directory.
+This chapter uses `omop.synthea`, the public synthetic Synthea27Nj data.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
-Run this setup first:
+Log in first:
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the
@@ -135,63 +126,70 @@ from R’s `all(logical(0))`, which is TRUE.
 reducers <- omop_recipe(variables = list(first = first, last = last,
   mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
+recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns)
 ```
 
 The columns are now in `D_reducers` on the server. Request one approved
 aggregate at a time:
 
 ``` r
-knitr::kable(book_summary("D_reducers$first", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 11.29 |      28 |         0 |
-| site | 10%       | 12.48 |      28 |         0 |
-| site | 25%       | 12.97 |      28 |         0 |
-| site | 50%       | 13.70 |      28 |         0 |
-| site | 75%       | 15.43 |      28 |         0 |
-| site | 90%       | 16.19 |      28 |         0 |
-| site | 95%       | 16.86 |      28 |         0 |
-| site | Mean      | 13.99 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571
+
+``` r
+dsBaseClient::ds.numNA("D_reducers$first", datasources = conns)
+```
+
+    #> $site
+    #> [1] 0
 
 All 28 people have a first nonmissing measurement. Their mean is 13.99
 g/dL; this gives each person one observation regardless of how often
 they were tested.
 
 ``` r
-knitr::kable(book_summary("D_reducers$last", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 12.34 |      28 |         0 |
-| site | 10%       | 12.74 |      28 |         0 |
-| site | 25%       | 13.60 |      28 |         0 |
-| site | 50%       | 15.00 |      28 |         0 |
-| site | 75%       | 16.25 |      28 |         0 |
-| site | 90%       | 16.83 |      28 |         0 |
-| site | 95%       | 17.03 |      28 |         0 |
-| site | Mean      | 14.89 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 12.34000 12.74000 13.60000 15.00000 16.25000 16.83000 17.03000 14.89286
 
 The last readings average 14.89 g/dL across the same 28 people. First
 and last can coincide for someone with only one reading.
 
 ``` r
-knitr::kable(book_summary("D_reducers$days", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_reducers$days", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |  1.00 |      28 |         0 |
-| site | 10%       |  1.70 |      28 |         0 |
-| site | 25%       |  3.00 |      28 |         0 |
-| site | 50%       |  4.00 |      28 |         0 |
-| site | 75%       |  4.00 |      28 |         0 |
-| site | 90%       |  5.00 |      28 |         0 |
-| site | 95%       |  5.65 |      28 |         0 |
-| site | Mean      |  3.86 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
 
 The mean is 3.86 measurement days per person, with a median of 4. A
 frequency table of each exact count is withheld on this dataset because
@@ -202,36 +200,34 @@ frequencies. See the table refusal once:
 
 ``` r
 day_table <- dsBaseClient::ds.table("D_reducers$days", useNA = "no", datasources = conns)
-cat(day_table$validity.message, "\n")
+day_table$validity.message
 ```
 
-    #> All studies failed for reasons identified below
+    #> [1] "All studies failed for reasons identified below"
 
 The message withholds the table. It does not say that these people have
 no measurements.
 
 ``` r
 ever_result <- dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
-knitr::kable(book_counts(ever_result))
+ever_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 1        |    28 |
+    #> D_reducers$ever
+    #>  1
+    #> 28
 
 Everyone in this public dataset has a hemoglobin measurement. A person
 without one would have ever = 0 in this defined window.
 
 ``` r
 any_result <- dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
-knitr::kable(book_counts(any_result))
+any_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 0        |     9 |
-| 1        |    19 |
-| NA       |     0 |
+    #> D_reducers$any_high
+    #>  0  1 NA
+    #>  9 19  0
 
 The released counts show 19 people with at least one reading at or above
 16 g/dL and 9 without one. A known qualifying measurement is enough for
@@ -239,14 +235,12 @@ any, even alongside an unknown value.
 
 ``` r
 all_result <- dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = conns)
-knitr::kable(book_counts(all_result))
+all_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 0        |    24 |
-| 1        |     4 |
-| NA       |     0 |
+    #> D_reducers$all_high
+    #>  0  1 NA
+    #> 24  4  0
 
 Four people have all readings at or above 14 g/dL; 24 do not. All
 distinguishes unknown comparisons from an empty set of records.
@@ -254,19 +248,19 @@ distinguishes unknown comparisons from an empty set of records.
 ## Read the mean summary
 
 ``` r
-knitr::kable(book_summary("D_reducers$mean", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_reducers$mean", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 12.90 |      28 |         0 |
-| site | 10%       | 13.15 |      28 |         0 |
-| site | 25%       | 13.79 |      28 |         0 |
-| site | 50%       | 14.32 |      28 |         0 |
-| site | 75%       | 15.34 |      28 |         0 |
-| site | 90%       | 15.70 |      28 |         0 |
-| site | 95%       | 15.92 |      28 |         0 |
-| site | Mean      | 14.47 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 12.90500 13.14667 13.78500 14.32500 15.33542 15.70000 15.92375 14.46679
 
 The mean of the 28 person-level means is 14.47 g/dL. Averaging all
 measurement rows instead would give more weight to people measured more
@@ -277,11 +271,11 @@ often.
 ``` r
 recent <- omop_recipe(variables = list(last = omop_variable(event = measure,
   reducer = omop_reduce("last_value", window = lookback))))
-invisible(recipe_execute(recent, out = "D_recent", conns = conns))
+recipe_execute(recent, out = "D_recent", conns = conns)
 recent_mean <- dsBaseClient::ds.mean("D_recent$last", type = "combine", datasources = conns)
 recent_missing <- dsBaseClient::ds.numNA("D_recent$last", datasources = conns)
-knitr::kable(data.frame(Mean_g_dL = recent_mean$Global.Mean[1, "EstimatedMean"],
-  N_missing = recent_missing$site), digits = 2)
+data.frame(Mean_g_dL = recent_mean$Global.Mean[1, "EstimatedMean"],
+  N_missing = recent_missing$site)
 ```
 
 | Mean\_g\_dL | N\_missing |
@@ -305,7 +299,7 @@ tolerance; it need not occur on the index day.
 at_index <- omop_study(measure, outputs = "baseline",
   baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
     tolerance = c(-30, 0), unit = 8713L)))
-invisible(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
+recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns)
 ```
 
 The tolerance excludes later measurements. The shortcut uses
@@ -313,19 +307,19 @@ The tolerance excludes later measurements. The shortcut uses
 30 days after.
 
 ``` r
-knitr::kable(book_summary("D_at_index$hemoglobin", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_at_index$hemoglobin", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 11.29 |      28 |         0 |
-| site | 10%       | 12.48 |      28 |         0 |
-| site | 25%       | 12.97 |      28 |         0 |
-| site | 50%       | 13.70 |      28 |         0 |
-| site | 75%       | 15.43 |      28 |         0 |
-| site | 90%       | 16.19 |      28 |         0 |
-| site | 95%       | 16.86 |      28 |         0 |
-| site | Mean      | 13.99 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571
 
 The mean is again 13.99 g/dL: because the index is the first hemoglobin
 reading, the closest value in \[-30, 0\] is that same reading. This
@@ -344,7 +338,7 @@ by ten. These are the vocabulary names for the input and target units:
 
 ``` r
 units <- ds.omop.concept.lookup(c(8713L, 8636L), conns = conns)
-knitr::kable(units$pooled[c("concept_id", "concept_name")])
+units$pooled[c("concept_id", "concept_name")]
 ```
 
 | concept\_id | concept\_name      |
@@ -369,23 +363,23 @@ across sites before pooling.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
+recipe_execute(converted, out = c(people = "D_converted"), conns = conns)
 ```
 
 ``` r
-knitr::kable(book_summary("D_converted$mean_gl", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_converted$mean_gl", datasources = conns)
 ```
 
-| Site | Statistic |  Value | N valid | N missing |
-| :--- | :-------- | -----: | ------: | --------: |
-| site | 5%        | 129.05 |      28 |         0 |
-| site | 10%       | 131.47 |      28 |         0 |
-| site | 25%       | 137.85 |      28 |         0 |
-| site | 50%       | 143.25 |      28 |         0 |
-| site | 75%       | 153.35 |      28 |         0 |
-| site | 90%       | 157.00 |      28 |         0 |
-| site | 95%       | 159.24 |      28 |         0 |
-| site | Mean      | 144.67 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 129.0500 131.4667 137.8500 143.2500 153.3542 157.0000 159.2375 144.6679
 
 The overall mean is 144.67 g/L, ten times 14.47 g/dL. This run uses the
 dataset’s unchanged recorded units; it does not pretend that the source
@@ -404,7 +398,7 @@ binned <- omop_recipe(variables = list(mean = mean_value,
   band = omop_number_bins(mean_value, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
   high = omop_number_flag(mean_value, "ge", 15),
   low = omop_number_flag(mean_value, "lt", 14)))
-invisible(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
+recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns)
 ```
 
 The band is an ordered factor directly on the server. Its order matters
@@ -412,17 +406,12 @@ for model contrasts.
 
 ``` r
 bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
-bin_display <- book_counts(bins_result)
-bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
-knitr::kable(bin_display[order(bin_display$Category, na.last = TRUE), ])
+bins_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category       | Count |
-| :------------- | ----: |
-| below 14       |     9 |
-| 14 to below 15 |     9 |
-| 15 or above    |    10 |
-| NA             |     0 |
+    #> D_lab_bins$band
+    #>       below 14 14 to below 15    15 or above             NA
+    #>              9              9             10              0
 
 There are 9 people below 14, 9 from 14 to below 15, and 10 at or above
 15 g/dL. All nonzero cells meet the release threshold. You see the
@@ -432,14 +421,13 @@ table. The left boundary is included and the right boundary excluded in
 these bins.
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_lab_bins$high",
-  useNA = "no", datasources = conns)))
+dsBaseClient::ds.table("D_lab_bins$high",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 0        |    18 |
-| 1        |    10 |
+    #> D_lab_bins$high
+    #>  0  1
+    #> 18 10
 
 The high flag is 1 for the same 10 people in the top band and 0 for the
 other 18. The ungrouped mean column remains available for numeric
@@ -462,20 +450,20 @@ Solution
 row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
-knitr::kable(book_summary("D_row_count$rows", datasources = conns), digits = 2)
+recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns)
+dsBaseClient::ds.summary("D_row_count$rows", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |  1.00 |      28 |         0 |
-| site | 10%       |  1.70 |      28 |         0 |
-| site | 25%       |  3.00 |      28 |         0 |
-| site | 50%       |  4.00 |      28 |         0 |
-| site | 75%       |  4.00 |      28 |         0 |
-| site | 90%       |  5.00 |      28 |         0 |
-| site | 95%       |  5.65 |      28 |         0 |
-| site | Mean      |  3.86 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143
 
 The row and day summaries are identical here because nobody has two
 hemoglobin records on the same day. With duplicates, row counts would
@@ -491,20 +479,27 @@ Solution
 
 ``` r
 change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
-invisible(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
-knitr::kable(book_summary("D_event_change$change", datasources = conns), digits = 2)
+recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns)
+dsBaseClient::ds.summary("D_event_change$change", datasources = conns)
 ```
 
-| Site | Statistic |  Value | N valid | N missing |
-| :--- | :-------- | -----: | ------: | --------: |
-| site | 5%        | \-2.94 |      25 |         3 |
-| site | 10%       | \-2.58 |      25 |         3 |
-| site | 25%       | \-1.40 |      25 |         3 |
-| site | 50%       |   1.60 |      25 |         3 |
-| site | 75%       |   2.40 |      25 |         3 |
-| site | 90%       |   3.20 |      25 |         3 |
-| site | 95%       |   3.76 |      25 |         3 |
-| site | Mean      |   1.02 |      25 |         3 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>     5%    10%    25%    50%    75%    90%    95%   Mean
+    #> -2.940 -2.580 -1.400  1.600  2.400  3.200  3.760  1.016
+
+``` r
+dsBaseClient::ds.numNA("D_event_change$change", datasources = conns)
+```
+
+    #> $site
+    #> [1] 3
 
 The mean change is 1.016 g/dL among 25 people; 3 are missing because
 they have only one reading. It differs from 14.893 − 13.986 = 0.907

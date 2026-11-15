@@ -5,16 +5,14 @@
 Measure time since entry, distinguish people from visits, and count
 visits by month and setting.
 
-**You need:** [the setup and questionnaire
-dataset](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-Start a fresh R session in `book-work` and run the sections in order.
+**You need:** the client packages and the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+This chapter uses `omop.questionnaire`.
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
 
 ## Measure time from each person’s first visit
@@ -28,20 +26,27 @@ visit <- omop_event("visit_occurrence")
 visit_study <- omop_study(visit, outputs = "baseline", baseline = list(
   first_days = omop_first_date("visit_occurrence"),
   last_days = omop_last_date("visit_occurrence")))
-invisible(recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns))
-knitr::kable(book_summary("D_visit_study$last_days", datasources = conns))
+recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns)
+dsBaseClient::ds.summary("D_visit_study$last_days", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |     0 |      36 |         0 |
-| site | 10%       |     0 |      36 |         0 |
-| site | 25%       |     0 |      36 |         0 |
-| site | 50%       |   366 |      36 |         0 |
-| site | 75%       |  1203 |      36 |         0 |
-| site | 90%       |  1203 |      36 |         0 |
-| site | 95%       |  1203 |      36 |         0 |
-| site | Mean      |   523 |      36 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 36
+    #>
+    #> $site$`quantiles & mean`
+    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>    0    0    0  366 1203 1203 1203  523
+
+``` r
+dsBaseClient::ds.numNA("D_visit_study$last_days", datasources = conns)
+```
+
+    #> $site
+    #> [1] 0
 
 The 36 valid values describe visitors. The last visit is 0, 366 or 1,203
 days after entry; zero includes people with only one visit. This is
@@ -63,17 +68,14 @@ precision.
 months <- omop_recipe(variables = list(visit_month = omop_date("first_visit",
   omop_date_spec(precision = "month", level_range = c("2020-03-01", "2020-07-31")))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(months, out = c(people = "D_months"), conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_months$visit_month",
-  useNA = "always", datasources = conns)))
+recipe_execute(months, out = c(people = "D_months"), conns = conns)
+dsBaseClient::ds.table("D_months$visit_month",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 2020-03  |    12 |
-| 2020-06  |    12 |
-| 2020-07  |    12 |
-| NA       |    12 |
+    #> D_months$visit_month
+    #> 2020-03 2020-06 2020-07      NA
+    #>      12      12      12      12
 
 March, June and July each contain 12 first visitors. Another 12 people
 have no visit. The public range declares the months to include; it is
@@ -86,7 +88,7 @@ Visit**. Check their names before selecting them:
 
 ``` r
 settings <- ds.omop.concept.lookup(c(9201L, 9202L), conns = conns)$pooled
-knitr::kable(settings[c("concept_id", "concept_name", "domain_id")])
+settings[c("concept_id", "concept_name", "domain_id")]
 ```
 
 | concept\_id | concept\_name    | domain\_id |
@@ -111,9 +113,10 @@ long_visits <- omop_recipe(
   events = list(visits = omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "visits")),
   outputs = omop_output("visits", format = "long", sources = "visits"),
   date_spec = omop_date_spec(precision = "month"))
-invisible(recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns))
-knitr::kable(book_table2(dsBaseClient::ds.table("D_visits$start_date",
-  "D_visits$concept_id", useNA = "no", datasources = conns)))
+recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns)
+dsBaseClient::ds.table("D_visits$start_date",
+  "D_visits$concept_id", useNA = "no",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 |         | Inpatient Visit | Outpatient Visit |
@@ -139,16 +142,14 @@ Solution 1
 ``` r
 counts <- omop_recipe(variables = list(visits = omop_variable(event = visit,
   reducer = omop_reduce("count"))))
-invisible(recipe_execute(counts, out = "D_visit_counts", conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_visit_counts$visits", datasources = conns)))
+recipe_execute(counts, out = "D_visit_counts", conns = conns)
+dsBaseClient::ds.table("D_visit_counts$visits",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 0        |    12 |
-| 1        |    12 |
-| 2        |    24 |
-| NA       |     0 |
+    #> D_visit_counts$visits
+    #>  0  1  2 NA
+    #> 12 12 24  0
 
 Twelve people have zero visits, 12 have one and 24 have two. Thus 12 × 0
 + 12 × 1 + 24 × 2 = 60 visit rows, but only 36 visitors.
@@ -162,17 +163,14 @@ Solution 2
 last_visit <- omop_anchor(visit, which = "last")
 quarters <- omop_recipe(variables = list(last_quarter = omop_date(last_visit,
   omop_date_spec(precision = "quarter"))))
-invisible(recipe_execute(quarters, out = "D_quarters", conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_quarters$last_quarter",
-  useNA = "always", datasources = conns)))
+recipe_execute(quarters, out = "D_quarters", conns = conns)
+dsBaseClient::ds.table("D_quarters$last_quarter",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 2020-Q3  |    12 |
-| 2021-Q1  |    12 |
-| 2023-Q4  |    12 |
-| NA       |    12 |
+    #> D_quarters$last_quarter
+    #> 2020-Q3 2021-Q1 2023-Q4      NA
+    #>      12      12      12      12
 
 There are 12 people in each of 2020-Q3, 2021-Q1 and 2023-Q4, and 12 with
 no visit. Unlike the first-visit months above, these are the quarters of

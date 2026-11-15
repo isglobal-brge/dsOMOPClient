@@ -95,13 +95,11 @@
 <p><strong>What you will learn</strong></p>
 <p>Measure time since entry, distinguish people from visits, and count visits by month and setting.</p>
 </div>
-<p><strong>You need:</strong> <a href="book-00-start.html">the setup and questionnaire dataset</a>. Start a fresh R session in <code>book-work</code> and run the sections in order.</p>
+<p><strong>You need:</strong> the client packages and the Opal login from <a href="book-00-start.html">Getting started</a>. This chapter uses <code>omop.questionnaire</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"questionnaire"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.login.html">ds.omop.login</a></span><span class="op">(</span><span class="st">"https://localhost:8443"</span>, user <span class="op">=</span> <span class="st">"administrator"</span>,</span>
+<span>  password <span class="op">=</span> <span class="st">"password"</span>, resource <span class="op">=</span> <span class="st">"omop.questionnaire"</span>, server <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="measure-time-from-each-persons-first-visit">Measure time from each person’s first visit<a class="anchor" aria-label="anchor" href="#measure-time-from-each-persons-first-visit"></a>
 </h2>
@@ -111,75 +109,22 @@
 <span><span class="va">visit_study</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">visit</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  first_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_first_date</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span><span class="op">)</span>,</span>
 <span>  last_days <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_last_date</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">visit_study</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_visit_study"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_visit_study$last_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">0</td>
-<td align="right">36</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">0</td>
-<td align="right">36</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">0</td>
-<td align="right">36</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">366</td>
-<td align="right">36</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">1203</td>
-<td align="right">36</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">1203</td>
-<td align="right">36</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">1203</td>
-<td align="right">36</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">523</td>
-<td align="right">36</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">visit_study</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_visit_study"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_visit_study$last_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "integer"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 36</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean</span></span>
+<span><span class="co">#&gt;    0    0    0  366 1203 1203 1203  523</span></span></code></pre>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.numNA.html" class="external-link">ds.numNA</a></span><span class="op">(</span><span class="st">"D_visit_study$last_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; [1] 0</span></span></code></pre>
 <p>The 36 valid values describe visitors. The last visit is 0, 366 or 1,203 days after entry; zero includes people with only one visit. This is elapsed time between recorded visits, not duration of observation. The first-visit offset is zero by definition.</p>
 <p>An offset from a public fixed date, such as 2020-01-01, can be converted back to an exact calendar date. Even a quantile may reveal a shared date when values are tied. Use index-relative time for elapsed-time questions and month categories for calendar summaries.</p>
 </div>
@@ -187,46 +132,25 @@
 <h2 id="keep-calendar-dates-private-and-summarise-months">Keep calendar dates private and summarise months<a class="anchor" aria-label="anchor" href="#keep-calendar-dates-private-and-summarise-months"></a>
 </h2>
 <p><code>omop_date("first_visit")</code> assigns an exact Date on the server; it does not let you fetch dates. For a calendar summary, explicitly choose month precision.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">months</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>visit_month <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="st">"first_visit"</span>,</span>
 <span>  <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"month"</span>, level_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2020-03-01"</span>, <span class="st">"2020-07-31"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">months</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_months"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_months$visit_month"</span>,</span>
-<span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">2020-03</td>
-<td align="right">12</td>
-</tr>
-<tr class="even">
-<td align="left">2020-06</td>
-<td align="right">12</td>
-</tr>
-<tr class="odd">
-<td align="left">2020-07</td>
-<td align="right">12</td>
-</tr>
-<tr class="even">
-<td align="left">NA</td>
-<td align="right">12</td>
-</tr>
-</tbody>
-</table>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">months</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_months"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_months$visit_month"</span>,</span>
+<span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; D_months$visit_month</span></span>
+<span><span class="co">#&gt; 2020-03 2020-06 2020-07      NA</span></span>
+<span><span class="co">#&gt;      12      12      12      12</span></span></code></pre>
 <p>March, June and July each contain 12 first visitors. Another 12 people have no visit. The public range declares the months to include; it is not estimated by requesting the earliest and latest patient dates.</p>
 </div>
 <div class="section level2">
 <h2 id="identify-the-setting">Identify the setting<a class="anchor" aria-label="anchor" href="#identify-the-setting"></a>
 </h2>
 <p>Chapter 4 found <strong>9201, Inpatient Visit</strong>, and <strong>9202, Outpatient Visit</strong>. Check their names before selecting them:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">settings</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">9201L</span>, <span class="fl">9202L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">settings</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"domain_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">settings</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"domain_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
@@ -252,14 +176,15 @@
 <h2 id="count-visit-rows-by-month-and-setting">Count visit rows by month and setting<a class="anchor" aria-label="anchor" href="#count-visit-rows-by-month-and-setting"></a>
 </h2>
 <p>A long table keeps one row per visit. Its <code>start_date</code> comes from <code>visit_start_date</code>, and <code>concept_id</code> contains the labelled setting. Apply month precision to the event dates before asking for a two-way table.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">long_visits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span></span>
 <span>  events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>visits <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, concepts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">9201L</span>, <span class="fl">9202L</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"visits"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"visits"</span>, format <span class="op">=</span> <span class="st">"long"</span>, sources <span class="op">=</span> <span class="st">"visits"</span><span class="op">)</span>,</span>
 <span>  date_spec <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"month"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">long_visits</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>visits <span class="op">=</span> <span class="st">"D_visits"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_table2</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_visits$start_date"</span>,</span>
-<span>  <span class="st">"D_visits$concept_id"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">long_visits</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>visits <span class="op">=</span> <span class="st">"D_visits"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_visits$start_date"</span>,</span>
+<span>  <span class="st">"D_visits$concept_id"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left"></th>
@@ -301,69 +226,28 @@
 </h2>
 <p><strong>1. Count visits per person.</strong> Include people who never visited. Explain how the counts relate to the 60 rows in the long table.</p>
 <details><p><summary>Solution 1</summary></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>visits <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">visit</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"count"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">counts</span>, out <span class="op">=</span> <span class="st">"D_visit_counts"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_visit_counts$visits"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">0</td>
-<td align="right">12</td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="right">12</td>
-</tr>
-<tr class="odd">
-<td align="left">2</td>
-<td align="right">24</td>
-</tr>
-<tr class="even">
-<td align="left">NA</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">counts</span>, out <span class="op">=</span> <span class="st">"D_visit_counts"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_visit_counts$visits"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; D_visit_counts$visits</span></span>
+<span><span class="co">#&gt;  0  1  2 NA</span></span>
+<span><span class="co">#&gt; 12 12 24  0</span></span></code></pre>
 <p>Twelve people have zero visits, 12 have one and 24 have two. Thus 12 × 0 + 12 × 1 + 24 × 2 = 60 visit rows, but only 36 visitors.</p>
 </details><p><strong>2. Change both the selection and precision.</strong> Count people by the quarter of their last visit. Would the resulting counts measure visits?</p>
 <details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">last_visit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_window.html">omop_anchor</a></span><span class="op">(</span><span class="va">visit</span>, which <span class="op">=</span> <span class="st">"last"</span><span class="op">)</span></span>
 <span><span class="va">quarters</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>last_quarter <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="va">last_visit</span>,</span>
 <span>  <span class="fu"><a href="../reference/omop_date_spec.html">omop_date_spec</a></span><span class="op">(</span>precision <span class="op">=</span> <span class="st">"quarter"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">quarters</span>, out <span class="op">=</span> <span class="st">"D_quarters"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_quarters$last_quarter"</span>,</span>
-<span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">2020-Q3</td>
-<td align="right">12</td>
-</tr>
-<tr class="even">
-<td align="left">2021-Q1</td>
-<td align="right">12</td>
-</tr>
-<tr class="odd">
-<td align="left">2023-Q4</td>
-<td align="right">12</td>
-</tr>
-<tr class="even">
-<td align="left">NA</td>
-<td align="right">12</td>
-</tr>
-</tbody>
-</table>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">quarters</span>, out <span class="op">=</span> <span class="st">"D_quarters"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_quarters$last_quarter"</span>,</span>
+<span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; D_quarters$last_quarter</span></span>
+<span><span class="co">#&gt; 2020-Q3 2021-Q1 2023-Q4      NA</span></span>
+<span><span class="co">#&gt;      12      12      12      12</span></span></code></pre>
 <p>There are 12 people in each of 2020-Q3, 2021-Q1 and 2023-Q4, and 12 with no visit. Unlike the first-visit months above, these are the quarters of each person’s last visit. Each person contributes once; this table does not count all 60 visits.</p>
 </details>
 </div>

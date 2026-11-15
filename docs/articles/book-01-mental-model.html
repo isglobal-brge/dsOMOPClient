@@ -95,16 +95,14 @@
 <p><strong>What you will learn</strong></p>
 <p>Distinguish a database, a private server object and a released summary.</p>
 </div>
-<p><strong>You need:</strong> the packages, helpers and loaded practice data from <a href="book-00-start.html#before-you-start">Getting started</a>. Start a fresh R session in <code>book-work</code> and run the sections in order. This chapter uses GiBleed.</p>
+<p><strong>You need:</strong> the client packages and the Opal login from <a href="book-00-start.html">Getting started</a>. This chapter uses <code>omop.gibleed</code>.</p>
 <div class="section level2">
 <h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.login.html">ds.omop.login</a></span><span class="op">(</span><span class="st">"https://localhost:8443"</span>, user <span class="op">=</span> <span class="st">"administrator"</span>,</span>
+<span>  password <span class="op">=</span> <span class="st">"password"</span>, resource <span class="op">=</span> <span class="st">"omop.gibleed"</span>, server <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="a-shared-table-structure">A shared table structure<a class="anchor" aria-label="anchor" href="#a-shared-table-structure"></a>
@@ -112,9 +110,9 @@
 <p>OMOP is a common data model (CDM): a shared set of tables and column meanings. <code>person</code> describes people; <code>visit_occurrence</code> describes visits; <code>observation</code> holds other observations, which can include questionnaire answers. A <em>concept</em> is a coded meaning, such as a diagnosis. Its vocabulary supplies a name.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tables</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.tables.html">ds.omop.tables</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">tables</span><span class="op">[</span><span class="va">tables</span><span class="op">$</span><span class="va">table_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"person"</span>, <span class="st">"visit_occurrence"</span>,</span>
+<span><span class="va">tables</span><span class="op">[</span><span class="va">tables</span><span class="op">$</span><span class="va">table_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"person"</span>, <span class="st">"visit_occurrence"</span>,</span>
 <span>  <span class="st">"condition_occurrence"</span>, <span class="st">"drug_exposure"</span>, <span class="st">"measurement"</span>, <span class="st">"observation"</span>, <span class="st">"death"</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"table_name"</span>, <span class="st">"has_person_id"</span><span class="op">)</span><span class="op">]</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"table_name"</span>, <span class="st">"has_person_id"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">table_name</th>
@@ -167,17 +165,17 @@
 <h2 id="send-a-question-to-the-data">Send a question to the data<a class="anchor" aria-label="anchor" href="#send-a-question-to-the-data"></a>
 </h2>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">rows</th>
-<th align="right">persons</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td align="right">2690</td>
-<td align="right">2690</td>
-</tr></tbody>
-</table>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $rows</span></span>
+<span><span class="co">#&gt; [1] 2690</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $persons</span></span>
+<span><span class="co">#&gt; [1] 2690</span></span></code></pre>
 <p><code>2690</code> is the lower end of a five-person band: 2690–2694 people. This endpoint rounds down to a multiple of five by default; it has not told you the exact count. For the person table, each row is one person, so the two bands agree.</p>
 <div class="book-flow" role="img" aria-label="Requests go to the server; private rows stay there; checked summaries return.">
 <div>
@@ -199,18 +197,18 @@
 </h2>
 <p>Request the visit count and the number of people with visits. Can one person contribute more than one visit?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">rows</th>
-<th align="right">persons</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td align="right">1035</td>
-<td align="right">890</td>
-</tr></tbody>
-</table>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $rows</span></span>
+<span><span class="co">#&gt; [1] 1035</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $persons</span></span>
+<span><span class="co">#&gt; [1] 890</span></span></code></pre>
 <p>There are 1,035–1,039 visit rows from 890–894 people. Even allowing for banding, there are more visits than people: some people have repeated visits. These are summaries, not a list of who attended.</p>
 </details>
 </div>
@@ -220,10 +218,14 @@
 <p>Ask for statistics of the death table. Does an unavailable result establish that nobody died?</p>
 <details><p><summary>Solution</summary></p>
 <!-- expected-refusal:start -->
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">death_stats</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">death_stats</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; data frame with 0 columns and 0 rows</span></span></code></pre>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; list()</span></span></code></pre>
 <!-- expected-refusal:end -->
 <p>The empty response contains no released statistics: there are too few supporting people. GiBleed’s public source has an empty death table, but the analyst response alone cannot distinguish an empty table from a small withheld count. Do not replace a refusal with zero.</p>
 </details>

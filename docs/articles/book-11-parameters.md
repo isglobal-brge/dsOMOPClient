@@ -5,27 +5,18 @@
 Bind typed parameters, use omop\_study and shortcuts, then derive and
 filter columns without bringing rows to your computer.
 
-This chapter uses the public synthetic Synthea27Nj numeric connection
-from [Getting
+**You need:** the client packages and the Opal login from [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-
-**You need:** the packages and helpers from [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work`
-directory.
+This chapter uses `omop.synthea`, the public synthetic Synthea27Nj data.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
-Run this setup first:
+Log in first:
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the
@@ -66,14 +57,11 @@ prior-visit count. The parameter list shows that `setting` still needs a
 concept set. Compilation refuses an unbound template:
 
 ``` r
-message <- tryCatch({
-  recipe_to_plan(template)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(message, "\n")
+recipe_to_plan(template)
 ```
 
-    #> Unbound parameter 'setting' in the recipe; bind it with recipe_bind() before recipe_to_plan().
+    #> Error:
+    #> ! Unbound parameter 'setting' in the recipe; bind it with recipe_bind() before recipe_to_plan().
 
 The error names `setting` and asks you to bind it. The template defines
 how to select people, but has not yet chosen which visit setting starts
@@ -96,31 +84,38 @@ Inpatient Visit is **9201**. These select setting, not the record’s
 provenance type.
 
 ``` r
-invisible(recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns))
-knitr::kable(book_summary("D_param_outpatient$age", datasources = conns), digits = 2)
+recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns)
+dsBaseClient::ds.summary("D_param_outpatient$age", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |  0.00 |      28 |         0 |
-| site | 10%       |  0.00 |      28 |         0 |
-| site | 25%       |  0.00 |      28 |         0 |
-| site | 50%       |  2.50 |      28 |         0 |
-| site | 75%       | 17.00 |      28 |         0 |
-| site | 90%       | 18.00 |      28 |         0 |
-| site | 95%       | 18.00 |      28 |         0 |
-| site | Mean      |  7.75 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>    5%   10%   25%   50%   75%   90%   95%  Mean
+    #>  0.00  0.00  0.00  2.50 17.00 18.00 18.00  7.75
+
+``` r
+dsBaseClient::ds.numNA("D_param_outpatient$age", datasources = conns)
+```
+
+    #> $site
+    #> [1] 0
 
 The server computes completed age at the first outpatient visit. The
 median is 2.5 years, reflecting that many first visits in this synthetic
-life history occur in childhood. The valid/missing columns show how many
-ages contributed.
+life history occur in childhood. `ds.numNA()` reports no missing age:
+all 28 people contribute.
 
 ## Read the simple-layer defaults
 
 ``` r
 explanation <- recipe_explain(outpatient)$text
-cat(grep("^Population|^Output|^  (prior_visits|age):", explanation, value = TRUE), sep = "\n")
+writeLines(grep("^Population|^Output|^  (prior_visits|age):", explanation, value = TRUE))
 ```
 
     #> Population 'study' (index): index = event 'visit_occurrence_9202', select = "first", end = observation_end
@@ -156,17 +151,17 @@ shortcuts <- omop_study(omop_event("measurement", 3000963L), outputs = "baseline
     count = omop_count("measurement", 3000963L, before = 365),
     value = omop_value_at_index("measurement", 3000963L,
       tolerance = c(-30, 0), unit = 8713L)))
-invisible(recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns))
+recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns)
 ```
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_shortcuts$ever",
-  useNA = "no", datasources = conns)))
+dsBaseClient::ds.table("D_shortcuts$ever",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 1        |    28 |
+    #> D_shortcuts$ever
+    #>  1
+    #> 28
 
 All 28 people have ever = 1 because the index hemoglobin measurement
 itself is included. To ask about measurements strictly before entry use
@@ -212,7 +207,7 @@ together:
 
 ``` r
 body_concepts <- ds.omop.concept.lookup(c(3025315L, 3036277L, 9529L, 8582L), conns = conns)
-knitr::kable(body_concepts$pooled[c("concept_id", "concept_name")])
+body_concepts$pooled[c("concept_id", "concept_name")]
 ```
 
 | concept\_id | concept\_name |
@@ -236,7 +231,7 @@ body <- omop_study(weight_event, outputs = "baseline", baseline = list(
   age = omop_age_at(omop_anchor(weight_event)),
   first_date = omop_date(omop_anchor(weight_event, which = "first")),
   last_date = omop_date(omop_anchor(weight_event, which = "last"))))
-invisible(recipe_execute(body, out = c(baseline = "D_body"), conns = conns))
+recipe_execute(body, out = c(baseline = "D_body"), conns = conns)
 ```
 
 These are synthetic Synthea measurements, including children. Calculated
@@ -245,21 +240,28 @@ BMI is a numeric teaching example, not an adult clinical classification.
 ## Create a new object
 
 ``` r
-invisible(ds.omop.mutate("D_body", height_m = height_cm / 100,
-  bmi = weight_kg / (height_m * height_m), newobj = "D_bmi", conns = conns))
-knitr::kable(book_summary("D_bmi$bmi", datasources = conns), digits = 2)
+ds.omop.mutate("D_body", height_m = height_cm / 100,
+  bmi = weight_kg / (height_m * height_m), newobj = "D_bmi", conns = conns)
+dsBaseClient::ds.summary("D_bmi$bmi", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 11.53 |      28 |         0 |
-| site | 10%       | 13.62 |      28 |         0 |
-| site | 25%       | 15.89 |      28 |         0 |
-| site | 50%       | 23.86 |      28 |         0 |
-| site | 75%       | 27.94 |      28 |         0 |
-| site | 90%       | 30.21 |      28 |         0 |
-| site | 95%       | 30.36 |      28 |         0 |
-| site | Mean      | 22.11 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 11.53374 13.62216 15.88957 23.86380 27.93787 30.20849 30.36386 22.11315
+
+``` r
+dsBaseClient::ds.numNA("D_bmi$bmi", datasources = conns)
+```
+
+    #> $site
+    #> [1] 0
 
 The mean BMI is 22.11 kg/m² across 28 people with no missing result. The
 second assignment uses the newly created `height_m`. A missing input
@@ -285,19 +287,17 @@ FALSE` includes the lower bound and excludes the upper bound; ages
 outside the range remain missing.
 
 ``` r
-invisible(ds.omop.mutate("D_bmi", age_group = cut(age, c(0, 18, 121),
+ds.omop.mutate("D_bmi", age_group = cut(age, c(0, 18, 121),
   labels = c("under 18", "18 to 120"), right = FALSE),
-  newobj = "D_grouped", conns = conns))
+  newobj = "D_grouped", conns = conns)
 age_counts <- dsBaseClient::ds.table("D_grouped$age_group",
   useNA = "always", datasources = conns)
-knitr::kable(book_counts(age_counts))
+age_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category  | Count |
-| :-------- | ----: |
-| 18 to 120 |    14 |
-| under 18  |    14 |
-| NA        |     0 |
+    #> D_grouped$age_group
+    #> 18 to 120  under 18        NA
+    #>        14        14         0
 
 There are 14 people under 18 and 14 aged 18–120 at their first weight.
 `cut` produces text labels in this grammar, not an ordered R factor. The
@@ -311,18 +311,16 @@ display.
 Solution — an age recode
 
 ``` r
-invisible(ds.omop.mutate("D_grouped", adult = ifelse(age >= 18, "yes", "no"),
-  newobj = "D_adults", conns = conns))
+ds.omop.mutate("D_grouped", adult = ifelse(age >= 18, "yes", "no"),
+  newobj = "D_adults", conns = conns)
 adult_counts <- dsBaseClient::ds.table("D_adults$adult", useNA = "always",
   datasources = conns)
-knitr::kable(book_counts(adult_counts))
+adult_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| no       |    14 |
-| yes      |    14 |
-| NA       |     0 |
+    #> D_adults$adult
+    #>  no yes  NA
+    #>  14  14   0
 
 A missing age stays missing rather than becoming “no”. The 14 adults
 match the 18-to-120 band; the 14 under-18s become “no”.
@@ -330,21 +328,21 @@ match the 18-to-120 band; the 14 under-18s become “no”.
 ## Subtract dates on the server
 
 ``` r
-invisible(ds.omop.mutate("D_bmi", span_days = last_date - first_date,
-  newobj = "D_span", conns = conns))
-knitr::kable(book_summary("D_span$span_days", datasources = conns), digits = 2)
+ds.omop.mutate("D_bmi", span_days = last_date - first_date,
+  newobj = "D_span", conns = conns)
+dsBaseClient::ds.summary("D_span$span_days", datasources = conns)
 ```
 
-| Site | Statistic |   Value | N valid | N missing |
-| :--- | :-------- | ------: | ------: | --------: |
-| site | 5%        |  952.70 |      28 |         0 |
-| site | 10%       | 1845.20 |      28 |         0 |
-| site | 25%       | 6142.50 |      28 |         0 |
-| site | 50%       | 6678.00 |      28 |         0 |
-| site | 75%       | 6996.50 |      28 |         0 |
-| site | 90%       | 7049.00 |      28 |         0 |
-| site | 95%       | 7053.55 |      28 |         0 |
-| site | Mean      | 5679.61 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #>  952.700 1845.200 6142.500 6678.000 6996.500 7049.000 7053.550 5679.607
 
 The mean span is 5,679.61 days and the median is 6,678 days across 28
 people. This is elapsed time between first and last recorded weights, in
@@ -357,21 +355,21 @@ column.
 Solution — convert a duration
 
 ``` r
-invisible(ds.omop.mutate("D_span", span_years = span_days / 365,
-  newobj = "D_years", conns = conns))
-knitr::kable(book_summary("D_years$span_years", datasources = conns), digits = 2)
+ds.omop.mutate("D_span", span_years = span_days / 365,
+  newobj = "D_years", conns = conns)
+dsBaseClient::ds.summary("D_years$span_years", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |  2.61 |      28 |         0 |
-| site | 10%       |  5.06 |      28 |         0 |
-| site | 25%       | 16.83 |      28 |         0 |
-| site | 50%       | 18.30 |      28 |         0 |
-| site | 75%       | 19.17 |      28 |         0 |
-| site | 90%       | 19.31 |      28 |         0 |
-| site | 95%       | 19.32 |      28 |         0 |
-| site | Mean      | 15.56 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean
+    #>  2.610137  5.055342 16.828767 18.295890 19.168493 19.312329 19.324795 15.560568
 
 The mean is 15.56 years and the median is 18.30 years. Each summary is
 the day summary divided by 365. These are fixed-length units, not
@@ -385,21 +383,18 @@ falling through to the default. Handle missingness explicitly when your
 study needs it.
 
 ``` r
-invisible(ds.omop.mutate("D_bmi", life_stage = case_when(
+ds.omop.mutate("D_bmi", life_stage = case_when(
   is.na(age) ~ "unknown", age < 5 ~ "young child",
   age < 18 ~ "older child", .default = "adult"),
-  newobj = "D_stage", conns = conns))
+  newobj = "D_stage", conns = conns)
 stage_counts <- dsBaseClient::ds.table("D_stage$life_stage",
   useNA = "always", datasources = conns)
-knitr::kable(book_counts(stage_counts))
+stage_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category    | Count |
-| :---------- | ----: |
-| adult       |    14 |
-| older child |     5 |
-| young child |     9 |
-| NA          |     0 |
+    #> D_stage$life_stage
+    #>       adult older child young child          NA
+    #>          14           5           9           0
 
 There are 9 young children, 5 older children and 14 adults. The declared
 default applies only after the preceding conditions are false. This
@@ -409,20 +404,18 @@ age.
 To recode a derived text category, combine both child labels as follows:
 
 ``` r
-invisible(ds.omop.mutate("D_stage", adult = case_when(
+ds.omop.mutate("D_stage", adult = case_when(
   life_stage %in% c("young child", "older child") ~ "no",
   life_stage == "unknown" ~ NA,
-  .default = "yes"), newobj = "D_recoded", conns = conns))
+  .default = "yes"), newobj = "D_recoded", conns = conns)
 recode_counts <- dsBaseClient::ds.table("D_recoded$adult", useNA = "always",
   datasources = conns)
-knitr::kable(book_counts(recode_counts))
+recode_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| no       |    14 |
-| yes      |    14 |
-| NA       |     0 |
+    #> D_recoded$adult
+    #>  no yes  NA
+    #>  14  14   0
 
 These counts agree with the earlier adult flag. Here the synthetic
 source has complete ages, so the missingness branch introduces no extra
@@ -435,9 +428,9 @@ Omitting `newobj` instead generates a fresh name; it does not mean “in
 place”.
 
 ``` r
-invisible(ds.omop.mutate("D_bmi", height_m = height_cm / 100,
+ds.omop.mutate("D_bmi", height_m = height_cm / 100,
   bmi = weight_kg / (height_m * height_m), bmi_copy = bmi,
-  newobj = "D_bmi", conns = conns))
+  newobj = "D_bmi", conns = conns)
 before_columns <- dsBaseClient::ds.colnames("D_bmi", datasources = conns)
 before_bmi <- dsBaseClient::ds.mean("D_bmi$bmi", type = "combine", datasources = conns)
 setdiff(before_columns$site, bmi_columns$site)
@@ -454,14 +447,11 @@ checks that behaviour.
 The following failures are intentional. First try an unknown function:
 
 ``` r
-unknown_message <- tryCatch({
-  ds.omop.mutate("D_bmi", bmi = sqrt(bmi), newobj = "D_bmi", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(unknown_message, "\n")
+ds.omop.mutate("D_bmi", bmi = sqrt(bmi), newobj = "D_bmi", conns = conns)
 ```
 
-    #> ds.omop.mutate(): 'sqrt' is not part of the mutation grammar (+ - * /, conditions, ifelse, case_when, coalesce, cut, as.Date).
+    #> Error:
+    #> ! ds.omop.mutate(): 'sqrt' is not part of the mutation grammar (+ - * /, conditions, ifelse, case_when, coalesce, cut, as.Date).
 
 `sqrt` is outside the closed grammar and is refused by the client before
 a request can alter the table. Use supported arithmetic or a documented
@@ -471,29 +461,23 @@ Next try to copy a protected key. The server refuses this column
 reference:
 
 ``` r
-key_message <- tryCatch({
-  ds.omop.mutate("D_bmi", copied = person_id,
-    newobj = "D_key_copy", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(key_message, "\n")
+ds.omop.mutate("D_bmi", copied = person_id,
+  newobj = "D_key_copy", conns = conns)
 ```
 
-    #> OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().
+    #> Error:
+    #> ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().
 
 The message refuses the protected person key. Next, a class-1 source
 name is refused even as the name of a new column:
 
 ``` r
-blocked_message <- tryCatch({
-  ds.omop.mutate("D_bmi", person_source_value = "label",
-    newobj = "D_blocked_copy", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(blocked_message, "\n")
+ds.omop.mutate("D_bmi", person_source_value = "label",
+  newobj = "D_blocked_copy", conns = conns)
 ```
 
-    #> OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: 'person_source_value' is a blocked (class-1) column name; choose another name; There are some DataSHIELD errors, list them with datashield.errors().
+    #> Error:
+    #> ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: 'person_source_value' is a blocked (class-1) column name; choose another name; There are some DataSHIELD errors, list them with datashield.errors().
 
 This is a blocked source/assignment name, not a request to alter its
 protection. Use descriptive study-variable names for allowed derived
@@ -503,15 +487,12 @@ Finally request an ordinary BMI change followed by a protected-key
 overwrite in the same in-place call. The whole request must fail:
 
 ``` r
-rollback_message <- tryCatch({
-  ds.omop.mutate("D_bmi", bmi = bmi + 1, person_id = "replacement",
-    newobj = "D_bmi", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(rollback_message, "\n")
+ds.omop.mutate("D_bmi", bmi = bmi + 1, person_id = "replacement",
+  newobj = "D_bmi", conns = conns)
 ```
 
-    #> OMOP mutate failed and 'D_bmi' was left unchanged: site: validation_error: omopMutateDS: 'person_id' is a protected identifier and cannot be written; There are some DataSHIELD errors, list them with datashield.errors()
+    #> Error:
+    #> ! OMOP mutate failed and 'D_bmi' was left unchanged: site: validation_error: omopMutateDS: 'person_id' is a protected identifier and cannot be written; There are some DataSHIELD errors, list them with datashield.errors()
 
 The protected-identifier message applies to person, episode and set keys
 and any columns marked protected by the server. It prohibits both reads
@@ -519,10 +500,10 @@ and writes. Renaming a key is not an allowed transformation.
 
 ``` r
 after_bmi <- dsBaseClient::ds.mean("D_bmi$bmi", type = "combine", datasources = conns)
-knitr::kable(data.frame(
+data.frame(
   State = c("Before refused change", "After refused change"),
   Mean_BMI = c(before_bmi$Global.Mean[1, "EstimatedMean"],
-    after_bmi$Global.Mean[1, "EstimatedMean"])), digits = 2)
+    after_bmi$Global.Mean[1, "EstimatedMean"]))
 ```
 
 | State                 | Mean\_BMI |
@@ -541,47 +522,53 @@ are dropped. This retains adults without using a key to target a known
 person.
 
 ``` r
-invisible(ds.omop.filter("D_bmi", expr = omop_where(age >= 18),
-  newobj = "D_adult_bmi", conns = conns))
-knitr::kable(book_summary("D_adult_bmi$bmi", datasources = conns), digits = 2)
+ds.omop.filter("D_bmi", expr = omop_where(age >= 18),
+  newobj = "D_adult_bmi", conns = conns)
+dsBaseClient::ds.summary("D_adult_bmi$bmi", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 22.76 |      14 |         0 |
-| site | 10%       | 23.70 |      14 |         0 |
-| site | 25%       | 25.79 |      14 |         0 |
-| site | 50%       | 28.04 |      14 |         0 |
-| site | 75%       | 29.79 |      14 |         0 |
-| site | 90%       | 30.36 |      14 |         0 |
-| site | 95%       | 30.46 |      14 |         0 |
-| site | Mean      | 27.35 |      14 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 14
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 22.75976 23.69819 25.78897 28.03959 29.79277 30.36457 30.45801 27.34679
+
+``` r
+dsBaseClient::ds.numNA("D_adult_bmi$bmi", datasources = conns)
+```
+
+    #> $site
+    #> [1] 0
 
 The 14 adults have a mean BMI of 27.35 kg/m², with no missing BMI. The
-subset meets the distinct-person release threshold in this practice
-data. It remains a private table. A small or empty final subset can be
-refused, as
+subset meets the server’s distinct-person release threshold. It remains
+a private table. A small or empty final subset can be refused, as
 [chapter 12](https://isglobal-brge.github.io/dsOMOPClient/articles/book-12-privacy.md)
 demonstrates.
 
 A text-category predicate can select the same adults:
 
 ``` r
-invisible(ds.omop.filter("D_stage", expr = omop_where(life_stage == "adult"),
-  newobj = "D_working_age", conns = conns))
-knitr::kable(book_summary("D_working_age$bmi", datasources = conns), digits = 2)
+ds.omop.filter("D_stage", expr = omop_where(life_stage == "adult"),
+  newobj = "D_working_age", conns = conns)
+dsBaseClient::ds.summary("D_working_age$bmi", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 22.76 |      14 |         0 |
-| site | 10%       | 23.70 |      14 |         0 |
-| site | 25%       | 25.79 |      14 |         0 |
-| site | 50%       | 28.04 |      14 |         0 |
-| site | 75%       | 29.79 |      14 |         0 |
-| site | 90%       | 30.36 |      14 |         0 |
-| site | 95%       | 30.46 |      14 |         0 |
-| site | Mean      | 27.35 |      14 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 14
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 22.75976 23.69819 25.78897 28.03959 29.79277 30.36457 30.45801 27.34679
 
 This category means ages 18 and over, so its summary agrees with the
 preceding filter. The earlier missingness case ensures an unknown age is
@@ -596,10 +583,10 @@ Solution
 
 ``` r
 inpatient <- recipe_bind(template, setting = 9201L)
-invisible(recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns))
+recipe_execute(inpatient, out = c(baseline = "D_param_inpatient"), conns = conns)
 inpatient_mean <- dsBaseClient::ds.mean("D_param_inpatient$prior_visits",
   type = "combine", datasources = conns)
-knitr::kable(inpatient_mean$Global.Mean)
+inpatient_mean$Global.Mean
 ```
 
 |                 | EstimatedMean | Nmissing | Nvalid | Ntotal |

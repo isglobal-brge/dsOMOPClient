@@ -6,9 +6,9 @@ Select a drug class, distinguish stockpiled supply from persistence, and
 calculate proportion of days covered with an explicit follow-up
 denominator.
 
-**You need:** [the setup and practice
-resources](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-Start a fresh R session in `book-work`.
+**You need:** the client packages and the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+This chapter uses `omop.questionnaire_drugs`, then `omop.gibleed`.
 
 ## Research question and supply patterns
 
@@ -30,17 +30,15 @@ days and first-era duration before examining the summaries.
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire", categories = TRUE, drug_histories = TRUE)
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire_drugs", server = "site")$conns
 ```
 
 ## Find a class and its descendants
 
 ``` r
 classes <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE, conns = conns)$pooled
-knitr::kable(classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")])
+classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")]
 ```
 
 | concept\_id | concept\_name             | concept\_class\_id | standard\_concept |
@@ -51,7 +49,7 @@ knitr::kable(classes[c("concept_id", "concept_name", "concept_class_id", "standa
 ``` r
 class_id <- classes$concept_id[classes$concept_class_id == "ATC 2nd"]
 children <- ds.omop.concept.descendants(class_id, conns = conns)$pooled
-knitr::kable(children[c("concept_id", "concept_name")])
+children[c("concept_id", "concept_name")]
 ```
 
 | concept\_id | concept\_name                |
@@ -59,7 +57,7 @@ knitr::kable(children[c("concept_id", "concept_name")])
 |      950001 | Questionnaire study medicine |
 
 ``` r
-knitr::kable(ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = conns)$pooled)
+ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = conns)$pooled
 ```
 
 | concept\_id | n\_persons | concept\_name                |
@@ -97,21 +95,21 @@ persistence <- omop_variable(event = era, reducer = omop_reduce("first_era_days"
 study <- omop_study(users, outputs = "baseline", require = list(followup = 364),
   baseline = list(covered = covered, persistence = persistence,
     discontinued = omop_number_flag(persistence, "lt", 365)))
-invisible(recipe_execute(study, out = c(baseline = "D_supply"), conns = conns))
-invisible(ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns))
-knitr::kable(book_summary("D_use$pdc", datasources = conns), digits = 3)
+recipe_execute(study, out = c(baseline = "D_supply"), conns = conns)
+ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns)
+dsBaseClient::ds.summary("D_use$pdc", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 0.164 |      36 |         0 |
-| site | 10%       | 0.164 |      36 |         0 |
-| site | 25%       | 0.164 |      36 |         0 |
-| site | 50%       | 0.329 |      36 |         0 |
-| site | 75%       | 1.000 |      36 |         0 |
-| site | 90%       | 1.000 |      36 |         0 |
-| site | 95%       | 1.000 |      36 |         0 |
-| site | Mean      | 0.498 |      36 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 36
+    #>
+    #> $site$`quantiles & mean`
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean
+    #> 0.1643836 0.1643836 0.1643836 0.3287671 1.0000000 1.0000000 1.0000000 0.4977169
 
 Mean PDC is **0.4977** across 36 people: (365 + 120 + 60)/(3 × 365). PDC
 is a dimensionless fraction of eligible days. It measures recorded
@@ -120,15 +118,13 @@ several would also need a rule about whether switching preserves
 persistence.
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_use$covered", datasources = conns)))
+dsBaseClient::ds.table("D_use$covered",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 60       |    12 |
-| 120      |    12 |
-| 365      |    12 |
-| NA       |     0 |
+    #> D_use$covered
+    #>  60 120 365  NA
+    #>  12  12  12   0
 
 Twelve people each have 60, 120 and 365 covered days, matching the three
 patterns. The restarted course contributes 60 covered days across two
@@ -142,15 +138,13 @@ Explain why it differs from total covered days for the restarted course.
 Solution 1
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_use$persistence", datasources = conns)))
+dsBaseClient::ds.table("D_use$persistence",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 30       |    12 |
-| 120      |    12 |
-| 365      |    12 |
-| NA       |     0 |
+    #> D_use$persistence
+    #>  30 120 365  NA
+    #>  12  12  12   0
 
 First eras last 30, 120 and 365 days, with 12 people in each and mean
 **171.67** days. The gap before the restart exceeds 30 days, so the
@@ -163,14 +157,13 @@ first year is complete? Does this prove permanent cessation?
 Solution 2
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_use$discontinued", datasources = conns)))
+dsBaseClient::ds.table("D_use$discontinued",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 0        |    12 |
-| 1        |    24 |
-| NA       |     0 |
+    #> D_use$discontinued
+    #>  0  1 NA
+    #> 12 24  0
 
 There are **24** indicators of one and **12** of zero. The definition
 says the first era ended before day 365 under this gap rule. It permits
@@ -185,10 +178,13 @@ identifies celecoxib ingredient **1118084**. Check what its available
 exposure spans can support.
 
 ``` r
-practice <- book_switch("gibleed")
-conns <- practice$conns
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.gibleed", conns = conns)
+```
+
+``` r
 hits <- ds.omop.concept.search("celecoxib", domain = "Drug", vocabulary = "RxNorm", conns = conns)$pooled
-knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
+hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 | concept\_id | concept\_name                              | standard\_concept |
@@ -211,20 +207,20 @@ feasibility <- omop_study(omop_new_users(ingredient, washout_days = 365),
   outputs = "baseline", require = list(followup = 364), baseline = list(
     covered = omop_variable(event = gibleed_era, reducer = omop_reduce("covered_days",
       window = omop_window(0, 364), coverage = "effective_supply"))))
-invisible(recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns))
-knitr::kable(book_summary("D_feasibility$covered", datasources = conns), digits = 3)
+recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns)
+dsBaseClient::ds.summary("D_feasibility$covered", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |     1 |    1745 |         0 |
-| site | 10%       |     1 |    1745 |         0 |
-| site | 25%       |     1 |    1745 |         0 |
-| site | 50%       |     1 |    1745 |         0 |
-| site | 75%       |     1 |    1745 |         0 |
-| site | 90%       |     1 |    1745 |         0 |
-| site | 95%       |     1 |    1745 |         0 |
-| site | Mean      |     1 |    1745 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 1745
+    #>
+    #> $site$`quantiles & mean`
+    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>    1    1    1    1    1    1    1    1
 
 Every covered-days summary is one day because the source has zero days
 supplied and equal exposure start/end dates. These records cannot

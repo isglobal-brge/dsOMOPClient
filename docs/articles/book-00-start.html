@@ -93,90 +93,110 @@
     
 <div class="learn-box">
 <p><strong>What you will learn</strong></p>
-<p>Install the packages, load the practice data and open a connection.</p>
+<p>Install the client packages, connect to the Opal server and choose a resource.</p>
 </div>
 <div class="section level2">
 <h2 id="before-you-start">Before you start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
 </h2>
-<p>You need R 4.1 or newer and internet access for installation and the data download. RStudio is a convenient editor; ordinary R also works. The lessons use synthetic data and a local DataSHIELD server provided by DSLite. The results teach analysis methods; they are not clinical findings.</p>
-<p>Run this <strong>installation block once</strong>. It installs the client, the local server and the packages used throughout the book. Installation is not executed here.</p>
+<p>The book uses an Opal server at <code>https://localhost:8443</code>. Its administrator has already loaded the data as OMOP CDM resources and installed dsOMOP and dsBase on its R server. You work only on the client side: you send requests and receive aggregate results, never patient rows. The data are synthetic, so the results teach methods; they are not clinical findings.</p>
+<p>You need R 4.1 or newer. Install the client packages once:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"remotes"</span>, <span class="st">"DSI"</span>, <span class="st">"DSOpal"</span>, <span class="st">"DSLite"</span>, <span class="st">"DBI"</span>, <span class="st">"RSQLite"</span>,</span>
-<span>                   <span class="st">"resourcer"</span>, <span class="st">"withr"</span>, <span class="st">"openssl"</span>, <span class="st">"jsonlite"</span>, <span class="st">"knitr"</span>,</span>
-<span>                   <span class="st">"rmarkdown"</span>, <span class="st">"duckdb"</span>, <span class="st">"lme4"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBase@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"remotes"</span>, <span class="st">"DSI"</span>, <span class="st">"DSOpal"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBaseClient@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"isglobal-brge/dsOMOP@2.10.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"isglobal-brge/dsOMOPClient@2.10.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span></code></pre></div>
-<p>The <em>client</em> runs on your computer. The <em>server</em> runs requests near the data; DSLite lets you run both locally for practice.</p>
 </div>
 <div class="section level2">
-<h2 id="get-the-book-helpers">Get the book helpers<a class="anchor" aria-label="anchor" href="#get-the-book-helpers"></a>
+<h2 id="connect-to-the-opal-server">Connect to the Opal server<a class="anchor" aria-label="anchor" href="#connect-to-the-opal-server"></a>
 </h2>
-<p>Download <a href="../downloads/book-helpers.zip">book-helpers.zip</a>, leave it zipped, and select it when the file chooser opens. This creates your working folder:</p>
+<p><code><a href="../reference/ds.omop.login.html">ds.omop.login()</a></code> logs in to the server and attaches one OMOP CDM resource:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">book_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/path.expand.html" class="external-link">path.expand</a></span><span class="op">(</span><span class="st">"~/book-work"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">book_dir</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html" class="external-link">unzip</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.choose.html" class="external-link">file.choose</a></span><span class="op">(</span><span class="op">)</span>, exdir <span class="op">=</span> <span class="va">book_dir</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">setwd</a></span><span class="op">(</span><span class="va">book_dir</span><span class="op">)</span></span></code></pre></div>
-<p>The ZIP creates <code>tools/book/</code> inside <code>book-work</code>. In each new R session, run <code>setwd(path.expand("~/book-work"))</code> before starting a chapter.</p>
-<p>The helpers open the practice connection and print summaries as readable tables. <code>connection.R</code> supplies <code>book_connect()</code>, <code>book_switch()</code> and <code>book_disconnect()</code>; <code>display.R</code> supplies the display functions. Each chapter shows which files to source. No patient rows are fetched by the display helpers.</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.login.html">ds.omop.login</a></span><span class="op">(</span><span class="st">"https://localhost:8443"</span>, user <span class="op">=</span> <span class="st">"administrator"</span>,</span>
+<span>  password <span class="op">=</span> <span class="st">"password"</span>, resource <span class="op">=</span> <span class="st">"omop.gibleed"</span>, server <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<p>Use the user name and password your administrator gave you, and keep them out of shared scripts; with a personal access token, pass <code>token = "&lt;token&gt;"</code> instead. <code>omop.gibleed</code> is the resource: project <code>omop</code>, resource <code>gibleed</code>. <code>site</code> is the name this book gives the connection. <code>conns</code> holds the connection, not patient rows; every later call sends its request through it.</p>
 </div>
 <div class="section level2">
-<h2 id="check-the-client">Check the client<a class="anchor" aria-label="anchor" href="#check-the-client"></a>
+<h2 id="check-the-client-and-the-server">Check the client and the server<a class="anchor" aria-label="anchor" href="#check-the-client-and-the-server"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dsOMOPClient"</span>, <span class="st">"dsOMOP"</span>, <span class="st">"DSI"</span>, <span class="st">"DSLite"</span>, <span class="st">"dsBaseClient"</span><span class="op">)</span>,</span>
-<span>       <span class="kw">function</span><span class="op">(</span><span class="va">package</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="va">package</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; dsOMOPClient       dsOMOP          DSI       DSLite dsBaseClient</span></span>
-<span><span class="co">#&gt;     "2.10.5"     "2.10.5"      "1.8.0"      "1.5.0"      "6.3.5"</span></span></code></pre>
-<p>These are the packages installed on your computer. This check catches a missing package before you connect; it does not establish that a remote server is ready.</p>
-</div>
-<div class="section level2">
-<h2 id="load-two-public-synthetic-datasets">Load two public synthetic datasets<a class="anchor" aria-label="anchor" href="#load-two-public-synthetic-datasets"></a>
-</h2>
-<p><strong>GiBleed</strong> supplies the people, visits, conditions and medicines for the first chapters. <strong>Synthea27Nj</strong> supplies numeric lab values and units. GiBleed has no numeric lab values, so the lab chapters use Synthea27Nj.</p>
-<p>Run the loader once from <code>book-work</code>. It downloads the public <a href="https://github.com/OHDSI/EunomiaDatasets" class="external-link">Eunomia datasets</a> and prepares the two local databases. We keep only its short data summary on screen:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.client.version.html">ds.omop.client.version</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "2.10.5"</span></span></code></pre>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/load-practice.R"</span><span class="op">)</span></span>
-<span><span class="va">loader_log</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="va">data_info</span> <span class="op">&lt;-</span> <span class="fu">load_book_practice</span><span class="op">(</span><span class="st">"../practice-data"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">data_info</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Dataset <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">dataset</span>, People <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">person</span>,</span>
-<span>    Measurements <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">measurements</span><span class="op">$</span><span class="va">rows</span>,</span>
-<span>    `Numeric values` <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">measurements</span><span class="op">$</span><span class="va">numeric_values</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"server"</span>, <span class="st">"published"</span>, <span class="st">"running"</span>, <span class="st">"ready"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Dataset</th>
-<th align="right">People</th>
-<th align="right">Measurements</th>
-<th align="right">Numeric values</th>
+<th align="left">server</th>
+<th align="left">published</th>
+<th align="left">running</th>
+<th align="left">ready</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">site</td>
+<td align="left">2.10.5</td>
+<td align="left">2.10.5</td>
+<td align="left">TRUE</td>
+</tr></tbody>
+</table>
+<p>The first line is the client package on your computer. <code>ready</code> confirms that the server’s installed dsOMOP and its available methods agree.</p>
+</div>
+<div class="section level2">
+<h2 id="the-resources-on-the-server">The resources on the server<a class="anchor" aria-label="anchor" href="#the-resources-on-the-server"></a>
+</h2>
+<p>Each chapter names the resource it uses. All of them are in the project <code>omop</code>:</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Resource</th>
+<th align="left">Contents</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">GiBleed</td>
-<td align="right">2694</td>
-<td align="right">44053</td>
-<td align="right">0</td>
+<td align="left"><code>omop.gibleed</code></td>
+<td align="left">GiBleed: 2,694 synthetic people with visits, conditions and medicines; no numeric lab values</td>
 </tr>
 <tr class="even">
-<td align="left">Synthea27Nj</td>
-<td align="right">28</td>
-<td align="right">10040</td>
-<td align="right">9107</td>
+<td align="left"><code>omop.synthea</code></td>
+<td align="left">Synthea27Nj: 28 synthetic people with numeric lab values and units</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>omop.questionnaire</code></td>
+<td align="left">A synthetic questionnaire study of 48 people, described below</td>
+</tr>
+<tr class="even">
+<td align="left"><code>omop.questionnaire_vocab</code></td>
+<td align="left">The questionnaire with a richer teaching vocabulary: codes, synonyms and hierarchies</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>omop.questionnaire_drugs</code></td>
+<td align="left">The questionnaire vocabulary plus medicine supply histories</td>
+</tr>
+<tr class="even">
+<td align="left"><code>omop.questionnaire_formulas</code></td>
+<td align="left">The questionnaire plus serum creatinine and repeated same-day weights</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>omop.questionnaire_site2</code></td>
+<td align="left">A second site’s questionnaire, with different answers and wording</td>
+</tr>
+<tr class="even">
+<td align="left">
+<code>omop.synthea_north</code>, <code>omop.synthea_south</code>
+</td>
+<td align="left">Synthea27Nj split into two sites with different people</td>
+</tr>
+<tr class="odd">
+<td align="left">
+<code>omop.gibleed_north</code>, <code>omop.gibleed_south</code>
+</td>
+<td align="left">GiBleed split into two sites with different people</td>
 </tr>
 </tbody>
 </table>
-<p>GiBleed has 2,694 people and 44,053 measurement rows, but zero numeric values. Synthea27Nj has 28 people and 10,040 measurement rows, including 9,107 numeric values. These are exact counts because you are loading public synthetic data, acting as its custodian. An analyst’s protected query later reports 44,050 for GiBleed’s measurement rows: the lower end of a five-row band. The source data use the Apache-2.0 licence; keep that licence with redistributed copies.</p>
-</div>
-<div class="section level2">
-<h2 id="the-questionnaire-dataset">The questionnaire dataset<a class="anchor" aria-label="anchor" href="#the-questionnaire-dataset"></a>
-</h2>
-<p>The categorical, date and mortality lessons use a separate synthetic dataset: 48 people in four groups of twelve. Two groups answer the education question twice, swapping Secondary and University between their first and last answers. One group has only a birth year; one has neither visits nor a death record. The following table describes the public teaching data before any analysis:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/fixture.R"</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_fixture_structure</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>GiBleed and Synthea27Nj are the public OHDSI Eunomia datasets. Analyst results report counts in five-person bands, so you will see 2,690 rather than 2,694.</p>
+<p>The questionnaire study has four groups of twelve people. Two groups answer the education question twice, swapping Secondary and University between their first and last answers; they also answer a yes/no fever question. One group has only a birth year; one has neither visits nor a death record. Knowing this design lets you predict the results of later chapters:</p>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Item</th>
@@ -253,131 +273,59 @@
 </tr>
 </tbody>
 </table>
-<p>There are 24 education respondents but 48 education answer rows: an answer row is not a person. There are 18 deaths in each of 2023 and 2024, and 12 survivors. The sex columns add to each total and let you predict later count tables. Some later exercises add medicine histories or duplicate weights; those sections explain the added data when needed.</p>
-</div>
-<div class="section level2">
-<h2 id="open-the-practice-server">Open the practice server<a class="anchor" aria-label="anchor" href="#open-the-practice-server"></a>
-</h2>
-<p>Each chapter starts with its own setup block. Copy it as shown:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
-<p><code>conns</code> holds the connection, not patient rows. The resource name <code>gibleed</code> selects the database; <code>numeric</code> and <code>questionnaire</code> select the other datasets.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"server"</span>, <span class="st">"published"</span>, <span class="st">"running"</span>, <span class="st">"ready"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;   server published running ready</span></span>
-<span><span class="co">#&gt; 1   site    2.10.5  2.10.5  TRUE</span></span></code></pre>
-<p><code>ready</code> confirms that the server’s running package and available methods agree. This checks the server installation, independently of the selected database.</p>
-</div>
-<div class="section level2">
-<h2 id="connect-to-your-opal-server">Connect to your Opal server<a class="anchor" aria-label="anchor" href="#connect-to-your-opal-server"></a>
-</h2>
-<p>Your administrator supplies the server URL, your user and password (or token), the project-qualified resource names and the DataSHIELD profile. The server is already set up. For a single-site lesson, replace the chapter’s local connection lines with this block, keeping its <code>display.R</code> source line:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/datashield/DSOpal/" class="external-link">DSOpal</a></span><span class="op">)</span></span>
-<span><span class="va">builder</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/newDSLoginBuilder.html" class="external-link">newDSLoginBuilder</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"site"</span>, url <span class="op">=</span> <span class="st">"&lt;server-url&gt;"</span>,</span>
-<span>  user <span class="op">=</span> <span class="st">"&lt;user&gt;"</span>, password <span class="op">=</span> <span class="st">"&lt;password&gt;"</span>,</span>
-<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="st">"&lt;profile&gt;"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.login.html" class="external-link">datashield.login</a></span><span class="op">(</span><span class="va">builder</span><span class="op">$</span><span class="fu">build</span><span class="op">(</span><span class="op">)</span>, assign <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"&lt;project&gt;.&lt;gibleed-resource&gt;"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>Keep credentials outside shared scripts. If you receive a token, replace the <code>user</code> and <code>password</code> arguments with <code>token = "&lt;token&gt;"</code>. The analysis calls use the same <code>conns</code>; your study data will give different results.</p>
-<p>Where a practice chapter uses <code>book_switch()</code>, use the corresponding resource name supplied by your administrator instead:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"&lt;project&gt;.&lt;numeric-resource&gt;"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>This attaches another database through the existing login.</p>
-<div class="section level3">
-<h3 id="connect-to-two-opal-sites">Connect to two Opal sites<a class="anchor" aria-label="anchor" href="#connect-to-two-opal-sites"></a>
-</h3>
-<p>For the paired analyses in chapters 14, 16, 20 and 23, use two resources supplied by their administrators. Replace only <code>practice_pair &lt;- book_connect(...)</code> and <code>two_conns &lt;- practice_pair$conns</code> with this block. Keep the chapter’s package and helper source lines. In chapters 14 and 16, also keep the earlier single-site <code>conns</code> connection: later exercises still use its tables.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/datashield/DSOpal/" class="external-link">DSOpal</a></span><span class="op">)</span></span>
-<span><span class="va">builder</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/newDSLoginBuilder.html" class="external-link">newDSLoginBuilder</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"north"</span>, url <span class="op">=</span> <span class="st">"&lt;server-a-url&gt;"</span>,</span>
-<span>  user <span class="op">=</span> <span class="st">"&lt;user-a&gt;"</span>, password <span class="op">=</span> <span class="st">"&lt;password-a&gt;"</span>,</span>
-<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="st">"&lt;profile-a&gt;"</span><span class="op">)</span></span>
-<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"south"</span>, url <span class="op">=</span> <span class="st">"&lt;server-b-url&gt;"</span>,</span>
-<span>  user <span class="op">=</span> <span class="st">"&lt;user-b&gt;"</span>, password <span class="op">=</span> <span class="st">"&lt;password-b&gt;"</span>,</span>
-<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="st">"&lt;profile-b&gt;"</span><span class="op">)</span></span>
-<span><span class="va">two_conns</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.login.html" class="external-link">datashield.login</a></span><span class="op">(</span><span class="va">builder</span><span class="op">$</span><span class="fu">build</span><span class="op">(</span><span class="op">)</span>, assign <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span></span>
-<span>  resource <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>north <span class="op">=</span> <span class="st">"&lt;project-a&gt;.&lt;resource-a&gt;"</span>,</span>
-<span>                  south <span class="op">=</span> <span class="st">"&lt;project-b&gt;.&lt;resource-b&gt;"</span><span class="op">)</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span></span></code></pre></div>
-<p><code>north</code> and <code>south</code> are the connection labels used by these lessons, not required geographical locations. Each resource-list name matches a login-builder name. <code>book_pool</code> is the server-side name of the attached OMOP handle; subsequent calls use that name together with <code>two_conns</code>. Chapters 14, 16 and 23 need lab resources; chapter 20 needs drug and outcome data. Use distinct study populations when pooling.</p>
-<p>Chapters 10 and 17 instead use <code>conns</code>, labels <code>site</code> and <code>site2</code>, and the default <code>omop</code> handle. For those chapters, replace the two local lines assigning <code>practice</code> and <code>conns</code> at their paired setup with this complete variant:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/datashield/DSOpal/" class="external-link">DSOpal</a></span><span class="op">)</span></span>
-<span><span class="va">builder</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/newDSLoginBuilder.html" class="external-link">newDSLoginBuilder</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"site"</span>, url <span class="op">=</span> <span class="st">"&lt;server-a-url&gt;"</span>,</span>
-<span>  user <span class="op">=</span> <span class="st">"&lt;user-a&gt;"</span>, password <span class="op">=</span> <span class="st">"&lt;password-a&gt;"</span>,</span>
-<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="st">"&lt;profile-a&gt;"</span><span class="op">)</span></span>
-<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"site2"</span>, url <span class="op">=</span> <span class="st">"&lt;server-b-url&gt;"</span>,</span>
-<span>  user <span class="op">=</span> <span class="st">"&lt;user-b&gt;"</span>, password <span class="op">=</span> <span class="st">"&lt;password-b&gt;"</span>,</span>
-<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="st">"&lt;profile-b&gt;"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.login.html" class="external-link">datashield.login</a></span><span class="op">(</span><span class="va">builder</span><span class="op">$</span><span class="fu">build</span><span class="op">(</span><span class="op">)</span>, assign <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span></span>
-<span>  resource <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>site <span class="op">=</span> <span class="st">"&lt;project-a&gt;.&lt;questionnaire-resource-a&gt;"</span>,</span>
-<span>                  site2 <span class="op">=</span> <span class="st">"&lt;project-b&gt;.&lt;questionnaire-resource-b&gt;"</span><span class="op">)</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>Use resources containing the study’s questionnaire concepts. In chapter 10 this replaces the paired <code>book_switch()</code> block; in chapter 17 it replaces the initial <code>book_connect()</code> block. Keep <code>site</code> and <code>site2</code> because chapter 17 selects each connection by name. These examples only attach existing resources: local practice-data options do not create data on an Opal server.</p>
-</div>
+<p>There are 24 education respondents but 48 education answer rows: an answer row is not a person.</p>
 </div>
 <div class="section level2">
 <h2 id="exercise-1-choose-the-lab-resource">Exercise 1: choose the lab resource<a class="anchor" aria-label="anchor" href="#exercise-1-choose-the-lab-resource"></a>
 </h2>
-<p>Open the numeric resource and request its person count. How can you tell that you are no longer querying GiBleed?</p>
+<p>Attach <code>omop.synthea</code> instead of GiBleed and request its person count. How can you tell that you are no longer querying GiBleed?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_switch</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">rows</th>
-<th align="right">persons</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td align="right">25</td>
-<td align="right">25</td>
-</tr></tbody>
-</table>
-<p>The person count is 25, meaning 25–29 people. That band contains Synthea27Nj’s 28 people and is far below GiBleed’s 2,694. Chapter 1 explains these bands.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.synthea"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $rows</span></span>
+<span><span class="co">#&gt; [1] 25</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $persons</span></span>
+<span><span class="co">#&gt; [1] 25</span></span></code></pre>
+<p>The person count is 25, meaning 25–29 people. That band contains Synthea27Nj’s 28 people and is far below GiBleed’s 2,694. Chapter 1 explains these bands. <code><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect()</a></code> releases the attached resource; the login stays open.</p>
 </details>
 </div>
 <div class="section level2">
-<h2 id="exercise-2-reconnect-after-finishing">Exercise 2: reconnect after finishing<a class="anchor" aria-label="anchor" href="#exercise-2-reconnect-after-finishing"></a>
+<h2 id="exercise-2-log-in-again">Exercise 2: log in again<a class="anchor" aria-label="anchor" href="#exercise-2-log-in-again"></a>
 </h2>
-<p>Close the numeric session, then open GiBleed again. Confirm the database with a person count, rather than checking only that a connection has a name.</p>
+<p>End the session, then log in again with GiBleed. Confirm the database with a person count, rather than checking only that a connection has a name.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">book_disconnect</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">rows</th>
-<th align="right">persons</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td align="right">2690</td>
-<td align="right">2690</td>
-</tr></tbody>
-</table>
-<p>The count is back to the 2,690–2,694 band. Disconnect closes the database handle; logout closes the DataSHIELD session. <code>book_disconnect()</code> performs both steps and clears the practice helper’s session record. Opening a new session starts new work.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.logout.html" class="external-link">datashield.logout</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.login.html">ds.omop.login</a></span><span class="op">(</span><span class="st">"https://localhost:8443"</span>, user <span class="op">=</span> <span class="st">"administrator"</span>,</span>
+<span>  password <span class="op">=</span> <span class="st">"password"</span>, resource <span class="op">=</span> <span class="st">"omop.gibleed"</span>, server <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $rows</span></span>
+<span><span class="co">#&gt; [1] 2690</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $persons</span></span>
+<span><span class="co">#&gt; [1] 2690</span></span></code></pre>
+<p>The count is back to the 2,690–2,694 band. Disconnect releases the resource; logout closes the DataSHIELD session. A new login starts a new session.</p>
 </details>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>Your working folder contains the helpers, the practice data are loaded, and <code>conns</code> lets you send requests to the selected database.</p>
+<p>The client packages are installed, <code><a href="../reference/ds.omop.login.html">ds.omop.login()</a></code> opens a resource on the server, and <code>conns</code> carries your requests.</p>
 <p><strong>Next:</strong> <a href="book-01-mental-model.html">1. What DataSHIELD and OMOP mean</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

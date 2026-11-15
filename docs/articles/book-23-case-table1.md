@@ -5,40 +5,34 @@
 Describe a shared study population with one column per site and a total,
 using baseline values, common categories and explicit missing counts.
 
-**You need:** [the setup and numeric
-resource](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md),
+**You need:** the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)
 and [the lab
 lesson](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md).
-Start a fresh R session in `book-work`.
+This chapter uses the two Synthea sites.
 
 ## Research question
 
 What are the age, sex and baseline haemoglobin characteristics of people
 entering at their first haemoglobin measurement? We build the
 descriptive table that opens most study reports, often called “Table 1”.
-The two practice sites contain disjoint halves of Synthea, so their
-people can be added without duplication.
-
-For real servers, replace the two lines assigning `practice_pair` and
-`two_conns` below with the [two-site Opal
-login](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#connect-to-two-opal-sites),
-which attaches the resources as `book_pool`.
+The two Synthea sites contain disjoint halves of the same people, so
+their people can be added without duplication.
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-source("tools/book/practice.R")
-practice_pair <- book_connect("numeric", two_sites = TRUE, symbol = "book_pool")
-two_conns <- practice_pair$conns
+two_conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("north", "south"),
+  resource = c(north = "omop.synthea_north", south = "omop.synthea_south"))$conns
 ```
 
 ## Confirm the measurement and units at both sites
 
 ``` r
-hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = two_conns, symbol = "book_pool")$pooled
+hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = two_conns)$pooled
 selected <- hits[trimws(hits$concept_name) == "Hemoglobin [Mass/volume] in Blood", ]
-knitr::kable(selected[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")], row.names = FALSE)
+selected[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 ```
 
 | concept\_id | concept\_name                       | standard\_concept | vocabulary\_id |
@@ -48,9 +42,9 @@ knitr::kable(selected[c("concept_id", "concept_name", "standard_concept", "vocab
 ``` r
 hb_id <- selected$concept_id
 unit_counts <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = hb_id,
-  conns = two_conns, symbol = "book_pool")$per_site
-knitr::kable(do.call(rbind, lapply(names(unit_counts), function(site)
-  data.frame(Site = site, unit_counts[[site]][c("value", "concept_name", "n")]))))
+  conns = two_conns)$per_site
+do.call(rbind, lapply(names(unit_counts), function(site)
+  data.frame(Site = site, unit_counts[[site]][c("value", "concept_name", "n")])))
 ```
 
 | Site  | value | concept\_name      |  n |
@@ -85,10 +79,10 @@ characterise <- omop_study(hb, outputs = "baseline", baseline = list(
     labels = c("under 18", "adult")),
   haemoglobin = omop_value_at_index("measurement", hb_set,
     tolerance = c(-90, 0), unit = omop_unit(8713L))))
-result <- recipe_execute(characterise, out = c(baseline = "D_baseline"), conns = two_conns, symbol = "book_pool")
+result <- recipe_execute(characterise, out = c(baseline = "D_baseline"), conns = two_conns)
 columns <- recipe_codebook(result)[[1]]$columns
 age_column <- match("age_band", columns$name)
-knitr::kable(data.frame(Age_group = columns$levels[[age_column]]$labels))
+data.frame(Age_group = columns$levels[[age_column]]$labels)
 ```
 
 | Age\_group |
@@ -119,11 +113,8 @@ describe <- function(connections) {
   age <- aggregate_mean("age"); lab <- aggregate_mean("haemoglobin")
   n <- age[1, "Ntotal"]
   numeric_text <- function(x, v) sprintf("%.2f (%.2f)", x[1, "EstimatedMean"], sqrt(v[1, "EstimatedVar"]))
-  counts <- function(column) {
-    x <- book_counts(dsBaseClient::ds.table(paste0("D_baseline$", column),
-      useNA = "always", datasources = connections))
-    setNames(x$Count, x$Category)
-  }
+  counts <- function(column) dsBaseClient::ds.table(paste0("D_baseline$", column),
+    useNA = "always", datasources = connections)$output.list$TABLES.COMBINED_all.sources_counts
   sex <- counts("sex"); bands <- counts("age_band")
   cell <- function(numerator) sprintf("%d (%.1f%%)", numerator, 100 * numerator / n)
   c(People = as.character(n),
@@ -139,8 +130,8 @@ describe <- function(connections) {
 site_a <- describe(two_conns[1])
 site_b <- describe(two_conns[2])
 total <- describe(two_conns)
-knitr::kable(data.frame(Characteristic = names(total), north = unname(site_a),
-  south = unname(site_b), Total = unname(total)), row.names = FALSE)
+data.frame(Characteristic = names(total), north = unname(site_a),
+  south = unname(site_b), Total = unname(total))
 ```
 
 | Characteristic                        | north         | south         | Total         |
@@ -180,10 +171,10 @@ Solution 1
 all_history <- omop_study(hb, outputs = "baseline", baseline = list(
   baseline = omop_value_at_index("measurement", hb_set, tolerance = c(0, 0), unit = omop_unit(8713L)),
   history = omop_variable(event = hb, reducer = omop_reduce("mean"))))
-invisible(recipe_execute(all_history, out = c(baseline = "D_history"), conns = two_conns, symbol = "book_pool"))
-invisible(ds.omop.mutate("D_history", difference = history - baseline,
-  newobj = "D_history_difference", conns = two_conns, symbol = "book_pool"))
-knitr::kable(dsBaseClient::ds.mean("D_history_difference$difference", type = "combine", datasources = two_conns)$Global.Mean, digits = 3)
+recipe_execute(all_history, out = c(baseline = "D_history"), conns = two_conns)
+ds.omop.mutate("D_history", difference = history - baseline,
+  newobj = "D_history_difference", conns = two_conns)
+dsBaseClient::ds.mean("D_history_difference$difference", type = "combine", datasources = two_conns)$Global.Mean
 ```
 
 |                 | EstimatedMean | Nmissing | Nvalid | Ntotal |
@@ -205,20 +196,16 @@ bands <- omop_study(hb, outputs = "baseline", baseline = list(
   band = omop_number_bins(omop_value_at_index("measurement", hb_set,
     tolerance = c(0, 0), unit = omop_unit(8713L)),
     breaks = c(-Inf, 14, Inf), labels = c("below 14", "14 or above"))))
-invisible(recipe_execute(bands, out = c(baseline = "D_baseline_bands"), conns = two_conns, symbol = "book_pool"))
-knitr::kable(do.call(rbind, lapply(names(two_conns), function(site)
-  transform(book_counts(dsBaseClient::ds.table("D_baseline_bands$band",
-    datasources = two_conns[site])), Site = site))))
+recipe_execute(bands, out = c(baseline = "D_baseline_bands"), conns = two_conns)
+dsBaseClient::ds.table("D_baseline_bands$band",
+  datasources = two_conns)$output.list$TABLE_rvar.by.study_counts
 ```
 
-| Category    | Count | Site  |
-| :---------- | ----: | :---- |
-| below 14    |     8 | north |
-| 14 or above |     6 | north |
-| NA          |     0 | north |
-| below 14    |     7 | south |
-| 14 or above |     7 | south |
-| NA          |     0 | south |
+|             | north | south |
+| :---------- | ----: | ----: |
+| below 14    |     8 |     7 |
+| 14 or above |     6 |     7 |
+| NA          |     0 |     0 |
 
 Both sites use the same boundary and labels. Counts depend on their
 people; sharing a definition makes comparison meaningful without forcing

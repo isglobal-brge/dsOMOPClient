@@ -5,22 +5,18 @@
 Save a study definition and its data-source information, repeat it at
 another site, and inspect unsupported cohort rules before running them.
 
-**You need:** [the setup and questionnaire
-dataset](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-Start a fresh R session in `book-work`. The two questionnaire sites have
-different education answers and vocabulary dates, so identical recipes
-need not give identical results.
-
-For real servers, replace the two local connection lines below with the
-`conns` / `site` / `site2` variant in the [two-site Opal
-instructions](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#connect-to-two-opal-sites).
+**You need:** the client packages and the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+This chapter uses the two questionnaire sites, `omop.questionnaire` and
+`omop.questionnaire_site2`. They have different education answers and
+vocabulary dates, so identical recipes need not give identical results.
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire", two_sites = TRUE)
-conns <- practice$conns
+conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("site", "site2"),
+  resource = c(site = "omop.questionnaire", site2 = "omop.questionnaire_site2"))$conns
 ```
 
 ## Record the data actually used
@@ -36,7 +32,7 @@ vocabulary_rows <- do.call(rbind, lapply(names(vocabularies), function(site) {
   x <- x[x$vocabulary_id == "Questionnaire", c("vocabulary_id", "vocabulary_version"), drop = FALSE]
   data.frame(Site = site, x)
 }))
-knitr::kable(vocabulary_rows)
+vocabulary_rows
 ```
 
 | Site  | vocabulary\_id | vocabulary\_version |
@@ -47,7 +43,7 @@ knitr::kable(vocabulary_rows)
 ``` r
 source_rows <- do.call(rbind, lapply(names(sources), function(site)
   data.frame(Site = site, sources[[site]][c("cdm_source_name", "cdm_version", "source_release_date")])))
-knitr::kable(source_rows, row.names = FALSE)
+source_rows
 ```
 
 | Site  | cdm\_source\_name               | cdm\_version | source\_release\_date |
@@ -78,7 +74,7 @@ check <- omop_recipe(variables = list(education = education,
   outputs = omop_output("people", format = "wide", grain = "person"))
 result <- recipe_execute(check, out = c(people = "D_documented"), conns = conns["site"])
 published <- recipe_codebook(result)
-knitr::kable(published[[1]]$columns[c("name", "semantic_type", "r_type", "unit")])
+published[[1]]$columns[c("name", "semantic_type", "r_type", "unit")]
 ```
 
 | name          | semantic\_type | r\_type         | unit            |
@@ -114,19 +110,12 @@ package_versions <- vapply(c("dsOMOPClient", "DSI", "dsBaseClient"),
 write.csv(data.frame(Package = names(package_versions), Release = unname(package_versions)),
   file.path(record_dir, "client-packages.csv"), row.names = FALSE)
 saveRDS(ds.omop.server.version(conns = conns), file.path(record_dir, "server-packages.rds"))
-knitr::kable(data.frame(File = list.files(record_dir)))
+list.files(record_dir)
 ```
 
-| File                |
-| :------------------ |
-| client-packages.csv |
-| codebook-site.rds   |
-| explanation.txt     |
-| plan-digest.txt     |
-| recipe.json         |
-| server-packages.rds |
-| sources.rds         |
-| vocabularies.rds    |
+    #> [1] "client-packages.csv" "codebook-site.rds"   "explanation.txt"
+    #> [4] "plan-digest.txt"     "recipe.json"         "server-packages.rds"
+    #> [7] "sources.rds"         "vocabularies.rds"
 
 The filenames identify the definition, software and data sources needed
 to repeat the study. Matching digests establish matching rules; they
@@ -138,15 +127,13 @@ cannot establish that a database has stayed unchanged.
 restored <- recipe_load(file.path(record_dir, "recipe.json"))
 second_result <- recipe_execute(restored, out = c(people = "D_repeated"), conns = conns["site2"])
 saveRDS(recipe_codebook(second_result), file.path(record_dir, "codebook-site2.rds"))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_repeated$death_period",
-  useNA = "always", datasources = conns["site2"])))
+dsBaseClient::ds.table("D_repeated$death_period",
+  useNA = "always", datasources = conns["site2"])$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 2023     |    18 |
-| 2024     |    18 |
-| NA       |    12 |
+    #> D_repeated$death_period
+    #> 2023 2024   NA
+    #>   18   18   12
 
 The second site has 18 deaths in 2023, 18 in 2024, and 12 people without
 a death year. The counts describe its data; the saved recipe describes
@@ -160,21 +147,22 @@ site after the separate runs. What changed?
 Solution 1
 
 ``` r
-first_counts <- book_counts(dsBaseClient::ds.table("D_documented$education",
-  useNA = "always", datasources = conns["site"]))
-second_counts <- book_counts(dsBaseClient::ds.table("D_repeated$education",
-  useNA = "always", datasources = conns["site2"]))
-knitr::kable(rbind(transform(first_counts, Site = "site"),
-                  transform(second_counts, Site = "site2")))
+dsBaseClient::ds.table("D_documented$education",
+  useNA = "always", datasources = conns["site"])$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category                 | Count | Site  |
-| :----------------------- | ----: | :---- |
-| Secondary education      |    12 | site  |
-| University education     |    12 | site  |
-| NA                       |    24 | site  |
-| University qualification |    24 | site2 |
-| NA                       |    24 | site2 |
+    #> D_documented$education
+    #>  Secondary education University education                   NA
+    #>                   12                   12                   24
+
+``` r
+dsBaseClient::ds.table("D_repeated$education",
+  useNA = "always", datasources = conns["site2"])$output.list$TABLES.COMBINED_all.sources_counts
+```
+
+    #> D_repeated$education
+    #> University qualification                       NA
+    #>                       24                       24
 
 Site has 12 Secondary and 12 University answers; site2 has 24 University
 answers. Both have 24 missing answers. The newer catalogue calls
@@ -192,21 +180,23 @@ Solution 2
 circe_json <- jsonlite::toJSON(list(AdditionalCriteria = list(Type = "ALL",
   CriteriaList = list(list(unsupported = TRUE)))), auto_unbox = TRUE)
 circe_check <- recipe_circe_check(circe_json)
-cat(paste0(circe_check$issues$path, ": ", circe_check$issues$remedy), sep = "\n")
+circe_check$issues[c("path", "remedy")]
 ```
 
-    #> $.AdditionalCriteria: AdditionalCriteria has no implemented adapter; retain the complete definition.
-    #> $.PrimaryCriteria: Provide an object with the documented structural fields.
+| path                 | remedy                                                                         |
+| :------------------- | :----------------------------------------------------------------------------- |
+| $.AdditionalCriteria | AdditionalCriteria has no implemented adapter; retain the complete definition. |
+| $.PrimaryCriteria    | Provide an object with the documented structural fields.                       |
 
 The check identifies structural problems in this example, so it is not
 ready for extraction. Attempt the strict import and read its refusal:
 
 ``` r
-tryCatch(recipe_import_circe(circe_json),
-  error = function(e) cat(conditionMessage(e), "\n"))
+recipe_import_circe(circe_json)
 ```
 
-    #> unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.
+    #> Error:
+    #> ! unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.
 
 `unsupported_circe_construct` identifies the unsupported
 `AdditionalCriteria` rule. Keep the complete cohort definition and
@@ -224,8 +214,8 @@ Solution 3
 ``` r
 columns <- recipe_codebook(result)[[1]]$columns
 period <- match("death_period", columns$name)
-knitr::kable(data.frame(Year = columns$levels[[period]]$labels,
-  Type = columns$r_type[[period]]))
+data.frame(Year = columns$levels[[period]]$labels,
+  Type = columns$r_type[[period]])
 ```
 
 | Year | Type            |
@@ -251,7 +241,7 @@ settings:
 ``` r
 person_counts <- ds.omop.analysis.run("dsomop:demo.person_count_by_gender",
   conns = conns["site"])
-knitr::kable(person_counts$pooled[c("gender_name", "n_persons")], row.names = FALSE)
+person_counts$pooled[c("gender_name", "n_persons")]
 ```
 
 | gender\_name | n\_persons |
@@ -274,12 +264,12 @@ the alternative preserve?
 Solution: keep the outcome-free observation period
 
 ``` r
-tryCatch(ds.omop.analysis.run("dsomop:incidence.rate",
-  params = list(clean_window = 365), conns = conns),
-  error = function(e) cat(conditionMessage(e), "\n"))
+ds.omop.analysis.run("dsomop:incidence.rate",
+  params = list(clean_window = 365), conns = conns)
 ```
 
-    #> unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required
+    #> Error:
+    #> ! unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required
 
 `unsupported_clean_window` means this analysis cannot implement the
 required clean period. Preserve continuous prior observation, the

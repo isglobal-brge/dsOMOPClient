@@ -95,18 +95,15 @@
 <p><strong>What you will learn</strong></p>
 <p>Distinguish a private assignment from an aggregate release, understand distinct-person support, and recognise refused identifiers and free text.</p>
 </div>
-<p>This chapter uses the synthetic questionnaire dataset described in <a href="book-00-start.html">Getting started</a>.</p>
-<p><strong>You need:</strong> the packages and helpers from <a href="book-00-start.html#before-you-start">Getting started</a>. Run the sections in order in a fresh R session in your <code>book-work</code> directory.</p>
+<p><strong>You need:</strong> the client packages and the Opal login from <a href="book-00-start.html">Getting started</a>. This chapter uses <code>omop.questionnaire</code>, the synthetic questionnaire study described there.</p>
 <div class="section level2">
 <h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
 </h2>
-<p>Start a fresh R session in the <code>book-work</code> directory created in <a href="book-00-start.html#get-the-book-helpers">Getting started</a>. Run this setup first:</p>
+<p>Log in first:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"questionnaire"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.login.html">ds.omop.login</a></span><span class="op">(</span><span class="st">"https://localhost:8443"</span>, user <span class="op">=</span> <span class="st">"administrator"</span>,</span>
+<span>  password <span class="op">=</span> <span class="st">"password"</span>, resource <span class="op">=</span> <span class="st">"omop.questionnaire"</span>, server <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 <p>The connection is ready; <code>conns</code> identifies the server used by the analysis calls.</p>
 </div>
 <div class="section level2">
@@ -144,8 +141,7 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">private</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"2024-06-01"</span><span class="op">)</span>, sex <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_sex</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">private</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_private"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; people → D_private</span></span></code></pre>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">private</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_private"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>The reply names <code>D_private</code>, the server table holding age and sex. Exact completed age stays beside the source data; the table is available for approved analysis calls in your DataSHIELD session.</p>
 <div class="book-flow" role="img" aria-label="Your recipe goes to the server; private rows stay there; checked summaries return to you.">
 <div>
@@ -164,75 +160,22 @@
 <div class="section level2">
 <h2 id="request-an-aggregate">Request an aggregate<a class="anchor" aria-label="anchor" href="#request-an-aggregate"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_private$age"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">34</td>
-<td align="right">36</td>
-<td align="right">12</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">34</td>
-<td align="right">36</td>
-<td align="right">12</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">34</td>
-<td align="right">36</td>
-<td align="right">12</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">43</td>
-<td align="right">36</td>
-<td align="right">12</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">49</td>
-<td align="right">36</td>
-<td align="right">12</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">49</td>
-<td align="right">36</td>
-<td align="right">12</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">49</td>
-<td align="right">36</td>
-<td align="right">12</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">42</td>
-<td align="right">36</td>
-<td align="right">12</td>
-</tr>
-</tbody>
-</table>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_private$age"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "integer"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 48</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;   5%  10%  25%  50%  75%  90%  95% Mean</span></span>
+<span><span class="co">#&gt;   34   34   34   43   49   49   49   42</span></span></code></pre>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.numNA.html" class="external-link">ds.numNA</a></span><span class="op">(</span><span class="st">"D_private$age"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; [1] 12</span></span></code></pre>
 <p>The mean completed age on 2024-06-01 is 42 years across 36 valid values; 12 people with year-only births have missing completed age. The roster includes all people; a fixed-date age calculation does not establish survival to that date. An approved aggregate method checks its own disclosure rules. A successfully assigned table does not guarantee every later summary or model will be releasable.</p>
 <div class="book-note">
 <p><strong>Note</strong></p>
@@ -242,12 +185,12 @@
 <div class="section level2">
 <h2 id="the-final-release-rule">The final release rule<a class="anchor" aria-label="anchor" href="#the-final-release-rule"></a>
 </h2>
-<p>Each final patient component needs enough <strong>distinct persons</strong> for the server’s <code>nfilter.subset</code>. Many events from one person still contribute only one person to this check. The practice server sets <code>nfilter.subset = 5</code>, stricter than the dsBase default of 3. Each data owner chooses the server policy.</p>
+<p>Each final patient component needs enough <strong>distinct persons</strong> for the server’s <code>nfilter.subset</code>. Many events from one person still contribute only one person to this check. Our server sets <code>nfilter.subset = 5</code>, stricter than the dsBase default of 3. Each data owner chooses the server policy.</p>
 <table class="table">
 <thead><tr class="header">
 <th>Rule</th>
 <th>What it checks</th>
-<th align="right">Practice value</th>
+<th align="right">Value on this server</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -264,14 +207,11 @@
 </table>
 <p>These checks apply at different steps. A table with enough people to assign can still produce frequency cells too small to release.</p>
 <p>Intermediate calculations may contain small populations privately. The gate is at final publication; a joined result’s private inputs do not need separate published symbols. A standalone filter produces a final object and is gated. Here we intentionally request a subset with no qualifying rows:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">small_message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_private"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;</span> <span class="fl">200L</span><span class="op">)</span>,</span>
-<span>    newobj <span class="op">=</span> <span class="st">"D_too_small"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span>  <span class="st">"Unexpected success"</span></span>
-<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">small_message</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_private"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;</span> <span class="fl">200L</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_too_small"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
 <p>The refusal reports the policy boundary without providing the small private count. The previous <code>D_private</code> object remains available. Empty and undersized results share this protection; do not interpret the diagnostic as a patient count.</p>
 </div>
 <div class="section level2">
@@ -279,27 +219,24 @@
 </h2>
 <p><em>Class 1</em> includes direct identifiers, source identifiers and free text that may contain identifiers. Renaming a source field does not make it safe. Both output values and predicates are checked, so a count cannot be used to probe a forbidden text column. The following intentionally invalid definition demonstrates that check:</p>
 <p>Fever question is <strong>900002</strong>, found in <a href="book-04-vocabulary.html">chapter 4</a>.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">text_message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="va">blocked</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>answer <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span></span>
-<span>    event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"observation"</span>, concepts <span class="op">=</span> <span class="fl">900002L</span>, value <span class="op">=</span> <span class="st">"value_as_string"</span><span class="op">)</span>,</span>
-<span>    reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">blocked</span><span class="op">)</span></span>
-<span>  <span class="st">"Unexpected success"</span></span>
-<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">text_message</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: value_as_string (event 'obs_900002' value).</span></span></code></pre>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">blocked</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>answer <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span></span>
+<span>  event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"observation"</span>, concepts <span class="op">=</span> <span class="fl">900002L</span>, value <span class="op">=</span> <span class="st">"value_as_string"</span><span class="op">)</span>,</span>
+<span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">blocked</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: value_as_string (event 'obs_900002' value).</span></span></code></pre>
 <p>This definition is refused before execution. Use the reviewed coded answer <code>value_as_concept_id</code> and translated categories when it answers the question, as in <a href="book-10-harmonise.html">chapter 10</a>. Free text is not needed for that analysis.</p>
 </div>
 <div class="section level2">
 <h2 id="why-dates-and-ages-can-remain-private-columns">Why dates and ages can remain private columns<a class="anchor" aria-label="anchor" href="#why-dates-and-ages-can-remain-private-columns"></a>
 </h2>
 <p><em>Class 2</em> means a quasi-identifier: a value that may help identify someone when combined with other facts. Exact dates, birth components and ages are permitted in private server tables. Their aggregates and any category labels still face the applicable release controls.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">date_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>visit_date <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="st">"first_visit"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">date_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_private_date"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">date_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_private_date"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_private_date"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "person_id"  "visit_date"</span></span></code></pre>
@@ -308,14 +245,11 @@
 <div class="section level2">
 <h2 id="protected-keys-cannot-become-analyst-variables">Protected keys cannot become analyst variables<a class="anchor" aria-label="anchor" href="#protected-keys-cannot-become-analyst-variables"></a>
 </h2>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">key_message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_private"</span>, copied <span class="op">=</span> <span class="va">person_id</span>,</span>
-<span>    newobj <span class="op">=</span> <span class="st">"D_key_copy"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span>  <span class="st">"Unexpected success"</span></span>
-<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">key_message</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_private"</span>, copied <span class="op">=</span> <span class="va">person_id</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_key_copy"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
 <p>The server needs keys to align rows and joins; an analyst mutation cannot copy, rewrite or filter them. Use the declared population and join operations instead.</p>
 </div>
 <div class="section level2">
@@ -326,16 +260,13 @@
 <div class="section level2">
 <h2 id="exercise-1-a-nonempty-subset-can-also-be-too-small">Exercise 1: a nonempty subset can also be too small<a class="anchor" aria-label="anchor" href="#exercise-1-a-nonempty-subset-can-also-be-too-small"></a>
 </h2>
-<p>Keep female participants whose completed age is 43 on the declared date. The public questionnaire description places four people in this group. Predict whether the practice server can assign that final subset.</p>
+<p>Keep female participants whose completed age is 43 on the declared date. The public questionnaire description places four people in this group. Predict whether the server can assign that final subset.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_private"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">age</span> <span class="op">==</span> <span class="fl">43</span> <span class="op">&amp;</span> <span class="va">sex</span> <span class="op">==</span> <span class="st">"F"</span><span class="op">)</span>,</span>
-<span>    newobj <span class="op">=</span> <span class="st">"D_small_group"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span>  <span class="st">"Unexpected success"</span></span>
-<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">message</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_private"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">age</span> <span class="op">==</span> <span class="fl">43</span> <span class="op">&amp;</span> <span class="va">sex</span> <span class="op">==</span> <span class="st">"F"</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_small_group"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
 <p>The four-person group is below <code>nfilter.subset = 5</code>, so it is refused just as the empty group was. The message does not disclose the small count; here the count was known from the public teaching data. In a real study, retain a scientifically justified larger population or report that the intended analysis cannot be released.</p>
 </details>
 </div>
@@ -344,7 +275,7 @@
 </h2>
 <p>After the protected-key refusal, list the server objects. Is <code>D_key_copy</code> present?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.symbols.html" class="external-link">datashield.symbols</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "D_private"      "D_private_date" "omop"</span></span></code></pre>

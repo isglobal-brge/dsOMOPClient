@@ -6,27 +6,19 @@ Distinguish a private assignment from an aggregate release, understand
 distinct-person support, and recognise refused identifiers and free
 text.
 
-This chapter uses the synthetic questionnaire dataset described in
-[Getting
+**You need:** the client packages and the Opal login from [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-
-**You need:** the packages and helpers from [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work`
-directory.
+This chapter uses `omop.questionnaire`, the synthetic questionnaire
+study described there.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
-Run this setup first:
+Log in first:
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the
@@ -49,10 +41,8 @@ download.
 ``` r
 private <- omop_recipe(variables = list(age = omop_age_at("2024-06-01"), sex = omop_sex()),
   outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(private, out = c(people = "D_private"), conns = conns))
+recipe_execute(private, out = c(people = "D_private"), conns = conns)
 ```
-
-    #> people → D_private
 
 The reply names `D_private`, the server table holding age and sex. Exact
 completed age stays beside the source data; the table is available for
@@ -71,19 +61,26 @@ approved analysis calls in your DataSHIELD session.
 ## Request an aggregate
 
 ``` r
-knitr::kable(book_summary("D_private$age", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_private$age", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |    34 |      36 |        12 |
-| site | 10%       |    34 |      36 |        12 |
-| site | 25%       |    34 |      36 |        12 |
-| site | 50%       |    43 |      36 |        12 |
-| site | 75%       |    49 |      36 |        12 |
-| site | 90%       |    49 |      36 |        12 |
-| site | 95%       |    49 |      36 |        12 |
-| site | Mean      |    42 |      36 |        12 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 48
+    #>
+    #> $site$`quantiles & mean`
+    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>   34   34   34   43   49   49   49   42
+
+``` r
+dsBaseClient::ds.numNA("D_private$age", datasources = conns)
+```
+
+    #> $site
+    #> [1] 12
 
 The mean completed age on 2024-06-01 is 42 years across 36 valid values;
 12 people with year-only births have missing completed age. The roster
@@ -101,14 +98,14 @@ the disclosure rules of its own method.
 
 Each final patient component needs enough **distinct persons** for the
 server’s `nfilter.subset`. Many events from one person still contribute
-only one person to this check. The practice server sets `nfilter.subset
-= 5`, stricter than the dsBase default of 3. Each data owner chooses the
+only one person to this check. Our server sets `nfilter.subset = 5`,
+stricter than the dsBase default of 3. Each data owner chooses the
 server policy.
 
-| Rule             | What it checks                                    | Practice value |
-| ---------------- | ------------------------------------------------- | -------------: |
-| `nfilter.subset` | Distinct people in a final assigned patient table |              5 |
-| `nfilter.tab`    | Nonzero cells in a dsBase frequency table         |              3 |
+| Rule             | What it checks                                    | Value on this server |
+| ---------------- | ------------------------------------------------- | -------------------: |
+| `nfilter.subset` | Distinct people in a final assigned patient table |                    5 |
+| `nfilter.tab`    | Nonzero cells in a dsBase frequency table         |                    3 |
 
 These checks apply at different steps. A table with enough people to
 assign can still produce frequency cells too small to release.
@@ -120,15 +117,12 @@ object and is gated. Here we intentionally request a subset with no
 qualifying rows:
 
 ``` r
-small_message <- tryCatch({
-  ds.omop.filter("D_private", expr = omop_where(age > 200L),
-    newobj = "D_too_small", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(small_message, "\n")
+ds.omop.filter("D_private", expr = omop_where(age > 200L),
+  newobj = "D_too_small", conns = conns)
 ```
 
-    #> OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().
+    #> Error:
+    #> ! OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().
 
 The refusal reports the policy boundary without providing the small
 private count. The previous `D_private` object remains available. Empty
@@ -147,18 +141,15 @@ Fever question is **900002**, found in
 [chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md).
 
 ``` r
-text_message <- tryCatch({
-  blocked <- omop_recipe(variables = list(answer = omop_variable(
-    event = omop_event("observation", concepts = 900002L, value = "value_as_string"),
-    reducer = omop_reduce("first_value"))),
-    outputs = omop_output("people", format = "wide", grain = "person"))
-  recipe_to_plan(blocked)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(text_message, "\n")
+blocked <- omop_recipe(variables = list(answer = omop_variable(
+  event = omop_event("observation", concepts = 900002L, value = "value_as_string"),
+  reducer = omop_reduce("first_value"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+recipe_to_plan(blocked)
 ```
 
-    #> Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: value_as_string (event 'obs_900002' value).
+    #> Error:
+    #> ! Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: value_as_string (event 'obs_900002' value).
 
 This definition is refused before execution. Use the reviewed coded
 answer `value_as_concept_id` and translated categories when it answers
@@ -176,7 +167,7 @@ any category labels still face the applicable release controls.
 ``` r
 date_recipe <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns))
+recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns)
 dsBaseClient::ds.colnames("D_private_date", datasources = conns)
 ```
 
@@ -194,15 +185,12 @@ name or type.
 ## Protected keys cannot become analyst variables
 
 ``` r
-key_message <- tryCatch({
-  ds.omop.mutate("D_private", copied = person_id,
-    newobj = "D_key_copy", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(key_message, "\n")
+ds.omop.mutate("D_private", copied = person_id,
+  newobj = "D_key_copy", conns = conns)
 ```
 
-    #> OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().
+    #> Error:
+    #> ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().
 
 The server needs keys to align rows and joins; an analyst mutation
 cannot copy, rewrite or filter them. Use the declared population and
@@ -221,20 +209,17 @@ for each request, so repeating the same request returns the same answer.
 
 Keep female participants whose completed age is 43 on the declared date.
 The public questionnaire description places four people in this group.
-Predict whether the practice server can assign that final subset.
+Predict whether the server can assign that final subset.
 
 Solution
 
 ``` r
-message <- tryCatch({
-  ds.omop.filter("D_private", expr = omop_where(age == 43 & sex == "F"),
-    newobj = "D_small_group", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(message, "\n")
+ds.omop.filter("D_private", expr = omop_where(age == 43 & sex == "F"),
+  newobj = "D_small_group", conns = conns)
 ```
 
-    #> OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().
+    #> Error:
+    #> ! OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().
 
 The four-person group is below `nfilter.subset = 5`, so it is refused
 just as the empty group was. The message does not disclose the small

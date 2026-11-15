@@ -5,27 +5,19 @@
 Choose who enters a study, define episodes and observation coverage,
 reuse a cohort, identify new users and sample controls at case time.
 
-This chapter uses the synthetic questionnaire dataset described in
-[Getting
+**You need:** the client packages and the Opal login from [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-
-**You need:** the packages and helpers from [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work`
-directory.
+This chapter uses `omop.questionnaire`, the synthetic questionnaire
+study described there.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
-Run this setup first:
+Log in first:
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the
@@ -66,7 +58,7 @@ visit episodes.
 ``` r
 visit_members <- omop_recipe(populations = list(visitors),
   outputs = omop_output("members", rows = "visitors", format = "membership"))
-invisible(recipe_execute(visit_members, out = c(members = "D_members"), conns = conns))
+recipe_execute(visit_members, out = c(members = "D_members"), conns = conns)
 ```
 
 Membership keeps private keys and episode dates. Count its rows:
@@ -109,7 +101,7 @@ is not evidence of eligibility.
 eligible_recipe <- omop_recipe(populations = list(eligible),
   variables = list(visits = omop_count("visit_occurrence", before = Inf)),
   outputs = omop_output("people", rows = "eligible", format = "wide"))
-invisible(recipe_execute(eligible_recipe, out = c(people = "D_eligible"), conns = conns))
+recipe_execute(eligible_recipe, out = c(people = "D_eligible"), conns = conns)
 ```
 
 The count includes visits through the chosen index day.
@@ -125,13 +117,13 @@ dsBaseClient::ds.dim("D_eligible", datasources = conns)
     #> [1] 24  4
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_eligible$visits",
-  useNA = "no", datasources = conns)))
+dsBaseClient::ds.table("D_eligible$visits",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 2        |    24 |
+    #> D_eligible$visits
+    #>  2
+    #> 24
 
 There are 24 eligible people, each with two visits through entry. Their
 first visit was outpatient; their second visit is the first eligible
@@ -164,7 +156,7 @@ cohort_population <- omop_population("saved", index = omop_index(
   list(cohort_definition_id = 1L), select = "all", end = omop_end("event_end")))
 cohort_recipe <- omop_recipe(populations = list(cohort_population),
   outputs = omop_output("members", rows = "saved", format = "membership"))
-invisible(recipe_execute(cohort_recipe, out = c(members = "D_cohort"), conns = conns))
+recipe_execute(cohort_recipe, out = c(members = "D_cohort"), conns = conns)
 dsBaseClient::ds.dim("D_cohort", datasources = conns)
 ```
 
@@ -192,7 +184,7 @@ up before selecting it:
 
 ``` r
 medicine <- ds.omop.concept.lookup(950001L, conns = conns)
-knitr::kable(medicine$pooled[c("concept_id", "concept_name")])
+medicine$pooled[c("concept_id", "concept_name")]
 ```
 
 | concept\_id | concept\_name                |
@@ -207,7 +199,7 @@ new_users <- omop_new_users(950001L, washout_days = 365, by = "concept")
 new_user_recipe <- omop_study(new_users, outputs = "baseline",
   baseline = list(prior_fills = omop_count("drug_exposure", 950001L,
     window = omop_window(-365, -1))))
-invisible(recipe_execute(new_user_recipe, out = c(baseline = "D_new_users"), conns = conns))
+recipe_execute(new_user_recipe, out = c(baseline = "D_new_users"), conns = conns)
 ```
 
 The synthetic medicine uses concept grouping explicitly; ingredient
@@ -217,13 +209,13 @@ interval end. “New user” means no recorded use during this washout, not
 no lifetime use.
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_new_users$prior_fills",
-  useNA = "no", datasources = conns)))
+dsBaseClient::ds.table("D_new_users$prior_fills",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 0        |    36 |
+    #> D_new_users$prior_fills
+    #>  0
+    #> 36
 
 All 36 new users have zero prior fills in days −365 to −1. That is an
 eligibility requirement, not a result to discover after admitting
@@ -270,7 +262,7 @@ matched_recipe <- omop_recipe(populations = list(cases, controls, matched),
   variables = list(is_case = omop_population_column("is_case"),
     set = omop_population_column("set_id"), sex = omop_sex()),
   outputs = omop_output("sample", rows = "matched", format = "wide"))
-invisible(recipe_execute(matched_recipe, out = c(sample = "D_matched"), conns = conns))
+recipe_execute(matched_recipe, out = c(sample = "D_matched"), conns = conns)
 ```
 
 The `set` column is a protected match-set key. Keep it for analyses that
@@ -278,8 +270,8 @@ account for matching, such as conditional logistic regression; it is not
 a covariate to copy or summarise.
 
 ``` r
-knitr::kable(book_table2(dsBaseClient::ds.table("D_matched$is_case", "D_matched$sex",
-  useNA = "no", datasources = conns)))
+dsBaseClient::ds.table("D_matched$is_case", "D_matched$sex",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 |   |  F |  M |
@@ -305,7 +297,7 @@ Solution
 all_visitors <- omop_population("visitors", index = omop_index(visits, select = "all"))
 all_recipe <- omop_recipe(populations = list(all_visitors),
   outputs = omop_output("members", rows = "visitors", format = "membership"))
-invisible(recipe_execute(all_recipe, out = c(members = "D_all_visitors"), conns = conns))
+recipe_execute(all_recipe, out = c(members = "D_all_visitors"), conns = conns)
 dsBaseClient::ds.dim("D_all_visitors", datasources = conns)
 ```
 
@@ -335,14 +327,11 @@ first_only <- omop_population("first_only",
     omop_has(inpatient, window = omop_window(0, 0))))
 first_recipe <- omop_recipe(populations = list(first_only),
   outputs = omop_output("members", rows = "first_only", format = "membership"))
-message <- tryCatch({
-  recipe_execute(first_recipe, out = c(members = "D_first_only"), conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(message, "\n")
+recipe_execute(first_recipe, out = c(members = "D_first_only"), conns = conns)
 ```
 
-    #> Plan publication refused: site:members [insufficient_support]. Execution-owned artifacts were revoked and removed.
+    #> Error:
+    #> ! Plan publication refused: site:members [insufficient_support]. Execution-owned artifacts were revoked and removed.
 
 Every first visit in the teaching data is outpatient, so nobody meets
 the inpatient criterion at that visit. The empty result is refused; the

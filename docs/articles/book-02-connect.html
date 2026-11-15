@@ -95,115 +95,107 @@
 <p><strong>What you will learn</strong></p>
 <p>Distinguish a connection, a resource and a symbol, and change databases deliberately.</p>
 </div>
-<p><strong>You need:</strong> the packages, helpers and loaded practice data from <a href="book-00-start.html#before-you-start">Getting started</a>. Start a fresh R session in <code>book-work</code> and run the sections in order.</p>
+<p><strong>You need:</strong> the client packages and the Opal login from <a href="book-00-start.html">Getting started</a>. This chapter uses <code>omop.gibleed</code> and <code>omop.synthea</code>.</p>
 <div class="section level2">
 <h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.login.html">ds.omop.login</a></span><span class="op">(</span><span class="st">"https://localhost:8443"</span>, user <span class="op">=</span> <span class="st">"administrator"</span>,</span>
+<span>  password <span class="op">=</span> <span class="st">"password"</span>, resource <span class="op">=</span> <span class="st">"omop.gibleed"</span>, server <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="three-names-with-different-jobs">Three names with different jobs<a class="anchor" aria-label="anchor" href="#three-names-with-different-jobs"></a>
 </h2>
-<p>A <strong>connection</strong> is a logged-in DataSHIELD session. A <strong>resource</strong> describes how the server opens a database. A <strong>symbol</strong> is an object name in that session. Here <code>site</code> names the connection, <code>gibleed</code> selects the resource and <code>omop</code> names the attached database handle.</p>
+<p>A <strong>connection</strong> is a logged-in DataSHIELD session. A <strong>resource</strong> describes how the server opens a database. A <strong>symbol</strong> is an object name in that session. Here <code>site</code> names the connection, <code>omop.gibleed</code> selects the resource and <code>omop</code> names the attached database handle.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.symbols.html" class="external-link">datashield.symbols</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "omop"</span></span></code></pre>
-<p>Under <code>site</code>, <code>omop</code> is the private handle created by <code>book_connect()</code>. Later, <code>D_people</code> will name a table created by a recipe, rather than a database handle.</p>
-<p>For an Opal study server, use the <a href="book-00-start.html#connect-to-your-opal-server">login block in Getting started</a>. Your administrator provides resource names including their project prefix.</p>
+<p>Under <code>site</code>, <code>omop</code> is the private handle that <code><a href="../reference/ds.omop.login.html">ds.omop.login()</a></code> created. Later, <code>D_people</code> will name a table created by a recipe, rather than a database handle.</p>
 </div>
 <div class="section level2">
 <h2 id="use-a-handle-explicitly">Use a handle explicitly<a class="anchor" aria-label="anchor" href="#use-a-handle-explicitly"></a>
 </h2>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">rows</th>
-<th align="right">persons</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td align="right">2690</td>
-<td align="right">2690</td>
-</tr></tbody>
-</table>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $rows</span></span>
+<span><span class="co">#&gt; [1] 2690</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $persons</span></span>
+<span><span class="co">#&gt; [1] 2690</span></span></code></pre>
 <p>The request goes to GiBleed through <code>omop</code>: its person count is in the 2,690–2,694 band. Most dsOMOP calls default to <code>symbol = "omop"</code>, so you can omit it when you have just one attached database. <code><a href="../reference/ds.omop.server.version.html">ds.omop.server.version()</a></code> is different: it reports the server’s installed and available methods, independently of any database handle.</p>
 </div>
 <div class="section level2">
 <h2 id="switch-resources">Switch resources<a class="anchor" aria-label="anchor" href="#switch-resources"></a>
 </h2>
-<p>The practice helper closes the current session and opens the requested resource. Always replace <code>conns</code> with the returned connection:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_switch</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">rows</th>
-<th align="right">persons</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td align="right">25</td>
-<td align="right">25</td>
-</tr></tbody>
-</table>
-<p>The person band is now 25–29, containing Synthea27Nj’s 28 people. The handle can still be called <code>omop</code> even though its database changed. Switching does not combine the two populations. On Opal, use the disconnect/attach pair in <a href="book-00-start.html#connect-to-your-opal-server">Getting started</a> instead.</p>
+<p>Release the attached resource, then attach another one through the same login:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_switch</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">rows</th>
-<th align="right">persons</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td align="right">2690</td>
-<td align="right">2690</td>
-</tr></tbody>
-</table>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.synthea"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $rows</span></span>
+<span><span class="co">#&gt; [1] 25</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $persons</span></span>
+<span><span class="co">#&gt; [1] 25</span></span></code></pre>
+<p>The person band is now 25–29, containing Synthea27Nj’s 28 people. The handle is still called <code>omop</code> even though its database changed. Switching does not combine the two populations.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.gibleed"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $rows</span></span>
+<span><span class="co">#&gt; [1] 2690</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $persons</span></span>
+<span><span class="co">#&gt; [1] 2690</span></span></code></pre>
 <p>The 2,690–2,694 band confirms that GiBleed is attached again. Choosing the resource explicitly prevents running a lab analysis against its empty numeric fields.</p>
 </div>
 <div class="section level2">
 <h2 id="exercise-1-keep-two-handles-in-one-session">Exercise 1: keep two handles in one session<a class="anchor" aria-label="anchor" href="#exercise-1-keep-two-handles-in-one-session"></a>
 </h2>
-<p>Attach the numeric resource as <code>labs</code>, keeping <code>omop</code> attached to GiBleed. List the names and count people through each. Does attaching <code>labs</code> combine them? For Opal, substitute the supplied numeric resource name.</p>
+<p>Attach <code>omop.synthea</code> as <code>labs</code>, keeping <code>omop</code> attached to GiBleed. List the names and count people through each. Does attaching <code>labs</code> combine them?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">labs_session</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"numeric"</span>, symbol <span class="op">=</span> <span class="st">"labs"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"omop.synthea"</span>, symbol <span class="op">=</span> <span class="st">"labs"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.symbols.html" class="external-link">datashield.symbols</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "labs" "omop"</span></span></code></pre>
 <p><code>labs</code> and <code>omop</code> are two distinct handles in the same session.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">handle_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"omop"</span>, <span class="st">"labs"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">handle</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, stats <span class="op">=</span> <span class="st">"persons"</span>,</span>
-<span>    symbol <span class="op">=</span> <span class="va">handle</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Handle <span class="op">=</span> <span class="va">handle</span>, <span class="va">counts</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">handle_counts</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Handle</th>
-<th align="right">persons</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">omop</td>
-<td align="right">2690</td>
-</tr>
-<tr class="even">
-<td align="left">labs</td>
-<td align="right">25</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, stats <span class="op">=</span> <span class="st">"persons"</span>, symbol <span class="op">=</span> <span class="st">"omop"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $persons</span></span>
+<span><span class="co">#&gt; [1] 2690</span></span></code></pre>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, stats <span class="op">=</span> <span class="st">"persons"</span>, symbol <span class="op">=</span> <span class="st">"labs"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: per_site</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $persons</span></span>
+<span><span class="co">#&gt; [1] 25</span></span></code></pre>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>symbol <span class="op">=</span> <span class="st">"labs"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p><code>omop</code> gives 2690 and <code>labs</code> gives 25. Each is a separate protected count; the populations were not combined. Disconnecting <code>labs</code> leaves <code>omop</code> available.</p>
 </details>
@@ -214,10 +206,10 @@
 <p>Ask for a person count through <code>missing_handle</code>. What needs fixing: the table name or the handle name?</p>
 <details><p><summary>Solution</summary></p>
 <!-- expected-refusal:start -->
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, symbol <span class="op">=</span> <span class="st">"missing_handle"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>,</span>
-<span>  error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; No OMOP session 'missing_handle'. Call ds.omop.connect() first.</span></span></code></pre>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, symbol <span class="op">=</span> <span class="st">"missing_handle"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! No OMOP session 'missing_handle'. Call ds.omop.connect() first.</span></span></code></pre>
 <!-- expected-refusal:end -->
 <p>The message identifies a missing session handle. It says nothing about whether the database has a person table. Use <code>omop</code>, or attach a resource under the name you intend to query.</p>
 </details>
@@ -225,10 +217,10 @@
 <div class="section level2">
 <h2 id="end-the-session">End the session<a class="anchor" aria-label="anchor" href="#end-the-session"></a>
 </h2>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.logout.html" class="external-link">datashield.logout</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>Disconnect releases the database handle; logout ends the DataSHIELD session. The next chapter opens a fresh connection.</p>
+<p>Disconnect releases the database handle; logout ends the DataSHIELD session. The next chapter logs in again.</p>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>

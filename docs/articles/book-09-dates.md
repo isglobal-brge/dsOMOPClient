@@ -6,27 +6,19 @@ Separate date sources from presentation, choose factor/number/date
 periods, extract parts, calculate anchored ages, and handle partial
 dates explicitly.
 
-This chapter uses the synthetic questionnaire dataset described in
-[Getting
+**You need:** the client packages and the Opal login from [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-
-**You need:** the packages and helpers from [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work`
-directory.
+This chapter uses `omop.questionnaire`, the synthetic questionnaire
+study described there.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
-Run this setup first:
+Log in first:
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the
@@ -51,7 +43,7 @@ inventory:
 ``` r
 exact <- omop_recipe(variables = list(visit_date = first_visit),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(exact, out = c(people = "D_date_exact"), conns = conns))
+recipe_execute(exact, out = c(people = "D_date_exact"), conns = conns)
 dsBaseClient::ds.colnames("D_date_exact", datasources = conns)
 ```
 
@@ -83,7 +75,7 @@ private minimum/maximum dates.
 ``` r
 months <- omop_recipe(variables = list(month = omop_date("first_visit", month_spec)),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(months, out = c(people = "D_date_months"), conns = conns))
+recipe_execute(months, out = c(people = "D_date_months"), conns = conns)
 ```
 
 ``` r
@@ -107,23 +99,30 @@ numbers <- omop_recipe(variables = list(month_index = omop_date("first_visit",
   omop_date_spec(precision = "month", representation = "number",
     numeric = "index", origin = "2020-01-01"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(numbers, out = c(people = "D_date_numbers"), conns = conns))
+recipe_execute(numbers, out = c(people = "D_date_numbers"), conns = conns)
 ```
 
 ``` r
-knitr::kable(book_summary("D_date_numbers$month_index", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_date_numbers$month_index", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |  2.00 |      36 |        12 |
-| site | 10%       |  2.00 |      36 |        12 |
-| site | 25%       |  2.00 |      36 |        12 |
-| site | 50%       |  5.00 |      36 |        12 |
-| site | 75%       |  6.00 |      36 |        12 |
-| site | 90%       |  6.00 |      36 |        12 |
-| site | 95%       |  6.00 |      36 |        12 |
-| site | Mean      |  4.33 |      36 |        12 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 48
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 2.000000 2.000000 2.000000 5.000000 6.000000 6.000000 6.000000 4.333333
+
+``` r
+dsBaseClient::ds.numNA("D_date_numbers$month_index", datasources = conns)
+```
+
+    #> $site
+    #> [1] 12
 
 January 2020 is zero, February one and March two. The mean 4.33 averages
 indices 2, 5 and 6 across 36 visitors; 12 are missing. These numbers
@@ -147,25 +146,32 @@ occurred at a boundary.
 ``` r
 bounds <- omop_recipe(variables = list(start = month_start, end = month_end),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(bounds, out = c(people = "D_date_bounds"), conns = conns))
-invisible(ds.omop.mutate("D_date_bounds", days = end - start + 1L,
-  newobj = "D_month_lengths", conns = conns))
+recipe_execute(bounds, out = c(people = "D_date_bounds"), conns = conns)
+ds.omop.mutate("D_date_bounds", days = end - start + 1L,
+  newobj = "D_month_lengths", conns = conns)
 ```
 
 ``` r
-knitr::kable(book_summary("D_month_lengths$days", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_month_lengths$days", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 30.00 |      36 |        12 |
-| site | 10%       | 30.00 |      36 |        12 |
-| site | 25%       | 30.00 |      36 |        12 |
-| site | 50%       | 31.00 |      36 |        12 |
-| site | 75%       | 31.00 |      36 |        12 |
-| site | 90%       | 31.00 |      36 |        12 |
-| site | 95%       | 31.00 |      36 |        12 |
-| site | Mean      | 30.67 |      36 |        12 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 48
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 30.00000 30.00000 30.00000 31.00000 31.00000 31.00000 31.00000 30.66667
+
+``` r
+dsBaseClient::ds.numNA("D_month_lengths$days", datasources = conns)
+```
+
+    #> $site
+    #> [1] 12
 
 The mean inclusive month length is 30.67 days across 36 visitors: March
 and July have 31 days, June has 30. The 12 people with no visit remain
@@ -181,7 +187,7 @@ choose the final column names in this bundle.
 parts <- omop_recipe(variables = list(visit = omop_date_parts("first_visit",
   c(visit_year = "year", visit_month = "month", weekday = "weekday_name"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(parts, out = c(people = "D_date_parts"), conns = conns))
+recipe_execute(parts, out = c(people = "D_date_parts"), conns = conns)
 ```
 
 ``` r
@@ -217,21 +223,17 @@ education_date <- omop_anchor(omop_event("observation", concepts = 900001L))
 ages <- omop_recipe(variables = list(at_death = omop_age_at("death"),
   at_question = omop_age_at(education_date)),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(ages, out = c(people = "D_date_ages"), conns = conns))
+recipe_execute(ages, out = c(people = "D_date_ages"), conns = conns)
 ```
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_date_ages$at_death",
-  useNA = "always", datasources = conns)))
+dsBaseClient::ds.table("D_date_ages$at_death",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 32       |     6 |
-| 33       |     6 |
-| 42       |     6 |
-| 43       |     6 |
-| NA       |    24 |
+    #> D_date_ages$at_death
+    #> 32 33 42 43 NA
+    #>  6  6  6  6 24
 
 Six people each died at completed ages 32, 33, 42 and 43. The 24 missing
 ages come from 12 people with no death and 12 with an incomplete birth
@@ -240,15 +242,13 @@ quantiles. A February 29 birthday completes on March 1 in a non-leap
 year. Exact age does not equal year subtraction.
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_date_ages$at_question",
-  useNA = "always", datasources = conns)))
+dsBaseClient::ds.table("D_date_ages$at_question",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 29       |    12 |
-| 39       |    12 |
-| NA       |    24 |
+    #> D_date_ages$at_question
+    #> 29 39 NA
+    #> 12 12 24
 
 At the first education question, 12 people were 29 and 12 were 39; the
 24 without that question have no age at that anchor. The event sets a
@@ -265,7 +265,7 @@ completed age.
 partial <- omop_recipe(variables = list(birth_year = omop_date("birth",
   omop_date_spec(precision = "year"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(partial, out = c(people = "D_date_partial"), conns = conns))
+recipe_execute(partial, out = c(people = "D_date_partial"), conns = conns)
 ```
 
 ``` r
@@ -285,23 +285,17 @@ implicit convention choose it.
 estimated <- omop_recipe(variables = list(age = omop_age_at("death",
   date_spec = omop_date_spec(partial = "mid"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(estimated, out = c(people = "D_date_estimated"), conns = conns))
+recipe_execute(estimated, out = c(people = "D_date_estimated"), conns = conns)
 ```
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_date_estimated$age",
-  useNA = "always", datasources = conns)))
+dsBaseClient::ds.table("D_date_estimated$age",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 23       |     6 |
-| 24       |     6 |
-| 32       |     6 |
-| 33       |     6 |
-| 42       |     6 |
-| 43       |     6 |
-| NA       |    12 |
+    #> D_date_estimated$age
+    #> 23 24 32 33 42 43 NA
+    #>  6  6  6  6  6  6 12
 
 The estimate adds six people aged 23 and six aged 24. Missing age at
 death falls from 24 to 12; the remaining 12 have no death date. The
@@ -318,7 +312,7 @@ reproducible plan.
 custom <- omop_recipe(variables = list(month = omop_date("first_visit",
   omop_date_spec(precision = "custom", pattern = "%b %Y"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(custom, out = c(people = "D_date_custom"), conns = conns))
+recipe_execute(custom, out = c(people = "D_date_custom"), conns = conns)
 ```
 
 ``` r
@@ -358,7 +352,7 @@ For example, choose an April-start fiscal quarter explicitly:
 fiscal <- omop_recipe(variables = list(quarter = omop_date("first_visit",
   omop_date_spec(precision = "fiscal_quarter", fiscal_start = 4L))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(fiscal, out = c(people = "D_date_fiscal"), conns = conns))
+recipe_execute(fiscal, out = c(people = "D_date_fiscal"), conns = conns)
 ```
 
 ``` r
@@ -384,20 +378,27 @@ Solution
 ``` r
 elapsed <- omop_recipe(variables = list(days = omop_time_between("first_visit", "death")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(elapsed, out = c(people = "D_date_elapsed"), conns = conns))
-knitr::kable(book_summary("D_date_elapsed$days", datasources = conns), digits = 2)
+recipe_execute(elapsed, out = c(people = "D_date_elapsed"), conns = conns)
+dsBaseClient::ds.summary("D_date_elapsed$days", datasources = conns)
 ```
 
-| Site | Statistic |   Value | N valid | N missing |
-| :--- | :-------- | ------: | ------: | --------: |
-| site | 5%        | 1095.00 |      36 |        12 |
-| site | 10%       | 1095.00 |      36 |        12 |
-| site | 25%       | 1095.00 |      36 |        12 |
-| site | 50%       | 1362.50 |      36 |        12 |
-| site | 75%       | 1461.00 |      36 |        12 |
-| site | 90%       | 1630.00 |      36 |        12 |
-| site | 95%       | 1630.00 |      36 |        12 |
-| site | Mean      | 1334.33 |      36 |        12 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 48
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 1095.000 1095.000 1095.000 1362.500 1461.000 1630.000 1630.000 1334.333
+
+``` r
+dsBaseClient::ds.numNA("D_date_elapsed$days", datasources = conns)
+```
+
+    #> $site
+    #> [1] 12
 
 The mean duration is 1,334.33 days, with 36 valid durations and 12
 missing, because 12 people have neither a visit nor a death date.
@@ -414,7 +415,7 @@ Solution 2
 ``` r
 month_explanation <- recipe_explain(months)$text
 duration_explanation <- recipe_explain(elapsed)$text
-cat(grep("^  (month|days):", c(month_explanation, duration_explanation), value = TRUE), sep = "\n")
+writeLines(grep("^  (month|days):", c(month_explanation, duration_explanation), value = TRUE))
 ```
 
     #>   month: calendar_date
@@ -434,7 +435,7 @@ Solution 3
 
 ``` r
 json <- recipe_export_json(months)
-cat(grep("2020-03-01|2020-07-31", strsplit(json, "\n")[[1]], value = TRUE), sep = "\n")
+writeLines(grep("2020-03-01|2020-07-31", strsplit(json, "\n")[[1]], value = TRUE))
 ```
 
     #>         "level_range": ["2020-03-01", "2020-07-31"]

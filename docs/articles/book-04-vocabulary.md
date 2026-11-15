@@ -5,21 +5,17 @@
 Search for a meaning, inspect its hierarchy and clinical use, then save
 a concept set.
 
-**You need:** the packages, helpers and loaded practice data from
-[Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Start a fresh R session in `book-work` and run the sections in order.
-Start with GiBleed; later sections switch to questionnaire data and
-Synthea27Nj.
+**You need:** the client packages and the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+This chapter starts with `omop.gibleed`; later sections switch to the
+questionnaire resources and `omop.synthea`.
 
 ## Start this chapter
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("gibleed")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.gibleed", server = "site")$conns
 ```
 
 ## Search a name, then narrow the meaning
@@ -32,7 +28,7 @@ non-standard source codes may map to standard ones.
 
 ``` r
 hits <- ds.omop.concept.search("Asthma", conns = conns)$pooled
-knitr::kable(hits[c("concept_id", "concept_name", "domain_id", "vocabulary_id")])
+hits[c("concept_id", "concept_name", "domain_id", "vocabulary_id")]
 ```
 
 | concept\_id | concept\_name    | domain\_id | vocabulary\_id |
@@ -48,7 +44,7 @@ specify which meaning you intend.
 ``` r
 conditions <- ds.omop.concept.search("Asthma", domain = "Condition",
   vocabulary = "SNOMED", standard_only = TRUE, valid = TRUE, conns = conns)$pooled
-knitr::kable(conditions[c("concept_id", "concept_name", "standard_concept", "concept_class_id")])
+conditions[c("concept_id", "concept_name", "standard_concept", "concept_class_id")]
 ```
 
 | concept\_id | concept\_name    | standard\_concept | concept\_class\_id |
@@ -70,7 +66,7 @@ Look up the chosen ID to confirm its identity:
 
 ``` r
 asthma_info <- ds.omop.concept.lookup(asthma_id, conns = conns)$pooled
-knitr::kable(asthma_info)
+asthma_info
 ```
 
 | concept\_id | concept\_name | domain\_id | vocabulary\_id | standard\_concept |
@@ -81,9 +77,8 @@ The lookup confirms that 317009 means Asthma. For vocabulary validity
 dates, use the richer search metadata:
 
 ``` r
-knitr::kable(conditions[conditions$concept_id == asthma_id,
-  c("concept_id", "concept_name", "valid_start_date", "valid_end_date", "invalid_reason")],
-  row.names = FALSE)
+conditions[conditions$concept_id == asthma_id,
+  c("concept_id", "concept_name", "valid_start_date", "valid_end_date", "invalid_reason")]
 ```
 
 | concept\_id | concept\_name | valid\_start\_date | valid\_end\_date | invalid\_reason |
@@ -101,7 +96,7 @@ vocabulary:
 ``` r
 bleeding <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition",
   conns = conns)$pooled
-knitr::kable(bleeding[c("concept_id", "concept_name", "vocabulary_id", "standard_concept")])
+bleeding[c("concept_id", "concept_name", "vocabulary_id", "standard_concept")]
 ```
 
 | concept\_id | concept\_name               | vocabulary\_id | standard\_concept |
@@ -118,8 +113,8 @@ touching it:
 ``` r
 mappings <- ds.omop.concept.relationships(bleeding_id,
   relationship_id = "Maps to", conns = conns)$pooled
-knitr::kable(mappings[c("concept_id", "related_concept_id", "related_concept_name",
-  "relationship_id", "direction")])
+mappings[c("concept_id", "related_concept_id", "related_concept_name",
+  "relationship_id", "direction")]
 ```
 
 | concept\_id | related\_concept\_id | related\_concept\_name                   | relationship\_id | direction |
@@ -133,8 +128,8 @@ explicitly:
 ``` r
 source_code <- ds.omop.concept.search(NULL, concept_id = 35208414L,
   standard_only = FALSE, conns = conns)$pooled
-knitr::kable(source_code[c("concept_id", "concept_name", "vocabulary_id",
-  "concept_code", "standard_concept")])
+source_code[c("concept_id", "concept_name", "vocabulary_id",
+  "concept_code", "standard_concept")]
 ```
 
 | concept\_id | concept\_name                            | vocabulary\_id | concept\_code | standard\_concept |
@@ -153,7 +148,7 @@ Inspect them before including a whole branch in your study.
 
 ``` r
 desc <- ds.omop.concept.descendants(asthma_id, include_self = FALSE, conns = conns)$pooled
-knitr::kable(desc[c("concept_id", "concept_name")])
+desc[c("concept_id", "concept_name")]
 ```
 
 | concept\_id | concept\_name    |
@@ -170,8 +165,8 @@ one.
 
 ``` r
 parents <- ds.omop.concept.ancestors(child_id, conns = conns)$pooled
-knitr::kable(parents[parents$direction == "ancestor",
-  c("concept_id", "concept_name", "direction")])
+parents[parents$direction == "ancestor",
+  c("concept_id", "concept_name", "direction")]
 ```
 
 | concept\_id | concept\_name | direction |
@@ -192,8 +187,8 @@ denominator.
 ``` r
 use <- ds.omop.concept.prevalence("condition_occurrence", metric = "persons",
   top_n = 20, scope = "pooled", conns = conns)$pooled
-knitr::kable(use[use$concept_id %in% c(asthma_id, child_id, bleeding_id),
-  c("concept_id", "concept_name", "n_persons")], row.names = FALSE)
+use[use$concept_id %in% c(asthma_id, child_id, bleeding_id),
+  c("concept_id", "concept_name", "n_persons")]
 ```
 
 | concept\_id | concept\_name               | n\_persons |
@@ -210,8 +205,8 @@ Locate both IDs to check which tables and columns actually use them:
 ``` r
 locations <- ds.omop.concept.locate(c(asthma_id, child_id), scope = "pooled", conns = conns)$pooled
 locations$concept_name <- conditions$concept_name[match(locations$concept_id, conditions$concept_id)]
-knitr::kable(locations[locations$table_name == "condition_occurrence",
-  c("concept_id", "concept_name", "table_name", "n_records", "n_persons")], row.names = FALSE)
+locations[locations$table_name == "condition_occurrence",
+  c("concept_id", "concept_name", "table_name", "n_records", "n_persons")]
 ```
 
 | concept\_id | concept\_name    | table\_name           | n\_records | n\_persons |
@@ -278,7 +273,7 @@ their IDs:
 visit_hits <- ds.omop.concept.search("Visit", domain = "Visit", conns = conns)$pooled
 visit_catalogue <- visit_hits[visit_hits$concept_name %in%
   c("Inpatient Visit", "Outpatient Visit"), ]
-knitr::kable(visit_catalogue[c("concept_id", "concept_name", "standard_concept")])
+visit_catalogue[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 | concept\_id | concept\_name    | standard\_concept |
@@ -297,7 +292,7 @@ in the vocabulary. Check their clinical use separately:
 ``` r
 visit_use <- ds.omop.concept.locate(unname(visit_ids), scope = "pooled", conns = conns)$pooled
 visit_use$concept_name <- names(visit_ids)[match(visit_use$concept_id, visit_ids)]
-knitr::kable(visit_use[c("concept_id", "concept_name", "n_records", "n_persons")])
+visit_use[c("concept_id", "concept_name", "n_records", "n_persons")]
 ```
 
 | concept\_id | concept\_name   | n\_records | n\_persons |
@@ -312,16 +307,19 @@ locator row could also be withheld.
 ## Find the questionnaire questions, answers and causes
 
 Switch to the separate synthetic dataset described in
-[chapter 0](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#the-questionnaire-dataset).
+[chapter 0](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#the-resources-on-the-server).
 Its local question and answer codes are teaching examples, not codes to
 copy into a clinical study.
 
 ``` r
-practice <- book_switch("questionnaire")
-conns <- practice$conns
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.questionnaire", conns = conns)
+```
+
+``` r
 questionnaire <- ds.omop.concept.search(NULL, standard_only = FALSE,
   limit = 100, conns = conns)$pooled
-knitr::kable(questionnaire[c("concept_id", "concept_name", "domain_id")])
+questionnaire[c("concept_id", "concept_name", "domain_id")]
 ```
 
 | concept\_id | concept\_name                | domain\_id  |
@@ -359,7 +357,7 @@ mapping or hierarchy.
 
 ``` r
 question_presence <- ds.omop.concept.prevalence("observation", scope = "pooled", conns = conns)$pooled
-knitr::kable(question_presence[c("concept_id", "concept_name", "n_persons")])
+question_presence[c("concept_id", "concept_name", "n_persons")]
 ```
 
 | concept\_id | concept\_name      | n\_persons |
@@ -376,7 +374,7 @@ the table’s checks.
 cause_use <- ds.omop.concept.locate(unname(question_ids[c("Myocardial infarction", "Pneumonia")]),
   scope = "pooled", conns = conns)$pooled
 cause_use$concept_name <- names(question_ids)[match(cause_use$concept_id, question_ids)]
-knitr::kable(cause_use[c("concept_id", "concept_name", "table_name", "n_records", "n_persons")], row.names = FALSE)
+cause_use[c("concept_id", "concept_name", "table_name", "n_records", "n_persons")]
 ```
 
 | concept\_id | concept\_name         | table\_name | n\_records | n\_persons |
@@ -395,10 +393,13 @@ optional teaching catalogue.
 Solution
 
 ``` r
-practice <- book_switch("questionnaire", categories = TRUE)
-conns <- practice$conns
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.questionnaire_vocab", conns = conns)
+```
+
+``` r
 atc_default <- ds.omop.concept.search(NULL, vocabulary = "ATC", conns = conns)$pooled
-print(atc_default[c("concept_id", "concept_name", "standard_concept")])
+atc_default
 ```
 
     #> NULL
@@ -409,7 +410,7 @@ instead:
 
 ``` r
 atc <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard = "C", conns = conns)$pooled
-knitr::kable(atc[c("concept_id", "concept_name", "standard_concept")])
+atc[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 | concept\_id | concept\_name             | standard\_concept |
@@ -429,19 +430,22 @@ Switch to the numeric resource. The vocabulary spells haemoglobin
 name containing the word.
 
 ``` r
-practice <- book_switch("numeric")
-conns <- practice$conns
-lab_hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)$pooled
-knitr::kable(lab_hits[c("concept_id", "concept_name", "standard_concept")])
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.synthea", conns = conns)
 ```
 
-| concept\_id | concept\_name                                                                        | standard\_concept |
-| ----------: | :----------------------------------------------------------------------------------- | :---------------- |
-|     3001643 | Hemoglobin and Hematocrit panel - Blood                                              | S                 |
-|     3004410 | Hemoglobin A1c/Hemoglobin.total in Blood                                             | S                 |
-|    40761014 | Hemoglobin.gastrointestinal.lower \[Presence\] in Stool by Immunoassay –1st specimen | S                 |
-|     3011397 | Hemoglobin \[Presence\] in Urine by Test strip                                       | S                 |
-|     3000963 | Hemoglobin \[Mass/volume\] in Blood                                                  | S                 |
+``` r
+lab_hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)$pooled
+lab_hits[c("concept_id", "concept_name", "standard_concept")]
+```
+
+| concept\_id | concept\_name                                                                         | standard\_concept |
+| ----------: | :------------------------------------------------------------------------------------ | :---------------- |
+|     3001643 | Hemoglobin and Hematocrit panel - Blood                                               | S                 |
+|     3004410 | Hemoglobin A1c/Hemoglobin.total in Blood                                              | S                 |
+|    40761014 | Hemoglobin.gastrointestinal.lower \[Presence\] in Stool by Immunoassay --1st specimen | S                 |
+|     3011397 | Hemoglobin \[Presence\] in Urine by Test strip                                        | S                 |
+|     3000963 | Hemoglobin \[Mass/volume\] in Blood                                                   | S                 |
 
 ``` r
 hb_id <- lab_hits$concept_id[lab_hits$concept_name == "Hemoglobin [Mass/volume] in Blood"]
@@ -453,7 +457,7 @@ share the word.
 
 ``` r
 glucose_hits <- ds.omop.concept.search("Glucose", domain = "Measurement", conns = conns)$pooled
-knitr::kable(glucose_hits[c("concept_id", "concept_name", "standard_concept")])
+glucose_hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 | concept\_id | concept\_name                                  | standard\_concept |
@@ -479,7 +483,7 @@ which specimens and concentration measures answer your question.
 units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = hb_id,
   scope = "pooled", conns = conns)$pooled
 names(units)[names(units) == "value"] <- "unit_concept_id"
-knitr::kable(units[c("unit_concept_id", "concept_name", "n")])
+units[c("unit_concept_id", "concept_name", "n")]
 ```
 
 | unit\_concept\_id | concept\_name      |   n |
@@ -501,11 +505,11 @@ serum_glucose_id <- glucose_hits$concept_id[glucose_hits$concept_name ==
   "Glucose [Mass/volume] in Serum or Plasma"]
 serum_glucose_units <- ds.omop.value.counts("measurement", "unit_concept_id",
   concept_id = serum_glucose_id, scope = "pooled", conns = conns)
-cat(serum_glucose_units$meta$warnings, sep = "\n")
+serum_glucose_units$meta$warnings
 ```
 
-    #> Server errors: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.
-    #> No complete disclosure-safe pooled value counts were available.
+    #> [1] "Server errors: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available."
+    #> [2] "No complete disclosure-safe pooled value counts were available."
 
 The aggregate is unavailable; this does not establish that the concept
 has no records. Use the separately selected Blood glucose for the next
@@ -521,7 +525,7 @@ Solution
 glucose_units <- ds.omop.value.counts("measurement", "unit_concept_id",
   concept_id = glucose_id, scope = "pooled", conns = conns)$pooled
 names(glucose_units)[names(glucose_units) == "value"] <- "unit_concept_id"
-knitr::kable(glucose_units[c("unit_concept_id", "concept_name", "n")])
+glucose_units[c("unit_concept_id", "concept_name", "n")]
 ```
 
 | unit\_concept\_id | concept\_name           |   n |
@@ -554,7 +558,7 @@ height and weight.
 ``` r
 bmi_hits <- ds.omop.concept.search("Body mass index", domain = "Measurement",
   vocabulary = "LOINC", conns = conns)$pooled
-knitr::kable(bmi_hits[c("concept_id", "concept_name", "standard_concept")])
+bmi_hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 | concept\_id | concept\_name                                        | standard\_concept |
@@ -572,7 +576,7 @@ Choose the standard LOINC measurement **3038553**, Body mass index (BMI)
 ``` r
 bmi_use <- ds.omop.concept.locate(bmi_id, scope = "pooled", conns = conns)$pooled
 bmi_use$concept_name <- bmi_hits$concept_name[match(bmi_use$concept_id, bmi_hits$concept_id)]
-knitr::kable(bmi_use[c("concept_id", "concept_name", "n_records", "n_persons")])
+bmi_use[c("concept_id", "concept_name", "n_records", "n_persons")]
 ```
 
 | concept\_id | concept\_name                   | n\_records | n\_persons |
@@ -586,7 +590,7 @@ measurements. Check the recorded unit before summarising those values:
 bmi_units <- ds.omop.value.counts("measurement", "unit_concept_id",
   concept_id = bmi_id, scope = "pooled", conns = conns)$pooled
 names(bmi_units)[names(bmi_units) == "value"] <- "unit_concept_id"
-knitr::kable(bmi_units[c("unit_concept_id", "concept_name", "n")])
+bmi_units[c("unit_concept_id", "concept_name", "n")]
 ```
 
 | unit\_concept\_id | concept\_name             |   n |

@@ -6,13 +6,13 @@ Find the study concepts, define mutually exclusive new-user entry,
 account for censoring, and fit a pooled adjusted constant-hazard
 survival model.
 
-**You need:** [the installed packages and practice
-resources](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start),
+**You need:** the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md),
 [concept
 discovery](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
-and the preceding tutorial chapters. Run these sections in order in a
-fresh `book-work` session. All observations are public synthetic
-teaching data; the numerical results are not clinical evidence.
+and the preceding tutorial chapters. This chapter uses the two GiBleed
+sites. All observations are public synthetic teaching data; the
+numerical results are not clinical evidence.
 
 ## Research question
 
@@ -21,31 +21,24 @@ either drug, how does first GI bleeding during the following year
 differ? We adjust for age. This is a methods exercise; age adjustment
 alone does not identify a causal drug effect.
 
-For real servers, replace the two lines assigning `practice_pair` and
-`two_conns` below with the [two-site Opal
-login](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#connect-to-two-opal-sites),
-which attaches the resources as `book_pool`.
-
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-source("tools/book/practice.R")
-practice_pair <- book_connect("gibleed", two_sites = TRUE, symbol = "book_pool")
-two_conns <- practice_pair$conns
+two_conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("north", "south"),
+  resource = c(north = "omop.gibleed_north", south = "omop.gibleed_south"))$conns
 ```
 
-The helper partitions public GiBleed people into two disjoint sites. It
-never splits or downloads a real site’s records through an analyst
-connection.
+The two GiBleed resources hold disjoint halves of the public GiBleed
+people, so no person is counted twice when the sites are pooled.
 
 ## Find the drugs and outcome
 
 ``` r
-ce <- ds.omop.concept.search("celecoxib", domain = "Drug", conns = two_conns, symbol = "book_pool")$pooled
-di <- ds.omop.concept.search("diclofenac", domain = "Drug", conns = two_conns, symbol = "book_pool")$pooled
-gi <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition", conns = two_conns, symbol = "book_pool")$pooled
-knitr::kable(rbind(ce, di, gi)[c("concept_id", "concept_name", "standard_concept", "concept_class_id")])
+ce <- ds.omop.concept.search("celecoxib", domain = "Drug", conns = two_conns)$pooled
+di <- ds.omop.concept.search("diclofenac", domain = "Drug", conns = two_conns)$pooled
+gi <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition", conns = two_conns)$pooled
+rbind(ce, di, gi)[c("concept_id", "concept_name", "standard_concept", "concept_class_id")]
 ```
 
 | concept\_id | concept\_name                                       | standard\_concept | concept\_class\_id |
@@ -74,8 +67,8 @@ does not establish a descendant relationship, which is why only the seed
 appears below.
 
 ``` r
-ce_children <- ds.omop.concept.descendants(ceid, conns = two_conns, symbol = "book_pool")$pooled
-knitr::kable(ce_children[c("concept_id", "concept_name")])
+ce_children <- ds.omop.concept.descendants(ceid, conns = two_conns)$pooled
+ce_children[c("concept_id", "concept_name")]
 ```
 
 | concept\_id | concept\_name |
@@ -83,8 +76,8 @@ knitr::kable(ce_children[c("concept_id", "concept_name")])
 |     1118084 | celecoxib     |
 
 ``` r
-knitr::kable(ds.omop.concept.locate(c(ceid, diid, giid), scope = "pooled",
-  conns = two_conns, symbol = "book_pool")$pooled)
+ds.omop.concept.locate(c(ceid, diid, giid), scope = "pooled",
+  conns = two_conns)$pooled
 ```
 
 | concept\_id | table\_name           | concept\_column        | n\_records | n\_persons |
@@ -151,7 +144,7 @@ comparison <- omop_recipe(populations = list(users),
     omop_output("analysis", rows = "users", format = "joined", options = list(
       from = list(list(output = "baseline"), list(output = "survival")),
       how = "inner", cardinality = "one_to_one"))), publish = "analysis")
-invisible(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
+recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns)
 ```
 
 The censor list and 365-day window define the estimand. Event = 0 means
@@ -176,23 +169,23 @@ time; check this before taking a logarithm rather than silently adding
 time or dropping those events.
 
 ``` r
-invisible(ds.omop.mutate("D_comparison", years = follow_up_days / 365.25,
+ds.omop.mutate("D_comparison", years = follow_up_days / 365.25,
   zero_time = ifelse(follow_up_days <= 0, 1L, 0L),
   month_difference = entry_month - birth_month, day_difference = entry_day - birth_day,
   age = entry_year - birth_year - ifelse(month_difference < 0 |
     (month_difference == 0 & day_difference < 0), 1L, 0L),
-  newobj = "D_comparison_model", conns = two_conns, symbol = "book_pool"))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_comparison_model$zero_time", datasources = two_conns)))
+  newobj = "D_comparison_model", conns = two_conns)
+dsBaseClient::ds.table("D_comparison_model$zero_time",
+  datasources = two_conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 0        |  2630 |
-| NA       |     0 |
+    #> D_comparison_model$zero_time
+    #>    0   NA
+    #> 2630    0
 
 ``` r
-knitr::kable(book_table2(dsBaseClient::ds.table("D_comparison$celecoxib",
-  "D_comparison$event", datasources = two_conns)))
+dsBaseClient::ds.table("D_comparison$celecoxib",
+  "D_comparison$event", datasources = two_conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 |    |    0 |   1 | NA |
@@ -209,8 +202,8 @@ making the study definition explicit.
 
 ``` r
 arm_summary <- do.call(rbind, lapply(0:1, function(arm) {
-  invisible(ds.omop.filter("D_comparison_model", var = "celecoxib", op = "==", value = arm,
-    newobj = paste0("D_arm", arm), conns = two_conns, symbol = "book_pool"))
+  ds.omop.filter("D_comparison_model", var = "celecoxib", op = "==", value = arm,
+    newobj = paste0("D_arm", arm), conns = two_conns)
   aggregate <- function(column) dsBaseClient::ds.mean(paste0("D_arm", arm, "$", column),
     type = "combine", datasources = two_conns)$Global.Mean
   time <- aggregate("years"); event <- aggregate("event"); age <- aggregate("age")
@@ -221,7 +214,7 @@ arm_summary <- do.call(rbind, lapply(0:1, function(arm) {
     Events = events, Person_years = py, Rate_per_1000 = 1000 * events / py,
     Mean_followup_days = 365.25 * py / n, Mean_age = age[1, "EstimatedMean"])
 }))
-knitr::kable(arm_summary, digits = 2)
+arm_summary
 ```
 
 | Arm        | People | Events | Person\_years | Rate\_per\_1000 | Mean\_followup\_days | Mean\_age |
@@ -249,8 +242,8 @@ comparison_fit <- dsBaseClient::ds.glm("event ~ celecoxib + age",
   data = "D_comparison_model", family = "poisson", offset = "log_years", datasources = two_conns)
 beta <- comparison_fit$coefficients["celecoxib", "Estimate"]
 se <- comparison_fit$coefficients["celecoxib", "Std. Error"]
-knitr::kable(data.frame(Hazard_ratio = exp(beta),
-  Lower_95 = exp(beta - 1.96 * se), Upper_95 = exp(beta + 1.96 * se)), digits = 3)
+data.frame(Hazard_ratio = exp(beta),
+  Lower_95 = exp(beta - 1.96 * se), Upper_95 = exp(beta + 1.96 * se))
 ```
 
 | Hazard\_ratio | Lower\_95 | Upper\_95 |
@@ -272,8 +265,8 @@ adequate adjustment?
 Solution 1
 
 ``` r
-knitr::kable(data.frame(Crude_rate_ratio = arm_summary$Rate_per_1000[2] /
-  arm_summary$Rate_per_1000[1], Adjusted_hazard_ratio = exp(beta)), digits = 3)
+data.frame(Crude_rate_ratio = arm_summary$Rate_per_1000[2] /
+  arm_summary$Rate_per_1000[1], Adjusted_hazard_ratio = exp(beta))
 ```
 
 | Crude\_rate\_ratio | Adjusted\_hazard\_ratio |
@@ -289,16 +282,15 @@ bleeding?
 Solution 2
 
 ``` r
-invisible(ds.omop.mutate("D_comparison", early_censor = ifelse(event == 0 & follow_up_days < 364, 1L, 0L),
-  newobj = "D_censor", conns = two_conns, symbol = "book_pool"))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_censor$early_censor", datasources = two_conns)))
+ds.omop.mutate("D_comparison", early_censor = ifelse(event == 0 & follow_up_days < 364, 1L, 0L),
+  newobj = "D_censor", conns = two_conns)
+dsBaseClient::ds.table("D_censor$early_censor",
+  datasources = two_conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 0        |  2578 |
-| 1        |    52 |
-| NA       |     0 |
+    #> D_censor$early_censor
+    #>    0    1   NA
+    #> 2578   52    0
 
 The 52 early censored episodes end at observation end; GiBleed has no
 recorded deaths. Event-free follow-up through day 365 has elapsed

@@ -5,17 +5,15 @@
 Combine ages, questionnaire answers, visit periods and causes in one
 private table, then use it to compare causes across age groups.
 
-**You need:** [the setup and questionnaire
-dataset](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md),
-plus the date and category lessons. Start a fresh R session in
-`book-work`.
+**You need:** the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md),
+plus the date and category lessons. This chapter uses
+`omop.questionnaire`.
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
 
 ## Find the concepts
@@ -23,7 +21,7 @@ conns <- practice$conns
 ``` r
 catalogue <- ds.omop.concept.lookup(c(900001L, 900002L, 900101L, 900102L,
   900201L, 900202L), conns = conns)$pooled
-knitr::kable(catalogue[c("concept_id", "concept_name", "domain_id")])
+catalogue[c("concept_id", "concept_name", "domain_id")]
 ```
 
 | concept\_id | concept\_name         | domain\_id  |
@@ -92,36 +90,39 @@ calendar counts.
 ## Check age and missingness
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$age_at_death",
-  useNA = "always", datasources = conns)))
+dsBaseClient::ds.table("D_capstone$age_at_death",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 32       |     6 |
-| 33       |     6 |
-| 42       |     6 |
-| 43       |     6 |
-| NA       |    24 |
+    #> D_capstone$age_at_death
+    #> 32 33 42 43 NA
+    #>  6  6  6  6 24
 
 Ages 32, 33, 42 and 43 each occur six times. The 24 missing ages combine
 12 deaths with incomplete birth dates and 12 survivors. Missing age is
 not a fifth age band.
 
 ``` r
-knitr::kable(book_summary("D_capstone$age_at_first_visit", datasources = conns))
+dsBaseClient::ds.summary("D_capstone$age_at_first_visit", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |    29 |      24 |        24 |
-| site | 10%       |    29 |      24 |        24 |
-| site | 25%       |    29 |      24 |        24 |
-| site | 50%       |    34 |      24 |        24 |
-| site | 75%       |    39 |      24 |        24 |
-| site | 90%       |    39 |      24 |        24 |
-| site | 95%       |    39 |      24 |        24 |
-| site | Mean      |    34 |      24 |        24 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 48
+    #>
+    #> $site$`quantiles & mean`
+    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #>   29   29   29   34   39   39   39   34
+
+``` r
+dsBaseClient::ds.numNA("D_capstone$age_at_first_visit", datasources = conns)
+```
+
+    #> $site
+    #> [1] 24
 
 There are 24 valid ages and 24 missing. The valid ages are 29 and 39,
 with a mean of 34 years. These describe the age at first care, not the
@@ -130,51 +131,44 @@ later age at death.
 ## Read the answers and calendar periods
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$education", datasources = conns)))
+dsBaseClient::ds.table("D_capstone$education",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category             | Count |
-| :------------------- | ----: |
-| Secondary education  |    12 |
-| University education |    12 |
-| Missing              |    24 |
-| NA                   |     0 |
+    #> D_capstone$education
+    #>  Secondary education University education              Missing                   NA
+    #>                   12                   12                   24                    0
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$fever", useNA = "always", datasources = conns)))
+dsBaseClient::ds.table("D_capstone$fever",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| Yes      |    12 |
-| No       |    12 |
-| NA       |    24 |
+    #> D_capstone$fever
+    #> Yes  No  NA
+    #>  12  12  24
 
 Education has 12 Secondary, 12 University and 24 Missing answers. Fever
 has 12 Yes, 12 No and 24 missing answers. No is an observed response; it
 is not a substitute for missingness.
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$visit_month", useNA = "always", datasources = conns)))
+dsBaseClient::ds.table("D_capstone$visit_month",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 2020-03  |    12 |
-| 2020-06  |    12 |
-| 2020-07  |    12 |
-| NA       |    12 |
+    #> D_capstone$visit_month
+    #> 2020-03 2020-06 2020-07      NA
+    #>      12      12      12      12
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_capstone$visit_quarter", useNA = "always", datasources = conns)))
+dsBaseClient::ds.table("D_capstone$visit_quarter",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 2020-Q1  |    12 |
-| 2020-Q2  |    12 |
-| 2020-Q3  |    12 |
-| NA       |    12 |
+    #> D_capstone$visit_quarter
+    #> 2020-Q1 2020-Q2 2020-Q3      NA
+    #>      12      12      12      12
 
 March, June and July each contain 12 first visits, with 12 people
 lacking a visit. They fall in three different quarters, so changing
@@ -184,8 +178,9 @@ may merge into one quarter.
 ## Use the table: cause by age at death
 
 ``` r
-knitr::kable(book_table2(dsBaseClient::ds.table("D_capstone$cause",
-  "D_capstone$age_band", useNA = "always", datasources = conns)))
+dsBaseClient::ds.table("D_capstone$cause",
+  "D_capstone$age_band", useNA = "always",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 |                       | under 40 | 40 and over | NA |
@@ -213,16 +208,14 @@ before_death <- omop_variable(event = education_event,
   reducer = omop_reduce("last_value", value = "value_as_concept_id",
     window = omop_window(NULL, 0, anchor = omop_anchor(omop_event("death"), which = "first"))))
 restricted <- omop_recipe(variables = list(education = before_death))
-invisible(recipe_execute(restricted, out = "D_before_death", conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_before_death$education",
-  useNA = "always", datasources = conns)))
+recipe_execute(restricted, out = "D_before_death", conns = conns)
+dsBaseClient::ds.table("D_before_death$education",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category             | Count |
-| :------------------- | ----: |
-| Secondary education  |    12 |
-| University education |    12 |
-| NA                   |    24 |
+    #> D_before_death$education
+    #>  Secondary education University education                   NA
+    #>                   12                   12                   24
 
 The counts remain 12 Secondary, 12 University and 24 missing: all
 observed answers preceded death. This exercise uses the raw education
@@ -238,23 +231,23 @@ month category.
 Solution 2
 
 ``` r
-knitr::kable(book_summary("D_capstone$visit_year", datasources = conns))
+dsBaseClient::ds.summary("D_capstone$visit_year", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |  2020 |      36 |        12 |
-| site | 10%       |  2020 |      36 |        12 |
-| site | 25%       |  2020 |      36 |        12 |
-| site | 50%       |  2020 |      36 |        12 |
-| site | 75%       |  2020 |      36 |        12 |
-| site | 90%       |  2020 |      36 |        12 |
-| site | 95%       |  2020 |      36 |        12 |
-| site | Mean      |  2020 |      36 |        12 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 48
+    #>
+    #> $site$`quantiles & mean`
+    #>   5%  10%  25%  50%  75%  90%  95% Mean
+    #> 2020 2020 2020 2020 2020 2020 2020 2020
 
 ``` r
 columns <- recipe_codebook(result)[[1]]$columns
-knitr::kable(columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")], row.names = FALSE)
+columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")]
 ```
 
 | name         | r\_type         |

@@ -5,27 +5,18 @@
 Choose a table shape for your question and run one small example of
 every format, including explicit survival censoring.
 
-This chapter uses the public synthetic Synthea27Nj numeric connection
-from [Getting
+**You need:** the client packages and the Opal login from [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-
-**You need:** the packages and helpers from [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work`
-directory.
+This chapter uses `omop.synthea`, the public synthetic Synthea27Nj data.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
-Run this setup first:
+Log in first:
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the
@@ -94,12 +85,6 @@ entry or before. Age is completed age at the first visit.
 
 ``` r
 wide_result <- recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns)
-book_symbols(wide_result)
-```
-
-    #> wide → D_fmt_wide
-
-``` r
 dsBaseClient::ds.dim("D_fmt_wide", datasources = conns)
 ```
 
@@ -123,7 +108,7 @@ long <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("long", rows = "visitors", format = "long",
   sources = "visits"))
-invisible(recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns))
+recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_long", datasources = conns)
 ```
 
@@ -139,14 +124,13 @@ index. One source makes the event-row meaning clear; multiple sources
 need an explicit event-log design.
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_fmt_long$concept_id",
-  useNA = "no", datasources = conns)))
+dsBaseClient::ds.table("D_fmt_long$concept_id",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category         | Count |
-| :--------------- | ----: |
-| Inpatient Visit  |    13 |
-| Outpatient Visit |  1722 |
+    #> D_fmt_long$concept_id
+    #>  Inpatient Visit Outpatient Visit
+    #>               13             1722
 
 The 13 inpatient and 1,722 outpatient visits sum to 1,735 records. These
 are visits by setting, rather than numbers of people. A person may
@@ -161,7 +145,7 @@ table. Native typed variables preserve their declared values.
 features <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("features", rows = "visitors", type = "features"))
-invisible(recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns))
+recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_features", datasources = conns)
 ```
 
@@ -188,7 +172,7 @@ baseline_variables <- list(
 baseline <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = baseline_variables,
   outputs = omop_output("baseline", rows = "visitors", type = "baseline"))
-invisible(recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns))
+recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_baseline", datasources = conns)
 ```
 
@@ -215,7 +199,7 @@ panel <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("panel", rows = "visitors", format = "person_period",
   options = list(sources = list(visits), bins = list(width = 30L),
     window = omop_window(1, 90), analyses = "count", representation = "dense")))
-invisible(recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns))
+recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_panel", datasources = conns)
 ```
 
@@ -231,20 +215,20 @@ instead aligns to calendar months, whose lengths vary. Account for
 repeated rows per person in downstream analysis.
 
 ``` r
-knitr::kable(book_summary("D_fmt_panel$visits_outpatient_visit_count",
-  datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_fmt_panel$visits_outpatient_visit_count",
+  datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        |  0.00 |      84 |         0 |
-| site | 10%       |  0.00 |      84 |         0 |
-| site | 25%       |  0.00 |      84 |         0 |
-| site | 50%       |  0.00 |      84 |         0 |
-| site | 75%       |  0.00 |      84 |         0 |
-| site | 90%       |  1.00 |      84 |         0 |
-| site | 95%       |  1.00 |      84 |         0 |
-| site | Mean      |  0.19 |      84 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 84
+    #>
+    #> $site$`quantiles & mean`
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean
+    #> 0.0000000 0.0000000 0.0000000 0.0000000 0.0000000 1.0000000 1.0000000 0.1904762
 
 The mean is 0.19 outpatient visits per person and 30-day bin, and the
 median is zero across 84 bins. Zero bins remain in the denominator; a
@@ -263,12 +247,15 @@ temporal <- omop_recipe(events = list(visits, spans, inpatient),
   options = list(sources = list(visits), bin_width = 30L,
     window = omop_window(0, 89), analyses = "count")))
 temporal_result <- recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns)
-book_symbols(temporal_result)
+DSI::datashield.symbols(conns)
 ```
 
-    #> temporal/temporal → D_fmt_temporal
-    #> temporal/covariateRef → D_fmt_temporal.covariateRef
-    #> temporal/timeRef → D_fmt_temporal.timeRef
+    #> $site
+    #> [1] "D_fmt_baseline"              "D_fmt_features"
+    #> [3] "D_fmt_long"                  "D_fmt_panel"
+    #> [5] "D_fmt_temporal"              "D_fmt_temporal.covariateRef"
+    #> [7] "D_fmt_temporal.timeRef"      "D_fmt_wide"
+    #> [9] "omop"
 
 ``` r
 dsBaseClient::ds.dim("D_fmt_temporal", datasources = conns)
@@ -280,10 +267,11 @@ dsBaseClient::ds.dim("D_fmt_temporal", datasources = conns)
     #> $`dimensions of D_fmt_temporal in combined studies`
     #> [1] 36  6
 
-The 36 rows count nonzero covariate/bin entries rather than people. Keep
-the covariate and time reference tables returned with this result: their
-keys need those definitions. Missing records and missing measurements
-are not automatically interchangeable.
+The server now also holds `D_fmt_temporal.covariateRef` and
+`D_fmt_temporal.timeRef`. The 36 rows count nonzero covariate/bin
+entries rather than people. Keep the covariate and time reference tables
+with this result: their keys need those definitions. Missing records and
+missing measurements are not automatically interchangeable.
 
 ## Survival: state the censoring rule
 
@@ -297,7 +285,7 @@ survival <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("survival", rows = "visitors", format = "survival",
   options = list(outcomes = list(admission = inpatient),
     tar = omop_window(1, NULL), censor = list("observation_end", "death"))))
-invisible(recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns))
+recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_survival", datasources = conns)
 ```
 
@@ -316,31 +304,30 @@ would use the default 730-day window.
 
 ``` r
 survival_result <- dsBaseClient::ds.table("D_fmt_survival$event", useNA = "no", datasources = conns)
-knitr::kable(book_counts(survival_result))
+survival_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| 0        |    21 |
-| 1        |     7 |
+    #> D_fmt_survival$event
+    #>  0  1
+    #> 21  7
 
 Seven people have `event = 1` (an observed admission); 21 have `event
 = 0` (follow-up ended without an admission in the risk window).
 
 ``` r
-knitr::kable(book_summary("D_fmt_survival$follow_up_days", datasources = conns), digits = 1)
+dsBaseClient::ds.summary("D_fmt_survival$follow_up_days", datasources = conns)
 ```
 
-| Site | Statistic |   Value | N valid | N missing |
-| :--- | :-------- | ------: | ------: | --------: |
-| site | 5%        |   993.4 |      28 |         0 |
-| site | 10%       |  1913.5 |      28 |         0 |
-| site | 25%       |  3821.2 |      28 |         0 |
-| site | 50%       |  7462.0 |      28 |         0 |
-| site | 75%       | 14257.5 |      28 |         0 |
-| site | 90%       | 18489.0 |      28 |         0 |
-| site | 95%       | 21647.2 |      28 |         0 |
-| site | Mean      |  9291.6 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean
+    #>   993.350  1913.500  3821.250  7462.000 14257.500 18489.000 21647.200  9291.571
 
 Median follow-up is 7,462 days and the mean is 9,291.6 days. This spans
 much of the simulated life histories because no upper time limit was
@@ -359,7 +346,7 @@ intervals <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("intervals", rows = "visitors", format = "intervals",
   options = list(sources = list(spans), window = omop_window(0, NULL))))
-invisible(recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns))
+recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_intervals", datasources = conns)
 ```
 
@@ -385,11 +372,17 @@ sparse <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("sparse", rows = "visitors", format = "sparse",
   options = list(sources = list(visits), analyses = c("binary", "count"))))
 sparse_result <- recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns)
-book_symbols(sparse_result)
+DSI::datashield.symbols(conns)
 ```
 
-    #> sparse/sparse → D_fmt_sparse
-    #> sparse/covariateRef → D_fmt_sparse.covariateRef
+    #> $site
+    #>  [1] "D_fmt_baseline"              "D_fmt_features"
+    #>  [3] "D_fmt_intervals"             "D_fmt_long"
+    #>  [5] "D_fmt_panel"                 "D_fmt_sparse"
+    #>  [7] "D_fmt_sparse.covariateRef"   "D_fmt_survival"
+    #>  [9] "D_fmt_temporal"              "D_fmt_temporal.covariateRef"
+    #> [11] "D_fmt_temporal.timeRef"      "D_fmt_wide"
+    #> [13] "omop"
 
 ``` r
 dsBaseClient::ds.dim("D_fmt_sparse", datasources = conns)
@@ -401,12 +394,13 @@ dsBaseClient::ds.dim("D_fmt_sparse", datasources = conns)
     #> $`dimensions of D_fmt_sparse in combined studies`
     #> [1] 70  5
 
-The 70 sparse rows each hold a nonzero value for one person and
-covariate, so this row count is not a population size. The data contain
-a covariate key and value. The reference companion maps keys to source,
-concept and analysis. A missing sparse row is not a missing person
-roster: retain membership separately. Each published patient component
-must meet its own support rule.
+`D_fmt_sparse` comes with its reference table
+`D_fmt_sparse.covariateRef`. The 70 sparse rows each hold a nonzero
+value for one person and covariate, so this row count is not a
+population size. The data contain a covariate key and value. The
+reference companion maps keys to source, concept and analysis. A missing
+sparse row is not a missing person roster: retain membership separately.
+Each published patient component must meet its own support rule.
 
 ## Membership: retain the population roster
 
@@ -417,7 +411,7 @@ independently of its measurements.
 membership <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("membership", rows = "visitors", format = "membership"))
-invisible(recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns))
+recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_membership", datasources = conns)
 ```
 
@@ -443,7 +437,7 @@ dictionary <- omop_recipe(events = list(visits), populations = list(visitors),
   counts = omop_output("counts", rows = "visitors", format = "wide", columns = "visits"),
   dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary",
     options = list(source_outputs = "counts"))), publish = "dictionary")
-invisible(recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns))
+recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_dictionary", datasources = conns)
 ```
 
@@ -505,9 +499,9 @@ meaning.
 ``` r
 books <- c(recipe_codebook(wide_result), recipe_codebook(sparse_result),
   recipe_codebook(joined_result))
-knitr::kable(do.call(rbind, lapply(books, function(x) data.frame(
+do.call(rbind, lapply(books, function(x) data.frame(
   Output = x$output, Component = x$component, Status = x$status,
-  Grain = x$row_grain, Columns = nrow(x$columns)))))
+  Grain = x$row_grain, Columns = nrow(x$columns))))
 ```
 
 |                     | Output | Component    | Status    | Grain   | Columns |
@@ -526,7 +520,7 @@ Inspect the sparse reference table’s column types:
 ``` r
 sparse_books <- recipe_codebook(sparse_result)
 reference_key <- grep("covariateRef$", names(sparse_books), value = TRUE)
-knitr::kable(sparse_books[[reference_key]]$columns[c("name", "r_type")])
+sparse_books[[reference_key]]$columns[c("name", "r_type")]
 ```
 
 | name          | r\_type   |
@@ -550,19 +544,19 @@ same as the wide count?
 Solution
 
 ``` r
-knitr::kable(book_summary("D_fmt_joined$visits", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_fmt_joined$visits", datasources = conns)
 ```
 
-| Site | Statistic |  Value | N valid | N missing |
-| :--- | :-------- | -----: | ------: | --------: |
-| site | 5%        |  11.75 |      28 |         0 |
-| site | 10%       |  16.40 |      28 |         0 |
-| site | 25%       |  23.75 |      28 |         0 |
-| site | 50%       |  45.00 |      28 |         0 |
-| site | 75%       |  75.25 |      28 |         0 |
-| site | 90%       | 117.60 |      28 |         0 |
-| site | 95%       | 152.20 |      28 |         0 |
-| site | Mean      |  61.96 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>        5%       10%       25%       50%       75%       90%       95%      Mean
+    #>  11.75000  16.40000  23.75000  45.00000  75.25000 117.60000 152.20000  61.96429
 
 The mean is 61.96 visits per person across 28 people. Both outputs use
 the same reducer and episodes. Joining one row to one row adds a column
@@ -577,19 +571,19 @@ weight?
 Solution
 
 ``` r
-knitr::kable(book_summary("D_fmt_wide$hemoglobin", datasources = conns), digits = 2)
+dsBaseClient::ds.summary("D_fmt_wide$hemoglobin", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 5%        | 12.90 |      28 |         0 |
-| site | 10%       | 13.15 |      28 |         0 |
-| site | 25%       | 13.79 |      28 |         0 |
-| site | 50%       | 14.32 |      28 |         0 |
-| site | 75%       | 15.34 |      28 |         0 |
-| site | 90%       | 15.70 |      28 |         0 |
-| site | 95%       | 15.92 |      28 |         0 |
-| site | Mean      | 14.47 |      28 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 28
+    #>
+    #> $site$`quantiles & mean`
+    #>       5%      10%      25%      50%      75%      90%      95%     Mean
+    #> 12.90500 13.14667 13.78500 14.32500 15.33542 15.70000 15.92375 14.46679
 
 The overall mean is 14.47 g/dL across 28 person-level means. The wide
 table gives each included person one mean in g/dL. An average over

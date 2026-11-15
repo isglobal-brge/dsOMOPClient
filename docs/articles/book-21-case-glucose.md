@@ -6,11 +6,11 @@ Describe first and later glucose readings, distinguish change from
 slope, handle unobserved threshold attainment, and interpret a model
 with only ten people.
 
-**You need:** [the setup and numeric
-resource](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md),
+**You need:** the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md)
 and [the lab
 lesson](https://isglobal-brge.github.io/dsOMOPClient/articles/book-14-labs.md).
-Start a fresh R session in `book-work`.
+This chapter uses `omop.synthea`.
 
 ## Research question
 
@@ -21,17 +21,15 @@ cutoffs below are teaching rules.
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
 ```
 
 ## Choose a populated measurement
 
 ``` r
 hits <- ds.omop.concept.search("Glucose", domain = "Measurement", vocabulary = "LOINC", conns = conns)$pooled
-knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
+hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 | concept\_id | concept\_name                                  | standard\_concept |
@@ -43,7 +41,7 @@ knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
 
 ``` r
 glucose_id <- hits$concept_id[trimws(hits$concept_name) == "Glucose [Mass/volume] in Blood"]
-knitr::kable(ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled)
+ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled
 ```
 
 | concept\_id | table\_name | concept\_column          | n\_records | n\_persons |
@@ -51,8 +49,8 @@ knitr::kable(ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)
 |     3000483 | measurement | measurement\_concept\_id |        225 |         10 |
 
 ``` r
-knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = glucose_id,
-  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")])
+ds.omop.value.counts("measurement", "unit_concept_id", concept_id = glucose_id,
+  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")]
 ```
 
 | value | concept\_name           |   n |
@@ -92,26 +90,21 @@ trajectory <- omop_recipe(populations = list(cohort), variables = list(
   followup_days = omop_variable(event = glucose, reducer = omop_reduce("last_date", window = omop_window(1, NULL))),
   target_days = omop_number_change(glucose, "time_to_threshold", threshold = 95, op = "ge")),
   outputs = omop_output("people", rows = "measured", format = "wide"))
-invisible(recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns))
-trajectory_summary <- do.call(rbind, lapply(c("first", "last", "change", "per_year", "followup_days"), function(column) {
-  x <- book_summary(paste0("D_glucose$", column), datasources = conns)
-  transform(x[x$Statistic %in% c("50%", "Mean"), ], Variable = column)
-}))
-knitr::kable(trajectory_summary, digits = 3, row.names = FALSE)
+recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns)
+sapply(c("first", "last", "change", "per_year", "followup_days"), function(column)
+  dsBaseClient::ds.quantileMean(paste0("D_glucose$", column), datasources = conns))
 ```
 
-| Site | Statistic |    Value | N valid | N missing | Variable       |
-| :--- | :-------- | -------: | ------: | --------: | :------------- |
-| site | 50%       |   84.550 |      10 |         0 | first          |
-| site | Mean      |   83.400 |      10 |         0 | first          |
-| site | 50%       |   92.200 |      10 |         0 | last           |
-| site | Mean      |   85.980 |      10 |         0 | last           |
-| site | 50%       |    9.050 |      10 |         0 | change         |
-| site | Mean      |    2.580 |      10 |         0 | change         |
-| site | 50%       |    0.221 |      10 |         0 | per\_year      |
-| site | Mean      |    0.397 |      10 |         0 | per\_year      |
-| site | 50%       | 6562.500 |      10 |         0 | followup\_days |
-| site | Mean      | 5915.200 |      10 |         0 | followup\_days |
+|      |  first |   last |   change | per\_year | followup\_days |
+| :--- | -----: | -----: | -------: | --------: | -------------: |
+| 5%   | 68.320 | 67.575 | \-25.715 |   \-0.882 |        3357.55 |
+| 10%  | 69.940 | 69.150 | \-23.330 |   \-0.722 |        4860.10 |
+| 25%  | 78.275 | 73.350 | \-15.275 |   \-0.014 |        5423.25 |
+| 50%  | 84.550 | 92.200 |    9.050 |     0.221 |        6562.50 |
+| 75%  | 90.050 | 95.225 |   18.900 |     0.575 |        6872.50 |
+| 90%  | 92.980 | 98.660 |   23.130 |     1.996 |        7008.50 |
+| 95%  | 96.040 | 99.380 |   25.965 |     2.077 |        7028.75 |
+| Mean | 83.400 | 85.980 |    2.580 |     0.397 |        5915.20 |
 
 All ten people have later values, with median follow-up about 18 years.
 First and last means are 83.40 and 85.98 mg/dL; mean change is 2.58
@@ -122,14 +115,13 @@ slope can miss fluctuations between readings.
 ## Classify values and distinguish unobserved attainment
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_glucose$control", datasources = conns)))
+dsBaseClient::ds.table("D_glucose$control",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category    | Count |
-| :---------- | ----: |
-| below 90    |     4 |
-| 90 or above |     6 |
-| NA          |     0 |
+    #> D_glucose$control
+    #>    below 90 90 or above          NA
+    #>           4           6           0
 
 Four people are below 90 and six are at least 90 mg/dL. It is a
 presentation rule, not a diagnosis or treatment goal. More detailed
@@ -143,19 +135,26 @@ protocol, and a withheld result is reported as withheld, not avoided by
 changing the cutoff.
 
 ``` r
-knitr::kable(book_summary("D_glucose$target_days", datasources = conns), digits = 3)
+dsBaseClient::ds.summary("D_glucose$target_days", datasources = conns)
 ```
 
-| Site | Statistic |  Value | N valid | N missing |
-| :--- | :-------- | -----: | ------: | --------: |
-| site | 5%        |  259.7 |       8 |         2 |
-| site | 10%       |  519.4 |       8 |         2 |
-| site | 25%       |  986.5 |       8 |         2 |
-| site | 50%       | 1169.0 |       8 |         2 |
-| site | 75%       | 2693.5 |       8 |         2 |
-| site | 90%       | 4769.8 |       8 |         2 |
-| site | 95%       | 5555.9 |       8 |         2 |
-| site | Mean      | 2101.5 |       8 |         2 |
+    #> $site
+    #> $site$class
+    #> [1] "integer"
+    #>
+    #> $site$length
+    #> [1] 10
+    #>
+    #> $site$`quantiles & mean`
+    #>     5%    10%    25%    50%    75%    90%    95%   Mean
+    #>  259.7  519.4  986.5 1169.0 2693.5 4769.8 5555.9 2101.5
+
+``` r
+dsBaseClient::ds.numNA("D_glucose$target_days", datasources = conns)
+```
+
+    #> $site
+    #> [1] 2
 
 Eight people have an observed attainment and two are missing. The median
 among attainments is 1,169 days; the mean is 2,101.5 days. One of the
@@ -178,8 +177,8 @@ large-sample z interval.
 fit <- dsBaseClient::ds.glm("last ~ first", data = "D_glucose", family = "gaussian", datasources = conns)
 b <- fit$coefficients["first", "Estimate"]
 se <- fit$coefficients["first", "Std. Error"]
-knitr::kable(data.frame(N = fit$Nvalid, df = fit$df, Estimate = b, Lower_95 = b - qt(.975, fit$df) * se,
-  Upper_95 = b + qt(.975, fit$df) * se, P_t = 2 * pt(-abs(b / se), df = fit$df)), digits = 3)
+data.frame(N = fit$Nvalid, df = fit$df, Estimate = b, Lower_95 = b - qt(.975, fit$df) * se,
+  Upper_95 = b + qt(.975, fit$df) * se, P_t = 2 * pt(-abs(b / se), df = fit$df))
 ```
 
 |  N | df | Estimate | Lower\_95 | Upper\_95 |  P\_t |
@@ -201,21 +200,28 @@ years and retain the number with missing attainment.
 Solution 1
 
 ``` r
-invisible(ds.omop.mutate("D_glucose", target_years = target_days / 365.25,
-  newobj = "D_glucose_years", conns = conns))
-knitr::kable(book_summary("D_glucose_years$target_years", datasources = conns), digits = 3)
+ds.omop.mutate("D_glucose", target_years = target_days / 365.25,
+  newobj = "D_glucose_years", conns = conns)
+dsBaseClient::ds.summary("D_glucose_years$target_years", datasources = conns)
 ```
 
-| Site | Statistic |  Value | N valid | N missing |
-| :--- | :-------- | -----: | ------: | --------: |
-| site | 5%        |  0.711 |       8 |         2 |
-| site | 10%       |  1.422 |       8 |         2 |
-| site | 25%       |  2.701 |       8 |         2 |
-| site | 50%       |  3.201 |       8 |         2 |
-| site | 75%       |  7.374 |       8 |         2 |
-| site | 90%       | 13.059 |       8 |         2 |
-| site | 95%       | 15.211 |       8 |         2 |
-| site | Mean      |  5.754 |       8 |         2 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 10
+    #>
+    #> $site$`quantiles & mean`
+    #>         5%        10%        25%        50%        75%        90%        95%       Mean
+    #>  0.7110198  1.4220397  2.7008898  3.2005476  7.3744011 13.0590007 15.2112252  5.7535934
+
+``` r
+dsBaseClient::ds.numNA("D_glucose_years$target_years", datasources = conns)
+```
+
+    #> $site
+    #> [1] 2
 
 The median becomes 3.20 years and the mean 5.75 years. Divide the day
 summary by 365.25 to check the values. The valid and missing counts do
@@ -228,21 +234,21 @@ prove a steady increase?
 Solution 2
 
 ``` r
-invisible(ds.omop.mutate("D_glucose", difference = last - first,
-  newobj = "D_difference", conns = conns))
-knitr::kable(book_summary("D_difference$difference", datasources = conns), digits = 3)
+ds.omop.mutate("D_glucose", difference = last - first,
+  newobj = "D_difference", conns = conns)
+dsBaseClient::ds.summary("D_difference$difference", datasources = conns)
 ```
 
-| Site | Statistic |    Value | N valid | N missing |
-| :--- | :-------- | -------: | ------: | --------: |
-| site | 5%        | \-25.715 |      10 |         0 |
-| site | 10%       | \-23.330 |      10 |         0 |
-| site | 25%       | \-15.275 |      10 |         0 |
-| site | 50%       |    9.050 |      10 |         0 |
-| site | 75%       |   18.900 |      10 |         0 |
-| site | 90%       |   23.130 |      10 |         0 |
-| site | 95%       |   25.965 |      10 |         0 |
-| site | Mean      |    2.580 |      10 |         0 |
+    #> $site
+    #> $site$class
+    #> [1] "numeric"
+    #>
+    #> $site$length
+    #> [1] 10
+    #>
+    #> $site$`quantiles & mean`
+    #>      5%     10%     25%     50%     75%     90%     95%    Mean
+    #> -25.715 -23.330 -15.275   9.050  18.900  23.130  25.965   2.580
 
 The difference agrees with native change because both calculate last
 minus first. All ten people have later readings, so the complete-case

@@ -95,18 +95,15 @@
 <p><strong>What you will learn</strong></p>
 <p>Select records, set inclusive time windows, and reduce them to first, last, count, ever, closest, any and all values.</p>
 </div>
-<p>This chapter uses the public synthetic Synthea27Nj numeric connection from <a href="book-00-start.html">Getting started</a>.</p>
-<p><strong>You need:</strong> the packages and helpers from <a href="book-00-start.html#before-you-start">Getting started</a>. Run the sections in order in a fresh R session in your <code>book-work</code> directory.</p>
+<p><strong>You need:</strong> the client packages and the Opal login from <a href="book-00-start.html">Getting started</a>. This chapter uses <code>omop.synthea</code>, the public synthetic Synthea27Nj data.</p>
 <div class="section level2">
 <h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
 </h2>
-<p>Start a fresh R session in the <code>book-work</code> directory created in <a href="book-00-start.html#get-the-book-helpers">Getting started</a>. Run this setup first:</p>
+<p>Log in first:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.login.html">ds.omop.login</a></span><span class="op">(</span><span class="st">"https://localhost:8443"</span>, user <span class="op">=</span> <span class="st">"administrator"</span>,</span>
+<span>  password <span class="op">=</span> <span class="st">"password"</span>, resource <span class="op">=</span> <span class="st">"omop.synthea"</span>, server <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 <p>The connection is ready; <code>conns</code> identifies the server used by the analysis calls.</p>
 </div>
 <div class="section level2">
@@ -176,371 +173,106 @@
 <code class="sourceCode R"><span><span class="va">reducers</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>first <span class="op">=</span> <span class="va">first</span>, last <span class="op">=</span> <span class="va">last</span>,</span>
 <span>  mean <span class="op">=</span> <span class="va">mean_value</span>, days <span class="op">=</span> <span class="va">n</span>, ever <span class="op">=</span> <span class="va">ever</span>, any_high <span class="op">=</span> <span class="va">any_high</span>, all_high <span class="op">=</span> <span class="va">all_high</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">reducers</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_reducers"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">reducers</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_reducers"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>The columns are now in <code>D_reducers</code> on the server. Request one approved aggregate at a time:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_reducers$first"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">11.29</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">12.48</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">12.97</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">13.70</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">15.43</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">16.19</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">16.86</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">13.99</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
-<p>All 28 people have a first nonmissing measurement. Their mean is 13.99 g/dL; this gives each person one observation regardless of how often they were tested.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_reducers$last"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">12.34</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">12.74</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">13.60</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">15.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">16.25</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">16.83</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">17.03</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">14.89</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
-<p>The last readings average 14.89 g/dL across the same 28 people. First and last can coincide for someone with only one reading.</p>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_reducers$first"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "numeric"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 28</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt; 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571</span></span></code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_reducers$days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">1.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">1.70</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">3.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">4.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">4.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">5.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">5.65</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">3.86</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
-<p>The mean is 3.86 measurement days per person, with a median of 4. A frequency table of each exact count is withheld on this dataset because some nonzero cells are below <code>nfilter.tab</code> (3); the entire table is withheld, not just its small cells. The summary describes the distribution of measurement frequency without listing all exact count frequencies. See the table refusal once:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">day_table</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_reducers$days"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">day_table</span><span class="op">$</span><span class="va">validity.message</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; All studies failed for reasons identified below</span></span></code></pre>
-<p>The message withholds the table. It does not say that these people have no measurements.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ever_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_reducers$ever"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">ever_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td align="left">1</td>
-<td align="right">28</td>
-</tr></tbody>
-</table>
-<p>Everyone in this public dataset has a hemoglobin measurement. A person without one would have ever = 0 in this defined window.</p>
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.numNA.html" class="external-link">ds.numNA</a></span><span class="op">(</span><span class="st">"D_reducers$first"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; [1] 0</span></span></code></pre>
+<p>All 28 people have a first nonmissing measurement. Their mean is 13.99 g/dL; this gives each person one observation regardless of how often they were tested.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_reducers$last"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "numeric"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 28</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt; 12.34000 12.74000 13.60000 15.00000 16.25000 16.83000 17.03000 14.89286</span></span></code></pre>
+<p>The last readings average 14.89 g/dL across the same 28 people. First and last can coincide for someone with only one reading.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_reducers$days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "integer"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 28</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt; 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143</span></span></code></pre>
+<p>The mean is 3.86 measurement days per person, with a median of 4. A frequency table of each exact count is withheld on this dataset because some nonzero cells are below <code>nfilter.tab</code> (3); the entire table is withheld, not just its small cells. The summary describes the distribution of measurement frequency without listing all exact count frequencies. See the table refusal once:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">day_table</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_reducers$days"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">day_table</span><span class="op">$</span><span class="va">validity.message</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "All studies failed for reasons identified below"</span></span></code></pre>
+<p>The message withholds the table. It does not say that these people have no measurements.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ever_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_reducers$ever"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">ever_result</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; D_reducers$ever</span></span>
+<span><span class="co">#&gt;  1</span></span>
+<span><span class="co">#&gt; 28</span></span></code></pre>
+<p>Everyone in this public dataset has a hemoglobin measurement. A person without one would have ever = 0 in this defined window.</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">any_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_reducers$any_high"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">any_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">0</td>
-<td align="right">9</td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="right">19</td>
-</tr>
-<tr class="odd">
-<td align="left">NA</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
+<span><span class="va">any_result</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; D_reducers$any_high</span></span>
+<span><span class="co">#&gt;  0  1 NA</span></span>
+<span><span class="co">#&gt;  9 19  0</span></span></code></pre>
 <p>The released counts show 19 people with at least one reading at or above 16 g/dL and 9 without one. A known qualifying measurement is enough for any, even alongside an unknown value.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">all_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_reducers$all_high"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">all_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">0</td>
-<td align="right">24</td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="right">4</td>
-</tr>
-<tr class="odd">
-<td align="left">NA</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
+<span><span class="va">all_result</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; D_reducers$all_high</span></span>
+<span><span class="co">#&gt;  0  1 NA</span></span>
+<span><span class="co">#&gt; 24  4  0</span></span></code></pre>
 <p>Four people have all readings at or above 14 g/dL; 24 do not. All distinguishes unknown comparisons from an empty set of records.</p>
 </div>
 <div class="section level2">
 <h2 id="read-the-mean-summary">Read the mean summary<a class="anchor" aria-label="anchor" href="#read-the-mean-summary"></a>
 </h2>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_reducers$mean"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">12.90</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">13.15</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">13.79</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">14.32</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">15.34</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">15.70</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">15.92</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">14.47</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_reducers$mean"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "numeric"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 28</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt; 12.90500 13.14667 13.78500 14.32500 15.33542 15.70000 15.92375 14.46679</span></span></code></pre>
 <p>The mean of the 28 person-level means is 14.47 g/dL. Averaging all measurement rows instead would give more weight to people measured more often.</p>
 </div>
 <div class="section level2">
 <h2 id="restrict-the-last-value-to-one-year">Restrict the last value to one year<a class="anchor" aria-label="anchor" href="#restrict-the-last-value-to-one-year"></a>
 </h2>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">recent</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>last <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">measure</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_value"</span>, window <span class="op">=</span> <span class="va">lookback</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">recent</span>, out <span class="op">=</span> <span class="st">"D_recent"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">recent</span>, out <span class="op">=</span> <span class="st">"D_recent"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">recent_mean</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_recent$last"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">recent_missing</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.numNA.html" class="external-link">ds.numNA</a></span><span class="op">(</span><span class="st">"D_recent$last"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Mean_g_dL <span class="op">=</span> <span class="va">recent_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"EstimatedMean"</span><span class="op">]</span>,</span>
-<span>  N_missing <span class="op">=</span> <span class="va">recent_missing</span><span class="op">$</span><span class="va">site</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Mean_g_dL <span class="op">=</span> <span class="va">recent_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"EstimatedMean"</span><span class="op">]</span>,</span>
+<span>  N_missing <span class="op">=</span> <span class="va">recent_missing</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">Mean_g_dL</th>
@@ -557,90 +289,33 @@
 <h2 id="value-at-the-index">Value at the index<a class="anchor" aria-label="anchor" href="#value-at-the-index"></a>
 </h2>
 <p>The <code><a href="../reference/omop_study.html">omop_study()</a></code> shortcut combines an index event, variables and outputs in one recipe. Let the first hemoglobin measurement set the anchor for each person. <em>Value at index</em> means closest within a chosen tolerance; it need not occur on the index day.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">at_index</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">measure</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>hemoglobin <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_value_at_index</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3000963L</span>,</span>
 <span>    tolerance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">30</span>, <span class="fl">0</span><span class="op">)</span>, unit <span class="op">=</span> <span class="fl">8713L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">at_index</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_at_index"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">at_index</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_at_index"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>The tolerance excludes later measurements. The shortcut uses <code>closest_value</code>; its default tolerance would include 90 days before and 30 days after.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_at_index$hemoglobin"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">11.29</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">12.48</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">12.97</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">13.70</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">15.43</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">16.19</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">16.86</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">13.99</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_at_index$hemoglobin"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "numeric"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 28</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt; 11.29000 12.48000 12.97500 13.70000 15.42500 16.19000 16.85500 13.98571</span></span></code></pre>
 <p>The mean is again 13.99 g/dL: because the index is the first hemoglobin reading, the closest value in [-30, 0] is that same reading. This equality follows from the chosen index; an index such as a diagnosis need not coincide with a lab. Only people with an eligible hemoglobin measurement enter this indexed study. If a required anchor is missing, a window is undefined and every reducer gives <code>NA</code>, including count and ever.</p>
 </div>
 <div class="section level2">
 <h2 id="convert-to-a-common-unit-before-reducing">Convert to a common unit before reducing<a class="anchor" aria-label="anchor" href="#convert-to-a-common-unit-before-reducing"></a>
 </h2>
 <p>A unit declaration alone keeps values already in that unit and makes other units’ values missing; an explicit conversion normalises them before the reducer runs. This example converts g/dL to g/L, multiplying by ten. These are the vocabulary names for the input and target units:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8713L</span>, <span class="fl">8636L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">units</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">units</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
@@ -658,148 +333,55 @@
 </tbody>
 </table>
 <p>Concept 8636 is gram per liter; 8713 is gram per deciliter. The conversion below changes the unit by multiplying by ten.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lab_gl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3000963L</span>,</span>
 <span>  unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8636L</span>, convert <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"8713"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>factor <span class="op">=</span> <span class="fl">10</span>, offset <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Rows already in g/L retain their value. Other undeclared units become missing by default; they are not guessed. A declared conversion also transforms reference ranges. Use the same target and conversion map across sites before pooling.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">converted</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean_gl <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">lab_gl</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">converted</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_converted"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_converted$mean_gl"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">129.05</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">131.47</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">137.85</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">143.25</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">153.35</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">157.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">159.24</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">144.67</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">converted</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_converted"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_converted$mean_gl"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "numeric"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 28</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt; 129.0500 131.4667 137.8500 143.2500 153.3542 157.0000 159.2375 144.6679</span></span></code></pre>
 <p>The overall mean is 144.67 g/L, ten times 14.47 g/dL. This run uses the dataset’s unchanged recorded units; it does not pretend that the source already had mixed units.</p>
 </div>
 <div class="section level2">
 <h2 id="value-bins-and-explicit-highlow-flags">Value bins and explicit high/low flags<a class="anchor" aria-label="anchor" href="#value-bins-and-explicit-highlow-flags"></a>
 </h2>
 <p>A <em>bin</em> groups numeric values into a declared interval. These cutoffs are arbitrary teaching choices, <strong>not clinical reference ranges or treatment thresholds</strong>. We apply them to each person’s mean, privately.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mean_value</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">measure</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">band_levels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"below 14"</span>, <span class="st">"14 to below 15"</span>, <span class="st">"15 or above"</span><span class="op">)</span></span>
 <span><span class="va">binned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="va">mean_value</span>,</span>
 <span>  band <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_bins</a></span><span class="op">(</span><span class="va">mean_value</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="cn">Inf</span>, <span class="fl">14</span>, <span class="fl">15</span>, <span class="cn">Inf</span><span class="op">)</span>, labels <span class="op">=</span> <span class="va">band_levels</span><span class="op">)</span>,</span>
 <span>  high <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_flag</a></span><span class="op">(</span><span class="va">mean_value</span>, <span class="st">"ge"</span>, <span class="fl">15</span><span class="op">)</span>,</span>
 <span>  low <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_flag</a></span><span class="op">(</span><span class="va">mean_value</span>, <span class="st">"lt"</span>, <span class="fl">14</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">binned</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>output <span class="op">=</span> <span class="st">"D_lab_bins"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">binned</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>output <span class="op">=</span> <span class="st">"D_lab_bins"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <p>The band is an ordered factor directly on the server. Its order matters for model contrasts.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bins_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_lab_bins$band"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">bin_display</span> <span class="op">&lt;-</span> <span class="fu">book_counts</span><span class="op">(</span><span class="va">bins_result</span><span class="op">)</span></span>
-<span><span class="va">bin_display</span><span class="op">$</span><span class="va">Category</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">ordered</a></span><span class="op">(</span><span class="va">bin_display</span><span class="op">$</span><span class="va">Category</span>, levels <span class="op">=</span> <span class="va">band_levels</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">bin_display</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">bin_display</span><span class="op">$</span><span class="va">Category</span>, na.last <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">below 14</td>
-<td align="right">9</td>
-</tr>
-<tr class="even">
-<td align="left">14 to below 15</td>
-<td align="right">9</td>
-</tr>
-<tr class="odd">
-<td align="left">15 or above</td>
-<td align="right">10</td>
-</tr>
-<tr class="even">
-<td align="left">NA</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
+<span><span class="va">bins_result</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; D_lab_bins$band</span></span>
+<span><span class="co">#&gt;       below 14 14 to below 15    15 or above             NA</span></span>
+<span><span class="co">#&gt;              9              9             10              0</span></span></code></pre>
 <p>There are 9 people below 14, 9 from 14 to below 15, and 10 at or above 15 g/dL. All nonzero cells meet the release threshold. You see the checked counts, never the private rows. A different set of bins can cause the entire table to be withheld; a refusal is not an empty or zero table. The left boundary is included and the right boundary excluded in these bins.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_lab_bins$high"</span>,</span>
-<span>  useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">0</td>
-<td align="right">18</td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="right">10</td>
-</tr>
-</tbody>
-</table>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_lab_bins$high"</span>,</span>
+<span>  useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">output.list</span><span class="op">$</span><span class="va">TABLES.COMBINED_all.sources_counts</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; D_lab_bins$high</span></span>
+<span><span class="co">#&gt;  0  1</span></span>
+<span><span class="co">#&gt; 18 10</span></span></code></pre>
 <p>The high flag is 1 for the same 10 people in the top band and 0 for the other 18. The ungrouped mean column remains available for numeric analysis.</p>
 <p><code>abnormal_high</code> and <code>abnormal_low</code> reducers compare each measurement with its recorded reference bounds. These hemoglobin data have no such bounds, so their zero comparable-abnormal counts would not establish normality. Study-defined flags are a different, explicitly chosen definition.</p>
 </div>
@@ -808,79 +390,22 @@
 </h2>
 <p>Add a count of measurement rows and compare its released mean and quantiles with the measurement-day summary above.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">row_count</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">measure</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"count"</span>, window <span class="op">=</span> <span class="va">history</span>, distinct <span class="op">=</span> <span class="st">"row"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">row_count</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_row_count"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_row_count$rows"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">1.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">1.70</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">3.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">4.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">4.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">5.00</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">5.65</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">3.86</td>
-<td align="right">28</td>
-<td align="right">0</td>
-</tr>
-</tbody>
-</table>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">row_count</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_row_count"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_row_count$rows"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "integer"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 28</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;       5%      10%      25%      50%      75%      90%      95%     Mean</span></span>
+<span><span class="co">#&gt; 1.000000 1.700000 3.000000 4.000000 4.000000 5.000000 5.650000 3.857143</span></span></code></pre>
 <p>The row and day summaries are identical here because nobody has two hemoglobin records on the same day. With duplicates, row counts would count each record while day counts would count that date once.</p>
 </details>
 </div>
@@ -889,77 +414,24 @@
 </h2>
 <p>Build a variable using <code><a href="../reference/omop_number_spec.html">omop_number_change()</a></code> to calculate last minus first for people with at least two readings. Is this the same quantity as a slope?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">change_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>change <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_change</a></span><span class="op">(</span><span class="va">measure</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">change_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>output <span class="op">=</span> <span class="st">"D_event_change"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_event_change$change"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Site</th>
-<th align="left">Statistic</th>
-<th align="right">Value</th>
-<th align="right">N valid</th>
-<th align="right">N missing</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">5%</td>
-<td align="right">-2.94</td>
-<td align="right">25</td>
-<td align="right">3</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">10%</td>
-<td align="right">-2.58</td>
-<td align="right">25</td>
-<td align="right">3</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">25%</td>
-<td align="right">-1.40</td>
-<td align="right">25</td>
-<td align="right">3</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">50%</td>
-<td align="right">1.60</td>
-<td align="right">25</td>
-<td align="right">3</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">75%</td>
-<td align="right">2.40</td>
-<td align="right">25</td>
-<td align="right">3</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">90%</td>
-<td align="right">3.20</td>
-<td align="right">25</td>
-<td align="right">3</td>
-</tr>
-<tr class="odd">
-<td align="left">site</td>
-<td align="left">95%</td>
-<td align="right">3.76</td>
-<td align="right">25</td>
-<td align="right">3</td>
-</tr>
-<tr class="even">
-<td align="left">site</td>
-<td align="left">Mean</td>
-<td align="right">1.02</td>
-<td align="right">25</td>
-<td align="right">3</td>
-</tr>
-</tbody>
-</table>
+<span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">change_recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>output <span class="op">=</span> <span class="st">"D_event_change"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_event_change$change"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; $site$class</span></span>
+<span><span class="co">#&gt; [1] "numeric"</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$length</span></span>
+<span><span class="co">#&gt; [1] 28</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
+<span><span class="co">#&gt;     5%    10%    25%    50%    75%    90%    95%   Mean</span></span>
+<span><span class="co">#&gt; -2.940 -2.580 -1.400  1.600  2.400  3.200  3.760  1.016</span></span></code></pre>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.numNA.html" class="external-link">ds.numNA</a></span><span class="op">(</span><span class="st">"D_event_change$change"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; [1] 3</span></span></code></pre>
 <p>The mean change is 1.016 g/dL among 25 people; 3 are missing because they have only one reading. It differs from 14.893 − 13.986 = 0.907 because those two means include all 28 people. Change is in g/dL, without dividing by elapsed time. Native change needs two eligible readings; a single reading stays missing rather than becoming zero. A fitted slope uses all eligible dates and values and has units per day. Continue with <a href="book-14-labs.html">Working with lab values</a> for both methods and pooled analyses.</p>
 </details>
 </div>

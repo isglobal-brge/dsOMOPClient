@@ -5,26 +5,19 @@
 Build education and cause-of-death columns, predict their output, and
 request category counts.
 
-This chapter uses the synthetic questionnaire dataset described in
-[Getting
+**You need:** the client packages and the Opal login from [Getting
 started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-**You need:** the packages and helpers from [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work`
-directory.
+This chapter uses `omop.questionnaire`, the synthetic questionnaire
+study described there.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
-Run this setup first:
+Log in first:
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the
@@ -44,7 +37,7 @@ education question by concept:
 
 ``` r
 question <- ds.omop.concept.lookup(900001L, conns = conns)
-knitr::kable(question$pooled[c("concept_id", "concept_name")])
+question$pooled[c("concept_id", "concept_name")]
 ```
 
 | concept\_id | concept\_name      |
@@ -119,7 +112,7 @@ time window restricts them.
 
 ``` r
 explained <- recipe_explain(people, conns = conns)
-cat(head(explained$text, 9), sep = "\n")
+writeLines(head(explained$text, 9))
 ```
 
     #> Recipe plan
@@ -141,15 +134,13 @@ these are not observed patient counts.
 ## Run: assign the result
 
 ``` r
-book_symbols(recipe_execute(people, out = c(people = "D_people"), conns = conns))
+recipe_execute(people, out = c(people = "D_people"), conns = conns)
 ```
 
-    #> people → D_people
-
-The reply says that the output named `people` was assigned to
-`D_people`. `D_people` is still on the server. Concept-valued columns
-are labelled factors because of their declared type. The names
-`education` and `cause_of_death` need no `_concept_id` suffix.
+Nothing comes back to you: the output named `people` is now `D_people`,
+a table kept on the server. Concept-valued columns are labelled factors
+because of their declared type. The names `education` and
+`cause_of_death` need no `_concept_id` suffix.
 
 ## Verify: check what you got
 
@@ -215,13 +206,12 @@ lessons, choose the one check that helps answer the current question.
 
 ``` r
 education_table_result <- dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
-knitr::kable(book_counts(education_table_result))
+education_table_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category             | Count |
-| :------------------- | ----: |
-| Secondary education  |    12 |
-| University education |    12 |
+    #> D_people$education
+    #>  Secondary education University education
+    #>                   12                   12
 
 There are 12 people whose **latest** answer is Secondary education and
 12 whose latest answer is University education. Every respondent gave
@@ -232,13 +222,12 @@ out the 24 missing values.
 ## Count causes
 
 ``` r
-knitr::kable(ds.omop.table("D_people", "cause_of_death", conns = conns))
+ds.omop.table("D_people", "cause_of_death", conns = conns)
 ```
 
-| D\_people.cause\_of\_death | Freq |
-| :------------------------- | ---: |
-| Myocardial infarction      |   24 |
-| Pneumonia                  |   12 |
+    #> D_people$cause_of_death
+    #> Myocardial infarction             Pneumonia
+    #>                    24                    12
 
 The table shows 24 myocardial infarctions and 12 pneumonias.
 `ds.omop.table()` is a shortcut that also retains categories with zero
@@ -266,18 +255,17 @@ become “no”.
 answers <- omop_recipe(
   variables = list(education = education, fever = fever, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
+recipe_execute(answers, out = c(people = "D_answers"), conns = conns)
 ```
 
 ``` r
 yes_no_result <- dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
-knitr::kable(book_counts(yes_no_result))
+yes_no_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category | Count |
-| :------- | ----: |
-| yes      |    12 |
-| no       |    12 |
+    #> D_answers$fever
+    #> yes  no
+    #>  12  12
 
 The table contains 12 “yes” and 12 “no” answers, using your lower-case
 labels. The other 24 people did not answer; they are excluded by `useNA
@@ -297,9 +285,10 @@ first_education <- omop_variable(event = education_event,
   reducer = omop_reduce("first_value", value = "value_as_concept_id"))
 comparison <- omop_recipe(variables = list(first = first_education, last = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(comparison, out = c(people = "D_education_change"), conns = conns))
-knitr::kable(book_table2(dsBaseClient::ds.table(
-  "D_education_change$first", "D_education_change$last", useNA = "no", datasources = conns)))
+recipe_execute(comparison, out = c(people = "D_education_change"), conns = conns)
+dsBaseClient::ds.table(
+  "D_education_change$first", "D_education_change$last", useNA = "no",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 |                      | Secondary education | University education |
@@ -319,15 +308,13 @@ Count causes with dsBase and include people without a coded cause.
 Solution
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_people$cause_of_death",
-  useNA = "always", datasources = conns)))
+dsBaseClient::ds.table("D_people$cause_of_death",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category              | Count |
-| :-------------------- | ----: |
-| Myocardial infarction |    24 |
-| Pneumonia             |    12 |
-| NA                    |    12 |
+    #> D_people$cause_of_death
+    #> Myocardial infarction             Pneumonia                    NA
+    #>                    24                    12                    12
 
 The 24 myocardial infarctions, 12 pneumonias and 12 missing causes
 account for all 48 people. Missing is not another coded cause and does
@@ -341,17 +328,14 @@ renaming it make that source field available?
 Solution
 
 ``` r
-message <- tryCatch({
-  source_cause <- omop_recipe(variables = list(cause = omop_variable(
-    event = omop_event("death"),
-    reducer = omop_reduce("first_value", value = "cause_source_value"))))
-  recipe_to_plan(source_cause)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(message, "\n")
+source_cause <- omop_recipe(variables = list(cause = omop_variable(
+  event = omop_event("death"),
+  reducer = omop_reduce("first_value", value = "cause_source_value"))))
+recipe_to_plan(source_cause)
 ```
 
-    #> Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: cause_source_value (variable 'cause' reducer value).
+    #> Error:
+    #> ! Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: cause_source_value (variable 'cause' reducer value).
 
 The source-value field is blocked before execution. A new variable name
 does not change its protection; use `cause_concept_id` for the coded

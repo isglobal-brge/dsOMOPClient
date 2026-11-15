@@ -5,20 +5,16 @@
 Find the right fields, distinguish rows from people, and check numeric
 coverage.
 
-**You need:** the packages, helpers and loaded practice data from
-[Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Start a fresh R session in `book-work` and run the sections in order.
-This chapter uses GiBleed.
+**You need:** the client packages and the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+This chapter uses `omop.gibleed`.
 
 ## Start this chapter
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("gibleed")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.gibleed", server = "site")$conns
 ```
 
 ## Read metadata before selecting records
@@ -45,9 +41,10 @@ result.
 ## Separate what was observed from its value
 
 ``` r
-knitr::kable(book_columns(ds.omop.columns("observation", conns = conns),
-  rows = c("observation_concept_id", "value_as_concept_id", "value_as_number",
-    "value_as_string", "observation_date")), row.names = FALSE)
+columns <- ds.omop.columns("observation", conns = conns)$site
+subset(columns, column_name %in% c("observation_concept_id", "value_as_concept_id",
+  "value_as_number", "value_as_string", "observation_date"),
+  select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
 
 | column\_name             | cdm\_datatype | is\_date | is\_blocked |
@@ -65,12 +62,19 @@ coded value or answer, and `value_as_number` a numeric value.
 choosing its value field are separate decisions.
 
 ``` r
-knitr::kable(as.data.frame(ds.omop.table.stats("observation", conns = conns)$per_site$site))
+ds.omop.table.stats("observation", conns = conns)
 ```
 
-| rows | persons |
-| ---: | ------: |
-| 1475 |     670 |
+    #> <dsomop_result>
+    #> Servers: site
+    #> Scope: per_site
+    #>
+    #> $site
+    #> $rows
+    #> [1] 1475
+    #>
+    #> $persons
+    #> [1] 670
 
 The bands begin at 1,475 rows and 670 people: one person can contribute
 several observations. These represent 1,475–1,479 rows and 670–674
@@ -81,8 +85,10 @@ those answers.
 ## Find the visit date and setting
 
 ``` r
-knitr::kable(book_columns(ds.omop.columns("visit_occurrence", conns = conns),
-  rows = c("visit_start_date", "visit_end_date", "visit_concept_id", "visit_type_concept_id")), row.names = FALSE)
+columns <- ds.omop.columns("visit_occurrence", conns = conns)$site
+subset(columns, column_name %in% c("visit_start_date", "visit_end_date",
+  "visit_concept_id", "visit_type_concept_id"),
+  select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
 
 | column\_name             | cdm\_datatype | is\_date | is\_blocked |
@@ -98,12 +104,19 @@ describes its setting, such as inpatient or outpatient.
 setting field to select inpatient visits.
 
 ``` r
-knitr::kable(as.data.frame(ds.omop.table.stats("visit_occurrence", conns = conns)$per_site$site))
+ds.omop.table.stats("visit_occurrence", conns = conns)
 ```
 
-| rows | persons |
-| ---: | ------: |
-| 1035 |     890 |
+    #> <dsomop_result>
+    #> Servers: site
+    #> Scope: per_site
+    #>
+    #> $site
+    #> $rows
+    #> [1] 1035
+    #>
+    #> $persons
+    #> [1] 890
 
 The bands are 1,035–1,039 visits and 890–894 people. Repeated visits
 explain why rows exceed people; a visit count is not a study sample
@@ -117,8 +130,9 @@ release a count of deaths.
 Solution
 
 ``` r
-knitr::kable(book_columns(ds.omop.columns("death", conns = conns),
-  rows = c("death_date", "cause_concept_id", "cause_source_value")), row.names = FALSE)
+columns <- ds.omop.columns("death", conns = conns)$site
+subset(columns, column_name %in% c("death_date", "cause_concept_id", "cause_source_value"),
+  select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
 
 | column\_name         | cdm\_datatype | is\_date | is\_blocked |
@@ -132,11 +146,15 @@ original source code, for example an ICD code, and is blocked here. The
 date field’s existence does not establish that any deaths were recorded.
 
 ``` r
-death_stats <- ds.omop.table.stats("death", conns = conns)
-print(as.data.frame(death_stats$per_site$site))
+ds.omop.table.stats("death", conns = conns)
 ```
 
-    #> data frame with 0 columns and 0 rows
+    #> <dsomop_result>
+    #> Servers: site
+    #> Scope: per_site
+    #>
+    #> $site
+    #> list()
 
 The empty response contains no count. The public GiBleed source has an
 empty death table; through DataSHIELD alone this response could also
@@ -151,8 +169,10 @@ establish that somebody took the medicine every day?
 Solution
 
 ``` r
-knitr::kable(book_columns(ds.omop.columns("drug_exposure", conns = conns),
-  rows = c("drug_exposure_start_date", "drug_exposure_end_date", "days_supply")), row.names = FALSE)
+columns <- ds.omop.columns("drug_exposure", conns = conns)$site
+subset(columns, column_name %in% c("drug_exposure_start_date",
+  "drug_exposure_end_date", "days_supply"),
+  select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
 
 | column\_name                | cdm\_datatype | is\_date | is\_blocked |
@@ -174,25 +194,49 @@ guarantee that lab values can be analysed? Check the column itself.
 Solution
 
 ``` r
-knitr::kable(as.data.frame(ds.omop.table.stats("measurement", conns = conns)$per_site$site))
+ds.omop.table.stats("measurement", conns = conns)
 ```
 
-|  rows | persons |
-| ----: | ------: |
-| 44050 |    2685 |
+    #> <dsomop_result>
+    #> Servers: site
+    #> Scope: per_site
+    #>
+    #> $site
+    #> $rows
+    #> [1] 44050
+    #>
+    #> $persons
+    #> [1] 2685
 
-The row band begins at 44,050. The loader in chapter 0 reported exactly
-44,053 rows because it ran as custodian of the public data; this analyst
-call rounds down.
+The row band begins at 44,050. The public GiBleed data have exactly
+44,053 measurement rows; this analyst call rounds down to its band.
 
 ``` r
-coverage <- ds.omop.column.stats("measurement", "value_as_number", conns = conns)
-knitr::kable(as.data.frame(coverage$per_site$site)[c("n_persons", "n_missing", "n_distinct")])
+ds.omop.column.stats("measurement", "value_as_number", conns = conns)
 ```
 
-| n\_persons | n\_missing | n\_distinct |
-| ---------: | ---------: | ----------: |
-|       2685 |       2685 |           0 |
+    #> <dsomop_result>
+    #> Servers: site
+    #> Scope: per_site
+    #>
+    #> $site
+    #> $n_total
+    #> [1] 44050
+    #>
+    #> $n_missing
+    #> [1] 2685
+    #>
+    #> $n_distinct
+    #> [1] 0
+    #>
+    #> $n_persons
+    #> [1] 2685
+    #>
+    #> $mean
+    #> [1] NA
+    #>
+    #> $sd
+    #> [1] NA
 
 `n_missing` equals `n_persons`, both 2,685 (the band 2,685–2,689). The
 same response reports `n_distinct = 0`: no distinct numeric values are

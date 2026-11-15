@@ -5,18 +5,18 @@
 See six useful results, then choose the chapter that teaches your next
 step.
 
-Read the cards as a tour, or run them in order. **You need:** the
-packages, downloaded helpers **and loaded practice data** from [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Start in `book-work`. The first four cards use the 48-person synthetic
-questionnaire dataset; the last two use Synthea27Nj labs.
+Read the cards as a tour, or run them in order after the Opal login in
+[Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+The first four cards use the 48-person synthetic questionnaire study on
+two sites; the last two use Synthea27Nj labs.
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire", two_sites = TRUE)
-conns <- practice$conns
+conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("site", "site2"),
+  resource = c(site = "omop.questionnaire", site2 = "omop.questionnaire_site2"))$conns
 ```
 
 ## Named concepts across sites
@@ -31,10 +31,10 @@ vocabulary wording.
 education <- omop_variable(event = omop_event("observation", 900001L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 named <- omop_recipe(variables = list(education = education))
-assigned <- recipe_execute(named, out = c(output = "D_tour_named"), conns = conns)
+recipe_execute(named, out = c(output = "D_tour_named"), conns = conns)
 education_counts <- dsBaseClient::ds.table("D_tour_named$education",
   useNA = "always", datasources = conns)
-knitr::kable(book_site_counts(education_counts))
+education_counts$output.list$TABLE_rvar.by.study_counts
 ```
 
 |                          | site | site2 |
@@ -54,8 +54,10 @@ harmonisation
 The next three cards use one questionnaire site:
 
 ``` r
-practice <- book_switch("questionnaire")
-conns <- practice$conns
+ds.omop.disconnect(conns = conns)
+DSI::datashield.logout(conns)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
 
 ## Dates and completed ages
@@ -65,16 +67,12 @@ birth and death dates. Incomplete dates stay missing by default.
 
 ``` r
 dates <- omop_recipe(variables = list(age = omop_age_at("death")))
-assigned <- recipe_execute(dates, out = c(output = "D_tour_dates"), conns = conns)
-age_summary <- book_summary("D_tour_dates$age", datasources = conns)
-knitr::kable(age_summary[age_summary$Statistic %in% c("50%", "Mean"), ],
-  digits = 1, row.names = FALSE)
+recipe_execute(dates, out = c(output = "D_tour_dates"), conns = conns)
+dsBaseClient::ds.quantileMean("D_tour_dates$age", datasources = conns)
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | 50%       |  37.5 |      24 |        24 |
-| site | Mean      |  37.5 |      24 |        24 |
+    #>    5%   10%   25%   50%   75%   90%   95%  Mean
+    #> 32.00 32.00 32.75 37.50 42.25 43.00 43.00 37.50
 
 The 24 complete ages are 32, 33, 42 and 43, with mean and median 37.5
 years. The median is the midpoint of the middle two ages, 33 and 42; it
@@ -108,11 +106,11 @@ study <- omop_recipe(events = list(visits), populations = list(visitors),
   outputs = shapes)
 targets <- c(wide = "D_tour_wide", long = "D_tour_long",
   panel = "D_tour_panel", survival = "D_tour_survival")
-assigned <- recipe_execute(study, out = targets, conns = conns)
+recipe_execute(study, out = targets, conns = conns)
 shape_sizes <- do.call(rbind, lapply(names(targets), function(shape)
   data.frame(Shape = shape, Rows = dsBaseClient::ds.dim(targets[[shape]],
     datasources = conns)[[1L]][1L])))
-knitr::kable(shape_sizes, row.names = FALSE)
+shape_sizes
 ```
 
 | Shape    | Rows |
@@ -130,23 +128,24 @@ formats
 
 ## A cause-of-death wide table
 
-Combine age, education, fever, visit periods and coded cause in one
-private table. The helper below builds the recipe taught step by step in
-the capstone; its concept definitions come from
+Give every person one row with their coded cause of death, then count
+the causes. The capstone adds age, education, fever and visit periods to
+the same table; the cause concepts come from
 [chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes).
 
 ``` r
-source("tools/book/capstone.R")
-assigned <- recipe_execute(book_capstone_recipe(), out = c(people = "D_tour_causes"), conns = conns)
-knitr::kable(book_counts(dsBaseClient::ds.table("D_tour_causes$cause",
-  useNA = "always", datasources = conns)))
+cause <- omop_variable(event = omop_event("death"),
+  reducer = omop_reduce("first_value", value = "cause_concept_id"))
+causes <- omop_recipe(variables = list(cause = cause),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+recipe_execute(causes, out = c(people = "D_tour_causes"), conns = conns)
+dsBaseClient::ds.table("D_tour_causes$cause",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-| Category              | Count |
-| :-------------------- | ----: |
-| Myocardial infarction |    24 |
-| Pneumonia             |    12 |
-| NA                    |    12 |
+    #> D_tour_causes$cause
+    #> Myocardial infarction             Pneumonia                    NA
+    #>                    24                    12                    12
 
 There are 24 myocardial infarction deaths, 12 pneumonia deaths and 12
 people without a death record. The person key and individual answers
@@ -156,8 +155,8 @@ stay private. [Build and analyse this table
 Switch to Synthea27Nj for numeric values:
 
 ``` r
-practice <- book_switch("numeric")
-conns <- practice$conns
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.synthea", conns = conns)
 ```
 
 ## Numbers and their groupings
@@ -173,12 +172,12 @@ hb <- omop_variable(event = omop_event("measurement", 3000963L,
 band_names <- c("below 14", "14 to below 15", "15 or above")
 labs <- omop_recipe(variables = list(hb = hb,
   band = omop_number_bins(hb, breaks = c(-Inf, 14, 15, Inf), labels = band_names)))
-assigned <- recipe_execute(labs, out = c(output = "D_tour_labs"), conns = conns)
+recipe_execute(labs, out = c(output = "D_tour_labs"), conns = conns)
 groups <- dsBaseClient::ds.meanSdGp("D_tour_labs$hb", "D_tour_labs$band",
   type = "combine", datasources = conns)
-knitr::kable(data.frame(`Band (g/dL)` = band_names,
+data.frame(`Band (g/dL)` = band_names,
   People = as.numeric(groups$Nvalid_gp), `Mean (g/dL)` = as.numeric(groups$Mean_gp),
-  check.names = FALSE), digits = 2)
+  check.names = FALSE)
 ```
 
 | Band (g/dL)    | People | Mean (g/dL) |
@@ -202,7 +201,7 @@ teaching cutoff of 14 g/dL. Find the target unit by its exact name:
 target_units <- ds.omop.concept.search("gram per liter", domain = "Unit",
   standard_only = FALSE, conns = conns)$pooled
 target_unit <- target_units[target_units$concept_name == "gram per liter", ]
-knitr::kable(target_unit[c("concept_id", "concept_name")], row.names = FALSE)
+target_unit[c("concept_id", "concept_name")]
 ```
 
 | concept\_id | concept\_name  |
@@ -221,18 +220,17 @@ people are included.
 converted <- omop_recipe(variables = list(hb = hb,
   hb_gl = omop_number(hb, omop_number_spec(
     unit = omop_number_unit("unit:8713", paste0("unit:", gl_id), 10)))))
-assigned <- recipe_execute(converted, out = c(output = "D_tour_converted"), conns = conns)
+recipe_execute(converted, out = c(output = "D_tour_converted"), conns = conns)
 ds.omop.mutate("D_tour_converted", above_cutoff = ifelse(hb >= 14, 1L, 0L),
   newobj = "D_tour_flagged", conns = conns)
 ds.omop.filter("D_tour_flagged", expr = omop_where(above_cutoff == 1L),
   newobj = "D_tour_selected", conns = conns)
-selected <- book_summary("D_tour_selected$hb_gl", datasources = conns)
-knitr::kable(selected[selected$Statistic == "Mean", ], digits = 2, row.names = FALSE)
+dsBaseClient::ds.mean("D_tour_selected$hb_gl", datasources = conns)$Mean.by.Study
 ```
 
-| Site | Statistic | Value | N valid | N missing |
-| :--- | :-------- | ----: | ------: | --------: |
-| site | Mean      |   150 |      19 |         0 |
+| EstimatedMean | Nmissing | Nvalid | Ntotal |
+| ------------: | -------: | -----: | -----: |
+|           150 |        0 |     19 |     19 |
 
 The selected group has 19 people with no missing haemoglobin means. Its
 mean is 150.00 g/L (15.00 g/dL), higher than the all-person mean of

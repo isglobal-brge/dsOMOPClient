@@ -4,20 +4,16 @@
 
 Distinguish a database, a private server object and a released summary.
 
-**You need:** the packages, helpers and loaded practice data from
-[Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Start a fresh R session in `book-work` and run the sections in order.
-This chapter uses GiBleed.
+**You need:** the client packages and the Opal login from [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+This chapter uses `omop.gibleed`.
 
 ## Start this chapter
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("gibleed")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.gibleed", server = "site")$conns
 ```
 
 ## A shared table structure
@@ -30,9 +26,9 @@ diagnosis. Its vocabulary supplies a name.
 
 ``` r
 tables <- ds.omop.tables(conns = conns)$site
-knitr::kable(tables[tables$table_name %in% c("person", "visit_occurrence",
+tables[tables$table_name %in% c("person", "visit_occurrence",
   "condition_occurrence", "drug_exposure", "measurement", "observation", "death"),
-  c("table_name", "has_person_id")], row.names = FALSE)
+  c("table_name", "has_person_id")]
 ```
 
 | table\_name           | has\_person\_id |
@@ -71,12 +67,19 @@ list.
 ## Send a question to the data
 
 ``` r
-knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
+ds.omop.table.stats("person", conns = conns)
 ```
 
-| rows | persons |
-| ---: | ------: |
-| 2690 |    2690 |
+    #> <dsomop_result>
+    #> Servers: site
+    #> Scope: per_site
+    #>
+    #> $site
+    #> $rows
+    #> [1] 2690
+    #>
+    #> $persons
+    #> [1] 2690
 
 `2690` is the lower end of a five-person band: 2690–2694 people. This
 endpoint rounds down to a multiple of five by default; it has not told
@@ -106,12 +109,19 @@ person contribute more than one visit?
 Solution
 
 ``` r
-knitr::kable(as.data.frame(ds.omop.table.stats("visit_occurrence", conns = conns)$per_site$site))
+ds.omop.table.stats("visit_occurrence", conns = conns)
 ```
 
-| rows | persons |
-| ---: | ------: |
-| 1035 |     890 |
+    #> <dsomop_result>
+    #> Servers: site
+    #> Scope: per_site
+    #>
+    #> $site
+    #> $rows
+    #> [1] 1035
+    #>
+    #> $persons
+    #> [1] 890
 
 There are 1,035–1,039 visit rows from 890–894 people. Even allowing for
 banding, there are more visits than people: some people have repeated
@@ -125,11 +135,15 @@ establish that nobody died?
 Solution
 
 ``` r
-death_stats <- ds.omop.table.stats("death", conns = conns)
-print(as.data.frame(death_stats$per_site$site))
+ds.omop.table.stats("death", conns = conns)
 ```
 
-    #> data frame with 0 columns and 0 rows
+    #> <dsomop_result>
+    #> Servers: site
+    #> Scope: per_site
+    #>
+    #> $site
+    #> list()
 
 The empty response contains no released statistics: there are too few
 supporting people. GiBleed’s public source has an empty death table, but
