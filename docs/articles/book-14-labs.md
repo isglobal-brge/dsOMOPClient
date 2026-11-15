@@ -561,9 +561,9 @@ knitr::kable(book_counts(bin_counts))
 | 15 or above    |    10 |
 | NA             |     0 |
 
-Unlike the old mutate-plus-cut workaround, the factor is ordered before
-release. That affects model contrasts: choose the raw number or explicit
-contrasts when a linear ordinal effect is not the model you intend.
+The factor is ordered before release. That affects model contrasts:
+choose the raw number or explicit contrasts when a linear ordinal effect
+is not the model you intend.
 
 **Exercise (basic).** Check the factor type and summarise the rounded
 number.
@@ -644,7 +644,7 @@ reference_message <- tryCatch({
 }, error = function(e) conditionMessage(e))
 ```
 
-    #> Warning in rm(list = c(name), envir = private$.session(sid)): object 'dsOexec.549TYd'
+    #> Warning in rm(list = c(name), envir = private$.session(sid)): object 'dsOexec.AXhGFJ'
     #> not found
 
 ``` r

@@ -727,18 +727,43 @@ unlink(pair$path)
 ## Exercise 2: a common variant
 
 Does a label map change a concept set? Inspect the recipe object
-locally.
+locally, compare its selection with the original education variable, and
+resolve the answer identities using the vocabulary lookup already
+returned above.
 
 Solution 2
 
 ``` r
-class(harmonised)
+selected <- harmonised$variables$education
+without_labels <- selected
+without_labels$labels <- NULL
+label_ids <- as.integer(names(selected$labels))
+answer_names <- lookup$per_site[[1L]]
+knitr::kable(data.frame(
+  Answer = answer_names$concept_name[match(label_ids, answer_names$concept_id)],
+  Shared_label = unname(selected$labels)))
 ```
 
-    #> [1] "omop_recipe" "list"
+| Answer               | Shared\_label        |
+| :------------------- | :------------------- |
+| University education | University education |
 
-A recipe definition is local. Reconciliation changes presentation;
-concept meaning still requires study review.
+``` r
+identical(selected$event$concepts, education$event$concepts)
+```
+
+    #> [1] TRUE
+
+``` r
+identical(selected$event$concepts, without_labels$event$concepts)
+```
+
+    #> [1] TRUE
+
+The label map names the University education answer. Removing that map
+leaves the observation selection identical (`TRUE`): it changes the
+displayed answer label, not which question is selected. Concept meaning
+still requires study review.
 
 ## Exercise 3: a pitfall to avoid
 

@@ -358,7 +358,8 @@
 <p>Compile the all-visit membership definition and check its index selection.</p>
 <details><p><summary>Solution 3</summary></p>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">all_visitors</span><span class="op">$</span><span class="va">index</span><span class="op">$</span><span class="va">select</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">compiled_membership</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">all_recipe</span><span class="op">)</span></span>
+<span><span class="va">compiled_membership</span><span class="op">$</span><span class="va">populations</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">index</span><span class="op">$</span><span class="va">select</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "all"</span></span></code></pre>
 <p>The all selector retains repeated episodes. The episode, not necessarily the person, is the analysis row.</p>
 </details>

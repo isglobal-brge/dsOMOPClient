@@ -488,6 +488,7 @@
 </h2>
 <p>The race-free adult CKD-EPI 2021 creatinine equation needs serum creatinine, age and sex. Its public formula is 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^−1.2 × 0.9938^age, with κ = 0.7 and α = −0.241 for female, κ = 0.9 and α = −0.302 for male, and a further factor 1.012 for female. Scr is in mg/dL. See the <a href="https://www.kidney.org/ckd-epi-creatinine-equation-2021" class="external-link">National Kidney Foundation equation</a>.</p>
 <p>Do not substitute a different specimen because the correct source is sparse. This check distinguishes vocabulary availability from observed use:</p>
+<!-- expected-refusal:start -->
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">creatinine_hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Creatinine"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>,</span>
 <span>  vocabulary <span class="op">=</span> <span class="st">"LOINC"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
@@ -516,12 +517,25 @@
 <code class="sourceCode R"><span><span class="va">serum_id</span> <span class="op">&lt;-</span> <span class="va">creatinine_hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">creatinine_hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span></span>
 <span>  <span class="st">"Creatinine [Mass/volume] in Serum or Plasma"</span><span class="op">]</span></span>
 <span><span class="va">serum_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">serum_id</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">serum_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
-<p>The available creatinine concept is <strong>Blood</strong>, while the formula requests Serum or Plasma. This lesson therefore does not report patient eGFR. The named helper <code><a href="../reference/omop_formula_bmi.html">omop_formula_egfr_ckdepi2021()</a></code> requires standardized creatinine in <code>coordinate:idms_creatinine_mg_dl</code>, completed calendar age at that same measurement, and an explicit public mapping from the study’s sex categories to the equation branches. A field named gender does not establish that mapping. The formula returns missing for children, nonpositive creatinine and unmapped sex.</p>
+<span><span class="va">serum_locations</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">serum_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">serum_locations</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; &lt;dsomop_result&gt;</span></span>
+<span><span class="co">#&gt; Servers: site</span></span>
+<span><span class="co">#&gt; Scope: pooled</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $site</span></span>
+<span><span class="co">#&gt; [1] table_name     concept_column concept_id     n_records      n_persons     </span></span>
+<span><span class="co">#&gt; &lt;0 rows&gt; (or 0-length row.names)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Warnings:</span></span>
+<span><span class="co">#&gt;   - Strict pooling failed: invalid concept locator from server site</span></span>
+<span><span class="co">#&gt;   - No complete disclosure-safe pooled concept-location result was available.</span></span></code></pre>
+<!-- expected-refusal:end -->
+<p>The catalogue contains both Blood and Serum or Plasma creatinine. The locator returns an empty site result and reports that strict pooling failed; there is no admitted pooled source-use result. This is inconclusive about suitable serum measurements, not evidence of their absence or a reason to substitute Blood. This lesson therefore does not report patient eGFR. The named helper <code><a href="../reference/omop_formula_bmi.html">omop_formula_egfr_ckdepi2021()</a></code> requires standardized creatinine in <code>coordinate:idms_creatinine_mg_dl</code>, completed calendar age at that same measurement, and an explicit public mapping from the study’s sex categories to the equation branches. A field named gender does not establish that mapping. The formula returns missing for children, nonpositive creatinine and unmapped sex.</p>
 <p>The source check above is a reason to stop this Synthea calculation: neither renaming Blood as Serum nor declaring an assay coordinate establishes specimen or assay suitability. The worked formula below uses a separate synthetic teaching example with known input meaning. It does not reinterpret the Synthea records.</p>
 <p><strong>Exercise 3.</strong> Why would using the first creatinine search hit be unsafe? Save the intended serum definition instead.</p>
 <details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">formula_concepts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>body <span class="op">=</span> <span class="va">body_sets</span>, systolic <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">sbp_id</span><span class="op">)</span>,</span>
 <span>  diastolic <span class="op">=</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">dbp_id</span><span class="op">)</span>, serum_creatinine <span class="op">=</span> <span class="va">serum_set</span><span class="op">)</span></span>
 <span><span class="va">formula_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".rds"</span><span class="op">)</span></span>
@@ -535,7 +549,7 @@
 <h2 id="collapse-duplicate-readings-within-a-recorded-day">Collapse duplicate readings within a recorded day<a class="anchor" aria-label="anchor" href="#collapse-duplicate-readings-within-a-recorded-day"></a>
 </h2>
 <p>An ordinary mean weights every reading. If the protocol gives each observed day equal weight, reduce within person, concept, unit and recorded date first, then reduce those daily values. Absent days are not filled.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">daily_mean</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_number_daily.html">omop_number_daily</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_number_spec.html">omop_number_rows</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">body_sets</span><span class="op">$</span><span class="va">weight</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">9529L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span>, within_day <span class="op">=</span> <span class="st">"mean"</span><span class="op">)</span></span>
 <span><span class="va">daily_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">daily_mean</span><span class="op">)</span><span class="op">)</span></span>
@@ -593,14 +607,14 @@
 <p><code>within_day = "max"</code> asks a different question; <code>"first"</code> uses deterministic event order. The outer reducer still controls how observed days contribute to the result.</p>
 <p><strong>Exercise.</strong> Compare a daily maximum followed by a mean.</p>
 <details><p><summary>Solution: change the within-day rule</summary></p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">daily_max</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_number_daily.html">omop_number_daily</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_number_spec.html">omop_number_rows</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">body_sets</span><span class="op">$</span><span class="va">weight</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">9529L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span>, within_day <span class="op">=</span> <span class="st">"max"</span><span class="op">)</span></span>
 <span><span class="va">daily_max_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">daily_max</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">daily_max_recipe</span>, out <span class="op">=</span> <span class="st">"D_daily_max_weights"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;                output </span></span>
 <span><span class="co">#&gt; "D_daily_max_weights"</span></span></code></pre>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_daily_max_weights$weight"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -658,7 +672,7 @@
 <h2 id="collapse-repeated-episodes-deliberately">Collapse repeated episodes deliberately<a class="anchor" aria-label="anchor" href="#collapse-repeated-episodes-deliberately"></a>
 </h2>
 <p>A person may have several eligible measurement episodes. Requesting person grain requires an explicit collapse rule: first_episode, last_episode or any. This collapses repeated population episodes, not duplicate source measurements.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">episodes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"weights"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">weight_event</span>, select <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">collapsed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>populations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">episodes</span><span class="op">)</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">weight</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, rows <span class="op">=</span> <span class="st">"weights"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span>,</span>
@@ -666,11 +680,11 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"collapse|grain"</span>, <span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">collapsed</span><span class="op">)</span><span class="op">$</span><span class="va">text</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Output 'people' [wide] rows 'weights', grain person (collapse first_episode)</span></span>
 <span><span class="co">#&gt;   - output 'people': one row per person from an episode population, collapse = "first_episode"</span></span></code></pre>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">collapsed</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_collapsed_weights"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;                people </span></span>
 <span><span class="co">#&gt; "D_collapsed_weights"</span></span></code></pre>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_collapsed_weights$weight"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -724,13 +738,13 @@
 <p>A same-day tolerance still does not average duplicate readings automatically. Closest-value selection uses deterministic ordering; a mean weights eligible rows. Document whether the problem is repeated episodes or duplicated source records before choosing a collapse or reducer. The events chapter compares record counts with distinct-day counts.</p>
 <p><strong>Exercise 4.</strong> Choose the last eligible episode instead. Predict the selection before comparing its summary with the first-episode output.</p>
 <details><p><summary>Solution 4</summary></p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">last_episode</span> <span class="op">&lt;-</span> <span class="va">collapsed</span></span>
 <span><span class="va">last_episode</span><span class="op">$</span><span class="va">outputs</span><span class="op">$</span><span class="va">people</span><span class="op">$</span><span class="va">collapse</span> <span class="op">&lt;-</span> <span class="st">"last_episode"</span></span>
 <span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">last_episode</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_last_weights"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;           people </span></span>
 <span><span class="co">#&gt; "D_last_weights"</span></span></code></pre>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_last_weights$weight"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -788,7 +802,7 @@
 <h2 id="execute-egfr-with-declared-synthetic-inputs">Execute eGFR with declared synthetic inputs<a class="anchor" aria-label="anchor" href="#execute-egfr-with-declared-synthetic-inputs"></a>
 </h2>
 <p>The questionnaire helper can create synthetic standardized serum creatinine measurements and explicitly named equation-sex categories. This is formula practice, separate from the two clinical practice resources. Its partial birth dates remain incomplete so that missing age still produces missing eGFR.</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/fixture.R"</span><span class="op">)</span></span>
 <span><span class="va">formula_practice</span> <span class="op">&lt;-</span> <span class="fu">book_fixture</span><span class="op">(</span>formulas <span class="op">=</span> <span class="cn">TRUE</span>, symbol <span class="op">=</span> <span class="st">"book_formula"</span><span class="op">)</span></span>
 <span><span class="va">formula_conns</span> <span class="op">&lt;-</span> <span class="va">formula_practice</span><span class="op">$</span><span class="va">conns</span></span>
@@ -820,7 +834,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">formula_id</span> <span class="op">&lt;-</span> <span class="va">formula_hits</span><span class="op">$</span><span class="va">concept_id</span></span>
 <span><span class="va">formula_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">formula_id</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.locate.html">ds.omop.concept.locate</a></span><span class="op">(</span><span class="va">formula_id</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">formula_conns</span>, symbol <span class="op">=</span> <span class="st">"book_formula"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
@@ -840,7 +854,7 @@
 <td align="right">20</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">formula_id</span>,</span>
 <span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">formula_conns</span>, symbol <span class="op">=</span> <span class="st">"book_formula"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -855,11 +869,11 @@
 <td align="left">8840</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sex_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">sex_hits</span><span class="op">$</span><span class="va">concept_id</span>, <span class="va">sex_hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>creatinine <span class="op">=</span> <span class="va">formula_set</span>, sex <span class="op">=</span> <span class="va">sex_ids</span><span class="op">)</span>, <span class="va">formula_file</span><span class="op">)</span></span></code></pre></div>
 <p>These are local teaching concepts with no external mappings or ancestors. The synthetic source explicitly defines standardized serum measurements in mg/dL. The clinical equivalents would require assay and source validation.</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">serum_event</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">formula_set</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8840L</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">creatinine</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">serum_event</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span>, missing <span class="op">=</span> <span class="st">"keep"</span><span class="op">)</span><span class="op">)</span></span>
@@ -928,7 +942,7 @@
 <p>The output is an adult estimate in mL/min/1.73 m². Age is completed calendar years at the selected creatinine measurement. Missing age or an unmapped equation-sex category remains missing; the helper never guesses a branch or adds a race term.</p>
 <p><strong>Exercise.</strong> Inspect the formula provenance retained with the table.</p>
 <details><p><summary>Solution: retain the equation and its eligibility rules</summary></p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">formula_record</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">egfr_result</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">formulas</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">formula_record</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"version"</span>, <span class="st">"equation"</span>, <span class="st">"unit"</span>, <span class="st">"eligibility"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $id</span></span>

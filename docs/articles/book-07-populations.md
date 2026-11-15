@@ -396,7 +396,8 @@ selection.
 Solution 3
 
 ``` r
-all_visitors$index$select
+compiled_membership <- recipe_to_plan(all_recipe)
+compiled_membership$populations[[1L]]$index$select
 ```
 
     #> [1] "all"

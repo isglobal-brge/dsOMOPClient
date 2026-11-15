@@ -424,12 +424,41 @@
 <div class="section level2">
 <h2 id="exercise-2-a-common-variant">Exercise 2: a common variant<a class="anchor" aria-label="anchor" href="#exercise-2-a-common-variant"></a>
 </h2>
-<p>Read the calendar output’s definition rather than inferring meaning from a number.</p>
+<p>Compare the month calendar variable with the elapsed-days variable. Read their sources and the month precision/representation instead of inferring meaning from a number.</p>
 <details><p><summary>Solution 2</summary></p>
 <div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">elapsed</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_recipe" "list"</span></span></code></pre>
-<p>The elapsed recipe defines a duration. A year coordinate and a day duration must not share an interpretation.</p>
+<code class="sourceCode R"><span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="va">months</span><span class="op">$</span><span class="va">variables</span><span class="op">$</span><span class="va">month</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>source_table <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">derived</span><span class="op">$</span><span class="va">reference</span><span class="op">$</span><span class="va">event</span><span class="op">$</span><span class="va">table</span>,</span>
+<span>  selection <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">derived</span><span class="op">$</span><span class="va">reference</span><span class="op">$</span><span class="va">which</span>,</span>
+<span>  precision <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">date_spec</span><span class="op">$</span><span class="va">precision</span>,</span>
+<span>  representation <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">date_spec</span><span class="op">$</span><span class="va">representation</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $source_table</span></span>
+<span><span class="co">#&gt; [1] "visit_occurrence"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $selection</span></span>
+<span><span class="co">#&gt; [1] "first"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $precision</span></span>
+<span><span class="co">#&gt; [1] "month"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $representation</span></span>
+<span><span class="co">#&gt; [1] "factor"</span></span></code></pre>
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">duration</span> <span class="op">&lt;-</span> <span class="va">elapsed</span><span class="op">$</span><span class="va">variables</span><span class="op">$</span><span class="va">days</span><span class="op">$</span><span class="va">derived</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>from_table <span class="op">=</span> <span class="va">duration</span><span class="op">$</span><span class="va">from</span><span class="op">$</span><span class="va">event</span><span class="op">$</span><span class="va">table</span>, from_selection <span class="op">=</span> <span class="va">duration</span><span class="op">$</span><span class="va">from</span><span class="op">$</span><span class="va">which</span>,</span>
+<span>  to_table <span class="op">=</span> <span class="va">duration</span><span class="op">$</span><span class="va">to</span><span class="op">$</span><span class="va">event</span><span class="op">$</span><span class="va">table</span>, unit <span class="op">=</span> <span class="va">duration</span><span class="op">$</span><span class="va">unit</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $from_table</span></span>
+<span><span class="co">#&gt; [1] "visit_occurrence"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $from_selection</span></span>
+<span><span class="co">#&gt; [1] "first"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $to_table</span></span>
+<span><span class="co">#&gt; [1] "death"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $unit</span></span>
+<span><span class="co">#&gt; [1] "days"</span></span></code></pre>
+<p>The month variable uses <code>first_visit</code>, month precision and factor representation. The elapsed variable measures the duration from first visit to death. A calendar period and a day duration answer different questions.</p>
 </details>
 </div>
 <div class="section level2">
@@ -437,7 +466,7 @@
 </h2>
 <p>Does exporting a date recipe export any dates?</p>
 <details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">is.character</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_export_json.html">recipe_export_json</a></span><span class="op">(</span><span class="va">elapsed</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] TRUE</span></span></code></pre>
 <p>No: JSON serialises the study definition, not the assigned patient table.</p>

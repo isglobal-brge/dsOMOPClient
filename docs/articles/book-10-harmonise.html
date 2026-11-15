@@ -872,12 +872,34 @@
 <div class="section level2">
 <h2 id="exercise-2-a-common-variant">Exercise 2: a common variant<a class="anchor" aria-label="anchor" href="#exercise-2-a-common-variant"></a>
 </h2>
-<p>Does a label map change a concept set? Inspect the recipe object locally.</p>
+<p>Does a label map change a concept set? Inspect the recipe object locally, compare its selection with the original education variable, and resolve the answer identities using the vocabulary lookup already returned above.</p>
 <details><p><summary>Solution 2</summary></p>
 <div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">harmonised</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_recipe" "list"</span></span></code></pre>
-<p>A recipe definition is local. Reconciliation changes presentation; concept meaning still requires study review.</p>
+<code class="sourceCode R"><span><span class="va">selected</span> <span class="op">&lt;-</span> <span class="va">harmonised</span><span class="op">$</span><span class="va">variables</span><span class="op">$</span><span class="va">education</span></span>
+<span><span class="va">without_labels</span> <span class="op">&lt;-</span> <span class="va">selected</span></span>
+<span><span class="va">without_labels</span><span class="op">$</span><span class="va">labels</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
+<span><span class="va">label_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">selected</span><span class="op">$</span><span class="va">labels</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">answer_names</span> <span class="op">&lt;-</span> <span class="va">lookup</span><span class="op">$</span><span class="va">per_site</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  Answer <span class="op">=</span> <span class="va">answer_names</span><span class="op">$</span><span class="va">concept_name</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">label_ids</span>, <span class="va">answer_names</span><span class="op">$</span><span class="va">concept_id</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  Shared_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">selected</span><span class="op">$</span><span class="va">labels</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Answer</th>
+<th align="left">Shared_label</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">University education</td>
+<td align="left">University education</td>
+</tr></tbody>
+</table>
+<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">selected</span><span class="op">$</span><span class="va">event</span><span class="op">$</span><span class="va">concepts</span>, <span class="va">education</span><span class="op">$</span><span class="va">event</span><span class="op">$</span><span class="va">concepts</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] TRUE</span></span></code></pre>
+<div class="sourceCode" id="cb76"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">selected</span><span class="op">$</span><span class="va">event</span><span class="op">$</span><span class="va">concepts</span>, <span class="va">without_labels</span><span class="op">$</span><span class="va">event</span><span class="op">$</span><span class="va">concepts</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] TRUE</span></span></code></pre>
+<p>The label map names the University education answer. Removing that map leaves the observation selection identical (<code>TRUE</code>): it changes the displayed answer label, not which question is selected. Concept meaning still requires study review.</p>
 </details>
 </div>
 <div class="section level2">
@@ -885,7 +907,7 @@
 </h2>
 <p>Check that the recipe remains serialisable after harmonisation.</p>
 <details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb78"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">is.character</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_export_json.html">recipe_export_json</a></span><span class="op">(</span><span class="va">harmonised</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] TRUE</span></span></code></pre>
 <p>TRUE means this definition can be recorded. It does not prove that two different concepts are clinically equivalent.</p>

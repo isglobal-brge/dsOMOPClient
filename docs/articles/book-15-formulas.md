@@ -281,17 +281,33 @@ knitr::kable(creatinine_hits[c("concept_name", "standard_concept")])
 serum_id <- creatinine_hits$concept_id[trimws(creatinine_hits$concept_name) ==
   "Creatinine [Mass/volume] in Serum or Plasma"]
 serum_set <- omop_concept_set(serum_id)
-knitr::kable(ds.omop.concept.locate(serum_id, scope = "pooled", conns = conns)$pooled)
+serum_locations <- ds.omop.concept.locate(serum_id, scope = "pooled", conns = conns)
+serum_locations
 ```
 
-The available creatinine concept is **Blood**, while the formula
-requests Serum or Plasma. This lesson therefore does not report patient
-eGFR. The named helper `omop_formula_egfr_ckdepi2021()` requires
-standardized creatinine in `coordinate:idms_creatinine_mg_dl`, completed
-calendar age at that same measurement, and an explicit public mapping
-from the study’s sex categories to the equation branches. A field named
-gender does not establish that mapping. The formula returns missing for
-children, nonpositive creatinine and unmapped sex.
+    #> <dsomop_result>
+    #> Servers: site
+    #> Scope: pooled
+    #> 
+    #> $site
+    #> [1] table_name     concept_column concept_id     n_records      n_persons     
+    #> <0 rows> (or 0-length row.names)
+    #> 
+    #> Warnings:
+    #>   - Strict pooling failed: invalid concept locator from server site
+    #>   - No complete disclosure-safe pooled concept-location result was available.
+
+The catalogue contains both Blood and Serum or Plasma creatinine. The
+locator returns an empty site result and reports that strict pooling
+failed; there is no admitted pooled source-use result. This is
+inconclusive about suitable serum measurements, not evidence of their
+absence or a reason to substitute Blood. This lesson therefore does not
+report patient eGFR. The named helper `omop_formula_egfr_ckdepi2021()`
+requires standardized creatinine in `coordinate:idms_creatinine_mg_dl`,
+completed calendar age at that same measurement, and an explicit public
+mapping from the study’s sex categories to the equation branches. A
+field named gender does not establish that mapping. The formula returns
+missing for children, nonpositive creatinine and unmapped sex.
 
 The source check above is a reason to stop this Synthea calculation:
 neither renaming Blood as Serum nor declaring an assay coordinate

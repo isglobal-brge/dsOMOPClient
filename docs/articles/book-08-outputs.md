@@ -176,8 +176,7 @@ dsBaseClient::ds.colnames("D_fmt_features", datasources = conns)
     #> [6] "hemoglobin"
 
 This is a wide table, not the sparse coordinate representation shown
-below. The native selection check prevents an accidental older-language
-execution.
+below.
 
 ## Baseline: characteristics at entry
 

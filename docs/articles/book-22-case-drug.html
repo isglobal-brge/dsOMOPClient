@@ -99,7 +99,7 @@
 <div class="section level2">
 <h2 id="research-question-and-vocabulary-feasibility">Research question and vocabulary feasibility<a class="anchor" aria-label="anchor" href="#research-question-and-vocabulary-feasibility"></a>
 </h2>
-<p>For a prespecified ATC class, what fraction of the first treatment year is covered, and when does the first treatment era end? First establish that the vocabulary supports that class. The small GiBleed vocabulary has no ATC entries; an ATC-class estimate is therefore unavailable on this practice resource. The executable worked analysis below is explicitly a <strong>celecoxib ingredient</strong> study instead. It teaches the mechanics without relabelling an ingredient as an ATC class.</p>
+<p>For a prespecified ATC class, what fraction of the first treatment year is covered, and when does the first treatment era end? First establish that the vocabulary supports that class. The small GiBleed vocabulary has no ATC entries; an ATC-class estimate is therefore unavailable on this practice resource. The executable worked ATC analysis therefore uses a separate, explicitly synthetic catalogue and longitudinal supply histories. A subsequent <strong>celecoxib ingredient</strong> example shows why the unmodified GiBleed records cannot support an adherence conclusion.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
@@ -117,15 +117,40 @@
 <div class="section level2">
 <h2 id="run-the-atc-class-selection-on-the-teaching-catalogue">Run the ATC-class selection on the teaching catalogue<a class="anchor" aria-label="anchor" href="#run-the-atc-class-selection-on-the-teaching-catalogue"></a>
 </h2>
-<p>The category chapter’s synthetic catalogue lets us execute the class-selection workflow without pretending that GiBleed contains an ATC hierarchy. The class, its descendant medicine and its exposure records are all explicitly synthetic.</p>
+<p>The category chapter’s synthetic catalogue lets us execute the class-selection workflow without pretending that GiBleed contains an ATC hierarchy. The class, its descendant medicine and its exposure records are all explicitly synthetic. Six people follow each of three invented supply patterns, indexed at day zero:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Pattern</th>
+<th>Fill days</th>
+<th>Days supplied per fill</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Continuous, with early refills</td>
+<td>0, 100, 220</td>
+<td>120, 120, 125</td>
+</tr>
+<tr class="even">
+<td>Two overlapping fills, then stop</td>
+<td>0, 30</td>
+<td>60, 60</td>
+</tr>
+<tr class="odd">
+<td>Short course, then restart</td>
+<td>0, 120</td>
+<td>30, 30</td>
+</tr>
+</tbody>
+</table>
+<p>Each has a complete observed year. Supply carried forward from early refills counts once; a restart after a gap over 30 days starts a new era. These public patterns let us predict the results before looking at protected summaries.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.logout.html" class="external-link">datashield.logout</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/fixture.R"</span><span class="op">)</span></span>
-<span><span class="va">class_practice</span> <span class="op">&lt;-</span> <span class="fu">book_fixture</span><span class="op">(</span>categories <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">class_practice</span> <span class="op">&lt;-</span> <span class="fu">book_fixture</span><span class="op">(</span>categories <span class="op">=</span> <span class="cn">TRUE</span>, drug_histories <span class="op">=</span> <span class="cn">TRUE</span>, symbol <span class="op">=</span> <span class="st">"class_omop"</span><span class="op">)</span></span>
 <span><span class="va">class_conns</span> <span class="op">&lt;-</span> <span class="va">class_practice</span><span class="op">$</span><span class="va">conns</span></span>
 <span><span class="va">classes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="cn">NULL</span>, vocabulary <span class="op">=</span> <span class="st">"ATC"</span>, standard_only <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">class_conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span>  conns <span class="op">=</span> <span class="va">class_conns</span>, symbol <span class="op">=</span> <span class="st">"class_omop"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">classes</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"concept_class_id"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -148,7 +173,7 @@
 </table>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">class_id</span> <span class="op">&lt;-</span> <span class="va">classes</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">classes</span><span class="op">$</span><span class="va">concept_class_id</span> <span class="op">==</span> <span class="st">"ATC 2nd"</span><span class="op">]</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">class_id</span>, conns <span class="op">=</span> <span class="va">class_conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">class_id</span>, conns <span class="op">=</span> <span class="va">class_conns</span>, symbol <span class="op">=</span> <span class="st">"class_omop"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
@@ -166,7 +191,7 @@
 </tr></tbody>
 </table>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">class_conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">class_conns</span>, symbol <span class="op">=</span> <span class="st">"class_omop"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="right">concept_id</th>
@@ -183,7 +208,7 @@
 <code class="sourceCode R"><span><span class="va">class_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">class_id</span>, descendants <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">class_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".rds"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">class_set</span>, <span class="va">class_file</span><span class="op">)</span></span></code></pre></div>
-<p>A classification concept groups descendants; it is not a standard ingredient substitution through Maps to. The descendant list establishes the selected medicine before the protected inventory establishes its use.</p>
+<p>A classification concept groups descendants; it is not a standard ingredient substitution through Maps to. The descendant list establishes the selected medicine before the protected inventory establishes its use. The prevalence entry is a disclosure-controlled count band (15 here), not the exact cohort size. The subsequent admitted analysis summary reports 18 valid people; use that analysis denominator when interpreting its mean.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">class_users</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_new_users.html">omop_new_users</a></span><span class="op">(</span><span class="va">class_set</span>, washout_days <span class="op">=</span> <span class="fl">365</span><span class="op">)</span></span>
 <span><span class="va">class_users</span><span class="op">$</span><span class="va">filters</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">class_users</span><span class="op">$</span><span class="va">filters</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_has.html">omop_observed</a></span><span class="op">(</span>after <span class="op">=</span> <span class="fl">364</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -191,26 +216,80 @@
 <span><span class="va">class_era</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_era.html">omop_era</a></span><span class="op">(</span><span class="va">class_drug</span>, gap <span class="op">=</span> <span class="fl">30</span>, by <span class="op">=</span> <span class="st">"ingredient"</span>, stockpile <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">class_days</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">class_era</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"covered_days"</span>,</span>
 <span>  window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">364</span><span class="op">)</span>, coverage <span class="op">=</span> <span class="st">"effective_supply"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">class_persistence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">class_era</span>,</span>
+<span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_era_days"</span>, window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">364</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">class_study</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">class_users</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  covered <span class="op">=</span> <span class="va">class_days</span>, persistence <span class="op">=</span> <span class="va">class_persistence</span>,</span>
+<span>  discontinued <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_flag</a></span><span class="op">(</span><span class="va">class_persistence</span>, <span class="st">"lt"</span>, <span class="fl">365</span><span class="op">)</span>,</span>
 <span>  pdc <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_derive</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>days <span class="op">=</span> <span class="va">class_days</span><span class="op">)</span>,</span>
 <span>    <span class="fu">book_expr</span><span class="op">(</span><span class="fu">book_op</span><span class="op">(</span><span class="st">"/"</span>, <span class="fu">book_col</span><span class="op">(</span><span class="st">"days"</span><span class="op">)</span>, <span class="fu">book_lit</span><span class="op">(</span><span class="fl">365</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, unit <span class="op">=</span> <span class="st">"1"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">class_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">class_study</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_class_use"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">class_conns</span><span class="op">)</span></span>
+<span><span class="va">class_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">class_study</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_class_use"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">class_conns</span>, symbol <span class="op">=</span> <span class="st">"class_omop"</span><span class="op">)</span></span>
 <span><span class="va">class_pdc</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_class_use$pdc"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">class_conns</span><span class="op">)</span></span>
 <span><span class="va">class_pdc</span><span class="op">$</span><span class="va">Global.Mean</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;                 EstimatedMean Nmissing Nvalid Ntotal</span></span>
-<span><span class="co">#&gt; studiesCombined    0.08219178        0     18     18</span></span></code></pre>
-<p>The synthetic PDC describes covered supply during a complete first year. The class has one ingredient in this catalogue; a protocol with several ingredients must decide whether switching still counts as persistence on the class. The rest of this case uses the unmodified GiBleed ingredient data to teach persistence, discontinuation and interpretation with varied histories.</p>
+<span><span class="co">#&gt; studiesCombined     0.4977169        0     18     18</span></span></code></pre>
+<p>The expected covered days are 365, 120 and 60. Their mean PDC is (365 + 120 + 60) / (3 × 365), about 0.498. First-era persistence is 365, 120 and 30 days: the restarted course adds covered days but does not extend the first era. Two of the three patterns meet the protocol’s first-era discontinuation rule. Recorded supply is not proof of ingestion or permanent cessation. The class has one ingredient; a protocol with several ingredients must decide whether switching still counts as persistence on the class.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">class_conns</span><span class="op">)</span></span>
-<span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.logout.html" class="external-link">datashield.logout</a></span><span class="op">(</span><span class="va">class_conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">class_practice</span><span class="op">$</span><span class="va">path</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_class_use$covered"</span>,</span>
+<span>  datasources <span class="op">=</span> <span class="va">class_conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Site</th>
+<th align="left">Statistic</th>
+<th align="right">Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">5%</td>
+<td align="right">60.0000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">10%</td>
+<td align="right">60.0000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">25%</td>
+<td align="right">60.0000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">50%</td>
+<td align="right">120.0000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">75%</td>
+<td align="right">365.0000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">90%</td>
+<td align="right">365.0000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">95%</td>
+<td align="right">365.0000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">Mean</td>
+<td align="right">181.6667</td>
+</tr>
+</tbody>
+</table>
+<p>The summary spans 60 to 365 covered days, consistent with the declared patterns. Keep this connection for the persistence and discontinuation exercises. Next, inspect the unmodified GiBleed ingredient records and their decisive limitation.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="find-the-executable-ingredient-set">Find the executable ingredient set<a class="anchor" aria-label="anchor" href="#find-the-executable-ingredient-set"></a>
 </h2>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"celecoxib"</span>, domain <span class="op">=</span> <span class="st">"Drug"</span>, vocabulary <span class="op">=</span> <span class="st">"RxNorm"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>, <span class="st">"concept_class_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -232,7 +311,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ingredient_id</span> <span class="op">&lt;-</span> <span class="va">hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span> <span class="st">"celecoxib"</span><span class="op">]</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">ingredient_id</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="st">"concept_name"</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -243,7 +322,7 @@
 <td align="left">celecoxib</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.concept.prevalence.html">ds.omop.concept.prevalence</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, top_n <span class="op">=</span> <span class="fl">10</span>, scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -309,7 +388,7 @@
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mapping</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.relationships.html">ds.omop.concept.relationships</a></span><span class="op">(</span><span class="va">ingredient_id</span>, relationship_id <span class="op">=</span> <span class="st">"Maps to"</span>,</span>
 <span>  conns <span class="op">=</span> <span class="va">conns</span>, symbol <span class="op">=</span> <span class="st">"omop"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
 <span><span class="va">children</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">ingredient_id</span>, include_self <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -317,14 +396,14 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Maps_to_rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">NROW</a></span><span class="op">(</span><span class="va">mapping</span><span class="op">)</span>, Descendant_rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">NROW</a></span><span class="op">(</span><span class="va">children</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   Maps_to_rows Descendant_rows</span></span>
 <span><span class="co">#&gt; 1            0               0</span></span></code></pre>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">drug_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">ingredient_id</span>, descendants <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="define-new-users-and-the-denominator">Define new users and the denominator<a class="anchor" aria-label="anchor" href="#define-new-users-and-the-denominator"></a>
 </h2>
 <p>Require a 365-day washout and a complete next year of observation. This complete- follow-up restriction simplifies the demonstration but can select healthier or more stable patients. A real protocol may instead use each person’s observed time.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">users</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_new_users.html">omop_new_users</a></span><span class="op">(</span><span class="va">drug_set</span>, washout_days <span class="op">=</span> <span class="fl">365</span><span class="op">)</span></span>
 <span><span class="va">users</span><span class="op">$</span><span class="va">filters</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">users</span><span class="op">$</span><span class="va">filters</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_has.html">omop_observed</a></span><span class="op">(</span>after <span class="op">=</span> <span class="fl">364</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">drug</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, <span class="va">drug_set</span><span class="op">)</span></span>
@@ -342,7 +421,7 @@
 <span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">utilisation</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_utilisation"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;        baseline </span></span>
 <span><span class="co">#&gt; "D_utilisation"</span></span></code></pre>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_utilisation$covered"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -393,17 +472,18 @@
 </tr>
 </tbody>
 </table>
-<p>The stockpiled era carries overlapping supply forward under the declared rule. Covered days count the union of effective supply days, avoiding double counting overlap. Era persistence tolerates a declared 30-day gap; it is not the same as covered days. Recorded prescribing is not proof of actual ingestion.</p>
+<p>Every released GiBleed covered-days summary is one day. The public input has one celecoxib exposure per person, zero <code>days_supply</code>, and equal start/end dates: only the inclusive one-day recorded span is available. It cannot establish longitudinal supply, adherence, restarts or actual treatment discontinuation.</p>
+<p>The stockpiled era carries overlapping supply forward when that information exists, as in the synthetic ATC example. Covered days count the union of effective supply days, avoiding double counting overlap. Era persistence tolerates a declared 30-day gap; it is not the same as covered days. Recorded prescribing is not proof of actual ingestion.</p>
 </div>
 <div class="section level2">
 <h2 id="pdc-and-discontinuation">PDC and discontinuation<a class="anchor" aria-label="anchor" href="#pdc-and-discontinuation"></a>
 </h2>
 <p>Proportion of days covered (PDC) divides covered days by the 365 eligible days. The native expression declares a dimensionless result (<code>unit = "1"</code>), rather than retaining the covered-days coordinate after a display rescaling. A first era shorter than 365 days is a protocol-defined discontinuation indicator under this gap rule, not proof of permanent treatment cessation.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">utilisation</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_utilisation_analysis"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;                 baseline </span></span>
 <span><span class="co">#&gt; "D_utilisation_analysis"</span></span></code></pre>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_utilisation_analysis$pdc"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -454,14 +534,15 @@
 </tr>
 </tbody>
 </table>
+<p>Here every GiBleed PDC is 1/365 (about 0.00274), solely because of the one-day recording pattern. This is arithmetic on the available record, not a clinical adherence estimate. The synthetic ATC example supplies the longitudinal teaching comparison.</p>
 <p>Inspect the definition before interpreting these values. Changing stockpiling, gap tolerance or the follow-up denominator changes the question even when the column name remains PDC. Privacy checks still apply to the final table and releases.</p>
 </div>
 <div class="section level2">
 <h2 id="exercises">Exercises<a class="anchor" aria-label="anchor" href="#exercises"></a>
 </h2>
-<p><strong>1.</strong> Summarise persistence and compare its units with PDC.</p>
+<p><strong>1.</strong> Summarise persistence in both resources. Compare its units with PDC and explain why only the synthetic example demonstrates varied supply histories.</p>
 <details><p><summary>Solution 1</summary></p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_utilisation_analysis$persistence"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -512,10 +593,61 @@
 </tr>
 </tbody>
 </table>
-<p>Persistence is measured in days; PDC is a fraction. A tolerated gap contributes to an era’s span but need not contribute covered supply days.</p>
-</details><p><strong>2.</strong> Count the discontinuation indicator.</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_class_use$persistence"</span>, datasources <span class="op">=</span> <span class="va">class_conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Site</th>
+<th align="left">Statistic</th>
+<th align="right">Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">5%</td>
+<td align="right">30.0000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">10%</td>
+<td align="right">30.0000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">25%</td>
+<td align="right">30.0000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">50%</td>
+<td align="right">120.0000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">75%</td>
+<td align="right">365.0000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">90%</td>
+<td align="right">365.0000</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">95%</td>
+<td align="right">365.0000</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">Mean</td>
+<td align="right">171.6667</td>
+</tr>
+</tbody>
+</table>
+<p>GiBleed persistence is uniformly one recorded day. Synthetic first-era persistence ranges from 30 to 365 days, with a mean of (365 + 120 + 30)/3 = 171.67 days. Persistence is measured in days; PDC is a fraction. A tolerated gap contributes to an era’s span but need not contribute covered supply days.</p>
+</details><p><strong>2.</strong> Count the discontinuation indicator in both resources and interpret it.</p>
 <details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_utilisation_analysis$discontinued"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -533,21 +665,46 @@
 </tr>
 </tbody>
 </table>
-<p>The indicator is specific to the first era and this complete follow-up cohort. Subsequent restarting remains possible.</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_class_use$discontinued"</span>, datasources <span class="op">=</span> <span class="va">class_conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Category</th>
+<th align="right">Count</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">0</td>
+<td align="right">6</td>
+</tr>
+<tr class="even">
+<td align="left">1</td>
+<td align="right">12</td>
+</tr>
+<tr class="odd">
+<td align="left">NA</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p>All 1,745 GiBleed people have an indicator of one because the available record ends on its start date; this does not establish clinical discontinuation. The synthetic example has 12 indicators of one and six of zero, as predicted from the supply patterns. The indicator refers to the first era; restarting remains possible and is explicitly present in the third synthetic pattern.</p>
 </details><p><strong>3.</strong> Save the ingredient definition. Would changing its name to an ATC code turn this into an ATC-class analysis?</p>
 <details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">set_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".rds"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">drug_set</span>, <span class="va">set_file</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">set_file</span><span class="op">)</span>, <span class="va">drug_set</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] TRUE</span></span></code></pre>
 <p>No. Class membership comes from the vocabulary hierarchy, not the local label.</p>
-</details>
+</details><div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">class_conns</span>, symbol <span class="op">=</span> <span class="st">"class_omop"</span><span class="op">)</span></span>
+<span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.logout.html" class="external-link">datashield.logout</a></span><span class="op">(</span><span class="va">class_conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">class_practice</span><span class="op">$</span><span class="va">path</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>Check vocabulary feasibility first. Ingredient utilisation is executable here; ATC-class utilisation requires the missing classification vocabulary. Distinguish covered supply, era persistence, PDC and protocol-defined discontinuation, and state the denominator and follow-up selection explicitly.</p>
+<p>Check vocabulary and supply-history feasibility first. The synthetic ATC example shows continuous supply, overlap and restarting. GiBleed supports ingredient selection but its one-day records cannot establish adherence. Distinguish covered supply, era persistence, PDC and protocol-defined discontinuation, and state the denominator and follow-up selection explicitly.</p>
 <p><strong>Next:</strong> <a href="book-23-case-table1.html">23. Case study: a harmonised Table 1</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

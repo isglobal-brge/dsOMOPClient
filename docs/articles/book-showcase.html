@@ -110,6 +110,7 @@
 <h2 id="named-concepts-across-sites">Named concepts across sites<a class="anchor" aria-label="anchor" href="#named-concepts-across-sites"></a>
 </h2>
 <p><strong>One categorical column, shared meanings.</strong> Declare a common label for the same education concept, then ask each site for a protected count table.</p>
+<p>The question and answer identities come from <a href="book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes">chapter 4’s questionnaire catalogue</a>, which searches, inspects and saves the education definition and checks its use.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">named</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>education <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span></span>
 <span>  event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"observation"</span>, <span class="fl">900001L</span><span class="op">)</span>,</span>
@@ -216,6 +217,7 @@
 <h2 id="choose-the-output-shape">Choose the output shape<a class="anchor" aria-label="anchor" href="#choose-the-output-shape"></a>
 </h2>
 <p><strong>Person → event → period → follow-up.</strong> Wide tables support named covariates; long tables retain events; panels repeat time bins; survival records end at an outcome or declared censor. All four remain private server tables.</p>
+<p>Use Inpatient Visit and Outpatient Visit from <a href="book-04-vocabulary.html#find-inpatient-and-outpatient-visits">chapter 4’s visit discovery</a>, including its standard-status inspection, location check and saved sets.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">visits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">9201L</span>, <span class="fl">9202L</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"visits"</span><span class="op">)</span></span>
 <span><span class="va">visitors</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"visitors"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">visits</span><span class="op">)</span><span class="op">)</span></span>
@@ -368,6 +370,7 @@
 <h2 id="a-cause-of-death-wide-table">A cause-of-death wide table<a class="anchor" aria-label="anchor" href="#a-cause-of-death-wide-table"></a>
 </h2>
 <p><strong>One wide table combines the study variables.</strong> The downloadable helper builds the released recipe: pseudonymous person key, completed ages, education and fever answers, visit periods, dates and coded cause of death.</p>
+<p>Education, fever answers and causes use <a href="book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes">chapter 4’s questionnaire catalogue</a>; visit settings use its <a href="book-04-vocabulary.html#find-inpatient-and-outpatient-visits">visit discovery</a>. These are the selections used inside the helper.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/capstone.R"</span><span class="op">)</span></span>
 <span><span class="va">va</span> <span class="op">&lt;-</span> <span class="fu">book_capstone_recipe</span><span class="op">(</span><span class="op">)</span></span>
@@ -396,6 +399,7 @@
 <h2 id="numbers-and-their-groupings">Numbers and their groupings<a class="anchor" aria-label="anchor" href="#numbers-and-their-groupings"></a>
 </h2>
 <p><strong>Keep the number and a declared band.</strong> Reduce hemoglobin to one mean per person, in recorded g/dL, and group those means using public teaching breaks.</p>
+<p>The measurement and g/dL unit come from <a href="book-04-vocabulary.html#find-haemoglobin-glucose-and-their-units-in-synthea">chapter 4’s haemoglobin discovery and recorded-unit check</a>.</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">labs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>hb <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3000963L</span>,</span>
 <span>  unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8713L</span><span class="op">)</span><span class="op">)</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -450,15 +454,209 @@
 <h2 id="derive-and-filter-without-downloading-rows">Derive and filter without downloading rows<a class="anchor" aria-label="anchor" href="#derive-and-filter-without-downloading-rows"></a>
 </h2>
 <p><strong>Present the number, then select with a condition.</strong> Native unit conversion declares the coordinate; <code>omop_where</code> declares the filter predicate. Standalone mutate remains useful for general derived columns in an already assigned table.</p>
+<p>Keep that haemoglobin selection. Discover the target g/L unit before declaring the conversion; a vocabulary unit identifies the target, while the factor of ten comes from the mass-unit definition.</p>
 <div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">target_units</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"gram per liter"</span>, domain <span class="op">=</span> <span class="st">"Unit"</span>,</span>
+<span>  standard_only <span class="op">=</span> <span class="cn">FALSE</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">target_units</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">concept_name</th>
+<th align="left">standard_concept</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Gram per deciliter and percent</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">Milligram C per Liter</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">Microgram per milliliter of FEU</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">nanogram per deciliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">nanogram per deciliter per hour</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">nanogram of fibrinogen equivalent unit per milliliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">nanogram per liter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">nanogram per milliliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">nanogram per milliliter and hour</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">nanogram per milliliter of red blood cells</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">nanogram per milliliter of trypsinogen</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">nanogram per microliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">microgram per deciliter of red blood cells</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">microgram per deciliter of thyroxine</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">microgram equivalent per milliliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">microgram of fibrinogen equivalent unit per milliliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">microgram per liter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">microgram per milliliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">microliter per gram</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">milliliter per kilogram per minute</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">femtogram per liter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">gram per deciliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">gram per deciliter calculated</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">gram per liter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">kilogram per liter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">liter per kilogram</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">milligram per milliliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">milligram of phenylketones per deciliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">picogram per deciliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">picogram per liter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">picogram per milliliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">picogram per microliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">microgram per deciliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">gram per milliliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">milligram per deciliter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">milligram per deciliter adult</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">milligram per deciliter calculated</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">milligram per deciliter of phenylalanine</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">milligram of fibrinogen equivalent unit per liter</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">milligram per liter</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">milliliter per gram</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">milliliter per kilogram</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">milliliter per kilogram per 24 hours</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
+<td align="left">milligram per deciliter per 24 hours</td>
+<td align="left">S</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">gl_id</span> <span class="op">&lt;-</span> <span class="va">target_units</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="va">target_units</span><span class="op">$</span><span class="va">concept_name</span> <span class="op">==</span> <span class="st">"gram per liter"</span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">gl_id</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">converted</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>hb <span class="op">=</span> <span class="va">tour_mean</span>,</span>
 <span>  hb_gl <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number</a></span><span class="op">(</span><span class="va">tour_mean</span>, <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_spec</a></span><span class="op">(</span></span>
-<span>    unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_unit</a></span><span class="op">(</span><span class="st">"unit:8713"</span>, <span class="st">"unit:8636"</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>    unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_unit</a></span><span class="op">(</span><span class="st">"unit:8713"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"unit:"</span>, <span class="va">gl_id</span><span class="op">)</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">converted</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>output <span class="op">=</span> <span class="st">"D_tour_converted"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;             output </span></span>
 <span><span class="co">#&gt; "D_tour_converted"</span></span></code></pre>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_tour_converted"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">hb</span> <span class="op">&gt;=</span> <span class="fl">14</span><span class="op">)</span>,</span>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_tour_converted"</span>, above_teaching_cutoff <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">hb</span> <span class="op">&gt;=</span> <span class="fl">14</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_tour_flagged"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_tour_flagged"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">above_teaching_cutoff</span> <span class="op">==</span> <span class="fl">1L</span><span class="op">)</span>,</span>
 <span>  newobj <span class="op">=</span> <span class="st">"D_tour_selected"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">selected_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_tour_selected$hb_gl"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">selected_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -511,14 +709,14 @@
 </tr>
 </tbody>
 </table>
-<p>The retained people’s values are expressed in g/L, ten times g/dL. The final subset passes its publication check; the analyst receives only this summary. <a href="book-11-parameters.html">Learn BMI, age groups, recodes and rollback →</a></p>
+<p>The mutation adds an indicator to the assigned table using a public teaching cutoff; the filter retains its positive group. This is a general column derivation, not a clinical abnormality flag. The retained people’s values are expressed in g/L, ten times g/dL. The final subset passes its publication check; the analyst receives only this summary. <a href="book-11-parameters.html">Learn BMI, age groups, recodes and rollback →</a></p>
 </div>
 <div class="section level2">
 <h2 id="try-it">Try it<a class="anchor" aria-label="anchor" href="#try-it"></a>
 </h2>
 <p>Use the converted table to summarise all people, without the filter. Why does the mean differ from the preceding card?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">all_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_tour_converted$hb_gl"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">all_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -578,7 +776,7 @@
 </h2>
 <p>Inspect the numeric card’s output schema.</p>
 <details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_tour_bands"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "person_id" "hb"        "band"</span></span></code></pre>
@@ -590,7 +788,7 @@
 </h2>
 <p>Count people by the declared haemoglobin bands.</p>
 <details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_tour_bands$band"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">

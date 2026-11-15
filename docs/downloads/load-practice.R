@@ -26,7 +26,7 @@ load_book_practice <- function(directory) {
       stopifnot(file.copy(archive, file.path(stage, filename)))
       withr::with_envvar(c(NUMERIC_POSTGRES="0", NUMERIC_DUCKDB="1"),
         load_numeric_cdm(stage))
-      input <- DBI::dbConnect(duckdb::duckdb(), file.path(stage,"numeric_cdm.duckdb"), read_only=TRUE)
+      input <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), file.path(stage,"numeric_cdm.duckdb"), read_only=TRUE)
       output <- DBI::dbConnect(RSQLite::SQLite(), database)
       counts <- list()
       tryCatch({
@@ -58,6 +58,16 @@ load_book_practice <- function(directory) {
       DBI::dbBegin(db)
       for (path in sort(list.files(csvdir,"[.]csv$",full.names=TRUE,recursive=TRUE,ignore.case=TRUE))) {
         table <- tolower(tools::file_path_sans_ext(basename(path)))
+        # GiBleed COST.csv is header-only without its final newline. Complete
+        # the text record in this disposable copy; preserve every field/row.
+        size <- file.info(path)$size
+        if (size > 0) {
+          stream <- file(path, "rb")
+          seek(stream, where=size-1)
+          last <- readBin(stream, "raw", n=1L)
+          close(stream)
+          if (!identical(last, charToRaw("\n"))) cat("\n", file=path, append=TRUE)
+        }
         d <- read.csv(path,colClasses="character",na.strings=c("","NA"),check.names=FALSE)
         names(d)<-tolower(names(d))
         text_ids<-c("vocabulary_id","domain_id","concept_class_id","relationship_id",

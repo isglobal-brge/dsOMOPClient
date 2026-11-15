@@ -61,8 +61,12 @@ giid <- gi$concept_id[trimws(gi$concept_name) == "Gastrointestinal hemorrhage"]
 ```
 
 Select the standard ingredients and standard outcome, then inspect
-descendants. The source products map into these ingredient hierarchies;
-ingredient names alone would not select every product record.
+descendants. These GiBleed study-drug records are already
+ingredient-coded. The descendant request includes the seed by default:
+the celecoxib row below is self-inclusion, not a more specific product.
+Zero Maps to rows demonstrate no product mapping here. In another
+resource, inspect actual products and mapping direction before assuming
+an ingredient set covers them.
 
 ``` r
 ce_children <- ds.omop.concept.descendants(ceid, conns = two_conns, symbol = "book_pool")$pooled

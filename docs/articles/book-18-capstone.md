@@ -156,9 +156,8 @@ class(visit_month)
 
     #> [1] "omop_variable" "list"
 
-The values will be ordered categories such as year-month. No manual
-date-string mutation or fixed 64-boundary cut vector is needed in
-2.10.5.
+The values will be ordered year-month categories, with the declared
+precision shared across sites.
 
 ## Present its quarter and year
 

@@ -145,13 +145,21 @@ knitr::kable(head(desc$pooled["concept_name"], 8))
 | Childhood asthma |
 
 ``` r
-parents <- ds.omop.concept.ancestors(asthma_id, conns = conns)
-knitr::kable(head(parents$pooled["concept_name"], 8))
+child_id <- desc$pooled$concept_id[desc$pooled$concept_name == "Childhood asthma"]
+parents <- ds.omop.concept.ancestors(child_id, conns = conns)
+knitr::kable(parents$pooled[parents$pooled$direction == "ancestor",
+  c("direction", "concept_name")])
 ```
 
-| concept\_name    |
-| :--------------- |
-| Childhood asthma |
+| direction | concept\_name |
+| :-------- | :------------ |
+| ancestor  | Asthma        |
+
+The ancestors API returns relationships in both directions. Keep its
+`direction` column and select `"ancestor"` to walk upward: Childhood
+asthma has Asthma as a parent. The preceding descendant query walks
+downward from Asthma to Childhood asthma. A descendant row in the
+ancestors response is not a parent.
 
 For medicines, ATC is a classification vocabulary, so the default
 `standard_only = TRUE` can hide the class you need. This is a common
@@ -402,8 +410,10 @@ knitr::kable(glucose_hits[c("concept_name", "vocabulary_id", "standard_concept")
 | Glucose \[Mass/volume\] in Urine by Test strip | LOINC          | S                 |
 
 ``` r
+glucose_id <- glucose_hits$concept_id[glucose_hits$concept_name ==
+  "Glucose [Mass/volume] in Blood"]
 lab_sets <- list(haemoglobin = omop_concept_set(hb_id),
-  glucose = omop_concept_set(glucose_hits$concept_id))
+  glucose = omop_concept_set(glucose_id))
 ```
 
 These glucose hits are a catalogue, not yet an interchangeable
@@ -424,6 +434,33 @@ Counts describe recorded unit use under disclosure control. A vocabulary
 lookup of “milligram per deciliter” alone cannot establish that the lab
 was stored that way.
 
+### When a unit count is withheld
+
+Serum or Plasma glucose is a different measurement. Here its unit-count
+request is refused. Print the complete response so that an unavailable
+pooled result cannot be mistaken for no units or a successful check.
+
+``` r
+serum_glucose_id <- glucose_hits$concept_id[glucose_hits$concept_name ==
+  "Glucose [Mass/volume] in Serum or Plasma"]
+serum_glucose_units <- ds.omop.value.counts("measurement", "unit_concept_id",
+  concept_id = serum_glucose_id, scope = "pooled", conns = conns)
+serum_glucose_units
+```
+
+    #> <dsomop_result>
+    #> Servers: <none>
+    #> Scope: pooled
+    #> 
+    #> Warnings:
+    #>   - Server errors: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.
+    #>   - No complete disclosure-safe pooled value counts were available.
+
+The disclosure warning means the requested aggregate is unavailable. It
+does not establish absence. For the positive example below, use the
+explicitly selected Blood glucose measurement; its unit count is
+admitted.
+
 **Exercise 3 (advanced).** Check glucose unit use and save its catalogue
 together with the haemoglobin set. Why is choosing all glucose hits
 premature?
@@ -432,9 +469,13 @@ Solution 3
 
 ``` r
 glucose_units <- ds.omop.value.counts("measurement", "unit_concept_id",
-  concept_id = glucose_hits$concept_id[glucose_hits$concept_name == "Glucose [Mass/volume] in Serum or Plasma"], scope = "pooled", conns = conns)
+  concept_id = glucose_id, scope = "pooled", conns = conns)
 knitr::kable(glucose_units$pooled)
 ```
+
+|   n | concept\_name           | value |
+| --: | :---------------------- | :---- |
+| 225 | milligram per deciliter | 8840  |
 
 ``` r
 saveRDS(list(sets = lab_sets, glucose_catalogue = glucose_hits,
@@ -453,6 +494,56 @@ subsequent examples.
 Different specimens, mass versus molar concentrations and urine versus
 blood measurements need different definitions. Preserve that decision
 with the set.
+
+## Find measured BMI and its recorded unit
+
+Measured BMI is a recorded value, distinct from calculating BMI from
+height and weight. The repeated-measures lesson uses this specific
+measurement.
+
+``` r
+bmi_hits <- ds.omop.concept.search("Body mass index", domain = "Measurement",
+  vocabulary = "LOINC", conns = conns)$pooled
+knitr::kable(bmi_hits[c("concept_name", "standard_concept", "concept_class_id")])
+```
+
+| concept\_name                                        | standard\_concept | concept\_class\_id   |
+| :--------------------------------------------------- | :---------------- | :------------------- |
+| Body mass index (BMI) \[Ratio\]                      | S                 | Clinical Observation |
+| Body mass index (BMI) \[Percentile\] Per age and sex | S                 | Clinical Observation |
+
+``` r
+bmi_id <- bmi_hits$concept_id[bmi_hits$concept_name == "Body mass index (BMI) [Ratio]"]
+stopifnot(length(bmi_id) == 1L)
+bmi_set <- omop_concept_set(bmi_id)
+bmi_locations <- ds.omop.concept.locate(bmi_id, scope = "pooled", conns = conns)
+knitr::kable(bmi_locations$pooled)
+```
+
+| concept\_id | table\_name | concept\_column          | n\_records | n\_persons |
+| ----------: | :---------- | :----------------------- | ---------: | ---------: |
+|     3038553 | measurement | measurement\_concept\_id |        435 |         25 |
+
+``` r
+bmi_units <- ds.omop.value.counts("measurement", "unit_concept_id",
+  concept_id = bmi_id, scope = "pooled", conns = conns)
+knitr::kable(bmi_units$pooled)
+```
+
+|   n | concept\_name             | value |
+| --: | :------------------------ | :---- |
+| 435 | kilogram per square meter | 9531  |
+
+``` r
+saved_sets <- readRDS(concept_file)
+saved_sets$measured_bmi <- bmi_set
+saved_sets$bmi_units <- bmi_units$pooled
+saveRDS(saved_sets, concept_file)
+```
+
+The standard LOINC measurement and its recorded
+kilogram-per-square-meter unit define the repeated BMI extraction. Keep
+both with the saved study definitions.
 
 ## Recap
 

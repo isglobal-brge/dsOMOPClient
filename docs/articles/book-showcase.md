@@ -36,6 +36,11 @@ study populations.
 the same education concept, then ask each site for a protected count
 table.
 
+The question and answer identities come from [chapter 4’s questionnaire
+catalogue](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes),
+which searches, inspects and saves the education definition and checks
+its use.
+
 ``` r
 named <- omop_recipe(variables = list(education = omop_variable(
   event = omop_event("observation", 900001L),
@@ -133,6 +138,10 @@ category release rules still apply. [Learn dates and ages
 covariates; long tables retain events; panels repeat time bins; survival
 records end at an outcome or declared censor. All four remain private
 server tables.
+
+Use Inpatient Visit and Outpatient Visit from [chapter 4’s visit
+discovery](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.html#find-inpatient-and-outpatient-visits),
+including its standard-status inspection, location check and saved sets.
 
 ``` r
 visits <- omop_event("visit_occurrence", c(9201L, 9202L), name = "visits")
@@ -278,6 +287,12 @@ builds the released recipe: pseudonymous person key, completed ages,
 education and fever answers, visit periods, dates and coded cause of
 death.
 
+Education, fever answers and causes use [chapter 4’s questionnaire
+catalogue](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes);
+visit settings use its [visit
+discovery](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.html#find-inpatient-and-outpatient-visits).
+These are the selections used inside the helper.
+
 ``` r
 source("tools/book/capstone.R")
 va <- book_capstone_recipe()
@@ -322,6 +337,10 @@ names(conns)
 **Keep the number and a declared band.** Reduce hemoglobin to one mean
 per person, in recorded g/dL, and group those means using public
 teaching breaks.
+
+The measurement and g/dL unit come from [chapter 4’s haemoglobin
+discovery and recorded-unit
+check](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.html#find-haemoglobin-glucose-and-their-units-in-synthea).
 
 ``` r
 labs <- omop_recipe(variables = list(hb = omop_variable(event = omop_event("measurement", 3000963L,
@@ -375,10 +394,72 @@ conversion declares the coordinate; `omop_where` declares the filter
 predicate. Standalone mutate remains useful for general derived columns
 in an already assigned table.
 
+Keep that haemoglobin selection. Discover the target g/L unit before
+declaring the conversion; a vocabulary unit identifies the target, while
+the factor of ten comes from the mass-unit definition.
+
+``` r
+target_units <- ds.omop.concept.search("gram per liter", domain = "Unit",
+  standard_only = FALSE, conns = conns)$pooled
+knitr::kable(target_units[c("concept_name", "standard_concept")])
+```
+
+| concept\_name                                          | standard\_concept |
+| :----------------------------------------------------- | :---------------- |
+| Gram per deciliter and percent                         | NA                |
+| Milligram C per Liter                                  | NA                |
+| Microgram per milliliter of FEU                        | NA                |
+| nanogram per deciliter                                 | S                 |
+| nanogram per deciliter per hour                        | S                 |
+| nanogram of fibrinogen equivalent unit per milliliter  | S                 |
+| nanogram per liter                                     | S                 |
+| nanogram per milliliter                                | S                 |
+| nanogram per milliliter and hour                       | S                 |
+| nanogram per milliliter of red blood cells             | S                 |
+| nanogram per milliliter of trypsinogen                 | S                 |
+| nanogram per microliter                                | S                 |
+| microgram per deciliter of red blood cells             | S                 |
+| microgram per deciliter of thyroxine                   | S                 |
+| microgram equivalent per milliliter                    | S                 |
+| microgram of fibrinogen equivalent unit per milliliter | S                 |
+| microgram per liter                                    | S                 |
+| microgram per milliliter                               | S                 |
+| microliter per gram                                    | S                 |
+| milliliter per kilogram per minute                     | S                 |
+| femtogram per liter                                    | S                 |
+| gram per deciliter                                     | S                 |
+| gram per deciliter calculated                          | S                 |
+| gram per liter                                         | S                 |
+| kilogram per liter                                     | S                 |
+| liter per kilogram                                     | S                 |
+| milligram per milliliter                               | S                 |
+| milligram of phenylketones per deciliter               | S                 |
+| picogram per deciliter                                 | S                 |
+| picogram per liter                                     | S                 |
+| picogram per milliliter                                | S                 |
+| picogram per microliter                                | S                 |
+| microgram per deciliter                                | S                 |
+| gram per milliliter                                    | S                 |
+| milligram per deciliter                                | S                 |
+| milligram per deciliter adult                          | S                 |
+| milligram per deciliter calculated                     | S                 |
+| milligram per deciliter of phenylalanine               | S                 |
+| milligram of fibrinogen equivalent unit per liter      | S                 |
+| milligram per liter                                    | S                 |
+| milliliter per gram                                    | S                 |
+| milliliter per kilogram                                | S                 |
+| milliliter per kilogram per 24 hours                   | S                 |
+| milligram per deciliter per 24 hours                   | S                 |
+
+``` r
+gl_id <- target_units$concept_id[target_units$concept_name == "gram per liter"]
+stopifnot(length(gl_id) == 1L)
+```
+
 ``` r
 converted <- omop_recipe(variables = list(hb = tour_mean,
   hb_gl = omop_number(tour_mean, omop_number_spec(
-    unit = omop_number_unit("unit:8713", "unit:8636", 10)))))
+    unit = omop_number_unit("unit:8713", paste0("unit:", gl_id), 10)))))
 book_symbols(recipe_execute(converted, out = c(output = "D_tour_converted"), conns = conns))
 ```
 
@@ -386,7 +467,9 @@ book_symbols(recipe_execute(converted, out = c(output = "D_tour_converted"), con
     #> "D_tour_converted"
 
 ``` r
-ds.omop.filter("D_tour_converted", expr = omop_where(hb >= 14),
+ds.omop.mutate("D_tour_converted", above_teaching_cutoff = ifelse(hb >= 14, 1L, 0L),
+  newobj = "D_tour_flagged", conns = conns)
+ds.omop.filter("D_tour_flagged", expr = omop_where(above_teaching_cutoff == 1L),
   newobj = "D_tour_selected", conns = conns)
 selected_result <- dsBaseClient::ds.summary("D_tour_selected$hb_gl", datasources = conns)
 knitr::kable(book_summary(selected_result))
@@ -403,9 +486,12 @@ knitr::kable(book_summary(selected_result))
 | site | 95%       | 159.9500 |
 | site | Mean      | 149.9991 |
 
-The retained people’s values are expressed in g/L, ten times g/dL. The
-final subset passes its publication check; the analyst receives only
-this summary. [Learn BMI, age groups, recodes and rollback
+The mutation adds an indicator to the assigned table using a public
+teaching cutoff; the filter retains its positive group. This is a
+general column derivation, not a clinical abnormality flag. The retained
+people’s values are expressed in g/L, ten times g/dL. The final subset
+passes its publication check; the analyst receives only this summary.
+[Learn BMI, age groups, recodes and rollback
 →](https://isglobal-brge.github.io/dsOMOPClient/articles/book-11-parameters.md)
 
 ## Try it

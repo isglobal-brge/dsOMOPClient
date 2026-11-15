@@ -623,6 +623,9 @@ recorded care, not disease onset.
 
 ## Repeated measures and mixed models
 
+Use the measured BMI concept and kg/m² unit found, inspected and saved
+in [chapter 4’s measured BMI
+discovery](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.html#find-measured-bmi-and-its-recorded-unit).
 For actual repeated-value modelling use Synthea’s BMI readings, whose
 within-person trajectories provide a more useful random-intercept
 example than hemoglobin here. A *random intercept* lets people have
@@ -668,10 +671,8 @@ policy. The person key, all readings and their dates stay on the
 servers. Preserve actual time; coding visit numbers as equally spaced
 would misrepresent these records. Each person has exactly one indexed
 episode here, so `cohort_row_id` is the person-level grouping key for
-these models. Using this stable episode key also keeps the local
-teaching runs reproducible when temporary resource paths change
-pseudonym labels. With multiple episodes per person, use a person-level
-key to model their dependence instead.
+these models. With multiple episodes per person, use a person-level key
+to model their dependence instead.
 
 ``` r
 print(ds.omop.mutate("D_long", years = start_date / 365.25,
