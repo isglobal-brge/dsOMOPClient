@@ -61,7 +61,8 @@ The two flags count cause-specific deaths; all deaths in this fixture occur in 2
 mi <- omop_event("death", cause_sets[["Myocardial infarction"]])
 pneumonia <- omop_event("death", cause_sets[["Pneumonia"]])
 mortality <- omop_recipe(variables = list(
-  sex = omop_category(omop_variable(table = "person", column = "gender_concept_id")),
+  sex = omop_category(omop_variable(name = "sex", table = "person", column = "gender_concept_id"),
+    omop_category_spec()),
   cause = omop_variable(event = omop_event("death"), reducer = omop_reduce("first_value", value = "cause_concept_id")),
   age_band = omop_number_bins(omop_age_at("death"), breaks = c(0, 40, 121),
     labels = c("under 40", "40 and over")),
