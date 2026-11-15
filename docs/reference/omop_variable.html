@@ -15,7 +15,7 @@ omop_variable_block and passed via blocks)."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,7 +89,9 @@ output formatting options. Variables are the atomic building blocks passed to
 <span>  broadcast <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  column_names <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  date_spec <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  date_spec <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  number_spec <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  category_spec <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -218,6 +220,14 @@ column keys to complete, valid R names. Variable maps override recipe maps.</p><
 
 <dt id="arg-date-spec">date_spec<a class="anchor" aria-label="anchor" href="#arg-date-spec"></a></dt>
 <dd><p>Native date presentation; variable fields override recipe defaults.</p></dd>
+
+
+<dt id="arg-number-spec">number_spec<a class="anchor" aria-label="anchor" href="#arg-number-spec"></a></dt>
+<dd><p>Native numeric presentation created with omop_number_spec().</p></dd>
+
+
+<dt id="arg-category-spec">category_spec<a class="anchor" aria-label="anchor" href="#arg-category-spec"></a></dt>
+<dd><p>Native category identity and presentation.</p></dd>
 
 </dl></div>
     <div class="section level2">

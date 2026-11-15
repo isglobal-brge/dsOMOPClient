@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,12 @@
 
 
 
-<p>This chapter follows the 2.10.4 recipe-language-2 contract. Examples are not evaluated during documentation builds because they need authenticated connections and study-specific concept definitions. Use matching client and server packages and check the server’s advertised operations before execution. A recipe describes work beside the database; patient rows stay on the DataSHIELD server.</p>
+<div class="section level2">
+<h2 id="imported-populations-in-2-10-5">Imported populations in 2.10.5<a class="anchor" aria-label="anchor" href="#imported-populations-in-2-10-5"></a>
+</h2>
+<p>Re-import OHDSI definitions to attach the executable <code>ohdsi-import-1</code> vocabulary validity policy. A matching capable server checks included and excluded public concepts; unsupported clauses refuse with structural diagnostics from <code><a href="../reference/recipe_circe_check.html">recipe_circe_check()</a></code>. <code><a href="../reference/recipe_circe_support.html">recipe_circe_support()</a></code> describes the directional subset. An explicit coverage declaration overrides the imported coverage default. Edits retain source provenance and mark the population as a derivative; they do not establish equivalence with the original phenotype. Keep half-open numeric ranges and authenticated safe-bin filters in native recipes.</p>
+<p>This chapter follows the 2.10.5 recipe-language-2 contract. Examples are not evaluated during documentation builds because they need authenticated connections and study-specific concept definitions. Use matching client and server packages and check the server’s advertised operations before execution. A recipe describes work beside the database; patient rows stay on the DataSHIELD server.</p>
+</div>
 <div class="section level2">
 <h2 id="start-with-a-study-question">Start with a study question<a class="anchor" aria-label="anchor" href="#start-with-a-study-question"></a>
 </h2>

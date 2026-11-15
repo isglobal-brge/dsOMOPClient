@@ -201,6 +201,17 @@
     `omop_prior_obs()` `omop_followup()` `omop_observed_days()`
     `omop_score()` `omop_population_column()` : Person-derived and
     population-column variables
+  - `omop_category_column()` : Copy a categorical output column before
+    presentation
+  - `omop_category_reduce()` : Reduce explicitly transformed event
+    category identities
+  - `omop_category_rows()` `omop_category_indicators()` : Event category
+    projections and identity indicators
+  - `omop_category_spec()` `omop_category()` `omop_category_order()`
+    `omop_category_recode()` `omop_category_rollup()`
+    `omop_category_language()` `omop_category_missing()`
+    `omop_category_binary()` : Category identity, ordering and
+    presentation
   - `omop_censor()` : Censoring by an event or era
   - `omop_concept_set()` : Define a concept set
   - `omop_cost()` : Cost rows linked to an event
@@ -226,6 +237,9 @@
     `omop_filter_has_measurement()` `omop_filter_missing_measurement()`
     : Create a filter specification
   - `omop_filter_group()` : Create an AND/OR group of filters
+  - `omop_formula_bmi()` `omop_formula_map()` `omop_formula_ratio()`
+    `omop_formula_egfr_ckdepi2021()` : Versioned clinical formulas
+    expanded into private numeric declarations
   - `omop_has()` `omop_has_not()` `omop_count_is()` `omop_not()`
     `omop_all()` `omop_any()` `omop_person()` `omop_age_is()`
     `omop_observed()` `omop_in_cohort()` : Population criteria
@@ -237,6 +251,16 @@
   - `omop_match()` `omop_age_band()` `omop_strata()` : Matched and
     nested case-control sampling
   - `omop_new_users()` : New users of a drug (simple layer)
+  - `omop_number_daily()` : Collapse numeric observations by recorded
+    calendar day
+  - `omop_number_spec()` `omop_number_pipeline()` `omop_number_unit()`
+    `omop_number_transform()` `omop_number_round()` `omop_number_expr()`
+    `omop_number_input()` `omop_number()` `omop_number_bins()`
+    `omop_number_category()` `omop_number_flag()`
+    `omop_number_present()` `omop_number_missing()` `omop_number_rows()`
+    `omop_number_column()` `omop_number_count()` `omop_number_change()`
+    `omop_number_derive()` : Private numeric presentation and
+    expressions
   - `omop_output()` : Create an output specification
   - `recipe_merge()` `omop_param()` `recipe_params()` `recipe_bind()` :
     Recipe parameters: placeholders, binding and merging
@@ -250,6 +274,8 @@
   - `omop_reduce()` : Reducers: how an event stream becomes one value
     per person or episode
   - `omop_study()` : A study in one call (simple layer)
+  - `omop_timepoint()` `omop_timepoints()` `omop_visits()`
+    `omop_repeated()` : Prespecified repeated-measure columns
   - `omop_unit()` : Unit normalisation for an event's numeric value
   - `omop_variable()` : Create a variable specification
   - `omop_variable_age()` : Create an age variable
@@ -300,6 +326,11 @@
   - `recipe_add_output()` : Add an output specification to the recipe
   - `recipe_add_population()` : Add a population to the recipe
   - `recipe_add_variable()` : Add a variable to the recipe
+  - `recipe_circe_check()` : Check a Circe definition without execution
+  - `recipe_circe_support()` : Inspect the supported Circe exchange
+    subset
+  - `recipe_codebook()` : Describe output tables without querying
+    patient data
   - `recipe_concept_sets()` `recipe_export_concept_sets()`
     `recipe_import_concept_sets()` : Concept sets of a recipe; OHDSI
     concept-set exchange

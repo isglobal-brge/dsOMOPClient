@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,6 +63,14 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="dsomopclient">dsOMOPClient<a class="anchor" aria-label="anchor" href="#dsomopclient"></a>
 </h1></div>
+<div class="section level2">
+<h2 id="release-2105">Release 2.10.5<a class="anchor" aria-label="anchor" href="#release-2105"></a>
+</h2>
+<p>Install matching dsOMOP and dsOMOPClient 2.10.5 and republish the server’s methods and Options in Opal after upgrading. Check installed and published versions with <code>ds.omop.server.version(conns)</code>. Existing private roots remain valid; this release requires no new privacy configuration, epoch change or database TLS setting.</p>
+<p>This release adds checked recursive numeric expressions and exact signed64 transport, typed categorical presentation and shared prospective/executed codebooks, four versioned clinical formulas, and explicit recorded-day numeric reduction. It also repairs staging ownership/cleanup, final DP provenance seals, and the supported OHDSI/Circe bridge. The broader workflow/declaration-library redesign is deferred.</p>
+<p>Re-run affected recipes and rebuild codebooks. Keep native row keys as opaque character strings. Arithmetic that would lose integer precision is refused; retain raw/count identity representation when exact binary64 conversion is not possible. Re-import OHDSI definitions to obtain the executable validity policy, and use a server advertising the required capabilities. See NEWS for each corrected or newly refused case and its migration path.</p>
+<p>Release validation: <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661271157" class="external-link">Opal contract run 43661271157</a> and <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661274062" class="external-link">end-to-end run 43661274062</a>. The release pipeline records both as successful; the end-to-end artifacts cover fresh installation and upgrade from 2.10.4 on Opal 6.2.1, including preservation of the existing DP noise root. These runs do not establish live execution on every SQL dialect or exercise the separate numeric scenario N.</p>
+</div>
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
@@ -104,7 +112,7 @@
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">'isglobal-brge/dsOMOPClient'</span><span class="op">)</span></span></code></pre></div>
 <p>Once the package is installed, you can load it into your R environment using the following command:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">dsOMOPClient</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="checking-versions">Checking versions<a class="anchor" aria-label="anchor" href="#checking-versions"></a>
 </h3>
@@ -115,9 +123,9 @@
 <p><code><a href="reference/ds.omop.server.version.html">ds.omop.server.version()</a></code> reports, per server, the dsOMOP version whose DataSHIELD methods the profile publishes, the version installed (the one that answers), the methods this client calls that the profile lacks, and what to change when a server is not ready. On Opal, upgrading dsOMOP does not publish the new version’s methods: an administrator publishes its settings again (Administration &gt; DataSHIELD &gt; Packages &gt; dsOMOP &gt; Publish). <code><a href="reference/ds.omop.connect.html">ds.omop.connect()</a></code> stops with the same explanation when a server cannot be used, and reports each server’s own error instead of DSI’s generic notice.</p>
 </div>
 <div class="section level3">
-<h3 id="upgrading-to-2104">Upgrading to 2.10.4<a class="anchor" aria-label="anchor" href="#upgrading-to-2104"></a>
+<h3 id="upgrading-to-2105">Upgrading to 2.10.5<a class="anchor" aria-label="anchor" href="#upgrading-to-2105"></a>
 </h3>
-<p>The matching release is dsOMOP 2.10.4 plus dsOMOPClient 2.10.4. Automatic server protection needs no privacy settings, secret provisioning, epoch bump, ETL coordination or TLS change. Existing valid roots survive package upgrade. Opal’s installed-package and published-profile versions are distinct; the version check identifies an installed 2.10.4 whose profile still has older methods, so ordinary profile publication completes that package upgrade.</p>
+<p>The matching release is dsOMOP 2.10.5 plus dsOMOPClient 2.10.5. Automatic server protection needs no privacy settings, secret provisioning, epoch bump, ETL coordination or TLS change. Existing valid roots survive package upgrade. Opal’s installed-package and published-profile versions are distinct; the version check identifies an installed 2.10.5 whose profile still has older methods, so ordinary profile publication completes that package upgrade.</p>
 <p>Language-2 execution requires the publication methods at every site. Supported legacy recipes keep their v1 path; <a href="https://isglobal-brge.github.io/dsOMOPClient/news/index.html">release notes</a> describes corrected, newly permitted and newly refused cases and their migration paths. During a mixed-server upgrade, v1 execution uses the documented legacy path with a warning, while language-2 execution stops before assignment.</p>
 <p>Protected payloads from 2.10.3 and later pool only with compatible contracts. <code>type = "split"</code> keeps labelled per-site results when versions differ. Old typed clients receive an upgrade refusal, and a new client warns about old servers; installing the client alone does not repair server-side inference defects. Outputs can change under the repaired public grids and component contracts. Protection labels distinguish fixed-synopsis mechanisms from heuristic realised-contribution reuse; neither is a finite lifetime or full-transcript privacy guarantee.</p>
 </div>
@@ -129,7 +137,7 @@
 </div>
 </div>
 <div class="section level2">
-<h2 id="recipe-language-2-in-2104">Recipe language 2 in 2.10.4<a class="anchor" aria-label="anchor" href="#recipe-language-2-in-2104"></a>
+<h2 id="recipe-language-2-in-2105">Recipe language 2 in 2.10.5<a class="anchor" aria-label="anchor" href="#recipe-language-2-in-2105"></a>
 </h2>
 <p>Use <code><a href="reference/omop_study.html">omop_study()</a></code> for a study with explicit baseline and follow-up inputs, or compose <code><a href="reference/omop_event.html">omop_event()</a></code>, <code><a href="reference/omop_population.html">omop_population()</a></code>, <code><a href="reference/omop_reduce.html">omop_reduce()</a></code> and <code><a href="reference/omop_output.html">omop_output()</a></code> for the advanced layer. Both produce the same typed recipe language; <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> shows defaults and <code><a href="reference/recipe_to_code.html">recipe_to_code()</a></code> prints the advanced expansion. See <a href="https://isglobal-brge.github.io/dsOMOPClient/articles/v03_cohorts.html">populations and studies</a> and <a href="https://isglobal-brge.github.io/dsOMOPClient/articles/v04_extraction.html">events and outputs</a>, including coded education level and cause of death. Examples use <code>eval = FALSE</code> because they need authenticated connections and a study-specific CDM. The integrated compilers are exercised by the release runs below; advertised operations still determine what an installed server runs.</p>
 <table class="table">
@@ -140,7 +148,7 @@
 </colgroup>
 <thead><tr class="header">
 <th>Backend</th>
-<th>Required 2.10.4 verification</th>
+<th>Required 2.10.5 verification</th>
 <th>Runtime release target</th>
 </tr></thead>
 <tbody>
@@ -176,7 +184,7 @@
 </tr>
 </tbody>
 </table>
-<p>The server README contains the construct-by-construct matrix. A supported connector alone does not establish recipe support. Unsupported constructs refuse at preflight with <code>dialect_unsupported</code>. Check both installed and published package versions with <code><a href="reference/ds.omop.server.version.html">ds.omop.server.version()</a></code>; use matching 2.10.4 packages and republish methods and Options on Opal after upgrading.</p>
+<p>The server README contains the construct-by-construct matrix. A supported connector alone does not establish recipe support. Unsupported constructs refuse at preflight with <code>dialect_unsupported</code>. Check both installed and published package versions with <code><a href="reference/ds.omop.server.version.html">ds.omop.server.version()</a></code>; use matching 2.10.5 packages and republish methods and Options on Opal after upgrading.</p>
 <p>Small private inputs are allowed. Each independently accessible final patient component needs <code>nfilter.subset</code> distinct persons. Strict servers refuse the whole plan on a small root; non-strict servers with <code>on_small_site = "error"</code> return passing families and warn with <code>partial</code> status. With <code>"skip"</code>, either server mode commits nothing at a small site and returns NULL for it; passing sites remain. Only support failure is skippable. Technical failures roll back the federation. Keep the returned dynamic inventory rather than guessing names.</p>
 </div>
 <div class="section level2">
@@ -239,8 +247,9 @@
 <p>An example is <strong><a href="https://github.com/isglobal-brge/dsOMOPHelper" class="external-link"><code>dsOMOPHelper</code></a></strong>, which combines calls from <code>dsOMOPClient</code> and <code>dsBaseClient</code> for common workflows. It is a separate package and must be reviewed against the same server allowlist and disclosure policy; this README does not assert compatibility with every dsOMOP output or deployment.</p>
 </div>
 <div class="section level2">
-<h2 id="support">Support</h2>
-<p>Report issues through the package repository.</p>
+<h2 id="support">Support<a class="anchor" aria-label="anchor" href="#support"></a>
+</h2>
+<p>Report issues through the package repository. For DataSHIELD information, visit <a href="https://www.datashield.org" class="external-link">datashield.org</a>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

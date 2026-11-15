@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -928,6 +928,34 @@
 
         <dt>
 
+          <code><a href="omop_category_column.html">omop_category_column()</a></code>
+
+        </dt>
+        <dd>Copy a categorical output column before presentation</dd>
+
+        <dt>
+
+          <code><a href="omop_category_reduce.html">omop_category_reduce()</a></code>
+
+        </dt>
+        <dd>Reduce explicitly transformed event category identities</dd>
+
+        <dt>
+
+          <code><a href="omop_category_rows.html">omop_category_rows()</a></code> <code><a href="omop_category_rows.html">omop_category_indicators()</a></code>
+
+        </dt>
+        <dd>Event category projections and identity indicators</dd>
+
+        <dt>
+
+          <code><a href="omop_category_spec.html">omop_category_spec()</a></code> <code><a href="omop_category_spec.html">omop_category()</a></code> <code><a href="omop_category_spec.html">omop_category_order()</a></code> <code><a href="omop_category_spec.html">omop_category_recode()</a></code> <code><a href="omop_category_spec.html">omop_category_rollup()</a></code> <code><a href="omop_category_spec.html">omop_category_language()</a></code> <code><a href="omop_category_spec.html">omop_category_missing()</a></code> <code><a href="omop_category_spec.html">omop_category_binary()</a></code>
+
+        </dt>
+        <dd>Category identity, ordering and presentation</dd>
+
+        <dt>
+
           <code><a href="omop_censor.html">omop_censor()</a></code>
 
         </dt>
@@ -998,6 +1026,13 @@
 
         <dt>
 
+          <code><a href="omop_formula_bmi.html">omop_formula_bmi()</a></code> <code><a href="omop_formula_bmi.html">omop_formula_map()</a></code> <code><a href="omop_formula_bmi.html">omop_formula_ratio()</a></code> <code><a href="omop_formula_bmi.html">omop_formula_egfr_ckdepi2021()</a></code>
+
+        </dt>
+        <dd>Versioned clinical formulas expanded into private numeric declarations</dd>
+
+        <dt>
+
           <code><a href="omop_has.html">omop_has()</a></code> <code><a href="omop_has.html">omop_has_not()</a></code> <code><a href="omop_has.html">omop_count_is()</a></code> <code><a href="omop_has.html">omop_not()</a></code> <code><a href="omop_has.html">omop_all()</a></code> <code><a href="omop_has.html">omop_any()</a></code> <code><a href="omop_has.html">omop_person()</a></code> <code><a href="omop_has.html">omop_age_is()</a></code> <code><a href="omop_has.html">omop_observed()</a></code> <code><a href="omop_has.html">omop_in_cohort()</a></code>
 
         </dt>
@@ -1037,6 +1072,20 @@
 
         </dt>
         <dd>New users of a drug (simple layer)</dd>
+
+        <dt>
+
+          <code><a href="omop_number_daily.html">omop_number_daily()</a></code>
+
+        </dt>
+        <dd>Collapse numeric observations by recorded calendar day</dd>
+
+        <dt>
+
+          <code><a href="omop_number_spec.html">omop_number_spec()</a></code> <code><a href="omop_number_spec.html">omop_number_pipeline()</a></code> <code><a href="omop_number_spec.html">omop_number_unit()</a></code> <code><a href="omop_number_spec.html">omop_number_transform()</a></code> <code><a href="omop_number_spec.html">omop_number_round()</a></code> <code><a href="omop_number_spec.html">omop_number_expr()</a></code> <code><a href="omop_number_spec.html">omop_number_input()</a></code> <code><a href="omop_number_spec.html">omop_number()</a></code> <code><a href="omop_number_spec.html">omop_number_bins()</a></code> <code><a href="omop_number_spec.html">omop_number_category()</a></code> <code><a href="omop_number_spec.html">omop_number_flag()</a></code> <code><a href="omop_number_spec.html">omop_number_present()</a></code> <code><a href="omop_number_spec.html">omop_number_missing()</a></code> <code><a href="omop_number_spec.html">omop_number_rows()</a></code> <code><a href="omop_number_spec.html">omop_number_column()</a></code> <code><a href="omop_number_spec.html">omop_number_count()</a></code> <code><a href="omop_number_spec.html">omop_number_change()</a></code> <code><a href="omop_number_spec.html">omop_number_derive()</a></code>
+
+        </dt>
+        <dd>Private numeric presentation and expressions</dd>
 
         <dt>
 
@@ -1100,6 +1149,13 @@
 
         </dt>
         <dd>A study in one call (simple layer)</dd>
+
+        <dt>
+
+          <code><a href="omop_timepoint.html">omop_timepoint()</a></code> <code><a href="omop_timepoint.html">omop_timepoints()</a></code> <code><a href="omop_timepoint.html">omop_visits()</a></code> <code><a href="omop_timepoint.html">omop_repeated()</a></code>
+
+        </dt>
+        <dd>Prespecified repeated-measure columns</dd>
 
         <dt>
 
@@ -1373,6 +1429,27 @@
 
         </dt>
         <dd>Add a variable to the recipe</dd>
+
+        <dt>
+
+          <code><a href="recipe_circe_check.html">recipe_circe_check()</a></code>
+
+        </dt>
+        <dd>Check a Circe definition without execution</dd>
+
+        <dt>
+
+          <code><a href="recipe_circe_support.html">recipe_circe_support()</a></code>
+
+        </dt>
+        <dd>Inspect the supported Circe exchange subset</dd>
+
+        <dt>
+
+          <code><a href="recipe_codebook.html">recipe_codebook()</a></code>
+
+        </dt>
+        <dd>Describe output tables without querying patient data</dd>
 
         <dt>
 
