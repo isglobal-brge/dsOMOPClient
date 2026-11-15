@@ -31,13 +31,13 @@ package used by the lessons, the offline server and the helpers.
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "resourcer", "withr", "openssl", "jsonlite", "knitr",
                    "rmarkdown", "pkgdown", "bslib", "opalr", "duckdb"))
-remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never", auth_token = "")
-remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never", auth_token = "")
-remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never", auth_token = "")
-remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never", auth_token = "")
+remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never", auth_token = NULL)
 ```
 
-These public repositories need no GitHub credentials; `auth_token = ""` prevents
+These public repositories need no GitHub credentials; `auth_token = NULL` prevents
 an expired stored token from interrupting installation.
 
 The *client* is the package on your computer. The *server* runs requests near the
