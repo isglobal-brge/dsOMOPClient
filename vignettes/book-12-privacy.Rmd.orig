@@ -14,7 +14,7 @@ vignette: >
 Distinguish a private assignment from an aggregate release, understand distinct-person support, and recognise refused identifiers and free text.
 </div>
 
-This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
+This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
 
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).

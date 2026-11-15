@@ -14,7 +14,7 @@ vignette: >
 Separate date sources from presentation, choose factor/number/date periods, extract parts, calculate anchored ages, and handle partial dates explicitly.
 </div>
 
-This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
+This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
 
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).

@@ -177,7 +177,7 @@ last_result
 </details>
 
 Later readings can change the last-value summary. The source dataset contains
-hemoglobin measurements for all 28 fictional people.
+hemoglobin measurements for everyone in this practice dataset.
 
 ```{r days-result}
 days_result <- dsBaseClient::ds.summary("D_reducers$days", datasources = conns)

@@ -14,7 +14,7 @@ vignette: >
 Rebuild the offline book and recognise the old recipe conventions.
 </div>
 
-This chapter uses the 24-person synthetic questionnaire test fixture described in [Getting started](book-00-start.html).
+This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
 **You need:** the packages and the matching practice connection described in
 [Before you start](book-00-start.html#before-you-start).
 Run the sections in order in one R session. All printed results below were computed

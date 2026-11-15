@@ -65,7 +65,7 @@ knitr::kable(height_units)
 ```
 
 The unit IDs used below were returned by those protected inventories. In the
-pinned source they mean kilogram and centimetre, as also inspected in chapter 4.
+practice source they mean kilogram and centimetre, as also inspected in chapter 4.
 
 ## Bind weight and height on the same day
 
@@ -186,7 +186,7 @@ serum_set <- omop_concept_set(serum_id)
 knitr::kable(ds.omop.concept.locate(serum_id, scope = "pooled", conns = conns)$pooled)
 ```
 
-The pinned subset's populated creatinine concept is **Blood**, while the formula
+The available creatinine concept is **Blood**, while the formula
 requests Serum or Plasma. This lesson therefore does not report patient eGFR.
 The named helper `omop_formula_egfr_ckdepi2021()` requires standardized creatinine
 in `coordinate:idms_creatinine_mg_dl`, completed calendar age at that same

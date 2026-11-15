@@ -71,8 +71,7 @@ knitr::kable(unit_counts$pooled[c("concept_name", "n")])
 ```
 
 The record count is disclosure-banded; it is not an exact patient count.
-The pinned public source contains 108 hemoglobin readings in grams per deciliter
-(g/dL), independently verified by the administrator loader. The analyst sees only
+The recorded unit is grams per deciliter (g/dL). The analyst sees
 the protected aggregate above.
 
 **Exercise.** Look up the name of unit 8713. Does a vocabulary lookup prove that
@@ -583,7 +582,7 @@ covariate. Fit last hemoglobin as the outcome and first hemoglobin as the
 covariate, both in g/dL. The servers keep the person-level data; the analyst sees
 model coefficients and diagnostics.
 
-With the pinned dsBase 6.3.5, the call emits the warnings shown below: its local
+With dsBase 6.3.5, the call emits the warnings shown below: its local
 setup fits use `maxit = 1`. The distributed algorithm then iterates across sites;
 this example finishes in three iterations. The book's independent checks compare
 its final coefficients, standard errors and deviance with a central Gaussian fit

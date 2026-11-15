@@ -26,7 +26,6 @@ server below. RStudio is a convenient editor; ordinary R also works. Download th
 
 Run this **installation block once**, before the examples. It installs every
 package used by the lessons, the offline server and the helpers.
-Installation changes your library and is not executed during the book build.
 
 ```r
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
@@ -163,7 +162,7 @@ when using Opal: publishing makes the package methods available to analysts.
 can continue with DSLite. These deployment commands were checked against the
 [easy-opal source](https://github.com/isglobal-brge/easy-opal/blob/main/src/services/rock.py)
 and [opalr resource API](https://www.obiba.org/opalr/reference/opal.resource_create.html).
-The book build tested both databases and all analyst chapters with DSLite.
+These lessons were tested with DSLite and both practice databases.
 **A live easy-opal deployment was not run for this revision: Docker was unavailable.**
 The success lines below are acceptance criteria, not recorded Opal output.
 

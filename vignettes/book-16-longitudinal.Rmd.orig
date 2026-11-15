@@ -378,7 +378,7 @@ outcome. Time in years is a predictor; the outcome probability remains **per day
 The binomial GLM models log odds with a linear time trend. A study would assess
 that time specification and the assumption of noninformative censoring.
 
-The pinned dsBase 6.3.5 local setup fits use one iteration and emit the explained
+The dsBase 6.3.5 local setup fits use one iteration and emit the explained
 `glm.fit: algorithm did not converge` warnings. The distributed fit then iterates;
 inspect its final diagnostics, which the book checks against a central fit of the
 public source. The warnings below are retained, not treated as evidence of success.
