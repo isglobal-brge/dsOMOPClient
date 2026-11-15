@@ -179,7 +179,7 @@ This checks the server installation, independently of the selected database.
 
 Your administrator supplies the server URL, your user and password (or token),
 the project-qualified resource names and the DataSHIELD profile. The server is
-already set up. Replace the chapter's local connection lines with this block,
+already set up. For a single-site lesson, replace the chapter's local connection lines with this block,
 keeping its `display.R` source line:
 
 
@@ -207,9 +207,67 @@ ds.omop.disconnect(conns = conns)
 ds.omop.connect(resource = "<project>.<numeric-resource>", conns = conns)
 ```
 
-This attaches another database through the existing login. A two-site lesson
-requires two supplied resources and connections; local data-generation options
-do not create data on an Opal server.
+This attaches another database through the existing login.
+
+### Connect to two Opal sites
+
+For the paired analyses in chapters 14, 16, 20 and 23, use two resources supplied
+by their administrators. Replace only `practice_pair <- book_connect(...)` and
+`two_conns <- practice_pair$conns` with this block. Keep the chapter's package
+and helper source lines. In chapters 14 and 16, also keep the earlier single-site
+`conns` connection: later exercises still use its tables.
+
+
+``` r
+library(dsOMOPClient)
+library(DSOpal)
+builder <- DSI::newDSLoginBuilder()
+builder$append(server = "north", url = "<server-a-url>",
+  user = "<user-a>", password = "<password-a>",
+  driver = "OpalDriver", profile = "<profile-a>")
+builder$append(server = "south", url = "<server-b-url>",
+  user = "<user-b>", password = "<password-b>",
+  driver = "OpalDriver", profile = "<profile-b>")
+two_conns <- DSI::datashield.login(builder$build(), assign = FALSE)
+ds.omop.connect(
+  resource = list(north = "<project-a>.<resource-a>",
+                  south = "<project-b>.<resource-b>"),
+  conns = two_conns, symbol = "book_pool")
+```
+
+`north` and `south` are the connection labels used by these lessons, not required
+geographical locations. Each resource-list name matches a login-builder name.
+`book_pool` is the server-side name of the attached OMOP handle; subsequent calls
+use that name together with `two_conns`. Chapters 14, 16 and 23 need lab resources;
+chapter 20 needs drug and outcome data. Use distinct study populations when pooling.
+
+Chapters 10 and 17 instead use `conns`, labels `site` and `site2`, and the default
+`omop` handle. For those chapters, replace the two local lines assigning
+`practice` and `conns` at their paired setup with this complete variant:
+
+
+``` r
+library(dsOMOPClient)
+library(DSOpal)
+builder <- DSI::newDSLoginBuilder()
+builder$append(server = "site", url = "<server-a-url>",
+  user = "<user-a>", password = "<password-a>",
+  driver = "OpalDriver", profile = "<profile-a>")
+builder$append(server = "site2", url = "<server-b-url>",
+  user = "<user-b>", password = "<password-b>",
+  driver = "OpalDriver", profile = "<profile-b>")
+conns <- DSI::datashield.login(builder$build(), assign = FALSE)
+ds.omop.connect(
+  resource = list(site = "<project-a>.<questionnaire-resource-a>",
+                  site2 = "<project-b>.<questionnaire-resource-b>"),
+  conns = conns)
+```
+
+Use resources containing the study's questionnaire concepts. In chapter 10 this
+replaces the paired `book_switch()` block; in chapter 17 it replaces the initial
+`book_connect()` block. Keep `site` and `site2` because chapter 17 selects each
+connection by name. These examples only attach existing resources: local
+practice-data options do not create data on an Opal server.
 
 ## Exercise 1: choose the lab resource
 

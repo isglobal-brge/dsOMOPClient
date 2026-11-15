@@ -146,7 +146,7 @@
 <span>  concept_id <span class="op">=</span> <span class="va">education_question</span>, value_source <span class="op">=</span> <span class="st">"value_as_string"</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"categorical"</span>, format <span class="op">=</span> <span class="st">"last_value"</span><span class="op">)</span></span>
 <span><span class="co"># recipe_to_plan() refuses a recipe that releases this class-1 source.</span></span></code></pre></div>
-<p><code>value_as_string</code> and <code>cause_source_value</code> are free source text (class 1). Selecting a categorical type or renaming the column does not make them safe. Use coded <code>value_as_concept_id</code> and <code>cause_concept_id</code> for the portable recipe. An administrator’s existing sensitive-column override is not permission to use text predicates or to alias protected source columns through mutation.</p>
+<p><code>value_as_string</code> holds a source string; <code>cause_source_value</code> retains the original source cause code, such as an ICD-10 code. Both are protected source fields (class 1), even when a source code is structured rather than narrative text. Selecting a categorical type or renaming the column does not make them safe. Use coded <code>value_as_concept_id</code> and <code>cause_concept_id</code> for the portable recipe. An administrator’s existing sensitive-column override is not permission to use text predicates or to alias protected source columns through mutation.</p>
 </div>
 <div class="section level2">
 <h2 id="declare-labels-and-keep-complete-categories">Declare labels and keep complete categories<a class="anchor" aria-label="anchor" href="#declare-labels-and-keep-complete-categories"></a>

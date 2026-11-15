@@ -21,6 +21,11 @@ either drug, how does first GI bleeding during the following year
 differ? We adjust for age. This is a methods exercise; age adjustment
 alone does not identify a causal drug effect.
 
+For real servers, replace the two lines assigning `practice_pair` and
+`two_conns` below with the [two-site Opal
+login](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#connect-to-two-opal-sites),
+which attaches the resources as `book_pool`.
+
 ``` r
 library(dsOMOPClient)
 source("tools/book/display.R")

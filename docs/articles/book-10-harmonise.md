@@ -579,7 +579,9 @@ count or a missingness estimate.
 Site2 has no Secondary education answers: all its respondents have
 University answers. Its newer vocabulary calls concept 900102
 “University qualification”. Switch resources through the same
-connection helper:
+connection helper. For real servers, replace this block with the `conns`
+/ `site` / `site2` variant in the [two-site Opal
+instructions](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#connect-to-two-opal-sites):
 
 ``` r
 practice <- book_switch("questionnaire", two_sites = TRUE)

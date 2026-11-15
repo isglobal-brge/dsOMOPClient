@@ -137,7 +137,7 @@ the capstone; its concept definitions come from
 ``` r
 source("tools/book/capstone.R")
 assigned <- recipe_execute(book_capstone_recipe(), out = c(people = "D_tour_causes"), conns = conns)
-knitr::kable(book_counts(dsBaseClient::ds.table("D_tour_causes$cause_of_death",
+knitr::kable(book_counts(dsBaseClient::ds.table("D_tour_causes$cause",
   useNA = "always", datasources = conns)))
 ```
 

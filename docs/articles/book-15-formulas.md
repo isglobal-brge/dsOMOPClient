@@ -455,14 +455,16 @@ Solution: retain the equation and its eligibility rules
 
 ``` r
 formula_record <- recipe_codebook(egfr_result)[[1]]$formulas[[1]]
-knitr::kable(data.frame(Field = c("Equation", "Unit"),
-  Value = c(formula_record$equation, formula_record$unit)))
+cat("Equation:", formula_record$equation, "\n")
 ```
 
-| Field    | Value                                                                |
-| :------- | :------------------------------------------------------------------- |
-| Equation | 142*min(Scr/k,1)^(alpha*max(Scr/k,1)^(-1.200)*0.9938)age*sex\_factor |
-| Unit     | coordinate:ml\_min\_1\_73m2                                          |
+    #> Equation: 142*min(Scr/k,1)^alpha*max(Scr/k,1)^(-1.200)*0.9938^age*sex_factor
+
+``` r
+cat("Unit:", formula_record$unit, "\n")
+```
+
+    #> Unit: coordinate:ml_min_1_73m2
 
 The equation and unit identify what was calculated. Keep the full
 formula record with the saved codebook, including its adult eligibility

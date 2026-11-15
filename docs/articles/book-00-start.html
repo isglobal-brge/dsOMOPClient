@@ -274,7 +274,7 @@
 <div class="section level2">
 <h2 id="connect-to-your-opal-server">Connect to your Opal server<a class="anchor" aria-label="anchor" href="#connect-to-your-opal-server"></a>
 </h2>
-<p>Your administrator supplies the server URL, your user and password (or token), the project-qualified resource names and the DataSHIELD profile. The server is already set up. Replace the chapter’s local connection lines with this block, keeping its <code>display.R</code> source line:</p>
+<p>Your administrator supplies the server URL, your user and password (or token), the project-qualified resource names and the DataSHIELD profile. The server is already set up. For a single-site lesson, replace the chapter’s local connection lines with this block, keeping its <code>display.R</code> source line:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/datashield/DSOpal/" class="external-link">DSOpal</a></span><span class="op">)</span></span>
@@ -289,14 +289,52 @@
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.disconnect.html">ds.omop.disconnect</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="st">"&lt;project&gt;.&lt;numeric-resource&gt;"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>This attaches another database through the existing login. A two-site lesson requires two supplied resources and connections; local data-generation options do not create data on an Opal server.</p>
+<p>This attaches another database through the existing login.</p>
+<div class="section level3">
+<h3 id="connect-to-two-opal-sites">Connect to two Opal sites<a class="anchor" aria-label="anchor" href="#connect-to-two-opal-sites"></a>
+</h3>
+<p>For the paired analyses in chapters 14, 16, 20 and 23, use two resources supplied by their administrators. Replace only <code>practice_pair &lt;- book_connect(...)</code> and <code>two_conns &lt;- practice_pair$conns</code> with this block. Keep the chapter’s package and helper source lines. In chapters 14 and 16, also keep the earlier single-site <code>conns</code> connection: later exercises still use its tables.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/datashield/DSOpal/" class="external-link">DSOpal</a></span><span class="op">)</span></span>
+<span><span class="va">builder</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/newDSLoginBuilder.html" class="external-link">newDSLoginBuilder</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"north"</span>, url <span class="op">=</span> <span class="st">"&lt;server-a-url&gt;"</span>,</span>
+<span>  user <span class="op">=</span> <span class="st">"&lt;user-a&gt;"</span>, password <span class="op">=</span> <span class="st">"&lt;password-a&gt;"</span>,</span>
+<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="st">"&lt;profile-a&gt;"</span><span class="op">)</span></span>
+<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"south"</span>, url <span class="op">=</span> <span class="st">"&lt;server-b-url&gt;"</span>,</span>
+<span>  user <span class="op">=</span> <span class="st">"&lt;user-b&gt;"</span>, password <span class="op">=</span> <span class="st">"&lt;password-b&gt;"</span>,</span>
+<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="st">"&lt;profile-b&gt;"</span><span class="op">)</span></span>
+<span><span class="va">two_conns</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.login.html" class="external-link">datashield.login</a></span><span class="op">(</span><span class="va">builder</span><span class="op">$</span><span class="fu">build</span><span class="op">(</span><span class="op">)</span>, assign <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span></span>
+<span>  resource <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>north <span class="op">=</span> <span class="st">"&lt;project-a&gt;.&lt;resource-a&gt;"</span>,</span>
+<span>                  south <span class="op">=</span> <span class="st">"&lt;project-b&gt;.&lt;resource-b&gt;"</span><span class="op">)</span>,</span>
+<span>  conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span></span></code></pre></div>
+<p><code>north</code> and <code>south</code> are the connection labels used by these lessons, not required geographical locations. Each resource-list name matches a login-builder name. <code>book_pool</code> is the server-side name of the attached OMOP handle; subsequent calls use that name together with <code>two_conns</code>. Chapters 14, 16 and 23 need lab resources; chapter 20 needs drug and outcome data. Use distinct study populations when pooling.</p>
+<p>Chapters 10 and 17 instead use <code>conns</code>, labels <code>site</code> and <code>site2</code>, and the default <code>omop</code> handle. For those chapters, replace the two local lines assigning <code>practice</code> and <code>conns</code> at their paired setup with this complete variant:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/datashield/DSOpal/" class="external-link">DSOpal</a></span><span class="op">)</span></span>
+<span><span class="va">builder</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/newDSLoginBuilder.html" class="external-link">newDSLoginBuilder</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"site"</span>, url <span class="op">=</span> <span class="st">"&lt;server-a-url&gt;"</span>,</span>
+<span>  user <span class="op">=</span> <span class="st">"&lt;user-a&gt;"</span>, password <span class="op">=</span> <span class="st">"&lt;password-a&gt;"</span>,</span>
+<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="st">"&lt;profile-a&gt;"</span><span class="op">)</span></span>
+<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"site2"</span>, url <span class="op">=</span> <span class="st">"&lt;server-b-url&gt;"</span>,</span>
+<span>  user <span class="op">=</span> <span class="st">"&lt;user-b&gt;"</span>, password <span class="op">=</span> <span class="st">"&lt;password-b&gt;"</span>,</span>
+<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="st">"&lt;profile-b&gt;"</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.login.html" class="external-link">datashield.login</a></span><span class="op">(</span><span class="va">builder</span><span class="op">$</span><span class="fu">build</span><span class="op">(</span><span class="op">)</span>, assign <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span></span>
+<span>  resource <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>site <span class="op">=</span> <span class="st">"&lt;project-a&gt;.&lt;questionnaire-resource-a&gt;"</span>,</span>
+<span>                  site2 <span class="op">=</span> <span class="st">"&lt;project-b&gt;.&lt;questionnaire-resource-b&gt;"</span><span class="op">)</span>,</span>
+<span>  conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<p>Use resources containing the study’s questionnaire concepts. In chapter 10 this replaces the paired <code>book_switch()</code> block; in chapter 17 it replaces the initial <code>book_connect()</code> block. Keep <code>site</code> and <code>site2</code> because chapter 17 selects each connection by name. These examples only attach existing resources: local practice-data options do not create data on an Opal server.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="exercise-1-choose-the-lab-resource">Exercise 1: choose the lab resource<a class="anchor" aria-label="anchor" href="#exercise-1-choose-the-lab-resource"></a>
 </h2>
 <p>Open the numeric resource and request its person count. How can you tell that you are no longer querying GiBleed?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_switch</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span></span>
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"person"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -318,7 +356,7 @@
 </h2>
 <p>Close the numeric session, then open GiBleed again. Confirm the database with a person count, rather than checking only that a connection has a name.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">book_disconnect</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>

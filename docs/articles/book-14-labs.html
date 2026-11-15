@@ -545,7 +545,7 @@
 <div class="section level2">
 <h2 id="convert-round-and-classify-in-a-declared-order">Convert, round and classify in a declared order<a class="anchor" aria-label="anchor" href="#convert-round-and-classify-in-a-declared-order"></a>
 </h2>
-<p>Target unit <strong>8636</strong> is gram per liter (g/L), found in chapter 4. Multiplication by ten converts g/dL to g/L. Here the conversion is applied to the person mean; an event-level <code>omop_unit(8636L, convert = list("8713" = c(factor = 10, offset = 0)))</code> would convert before reduction instead.</p>
+<p>Target unit <strong>8636</strong> is gram per liter (g/L), found in <a href="book-06-events.html#convert-to-a-common-unit-before-reducing">chapter 6</a>. Multiplication by ten converts g/dL to g/L. Here the conversion is applied to the person mean; an event-level <code>omop_unit(8636L, convert = list("8713" = c(factor = 10, offset = 0)))</code> would convert before reduction instead.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">band_labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"below 14"</span>, <span class="st">"14 to below 15"</span>, <span class="st">"15 or above"</span><span class="op">)</span></span>
 <span><span class="va">presentation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_pipeline</a></span><span class="op">(</span></span>
@@ -688,6 +688,7 @@
 <h2 id="fit-a-model-only-for-people-with-follow-up">Fit a model only for people with follow-up<a class="anchor" aria-label="anchor" href="#fit-a-model-only-for-people-with-follow-up"></a>
 </h2>
 <p>A last value equal to first because no second reading exists is not a follow-up outcome. Index on the first lab and restrict last to days 1 onward. Use two disjoint practice sites; their combined population is the same 28 people. The named <code>paired</code> session keeps the earlier single-site tables available for the exercises below.</p>
+<p>For real servers, replace the next two connection lines with the <a href="book-00-start.html#connect-to-two-opal-sites">two-site Opal login</a>. Keep the earlier <code>conns</code> connection for the later single-site exercises.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">practice_pair</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"numeric"</span>, two_sites <span class="op">=</span> <span class="cn">TRUE</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span>, session <span class="op">=</span> <span class="st">"paired"</span><span class="op">)</span></span>
 <span><span class="va">two_conns</span> <span class="op">&lt;-</span> <span class="va">practice_pair</span><span class="op">$</span><span class="va">conns</span></span>

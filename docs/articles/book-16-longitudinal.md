@@ -424,6 +424,11 @@ duplicated. A real multisite study must establish nonoverlapping
 populations separately. The named `paired` session keeps the earlier
 single-site connection available.
 
+For real servers, replace the next two connection lines with the
+[two-site Opal
+login](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#connect-to-two-opal-sites).
+Keep the earlier `conns` connection for the later single-site exercises.
+
 ``` r
 practice_pair <- book_connect("numeric", two_sites = TRUE, symbol = "book_pool", session = "paired")
 two_conns <- practice_pair$conns

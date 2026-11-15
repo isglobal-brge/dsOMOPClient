@@ -194,9 +194,10 @@ permanent cessation.
 
 ## Check feasibility before applying this to another resource
 
-GiBleed has no ATC hierarchy, but chapter 4 identifies celecoxib
-ingredient **1118084**. Check what its available exposure spans can
-support.
+GiBleed has no ATC hierarchy, but
+[chapter 20](https://isglobal-brge.github.io/dsOMOPClient/articles/book-20-case-gibleed.html#find-the-drugs-and-outcome)
+identifies celecoxib ingredient **1118084**. Check what its available
+exposure spans can support.
 
 ``` r
 practice <- book_switch("gibleed")

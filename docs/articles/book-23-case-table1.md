@@ -19,6 +19,11 @@ descriptive table that opens most study reports, often called “Table 1”.
 The two practice sites contain disjoint halves of Synthea, so their
 people can be added without duplication.
 
+For real servers, replace the two lines assigning `practice_pair` and
+`two_conns` below with the [two-site Opal
+login](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#connect-to-two-opal-sites),
+which attaches the resources as `book_pool`.
+
 ``` r
 library(dsOMOPClient)
 source("tools/book/display.R")

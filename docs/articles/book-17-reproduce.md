@@ -11,6 +11,10 @@ Start a fresh R session in `book-work`. The two questionnaire sites have
 different education answers and vocabulary dates, so identical recipes
 need not give identical results.
 
+For real servers, replace the two local connection lines below with the
+`conns` / `site` / `site2` variant in the [two-site Opal
+instructions](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#connect-to-two-opal-sites).
+
 ``` r
 library(dsOMOPClient)
 source("tools/book/display.R")
@@ -175,18 +179,33 @@ Solution 2
 circe_json <- jsonlite::toJSON(list(AdditionalCriteria = list(Type = "ALL",
   CriteriaList = list(list(unsupported = TRUE)))), auto_unbox = TRUE)
 circe_check <- recipe_circe_check(circe_json)
-knitr::kable(circe_check$issues[c("path", "remedy")])
+issues <- circe_check$issues[c("path", "remedy")]
+issues$path <- paste0("`", issues$path, "`")
+knitr::kable(issues, row.names = FALSE)
 ```
 
-| path                                                                                                             | remedy                                                   |
-| :--------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------- |
-| \(.AdditionalCriteria|AdditionalCriteriahasnoimplementedadapter;retainthecompletedefinition.||\).PrimaryCriteria | Provide an object with the documented structural fields. |
+| path                   | remedy                                                                         |
+| :--------------------- | :----------------------------------------------------------------------------- |
+| `$.AdditionalCriteria` | AdditionalCriteria has no implemented adapter; retain the complete definition. |
+| `$.PrimaryCriteria`    | Provide an object with the documented structural fields.                       |
 
 The check identifies structural problems in this example, so it is not
-ready for extraction. A successful strict import means every construct
-had an adapter; you must still compare the translated population with
-the intended inclusion and exclusion rules. Never delete a scientific
-criterion merely to make an import succeed.
+ready for extraction. Attempt the strict import and read its refusal:
+
+``` r
+tryCatch(recipe_import_circe(circe_json),
+  error = function(e) cat(conditionMessage(e), "\n"))
+```
+
+    #> unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.
+
+`unsupported_circe_construct` identifies the unsupported
+`AdditionalCriteria` rule. Keep the complete cohort definition and
+implement that rule in a reviewed native recipe before extracting. A
+successful strict import means every construct had an adapter; you must
+still compare the translated population with the intended inclusion and
+exclusion rules. Never delete a scientific criterion merely to make an
+import succeed.
 
 **3. Read the actual calendar levels.** Which years can the assigned
 death-period column represent, and are they ordered?
@@ -208,6 +227,37 @@ knitr::kable(data.frame(Year = columns$levels[[period]]$labels,
 The levels are 2023 and 2024 in chronological order. A column called
 “year” could instead be numeric or a Date under a different
 declaration; its name alone is insufficient.
+
+## Exercise 4: preserve a required clean period
+
+Suppose a study requires 365 observed days without the outcome before
+entry. Can the incidence-rate analysis below implement that requirement?
+If it refuses, which scientific rule must the alternative preserve?
+
+Solution: keep the outcome-free observation period
+
+``` r
+tryCatch(ds.omop.analysis.run("dsomop:incidence.rate",
+  params = list(clean_window = 365), conns = conns),
+  error = function(e) cat(conditionMessage(e), "\n"))
+```
+
+    #> unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required
+
+`unsupported_clean_window` means this analysis does not implement a
+nonzero clean period. Setting it to zero would answer a different
+question. Use a validated native risk recipe: require continuous
+observation for the preceding 365 days, exclude entrants with the
+outcome in days −365 through −1, and declare the subsequent time at
+risk, outcome and censoring rules. The [population
+lessons](https://isglobal-brge.github.io/dsOMOPClient/articles/book-07-populations.md)
+introduce eligibility, and the [drug
+comparison](https://isglobal-brge.github.io/dsOMOPClient/articles/book-20-case-gibleed.md)
+shows explicit prior-event exclusion and follow-up. Adapt those rules to
+the protocol and check eligibility and person-time before estimating the
+rate; no recorded outcome alone does not establish a fully observed
+clean period. Retain the refusal and the reviewed replacement definition
+with the study record.
 
 ## Recap
 

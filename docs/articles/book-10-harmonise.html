@@ -708,7 +708,7 @@
 <div class="section level2">
 <h2 id="two-sites-with-different-wording-and-different-answers">Two sites with different wording and different answers<a class="anchor" aria-label="anchor" href="#two-sites-with-different-wording-and-different-answers"></a>
 </h2>
-<p>Site2 has no Secondary education answers: all its respondents have University answers. Its newer vocabulary calls concept 900102 “University qualification”. Switch resources through the same connection helper:</p>
+<p>Site2 has no Secondary education answers: all its respondents have University answers. Its newer vocabulary calls concept 900102 “University qualification”. Switch resources through the same connection helper. For real servers, replace this block with the <code>conns</code> / <code>site</code> / <code>site2</code> variant in the <a href="book-00-start.html#connect-to-two-opal-sites">two-site Opal instructions</a>:</p>
 <div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_switch</span><span class="op">(</span><span class="st">"questionnaire"</span>, two_sites <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>

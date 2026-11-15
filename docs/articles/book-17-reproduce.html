@@ -96,6 +96,7 @@
 <p>Save a study definition and its data-source information, repeat it at another site, and inspect unsupported cohort rules before running them.</p>
 </div>
 <p><strong>You need:</strong> <a href="book-00-start.html">the setup and questionnaire dataset</a>. Start a fresh R session in <code>book-work</code>. The two questionnaire sites have different education answers and vocabulary dates, so identical recipes need not give identical results.</p>
+<p>For real servers, replace the two local connection lines below with the <code>conns</code> / <code>site</code> / <code>site2</code> variant in the <a href="book-00-start.html#connect-to-two-opal-sites">two-site Opal instructions</a>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
@@ -323,26 +324,38 @@
 <code class="sourceCode R"><span><span class="va">circe_json</span> <span class="op">&lt;-</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">toJSON</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>AdditionalCriteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Type <span class="op">=</span> <span class="st">"ALL"</span>,</span>
 <span>  CriteriaList <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>unsupported <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, auto_unbox <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">circe_check</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_circe_check.html">recipe_circe_check</a></span><span class="op">(</span><span class="va">circe_json</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">circe_check</span><span class="op">$</span><span class="va">issues</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"path"</span>, <span class="st">"remedy"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">issues</span> <span class="op">&lt;-</span> <span class="va">circe_check</span><span class="op">$</span><span class="va">issues</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"path"</span>, <span class="st">"remedy"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">issues</span><span class="op">$</span><span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"`"</span>, <span class="va">issues</span><span class="op">$</span><span class="va">path</span>, <span class="st">"`"</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">issues</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
-<col width="21%">
-<col width="79%">
+<col width="22%">
+<col width="77%">
 </colgroup>
 <thead><tr class="header">
 <th align="left">path</th>
 <th align="left">remedy</th>
 </tr></thead>
-<tbody><tr class="odd">
-<td align="left">
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>.</mi><mi>A</mi><mi>d</mi><mi>d</mi><mi>i</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>a</mi><mi>l</mi><mi>C</mi><mi>r</mi><mi>i</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>a</mi><mo stretchy="false" form="prefix">|</mo><mi>A</mi><mi>d</mi><mi>d</mi><mi>i</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>a</mi><mi>l</mi><mi>C</mi><mi>r</mi><mi>i</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>a</mi><mi>h</mi><mi>a</mi><mi>s</mi><mi>n</mi><mi>o</mi><mi>i</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>d</mi><mi>a</mi><mi>d</mi><mi>a</mi><mi>p</mi><mi>t</mi><mi>e</mi><mi>r</mi><mo>;</mo><mi>r</mi><mi>e</mi><mi>t</mi><mi>a</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>h</mi><mi>e</mi><mi>c</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>t</mi><mi>e</mi><mi>d</mi><mi>e</mi><mi>f</mi><mi>i</mi><mi>n</mi><mi>i</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>.</mi><mo stretchy="false" form="prefix">|</mo><mo stretchy="false" form="prefix">|</mo></mrow><annotation encoding="application/x-tex">.AdditionalCriteria |AdditionalCriteria has no implemented adapter; retain the complete definition. | |</annotation></semantics></math>.PrimaryCriteria</td>
+<tbody>
+<tr class="odd">
+<td align="left"><code>$.AdditionalCriteria</code></td>
+<td align="left">AdditionalCriteria has no implemented adapter; retain the complete definition.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>$.PrimaryCriteria</code></td>
 <td align="left">Provide an object with the documented structural fields.</td>
-</tr></tbody>
+</tr>
+</tbody>
 </table>
-<p>The check identifies structural problems in this example, so it is not ready for extraction. A successful strict import means every construct had an adapter; you must still compare the translated population with the intended inclusion and exclusion rules. Never delete a scientific criterion merely to make an import succeed.</p>
+<p>The check identifies structural problems in this example, so it is not ready for extraction. Attempt the strict import and read its refusal:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_import_circe.html">recipe_import_circe</a></span><span class="op">(</span><span class="va">circe_json</span><span class="op">)</span>,</span>
+<span>  error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; unsupported_circe_construct: $.AdditionalCriteria; AdditionalCriteria has no implemented adapter; retain the complete definition. Inspect recipe_circe_check() for all structural issues.</span></span></code></pre>
+<p><code>unsupported_circe_construct</code> identifies the unsupported <code>AdditionalCriteria</code> rule. Keep the complete cohort definition and implement that rule in a reviewed native recipe before extracting. A successful strict import means every construct had an adapter; you must still compare the translated population with the intended inclusion and exclusion rules. Never delete a scientific criterion merely to make an import succeed.</p>
 </details><p><strong>3. Read the actual calendar levels.</strong> Which years can the assigned death-period column represent, and are they ordered?</p>
 <details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">result</span>, output <span class="op">=</span> <span class="st">"people"</span>, component <span class="op">=</span> <span class="st">"people"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">columns</span></span>
 <span><span class="va">period</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="st">"death_period"</span>, <span class="va">columns</span><span class="op">$</span><span class="va">name</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Year <span class="op">=</span> <span class="va">columns</span><span class="op">$</span><span class="va">levels</span><span class="op">[[</span><span class="va">period</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">labels</span>,</span>
@@ -364,6 +377,19 @@
 </tbody>
 </table>
 <p>The levels are 2023 and 2024 in chronological order. A column called “year” could instead be numeric or a Date under a different declaration; its name alone is insufficient.</p>
+</details>
+</div>
+<div class="section level2">
+<h2 id="exercise-4-preserve-a-required-clean-period">Exercise 4: preserve a required clean period<a class="anchor" aria-label="anchor" href="#exercise-4-preserve-a-required-clean-period"></a>
+</h2>
+<p>Suppose a study requires 365 observed days without the outcome before entry. Can the incidence-rate analysis below implement that requirement? If it refuses, which scientific rule must the alternative preserve?</p>
+<details><p><summary>Solution: keep the outcome-free observation period</summary></p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.analysis.run.html">ds.omop.analysis.run</a></span><span class="op">(</span><span class="st">"dsomop:incidence.rate"</span>,</span>
+<span>  params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>clean_window <span class="op">=</span> <span class="fl">365</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>,</span>
+<span>  error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; unsupported_clean_window: params.clean_window; zero selects the descriptive first-episode/full-window estimand; use a validated native risk recipe when a clean period is required</span></span></code></pre>
+<p><code>unsupported_clean_window</code> means this analysis does not implement a nonzero clean period. Setting it to zero would answer a different question. Use a validated native risk recipe: require continuous observation for the preceding 365 days, exclude entrants with the outcome in days −365 through −1, and declare the subsequent time at risk, outcome and censoring rules. The <a href="book-07-populations.html">population lessons</a> introduce eligibility, and the <a href="book-20-case-gibleed.html">drug comparison</a> shows explicit prior-event exclusion and follow-up. Adapt those rules to the protocol and check eligibility and person-time before estimating the rate; no recorded outcome alone does not establish a fully observed clean period. Retain the refusal and the reviewed replacement definition with the study record.</p>
 </details>
 </div>
 <div class="section level2">
