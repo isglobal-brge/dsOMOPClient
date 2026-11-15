@@ -140,7 +140,7 @@
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_months"</span>, <span class="st">"month"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_date_months$month</span></span>
-<span><span class="co">#&gt; 2020-03 2020-04 2020-05 2020-06 2020-07 </span></span>
+<span><span class="co">#&gt; 2020-03 2020-04 2020-05 2020-06 2020-07</span></span>
 <span><span class="co">#&gt;      12       0       0      12      12</span></span></code></pre>
 <p>March, June and July each contain 12 first visits; another 12 people have no visit and are omitted from this table. <code><a href="../reference/ds.omop.table.html">ds.omop.table()</a></code> excludes missing values while retaining declared zero categories such as April and May. Ordered factors have ordered-factor model contrasts; for a linear time trend request a number explicitly.</p>
 </div>
@@ -322,7 +322,7 @@
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_parts"</span>, <span class="st">"weekday"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_date_parts$weekday</span></span>
-<span><span class="co">#&gt;    Monday   Tuesday Wednesday  Thursday    Friday  Saturday    Sunday </span></span>
+<span><span class="co">#&gt;    Monday   Tuesday Wednesday  Thursday    Friday  Saturday    Sunday</span></span>
 <span><span class="co">#&gt;        24         0         0         0         0        12         0</span></span></code></pre>
 <p>The first visits fall on Saturday for 12 people and Monday for 24; another 12 people have no visit and are omitted here. Weekday names use fixed English levels, with Monday first. Month categories likewise include all twelve months. Year, ISO week/year, quarter, day-of-year and cyclic sine/cosine parts are also available. For season parts, declare the intended hemisphere (the default is north); using only a week number without its week-year can mix different years.</p>
 <div class="book-tip">
@@ -409,7 +409,7 @@
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_partial"</span>, <span class="st">"birth_year"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_date_partial$birth_year</span></span>
-<span><span class="co">#&gt; 1975 1980 1990 2000 </span></span>
+<span><span class="co">#&gt; 1975 1980 1990 2000</span></span>
 <span><span class="co">#&gt;   12   12   12   12</span></span></code></pre>
 <p>Each birth-year category contains 12 people: 1975, 1980, 1990 and 2000. All 48 birth years are known even though 12 exact birthdays are not. If the study permits an estimate, declare imputation instead of letting an implicit convention choose it.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
@@ -469,7 +469,7 @@
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_custom"</span>, <span class="st">"month"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_date_custom$month</span></span>
-<span><span class="co">#&gt; Mar 2020 Jun 2020 Jul 2020 </span></span>
+<span><span class="co">#&gt; Mar 2020 Jun 2020 Jul 2020</span></span>
 <span><span class="co">#&gt;       12       12       12</span></span></code></pre>
 <p>The counts are again 12 each for Mar 2020, Jun 2020 and Jul 2020; the 12 missing visits are omitted. Only the month labels have changed. This uses fixed English month abbreviations and a year. The supported directives are <code>%Y</code>, <code>%m</code>, <code>%d</code>, <code>%j</code>, <code>%G</code>, <code>%V</code>, <code>%u</code>, <code>%b</code>, <code>%B</code>, <code>%a</code>, <code>%A</code> and <code>%%</code>, with simple literal text/punctuation. ISO weeks require <code>%G-W%V</code>, not <code>%Y-W%V</code>. Arbitrary <code>strftime</code> directives, locale-dependent code and time-of-day are refused. A named <code>labels</code> map may rename public date categories but must keep them unique; it cannot merge dates. Fine-grained factor labels still face disclosure checks.</p>
 </div>
@@ -530,7 +530,7 @@
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_date_fiscal"</span>, <span class="st">"quarter"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_date_fiscal$quarter</span></span>
-<span><span class="co">#&gt; 2019-FQ4 2020-FQ1 2020-FQ2 </span></span>
+<span><span class="co">#&gt; 2019-FQ4 2020-FQ1 2020-FQ2</span></span>
 <span><span class="co">#&gt;       12       12       12</span></span></code></pre>
 <p>March maps to 2019-FQ4, June to 2020-FQ1 and July to 2020-FQ2, with 12 people each. The 12 missing visits are omitted. March belongs to the preceding fiscal year. The variable’s specification overrides the recipe’s specification, which overrides the defaults.</p>
 </div>

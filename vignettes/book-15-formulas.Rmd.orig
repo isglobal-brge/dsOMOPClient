@@ -129,8 +129,6 @@ to the same systolic measurement date. The familiar approximate MAP formula is
 sbp_hits <- ds.omop.concept.search("Systolic blood pressure", domain = "Measurement", conns = conns)$pooled
 dbp_hits <- ds.omop.concept.search("Diastolic blood pressure", domain = "Measurement", conns = conns)$pooled
 knitr::kable(rbind(sbp_hits, dbp_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")])
-sbp_id <- sbp_hits$concept_id[trimws(sbp_hits$concept_name) == "Systolic blood pressure"]
-dbp_id <- dbp_hits$concept_id[trimws(dbp_hits$concept_name) == "Diastolic blood pressure"]
 ```
 
 Both pressure searches also return panel **40758413**, Blood pressure systolic
@@ -138,6 +136,8 @@ and diastolic. Select the separate systolic (**3004249**) and diastolic
 (**3012888**) measurements for the formula.
 
 ```{r pressure-units}
+sbp_id <- sbp_hits$concept_id[trimws(sbp_hits$concept_name) == "Systolic blood pressure"]
+dbp_id <- dbp_hits$concept_id[trimws(dbp_hits$concept_name) == "Diastolic blood pressure"]
 pressure_units <- lapply(c(Systolic = sbp_id, Diastolic = dbp_id), function(id)
   ds.omop.value.counts("measurement", "unit_concept_id", concept_id = id,
     scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")])

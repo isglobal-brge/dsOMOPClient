@@ -339,7 +339,6 @@ ever.
 
 A unit declaration alone keeps values already in that unit and makes
 other units’ values missing; an explicit conversion normalises them
-before the reducer runs. An explicit conversion normalises the values
 before the reducer runs. This example converts g/dL to g/L, multiplying
 by ten. These are the vocabulary names for the input and target units:
 

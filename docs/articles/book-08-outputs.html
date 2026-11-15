@@ -221,7 +221,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_wide"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_wide in site`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_wide in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span></code></pre>
 <p>There are 28 rows, one per first-visit episode, and one column per requested variable. A person’s pseudonym and episode keys are supplied by the server.</p>
@@ -239,7 +239,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_long"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_long in site`</span></span>
 <span><span class="co">#&gt; [1] 1735    9</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_long in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 1735    9</span></span></code></pre>
 <p>The long output has 1,735 rows, one per selected visit. Its columns include <code>concept_id</code> and <code>start_date</code>. Dates default to offsets from the index. One source makes the event-row meaning clear; multiple sources need an explicit event-log design.</p>
@@ -276,7 +276,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_features"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_features in site`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_features in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span></code></pre>
 <p>The features table has 28 rows, one per visitor, with the same values as wide.</p>
@@ -298,7 +298,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_baseline"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_baseline in site`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_baseline in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span></code></pre>
 <p>The baseline preset also has 28 rows. Here we explicitly changed the variables to a visit count during days −365 to 0 and hemoglobin closest to entry within days −90 to 0. The preset itself neither restricts all-history values nor bands age; the variable definitions make these entry characteristics.</p>
@@ -317,7 +317,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_panel"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_panel in site`</span></span>
 <span><span class="co">#&gt; [1] 84  8</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_panel in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 84  8</span></span></code></pre>
 <p>The panel has 84 rows: 28 visitors × three bins. A dense panel retains empty bins with zero event counts. <code>bins = list(calendar = "month")</code> instead aligns to calendar months, whose lengths vary. Account for repeated rows per person in downstream analysis.</p>
@@ -412,7 +412,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_temporal"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_temporal in site`</span></span>
 <span><span class="co">#&gt; [1] 36  6</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_temporal in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 36  6</span></span></code></pre>
 <p>The 36 rows count nonzero covariate/bin entries rather than people. Keep the covariate and time reference tables returned with this result: their keys need those definitions. Missing records and missing measurements are not automatically interchangeable.</p>
@@ -431,7 +431,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_survival"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_survival in site`</span></span>
 <span><span class="co">#&gt; [1] 28  8</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_survival in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  8</span></span></code></pre>
 <p>The survival output has 28 rows, one per person for this single outcome. Only the named censor sources cap follow-up: observation end and death here. The window also limits follow-up when its upper bound is finite. An episode end is not an extra censor unless requested. A censor is not a “no outcome ever” assertion. Always state the window: omitting it would use the default 730-day window.</p>
@@ -539,7 +539,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_intervals"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_intervals in site`</span></span>
 <span><span class="co">#&gt; [1] 1735    7</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_intervals in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 1735    7</span></span></code></pre>
 <p>The 1,735 interval rows represent recorded visit spans, with a start and an end. Both bounds remain private, normally as index-relative days. Overlapping intervals are not automatically a union of covered days; define an era or a coverage reducer for that question.</p>
@@ -561,7 +561,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_sparse"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_sparse in site`</span></span>
 <span><span class="co">#&gt; [1] 70  5</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_sparse in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 70  5</span></span></code></pre>
 <p>The 70 sparse rows each hold a nonzero value for one person and covariate, so this row count is not a population size. The data contain a covariate key and value. The reference companion maps keys to source, concept and analysis. A missing sparse row is not a missing person roster: retain membership separately. Each published patient component must meet its own support rule.</p>
@@ -578,7 +578,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_membership"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_membership in site`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_membership in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  6</span></span></code></pre>
 <p>The membership output has 28 rows, one for each first-visit episode. This is still a patient-linked private object. It is not a public list of participants.</p>
@@ -597,7 +597,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_dictionary"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_dictionary in site`</span></span>
 <span><span class="co">#&gt; [1] 2 6</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_dictionary in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 2 6</span></span></code></pre>
 <p>The two dictionary rows describe the two visit-setting concepts, not patients or frequencies. A dictionary does not certify that a concept occurred in a particular person, and it is not a replacement for the sparse covariate reference.</p>
@@ -620,7 +620,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_fmt_joined"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_fmt_joined in site`</span></span>
 <span><span class="co">#&gt; [1] 28  5</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_fmt_joined in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 28  5</span></span></code></pre>
 <p>The joined table retains 28 rows. A left join retains the first input’s rows. Here each episode has exactly one counts row and one ages row. Repeated event rows would require a different, explicit cardinality; do not silently multiply a study population.</p>

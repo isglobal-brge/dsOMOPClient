@@ -390,13 +390,12 @@
 </tr>
 </tbody>
 </table>
-<p>Celecoxib contributes 1,800 people, 355 events and 1,470.7 person-years; diclofenac contributes 830 people, 124 events and 710.1 person-years. The crude rates are about 241 and 175 per 1,000 person-years. Read the age and follow-up columns too: unequal follow-up is why a comparison of raw event counts would mislead.</p>
+<p>Celecoxib contributes 1,800 people, 355 events and 1,470.74 person-years; diclofenac contributes 830 people, 124 events and 710.05 person-years. The crude rates are about 241 and 175 per 1,000 person-years. Read the age and follow-up columns too: unequal follow-up is why a comparison of raw event counts would mislead.</p>
 </div>
 <div class="section level2">
 <h2 id="fit-an-adjusted-survival-model-with-dsbase">Fit an adjusted survival model with dsBase<a class="anchor" aria-label="anchor" href="#fit-an-adjusted-survival-model-with-dsbase"></a>
 </h2>
 <p>An exponential survival model assumes a constant event hazard during follow-up. Fit a Poisson model of the event indicator with log(person-years) as an offset. The treatment coefficient is a log hazard ratio against diclofenac, conditional on completed age at entry. This is not a Cox model.</p>
-<p>The known local-step warnings are hidden in this example.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.log.html" class="external-link">ds.log</a></span><span class="op">(</span><span class="st">"D_comparison_model$years"</span>, newobj <span class="op">=</span> <span class="st">"log_years"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
 <span><span class="va">comparison_fit</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.glm.html" class="external-link">ds.glm</a></span><span class="op">(</span><span class="st">"event ~ celecoxib + age"</span>,</span>

@@ -519,8 +519,6 @@ outcome. Time in years is a predictor; the outcome probability remains **per day
 The binomial GLM models log odds with a linear time trend. A study would assess
 that time specification and the assumption of noninformative censoring.
 
-The known local-step warnings are hidden here.
-
 
 ``` r
 hazard_fit <- dsBaseClient::ds.glm("event ~ years", data = "D_hazard",
@@ -650,8 +648,8 @@ coefficient. A random-effects pool allows site coefficients to differ; here use
 REML to estimate their between-site variance. With only two sites, that variance
 and the pooled interval remain uncertain.
 
-The known upstream warning is hidden. Optimizer convergence alone does not
-establish that the data support a model; the binary example below illustrates this.
+Optimizer convergence alone does not establish that the data support a model;
+the binary example below illustrates this.
 
 
 ``` r

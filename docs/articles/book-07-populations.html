@@ -166,7 +166,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_members"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_members in site`</span></span>
 <span><span class="co">#&gt; [1] 36  6</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_members in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 36  6</span></span></code></pre>
 <p>There are 36 rows: one first-visit episode for each visitor. The 12 people without visits do not enter. Later, selecting every visit will make a row count different from a person count.</p>
@@ -192,7 +192,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_eligible"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_eligible in site`</span></span>
 <span><span class="co">#&gt; [1] 24  4</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_eligible in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 24  4</span></span></code></pre>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -229,7 +229,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_cohort"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_cohort in site`</span></span>
 <span><span class="co">#&gt; [1] 24  6</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_cohort in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 24  6</span></span></code></pre>
 <p>The 24 rows are the saved cohort episodes. This reads existing membership without writing a cohort to the database. Use <code>omop_in_cohort(1L)</code> as a criterion when you want membership alone while retaining a different index. Do not invent a cohort ID on a real resource.</p>
@@ -341,7 +341,7 @@
 <span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_all_visitors"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_all_visitors in site`</span></span>
 <span><span class="co">#&gt; [1] 60  6</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_all_visitors in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 60  6</span></span></code></pre>
 <p>There are 60 episodes from 36 visitors: 24 people have two visits and 12 have one. With the default end at observation end, episodes for the same person overlap; summing their durations would count time repeatedly. Choose an appropriate <code>omop_end("event_end")</code> or <code>omop_end("fixed", ...)</code> and resolve overlaps before using episodes to measure person-time.</p>

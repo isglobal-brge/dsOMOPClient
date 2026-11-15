@@ -229,11 +229,11 @@ knitr::kable(arm_summary, digits = 2)
 | Diclofenac |    830 |    124 |        710.05 |          174.64 |               312.46 |     38.10 |
 | Celecoxib  |   1800 |    355 |       1470.74 |          241.37 |               298.44 |     38.17 |
 
-Celecoxib contributes 1,800 people, 355 events and 1,470.7 person-years;
-diclofenac contributes 830 people, 124 events and 710.1 person-years.
-The crude rates are about 241 and 175 per 1,000 person-years. Read the
-age and follow-up columns too: unequal follow-up is why a comparison of
-raw event counts would mislead.
+Celecoxib contributes 1,800 people, 355 events and 1,470.74
+person-years; diclofenac contributes 830 people, 124 events and 710.05
+person-years. The crude rates are about 241 and 175 per 1,000
+person-years. Read the age and follow-up columns too: unequal follow-up
+is why a comparison of raw event counts would mislead.
 
 ## Fit an adjusted survival model with dsBase
 
@@ -242,8 +242,6 @@ follow-up. Fit a Poisson model of the event indicator with
 log(person-years) as an offset. The treatment coefficient is a log
 hazard ratio against diclofenac, conditional on completed age at entry.
 This is not a Cox model.
-
-The known local-step warnings are hidden in this example.
 
 ``` r
 dsBaseClient::ds.log("D_comparison_model$years", newobj = "log_years", datasources = two_conns)

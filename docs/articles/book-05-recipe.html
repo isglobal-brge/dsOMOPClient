@@ -140,7 +140,7 @@
 <span>  event <span class="op">=</span> <span class="va">education_event</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_value"</span>, value <span class="op">=</span> <span class="st">"value_as_concept_id"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">education</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; omop_variable: &lt;unnamed&gt; </span></span>
+<pre><code><span><span class="co">#&gt; omop_variable: &lt;unnamed&gt;</span></span>
 <span><span class="co">#&gt;    last_value of observation</span></span></code></pre>
 <p>This makes one categorical column. It does not create a separate binary column for every education level. A same-date tie uses the documented deterministic record ordering; it does not mean “largest answer ID”.</p>
 </div>
@@ -202,7 +202,7 @@
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_people"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_people in site`</span></span>
 <span><span class="co">#&gt; [1] 48  3</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_people in combined studies`</span></span>
 <span><span class="co">#&gt; [1] 48  3</span></span></code></pre>
 <p>The 48 rows correspond to all 48 people, including people with missing answers. The three columns match the prediction.</p>

@@ -227,7 +227,7 @@
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_renamed_categories"</span>, <span class="st">"schooling"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_renamed_categories$schooling</span></span>
-<span><span class="co">#&gt;  Secondary education University education </span></span>
+<span><span class="co">#&gt;  Secondary education University education</span></span>
 <span><span class="co">#&gt;                   12                   12</span></span></code></pre>
 <p>The education categories and counts are unchanged. Next we address differences between sites, where even the vocabulary names can vary.</p>
 </div>
@@ -420,7 +420,7 @@
 <span><span class="va">ordered_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">ordered_recipe</span>, out <span class="op">=</span> <span class="st">"D_ordered"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_ordered"</span>, <span class="st">"education"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_ordered$education</span></span>
-<span><span class="co">#&gt;   primary secondary  tertiary </span></span>
+<span><span class="co">#&gt;   primary secondary  tertiary</span></span>
 <span><span class="co">#&gt;         0        12        12</span></span></code></pre>
 <p>The table follows primary &lt; secondary &lt; tertiary, with primary = 0, secondary = 12 and tertiary = 12. The 24 missing answers are omitted by <code><a href="../reference/ds.omop.table.html">ds.omop.table()</a></code>. The order is chosen by the study, not inferred from frequency. Ordered factors use polynomial contrasts; set <code>ordered = FALSE</code> if your model needs nominal treatment contrasts instead. A treatment reference and display order are separate choices.</p>
 <p>Check the actual type of this column.</p>
@@ -443,14 +443,14 @@
 <span><span class="va">style_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">styled</span>, out <span class="op">=</span> <span class="st">"D_styled"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_styled"</span>, <span class="st">"local_name"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_styled$local_name</span></span>
-<span><span class="co">#&gt; Secondary schooling  Tertiary schooling </span></span>
+<span><span class="co">#&gt; Secondary schooling  Tertiary schooling</span></span>
 <span><span class="co">#&gt;                  12                  12</span></span></code></pre>
 <p>The teaching vocabulary supplies “Secondary schooling” and “Tertiary schooling” as English synonyms, still with 12 people each. The category identity is unchanged by these labels.</p>
 <p>Display the code-and-name variant from the same extraction.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_styled"</span>, <span class="st">"code_and_name"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_styled$code_and_name</span></span>
-<span><span class="co">#&gt; secondary - Secondary education tertiary - University education </span></span>
+<span><span class="co">#&gt; secondary - Secondary education tertiary - University education</span></span>
 <span><span class="co">#&gt;                              12                              12</span></span></code></pre>
 <p>The counts remain 12/12; each label now includes its public vocabulary code. Use <code>code</code> or <code>vocabulary_code</code> when that coding context is needed. <code>source_code</code> is refused on this route because source-code disclosure needs a separately admitted policy. Prefer names for an ordinary analysis table.</p>
 </div>
@@ -467,14 +467,14 @@
 <span><span class="va">missing_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">missing_recipe</span>, out <span class="op">=</span> <span class="st">"D_missing_categories"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_missing_categories"</span>, <span class="st">"education"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_missing_categories$education</span></span>
-<span><span class="co">#&gt;  Secondary education University education              Missing              Unknown </span></span>
+<span><span class="co">#&gt;  Secondary education University education              Missing              Unknown</span></span>
 <span><span class="co">#&gt;                   12                   12                   24                    0</span></span></code></pre>
 <p>The 24 missing answers are now visible as Missing, alongside 12 Secondary and 12 University answers. The public Unknown level may have zero count; declaring it does not assert that anyone has an unknown answer. The sex column contains FEMALE and MALE; its declared Missing and Unknown levels remain empty.</p>
 <p>Check which declared sex levels are actually observed.</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_missing_categories"</span>, <span class="st">"sex"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_missing_categories$sex</span></span>
-<span><span class="co">#&gt;    MALE  FEMALE Missing Unknown </span></span>
+<span><span class="co">#&gt;    MALE  FEMALE Missing Unknown</span></span>
 <span><span class="co">#&gt;      28      20       0       0</span></span></code></pre>
 <p>There are 20 FEMALE and 28 MALE values. A declared Unknown level does not turn an observed FEMALE or MALE value into an unknown value.</p>
 </div>
@@ -491,7 +491,7 @@
 <span><span class="va">flag_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">flags</span>, out <span class="op">=</span> <span class="st">"D_flags"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_flags"</span>, <span class="st">"named_flag"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_flags$named_flag</span></span>
-<span><span class="co">#&gt;  no yes </span></span>
+<span><span class="co">#&gt;  no yes</span></span>
 <span><span class="co">#&gt;  12  36</span></span></code></pre>
 <p>There are 12 “no” and 36 “yes” values. This “no” means no selected visit in the defined history. It does not mean a negative answer to the fever question. Binary presentation is for semantic flags, not an arbitrary two-level concept column.</p>
 <p>Inspect the published types without reading patient rows.</p>
@@ -632,7 +632,7 @@
 <span><span class="va">rollup_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">rollups</span>, out <span class="op">=</span> <span class="st">"D_rollups"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_rollups"</span>, <span class="st">"chapter"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_rollups$chapter</span></span>
-<span><span class="co">#&gt; Teaching circulatory chapter Teaching respiratory chapter </span></span>
+<span><span class="co">#&gt; Teaching circulatory chapter Teaching respiratory chapter</span></span>
 <span><span class="co">#&gt;                           24                           12</span></span></code></pre>
 <p>There are 24 people in the circulatory chapter and 12 in the respiratory chapter. The 12 people with no cause are omitted from this table. The cause counts are grouped by the synthetic chapter relationships. The underlying person roster is unchanged. Use a validated clinical vocabulary for a real cause-of-death classification.</p>
 <p>Compare the two ATC levels in the public codebook.</p>

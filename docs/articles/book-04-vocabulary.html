@@ -386,7 +386,7 @@
 <span><span class="va">concept_file</span> <span class="op">&lt;-</span> <span class="st">"book-concepts.rds"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>asthma <span class="op">=</span> <span class="va">asthma</span><span class="op">)</span>, <span class="va">concept_file</span><span class="op">)</span></span>
 <span><span class="va">asthma</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; omop_concept_set : 317009 </span></span>
+<pre><code><span><span class="co">#&gt; omop_concept_set : 317009</span></span>
 <span><span class="co">#&gt;   includes: descendants</span></span></code></pre>
 <p>The printed definition includes the seed and requests its descendants. <code>book-concepts.rds</code> now stores that definition for reuse. Setting <code>descendants = FALSE</code> would select only the seed.</p>
 <p><strong>Exercise 1.</strong> Keep Asthma’s children but exclude the seed itself. Save the set and read it back. Does the saved definition preserve the exclusion?</p>
@@ -399,7 +399,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">saved_sets</span>, <span class="va">concept_file</span><span class="op">)</span></span>
 <span><span class="va">saved_sets</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">concept_file</span><span class="op">)</span></span>
 <span><span class="va">saved_sets</span><span class="op">$</span><span class="va">children_only</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; omop_concept_set : 317009 </span></span>
+<pre><code><span><span class="co">#&gt; omop_concept_set : 317009</span></span>
 <span><span class="co">#&gt;   includes: descendants, exclusions</span></span></code></pre>
 <p>The reloaded definition still requests descendants and excludes 317009 itself. An excluded set could also include descendants if you wanted to remove an entire branch. This file contains definitions, not patient data.</p>
 </details>

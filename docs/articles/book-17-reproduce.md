@@ -192,15 +192,11 @@ Solution 2
 circe_json <- jsonlite::toJSON(list(AdditionalCriteria = list(Type = "ALL",
   CriteriaList = list(list(unsupported = TRUE)))), auto_unbox = TRUE)
 circe_check <- recipe_circe_check(circe_json)
-print(circe_check$issues[c("path", "remedy")], row.names = FALSE)
+cat(paste0(circe_check$issues$path, ": ", circe_check$issues$remedy), sep = "\n")
 ```
 
-    #>                  path
-    #>  $.AdditionalCriteria
-    #>     $.PrimaryCriteria
-    #>                                                                          remedy
-    #>  AdditionalCriteria has no implemented adapter; retain the complete definition.
-    #>                        Provide an object with the documented structural fields.
+    #> $.AdditionalCriteria: AdditionalCriteria has no implemented adapter; retain the complete definition.
+    #> $.PrimaryCriteria: Provide an object with the documented structural fields.
 
 The check identifies structural problems in this example, so it is not
 ready for extraction. Attempt the strict import and read its refusal:
@@ -246,7 +242,8 @@ declaration; its name alone is insufficient.
 A prebuilt analysis is a named catalogue procedure that returns an
 aggregate; a recipe instead lets you choose populations, variables and
 output tables. Each analysis declares its supported settings, so inspect
-its definition before using it for a study.
+its definition with `ds.omop.analysis.get()` before using it for a
+study.
 
 For a small successful example, the person-count analysis needs no
 settings:
