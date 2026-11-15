@@ -1,8 +1,0 @@
-PRECOMPUTE vignettes/book-16-longitudinal.Rmd.orig
-linear source-fit maximum coefficient difference: 2.94875235340442e-12; maximum SE difference: 8.81295036947449e-11
-Error in same(fit$sematrix.all, se, 1e-04) :
-  isTRUE(all.equal(unname(as.numeric(x)), unname(as.numeric(y)),  .... is not TRUE
-Calls: render ... verify_chapter -> verify_longitudinal -> same -> stopifnot
-Execution halted
-Error: Fresh-process chapter failed: vignettes/book-16-longitudinal.Rmd.orig
-Execution halted

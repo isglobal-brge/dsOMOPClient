@@ -1,7 +1,0 @@
-PRECOMPUTE vignettes/book-16-longitudinal.Rmd.orig
-Error in same(env$hazard_fit$coefficients[, 2], summary(ref)$coefficients[,  :
-  isTRUE(all.equal(unname(as.numeric(x)), unname(as.numeric(y)),  .... is not TRUE
-Calls: render ... verify_chapter -> verify_longitudinal -> same -> stopifnot
-Execution halted
-Error: Fresh-process chapter failed: vignettes/book-16-longitudinal.Rmd.orig
-Execution halted

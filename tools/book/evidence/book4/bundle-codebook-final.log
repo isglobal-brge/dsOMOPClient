@@ -1,5 +1,0 @@
-PASS: Reproduction chapter reads the loader manifest
-PASS: all chunks and identical output (normalised temporary cleanup handle): book-17-reproduce.Rmd.orig
-PASS: Reproduction chapter reads the loader manifest
-PASS: all chunks and identical output (normalised temporary cleanup handle): book-17-reproduce.Rmd.orig
-PASS: 1 complete chapter(s) in fresh R processes from the final ZIP; study-record chapter also passed with BOOK_PRACTICE_DIR and no default data path

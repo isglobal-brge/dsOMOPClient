@@ -31,7 +31,8 @@ dir.create("docs/downloads",showWarnings=FALSE)
 unlink("docs/downloads/va-native.R")
 helpers <- c("load-practice.R", "load-numeric.R", "practice.R", "fixture.R", "connection.R",
              "display.R", "case-helpers.R", "opal-admin.R", "check-opal.R", "book-compose.sh", "book-rock.yml")
-helpers <- c(file.path("tools/book", helpers), "tools/book/capstone.R")
+helpers <- c(file.path("tools/book", helpers), "tools/book/capstone.R",
+             "tools/book/EunomiaDatasets-LICENSE.txt")
 stopifnot(all(file.copy(helpers, "docs/downloads", overwrite=TRUE)))
 # Recreate the archive so removed helpers cannot linger from an earlier build.
 unlink("docs/downloads/book-helpers.zip")

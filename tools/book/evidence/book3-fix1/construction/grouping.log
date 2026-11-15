@@ -1,7 +1,0 @@
-PRECOMPUTE vignettes/book-06-events.Rmd.orig
-Error in verify_book2(input, env, get_data) :
-  identical(counts, as.numeric(expected_counts[[name]])) is not TRUE
-Calls: render -> verify_chapter -> verify_book2 -> stopifnot
-Execution halted
-Error: Fresh-process chapter failed: vignettes/book-06-events.Rmd.orig
-Execution halted

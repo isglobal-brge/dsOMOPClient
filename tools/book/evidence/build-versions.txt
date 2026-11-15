@@ -1,4 +1,0 @@
-pkgdown 2.2.1 
-bslib 0.12.0 
-rmarkdown 2.32 
-knitr 1.52 

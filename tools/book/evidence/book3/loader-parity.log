@@ -1,4 +1,0 @@
-Error in eval(quote({ : 
-  condition_era.condition_era_start_date: 469 string mismatches
-Calls: local -> eval.parent -> eval -> eval -> eval -> eval
-Execution halted

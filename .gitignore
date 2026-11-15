@@ -8,3 +8,6 @@ tools/book/data/
 
 # Local public concept definitions created by the book exercise.
 /book-concepts.rds
+
+# Local book build and review evidence.
+tools/book/evidence/

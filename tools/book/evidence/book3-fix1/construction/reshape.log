@@ -1,9 +1,0 @@
-Error in `file()`:
-! cannot open the connection
-Backtrace:
-    ▆
- 1. └─base::source("tools/book/display.R")
- 2.   └─base::file(filename, "r", encoding = encoding)
-
-Quitting from /tmp/RtmprRduQr/fileea4042ab09b4f.Rmd:80-94 [chapter-setup]
-Execution halted

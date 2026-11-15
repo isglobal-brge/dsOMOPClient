@@ -1,9 +1,0 @@
-FAILURES BY FILE
-                 file blocks failed errors
- test-book-examples.R      1      1      0
-
-FAILING TESTS
-test-book-examples.R | book chapters execute against the released synthetic CDM | failed=1 error=FALSE
-
-RESULT failed: 1 errors: 0 skipped: 0 passed: 0 
-RESULT failed: 1 errors: 0 skipped: 0 passed: 0 

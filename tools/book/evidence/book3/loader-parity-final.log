@@ -1,1 +1,0 @@
-PASS: pinned loader -> DuckDB -> SQLite; all 39 tables, every scalar and manifest count; 9,107 numeric values, 8,403 with units

@@ -1,8 +1,0 @@
-docs/articles/book-10-harmonise.md:426: trailing whitespace.
-+    #>    MALE  FEMALE Missing Unknown 
-docs/articles/book-17-reproduce.md:152: trailing whitespace.
-+    #> [1] "codebook.rds"    "datasets.json"   "explanation.txt" "packages.csv"   
-docs/articles/book-17-reproduce.md:176: trailing whitespace.
-+    #> same_definition    same_columns 
-docs/articles/book-17-reproduce.md:184: trailing whitespace.
-+    #> 2024 

@@ -1,7 +1,0 @@
-PRECOMPUTE vignettes/book-15-labs.Rmd.orig
-Error in verify_book3(input, env, get_data) : 
-  all(file.exists(env$pair$path)) is not TRUE
-Calls: render -> verify_chapter -> verify_book3 -> stopifnot
-Execution halted
-Error: Fresh-process chapter failed: vignettes/book-15-labs.Rmd.orig
-Execution halted

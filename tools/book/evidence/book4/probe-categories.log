@@ -1,6 +1,0 @@
-[1] ".categoryReject"
-Tracing function ".categoryReject" in package "namespace:dsOMOP"
-
-Quitting from vignettes/book-10-harmonise.Rmd.orig:33-40 [chapter-setup]
-Error in file(filename, "r", encoding = encoding) : 
-  cannot open the connection

@@ -1,4 +1,0 @@
-PRECOMPUTE vignettes/book-00-start.Rmd.orig
-ASSERTIONS PASS book-00-start.Rmd.orig
-All chapter chunks executed successfully
-All chapters passed in separate R processes using visible setup

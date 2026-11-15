@@ -4,3 +4,4 @@
 ^docs$
 ^pkgdown$
 ^tools/book$
+^tools/book/evidence/

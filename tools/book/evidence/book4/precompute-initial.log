@@ -1,9 +1,0 @@
-Error in file(filename, "r", encoding = encoding) : 
-  cannot open the connection
-Calls: load_book_practice -> source -> file
-In addition: Warning messages:
-1: In read.table(file = file, header = header, sep = sep, quote = quote,  :
-  incomplete final line found by readTableHeader on '/root/rt/wt/book/practice-data/book-csv-10dcae1dbfa3ee/GiBleed_5.3/COST.csv'
-2: In file(filename, "r", encoding = encoding) :
-  cannot open file 'tools/book/load-numeric.R': No such file or directory
-Execution halted
