@@ -106,7 +106,7 @@ from the first.
 ```{r value-at-index}
 indexed <- omop_study(omop_index(lab, offset = 7L), outputs = "baseline",
   baseline = list(at_index = omop_value_at_index("measurement", lab_id,
-    tolerance = c(-7, 0), unit = 8713L)))
+    tolerance = c(-7, 0), unit = omop_unit(8713L))))
 invisible(recipe_execute(indexed, out = c(baseline = "D_index"), conns = conns))
 knitr::kable(book_summary("D_index$at_index", datasources = conns))
 ```
@@ -202,7 +202,7 @@ disjoint practice sites; their combined population is the same 28 people.
 pair <- book_numeric_pair()
 two_conns <- pair$conns
 followup <- omop_study(lab, outputs = "baseline", baseline = list(
-  first = omop_value_at_index("measurement", lab_id, tolerance = c(0, 0), unit = 8713L),
+  first = omop_value_at_index("measurement", lab_id, tolerance = c(0, 0), unit = omop_unit(8713L)),
   last = omop_variable(event = lab, reducer = omop_reduce("last_value", window = omop_window(1, NULL))),
   mean = average))
 invisible(recipe_execute(followup, out = c(baseline = "D_pool"), conns = two_conns, symbol = "book_pool"))

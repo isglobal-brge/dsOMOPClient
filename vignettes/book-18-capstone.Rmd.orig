@@ -30,13 +30,13 @@ conns <- practice$conns
 
 ```{r va-discovery}
 catalogue <- ds.omop.concept.lookup(c(900001L, 900002L, 900101L, 900102L,
-  900301L, 900302L), conns = conns)$pooled
+  900201L, 900202L), conns = conns)$pooled
 knitr::kable(catalogue[c("concept_id", "concept_name", "domain_id")])
 ```
 
 The questions are Education **900001** and Fever **900002**; answers Secondary
 **900101** and University **900102** are distinct from the questions. The coded
-causes are Myocardial infarction **900301** and Pneumonia **900302**.
+causes are Myocardial infarction **900201** and Pneumonia **900202**.
 Their occurrence was established in [chapter 4](book-04-vocabulary.html).
 
 ## Define one row per person

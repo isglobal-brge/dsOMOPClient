@@ -39,7 +39,7 @@ two_conns <- pair$conns
 ```{r table-discovery}
 hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = two_conns, symbol = "book_pool")$pooled
 selected <- hits[trimws(hits$concept_name) == "Hemoglobin [Mass/volume] in Blood", ]
-knitr::kable(selected[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")])
+knitr::kable(selected[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")], row.names = FALSE)
 hb_id <- selected$concept_id
 unit_counts <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = hb_id,
   conns = two_conns, symbol = "book_pool")$per_site
@@ -116,8 +116,8 @@ describe <- function(connections) {
 site_a <- describe(two_conns[1])
 site_b <- describe(two_conns[2])
 total <- describe(two_conns)
-knitr::kable(data.frame(Characteristic = names(total), site_a = unname(site_a),
-  site_b = unname(site_b), Total = unname(total)), row.names = FALSE)
+knitr::kable(data.frame(Characteristic = names(total), north = unname(site_a),
+  south = unname(site_b), Total = unname(total)), row.names = FALSE)
 ```
 
 Each site contributes 14 people, for 28 total. The sites differ: female counts are

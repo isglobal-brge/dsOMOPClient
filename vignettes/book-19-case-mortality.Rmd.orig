@@ -38,14 +38,14 @@ conns <- practice$conns
 ## Find the causes
 
 ```{r find-causes}
-catalogue <- ds.omop.concept.lookup(c(900301L, 900302L), conns = conns)$pooled
+catalogue <- ds.omop.concept.lookup(c(900201L, 900202L), conns = conns)$pooled
 knitr::kable(catalogue[c("concept_id", "concept_name", "domain_id")])
 knitr::kable(ds.omop.concept.prevalence("death", scope = "pooled", conns = conns)$pooled)
-mi <- omop_event("death", 900301L)
-pneumonia <- omop_event("death", 900302L)
+mi <- omop_event("death", 900201L)
+pneumonia <- omop_event("death", 900202L)
 ```
 
-Myocardial infarction is **900301** and Pneumonia is **900302**. The inventory's
+Myocardial infarction is **900201** and Pneumonia is **900202**. The inventory's
 person counts are rounded down to multiples of five: 20 and 10 indicate bands
 20–24 and 10–14. They are not period-specific numerators; we calculate those next.
 
@@ -63,8 +63,6 @@ period_recipe <- function(start, days) {
     sex = omop_sex(),
     age = omop_age_at(start),
     death_days = omop_time_between(start, "death"),
-    cause = omop_variable(event = omop_event("death"),
-      reducer = omop_reduce("first_value", value = "cause_concept_id", window = window)),
     mi = omop_variable(event = mi, reducer = omop_reduce("binary", window = window)),
     pneumonia = omop_variable(event = pneumonia, reducer = omop_reduce("binary", window = window))))
 }
@@ -74,6 +72,8 @@ invisible(ds.omop.filter("D_2024", expr = omop_where(is.na(death_days) | death_d
 invisible(ds.omop.mutate("D_alive_2024", potential_days = coalesce(death_days, 366),
   risk_days = ifelse(potential_days > 366, 366, potential_days),
   age_group = ifelse(is.na(age), "Missing", ifelse(age < 40, "under 40", "40 and over")),
+  cause = ifelse(mi == 1, "Myocardial infarction",
+    ifelse(pneumonia == 1, "Pneumonia", "Neither selected cause")),
   newobj = "D_risk_2024", conns = conns))
 ```
 
@@ -91,7 +91,8 @@ knitr::kable(book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
 
 F means female and M means male. In 2024 there are four female and eight male myocardial-infarction deaths, and
 three pneumonia deaths in each sex. Six people of each sex survive the year.
-The denominators must include those survivors' time.
+The “Neither selected cause” row contains survivors in this dataset; in another
+study it could also contain other causes. The denominators include survivors' time.
 
 ```{r cause-by-age}
 knitr::kable(book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
@@ -131,7 +132,9 @@ rates_2024 <- released_rates("D_risk_2024", "All", 2024)
 knitr::kable(rates_2024, digits = 2, row.names = FALSE)
 ```
 
-Read each rate as deaths per 1,000 observed person-years, with its 95% interval.
+In 2024, 30 people contribute 22.03 person-years. The myocardial-infarction
+rate is 544.74 per 1,000 person-years (95% CI 281.48–951.56), and the pneumonia
+rate is 272.37 (99.96–592.84). These intervals describe uncertainty in the rates.
 These are **crude** rates: they do not adjust for the age distribution. The
 intentionally high mortality in this small synthetic population is a teaching
 example, not an estimate for a clinical population.
@@ -154,8 +157,10 @@ knitr::kable(sex_rates, digits = 2, row.names = FALSE)
 knitr::kable(age_rates, digits = 2, row.names = FALSE)
 ```
 
-The male myocardial-infarction rate exceeds the female rate, but their uncertainty
-intervals overlap. Age-specific rates use the age group's own time, including
+The male myocardial-infarction rate is 640.93 per 1,000 person-years (95% CI
+276.71–1,262.89), against 418.98 (114.16–1,072.77) in females. The intervals
+overlap. Under-40 pneumonia has six deaths in only 1.20 person-years, giving
+5,003.42 per 1,000 person-years: a rate can exceed 1,000 because it is not a percentage. Age-specific rates use the age group's own time, including
 survivors. A zero observed count has a positive upper confidence limit; it does
 not establish that the underlying rate is zero. Small cells may be withheld in
 other datasets; never replace a withheld result with zero.
@@ -180,7 +185,9 @@ knitr::kable(rbind(rates_2023, rates_2024), digits = 2, row.names = FALSE)
 
 Both years have 12 myocardial-infarction and six pneumonia deaths. The 2023 risk
 set contains 48 people; the 2024 risk set contains 30 after excluding 18 earlier
-deaths. More person-time in 2023 gives lower rates despite equal numerators.
+deaths. In 2023, 39.93 person-years give rates of 300.49 for myocardial infarction
+(95% CI 155.27–524.90) and 150.25 for pneumonia (55.14–327.02). More person-time
+in 2023 gives lower rates despite equal numerators.
 
 </details>
 

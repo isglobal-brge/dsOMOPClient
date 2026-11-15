@@ -20,7 +20,7 @@ mixed models across two connections.
 [output formats](book-08-outputs.html) and [lab values](book-14-labs.html).
 Start a fresh session in `book-work` and run every section in order, including solutions.
 GiBleed and Synthea are public **synthetic** resources. Their results teach analysis
-mechanics, not clinical conclusions. 
+mechanics, not clinical conclusions.
 
 
 ## The same people, two shapes
@@ -99,8 +99,19 @@ visit_counts <- dsBaseClient::ds.table("D_visit_long$concept_id", datasources = 
 knitr::kable(book_counts(visit_counts))
 ```
 
-There are 1,037 admission rows from 890 visitors; 756 visitors have only one
-admission. A long table does not guarantee repeated visits for every person.
+The table counts 1,037 admission rows. To count people separately, reduce each
+visitor's records to a count and distinguish single from repeat visitors.
+
+```{r visitor-counts}
+visits_per_person <- omop_study(visits, outputs = "baseline", baseline = list(
+  admissions = omop_variable(event = visits, reducer = omop_reduce("count"))))
+invisible(recipe_execute(visits_per_person, out = c(baseline = "D_visitors"), conns = conns))
+invisible(ds.omop.mutate("D_visitors", pattern = ifelse(admissions == 1,
+  "One admission", "Repeated admissions"), newobj = "D_visit_patterns", conns = conns))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_visit_patterns$pattern", datasources = conns)))
+```
+
+There are 890 visitors: 756 with one admission and 134 with repeated admissions. A long table does not guarantee repeated visits for every person.
 Inpatient Visit is concept **9201**, found in chapter 4.
 
 Summarise time since entry without fetching event rows.
@@ -129,7 +140,8 @@ lab <- omop_event("measurement", concepts = 3000963L, value = "value_as_number",
 entry <- omop_population("entry", index = omop_index(lab))
 ```
 
-Index is each person's first hemoglobin. These synthetic records are irregularly
+Haemoglobin **3000963** and g/dL **8713** are the measurement and unit used in
+chapter 14. Index is each person's first haemoglobin. These synthetic records are irregularly
 spaced over years. Use three **1000-day windows**, not calendar years. Window 1
 includes days 0–999, window 2 days 1000–1999, and window 3 days 2000–2999.
 First and last refer to actual dates within each window, not scheduled visits.
@@ -231,7 +243,8 @@ knitr::kable(book_summary(
   "D_timepoints$measurements_hb_year5", datasources = conns))
 ```
 
-The five-year point has 15 observed and 13 missing values. The tolerance is
+The five-year point has 15 observed and 13 missing values, with a mean of
+15.15 g/dL among those observed. The tolerance is
 ±365 days; this selects a nearby observation without inventing a scheduled reading.
 
 </details>
@@ -257,17 +270,15 @@ The native recipe uses names without dots. Create three private aliases with the
 This operation assigns privately; it never returns individual rows.
 
 ```{r reshape}
-stopifnot(all(c("ds.reShape", "ds.lmerSLMA", "ds.glmerSLMA") %in%
-                getNamespaceExports("dsBaseClient")))
 for (period in 1:3) {
   dsBaseClient::ds.asNumeric(x.name = paste0("D_windows$first", period),
     newobj = paste0("first.", period), datasources = conns)
 }
-dsBaseClient::ds.dataFrame(c("D_windows$person_id", "first.1", "first.2", "first.3"),
-  newobj = "D_for_reshape", datasources = conns)
-dsBaseClient::ds.reShape("D_for_reshape", varying = c("first.1", "first.2", "first.3"),
+invisible(dsBaseClient::ds.dataFrame(c("D_windows$person_id", "first.1", "first.2", "first.3"),
+  newobj = "D_for_reshape", datasources = conns))
+invisible(dsBaseClient::ds.reShape("D_for_reshape", varying = c("first.1", "first.2", "first.3"),
   timevar.name = "period", idvar.name = "person_id", direction = "long",
-  newobj = "D_reshaped", datasources = conns)
+  newobj = "D_reshaped", datasources = conns))
 knitr::kable(data.frame(Column = unique(unlist(dsBaseClient::ds.colnames("D_reshaped", datasources = conns)))))
 ```
 
@@ -403,7 +414,7 @@ knitr::kable(data.frame(Daily_odds_ratio = exp(b), Lower_95 = exp(b - 1.96 * se)
   Upper_95 = exp(b + 1.96 * se)), digits = 3)
 ```
 
-The daily odds ratio is about 3.65 per additional year since entry. It compares the odds of a repeat **on the current day**, conditional on having
+The daily odds ratio is 3.65 (95% CI 2.31–5.78) per additional year since entry. It compares the odds of a repeat **on the current day**, conditional on having
 remained at risk, for a one-year difference in time since entry. It is not a causal
 effect or an annual risk. The event is recorded care, not disease onset.
 
@@ -413,6 +424,7 @@ effect or an annual risk. The event is recorded care, not disease onset.
 
 Use the measured BMI concept and kg/m² unit found, inspected and saved in
 [chapter 4’s measured BMI discovery](book-04-vocabulary.html#find-measured-bmi-and-its-recorded-unit).
+The measurement is Body mass index **3038553**, with unit **9531**, kg/m².
 For actual repeated-value modelling use Synthea's BMI readings, whose within-person
 trajectories provide a more useful random-intercept example than hemoglobin here.
 A *random intercept* lets people have different baseline levels and accounts for

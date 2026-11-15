@@ -57,7 +57,7 @@ saveRDS(class_set, "utilisation-class.rds")
 ```
 
 ATC classification concepts have standard status C, so the search includes
-nonstandard entries. The synthetic hierarchy selects **950001**, Questionnaire
+nonstandard entries. Select second-level class **960002**. Its synthetic hierarchy selects **950001**, Questionnaire
 study medicine. The occurrence band 35 means 35–39 exposed people; the analysis
 below has 36. Class membership comes from the hierarchy, not a drug's spelling
 or a Maps to substitution.

@@ -34,11 +34,6 @@ source("tools/book/connection.R")
 source("tools/book/practice.R")
 pair <- book_numeric_pair(resource = "gibleed")
 two_conns <- pair$conns
-names(two_conns)
-```
-
-```
-#> [1] "north" "south"
 ```
 
 The helper partitions public GiBleed people into two disjoint sites. It never
@@ -51,18 +46,18 @@ splits or downloads a real site's records through an analyst connection.
 ce <- ds.omop.concept.search("celecoxib", domain = "Drug", conns = two_conns, symbol = "book_pool")$pooled
 di <- ds.omop.concept.search("diclofenac", domain = "Drug", conns = two_conns, symbol = "book_pool")$pooled
 gi <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition", conns = two_conns, symbol = "book_pool")$pooled
-knitr::kable(rbind(ce, di, gi)[c("concept_name", "standard_concept", "concept_class_id")])
+knitr::kable(rbind(ce, di, gi)[c("concept_id", "concept_name", "standard_concept", "concept_class_id")])
 ```
 
 
 
-|concept_name                                        |standard_concept |concept_class_id |
-|:---------------------------------------------------|:----------------|:----------------|
-|celecoxib 200 MG Oral Capsule [Celebrex]            |S                |Branded Drug     |
-|celecoxib                                           |S                |Ingredient       |
-|Diclofenac Sodium 75 MG Delayed Release Oral Tablet |S                |Clinical Drug    |
-|Diclofenac                                          |S                |Ingredient       |
-|Gastrointestinal hemorrhage                         |S                |Clinical Finding |
+| concept_id|concept_name                                        |standard_concept |concept_class_id |
+|----------:|:---------------------------------------------------|:----------------|:----------------|
+|    1118088|celecoxib 200 MG Oral Capsule [Celebrex]            |S                |Branded Drug     |
+|    1118084|celecoxib                                           |S                |Ingredient       |
+|   40162359|Diclofenac Sodium 75 MG Delayed Release Oral Tablet |S                |Clinical Drug    |
+|    1124300|Diclofenac                                          |S                |Ingredient       |
+|     192671|Gastrointestinal hemorrhage                         |S                |Clinical Finding |
 
 ``` r
 ceid <- ce$concept_id[trimws(ce$concept_name) == "celecoxib"]
@@ -70,54 +65,40 @@ diid <- di$concept_id[trimws(di$concept_name) == "Diclofenac"]
 giid <- gi$concept_id[trimws(gi$concept_name) == "Gastrointestinal hemorrhage"]
 ```
 
-Select the standard ingredients and standard outcome, then inspect descendants.
+Select **1118084** (celecoxib), **1124300** (Diclofenac) and **192671**
+(Gastrointestinal hemorrhage), then inspect descendants.
 These GiBleed study-drug records are already ingredient-coded. The descendant
 request includes the seed by default: the celecoxib row below is self-inclusion,
-not a more specific product. Zero Maps to rows demonstrate no product mapping
-here. In another resource, inspect actual products and mapping direction before
-assuming an ingredient set covers them.
+not a more specific product. Ingredient-to-product membership uses the ancestry
+hierarchy; Maps to serves a different purpose.
 
 
 ``` r
 ce_children <- ds.omop.concept.descendants(ceid, conns = two_conns, symbol = "book_pool")$pooled
-knitr::kable(ce_children["concept_name"])
+knitr::kable(ce_children[c("concept_id", "concept_name")])
 ```
 
 
 
-|concept_name |
-|:------------|
-|celecoxib    |
+| concept_id|concept_name |
+|----------:|:------------|
+|    1118084|celecoxib    |
 
 ``` r
-map_rows <- ds.omop.concept.relationships(ceid, relationship_id = "Maps to", conns = two_conns, symbol = "book_pool")$pooled
-print(data.frame(mapping_rows = NROW(map_rows)))
-```
-
-```
-#>   mapping_rows
-#> 1            0
-```
-
-``` r
-knitr::kable(ds.omop.concept.prevalence("drug_exposure", top_n = 10, scope = "pooled",
+knitr::kable(ds.omop.concept.locate(c(ceid, diid, giid), scope = "pooled",
   conns = two_conns, symbol = "book_pool")$pooled)
 ```
 
 
 
-| concept_id| n_persons|concept_name                                                                                                      |
-|----------:|---------:|:-----------------------------------------------------------------------------------------------------------------|
-|   40213227|      2660|tetanus and diphtheria toxoids, adsorbed, preservative free, for adult use                                        |
-|    1127433|      2580|Acetaminophen 325 MG Oral Tablet                                                                                  |
-|   40213160|      2140|poliovirus vaccine, inactivated                                                                                   |
-|    1713671|      2015|Amoxicillin 250 MG / Clavulanate 125 MG Oral Tablet                                                               |
-|   19059056|      1920|Aspirin 81 MG Oral Tablet                                                                                         |
-|    1118084|      1840|celecoxib                                                                                                         |
-|   40213296|      1735|hepatitis A vaccine, adult dosage                                                                                 |
-|   40213306|      1555|hepatitis B vaccine, adult dosage                                                                                 |
-|    1127078|      1420|Acetaminophen 160 MG Oral Tablet                                                                                  |
-|   40229134|      1385|Acetaminophen 21.7 MG/ML / Dextromethorphan Hydrobromide 1 MG/ML / doxylamine succinate 0.417 MG/ML Oral Solution |
+| concept_id|table_name           |concept_column       | n_records| n_persons|
+|----------:|:--------------------|:--------------------|---------:|---------:|
+|     192671|condition_era        |condition_concept_id |       475|       475|
+|     192671|condition_occurrence |condition_concept_id |       475|       475|
+|    1118084|drug_exposure        |drug_concept_id      |      1840|      1840|
+|    1118084|drug_era             |drug_concept_id      |      1840|      1840|
+|    1124300|drug_exposure        |drug_concept_id      |       850|       850|
+|    1124300|drug_era             |drug_concept_id      |       850|       850|
 
 ``` r
 study_sets <- list(celecoxib = omop_concept_set(ceid, descendants = TRUE),
@@ -125,12 +106,17 @@ study_sets <- list(celecoxib = omop_concept_set(ceid, descendants = TRUE),
   bleeding = omop_concept_set(giid, descendants = TRUE))
 ```
 
+The locator shows recorded use of both ingredient IDs and the bleeding concept.
+Counts are bands of five; the analysis below supplies its own exact denominators.
+
 ## Define entry and washout
 
 Choose first eligible exposure to either study drug. Require 365 observed days
 and no exposure to either during the preceding year. Exclude simultaneous starts
 so each person's baseline treatment is unambiguous. Later switching does not
 change baseline treatment: this is an initial-treatment follow-up definition.
+Exclude any bleeding before or at entry so the outcome is first recorded bleeding
+after entry, rather than recurrence of a known prior outcome.
 
 
 ``` r
@@ -141,6 +127,7 @@ users <- omop_population("users", index = omop_index(omop_any_of(ce_event, di_ev
   select = "first_eligible"), filters = list(omop_observed(before = 365),
   omop_has_not(ce_event, window = omop_window(-365, -1)),
   omop_has_not(di_event, window = omop_window(-365, -1)),
+  omop_has_not(bleed, window = omop_window(NULL, 0)),
   omop_not(omop_all(omop_has(ce_event, window = omop_window(0, 0)),
     omop_has(di_event, window = omop_window(0, 0))))))
 ```
@@ -153,7 +140,12 @@ frame is published; its dependencies remain private intermediates.
 
 ``` r
 comparison <- omop_recipe(populations = list(users),
-  variables = list(age = omop_age(), celecoxib = omop_variable(event = ce_event,
+  variables = list(birth_year = omop_variable(name = "birth_year", table = "person", column = "year_of_birth"),
+    birth_month = omop_variable(name = "birth_month", table = "person", column = "month_of_birth"),
+    birth_day = omop_variable(name = "birth_day", table = "person", column = "day_of_birth"),
+    entry = omop_date_parts("index", c("year", "month", "day"),
+      date_spec = omop_date_spec(representation = "number")),
+    celecoxib = omop_variable(event = ce_event,
     reducer = omop_reduce("binary", window = omop_window(0, 0)))),
   outputs = list(omop_output("baseline", rows = "users", format = "wide"),
     omop_output("survival", rows = "users", format = "survival", options = list(
@@ -162,176 +154,167 @@ comparison <- omop_recipe(populations = list(users),
     omop_output("analysis", rows = "users", format = "joined", options = list(
       from = list(list(output = "baseline"), list(output = "survival")),
       how = "inner", cardinality = "one_to_one"))), publish = "analysis")
-cat(grep("censor|follow|survival", recipe_explain(comparison)$text, value = TRUE), sep = "\n")
-```
-
-```
-#> Output 'survival' [survival] rows 'users', grain episode - private input, never published
-#> variables.celecoxib: concept origin follows reducer binary over the declared source value; explicit variable name is retained.
-```
-
-``` r
-book_symbols(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
-```
-
-```
-#>       analysis 
-#> "D_comparison"
-```
-
-``` r
-dsBaseClient::ds.colnames("D_comparison", datasources = two_conns)
-```
-
-```
-#> $north
-#>  [1] "row_id"                "cohort_row_id"         "person_id"            
-#>  [4] "age"                   "celecoxib"             "outcome_name"         
-#>  [7] "event"                 "entry_days_from_index" "exit_days_from_index" 
-#> [10] "follow_up_days"       
-#> 
-#> $south
-#>  [1] "row_id"                "cohort_row_id"         "person_id"            
-#>  [4] "age"                   "celecoxib"             "outcome_name"         
-#>  [7] "event"                 "entry_days_from_index" "exit_days_from_index" 
-#> [10] "follow_up_days"
+invisible(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
 ```
 
 The censor list and 365-day window define the estimand. Event = 0 means censored
 within that follow-up, not “never bleeds”. Person rows remain private at each site.
 
-## Fit an adjusted survival model with dsBase
+Completed age subtracts one from the difference in calendar years when entry
+occurs before the birthday. We calculate it explicitly from the birth components
+and index-date parts below; missing birth components preserve missing age.
 
-An exponential survival model assumes a constant event hazard during follow-up.
-Its censored likelihood can be fitted by Poisson regression of the event indicator
-with log(person-years) as an offset. The coefficient of celecoxib is a log hazard
-ratio against diclofenac, conditional on age and this model. This is not a Cox fit.
+## Describe the arms before modelling
+
+Follow-up starts on day 1 and ends at bleeding, death, observation end or day 365,
+whichever comes first. The survival output measures elapsed days as exit minus
+entry. A day-1 outcome would therefore have zero time; check this before taking
+a logarithm rather than silently adding time or dropping those events.
 
 
 ``` r
-print(ds.omop.mutate("D_comparison", years = follow_up_days / 365.25,
+invisible(ds.omop.mutate("D_comparison", years = follow_up_days / 365.25,
+  zero_time = ifelse(follow_up_days <= 0, 1L, 0L),
+  month_difference = entry_month - birth_month, day_difference = entry_day - birth_day,
+  age = entry_year - birth_year - ifelse(month_difference < 0 |
+    (month_difference == 0 & day_difference < 0), 1L, 0L),
   newobj = "D_comparison_model", conns = two_conns, symbol = "book_pool"))
-```
-
-```
-#> [1] "D_comparison_model"
-```
-
-The installed dsBase uses one-iteration local starting fits and may print the
-known setup convergence warning. Check the final distributed iteration count,
-diagnostics and coefficients; an unexplained final failure is not a result.
-
-<!-- expected-glm-warning:start -->
-
-``` r
-dsBaseClient::ds.log("D_comparison_model$years", newobj = "log_years", datasources = two_conns)
-comparison_fit <- dsBaseClient::ds.glm("event ~ celecoxib + age",
-  data = "D_comparison_model", family = "poisson", offset = "log_years", datasources = two_conns)
-```
-
-```
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-```
-
-``` r
-knitr::kable(comparison_fit$coefficients)
-```
-
-
-
-|            |   Estimate| Std. Error|   z-value|   p-value| low0.95CI.LP| high0.95CI.LP| EXPONENTIATED RR| low0.95CI.EXP| high0.95CI.EXP|
-|:-----------|----------:|----------:|---------:|---------:|------------:|-------------:|----------------:|-------------:|--------------:|
-|(Intercept) | -2.4632199|  0.5396061| -4.564848| 0.0000050|   -3.5208285|    -1.4056112|        0.0851603|     0.0295749|      0.2452171|
-|celecoxib   |  0.3217293|  0.1043243|  3.083934| 0.0020428|    0.1172574|     0.5262012|        1.3795113|     1.1244088|      1.6924906|
-|age         |  0.0185955|  0.0137416|  1.353233| 0.1759812|   -0.0083374|     0.0455285|        1.0187695|     0.9916972|      1.0465808|
-<!-- expected-glm-warning:end -->
-
-Synthetic data can show an association even without a real biological mechanism.
-Confounding by indication, selection, outcome validity and informative censoring
-all need a study design; federating a model does not remove those problems.
-
-## Exercises
-
-**1.** Count observed outcomes and censored episodes across the two sites.
-
-<details><summary>Solution 1</summary>
-
-
-``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_comparison$event", datasources = two_conns)))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_comparison_model$zero_time", datasources = two_conns)))
 ```
 
 
 
 |Category | Count|
 |:--------|-----:|
-|0        |  2151|
-|1        |   479|
+|0        |  2630|
 |NA       |     0|
 
-Each person enters at most once. Do not add counts from overlapping drug cohorts.
+``` r
+knitr::kable(book_table2(dsBaseClient::ds.table("D_comparison$celecoxib",
+  "D_comparison$event", datasources = two_conns)))
+```
+
+
+
+|   |    0|   1| NA|
+|:--|----:|---:|--:|
+|0  |  706| 124|  0|
+|1  | 1445| 355|  0|
+|NA |    0|   0|  0|
+
+All 2,630 episodes have positive time. Treatment 0 is diclofenac and 1 is
+celecoxib; event 1 is bleeding and 0 is censoring. The event counts are 124 and
+355 respectively. No prior bleeding is present in this dataset, so the exclusion
+leaves these counts unchanged while making the study definition explicit.
+
+
+``` r
+arm_summary <- do.call(rbind, lapply(0:1, function(arm) {
+  invisible(ds.omop.filter("D_comparison_model", var = "celecoxib", op = "==", value = arm,
+    newobj = paste0("D_arm", arm), conns = two_conns, symbol = "book_pool"))
+  aggregate <- function(column) dsBaseClient::ds.mean(paste0("D_arm", arm, "$", column),
+    type = "combine", datasources = two_conns)$Global.Mean
+  time <- aggregate("years"); event <- aggregate("event"); age <- aggregate("age")
+  n <- time[1, "Nvalid"]
+  events <- round(event[1, "EstimatedMean"] * n)
+  py <- time[1, "EstimatedMean"] * n
+  data.frame(Arm = c("Diclofenac", "Celecoxib")[arm + 1], People = n,
+    Events = events, Person_years = py, Rate_per_1000 = 1000 * events / py,
+    Mean_followup_days = 365.25 * py / n, Mean_age = age[1, "EstimatedMean"])
+}))
+knitr::kable(arm_summary, digits = 2)
+```
+
+
+
+|Arm        | People| Events| Person_years| Rate_per_1000| Mean_followup_days| Mean_age|
+|:----------|------:|------:|------------:|-------------:|------------------:|--------:|
+|Diclofenac |    830|    124|       710.05|        174.64|             312.46|    38.10|
+|Celecoxib  |   1800|    355|      1470.74|        241.37|             298.44|    38.17|
+
+Celecoxib contributes 1,800 people, 355 events and 1,470.7 person-years; diclofenac
+contributes 830 people, 124 events and 710.1 person-years. The crude rates are
+about 241 and 175 per 1,000 person-years. Read the age and follow-up columns too:
+unequal follow-up is why a comparison of raw event counts would mislead.
+
+## Fit an adjusted survival model with dsBase
+
+An exponential survival model assumes a constant event hazard during follow-up.
+Fit a Poisson model of the event indicator with log(person-years) as an offset.
+The treatment coefficient is a log hazard ratio against diclofenac, conditional
+on completed age at entry. This is not a Cox model.
+
+dsBase's local steps may warn; check the final `$iter` and error diagnostics for
+convergence. The known local-step warnings are hidden in this example.
+
+
+``` r
+dsBaseClient::ds.log("D_comparison_model$years", newobj = "log_years", datasources = two_conns)
+comparison_fit <- dsBaseClient::ds.glm("event ~ celecoxib + age",
+  data = "D_comparison_model", family = "poisson", offset = "log_years", datasources = two_conns)
+beta <- comparison_fit$coefficients["celecoxib", "Estimate"]
+se <- comparison_fit$coefficients["celecoxib", "Std. Error"]
+knitr::kable(data.frame(Hazard_ratio = exp(beta),
+  Lower_95 = exp(beta - 1.96 * se), Upper_95 = exp(beta + 1.96 * se)), digits = 3)
+```
+
+
+
+| Hazard_ratio| Lower_95| Upper_95|
+|------------:|--------:|--------:|
+|         1.38|    1.124|    1.692|
+
+After age adjustment, celecoxib starters have about 1.38 times the bleeding
+hazard of diclofenac starters (95% CI about 1.12–1.69), under the constant-hazard
+assumption. Age adjustment alone cannot remove confounding by indication,
+selection or outcome misclassification; this synthetic association is not a causal drug effect.
+
+## Exercises
+
+**1. Compare crude and adjusted results.** Calculate the crude incidence-rate
+ratio from the arm table. Does agreement establish adequate adjustment?
+
+<details><summary>Solution 1</summary>
+
+
+``` r
+knitr::kable(data.frame(Crude_rate_ratio = arm_summary$Rate_per_1000[2] /
+  arm_summary$Rate_per_1000[1], Adjusted_hazard_ratio = exp(beta)), digits = 3)
+```
+
+
+
+| Crude_rate_ratio| Adjusted_hazard_ratio|
+|----------------:|---------------------:|
+|            1.382|                  1.38|
+
+Both ratios are about 1.38. Similar estimates only show that this age adjustment
+changes little here; they do not rule out other confounding.
 
 </details>
 
-**2.** Express the treatment coefficient as a hazard ratio.
+**2. Check censoring.** How many episodes end before day 365 without bleeding?
 
 <details><summary>Solution 2</summary>
 
 
 ``` r
-exp(comparison_fit$coefficients["celecoxib", "Estimate"])
+invisible(ds.omop.mutate("D_comparison", early_censor = ifelse(event == 0 & follow_up_days < 364, 1L, 0L),
+  newobj = "D_censor", conns = two_conns, symbol = "book_pool"))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_censor$early_censor", datasources = two_conns)))
 ```
 
-```
-#> [1] 1.379511
-```
-
-This exponentiates a released coefficient, not a patient value.
-
-</details>
-
-**3.** Confirm the final model reports no site errors and stopped before its limit.
-
-<details><summary>Solution 3</summary>
 
 
-``` r
-comparison_fit[c("Nvalid", "Nmissing", "iter", "errorMessage")]
-```
+|Category | Count|
+|:--------|-----:|
+|0        |  2578|
+|1        |    52|
+|NA       |     0|
 
-```
-#> $Nvalid
-#> [1] 2630
-#> 
-#> $Nmissing
-#> [1] 0
-#> 
-#> $iter
-#> [1] 7
-#> 
-#> $errorMessage
-#>       ERROR MESSAGES
-#> north "No errors"   
-#> south "No errors"
-```
-
-Compare the valid sample with the intended episode population. Missing covariates
-can change it even when extraction succeeded.
+The 52 early censored episodes end at observation end; GiBleed has no recorded
+deaths. Event-free follow-up through day 365 has elapsed duration 364 from day 1.
+Censoring means the outcome is unknown after follow-up ends, not that it never occurs.
 
 </details>
 

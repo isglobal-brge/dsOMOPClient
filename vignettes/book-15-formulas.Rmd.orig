@@ -38,8 +38,7 @@ practice <- book_connect("numeric")
 conns <- practice$conns
 ```
 
-Search weight and height separately. The search rows carry standard status,
-concept class and validity dates. Select an exact name, not the first search hit.
+Search weight and height separately and inspect their standard status. Select an exact name, not the first search hit.
 
 ```{r find-body}
 weight_hits <- ds.omop.concept.search("Body weight", domain = "Measurement", conns = conns)$pooled
@@ -50,7 +49,7 @@ height_id <- height_hits$concept_id[trimws(height_hits$concept_name) == "Body he
 body_sets <- list(weight = omop_concept_set(weight_id), height = omop_concept_set(height_id))
 ```
 
-Weight and height are separate concepts; choosing the exact name avoids mixing
+Body weight is **3025315** and Body height is **3036277**. They are separate concepts; choosing the exact name avoids mixing
 measurements with similar wording.
 
 ```{r body-units}
@@ -62,8 +61,9 @@ knitr::kable(weight_units[c("value", "concept_name", "n")])
 knitr::kable(height_units[c("value", "concept_name", "n")])
 ```
 
-The unit IDs used below were returned by those protected inventories. In the
-practice source they mean kilogram and centimetre, as also inspected in chapter 4.
+The inventories identify **9529**, kilogram, for weight and **8582**, centimetre,
+for height. The `value` column holds the unit concept ID; `n` is a record count
+rounded down to a multiple of five.
 
 ## Bind weight and height on the same day
 
@@ -137,6 +137,7 @@ pressure_units <- lapply(c(Systolic = sbp_id, Diastolic = dbp_id), function(id)
 knitr::kable(do.call(rbind, pressure_units))
 ```
 
+Systolic pressure is **3004249** and diastolic pressure is **3012888**.
 Both pressures use **8876**, millimeter mercury (mmHg). Check both inputs:
 a shared name for the result would not repair mismatched units.
 
@@ -276,7 +277,8 @@ formula_concepts$questionnaire <- list(creatinine = formula_set, sex = sex_ids)
 saveRDS(formula_concepts, formula_file)
 ```
 
-These are local teaching concepts with no external mappings or ancestors.
+Creatinine **970001** is a local teaching concept with no external mappings.
+The equation branches use Female **8532** and Male **8507**.
 The synthetic source explicitly defines standardized serum measurements in mg/dL.
 The clinical equivalents would require assay and source validation.
 

@@ -50,7 +50,8 @@ diid <- di$concept_id[trimws(di$concept_name) == "Diclofenac"]
 giid <- gi$concept_id[trimws(gi$concept_name) == "Gastrointestinal hemorrhage"]
 ```
 
-Select the standard ingredients and standard outcome, then inspect descendants.
+Select **1118084** (celecoxib), **1124300** (Diclofenac) and **192671**
+(Gastrointestinal hemorrhage), then inspect descendants.
 These GiBleed study-drug records are already ingredient-coded. The descendant
 request includes the seed by default: the celecoxib row below is self-inclusion,
 not a more specific product. Ingredient-to-product membership uses the ancestry

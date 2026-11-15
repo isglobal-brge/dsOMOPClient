@@ -20,12 +20,8 @@ mixed models across two connections.
 [output formats](book-08-outputs.html) and [lab values](book-14-labs.html).
 Start a fresh session in `book-work` and run every section in order, including solutions.
 GiBleed and Synthea are public **synthetic** resources. Their results teach analysis
-mechanics, not clinical conclusions. This chapter uses dsBaseClient 6.3.5.
+mechanics, not clinical conclusions.
 
-Concept selections refer to the searches and saved definitions in
-[chapter 4](book-04-vocabulary.html), including the separate questionnaire
-catalogue. Additional body-measurement concepts are found on screen in the
-[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
 
 ## The same people, two shapes
 
@@ -53,10 +49,10 @@ This is a scheduled grid: B's second row explicitly represents a missing value.
 An event-long table would omit B's day-30 row if no event occurred. Its absence
 must not be interpreted as a measured zero. Six rows still represent three people.
 
-**Exercise.** Which shape would you use to compare baseline means? Which for a
+**Check.** Which shape would you use to compare baseline means? Which for a
 model of change over time?
 
-<details><summary>Solution</summary>
+<details><summary>Worked answer</summary>
 
 Use the wide day-0 column for baseline means. Use long data with a person key and
 time for repeated-measure models. Account for dependence between the same person's
@@ -94,29 +90,11 @@ visitors <- omop_population("visitors", index = omop_index(visits))
 visit_recipe <- omop_recipe(events = list(visits), populations = list(visitors),
   outputs = omop_output("visits", rows = "visitors", format = "long", sources = "admission",
     options = list(columns_derived = c("days_from_index", "duration_days"))))
-book_symbols(recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), conns = conns))
+invisible(recipe_execute(visit_recipe, out = c(visits = "D_visit_long"), conns = conns))
 ```
 
-```
-#>         visits 
-#> "D_visit_long"
-```
+The long table remains private. Release the setting counts to describe its rows.
 
-The long table remains private. Release only the named visit-type counts and
-column names, which describe the representation.
-
-
-``` r
-dsBaseClient::ds.colnames("D_visit_long", datasources = conns)
-```
-
-```
-#> $site
-#>  [1] "row_id"                  "cohort_row_id"           "person_id"              
-#>  [4] "concept_id"              "start_date"              "end_date"               
-#>  [7] "visit_type_concept_id"   "discharge_to_concept_id" "days_from_index"        
-#> [10] "duration_days"
-```
 
 ``` r
 visit_counts <- dsBaseClient::ds.table("D_visit_long$concept_id", datasources = conns)
@@ -130,30 +108,47 @@ knitr::kable(book_counts(visit_counts))
 |Inpatient Visit |  1037|
 |NA              |     0|
 
-**Exercise.** Summarise the time since entry. Does a long format guarantee repeated visits?
+The table counts 1,037 admission rows. To count people separately, reduce each
+visitor's records to a count and distinguish single from repeat visitors.
 
-<details><summary>Solution</summary>
+
+``` r
+visits_per_person <- omop_study(visits, outputs = "baseline", baseline = list(
+  admissions = omop_variable(event = visits, reducer = omop_reduce("count"))))
+invisible(recipe_execute(visits_per_person, out = c(baseline = "D_visitors"), conns = conns))
+invisible(ds.omop.mutate("D_visitors", pattern = ifelse(admissions == 1,
+  "One admission", "Repeated admissions"), newobj = "D_visit_patterns", conns = conns))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_visit_patterns$pattern", datasources = conns)))
+```
+
+
+
+|Category            | Count|
+|:-------------------|-----:|
+|One admission       |   756|
+|Repeated admissions |   134|
+|NA                  |     0|
+
+There are 890 visitors: 756 with one admission and 134 with repeated admissions. A long table does not guarantee repeated visits for every person.
+Inpatient Visit is concept **9201**, found in chapter 4.
+
+Summarise time since entry without fetching event rows.
+
+<details><summary>Worked answer</summary>
 
 
 ``` r
 visit_time <- dsBaseClient::ds.mean("D_visit_long$days_from_index", type = "combine", datasources = conns)
-visit_time
+knitr::kable(visit_time$Global.Mean, digits = 2)
 ```
 
-```
-#> $Global.Mean
-#>                 EstimatedMean Nmissing Nvalid Ntotal
-#> studiesCombined      1272.554        0   1037   1037
-#> 
-#> $Nstudies
-#> [1] 1
-#> 
-#> $ValidityMessage
-#>      ValidityMessage 
-#> site "VALID ANALYSIS"
-```
 
-No. Here the mean is about 1273 days: the first admission contributes zero,
+
+|                | EstimatedMean| Nmissing| Nvalid| Ntotal|
+|:---------------|-------------:|--------:|------:|------:|
+|studiesCombined |       1272.55|        0|   1037|   1037|
+
+The mean is about 1273 days: the first admission contributes zero,
 and subsequent admissions contribute positive offsets. Some people still have
 only one admission. This is an event-weighted mean, not the mean gap between
 admissions. Switch to Synthea for repeated numeric measurements.
@@ -164,21 +159,15 @@ admissions. Switch to Synthea for repeated numeric measurements.
 
 
 ``` r
-ds.omop.disconnect(conns = conns)
-DSI::datashield.logout(conns)
-practice <- book_connect("numeric")
+practice <- book_switch("numeric")
 conns <- practice$conns
 lab <- omop_event("measurement", concepts = 3000963L, value = "value_as_number",
-  where = omop_where(unit_concept_id == 8713L), name = "hb")
+  unit = omop_unit(8713L), name = "hb")
 entry <- omop_population("entry", index = omop_index(lab))
-class(entry)
 ```
 
-```
-#> [1] "omop_population" "list"
-```
-
-Index is each person's first hemoglobin. These synthetic records are irregularly
+Haemoglobin **3000963** and g/dL **8713** are the measurement and unit used in
+chapter 14. Index is each person's first haemoglobin. These synthetic records are irregularly
 spaced over years. Use three **1000-day windows**, not calendar years. Window 1
 includes days 0–999, window 2 days 1000–1999, and window 3 days 2000–2999.
 First and last refer to actual dates within each window, not scheduled visits.
@@ -197,12 +186,7 @@ windows <- omop_recipe(events = list(lab), populations = list(entry), variables 
   last2 = window_value("last_value", 1000, 1999),
   last3 = window_value("last_value", 2000, 2999)),
   outputs = omop_output("wide", rows = "entry", format = "wide"))
-book_symbols(recipe_execute(windows, out = c(wide = "D_windows"), conns = conns))
-```
-
-```
-#>        wide 
-#> "D_windows"
+invisible(recipe_execute(windows, out = c(wide = "D_windows"), conns = conns))
 ```
 
 No eligible nonmissing value gives `NA`. It never gives zero hemoglobin. Before
@@ -231,28 +215,23 @@ knitr::kable(do.call(rbind, window_results))
 |      2| 15.30000| 15.30000|       10|      18|
 |      3| 14.56667| 14.56667|       15|      13|
 
-These means use the observed people in each period; changing means can therefore
+In periods 2 and 3, first equals last (15.30 and 14.57 g/dL): each observed
+person has only one reading in those windows. In period 1, some have repeated
+readings. These means use the observed people in each period; changing means can therefore
 reflect changing membership. A missing measurement does not prove that the person
 left observation. Check observation coverage separately for a follow-up analysis.
 
-**Exercise.** Make missingness a named category for each period and release its counts.
+**Check.** Make missingness a named category for each period and release its counts.
 
-<details><summary>Solution</summary>
+<details><summary>Worked answer</summary>
 
 
 ``` r
-print(ds.omop.mutate("D_windows",
+invisible(ds.omop.mutate("D_windows",
   missing1 = ifelse(is.na(first1), "missing", "observed"),
   missing2 = ifelse(is.na(first2), "missing", "observed"),
   missing3 = ifelse(is.na(first3), "missing", "observed"),
   newobj = "D_missing", conns = conns))
-```
-
-```
-#> [1] "D_missing"
-```
-
-``` r
 missing_counts <- lapply(1:3, function(period) {
   result <- dsBaseClient::ds.table(paste0("D_missing$missing", period), datasources = conns)
   transform(book_counts(result), Period = period)
@@ -273,7 +252,7 @@ knitr::kable(do.call(rbind, missing_counts))
 |observed |    15|      3|
 |NA       |     0|      3|
 
-The source checks find 28, 10 and 15 observed people: therefore 0, 18 and 13
+The tables show 28, 10 and 15 observed people: therefore 0, 18 and 13
 missing values. Do not carry a measurement forward without declaring how long
 it remains valid and what that assumption means.
 
@@ -289,7 +268,7 @@ from an eligible observed event; no measurement is interpolated.
 ``` r
 points <- omop_timepoints(list(
   baseline = omop_timepoint(),
-  year3 = omop_timepoint(3, "years", tolerance = c(-365, 365))),
+  year5 = omop_timepoint(5, "years", tolerance = c(-365, 365))),
   anchor = "index", reuse = FALSE)
 repeated_hb <- omop_repeated(lab, values = list(hb = omop_number_rows(lab)),
   timepoints = points, missing = "keep")
@@ -297,67 +276,72 @@ repeated_recipe <- omop_recipe(events = list(lab), populations = list(entry),
   variables = list(measurements = repeated_hb),
   outputs = omop_output("wide", rows = "entry", format = "wide"))
 repeated_result <- recipe_execute(repeated_recipe, out = "D_timepoints", conns = conns)
-dsBaseClient::ds.colnames("D_timepoints", datasources = conns)
+knitr::kable(data.frame(Column = unique(unlist(dsBaseClient::ds.colnames("D_timepoints", datasources = conns)))))
 ```
 
-```
-#> $site
-#> [1] "row_id"                   "cohort_row_id"            "person_id"               
-#> [4] "measurements_hb_baseline" "measurements_hb_year3"
-```
+
+
+|Column                   |
+|:------------------------|
+|row_id                   |
+|cohort_row_id            |
+|person_id                |
+|measurements_hb_baseline |
+|measurements_hb_year5    |
 
 The generated names retain the measurement and time-point names. `closest` is
 the default selection; `first` or `last` would choose differently within the
 inclusive tolerance. `reuse = FALSE` prevents an event from filling two points.
 The tolerance here is a teaching choice for irregular data, not a claim that a
-lab a year away represents a clinical three-year visit.
+lab a year away represents a clinical five-year visit.
 
-**Exercise.** Inspect the baseline column's released summary.
+**Check.** Inspect the five-year column's released summary and missing count.
 
 <details><summary>Solution: a scheduled column</summary>
 
 
 ``` r
-knitr::kable(book_summary(dsBaseClient::ds.summary(
-  "D_timepoints$measurements_hb_baseline", datasources = conns)))
+knitr::kable(book_summary(
+  "D_timepoints$measurements_hb_year5", datasources = conns))
 ```
 
 
 
-|Site |Statistic |    Value|
-|:----|:---------|--------:|
-|site |5%        | 11.29000|
-|site |10%       | 12.48000|
-|site |25%       | 12.97500|
-|site |50%       | 13.70000|
-|site |75%       | 15.42500|
-|site |90%       | 16.19000|
-|site |95%       | 16.85500|
-|site |Mean      | 13.98571|
+|Site |Statistic |    Value| N valid| N missing|
+|:----|:---------|--------:|-------:|---------:|
+|site |5%        | 12.59000|      15|        13|
+|site |10%       | 12.88000|      15|        13|
+|site |25%       | 13.25000|      15|        13|
+|site |50%       | 16.00000|      15|        13|
+|site |75%       | 16.75000|      15|        13|
+|site |90%       | 17.20000|      15|        13|
+|site |95%       | 17.29000|      15|        13|
+|site |Mean      | 15.15333|      15|        13|
 
-The baseline target is day zero at the first lab. Later targets without an
-eligible reading remain missing; they are not zero-valued measurements.
+The five-year point has 15 observed and 13 missing values, with a mean of
+15.15 g/dL among those observed. The tolerance is
+±365 days; this selects a nearby observation without inventing a scheduled reading.
 
 </details>
 
-**Exercise.** Where can you check the expanded columns' types before modelling?
+**Check.** Where can you check the expanded columns' types before modelling?
 
 <details><summary>Solution: the published table codebook</summary>
 
 
 ``` r
-knitr::kable(recipe_codebook(repeated_result)[[1]]$columns[c("name", "r_type", "unit")])
+knitr::kable(recipe_codebook(repeated_result)[[1]]$columns[c("name", "r_type")])
 ```
 
 
 
-|name                     |r_type    |unit              |
-|:------------------------|:---------|:-----------------|
-|row_id                   |character |not_applicable    |
-|cohort_row_id            |character |not_applicable    |
-|person_id                |character |not_applicable    |
-|measurements_hb_baseline |double    |unresolved_source |
-|measurements_hb_year3    |double    |unresolved_source |
+|name                     |r_type    |
+|:------------------------|:---------|
+|row_id                   |character |
+|cohort_row_id            |character |
+|person_id                |character |
+|measurements_hb_baseline |double    |
+|measurements_hb_year5    |double    |
 
 Use the numeric columns in a model only after choosing how to handle missing
 scheduled readings. A codebook does not expose their missingness frequency.
@@ -373,46 +357,25 @@ This operation assigns privately; it never returns individual rows.
 
 
 ``` r
-stopifnot(all(c("ds.reShape", "ds.lmerSLMA", "ds.glmerSLMA") %in%
-                getNamespaceExports("dsBaseClient")))
 for (period in 1:3) {
   dsBaseClient::ds.asNumeric(x.name = paste0("D_windows$first", period),
     newobj = paste0("first.", period), datasources = conns)
 }
-dsBaseClient::ds.dataFrame(c("D_windows$person_id", "first.1", "first.2", "first.3"),
-  newobj = "D_for_reshape", datasources = conns)
-```
-
-```
-#> $is.object.created
-#> [1] "A data object <D_for_reshape> has been created in all specified data sources"
-#> 
-#> $validity.check
-#> [1] "<D_for_reshape> appears valid in all sources"
-```
-
-``` r
-dsBaseClient::ds.reShape("D_for_reshape", varying = c("first.1", "first.2", "first.3"),
+invisible(dsBaseClient::ds.dataFrame(c("D_windows$person_id", "first.1", "first.2", "first.3"),
+  newobj = "D_for_reshape", datasources = conns))
+invisible(dsBaseClient::ds.reShape("D_for_reshape", varying = c("first.1", "first.2", "first.3"),
   timevar.name = "period", idvar.name = "person_id", direction = "long",
-  newobj = "D_reshaped", datasources = conns)
+  newobj = "D_reshaped", datasources = conns))
+knitr::kable(data.frame(Column = unique(unlist(dsBaseClient::ds.colnames("D_reshaped", datasources = conns)))))
 ```
 
-```
-#> $is.object.created
-#> [1] "A data object <D_reshaped> has been created in all specified data sources"
-#> 
-#> $validity.check
-#> [1] "<D_reshaped> appears valid in all sources"
-```
 
-``` r
-dsBaseClient::ds.colnames("D_reshaped", datasources = conns)
-```
 
-```
-#> $site
-#> [1] "person_id" "period"    "first"
-```
+|Column    |
+|:---------|
+|person_id |
+|period    |
+|first     |
 
 This gives each person three period rows, including missing first values.
 Only the person key and three first values enter this reshape; last values are
@@ -431,32 +394,31 @@ panel <- omop_recipe(events = list(lab), populations = list(entry),
   outputs = omop_output("panel", rows = "entry", format = "person_period",
     options = list(sources = list(lab), bins = list(width = 1000L),
       window = omop_window(0, 2999), analyses = c("count", "last"), representation = "dense")))
-book_symbols(recipe_execute(panel, out = c(panel = "D_panel"), conns = conns))
+invisible(recipe_execute(panel, out = c(panel = "D_panel"), conns = conns))
+knitr::kable(data.frame(Column = unique(unlist(dsBaseClient::ds.colnames("D_panel", datasources = conns)))))
 ```
 
-```
-#>     panel 
-#> "D_panel"
-```
 
-``` r
-dsBaseClient::ds.colnames("D_panel", datasources = conns)
-```
 
-```
-#> $site
-#> [1] "row_id"            "cohort_row_id"     "person_id"         "period_start_days"
-#> [5] "period_end_days"   "days"              "hb_count"          "hb_last"
-```
+|Column            |
+|:-----------------|
+|row_id            |
+|cohort_row_id     |
+|person_id         |
+|period_start_days |
+|period_end_days   |
+|days              |
+|hb_count          |
+|hb_last           |
 
 The panel respects observation coverage and retains empty observed bins: a zero
 count and a missing last value describe different things. It can omit time outside
 coverage, so it need not have the same roster as the wide-window reshape. Requesting
 the right shape keeps keys, windows, coverage and event semantics in one checked plan.
 
-**Exercise.** Verify that the reshape kept three rows per person, without reading rows.
+**Exercise 1.** Verify that the reshape kept three rows per person, without reading rows.
 
-<details><summary>Solution</summary>
+<details><summary>Worked answer</summary>
 
 
 ``` r
@@ -486,7 +448,7 @@ not illness or death. Start on day 1 after the first reading, and stop at the fi
 subsequent reading, death, observation end or day 7300, whichever comes first.
 The absence of a repeat lab is not a normal result.
 
-For this section use the same disjoint public Synthea split as chapter 15:
+For this section use the same disjoint public Synthea split as chapter 14:
 14 people at each of two local DSLite servers. No people are duplicated. A real
 multisite study must establish nonoverlapping populations separately.
 
@@ -494,11 +456,6 @@ multisite study must establish nonoverlapping populations separately.
 ``` r
 pair <- book_numeric_pair()
 two_conns <- pair$conns
-names(two_conns)
-```
-
-```
-#> [1] "north" "south"
 ```
 
 The panel already stops at observation coverage. Attach one first-outcome day
@@ -519,14 +476,8 @@ hazard <- omop_recipe(events = list(lab, death), populations = list(entry), vari
     omop_output("ends", rows = "entry", format = "wide"),
     omop_output("risk", rows = "entry", format = "joined",
       options = list(from = list(list(output = "daily"), list(output = "ends")),
-        how = "left", cardinality = "many_to_one"))))
-hazard$publish <- "risk"
-book_symbols(recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "book_pool"))
-```
-
-```
-#>     risk 
-#> "D_days"
+        how = "left", cardinality = "many_to_one"))), publish = "risk")
+invisible(recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "book_pool"))
 ```
 
 Remove days after the first repeat or death. A missing next-day value means
@@ -535,37 +486,16 @@ We count an event on the death day if both dates coincide; state this tie rule.
 
 
 ``` r
-print(ds.omop.mutate("D_days", to_next = next_day - period_start_days,
+invisible(ds.omop.mutate("D_days", to_next = next_day - period_start_days,
   to_death = death_day - period_start_days,
   newobj = "D_remaining", conns = two_conns, symbol = "book_pool"))
-```
-
-```
-#> [1] "D_remaining"
-```
-
-``` r
-print(ds.omop.filter("D_remaining",
+invisible(ds.omop.filter("D_remaining",
   expr = omop_where((is.na(to_next) | to_next >= 0) &
   (is.na(to_death) | to_death >= 0)),
   newobj = "D_risk", conns = two_conns, symbol = "book_pool"))
-```
-
-```
-#> [1] "D_risk"
-```
-
-``` r
-print(ds.omop.mutate("D_risk", event = ifelse(hb_count > 0, 1L, 0L),
+invisible(ds.omop.mutate("D_risk", event = ifelse(hb_count > 0, 1L, 0L),
   years = period_start_days / 365.25,
   newobj = "D_hazard", conns = two_conns, symbol = "book_pool"))
-```
-
-```
-#> [1] "D_hazard"
-```
-
-``` r
 hazard_counts <- dsBaseClient::ds.table("D_hazard$event", datasources = two_conns)
 knitr::kable(book_counts(hazard_counts))
 ```
@@ -583,50 +513,13 @@ outcome. Time in years is a predictor; the outcome probability remains **per day
 The binomial GLM models log odds with a linear time trend. A study would assess
 that time specification and the assumption of noninformative censoring.
 
-The dsBase 6.3.5 local setup fits use one iteration and emit the explained
-`glm.fit: algorithm did not converge` warnings. The distributed fit then iterates;
-inspect its final diagnostics, which the book checks against a central fit of the
-public source. The warnings below are retained, not treated as evidence of success.
+dsBase's local steps may warn; check `$iter` and the final errors for convergence.
+The known local-step warnings are hidden here.
 
-<!-- expected-glm-warning:start -->
 
 ``` r
 hazard_fit <- dsBaseClient::ds.glm("event ~ years", data = "D_hazard",
   family = "binomial", datasources = two_conns)
-```
-
-```
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: algorithm did not converge
-```
-
-``` r
 hazard_table <- as.data.frame(hazard_fit$coefficients[, 1:4, drop = FALSE])
 hazard_table[["p-value"]] <- format.pval(hazard_table[["p-value"]], digits = 3, eps = 1e-16)
 knitr::kable(hazard_table, digits = 4)
@@ -638,51 +531,35 @@ knitr::kable(hazard_table, digits = 4)
 |:-----------|--------:|----------:|--------:|:--------|
 |(Intercept) | -12.9553|     1.2056| -10.7463|< 1e-16  |
 |years       |   1.2945|     0.2344|   5.5221|3.35e-08 |
-<!-- expected-glm-warning:end -->
 
-
-``` r
-list(iterations = hazard_fit$iter, valid_days = hazard_fit$Nvalid,
-     disclosure_risk = hazard_fit$disclosure.risk, errors = hazard_fit$errorMessage)
-```
-
-```
-#> $iterations
-#> [1] 13
-#> 
-#> $valid_days
-#> [1] 48560
-#> 
-#> $disclosure_risk
-#>       RISK OF DISCLOSURE
-#> north                  0
-#> south                  0
-#> 
-#> $errors
-#>       ERROR MESSAGES
-#> north "No errors"   
-#> south "No errors"
-```
+The event table has 25 first repeats among 28 people. The positive time
+coefficient means a repeat becomes more likely on a given day among those still
+without a repeat, under the assumed linear log-odds trend.
 
 This is a jointly estimated distributed GLM. Its risk-set likelihood has one
 first event at most per person; it is not a logistic model of every recurrent
 reading treated as an independent patient.
 
-**Exercise.** Show the fitted odds ratio per additional year since entry. Does it
+**Exercise 2.** Show the fitted odds ratio per additional year since entry. Does it
 mean a yearly probability of getting a lab?
 
-<details><summary>Solution</summary>
+<details><summary>Worked answer</summary>
 
 
 ``` r
-exp(hazard_fit$coefficients["years", 1])
+b <- hazard_fit$coefficients["years", 1]
+se <- hazard_fit$coefficients["years", 2]
+knitr::kable(data.frame(Daily_odds_ratio = exp(b), Lower_95 = exp(b - 1.96 * se),
+  Upper_95 = exp(b + 1.96 * se)), digits = 3)
 ```
 
-```
-#> [1] 3.649034
-```
 
-No. It compares the odds of a repeat **on the current day**, conditional on having
+
+| Daily_odds_ratio| Lower_95| Upper_95|
+|----------------:|--------:|--------:|
+|            3.649|    2.305|    5.777|
+
+The daily odds ratio is 3.65 (95% CI 2.31–5.78) per additional year since entry. It compares the odds of a repeat **on the current day**, conditional on having
 remained at risk, for a one-year difference in time since entry. It is not a causal
 effect or an annual risk. The event is recorded care, not disease onset.
 
@@ -692,6 +569,7 @@ effect or an annual risk. The event is recorded care, not disease onset.
 
 Use the measured BMI concept and kg/m² unit found, inspected and saved in
 [chapter 4’s measured BMI discovery](book-04-vocabulary.html#find-measured-bmi-and-its-recorded-unit).
+The measurement is Body mass index **3038553**, with unit **9531**, kg/m².
 For actual repeated-value modelling use Synthea's BMI readings, whose within-person
 trajectories provide a more useful random-intercept example than hemoglobin here.
 A *random intercept* lets people have different baseline levels and accounts for
@@ -701,40 +579,31 @@ time to the first repeat lab.
 
 ``` r
 bmi <- omop_event("measurement", concepts = 3038553L, value = "value_as_number",
-  where = omop_where(unit_concept_id == 9531L), name = "bmi")
+  unit = omop_unit(9531L), name = "bmi")
 bmi_entry <- omop_population("bmi_entry", index = omop_index(bmi))
 repeated <- omop_recipe(events = list(bmi), populations = list(bmi_entry),
   outputs = omop_output("long", rows = "bmi_entry", format = "long", sources = "bmi",
     options = list(columns_derived = c("value", "unit", "days_since_previous"))))
-book_symbols(recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "book_pool"))
+invisible(recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "book_pool"))
+knitr::kable(data.frame(Column = unique(unlist(dsBaseClient::ds.colnames("D_long", datasources = two_conns)))))
 ```
 
-```
-#>     long 
-#> "D_long"
-```
 
-``` r
-dsBaseClient::ds.colnames("D_long", datasources = two_conns)
-```
 
-```
-#> $north
-#>  [1] "row_id"                      "cohort_row_id"              
-#>  [3] "person_id"                   "concept_id"                 
-#>  [5] "start_date"                  "end_date"                   
-#>  [7] "measurement_type_concept_id" "value_as_concept_id"        
-#>  [9] "meas_event_field_concept_id" "days_since_previous"        
-#> [11] "value"                       "unit_concept_id"            
-#> 
-#> $south
-#>  [1] "row_id"                      "cohort_row_id"              
-#>  [3] "person_id"                   "concept_id"                 
-#>  [5] "start_date"                  "end_date"                   
-#>  [7] "measurement_type_concept_id" "value_as_concept_id"        
-#>  [9] "meas_event_field_concept_id" "days_since_previous"        
-#> [11] "value"                       "unit_concept_id"
-```
+|Column                      |
+|:---------------------------|
+|row_id                      |
+|cohort_row_id               |
+|person_id                   |
+|concept_id                  |
+|start_date                  |
+|end_date                    |
+|measurement_type_concept_id |
+|value_as_concept_id         |
+|meas_event_field_concept_id |
+|days_since_previous         |
+|value                       |
+|unit_concept_id             |
 
 `start_date` is days since first BMI under the default relative-date policy.
 The person key, all readings and their dates stay on the servers. Preserve actual
@@ -745,16 +614,9 @@ model their dependence instead.
 
 
 ``` r
-print(ds.omop.mutate("D_long", years = start_date / 365.25,
+invisible(ds.omop.mutate("D_long", years = start_date / 365.25,
   above_cutoff = ifelse(value >= 25, 1L, 0L),
   newobj = "D_repeat", conns = two_conns, symbol = "book_pool"))
-```
-
-```
-#> [1] "D_repeat"
-```
-
-``` r
 repeat_mean <- dsBaseClient::ds.mean("D_repeat$value", type = "combine", datasources = two_conns)
 repeat_counts <- dsBaseClient::ds.table("D_repeat$above_cutoff", datasources = two_conns)
 knitr::kable(book_group_comparison(repeat_counts, repeat_mean, "BMI reading", "kg/m²"))
@@ -762,123 +624,121 @@ knitr::kable(book_group_comparison(repeat_counts, repeat_mean, "BMI reading", "k
 
 
 
-|Category | Count|Number      |Unit  |     Mean|
-|:--------|-----:|:-----------|:-----|--------:|
-|0        |   123|BMI reading |kg/m² | 25.76941|
-|1        |   315|BMI reading |kg/m² | 25.76941|
-|NA       |     0|BMI reading |kg/m² | 25.76941|
+|Category             | Count|Number      |Unit  | Overall mean|
+|:--------------------|-----:|:-----------|:-----|------------:|
+|0                    |   123|BMI reading |kg/m² |           NA|
+|1                    |   315|BMI reading |kg/m² |           NA|
+|NA                   |     0|BMI reading |kg/m² |           NA|
+|Overall (all groups) |    NA|BMI reading |kg/m² |     25.76941|
 
-This mean weights readings, not people. The cutoff is a teaching rule only: this
+The 438 readings split into 123 below and 315 at or above 25. Their overall
+mean is 25.77 kg/m². This mean weights readings, not people. The cutoff is a teaching rule only: this
 synthetic population includes children, and an adult BMI cutoff is not an age-specific
 clinical classification. The continuous and binary responses answer different questions.
 
 `SLMA` means **study-level meta-analysis**. Each server fits its own mixed model;
 only estimates and standard errors return for pooling. It is not a single mixed
-model fitted jointly to concatenated rows. Here we show fixed-effect meta-analysis
-columns (`pooled.FE`, `se.FE`); this assumes a common coefficient across sites.
-The method also returns ML/REML random-effects pooling, with little information
-about between-site heterogeneity from only two sites.
+model fitted jointly to concatenated rows. A fixed-effect pool assumes a common
+coefficient. A random-effects pool allows site coefficients to differ; here use
+REML to estimate their between-site variance. With only two sites, that variance
+and the pooled interval remain uncertain.
 
-The installed dsBase calls `lme4::nobars`, which in this dependency version emits
-a deprecation warning about moving to `reformulas`. It concerns the upstream API,
-not the data. We retain and explain that exact warning; model convergence and
-singularity are checked separately rather than suppressing diagnostics.
+The known upstream warning is hidden. Check `Convergence.error.message` for
+each model before interpreting estimates.
 
-<!-- expected-mixed-warning:start -->
 
 ``` r
 linear_mixed <- dsBaseClient::ds.lmerSLMA("value ~ years + (1|cohort_row_id)",
   dataName = "D_repeat", datasources = two_conns)
+site_slopes <- data.frame(Site = names(two_conns),
+  Estimate = as.numeric(linear_mixed$betamatrix.all["years", ]),
+  SE = as.numeric(linear_mixed$sematrix.all["years", ]))
+knitr::kable(site_slopes, digits = 4)
 ```
 
-```
-#> Warning: the 'nobars' function has moved to the reformulas package. Please update your
-#> imports, or ask an upstream package maintainer to do so.
-```
+
+
+|Site  | Estimate|     SE|
+|:-----|--------:|------:|
+|north |   0.2008| 0.0211|
+|south |   0.0938| 0.0224|
 
 ``` r
-knitr::kable(linear_mixed$SLMA.pooled.ests.matrix[, c("pooled.FE", "se.FE"), drop = FALSE])
+pooled <- linear_mixed$SLMA.pooled.ests.matrix
+knitr::kable(pooled[, c("pooled.FE", "se.FE", "pooled.REML", "se.REML"), drop = FALSE], digits = 4)
 ```
 
 
 
-|            |  pooled.FE|     se.FE|
-|:-----------|----------:|---------:|
-|(Intercept) | 23.3504584| 0.9636351|
-|years       |  0.1507029| 0.0153574|
+|            | pooled.FE|  se.FE| pooled.REML| se.REML|
+|:-----------|---------:|------:|-----------:|-------:|
+|(Intercept) |   23.3505| 0.9636|     23.3462|  1.3860|
+|years       |    0.1507| 0.0154|      0.1476|  0.0535|
+
+The site slopes are about 0.201 and 0.094 BMI units per year. They differ strongly
+(I² about 92%); a common-effect standard error understates this disagreement.
+The REML standard error is about 3.5 times the fixed-effect one. Interpret the
+random-effects estimate and interval, while remembering that two sites provide
+little information about the distribution of site effects. Growth may also be
+nonlinear, so this straight-line model is only a demonstration.
+
 
 ``` r
-linear_mixed$Convergence.error.message
+b <- pooled["years", "pooled.REML"]
+se <- pooled["years", "se.REML"]
+knitr::kable(data.frame(BMI_units_per_year = b, Lower_95 = b - 1.96 * se,
+  Upper_95 = b + 1.96 * se), digits = 3)
 ```
 
-```
-#> [1] "Study1: no convergence error reported" "Study2: no convergence error reported"
-```
-<!-- expected-mixed-warning:end -->
 
-The time coefficient is BMI units per year under this linear trajectory model.
-Real growth may be nonlinear; these data do not validate a constant-slope assumption.
-No individual random intercepts are downloaded.
+
+| BMI_units_per_year| Lower_95| Upper_95|
+|------------------:|--------:|--------:|
+|              0.148|    0.043|    0.252|
+
+The average slope is 0.148 BMI units per year (95% normal interval 0.043–0.252).
+The interval expresses uncertainty about the average site slope under the
+random-effects model. It is not the range of individual people's slopes.
+
+## A binary model the data do not support well
+
+Turning BMI into a ≥25 flag changes the question and discards information.
+In the public synthetic records, 19 of 27 measured people stay on one side of
+this cutoff throughout follow-up. The cutoff is a teaching choice, not a clinical
+classification for this population, which includes children.
 
 
 ``` r
 binary_mixed <- dsBaseClient::ds.glmerSLMA("above_cutoff ~ years + (1|cohort_row_id)",
   family = "binomial", dataName = "D_repeat", datasources = two_conns)
-knitr::kable(binary_mixed$SLMA.pooled.ests.matrix[, c("pooled.FE", "se.FE"), drop = FALSE])
+binary_sites <- data.frame(Site = names(two_conns),
+  Intercept = as.numeric(binary_mixed$betamatrix.all["(Intercept)", ]),
+  Time_coefficient = as.numeric(binary_mixed$betamatrix.all["years", ]),
+  Random_intercept_SD = vapply(binary_mixed$output.summary[c("study1", "study2")],
+    function(x) as.data.frame(x$varcor)$sdcor[1], numeric(1)))
+knitr::kable(binary_sites, digits = 2)
 ```
 
 
 
-|            | pooled.FE|     se.FE|
-|:-----------|---------:|---------:|
-|(Intercept) | 4.7059447| 2.6100909|
-|years       | 0.0093367| 0.0526681|
+|       |Site  | Intercept| Time_coefficient| Random_intercept_SD|
+|:------|:-----|---------:|----------------:|-------------------:|
+|study1 |north |     -9.37|             1.28|               17.31|
+|study2 |south |      9.25|             0.00|               12.44|
 
-``` r
-binary_mixed$Convergence.error.message
-```
+Site intercepts near −9.4 and +9.2 and random-intercept standard deviations near
+17 and 12 logits indicate extreme separation between people. Even an optimizer
+that reports convergence does not make these data informative for this model.
+We do not interpret a pooled binary effect here.
 
-```
-#> [1] "Study1: no convergence error reported" "Study2: no convergence error reported"
-```
+**Exercise 3.** Would changing the pooling method repair this binary model?
 
-This coefficient is on the log-odds scale for a reading above the teaching cutoff,
-conditional on the person's random intercept. It is neither a BMI-unit slope nor
-the first-event hazard from the preceding section.
+<details><summary>Solution: assess support before pooling</summary>
 
-**Exercise 1.** Show the number of contributing sites and the binary-model time
-odds ratio. Is SLMA pooling equivalent to the preceding distributed GLM?
-
-<details><summary>Solution 1</summary>
-
-
-``` r
-list(sites = binary_mixed$num.valid.studies,
-     time_odds_ratio = exp(binary_mixed$SLMA.pooled.ests.matrix["years", "pooled.FE"]))
-```
-
-```
-#> $sites
-#> [1] 2
-#> 
-#> $time_odds_ratio
-#> [1] 1.00938
-```
-
-No. SLMA combines site coefficients and their uncertainty. The distributed GLM
-combines iteration statistics to estimate one model. Both need compatible variable
-meaning and disjoint populations; they solve different estimation problems.
-
-</details>
-
-**Exercise 2.** Would a singular fit be proof that a mixed model worked well?
-
-<details><summary>Solution 2</summary>
-
-No. A near-zero random-effect variance or another boundary estimate can make the
-random-effects structure unsupported. Inspect the site's convergence messages,
-variance components, observation counts and design. Simplify or reconsider the
-model for a reason; do not remove warnings merely to obtain a clean table.
+No. The extreme site estimates arise before pooling. Inspect within-person
+outcome variation and site variance components; use the continuous response if
+it answers the question, or reconsider the study design. A different pooling
+method cannot create missing information.
 
 </details>
 

@@ -90,7 +90,7 @@ package_versions <- vapply(c("dsOMOPClient", "DSI", "dsBaseClient"),
 write.csv(data.frame(Package = names(package_versions), Release = unname(package_versions)),
   file.path(record_dir, "client-packages.csv"), row.names = FALSE)
 saveRDS(ds.omop.server.version(conns = conns), file.path(record_dir, "server-packages.rds"))
-list.files(record_dir)
+knitr::kable(data.frame(File = list.files(record_dir)))
 ```
 
 The filenames identify the definition, software and data sources needed to repeat
