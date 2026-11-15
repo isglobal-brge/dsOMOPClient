@@ -31,6 +31,8 @@ for (path in c("tools/book/opal-admin.R", "tools/book/check-opal.R")) {
       name <- as.character(x[[1]])[1]
       if (grepl("^(opal[.]|oadmin[.]|dsadmin[.])", name)) {
         fun <- getExportedValue("opalr", name)
+        if (name == "dsadmin.install_github_package" && identical(as.list(x)[[3]], "dsOMOP"))
+          stopifnot(identical(x$ref, as.character(packageVersion("dsOMOP"))))
         supplied <- names(as.list(x)[-1])
         stopifnot(all(supplied[nzchar(supplied)] %in% names(formals(fun))))
       }

@@ -71,7 +71,8 @@ category representation and renaming can affect several fields at once.
 check <- omop_recipe(variables = list(
   age = omop_age_at("death"),
   death_period = omop_date("death", omop_date_spec(precision = "year"))),
-  outputs = omop_output("people", format = "wide", grain = "person"))
+  outputs = omop_output("people", format = "wide", grain = "person"),
+  category_spec = omop_category_spec(ordered = TRUE))
 prospective <- recipe_codebook(check)
 result <- recipe_execute(check, out = c(people = "D_documented"), conns = conns)
 published <- recipe_codebook(result)
@@ -164,7 +165,7 @@ category ordering and contrasts. Why is this preferable to guessing from a name?
 columns <- recipe_codebook(result, output = "people", component = "people")[[1]]$columns
 period <- match("death_period", columns$name)
 print(list(ordered = columns$ordered[[period]], contrasts = columns$contrasts[[period]],
-  levels = columns$levels[[period]]))
+  levels = columns$levels[[period]]$labels))
 ```
 
 The metadata records the actual category contract. A column called “year” could

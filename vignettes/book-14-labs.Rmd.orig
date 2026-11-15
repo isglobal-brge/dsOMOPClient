@@ -391,7 +391,7 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_control$control", datasources
 
 Reference mode instead uses the bounds paired with the selected observation.
 Synthea27Nj records no bounds for haemoglobin, so this example deliberately
-shows the current publication refusal for an all-missing reference factor.
+shows the source-validation refusal for missing reference bounds.
 The missing bounds cannot establish normality. Do not invent bounds or weaken
 the release check to obtain categories. The declared-threshold example above
 is the runnable alternative when those cutoffs are part of the protocol.
