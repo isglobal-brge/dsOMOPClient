@@ -40,7 +40,7 @@ explicitly where a requested analysis cannot be supported.
 - [20. Case study: celecoxib versus diclofenac](articles/book-20-case-gibleed.html)
 - [21. Case study: glucose trajectories](articles/book-21-case-glucose.html)
 - [22. Case study: drug utilisation](articles/book-22-case-drug.html)
-- [23. Case study: a harmonised Table 1](articles/book-23-case-table1.html)
+- [23. Case study: describing the same population across two sites](articles/book-23-case-table1.html)
 
 ## Keep your study reproducible
 

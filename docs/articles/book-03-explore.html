@@ -58,7 +58,7 @@
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
-    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: describing the same population across two sites</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -93,1680 +93,315 @@
     
 <div class="learn-box">
 <p><strong>What you will learn</strong></p>
-<p>Read table and column metadata, then interpret safe counts.</p>
+<p>Find the right fields, distinguish rows from people, and check numeric coverage.</p>
 </div>
-<p>This chapter uses the public synthetic GiBleed practice connection from <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.</p>
+<p><strong>You need:</strong> the packages, helpers and loaded practice data from <a href="book-00-start.html#before-you-start">Getting started</a>. Start a fresh R session in <code>book-work</code> and run the sections in order. This chapter uses GiBleed.</p>
 <div class="section level2">
 <h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
 </h2>
-<p>Start a fresh R session in the <code>book-work</code> directory created in <a href="book-00-start.html#get-the-book-helpers">Getting started</a>. Run this setup first:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/practice.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">book_driver</span> <span class="op">==</span> <span class="st">"DSLite"</span><span class="op">)</span> <span class="fu">book_practice</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span> <span class="kw">else</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
-<p>The <code>site</code> connection is ready. The shared <code>connection.R</code> selects DSLite or Opal and resolves the resource names.</p>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"gibleed"</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="find-a-table">Find a table<a class="anchor" aria-label="anchor" href="#find-a-table"></a>
+<h2 id="read-metadata-before-selecting-records">Read metadata before selecting records<a class="anchor" aria-label="anchor" href="#read-metadata-before-selecting-records"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">available</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.tables.html">ds.omop.tables</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">available</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
+<p>A table’s schema describes its fields, even when the table is empty. The metadata returned by <code><a href="../reference/ds.omop.columns.html">ds.omop.columns()</a></code> help you decide which field to use. We display only the rows and columns needed for each decision.</p>
 <table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
 <thead><tr class="header">
-<th align="left">table_name</th>
-<th align="left">schema_category</th>
-<th align="left">has_person_id</th>
-<th align="left">concept_prefix</th>
+<th align="left">Metadata</th>
+<th align="left">How to read it</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">person</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left"></td>
+<td align="left">
+<code>cdm_datatype</code>, <code>is_date</code>
+</td>
+<td align="left">The field’s expected type and whether it represents a date.</td>
 </tr>
 <tr class="even">
-<td align="left">observation_period</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left"></td>
+<td align="left"><code>is_blocked</code></td>
+<td align="left">The field is unavailable for analytical extraction, for example free text or a source value.</td>
 </tr>
 <tr class="odd">
-<td align="left">visit_occurrence</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left">visit</td>
+<td align="left"><code>is_quasi_identifier</code></td>
+<td align="left">Values such as dates and ages could help identify someone; they remain private and releases are checked.</td>
 </tr>
 <tr class="even">
-<td align="left">visit_detail</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left">visit_detail</td>
+<td align="left">
+<code>concept_role</code>, <code>fk_domain</code>
+</td>
+<td align="left">Whether a code is a standard target or source code, and which kind of concept it should reference.</td>
 </tr>
 <tr class="odd">
-<td align="left">condition_occurrence</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left">condition</td>
+<td align="left"><code>is_extension</code></td>
+<td align="left">The field is an addition to the standard CDM schema.</td>
 </tr>
 <tr class="even">
-<td align="left">drug_exposure</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left">drug</td>
+<td align="left"><code>is_untyped_identifier</code></td>
+<td align="left">The field looks like an identifier but has no recognised standard role.</td>
 </tr>
 <tr class="odd">
-<td align="left">procedure_occurrence</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left">procedure</td>
+<td align="left"><code>is_sensitive</code></td>
+<td align="left">The field is flagged as sensitive, for example free text or an original source value.</td>
 </tr>
 <tr class="even">
-<td align="left">device_exposure</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left">device</td>
-</tr>
-<tr class="odd">
-<td align="left">measurement</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left">measurement</td>
-</tr>
-<tr class="even">
-<td align="left">observation</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left">observation</td>
-</tr>
-<tr class="odd">
-<td align="left">death</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">note</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">note_nlp</td>
-<td align="left">CDM</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">specimen</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left">specimen</td>
-</tr>
-<tr class="odd">
-<td align="left">fact_relationship</td>
-<td align="left">CDM</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">location</td>
-<td align="left">CDM</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">care_site</td>
-<td align="left">CDM</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">provider</td>
-<td align="left">CDM</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">payer_plan_period</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">cost</td>
-<td align="left">CDM</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">drug_era</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">dose_era</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">condition_era</td>
-<td align="left">CDM</td>
-<td align="left">TRUE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">metadata</td>
-<td align="left">CDM</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">cdm_source</td>
-<td align="left">CDM</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">concept</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">vocabulary</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">domain</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">concept_class</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">concept_relationship</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">relationship</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">concept_synonym</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">concept_ancestor</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">source_to_concept_map</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">drug_strength</td>
-<td align="left">Vocabulary</td>
-<td align="left">FALSE</td>
-<td align="left"></td>
+<td align="left"><code>semantic_class</code></td>
+<td align="left">The kind of field, such as <code>concept</code> or <code>ordinary</code>; this alone does not determine what can be released.</td>
 </tr>
 </tbody>
 </table>
-<p>Check that <code>observation</code>, <code>death</code> and <code>visit_occurrence</code> exist before designing a recipe. A CDM may contain an empty table or omit a table altogether.</p>
+<p>A FALSE flag is not permission to download rows. These flags describe fields; the server also checks the operation and the support for each result.</p>
 </div>
 <div class="section level2">
-<h2 id="read-the-question-and-answer-fields">Read the question and answer fields<a class="anchor" aria-label="anchor" href="#read-the-question-and-answer-fields"></a>
+<h2 id="separate-what-was-observed-from-its-value">Separate what was observed from its value<a class="anchor" aria-label="anchor" href="#separate-what-was-observed-from-its-value"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"observation"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_columns</span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"observation"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>,</span>
+<span>  rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"observation_concept_id"</span>, <span class="st">"value_as_concept_id"</span>, <span class="st">"value_as_number"</span>,</span>
+<span>    <span class="st">"value_as_string"</span>, <span class="st">"observation_date"</span><span class="op">)</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
-<colgroup>
-<col width="15%">
-<col width="6%">
-<col width="6%">
-<col width="9%">
-<col width="7%">
-<col width="6%">
-<col width="4%">
-<col width="6%">
-<col width="11%">
-<col width="6%">
-<col width="5%">
-<col width="10%">
-</colgroup>
 <thead><tr class="header">
 <th align="left">column_name</th>
 <th align="left">cdm_datatype</th>
-<th align="left">db_datatype</th>
-<th align="left">concept_role</th>
-<th align="left">semantic_class</th>
-<th align="left">fk_domain</th>
 <th align="left">is_date</th>
-<th align="left">is_extension</th>
-<th align="left">is_untyped_identifier</th>
-<th align="left">is_sensitive</th>
 <th align="left">is_blocked</th>
-<th align="left">is_quasi_identifier</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">observation_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">person_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
 <td align="left">observation_concept_id</td>
 <td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">domain_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="even">
 <td align="left">observation_date</td>
 <td align="left">date</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
 <td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">observation_datetime</td>
-<td align="left">datetime</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">observation_type_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">type_concept</td>
-<td align="left">concept</td>
-<td align="left">Type Concept</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="odd">
 <td align="left">value_as_number</td>
 <td align="left">float</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="even">
 <td align="left">value_as_string</td>
 <td align="left">varchar(60)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
 <td align="left">FALSE</td>
 <td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
 </tr>
 <tr class="odd">
 <td align="left">value_as_concept_id</td>
 <td align="left">Integer</td>
-<td align="left">real</td>
-<td align="left">attribute_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
 <td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">qualifier_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">attribute_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">unit_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">attribute_concept</td>
-<td align="left">concept</td>
-<td align="left">Unit</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">provider_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">visit_occurrence_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">visit_detail_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">observation_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">observation_source_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">source_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">unit_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">qualifier_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
 <td align="left">FALSE</td>
 </tr>
 </tbody>
 </table>
-<p><code>observation_concept_id</code> identifies the question. <code>value_as_concept_id</code> identifies a coded answer. Filtering on the question and reading the answer are two separate choices. <code>value_as_number</code> is for numeric values; it is not our education answer.</p>
-</div>
-<div class="section level2">
-<h2 id="count-safely">Count safely<a class="anchor" aria-label="anchor" href="#count-safely"></a>
-</h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"observation"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $rows</span></span>
-<span><span class="co">#&gt; [1] 1475</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $persons</span></span>
-<span><span class="co">#&gt; [1] 670</span></span></code></pre>
-<p>An observation row is an answer, not necessarily a distinct person. Repeated answers mean that counting rows and counting people can give different results. Respect the returned disclosure representation; do not reinterpret a band as an exact number or a refused result as an empty table.</p>
-</div>
-<div class="section level2">
-<h2 id="identify-the-date-field">Identify the date field<a class="anchor" aria-label="anchor" href="#identify-the-date-field"></a>
-</h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
+<p><code>observation_concept_id</code> identifies what was observed; in a questionnaire it identifies the question. <code>value_as_concept_id</code> holds a coded value or answer, and <code>value_as_number</code> a numeric value. <code>value_as_string</code> is blocked free text. Selecting the observation and choosing its value field are separate decisions.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"observation"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
-<colgroup>
-<col width="15%">
-<col width="6%">
-<col width="6%">
-<col width="9%">
-<col width="7%">
-<col width="6%">
-<col width="4%">
-<col width="6%">
-<col width="11%">
-<col width="6%">
-<col width="5%">
-<col width="10%">
-</colgroup>
+<thead><tr class="header">
+<th align="right">rows</th>
+<th align="right">persons</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">1475</td>
+<td align="right">670</td>
+</tr></tbody>
+</table>
+<p>The bands begin at 1,475 rows and 670 people: one person can contribute several observations. These represent 1,475–1,479 rows and 670–674 people. GiBleed’s observations describe allergies and histories, not education answers. The questionnaire chapters use a separate dataset for those answers.</p>
+</div>
+<div class="section level2">
+<h2 id="find-the-visit-date-and-setting">Find the visit date and setting<a class="anchor" aria-label="anchor" href="#find-the-visit-date-and-setting"></a>
+</h2>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_columns</span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>,</span>
+<span>  rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"visit_start_date"</span>, <span class="st">"visit_end_date"</span>, <span class="st">"visit_concept_id"</span>, <span class="st">"visit_type_concept_id"</span><span class="op">)</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
 <thead><tr class="header">
 <th align="left">column_name</th>
 <th align="left">cdm_datatype</th>
-<th align="left">db_datatype</th>
-<th align="left">concept_role</th>
-<th align="left">semantic_class</th>
-<th align="left">fk_domain</th>
 <th align="left">is_date</th>
-<th align="left">is_extension</th>
-<th align="left">is_untyped_identifier</th>
-<th align="left">is_sensitive</th>
 <th align="left">is_blocked</th>
-<th align="left">is_quasi_identifier</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">visit_occurrence_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">person_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
 <td align="left">visit_concept_id</td>
 <td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">domain_concept</td>
-<td align="left">concept</td>
-<td align="left">Visit</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="even">
 <td align="left">visit_start_date</td>
 <td align="left">date</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
 <td align="left">TRUE</td>
 <td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
 </tr>
 <tr class="odd">
-<td align="left">visit_start_datetime</td>
-<td align="left">datetime</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
 <td align="left">visit_end_date</td>
 <td align="left">date</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
 <td align="left">TRUE</td>
 <td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">visit_end_datetime</td>
-<td align="left">datetime</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
 </tr>
 <tr class="even">
 <td align="left">visit_type_concept_id</td>
 <td align="left">Integer</td>
-<td align="left">real</td>
-<td align="left">type_concept</td>
-<td align="left">concept</td>
-<td align="left">Type Concept</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">provider_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">care_site_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">visit_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">visit_source_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">source_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">admitting_source_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">source_concept</td>
-<td align="left">concept</td>
-<td align="left">Visit</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">admitting_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">discharge_to_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">attribute_concept</td>
-<td align="left">concept</td>
-<td align="left">Visit</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">discharge_to_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">preceding_visit_occurrence_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 </tbody>
 </table>
-<p><code>visit_start_date</code> records when a visit started. <code>visit_concept_id</code> describes its setting, such as inpatient or outpatient. <code>visit_type_concept_id</code> describes the provenance of the record; it is not the field for that setting filter.</p>
+<p><code>visit_start_date</code> is when the visit started. <code>visit_concept_id</code> describes its setting, such as inpatient or outpatient. <code>visit_type_concept_id</code> describes where the record came from; use the setting field to select inpatient visits.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">rows</th>
+<th align="right">persons</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">1035</td>
+<td align="right">890</td>
+</tr></tbody>
+</table>
+<p>The bands are 1,035–1,039 visits and 890–894 people. Repeated visits explain why rows exceed people; a visit count is not a study sample size.</p>
 </div>
 <div class="section level2">
-<h2 id="try-it">Try it<a class="anchor" aria-label="anchor" href="#try-it"></a>
+<h2 id="exercise-1-a-coded-cause-does-not-guarantee-a-death-record">Exercise 1: a coded cause does not guarantee a death record<a class="anchor" aria-label="anchor" href="#exercise-1-a-coded-cause-does-not-guarantee-a-death-record"></a>
 </h2>
-<p>Inspect the death table and locate its coded cause field.</p>
+<p>Find the coded cause and death date. Then check whether the server can release a count of deaths.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
-<table style="width:100%;" class="table">
-<colgroup>
-<col width="13%">
-<col width="7%">
-<col width="6%">
-<col width="9%">
-<col width="8%">
-<col width="7%">
-<col width="4%">
-<col width="7%">
-<col width="12%">
-<col width="7%">
-<col width="6%">
-<col width="10%">
-</colgroup>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_columns</span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>,</span>
+<span>  rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"death_date"</span>, <span class="st">"cause_concept_id"</span>, <span class="st">"cause_source_value"</span><span class="op">)</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
 <thead><tr class="header">
 <th align="left">column_name</th>
 <th align="left">cdm_datatype</th>
-<th align="left">db_datatype</th>
-<th align="left">concept_role</th>
-<th align="left">semantic_class</th>
-<th align="left">fk_domain</th>
 <th align="left">is_date</th>
-<th align="left">is_extension</th>
-<th align="left">is_untyped_identifier</th>
-<th align="left">is_sensitive</th>
 <th align="left">is_blocked</th>
-<th align="left">is_quasi_identifier</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">person_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
 <td align="left">death_date</td>
 <td align="left">date</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
 <td align="left">TRUE</td>
 <td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">death_datetime</td>
-<td align="left">datetime</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
 </tr>
 <tr class="even">
-<td align="left">death_type_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">type_concept</td>
-<td align="left">concept</td>
-<td align="left">Type Concept</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
 <td align="left">cause_concept_id</td>
 <td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">attribute_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
 <td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">cause_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="odd">
-<td align="left">cause_source_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">source_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
+<td align="left">cause_source_value</td>
+<td align="left">varchar(50)</td>
 <td align="left">FALSE</td>
 <td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
 </tr>
 </tbody>
-</table></details>
+</table>
+<p><code>cause_concept_id</code> is the coded cause. <code>cause_source_value</code> is the original source code, for example an ICD code, and is blocked here. The date field’s existence does not establish that any deaths were recorded.</p>
+<!-- expected-refusal:start -->
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">death_stats</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">death_stats</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; data frame with 0 columns and 0 rows</span></span></code></pre>
+<!-- expected-refusal:end -->
+<p>The empty response contains no count. The public GiBleed source has an empty death table; through DataSHIELD alone this response could also mean a small withheld count. Treat it as unavailable, rather than asserting zero deaths.</p>
+</details>
 </div>
 <div class="section level2">
-<h2 id="compare-events-with-people">Compare events with people<a class="anchor" aria-label="anchor" href="#compare-events-with-people"></a>
+<h2 id="exercise-2-distinguish-dispensing-from-visits">Exercise 2: distinguish dispensing from visits<a class="anchor" aria-label="anchor" href="#exercise-2-distinguish-dispensing-from-visits"></a>
 </h2>
-<p>A visit table can contain repeated rows per person. Request its protected summary before assuming a count of visits is a count of participants.</p>
+<p>Find the drug exposure dates and supply duration. Does supply duration establish that somebody took the medicine every day?</p>
+<details><p><summary>Solution</summary></p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $rows</span></span>
-<span><span class="co">#&gt; [1] 1035</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $persons</span></span>
-<span><span class="co">#&gt; [1] 890</span></span></code></pre>
-<p>Compare the returned row and distinct-person representations with the earlier observation summary. They describe different clinical events and may use bands. Neither a large row count nor the presence of a numeric column guarantees the support needed for a specific lab, category or model.</p>
-</div>
-<div class="section level2">
-<h2 id="exercise-2-a-common-variant">Exercise 2: a common variant<a class="anchor" aria-label="anchor" href="#exercise-2-a-common-variant"></a>
-</h2>
-<p>Inspect drug dates and supply fields. Which are different from a visit start?</p>
-<details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_columns</span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"drug_exposure"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>,</span>
+<span>  rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"drug_exposure_start_date"</span>, <span class="st">"drug_exposure_end_date"</span>, <span class="st">"days_supply"</span><span class="op">)</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
-<colgroup>
-<col width="15%">
-<col width="6%">
-<col width="6%">
-<col width="9%">
-<col width="8%">
-<col width="6%">
-<col width="4%">
-<col width="6%">
-<col width="11%">
-<col width="6%">
-<col width="5%">
-<col width="10%">
-</colgroup>
 <thead><tr class="header">
 <th align="left">column_name</th>
 <th align="left">cdm_datatype</th>
-<th align="left">db_datatype</th>
-<th align="left">concept_role</th>
-<th align="left">semantic_class</th>
-<th align="left">fk_domain</th>
 <th align="left">is_date</th>
-<th align="left">is_extension</th>
-<th align="left">is_untyped_identifier</th>
-<th align="left">is_sensitive</th>
 <th align="left">is_blocked</th>
-<th align="left">is_quasi_identifier</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">drug_exposure_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">person_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">drug_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">domain_concept</td>
-<td align="left">concept</td>
-<td align="left">Drug</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
 <td align="left">drug_exposure_start_date</td>
 <td align="left">date</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
 <td align="left">TRUE</td>
 <td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">drug_exposure_start_datetime</td>
-<td align="left">datetime</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
 </tr>
 <tr class="even">
 <td align="left">drug_exposure_end_date</td>
 <td align="left">date</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
 <td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">drug_exposure_end_datetime</td>
-<td align="left">datetime</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">verbatim_end_date</td>
-<td align="left">date</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">drug_type_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">type_concept</td>
-<td align="left">concept</td>
-<td align="left">Type Concept</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">stop_reason</td>
-<td align="left">varchar(20)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">refills</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">quantity</td>
-<td align="left">float</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="odd">
 <td align="left">days_supply</td>
 <td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
 <td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">sig</td>
-<td align="left">varchar(MAX)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">route_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">attribute_concept</td>
-<td align="left">concept</td>
-<td align="left">Route</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">lot_number</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">provider_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">visit_occurrence_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">visit_detail_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">drug_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">drug_source_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">source_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">route_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">dose_unit_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
 <td align="left">FALSE</td>
 </tr>
 </tbody>
 </table>
-<p>Drug start/end and days_supply describe prescribing or dispensing records; they do not prove ingestion.</p>
+<p>The two dates delimit the recorded exposure and <code>days_supply</code> describes the supplied duration. These prescribing or dispensing fields do not prove ingestion. They answer a different question from a visit start date.</p>
 </details>
 </div>
 <div class="section level2">
-<h2 id="exercise-3-a-pitfall-to-avoid">Exercise 3: a pitfall to avoid<a class="anchor" aria-label="anchor" href="#exercise-3-a-pitfall-to-avoid"></a>
+<h2 id="exercise-3-test-numeric-coverage">Exercise 3: test numeric coverage<a class="anchor" aria-label="anchor" href="#exercise-3-test-numeric-coverage"></a>
 </h2>
-<p>Compare measurement statistics with its schema. Does having value_as_number guarantee populated numeric results?</p>
-<details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.columns.html">ds.omop.columns</a></span><span class="op">(</span><span class="st">"measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
+<p>Does the presence of a measurement table and a <code>value_as_number</code> column guarantee that lab values can be analysed? Check the column itself.</p>
+<details><p><summary>Solution</summary></p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
-<colgroup>
-<col width="15%">
-<col width="6%">
-<col width="6%">
-<col width="9%">
-<col width="7%">
-<col width="6%">
-<col width="4%">
-<col width="6%">
-<col width="11%">
-<col width="6%">
-<col width="5%">
-<col width="10%">
-</colgroup>
 <thead><tr class="header">
-<th align="left">column_name</th>
-<th align="left">cdm_datatype</th>
-<th align="left">db_datatype</th>
-<th align="left">concept_role</th>
-<th align="left">semantic_class</th>
-<th align="left">fk_domain</th>
-<th align="left">is_date</th>
-<th align="left">is_extension</th>
-<th align="left">is_untyped_identifier</th>
-<th align="left">is_sensitive</th>
-<th align="left">is_blocked</th>
-<th align="left">is_quasi_identifier</th>
+<th align="right">rows</th>
+<th align="right">persons</th>
 </tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">measurement_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">person_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">measurement_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">domain_concept</td>
-<td align="left">concept</td>
-<td align="left">Measurement</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">measurement_date</td>
-<td align="left">date</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">measurement_datetime</td>
-<td align="left">datetime</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">measurement_time</td>
-<td align="left">varchar(10)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">measurement_type_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">type_concept</td>
-<td align="left">concept</td>
-<td align="left">Type Concept</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">operator_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">attribute_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">value_as_number</td>
-<td align="left">float</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">value_as_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">attribute_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">unit_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">attribute_concept</td>
-<td align="left">concept</td>
-<td align="left">Unit</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">range_low</td>
-<td align="left">float</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">range_high</td>
-<td align="left">float</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">provider_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">visit_occurrence_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">visit_detail_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">measurement_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">measurement_source_concept_id</td>
-<td align="left">integer</td>
-<td align="left">real</td>
-<td align="left">source_concept</td>
-<td align="left">concept</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">unit_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">value_source_value</td>
-<td align="left">varchar(50)</td>
-<td align="left">text</td>
-<td align="left">non_concept</td>
-<td align="left">ordinary</td>
-<td align="left"></td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-<td align="left">TRUE</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-</tbody>
+<tbody><tr class="odd">
+<td align="right">44050</td>
+<td align="right">2685</td>
+</tr></tbody>
 </table>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.stats.html">ds.omop.table.stats</a></span><span class="op">(</span><span class="st">"measurement"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $rows</span></span>
-<span><span class="co">#&gt; [1] 44050</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $persons</span></span>
-<span><span class="co">#&gt; [1] 2685</span></span></code></pre>
-<p>No. GiBleed has measurement rows but no numeric values. The numeric chapters use Synthea and check recorded unit use.</p>
+<p>The row band begins at 44,050. The loader in chapter 0 reported exactly 44,053 rows because it ran as custodian of the public data; this analyst call rounds down.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">coverage</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.column.stats.html">ds.omop.column.stats</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"value_as_number"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">coverage</span><span class="op">$</span><span class="va">per_site</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"n_persons"</span>, <span class="st">"n_missing"</span>, <span class="st">"n_distinct"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">n_persons</th>
+<th align="right">n_missing</th>
+<th align="right">n_distinct</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="right">2685</td>
+<td align="right">2685</td>
+<td align="right">0</td>
+</tr></tbody>
+</table>
+<p><code>n_missing</code> equals <code>n_persons</code>, both 2,685 (the band 2,685–2,689). The same response reports <code>n_distinct = 0</code>: no distinct numeric values are available. The public GiBleed data contain no numeric lab values. Use Synthea27Nj for the lab lessons, and check the chosen lab and unit there before fitting a model.</p>
 </details>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>Schema exploration tells you which fields exist. Safe counts describe support without returning records.</p>
+<p>A schema tells you which fields exist. Protected counts describe their support. Neither a large row count nor a numeric field guarantees usable lab values.</p>
 <p><strong>Next:</strong> <a href="book-04-vocabulary.html">4. Finding the concept IDs you need</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

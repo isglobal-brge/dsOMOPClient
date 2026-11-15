@@ -11,160 +11,141 @@ vignette: >
 <div class="learn-box">
 **What you will learn**
 
-Attach a resource and learn the two kinds of name used in a session.
+Distinguish a connection, a resource and a symbol, and change databases deliberately.
 </div>
 
-This chapter uses the public synthetic GiBleed practice connection from [Getting started](book-00-start.html).
-**You need:** the packages and the matching practice connection described in
-[Before you start](book-00-start.html#before-you-start).
-Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
+**You need:** the packages, helpers and loaded practice data from
+[Getting started](book-00-start.html#before-you-start). Start a fresh R session
+in `book-work` and run the sections in order.
 
 ## Start this chapter
-
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
 
 ```{r chapter-setup}
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-source("tools/book/practice.R")
-practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
+practice <- book_connect("gibleed")
 conns <- practice$conns
-names(conns)
 ```
 
-The `site` connection is ready. The shared `connection.R` selects DSLite or Opal and resolves the resource names.
+## Three names with different jobs
 
-## One connection list
-
-A *connection* is a logged-in session. Our DSLite helper made one, named `site`.
-
-```{r connection-names}
-names(conns)
-```
-
-Most calls accept `conns`. Passing it explicitly makes clear where a request goes.
-
-## The Opal login path
-
-For a study server, replace the local connection chunk with the
-[Opal login chunk in Getting started](book-00-start.html#connect-to-your-opal-server).
-It uses DSI and DSOpal with the URL, credentials, profile and resources supplied
-by your administrator. The attach and analysis calls below then use that `conns`
-list and its resource names.
-
-For local practice, keep the setup above. `book_connect()` reads the same
-connection settings when a later section changes datasets. Questionnaire
-chapters identify their separate local dataset.
-
-```{r resolved-resources}
-resource_names
-```
-
-These are the names used by every attach and switch below. With Opal they include
-the configured project prefix, even when you rename either resource.
-
-## A resource is a route to a database
-
-A *resource* stores the connection details on the server. On the practice server its name
-is `gibleed`. On Opal, use the project-qualified name supplied by your administrator.
-
-A *symbol* is an R object name inside the DataSHIELD session. Attach the resource
-and deliberately name the session handle `omop`:
-
-```{r attach}
-ds.omop.disconnect(conns = conns)
-ds.omop.connect(resource = resource_names[["gibleed"]], symbol = "omop", conns = conns)
-```
-
-The server opens its database connection. This does not copy the database into R
-on your laptop. The shared configuration supplies the correct resource name for either driver.
-
-## Reuse the handle
+A **connection** is a logged-in DataSHIELD session. A **resource** describes how
+the server opens a database. A **symbol** is an object name in that session.
+Here `site` names the connection, `gibleed` selects the resource and `omop` names
+the attached database handle.
 
 ```{r handle}
-ds.omop.columns("person", symbol = "omop", conns = conns)$site
+DSI::datashield.symbols(conns)
 ```
 
-Subsequent calls can omit `symbol` because its default is `omop`. An output symbol
-such as `D_people` is different: it names a table built later by a recipe.
+Under `site`, `omop` is the private handle created by `book_connect()`. Later,
+`D_people` will name a table created by a recipe, rather than a database handle.
 
-## End a session deliberately
+For an Opal study server, use the
+[login block in Getting started](book-00-start.html#connect-to-your-opal-server).
+Your administrator provides resource names including their project prefix.
 
-At the end of your own work, call `ds.omop.disconnect(conns = conns)` and then
-`DSI::datashield.logout(conns)`. Start again with the practice helper for another
-chapter.
+## Use a handle explicitly
 
-## Switch between the two practice resources
+```{r explicit-handle}
+knitr::kable(as.data.frame(ds.omop.table.stats("person", symbol = "omop", conns = conns)$per_site$site))
+```
 
-The same practice server also offers the numeric Synthea27Nj database. Disconnect
-the current OMOP handle, then attach that resource on the same login connection:
+The request goes to GiBleed through `omop`: its person count is in the
+2,690–2,694 band. Most dsOMOP calls default to `symbol = "omop"`, so you can
+omit it when you have just one attached database.
+`ds.omop.server.version()` is different: it reports the server's installed and
+available methods, independently of any database handle.
+
+## Switch resources
+
+The practice helper closes the current session and opens the requested resource.
+Always replace `conns` with the returned connection:
 
 ```{r switch-to-numeric}
-ds.omop.disconnect(conns = conns)
-numeric_session <- ds.omop.connect(resource = resource_names[["numeric"]], conns = conns)
-class(numeric_session)
+practice <- book_switch("numeric")
+conns <- practice$conns
+knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
 ```
 
-This changes the database behind the OMOP handle. It does not copy or combine
-patient rows between resources. On Opal, `resource_names[["numeric"]]` selects the resource you configured.
-Return to GiBleed for the next introductory chapters:
+The person band is now 25–29, containing Synthea27Nj's 28 people. The handle can
+still be called `omop` even though its database changed. Switching does not
+combine the two populations. On Opal, use the disconnect/attach pair in
+[Getting started](book-00-start.html#connect-to-your-opal-server) instead.
 
 ```{r switch-back}
-ds.omop.disconnect(conns = conns)
-session <- ds.omop.connect(resource = resource_names[["gibleed"]], conns = conns)
-class(session)
+practice <- book_switch("gibleed")
+conns <- practice$conns
+knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
 ```
 
-The numeric chapters will open their own fresh `numeric` session. Keeping resource
-selection explicit prevents accidentally running a lab recipe against GiBleed's
-empty numeric-value fields.
+The 2,690–2,694 band confirms that GiBleed is attached again. Choosing the
+resource explicitly prevents running a lab analysis against its empty numeric fields.
 
-## Try it
+## Exercise 1: keep two handles in one session
 
-Repeat the column request without specifying the symbol.
+Attach the numeric resource as `labs`, keeping `omop` attached to GiBleed.
+List the names and count people through each. Does attaching `labs` combine them?
+For Opal, substitute the supplied numeric resource name.
 
 <details><summary>Solution</summary>
 
-
-```{r solution}
-ds.omop.columns("person", conns = conns)$site
+```{r two-handles}
+labs_session <- ds.omop.connect(resource = "numeric", symbol = "labs", conns = conns)
+DSI::datashield.symbols(conns)
 ```
+
+`labs` and `omop` are two distinct handles in the same session.
+
+```{r two-counts}
+handle_counts <- lapply(c("omop", "labs"), function(handle) {
+  counts <- ds.omop.table.stats("person", stats = "persons",
+    symbol = handle, conns = conns)$per_site$site
+  data.frame(Handle = handle, counts)
+})
+knitr::kable(do.call(rbind, handle_counts), row.names = FALSE)
+ds.omop.disconnect(symbol = "labs", conns = conns)
+```
+
+`omop` gives 2690 and `labs` gives 25. Each is a separate protected count; the
+populations were not combined. Disconnecting `labs` leaves `omop` available.
 
 </details>
 
-## Exercise 2: a common variant
+## Exercise 2: diagnose a wrong name
 
-Resolve resource names for an Opal project called teaching. Do you need to reconnect for this local calculation?
+Ask for a person count through `missing_handle`. What needs fixing: the table
+name or the handle name?
 
-<details><summary>Solution 2</summary>
+<details><summary>Solution</summary>
 
-```{r book4-exercise-2}
-book_resource_names("Opal", "teaching", c(gibleed = "bleeding", numeric = "labs"))
+<!-- expected-refusal:start -->
+```{r unknown-handle}
+tryCatch(ds.omop.table.stats("person", symbol = "missing_handle", conns = conns),
+  error = function(e) cat(conditionMessage(e), "\n"))
 ```
+<!-- expected-refusal:end -->
 
-No. Name resolution is local; attaching the resolved resource is a separate server operation.
+The message identifies a missing session handle. It says nothing about whether
+the database has a person table. Use `omop`, or attach a resource under the name
+you intend to query.
 
 </details>
 
-## Exercise 3: a pitfall to avoid
+## End the session
 
-Use an explicit handle for a different table, then verify the current server version.
-
-<details><summary>Solution 3</summary>
-
-```{r book4-exercise-3}
-knitr::kable(ds.omop.columns("death", symbol = "omop", conns = conns)$site)
-ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
+```{r logout}
+ds.omop.disconnect(conns = conns)
+DSI::datashield.logout(conns)
 ```
 
-The same handle routes both calls to the current resource. A symbol name does not describe which dataset it contains.
+Disconnect releases the database handle; logout ends the DataSHIELD session.
+The next chapter opens a fresh connection.
 
-</details>
 ## Recap
 
-The resource identifies a database; `omop` is its session handle; `D_people` will name a private result.
+A resource selects a database, a connection carries requests, and a symbol names
+a private server object. Check the selected resource before analysing it.
 
 **Next:** [3. Exploring the CDM](book-03-explore.html).

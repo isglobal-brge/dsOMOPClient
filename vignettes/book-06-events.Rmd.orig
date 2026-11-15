@@ -16,16 +16,8 @@ Select records, set inclusive time windows, and reduce them to first, last, coun
 
 This chapter uses the public synthetic Synthea27Nj numeric connection from [Getting started](book-00-start.html).
 
-**You need:** the packages and the matching practice connection described in
-[Before you start](book-00-start.html#before-you-start).
-Run its sections in order. Each chapter starts from a fresh practice connection;
-all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
-The numbers describe teaching data, not clinical findings.
-
-Concept selections refer to the searches and saved definitions in
-[chapter 4](book-04-vocabulary.html), including the separate questionnaire
-catalogue. Additional body-measurement concepts are found on screen in the
-[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
+Run the sections in order in a fresh R session in your `book-work` directory.
 
 ## Start this chapter
 
@@ -36,27 +28,27 @@ Start a fresh R session in the `book-work` directory created in
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-source("tools/book/practice.R")
-practice <- if (book_driver == "DSLite") book_practice("numeric") else book_connect("numeric")
+practice <- book_connect("numeric")
 conns <- practice$conns
-names(conns)
 ```
 
-The `site` connection is ready. The shared `connection.R` selects DSLite or Opal and resolves the resource names.
+The connection is ready; `conns` identifies the server used by the analysis calls.
 
 ## Define the records once
 
+[Chapter 4](book-04-vocabulary.html) identifies Hemoglobin [Mass/volume] in
+Blood as **3000963** and gram per deciliter as **8713**.
 An *event* describes which records the server should read. These simulated hemoglobin measurements
 have numeric values recorded in grams per deciliter (g/dL). Concept IDs here are vocabulary inputs;
 they are not patient identifiers.
 
 ```{r measurement}
 measure <- omop_event("measurement", concepts = 3000963L,
-  value = "value_as_number", where = omop_where(unit_concept_id == 8713L))
-class(measure)
+  value = "value_as_number", unit = omop_unit(8713L))
 ```
 
-The unit predicate keeps values recorded in that unit; it does not convert units.
+The unit declaration accepts g/dL values; other units become missing unless
+you declare a conversion. It also records the unit of the result.
 Use an `omop_unit()` conversion when your study needs conversion.
 
 ## Set a public time window
@@ -65,13 +57,12 @@ A *window* is an inclusive range of days around an *anchor*, the reference date.
 A fixed date works even when the population has no index event.
 
 ```{r window}
-history <- omop_window(NULL, NULL, anchor = "2020-01-01")
-class(history)
+history <- omop_window(NULL, NULL)
+lookback <- omop_window(-365, 0, anchor = "2020-01-01")
 ```
 
-Both ends are unbounded here, so every recorded measurement is eligible.
-For a one-year lookback use `omop_window(-365, 0, anchor = "2020-01-01")`;
-that window includes both endpoint days.
+`history` includes all recorded dates. `lookback` includes only the 365 days
+before 2020-01-01 and that date itself. We will compare the two after extraction.
 An omitted window on an advanced reducer reads all history; a simple-layer
 shortcut usually defaults to history through the index. Choose explicitly.
 
@@ -84,7 +75,6 @@ first <- omop_variable(event = measure,
   reducer = omop_reduce("first_value", window = history))
 last <- omop_variable(event = measure,
   reducer = omop_reduce("last_value", window = history))
-class(last)
 ```
 
 These select by date, source and record key, not by the size of the value.
@@ -99,7 +89,6 @@ question from choosing the first or last recorded value.
 ```{r mean-variable}
 mean_value <- omop_variable(event = measure,
   reducer = omop_reduce("mean", window = history))
-class(mean_value)
 ```
 
 The unit is still g/dL. Do not average numeric concept IDs or mixed units.
@@ -111,7 +100,6 @@ n <- omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "day"))
 ever <- omop_variable(event = measure,
   reducer = omop_reduce("binary", window = history))
-class(n)
 ```
 
 Count measures distinct measurement days here; `distinct = "row"` counts records.
@@ -127,7 +115,6 @@ any_high <- omop_variable(event = measure,
 all_high <- omop_variable(event = measure,
   reducer = omop_reduce("all", window = history,
     predicate = omop_where(value >= 14)))
-class(any_high)
 ```
 
 Ever tests whether a record exists. Any and all test a condition on its values.
@@ -136,6 +123,7 @@ at least 14 g/dL. Both are arbitrary teaching cutoffs, not clinical reference li
 A missing value makes its comparison unknown; a true value settles any, and a
 false value settles all. Otherwise an unknown remains missing. Empty windows
 give any = 0 and all = NA: without measurements there is no all-value result.
+This differs from R's `all(logical(0))`, which is TRUE.
 
 ## Assign the columns privately
 
@@ -143,72 +131,47 @@ give any = 0 and all = NA: without measurements there is no all-value result.
 reducers <- omop_recipe(variables = list(first = first, last = last,
   mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
+invisible(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
 ```
 
-Only the symbol mapping returns. Request one approved aggregate at a time:
+The columns are now in `D_reducers` on the server. Request one approved
+aggregate at a time:
 
 ```{r first-result}
-first_result <- dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
-knitr::kable(book_summary(first_result))
+knitr::kable(book_summary("D_reducers$first", datasources = conns), digits = 2)
 ```
 
-<details><summary>Full aggregate response</summary>
-
-```{r first-result-full}
-first_result
-```
-
-</details>
-
-This summarises the first nonmissing measurement per person.
+All 28 people have a first nonmissing measurement. Their mean is 13.99 g/dL;
+this gives each person one observation regardless of how often they were tested.
 
 ```{r last-result}
-last_result <- dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
-knitr::kable(book_summary(last_result))
+knitr::kable(book_summary("D_reducers$last", datasources = conns), digits = 2)
 ```
 
-<details><summary>Full aggregate response</summary>
-
-```{r last-result-full}
-last_result
-```
-
-</details>
-
-Later readings can change the last-value summary. The source dataset contains
-hemoglobin measurements for everyone in this practice dataset.
+The last readings average 14.89 g/dL across the same 28 people. First and last
+can coincide for someone with only one reading.
 
 ```{r days-result}
-days_result <- dsBaseClient::ds.summary("D_reducers$days", datasources = conns)
-knitr::kable(book_summary(days_result))
+knitr::kable(book_summary("D_reducers$days", datasources = conns), digits = 2)
 ```
 
-<details><summary>Full aggregate response</summary>
-
-```{r days-result-full}
-days_result
-```
-
-</details>
-
-This summarises one measurement-day count per person. A frequency table of each
+The mean is 3.86 measurement days per person, with a median of 4. A frequency table of each
 exact count is withheld on this dataset because some nonzero cells are below
 `nfilter.tab` (3); the entire table is withheld, not just its small cells.
-An approved numeric summary answers the comparison without requesting that table.
+The summary describes the distribution of measurement frequency without listing
+all exact count frequencies. See the table refusal once:
+
+```{r day-table-refusal}
+day_table <- dsBaseClient::ds.table("D_reducers$days", useNA = "no", datasources = conns)
+cat(day_table$validity.message, "\n")
+```
+
+The message withholds the table. It does not say that these people have no measurements.
 
 ```{r ever-result}
 ever_result <- dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
 knitr::kable(book_counts(ever_result))
 ```
-
-<details><summary>Full aggregate response</summary>
-
-```{r ever-result-full}
-ever_result
-```
-
-</details>
 
 Everyone in this public dataset has a hemoglobin measurement. A person without
 one would have ever = 0 in this defined window.
@@ -217,14 +180,6 @@ one would have ever = 0 in this defined window.
 any_result <- dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
 knitr::kable(book_counts(any_result))
 ```
-
-<details><summary>Full aggregate response</summary>
-
-```{r any-result-full}
-any_result
-```
-
-</details>
 
 The released counts show 19 people with at least one reading at or above 16 g/dL
 and 9 without one. A known qualifying measurement is enough for any, even
@@ -235,81 +190,79 @@ all_result <- dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", da
 knitr::kable(book_counts(all_result))
 ```
 
-<details><summary>Full aggregate response</summary>
-
-```{r all-result-full}
-all_result
-```
-
-</details>
-
 Four people have all readings at or above 14 g/dL; 24 do not.
 All distinguishes unknown comparisons from an empty set of records.
 
 ## Read the mean summary
 
 ```{r mean-result}
-mean_result <- dsBaseClient::ds.summary("D_reducers$mean", datasources = conns)
-knitr::kable(book_summary(mean_result))
+knitr::kable(book_summary("D_reducers$mean", datasources = conns), digits = 2)
 ```
 
-<details><summary>Full aggregate response</summary>
+The mean of the 28 person-level means is 14.47 g/dL. Averaging all measurement
+rows instead would give more weight to people measured more often.
 
-```{r mean-result-full}
-mean_result
+## Restrict the last value to one year
+
+```{r lookback-run}
+recent <- omop_recipe(variables = list(last = omop_variable(event = measure,
+  reducer = omop_reduce("last_value", window = lookback))))
+invisible(recipe_execute(recent, out = "D_recent", conns = conns))
+recent_mean <- dsBaseClient::ds.mean("D_recent$last", type = "combine", datasources = conns)
+recent_missing <- dsBaseClient::ds.numNA("D_recent$last", datasources = conns)
+knitr::kable(data.frame(Mean_g_dL = recent_mean$Global.Mean[1, "EstimatedMean"],
+  N_missing = recent_missing$site), digits = 2)
 ```
 
-</details>
-
-This summarises one mean per person. It is not the pooled mean of all measurement
-rows, which would give more weight to people measured more often.
+The mean is 14.85 g/dL, but 24 of the 28 people have no reading in this year.
+Only four contribute, compared with all 28 in the all-history summary. We show
+a mean rather than quantiles for this small group. People without a recent
+reading remain in the roster with missing values.
 
 ## Value at the index
 
-Now let the first hemoglobin measurement set a different anchor for each person. *Value at index*
+The `omop_study()` shortcut combines an index event, variables and outputs in
+one recipe. Let the first hemoglobin measurement set the anchor for each person. *Value at index*
 means closest within a chosen tolerance; it need not occur on the index day.
 
 ```{r at-index}
 at_index <- omop_study(measure, outputs = "baseline",
   baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
     tolerance = c(-30, 0), unit = 8713L)))
-book_symbols(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
+invisible(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
 ```
 
 The tolerance excludes later measurements. The shortcut uses `closest_value`;
 its default tolerance would include 90 days before and 30 days after.
 
 ```{r at-index-result}
-at_index_result <- dsBaseClient::ds.summary("D_at_index$hemoglobin", datasources = conns)
-knitr::kable(book_summary(at_index_result))
+knitr::kable(book_summary("D_at_index$hemoglobin", datasources = conns), digits = 2)
 ```
 
-<details><summary>Full aggregate response</summary>
-
-```{r at-index-result-full}
-at_index_result
-```
-
-</details>
-
+The mean is again 13.99 g/dL: because the index is the first hemoglobin reading,
+the closest value in [-30, 0] is that same reading. This equality follows from
+the chosen index; an index such as a diagnosis need not coincide with a lab.
 Only people with an eligible hemoglobin measurement enter this indexed study. If a required anchor is missing,
 a window is undefined and every reducer gives `NA`, including count and ever.
 
 ## Convert to a common unit before reducing
 
-A numeric unit filter only restricts records. An explicit conversion normalises
-the values before the reducer runs. This example converts g/dL to g/L, multiplying
-by ten. These are the vocabulary names for the input and target units:
+A unit declaration alone keeps values already in that unit and makes other units'
+values missing; an explicit conversion normalises them before the reducer runs.
+This example converts g/dL to g/L, multiplying by ten. These are the vocabulary
+names for the input and target units:
 
 ```{r unit-names}
 units <- ds.omop.concept.lookup(c(8713L, 8636L), conns = conns)
-knitr::kable(units$pooled["concept_name"])
+knitr::kable(units$pooled[c("concept_id", "concept_name")])
 ```
+
+Concept 8636 is gram per liter; 8713 is gram per deciliter. The conversion
+below changes the unit by multiplying by ten.
 
 ```{r converted-event}
 lab_gl <- omop_event("measurement", 3000963L,
   unit = omop_unit(8636L, convert = list("8713" = c(factor = 10, offset = 0))))
-class(lab_gl)
 ```
 
 Rows already in g/L retain their value. Other undeclared units become missing by
@@ -320,23 +273,14 @@ ranges. Use the same target and conversion map across sites before pooling.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
+invisible(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
 ```
 
 ```{r conversion-result}
-conversion_result <- dsBaseClient::ds.summary("D_converted$mean_gl", datasources = conns)
-knitr::kable(book_summary(conversion_result))
+knitr::kable(book_summary("D_converted$mean_gl", datasources = conns), digits = 2)
 ```
 
-<details><summary>Full aggregate response</summary>
-
-```{r conversion-result-full}
-conversion_result
-```
-
-</details>
-
-The means are ten times the g/dL means. This run uses the dataset's unchanged
+The overall mean is 144.67 g/L, ten times 14.47 g/dL. This run uses the dataset's unchanged
 recorded units; it does not pretend that the source already had mixed units.
 
 ## Value bins and explicit high/low flags
@@ -352,67 +296,37 @@ binned <- omop_recipe(variables = list(mean = mean_value,
   band = omop_number_bins(mean_value, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
   high = omop_number_flag(mean_value, "ge", 15),
   low = omop_number_flag(mean_value, "lt", 14)))
-book_symbols(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
+invisible(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
 ```
 
-The band is an ordered factor directly on the server. No mutate-plus-cut or
-subsequent factor conversion is needed. The type matters for model contrasts.
-
-```{r ordered-bin-levels}
-dsBaseClient::ds.class("D_lab_bins$band", datasources = conns)
-```
+The band is an ordered factor directly on the server. Its order matters for
+model contrasts.
 
 ```{r bins-result}
 bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
 bin_display <- book_counts(bins_result)
 bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
 knitr::kable(bin_display[order(bin_display$Category, na.last = TRUE), ])
-dsBaseClient::ds.mean("D_lab_bins$mean", type = "combine", datasources = conns)
 ```
 
-<details><summary>Full aggregate response</summary>
-
-```{r bins-result-full}
-bins_result
-```
-
-</details>
-
-All nonzero cells in this worked example meet the release threshold. You see
+There are 9 people below 14, 9 from 14 to below 15, and 10 at or above 15 g/dL.
+All nonzero cells meet the release threshold. You see
 the checked counts, never the private rows. A different set of bins can cause
 the entire table to be withheld; a refusal is not an empty or zero table.
 The left boundary is included and the right boundary excluded in these bins.
 
-## Recorded abnormal-high and abnormal-low counts
-
-The dedicated reducers compare each measurement with its own `range_high` or
-`range_low`. They count comparable records outside those bounds.
-
-```{r recorded-ranges}
-ranges <- omop_recipe(variables = list(
-  high_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_high")),
-  low_count = omop_variable(event = measure, reducer = omop_reduce("abnormal_low"))),
-  outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(ranges, out = c(people = "D_lab_ranges"), conns = conns))
+```{r high-flag}
+knitr::kable(book_counts(dsBaseClient::ds.table("D_lab_bins$high",
+  useNA = "no", datasources = conns)))
 ```
 
-```{r ranges-result}
-ranges_result <- dsBaseClient::ds.table("D_lab_ranges$high_count", useNA = "no", datasources = conns)
-knitr::kable(book_counts(ranges_result))
-```
+The high flag is 1 for the same 10 people in the top band and 0 for the other 18.
+The ungrouped mean column remains available for numeric analysis.
 
-<details><summary>Full aggregate response</summary>
-
-```{r ranges-result-full}
-ranges_result
-```
-
-</details>
-
-Synthea27Nj has no recorded hemoglobin reference bounds. Zero here means no
-recorded comparable abnormal-high result; it is **not evidence of normality**.
-The study-defined flags above remain a separate, explicit definition. Never fill
-missing clinical reference ranges with an invented normal interval.
+`abnormal_high` and `abnormal_low` reducers compare each measurement with its
+recorded reference bounds. These hemoglobin data have no such bounds, so their
+zero comparable-abnormal counts would not establish normality. Study-defined
+flags are a different, explicitly chosen definition.
 
 ## Try it
 
@@ -425,58 +339,38 @@ with the measurement-day summary above.
 row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
-solution_result <- dsBaseClient::ds.summary("D_row_count$rows", datasources = conns)
-knitr::kable(book_summary(solution_result))
+invisible(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
+knitr::kable(book_summary("D_row_count$rows", datasources = conns), digits = 2)
 ```
 
-<details><summary>Full aggregate response</summary>
-
-```{r solution-full}
-solution_result
-```
+The row and day summaries are identical here because nobody has two hemoglobin
+records on the same day. With duplicates, row counts would count each record
+while day counts would count that date once.
 
 </details>
-Compare the released summaries: records on the same day would count separately as rows, but once as a day. Their equality or difference is a data property, not a guarantee of the reducers.
-
-</details>
-
 
 ## Another numeric exercise
 
-Using the Synthea columns already assigned, calculate last minus first and
-summarise the differences. Is this the same quantity as a slope?
+Build a variable using `omop_number_change()` to calculate last minus first
+for people with at least two readings. Is this the same quantity as a slope?
 
 <details><summary>Solution</summary>
 
 ```{r numeric-change-exercise}
 change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
-book_symbols(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
-event_change <- dsBaseClient::ds.summary("D_event_change$change", datasources = conns)
-knitr::kable(book_summary(event_change))
+invisible(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
+knitr::kable(book_summary("D_event_change$change", datasources = conns), digits = 2)
 ```
 
-This is change in g/dL, without dividing by elapsed time. Native change needs
+The mean change is 1.016 g/dL among 25 people; 3 are missing because they have
+only one reading. It differs from 14.893 − 13.986 = 0.907 because those two means
+include all 28 people. Change is in g/dL, without dividing by elapsed time. Native change needs
 two eligible readings; a single reading stays missing rather than becoming zero. A fitted slope uses
 all eligible dates and values and has units per day. Continue with
 [Working with lab values](book-14-labs.html) for both methods and pooled analyses.
 
 </details>
 
-## Exercise 2: a common variant
-
-Inspect the unit declaration before executing a conversion. What changes: the patients or the measurement coordinate?
-
-<details><summary>Solution 2</summary>
-
-```{r book4-exercise-2}
-class(lab_gl)
-lab_gl$unit
-```
-
-It changes the numeric coordinate under the declared conversion map, not who the source records describe.
-
-</details>
 ## Recap
 
 An event chooses records, a window chooses time, and a reducer answers one question. Empty records and an undefined anchor are different.

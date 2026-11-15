@@ -2,339 +2,345 @@
 
 **What you will learn**
 
-Find meanings, look up names and define a reusable concept set.
+Search for a meaning, inspect its hierarchy and clinical use, then save
+a concept set.
 
-This chapter uses the public synthetic GiBleed practice connection from
+**You need:** the packages, helpers and loaded practice data from
 [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
-**You need:** the packages and the matching practice connection
-described in [Before you
-start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
-Run the sections in order in one R session. All printed results below
-were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching
-data, not clinical findings.
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
+Start a fresh R session in `book-work` and run the sections in order.
+Start with GiBleed; later sections switch to questionnaire data and
+Synthea27Nj.
 
 ## Start this chapter
-
-Start a fresh R session in the `book-work` directory created in [Getting
-started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
-Run this setup first:
 
 ``` r
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-source("tools/book/practice.R")
-practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
+practice <- book_connect("gibleed")
 conns <- practice$conns
-names(conns)
 ```
-
-    #> [1] "site"
-
-The `site` connection is ready. The shared `connection.R` selects DSLite
-or Opal and resolves the resource names.
 
 ## Search a name, then narrow the meaning
 
-A concept is a public vocabulary meaning. Start broadly, then constrain
-the domain (kind of clinical fact), vocabulary (coding system) and
-standard status. Standard concepts are the preferred OMOP targets;
-classification concepts group them, and source concepts may map to them.
-None of this establishes patient use.
+A concept is a public vocabulary meaning with a stable numeric ID. Its
+**domain** is the kind of fact, such as Condition or Measurement; its
+**vocabulary** is the coding system. Standard concepts (`S`) are
+preferred OMOP targets. Classification concepts (`C`) group meanings;
+non-standard source codes may map to standard ones.
 
 ``` r
-hits <- ds.omop.concept.search("Asthma", conns = conns)
-knitr::kable(head(hits$pooled[c("concept_name", "domain_id", "vocabulary_id", "standard_concept")], 8))
+hits <- ds.omop.concept.search("Asthma", conns = conns)$pooled
+knitr::kable(hits[c("concept_id", "concept_name", "domain_id", "vocabulary_id")])
 ```
 
-| concept\_name    | domain\_id | vocabulary\_id | standard\_concept |
-| :--------------- | :--------- | :------------- | :---------------- |
-| Childhood asthma | Condition  | SNOMED         | S                 |
-| Asthma           | Condition  | SNOMED         | S                 |
-| Asthma screening | Procedure  | SNOMED         | S                 |
+| concept\_id | concept\_name    | domain\_id | vocabulary\_id |
+| ----------: | :--------------- | :--------- | :------------- |
+|     4051466 | Childhood asthma | Condition  | SNOMED         |
+|      317009 | Asthma           | Condition  | SNOMED         |
+|     4062501 | Asthma screening | Procedure  | SNOMED         |
 
-Now keep valid standard SNOMED conditions. The explicit filters make the
-search reproducible; a word alone can also match findings or history-of
-conditions.
+The word matches Asthma, Childhood asthma and Asthma screening, a
+procedure. Keep the ID beside the name: a familiar word alone does not
+specify which meaning you intend.
 
 ``` r
 conditions <- ds.omop.concept.search("Asthma", domain = "Condition",
-  vocabulary = "SNOMED", standard_only = TRUE, valid = TRUE, conns = conns)
-knitr::kable(head(conditions$pooled[c("concept_name", "concept_class_id")], 8))
+  vocabulary = "SNOMED", standard_only = TRUE, valid = TRUE, conns = conns)$pooled
+knitr::kable(conditions[c("concept_id", "concept_name", "standard_concept", "concept_class_id")])
 ```
 
-| concept\_name    | concept\_class\_id |
-| :--------------- | :----------------- |
-| Childhood asthma | Clinical Finding   |
-| Asthma           | Clinical Finding   |
+| concept\_id | concept\_name    | standard\_concept | concept\_class\_id |
+| ----------: | :--------------- | :---------------- | :----------------- |
+|     4051466 | Childhood asthma | S                 | Clinical Finding   |
+|      317009 | Asthma           | S                 | Clinical Finding   |
 
 ``` r
-asthma_id <- conditions$pooled$concept_id[conditions$pooled$concept_name == "Asthma"]
-stopifnot(length(asthma_id) == 1L)
+asthma_id <- conditions$concept_id[conditions$concept_name == "Asthma"]
 ```
 
-**Exercise 1 (basic).** Broaden the query to non-standard concepts. Does
-that change the patient population yet?
-
-Solution 1
-
-``` r
-broad <- ds.omop.concept.search("Asthma", standard_only = FALSE, conns = conns)
-knitr::kable(head(broad$pooled[c("concept_name", "vocabulary_id", "standard_concept")], 8))
-```
-
-| concept\_name    | vocabulary\_id | standard\_concept |
-| :--------------- | :------------- | :---------------- |
-| Childhood asthma | SNOMED         | S                 |
-| Asthma           | SNOMED         | S                 |
-| Asthma screening | SNOMED         | S                 |
-
-No: this is a catalogue search. No clinical rows have been selected.
+Asthma is **317009** and Childhood asthma is **4051466**. Both are
+standard SNOMED clinical findings in the Condition domain. The filters
+state the intended kind of code; they have not yet selected any people.
 
 ## Read a concept and its mappings
 
-`lookup()` returns the compact identity fields; the filtered search
-above also returns the full metadata used here. The concept class says
-what sort of vocabulary item this is. Valid dates delimit its vocabulary
-validity, not the dates of patient records. An invalid reason is about a
-vocabulary entry, not a patient’s diagnosis.
+Look up the chosen ID to confirm its identity:
 
 ``` r
-asthma_info <- ds.omop.concept.lookup(asthma_id, conns = conns)
-knitr::kable(conditions$pooled[conditions$pooled$concept_id == asthma_id, c("concept_name", "standard_concept",
-  "concept_class_id", "valid_start_date", "valid_end_date", "invalid_reason")])
+asthma_info <- ds.omop.concept.lookup(asthma_id, conns = conns)$pooled
+knitr::kable(asthma_info)
 ```
 
-|   | concept\_name | standard\_concept | concept\_class\_id | valid\_start\_date | valid\_end\_date | invalid\_reason |
-| :- | :------------ | :---------------- | :----------------- | :----------------- | :--------------- | :-------------- |
-| 2 | Asthma        | S                 | Clinical Finding   | 1970-01-01         | 2099-12-31       | NA              |
+| concept\_id | concept\_name | domain\_id | vocabulary\_id | standard\_concept |
+| ----------: | :------------ | :--------- | :------------- | :---------------- |
+|      317009 | Asthma        | Condition  | SNOMED         | S                 |
 
-A source code’s **Maps to** relationship can identify its standard
-target. Inspect the relationship direction and target before using
-mapped expansion. A standard concept may map to itself; that is not an
-additional diagnosis.
+The lookup confirms that 317009 means Asthma. For vocabulary validity
+dates, use the richer search metadata:
 
 ``` r
-mappings <- ds.omop.concept.relationships(asthma_id,
-  relationship_id = "Maps to", conns = conns)
-print(data.frame(returned_relationships = NROW(mappings$pooled)))
+knitr::kable(conditions[conditions$concept_id == asthma_id,
+  c("concept_id", "concept_name", "valid_start_date", "valid_end_date", "invalid_reason")],
+  row.names = FALSE)
 ```
 
-    #>   returned_relationships
-    #> 1                      0
+| concept\_id | concept\_name | valid\_start\_date | valid\_end\_date | invalid\_reason |
+| ----------: | :------------ | :----------------- | :--------------- | :-------------- |
+|      317009 | Asthma        | 1970-01-01         | 2099-12-31       | NA              |
 
-An empty relationship result means this practice vocabulary has no
-returned mapping for the requested direction. It does not establish that
-all source codes are standard; inspect the source code itself in your
-own vocabulary.
+The validity interval is about the vocabulary entry, not patients’
+diagnosis dates. A missing `invalid_reason` means the entry has not been
+marked invalid.
+
+A **Maps to** relationship connects a source code to its standard
+target. Find gastrointestinal haemorrhage to see a real mapping in this
+vocabulary:
+
+``` r
+bleeding <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition",
+  conns = conns)$pooled
+knitr::kable(bleeding[c("concept_id", "concept_name", "vocabulary_id", "standard_concept")])
+```
+
+| concept\_id | concept\_name               | vocabulary\_id | standard\_concept |
+| ----------: | :-------------------------- | :------------- | :---------------- |
+|      192671 | Gastrointestinal hemorrhage | SNOMED         | S                 |
+
+``` r
+bleeding_id <- bleeding$concept_id[bleeding$concept_name == "Gastrointestinal hemorrhage"]
+```
+
+The standard SNOMED concept is **192671**. Inspect the mapping edges
+touching it:
+
+``` r
+mappings <- ds.omop.concept.relationships(bleeding_id,
+  relationship_id = "Maps to", conns = conns)$pooled
+knitr::kable(mappings[c("concept_id", "related_concept_id", "related_concept_name",
+  "relationship_id", "direction")])
+```
+
+| concept\_id | related\_concept\_id | related\_concept\_name                   | relationship\_id | direction |
+| :---------- | :------------------- | :--------------------------------------- | :--------------- | :-------- |
+| 192671      | 35208414             | Gastrointestinal hemorrhage, unspecified | Maps to          | reverse   |
+
+`reverse` means the related concept **35208414** is the source of the
+mapping into the requested target **192671**. Inspect that source code
+explicitly:
+
+``` r
+source_code <- ds.omop.concept.search(NULL, concept_id = 35208414L,
+  standard_only = FALSE, conns = conns)$pooled
+knitr::kable(source_code[c("concept_id", "concept_name", "vocabulary_id",
+  "concept_code", "standard_concept")])
+```
+
+| concept\_id | concept\_name                            | vocabulary\_id | concept\_code | standard\_concept |
+| ----------: | :--------------------------------------- | :------------- | :------------ | :---------------- |
+|    35208414 | Gastrointestinal hemorrhage, unspecified | ICD10CM        | K92.2         | NA                |
+
+The source is ICD10CM **K92.2**, Gastrointestinal hemorrhage,
+unspecified; its standard status is missing. It maps to the standard
+SNOMED target. A mapping translates a code; adding descendants instead
+broadens a clinical definition.
 
 ## Walk down and up the hierarchy
 
-Descendants are more specific meanings. Ancestors are broader meanings.
-A SNOMED parent can have many clinically different children: inspect
-before pooling.
+Descendants are more specific meanings; ancestors are broader meanings.
+Inspect them before including a whole branch in your study.
 
 ``` r
-desc <- ds.omop.concept.descendants(asthma_id, include_self = FALSE, conns = conns)
-knitr::kable(head(desc$pooled["concept_name"], 8))
+desc <- ds.omop.concept.descendants(asthma_id, include_self = FALSE, conns = conns)$pooled
+knitr::kable(desc[c("concept_id", "concept_name")])
 ```
 
-| concept\_name    |
-| :--------------- |
-| Childhood asthma |
+| concept\_id | concept\_name    |
+| ----------: | :--------------- |
+|     4051466 | Childhood asthma |
 
 ``` r
-child_id <- desc$pooled$concept_id[desc$pooled$concept_name == "Childhood asthma"]
-parents <- ds.omop.concept.ancestors(child_id, conns = conns)
-knitr::kable(parents$pooled[parents$pooled$direction == "ancestor",
-  c("direction", "concept_name")])
+child_id <- desc$concept_id[desc$concept_name == "Childhood asthma"]
 ```
 
-| direction | concept\_name |
-| :-------- | :------------ |
-| ancestor  | Asthma        |
-
-The ancestors API returns relationships in both directions. Keep its
-`direction` column and select `"ancestor"` to walk upward: Childhood
-asthma has Asthma as a parent. The preceding descendant query walks
-downward from Asthma to Childhood asthma. A descendant row in the
-ancestors response is not a parent.
-
-For medicines, ATC is a classification vocabulary, so the default
-`standard_only = TRUE` can hide the class you need. This is a common
-pitfall.
+Childhood asthma (4051466) is a descendant of Asthma (317009). A set
+that includes descendants will include both meanings unless you exclude
+one.
 
 ``` r
-atc <- ds.omop.concept.search(NULL, vocabulary = "ATC",
-  standard_only = FALSE, conns = conns)
-print(data.frame(returned_ATC_classes = NROW(atc$pooled)))
+parents <- ds.omop.concept.ancestors(child_id, conns = conns)$pooled
+knitr::kable(parents[parents$direction == "ancestor",
+  c("concept_id", "concept_name", "direction")])
 ```
 
-    #>   returned_ATC_classes
-    #> 1                    0
+| concept\_id | concept\_name | direction |
+| ----------: | :------------ | :-------- |
+|      317009 | Asthma        | ancestor  |
 
-If this subset vocabulary returns zero ATC classes, stop: no ATC-class
-study can be inferred from ingredient names. An authorised resource with
-that vocabulary is needed. Do not fabricate a class or silently
-substitute an ingredient.
-
-Only use a returned class when its description matches the protocol. The
-drug utilisation case study below expands the selected class and
-inspects its members.
+The `ancestor` row leads back to Asthma. This API can return both
+directions; selecting `direction == "ancestor"` is what makes this an
+upward walk.
 
 ## Check that the concept occurs here
 
-Vocabulary presence is different from clinical prevalence. Prevalence is
-a protected aggregate over a **table**, with `metric = "persons"` by
-default. It has no `concept_ids` filter: select the row from the
-returned protected table. A concept outside the requested top list need
-not be absent.
-
-``` r
-prevalence <- ds.omop.concept.prevalence("condition_occurrence",
-  metric = "persons", top_n = 20, scope = "pooled", conns = conns)
-knitr::kable(prevalence$pooled)
-```
-
-| concept\_id | n\_persons | concept\_name                            |
-| ----------: | ---------: | :--------------------------------------- |
-|       80180 |       2690 | Osteoarthritis                           |
-|    40481087 |       2685 | Viral sinusitis                          |
-|     4112343 |       2605 | Acute viral pharyngitis                  |
-|      260139 |       2540 | Acute bronchitis                         |
-|      372328 |       2025 | Otitis media                             |
-|       28060 |       1675 | Streptococcal sore throat                |
-|       81151 |       1355 | Sprain of ankle                          |
-|      378001 |        850 | Concussion with no loss of consciousness |
-|     4283893 |        830 | Sinusitis                                |
-|      257012 |        810 | Chronic sinusitis                        |
-|     4027663 |        800 | Peptic ulcer                             |
-|     4294548 |        785 | Acute bacterial sinusitis                |
-|     4218389 |        705 | Whiplash injury to neck                  |
-|       78272 |        675 | Sprain of wrist                          |
-|     4278672 |        510 | Fracture of forearm                      |
-|      192671 |        475 | Gastrointestinal hemorrhage              |
-|     4113008 |        460 | Laceration of hand                       |
-|     4152936 |        455 | Laceration of thigh                      |
-|     4155034 |        455 | Laceration of forearm                    |
-|     4156265 |        455 | Facial laceration                        |
-
-Locate instead accepts concept IDs and reports which clinical columns
-use them. It is also protected: it is not a way to recover exact small
-cell counts.
-
-``` r
-locations <- ds.omop.concept.locate(asthma_id, scope = "pooled", conns = conns)
-knitr::kable(locations$pooled)
-```
-
-| concept\_id | table\_name           | concept\_column        | n\_records | n\_persons |
-| ----------: | :-------------------- | :--------------------- | ---------: | ---------: |
-|      317009 | condition\_era        | condition\_concept\_id |          5 |          5 |
-|      317009 | condition\_occurrence | condition\_concept\_id |          5 |          5 |
-
-Read a band as a band, a suppressed result as unavailable, and an absent
-top-list entry as inconclusive. Never replace those with zero in a study
+A catalogue entry does not establish clinical use. Despite its name,
+`concept.prevalence()` returns protected **person counts** by default. A
+prevalence estimate would also need a defined population, period and
 denominator.
+
+``` r
+use <- ds.omop.concept.prevalence("condition_occurrence", metric = "persons",
+  top_n = 20, scope = "pooled", conns = conns)$pooled
+knitr::kable(use[use$concept_id %in% c(asthma_id, child_id, bleeding_id),
+  c("concept_id", "concept_name", "n_persons")], row.names = FALSE)
+```
+
+| concept\_id | concept\_name               | n\_persons |
+| ----------: | :-------------------------- | ---------: |
+|      192671 | Gastrointestinal hemorrhage |        475 |
+
+Only gastrointestinal haemorrhage appears in these top 20 results, with
+a band of 475–479 people. Neither asthma concept made this top list.
+Their absence is not evidence of zero use; the targeted locator below
+answers that question.
+
+Locate both IDs to check which tables and columns actually use them:
+
+``` r
+locations <- ds.omop.concept.locate(c(asthma_id, child_id), scope = "pooled", conns = conns)$pooled
+locations$concept_name <- conditions$concept_name[match(locations$concept_id, conditions$concept_id)]
+knitr::kable(locations[locations$table_name == "condition_occurrence",
+  c("concept_id", "concept_name", "table_name", "n_records", "n_persons")], row.names = FALSE)
+```
+
+| concept\_id | concept\_name    | table\_name           | n\_records | n\_persons |
+| ----------: | :--------------- | :-------------------- | ---------: | ---------: |
+|      317009 | Asthma           | condition\_occurrence |          5 |          5 |
+|     4051466 | Childhood asthma | condition\_occurrence |         95 |         95 |
+
+The record bands begin at 5 for Asthma and 95 for Childhood asthma: 5–9
+and 95–99 records respectively. Looking only for the seed would miss
+most records in this branch. Counts are rounded down to multiples of
+five, so do not treat these as exact counts or calculate a precise
+percentage from them.
 
 ## Save the definition, including exclusions
 
-Save the local definition rather than copying a transient list of search
-rows. This preserves whether descendants and mapped concepts belong in
-the set.
+A concept set records your selection rule, including whether descendants
+belong. It is a local definition, not a list of patients.
 
 ``` r
 asthma <- omop_concept_set(asthma_id, descendants = TRUE)
-asthma_exact <- omop_concept_set(asthma_id, descendants = FALSE)
-class(asthma)
+concept_file <- "book-concepts.rds"
+saveRDS(list(asthma = asthma), concept_file)
+asthma
 ```
 
-    #> [1] "omop_concept_set" "list"
+    #> omop_concept_set : 317009
+    #>   includes: descendants
 
-**Exercise 2 (intermediate).** Exclude the seed itself while keeping its
-children. Save the definition and read it back without accessing
-patients.
+The printed definition includes the seed and requests its descendants.
+`book-concepts.rds` now stores that definition for reuse. Setting
+`descendants = FALSE` would select only the seed.
 
-Solution 2
+**Exercise 1.** Keep Asthma’s children but exclude the seed itself. Save
+the set and read it back. Does the saved definition preserve the
+exclusion?
+
+Solution
 
 ``` r
 children_only <- omop_concept_set(asthma_id, descendants = TRUE,
   exclude = omop_concept_set(asthma_id, descendants = FALSE))
-concept_file <- "book-concepts.rds"
-saveRDS(list(asthma = asthma, children_only = children_only), concept_file)
 saved_sets <- readRDS(concept_file)
-identical(saved_sets$children_only, children_only)
+saved_sets$children_only <- children_only
+saveRDS(saved_sets, concept_file)
+saved_sets <- readRDS(concept_file)
+saved_sets$children_only
 ```
 
-    #> [1] TRUE
+    #> omop_concept_set : 317009
+    #>   includes: descendants, exclusions
 
-The result is TRUE. An excluded set can itself use descendants when you
-intend to remove an entire subtree. Keep these definitions with the
-study protocol.
+The reloaded definition still requests descendants and excludes 317009
+itself. An excluded set could also include descendants if you wanted to
+remove an entire branch. This file contains definitions, not patient
+data.
 
 ## Find inpatient and outpatient visits
 
-The setting is `visit_concept_id`; `visit_type_concept_id` describes
-provenance. The names below produce the IDs used in the visit chapters.
+Use `visit_concept_id` for the setting; `visit_type_concept_id`
+describes the record’s provenance. Discover the settings before using
+their IDs:
 
 ``` r
-visit_hits <- ds.omop.concept.search("Visit", domain = "Visit", conns = conns)
-visit_catalogue <- visit_hits$pooled[visit_hits$pooled$concept_name %in%
+visit_hits <- ds.omop.concept.search("Visit", domain = "Visit", conns = conns)$pooled
+visit_catalogue <- visit_hits[visit_hits$concept_name %in%
   c("Inpatient Visit", "Outpatient Visit"), ]
-knitr::kable(visit_catalogue[c("concept_name", "standard_concept")])
+knitr::kable(visit_catalogue[c("concept_id", "concept_name", "standard_concept")])
 ```
 
-| concept\_name    | standard\_concept |
-| :--------------- | :---------------- |
-| Inpatient Visit  | S                 |
-| Outpatient Visit | S                 |
+| concept\_id | concept\_name    | standard\_concept |
+| ----------: | :--------------- | :---------------- |
+|        9201 | Inpatient Visit  | S                 |
+|        9202 | Outpatient Visit | S                 |
 
 ``` r
 visit_ids <- setNames(visit_catalogue$concept_id, visit_catalogue$concept_name)
 visit_sets <- lapply(visit_ids, omop_concept_set)
-ds.omop.concept.locate(unname(visit_ids), scope = "pooled", conns = conns)$pooled
 ```
 
-    #>   concept_id       table_name   concept_column n_records n_persons
-    #> 1       9201 visit_occurrence visit_concept_id      1035       890
+Inpatient Visit is **9201** and Outpatient Visit is **9202**. Both exist
+in the vocabulary. Check their clinical use separately:
+
+``` r
+visit_use <- ds.omop.concept.locate(unname(visit_ids), scope = "pooled", conns = conns)$pooled
+visit_use$concept_name <- names(visit_ids)[match(visit_use$concept_id, visit_ids)]
+knitr::kable(visit_use[c("concept_id", "concept_name", "n_records", "n_persons")])
+```
+
+| concept\_id | concept\_name   | n\_records | n\_persons |
+| ----------: | :-------------- | ---------: | ---------: |
+|        9201 | Inpatient Visit |       1035 |        890 |
+
+Only Inpatient Visit is returned: its bands begin at 1,035 records and
+890 people. The public GiBleed data record only inpatient visits;
+Outpatient Visit is unused. In an unfamiliar private dataset, an absent
+locator row could also be withheld.
 
 ## Find the questionnaire questions, answers and causes
 
-The questionnaire dataset is synthetic and separate from GiBleed. Its local concepts are teaching examples, not codes to copy
-into a clinical study. Search the whole small catalogue so the question,
-answer and cause roles are visible together. Later questionnaire
-chapters refer back to this catalogue.
+Switch to the separate synthetic dataset described in
+[chapter 0](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#the-questionnaire-dataset).
+Its local question and answer codes are teaching examples, not codes to
+copy into a clinical study.
 
 ``` r
-ds.omop.disconnect(conns = conns)
-DSI::datashield.logout(conns)
-source("tools/book/fixture.R")
-practice <- book_fixture()
+practice <- book_switch("questionnaire")
 conns <- practice$conns
 questionnaire <- ds.omop.concept.search(NULL, standard_only = FALSE,
   limit = 100, conns = conns)$pooled
-knitr::kable(questionnaire[c("concept_name", "domain_id", "standard_concept")])
+knitr::kable(questionnaire[c("concept_id", "concept_name", "domain_id")])
 ```
 
-| concept\_name         | domain\_id  | standard\_concept |
-| :-------------------- | :---------- | :---------------- |
-| Education question    | Observation | S                 |
-| Fever question        | Observation | S                 |
-| Secondary education   | Meas Value  | S                 |
-| University education  | Meas Value  | S                 |
-| Myocardial infarction | Condition   | S                 |
-| Pneumonia             | Condition   | S                 |
-| Yes                   | Meas Value  | S                 |
-| FEMALE                | Gender      | S                 |
-| MALE                  | Gender      | S                 |
-| No                    | Meas Value  | S                 |
-| Inpatient Visit       | Meas Value  | S                 |
-| Outpatient Visit      | Meas Value  | S                 |
-| Education answer      | Meas Value  | S                 |
-| Practice medicine     | Drug        | S                 |
-| Practice measurement  | Measurement | S                 |
-| kilogram              | Unit        | S                 |
+| concept\_id | concept\_name                | domain\_id  |
+| ----------: | :--------------------------- | :---------- |
+|      900001 | Education question           | Observation |
+|      900002 | Fever question               | Observation |
+|      900101 | Secondary education          | Meas Value  |
+|      900102 | University education         | Meas Value  |
+|      900201 | Myocardial infarction        | Condition   |
+|      900202 | Pneumonia                    | Condition   |
+|      900301 | Yes                          | Meas Value  |
+|        8532 | FEMALE                       | Gender      |
+|        8507 | MALE                         | Gender      |
+|      900302 | No                           | Meas Value  |
+|        9201 | Inpatient Visit              | Visit       |
+|        9202 | Outpatient Visit             | Visit       |
+|      950001 | Questionnaire study medicine | Drug        |
+|      950002 | Body weight (questionnaire)  | Measurement |
+|        9529 | kilogram                     | Unit        |
 
 ``` r
 question_ids <- setNames(questionnaire$concept_id, questionnaire$concept_name)
@@ -342,213 +348,268 @@ education_set <- omop_concept_set(unname(question_ids["Education question"]))
 cause_sets <- lapply(question_ids[c("Myocardial infarction", "Pneumonia")], omop_concept_set)
 ```
 
-The education question selects observations. Secondary and University
-education are possible answers in `value_as_concept_id`. Myocardial
-infarction and Pneumonia are coded causes in death. The questionnaire dataset’s local concepts have no external mapping or hierarchy; do not invent SNOMED or
-ATC ancestry for them.
+Education question **900001** selects observations; Secondary **900101**
+and University **900102** are its coded answers. Fever question
+**900002** uses Yes **900301** and No **900302**. The death causes are
+Myocardial infarction **900201** and Pneumonia **900202**. Visits use
+the Visit domain. Study medicine **950001** supports drug-history
+lessons; weight **950002**, with kilogram **9529**, supports numeric
+exercises. The default local question and cause codes have no external
+mapping or hierarchy.
 
 ``` r
-question_presence <- ds.omop.concept.prevalence("observation", scope = "pooled", conns = conns)
-knitr::kable(question_presence$pooled[setdiff(names(question_presence$pooled), "concept_id")])
+question_presence <- ds.omop.concept.prevalence("observation", scope = "pooled", conns = conns)$pooled
+knitr::kable(question_presence[c("concept_id", "concept_name", "n_persons")])
 ```
 
-| n\_persons | concept\_name      |
-| ---------: | :----------------- |
-|         10 | Education question |
-|         10 | Fever question     |
+| concept\_id | concept\_name      | n\_persons |
+| ----------: | :----------------- | ---------: |
+|      900001 | Education question |         20 |
+|      900002 | Fever question     |         20 |
+
+The person bands for education and fever both begin at 20, meaning 20–24
+people. The public dataset has 24 respondents to each question. Later
+categorical tables can release those exact counts when their cells pass
+the table’s checks.
 
 ``` r
-knitr::kable(ds.omop.concept.locate(unname(question_ids[c("Myocardial infarction", "Pneumonia")]),
-  scope = "pooled", conns = conns)$pooled)
+cause_use <- ds.omop.concept.locate(unname(question_ids[c("Myocardial infarction", "Pneumonia")]),
+  scope = "pooled", conns = conns)$pooled
+cause_use$concept_name <- names(question_ids)[match(cause_use$concept_id, question_ids)]
+knitr::kable(cause_use[c("concept_id", "concept_name", "table_name", "n_records", "n_persons")], row.names = FALSE)
 ```
 
-| concept\_id | table\_name | concept\_column    | n\_records | n\_persons |
-| ----------: | :---------- | :----------------- | ---------: | ---------: |
-|      900201 | death       | cause\_concept\_id |         10 |         10 |
-|      900202 | death       | cause\_concept\_id |          5 |          5 |
+| concept\_id | concept\_name         | table\_name | n\_records | n\_persons |
+| ----------: | :-------------------- | :---------- | ---------: | ---------: |
+|      900201 | Myocardial infarction | death       |         20 |         20 |
+|      900202 | Pneumonia             | death       |         10 |         10 |
+
+The cause bands begin at 20 for infarction and 10 for pneumonia: 20–24
+and 10–14 people. They contain the dataset’s exact totals of 24 and 12.
+The different representations are not conflicting counts.
+
+**Exercise 2.** ATC classes are classification concepts. Can a
+standard-only search miss them even when they are present? Use the
+optional teaching catalogue.
+
+Solution
+
+``` r
+practice <- book_switch("questionnaire", categories = TRUE)
+conns <- practice$conns
+atc_default <- ds.omop.concept.search(NULL, vocabulary = "ATC", conns = conns)$pooled
+print(atc_default[c("concept_id", "concept_name", "standard_concept")])
+```
+
+    #> NULL
+
+`NULL` means the search returned no matching concepts: the default asks
+for standard concepts (`S`). Request classification concepts (`C`)
+instead:
+
+``` r
+atc <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard = "C", conns = conns)$pooled
+knitr::kable(atc[c("concept_id", "concept_name", "standard_concept")])
+```
+
+| concept\_id | concept\_name             | standard\_concept |
+| ----------: | :------------------------ | :---------------- |
+|      960001 | Teaching ATC first level  | C                 |
+|      960002 | Teaching ATC second level | C                 |
+
+Two classes appear: **960001** and **960002**. These are explicitly
+invented teaching classes, used in the drug-utilisation lesson. The
+lesson here is the search filter: a missing standard-only hit does not
+prove a class is absent.
 
 ## Find haemoglobin, glucose and their units in Synthea
 
 Switch to the numeric resource. The vocabulary spells haemoglobin
-“Hemoglobin”. Select the precise test and specimen, not every hit
-containing the word.
+“Hemoglobin”. Select a precise test and specimen, rather than every
+name containing the word.
 
 ``` r
-ds.omop.disconnect(conns = conns)
-DSI::datashield.logout(conns)
-unlink(practice$path)
-practice <- book_connect("numeric")
+practice <- book_switch("numeric")
 conns <- practice$conns
 lab_hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)$pooled
-knitr::kable(lab_hits[c("concept_name", "vocabulary_id", "standard_concept")])
+knitr::kable(lab_hits[c("concept_id", "concept_name", "standard_concept")])
 ```
 
-| concept\_name                                                                        | vocabulary\_id | standard\_concept |
-| :----------------------------------------------------------------------------------- | :------------- | :---------------- |
-| Hemoglobin and Hematocrit panel - Blood                                              | LOINC          | S                 |
-| Hemoglobin A1c/Hemoglobin.total in Blood                                             | LOINC          | S                 |
-| Hemoglobin.gastrointestinal.lower \[Presence\] in Stool by Immunoassay –1st specimen | LOINC          | S                 |
-| Hemoglobin \[Presence\] in Urine by Test strip                                       | LOINC          | S                 |
-| Hemoglobin \[Mass/volume\] in Blood                                                  | LOINC          | S                 |
+| concept\_id | concept\_name                                                                        | standard\_concept |
+| ----------: | :----------------------------------------------------------------------------------- | :---------------- |
+|     3001643 | Hemoglobin and Hematocrit panel - Blood                                              | S                 |
+|     3004410 | Hemoglobin A1c/Hemoglobin.total in Blood                                             | S                 |
+|    40761014 | Hemoglobin.gastrointestinal.lower \[Presence\] in Stool by Immunoassay –1st specimen | S                 |
+|     3011397 | Hemoglobin \[Presence\] in Urine by Test strip                                       | S                 |
+|     3000963 | Hemoglobin \[Mass/volume\] in Blood                                                  | S                 |
 
 ``` r
 hb_id <- lab_hits$concept_id[lab_hits$concept_name == "Hemoglobin [Mass/volume] in Blood"]
-glucose_hits <- ds.omop.concept.search("Glucose", domain = "Measurement", conns = conns)$pooled
-knitr::kable(glucose_hits[c("concept_name", "vocabulary_id", "standard_concept")])
 ```
 
-| concept\_name                                  | vocabulary\_id | standard\_concept |
-| :--------------------------------------------- | :------------- | :---------------- |
-| Glucose tolerance test                         | SNOMED         | S                 |
-| Urine screening for glucose                    | SNOMED         | S                 |
-| Self-monitoring of blood glucose               | SNOMED         | S                 |
-| Glucose \[Mass/volume\] in Blood               | LOINC          | S                 |
-| Glucose \[Mass/volume\] in Serum or Plasma     | LOINC          | S                 |
-| Glucose \[Presence\] in Urine by Test strip    | LOINC          | S                 |
-| Glucose \[Mass/volume\] in Urine by Test strip | LOINC          | S                 |
+Choose **3000963**, Hemoglobin \[Mass/volume\] in Blood. A panel and a
+haemoglobin fraction are different measurements even though their names
+share the word.
 
 ``` r
-glucose_id <- glucose_hits$concept_id[glucose_hits$concept_name ==
-  "Glucose [Mass/volume] in Blood"]
-lab_sets <- list(haemoglobin = omop_concept_set(hb_id),
-  glucose = omop_concept_set(glucose_id))
+glucose_hits <- ds.omop.concept.search("Glucose", domain = "Measurement", conns = conns)$pooled
+knitr::kable(glucose_hits[c("concept_id", "concept_name", "standard_concept")])
 ```
 
-These glucose hits are a catalogue, not yet an interchangeable
-measurement set. The chronic-disease study selects a single specimen and
-concentration measure.
+| concept\_id | concept\_name                                  | standard\_concept |
+| ----------: | :--------------------------------------------- | :---------------- |
+|     4012477 | Glucose tolerance test                         | S                 |
+|     4149386 | Urine screening for glucose                    | S                 |
+|     4146454 | Self-monitoring of blood glucose               | S                 |
+|     3000483 | Glucose \[Mass/volume\] in Blood               | S                 |
+|     3004501 | Glucose \[Mass/volume\] in Serum or Plasma     | S                 |
+|     3009261 | Glucose \[Presence\] in Urine by Test strip    | S                 |
+|     3024629 | Glucose \[Mass/volume\] in Urine by Test strip | S                 |
+
+``` r
+glucose_id <- glucose_hits$concept_id[glucose_hits$concept_name == "Glucose [Mass/volume] in Blood"]
+lab_sets <- list(haemoglobin = omop_concept_set(hb_id), glucose = omop_concept_set(glucose_id))
+```
+
+Blood glucose is **3000483**. Serum or Plasma glucose and urine glucose
+are separate concepts; do not combine all search hits without deciding
+which specimens and concentration measures answer your question.
 
 ``` r
 units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = hb_id,
-  scope = "pooled", conns = conns)
-knitr::kable(units$pooled)
+  scope = "pooled", conns = conns)$pooled
+names(units)[names(units) == "value"] <- "unit_concept_id"
+knitr::kable(units[c("unit_concept_id", "concept_name", "n")])
 ```
 
-|   n | concept\_name      | value |
-| --: | :----------------- | :---- |
-| 105 | gram per deciliter | 8713  |
+| unit\_concept\_id | concept\_name      |   n |
+| :---------------- | :----------------- | --: |
+| 8713              | gram per deciliter | 105 |
 
-Counts describe recorded unit use under disclosure control. A vocabulary
-lookup of “milligram per deciliter” alone cannot establish that the lab
-was stored that way.
+Haemoglobin uses **8713**, gram per deciliter (g/dL), for 105–109
+recorded values. The count describes recorded unit use; a unit’s mere
+presence in the vocabulary would not establish this.
 
 ### When a unit count is withheld
 
-Serum or Plasma glucose is a different measurement. Here its unit-count
-request is refused. Print the complete response so that an unavailable
-pooled result cannot be mistaken for no units or a successful check.
+For Serum or Plasma glucose, the requested unit count lacks enough
+support. Keep the server’s explanation instead of treating an
+unavailable result as zero:
 
 ``` r
 serum_glucose_id <- glucose_hits$concept_id[glucose_hits$concept_name ==
   "Glucose [Mass/volume] in Serum or Plasma"]
 serum_glucose_units <- ds.omop.value.counts("measurement", "unit_concept_id",
   concept_id = serum_glucose_id, scope = "pooled", conns = conns)
-serum_glucose_units
+cat(serum_glucose_units$meta$warnings, sep = "\n")
 ```
 
-    #> <dsomop_result>
-    #> Servers: <none>
-    #> Scope: pooled
-    #> 
-    #> Warnings:
-    #>   - Server errors: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.
-    #>   - No complete disclosure-safe pooled value counts were available.
+    #> Server errors: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.
+    #> No complete disclosure-safe pooled value counts were available.
 
-The disclosure warning means the requested aggregate is unavailable. It
-does not establish absence. For the positive example below, use the
-explicitly selected Blood glucose measurement; its unit count is
-admitted.
+The aggregate is unavailable; this does not establish that the concept
+has no records. Use the separately selected Blood glucose for the next
+exercise.
 
-**Exercise 3 (advanced).** Check glucose unit use and save its catalogue
-together with the haemoglobin set. Why is choosing all glucose hits
-premature?
+**Exercise 3.** Check Blood glucose’s unit and add the lab and
+questionnaire sets to `book-concepts.rds` without discarding the saved
+asthma exclusions.
 
-Solution 3
+Solution
 
 ``` r
 glucose_units <- ds.omop.value.counts("measurement", "unit_concept_id",
-  concept_id = glucose_id, scope = "pooled", conns = conns)
-knitr::kable(glucose_units$pooled)
+  concept_id = glucose_id, scope = "pooled", conns = conns)$pooled
+names(glucose_units)[names(glucose_units) == "value"] <- "unit_concept_id"
+knitr::kable(glucose_units[c("unit_concept_id", "concept_name", "n")])
 ```
 
-|   n | concept\_name           | value |
-| --: | :---------------------- | :---- |
-| 225 | milligram per deciliter | 8840  |
+| unit\_concept\_id | concept\_name           |   n |
+| :---------------- | :---------------------- | --: |
+| 8840              | milligram per deciliter | 225 |
 
 ``` r
-saveRDS(list(sets = lab_sets, glucose_catalogue = glucose_hits,
-  visit_sets = visit_sets, education = education_set, causes = cause_sets,
-  questionnaire_catalogue = questionnaire), concept_file)
-identical(readRDS(concept_file)$sets, lab_sets)
+saved_sets <- readRDS(concept_file)
+saved_sets$sets <- lab_sets
+saved_sets$visit_sets <- visit_sets
+saved_sets$education <- education_set
+saved_sets$causes <- cause_sets
+saved_sets$questionnaire_catalogue <- questionnaire
+saved_sets$glucose_catalogue <- glucose_hits
+saveRDS(saved_sets, concept_file)
 ```
 
-    #> [1] TRUE
-
-Keep `book-concepts.rds` with your study files. In a later session,
-`readRDS("book-concepts.rds")$education` reuses the saved education
-definition; the questionnaire catalogue records the IDs used in
-subsequent examples.
-
-Different specimens, mass versus molar concentrations and urine versus
-blood measurements need different definitions. Preserve that decision
-with the set.
+Blood glucose uses **8840**, milligram per deciliter (mg/dL), for
+225–229 records. Reading the file before adding entries preserves
+`asthma` and `children_only`. To reuse education in your own later
+session, read `readRDS("book-concepts.rds")$education`. The following
+chapters name the IDs from this catalogue so they can also run
+independently in a fresh session.
 
 ## Find measured BMI and its recorded unit
 
-Measured BMI is a recorded value, distinct from calculating BMI from
-height and weight. The repeated-measures lesson uses this specific
-measurement.
+Measured BMI is a recorded value, distinct from calculating it from
+height and weight.
 
 ``` r
 bmi_hits <- ds.omop.concept.search("Body mass index", domain = "Measurement",
   vocabulary = "LOINC", conns = conns)$pooled
-knitr::kable(bmi_hits[c("concept_name", "standard_concept", "concept_class_id")])
+knitr::kable(bmi_hits[c("concept_id", "concept_name", "standard_concept")])
 ```
 
-| concept\_name                                        | standard\_concept | concept\_class\_id   |
-| :--------------------------------------------------- | :---------------- | :------------------- |
-| Body mass index (BMI) \[Ratio\]                      | S                 | Clinical Observation |
-| Body mass index (BMI) \[Percentile\] Per age and sex | S                 | Clinical Observation |
+| concept\_id | concept\_name                                        | standard\_concept |
+| ----------: | :--------------------------------------------------- | :---------------- |
+|     3038553 | Body mass index (BMI) \[Ratio\]                      | S                 |
+|    40762638 | Body mass index (BMI) \[Percentile\] Per age and sex | S                 |
 
 ``` r
 bmi_id <- bmi_hits$concept_id[bmi_hits$concept_name == "Body mass index (BMI) [Ratio]"]
-stopifnot(length(bmi_id) == 1L)
-bmi_set <- omop_concept_set(bmi_id)
-bmi_locations <- ds.omop.concept.locate(bmi_id, scope = "pooled", conns = conns)
-knitr::kable(bmi_locations$pooled)
 ```
 
-| concept\_id | table\_name | concept\_column          | n\_records | n\_persons |
-| ----------: | :---------- | :----------------------- | ---------: | ---------: |
-|     3038553 | measurement | measurement\_concept\_id |        435 |         25 |
+Choose the standard LOINC measurement **3038553**, Body mass index (BMI)
+\[Ratio\]. The repeated-measures chapter uses this definition.
+
+``` r
+bmi_use <- ds.omop.concept.locate(bmi_id, scope = "pooled", conns = conns)$pooled
+bmi_use$concept_name <- bmi_hits$concept_name[match(bmi_use$concept_id, bmi_hits$concept_id)]
+knitr::kable(bmi_use[c("concept_id", "concept_name", "n_records", "n_persons")])
+```
+
+| concept\_id | concept\_name                   | n\_records | n\_persons |
+| ----------: | :------------------------------ | ---------: | ---------: |
+|     3038553 | Body mass index (BMI) \[Ratio\] |        435 |         25 |
+
+The bands begin at 435 records and 25 people, showing repeated
+measurements. Check the recorded unit before summarising those values:
 
 ``` r
 bmi_units <- ds.omop.value.counts("measurement", "unit_concept_id",
-  concept_id = bmi_id, scope = "pooled", conns = conns)
-knitr::kable(bmi_units$pooled)
+  concept_id = bmi_id, scope = "pooled", conns = conns)$pooled
+names(bmi_units)[names(bmi_units) == "value"] <- "unit_concept_id"
+knitr::kable(bmi_units[c("unit_concept_id", "concept_name", "n")])
 ```
 
-|   n | concept\_name             | value |
-| --: | :------------------------ | :---- |
-| 435 | kilogram per square meter | 9531  |
+| unit\_concept\_id | concept\_name             |   n |
+| :---------------- | :------------------------ | --: |
+| 9531              | kilogram per square meter | 435 |
 
 ``` r
 saved_sets <- readRDS(concept_file)
-saved_sets$measured_bmi <- bmi_set
-saved_sets$bmi_units <- bmi_units$pooled
+saved_sets$measured_bmi <- omop_concept_set(bmi_id)
+saved_sets$bmi_units <- bmi_units
 saveRDS(saved_sets, concept_file)
 ```
 
-The standard LOINC measurement and its recorded
-kilogram-per-square-meter unit define the repeated BMI extraction. Keep
-both with the saved study definitions.
+BMI uses **9531**, kilogram per square meter. Its record band also
+begins at 435. The saved set and unit record preserve both parts of the
+measurement definition.
 
 ## Recap
 
-Search, inspect standard status and mappings, explore ancestry, check
-protected clinical use, then save the definition. The subsequent
-chapters reuse these catalogues; the case studies repeat the same
-process for their research question.
+Search, inspect meanings and mappings, check the hierarchy and clinical
+use, then save the definition. Keep IDs alongside names during
+discovery; analysis tables can then present the selected concepts as
+named categories.
 
 **Next:** [5. A first
 recipe](https://isglobal-brge.github.io/dsOMOPClient/articles/book-05-recipe.md).

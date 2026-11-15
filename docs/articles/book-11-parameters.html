@@ -58,7 +58,7 @@
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
-    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: describing the same population across two sites</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -96,8 +96,7 @@
 <p>Bind typed parameters, use omop_study and shortcuts, then derive and filter columns without bringing rows to your computer.</p>
 </div>
 <p>This chapter uses the public synthetic Synthea27Nj numeric connection from <a href="book-00-start.html">Getting started</a>.</p>
-<p><strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run its sections in order. Each chapter starts from a fresh practice connection; all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls. The numbers describe teaching data, not clinical findings.</p>
-<p>Concept selections refer to the searches and saved definitions in <a href="book-04-vocabulary.html">chapter 4</a>, including the separate questionnaire catalogue. Additional body-measurement concepts are found on screen in the <a href="book-15-formulas.html#find-the-inputs-before-calculating">formula walkthrough</a>.</p>
+<p><strong>You need:</strong> the packages and helpers from <a href="book-00-start.html#before-you-start">Getting started</a>. Run the sections in order in a fresh R session in your <code>book-work</code> directory.</p>
 <div class="section level2">
 <h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
 </h2>
@@ -106,145 +105,201 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/practice.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">book_driver</span> <span class="op">==</span> <span class="st">"DSLite"</span><span class="op">)</span> <span class="fu">book_practice</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span> <span class="kw">else</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
-<p>The <code>site</code> connection is ready. The shared <code>connection.R</code> selects DSLite or Opal and resolves the resource names.</p>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"numeric"</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<p>The connection is ready; <code>conns</code> identifies the server used by the analysis calls.</p>
 </div>
 <div class="section level2">
 <h2 id="describe-the-setting-as-a-parameter">Describe the setting as a parameter<a class="anchor" aria-label="anchor" href="#describe-the-setting-as-a-parameter"></a>
 </h2>
 <p>A <em>parameter</em> is a named, typed placeholder in a study definition. It lets you reuse a recipe without editing its logic. It is not R code or SQL text.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">setting</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_param.html">omop_param</a></span><span class="op">(</span><span class="st">"setting"</span>, type <span class="op">=</span> <span class="st">"concept_set"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">setting</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_param" "list"</span></span></code></pre>
+<span><span class="va">setting</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; omop_param 'setting' (concept_set)</span></span></code></pre>
 <p>This parameter accepts concept sets. A separate date parameter would declare a date type; give each changing input its own appropriate type.</p>
 </div>
 <div class="section level2">
 <h2 id="build-a-template">Build a template<a class="anchor" aria-label="anchor" href="#build-a-template"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">template</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, concepts <span class="op">=</span> <span class="va">setting</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    prior_visits <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_count</a></span><span class="op">(</span><span class="st">"visit_occurrence"</span>, window <span class="op">=</span> <span class="fu"><a href="../reference/omop_window.html">omop_window</a></span><span class="op">(</span><span class="op">-</span><span class="fl">365</span>, <span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    age <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_age</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">template</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_recipe" "list"</span></span></code></pre>
-<p><code><a href="../reference/omop_study.html">omop_study()</a></code> returns an ordinary recipe. It creates an indexed population and baseline output. We explicitly exclude day zero from the prior-visit count. The unbound template cannot execute until its required setting is supplied.</p>
+<span>    age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"index"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/omop_param.html">recipe_params</a></span><span class="op">(</span><span class="va">template</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; $setting</span></span>
+<span><span class="co">#&gt; omop_param 'setting' (concept_set)</span></span></code></pre>
+<p><code><a href="../reference/omop_study.html">omop_study()</a></code> returns an ordinary recipe. It creates an indexed population and baseline output. We explicitly exclude day zero from the prior-visit count. The parameter list shows that <code>setting</code> still needs a concept set. Compilation refuses an unbound template:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">template</span><span class="op">)</span></span>
+<span>  <span class="st">"Unexpected success"</span></span>
+<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">message</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Unbound parameter 'setting' in the recipe; bind it with recipe_bind() before recipe_to_plan().</span></span></code></pre>
+<p>The error names <code>setting</code> and asks you to bind it. The template defines how to select people, but has not yet chosen which visit setting starts the study.</p>
 </div>
 <div class="section level2">
 <h2 id="bind-and-inspect">Bind and inspect<a class="anchor" aria-label="anchor" href="#bind-and-inspect"></a>
 </h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outpatient</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_param.html">recipe_bind</a></span><span class="op">(</span><span class="va">template</span>, setting <span class="op">=</span> <span class="fl">9202L</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">outpatient</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_recipe" "list"</span></span></code></pre>
-<p>Binding fills the placeholder while preserving the template. Concept 9202 is the outpatient visit setting, not the record’s provenance type.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">outpatient</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_param_outpatient"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;             baseline </span></span>
-<span><span class="co">#&gt; "D_param_outpatient"</span></span></code></pre>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_param_outpatient$age"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $site</span></span>
-<span><span class="co">#&gt; $site$class</span></span>
-<span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $site$length</span></span>
-<span><span class="co">#&gt; [1] 28</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
-<span><span class="co">#&gt;  0.000000  0.000000  0.750000  3.500000 17.000000 18.000000 18.000000  8.071429</span></span></code></pre>
-<p>The server computes annual age (index year minus birth year) at the first outpatient visit. The analyst receives only the approved summary.</p>
+<span><span class="fu"><a href="../reference/omop_param.html">recipe_params</a></span><span class="op">(</span><span class="va">outpatient</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; list()</span></span></code></pre>
+<p>The empty parameter list means the bound copy has no remaining placeholders. Binding preserves the original template. Concept 9202 is the Outpatient Visit setting, found in <a href="book-04-vocabulary.html">chapter 4</a>. Inpatient Visit is <strong>9201</strong>. These select setting, not the record’s provenance type.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">outpatient</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_param_outpatient"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_param_outpatient$age"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Site</th>
+<th align="left">Statistic</th>
+<th align="right">Value</th>
+<th align="right">N valid</th>
+<th align="right">N missing</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">5%</td>
+<td align="right">0.00</td>
+<td align="right">28</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">10%</td>
+<td align="right">0.00</td>
+<td align="right">28</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">25%</td>
+<td align="right">0.00</td>
+<td align="right">28</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">50%</td>
+<td align="right">2.50</td>
+<td align="right">28</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">75%</td>
+<td align="right">17.00</td>
+<td align="right">28</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">90%</td>
+<td align="right">18.00</td>
+<td align="right">28</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">site</td>
+<td align="left">95%</td>
+<td align="right">18.00</td>
+<td align="right">28</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">site</td>
+<td align="left">Mean</td>
+<td align="right">7.75</td>
+<td align="right">28</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p>The server computes completed age at the first outpatient visit. The median is 2.5 years, reflecting that many first visits in this synthetic life history occur in childhood. The valid/missing columns show how many ages contributed.</p>
 </div>
 <div class="section level2">
 <h2 id="read-the-simple-layer-defaults">Read the simple-layer defaults<a class="anchor" aria-label="anchor" href="#read-the-simple-layer-defaults"></a>
 </h2>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">outpatient</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Concept presentation: factors; identity is the declared concept class, preserved through aliases and value-preserving reducers.</span></span>
-<span><span class="co">#&gt; Label precedence: variable recode, recipe recode, vocabulary name, decimal ID fallback. Explicit equal recodes merge categories.</span></span>
-<span><span class="co">#&gt; Federation: permitted ID union, including declared unused levels; newest comparable vocabulary version, then bytewise name tie. Unresolved versions never establish recency.</span></span>
-<span><span class="co">#&gt; Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.</span></span>
-<span><span class="co">#&gt; variables.prior_visits: concept origin follows reducer count over the declared source value; explicit variable name is retained. </span></span>
-<span><span class="co">#&gt; === omop_recipe ===</span></span>
-<span><span class="co">#&gt; Populations ( 2 ):</span></span>
-<span><span class="co">#&gt;    base  :  All Persons </span></span>
-<span><span class="co">#&gt;    study  :  Base Population </span></span>
-<span><span class="co">#&gt; Variables ( 2 ):</span></span>
-<span><span class="co">#&gt;    prior_visits :  count of visit_occurrence </span></span>
-<span><span class="co">#&gt;    age :  derived age (exact annual age) </span></span>
-<span><span class="co">#&gt; Filters ( 0 ):</span></span>
-<span><span class="co">#&gt; Outputs ( 1 ):</span></span>
-<span><span class="co">#&gt;    baseline  [ wide ] pop: study </span></span>
-<span><span class="co">#&gt; Study 'study' (omop_study()) defaults chosen:</span></span>
-<span><span class="co">#&gt;   - index selection "first" (default): the first candidate per person, selected before the requirements</span></span>
-<span><span class="co">#&gt;   - observation coverage unique/drop/drop (default)</span></span>
-<span><span class="co">#&gt;   - every output has episode grain; survival ties follow the priority rule; dates are relative to the index date (simple-layer choices)</span></span></code></pre>
-<p>The study’s default index selection is <code>first</code>. The population uses the default coverage policy; all requirements are combined with AND. Baseline has episode rows. For survival, supply outcomes and an explicit follow-up definition. For example, <code>follow_up = list(start = 1, end = 365, censor = c("observation_end", "death"))</code> describes a year after entry, ending sooner at a listed censor. The <a href="book-08-outputs.html">output chapter</a> executes the corresponding native survival format.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">explanation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">outpatient</span><span class="op">)</span><span class="op">$</span><span class="va">text</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^Population|^Output|^  (prior_visits|age):"</span>, <span class="va">explanation</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Population 'study' (index): index = event 'visit_occurrence_9202', select = "first", end = observation_end</span></span>
+<span><span class="co">#&gt;   prior_visits: count of event 'visit_occurrence' over days [-365, -1] relative to index</span></span>
+<span><span class="co">#&gt;   age: age_at</span></span>
+<span><span class="co">#&gt; Output 'baseline' [wide] rows 'study', grain episode</span></span></code></pre>
+<p>The short explanation identifies the population, prior-visit count, completed age and baseline output. The study’s default index selection is <code>first</code>. The population uses the default coverage policy; all requirements are combined with AND. Baseline has episode rows. For survival, supply outcomes and an explicit follow-up definition. For example, <code>follow_up = list(start = 1, end = 365, censor = c("observation_end", "death"))</code> describes a year after entry, ending sooner at a listed censor. The <a href="book-08-outputs.html">output chapter</a> executes the corresponding native survival format.</p>
 </div>
 <div class="section level2">
 <h2 id="shortcuts-expand-into-ordinary-variables">Shortcuts expand into ordinary variables<a class="anchor" aria-label="anchor" href="#shortcuts-expand-into-ordinary-variables"></a>
 </h2>
 <p>Use a shortcut when its defaults match your question; use an explicit reducer when you need more control. <code>before = 365</code> includes day zero, while <code>after = 365</code> starts at day one. Without either, most shortcuts use all history through entry.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<p><a href="book-04-vocabulary.html">Chapter 4</a> identifies blood hemoglobin as <strong>3000963</strong> and gram per deciliter as <strong>8713</strong>.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">shortcuts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3000963L</span><span class="op">)</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>ever <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_ever</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3000963L</span>, before <span class="op">=</span> <span class="fl">365</span><span class="op">)</span>,</span>
 <span>    count <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_count</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3000963L</span>, before <span class="op">=</span> <span class="fl">365</span><span class="op">)</span>,</span>
 <span>    value <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_value_at_index</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3000963L</span>,</span>
 <span>      tolerance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">30</span>, <span class="fl">0</span><span class="op">)</span>, unit <span class="op">=</span> <span class="fl">8713L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">shortcuts</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_shortcuts"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;      baseline </span></span>
-<span><span class="co">#&gt; "D_shortcuts"</span></span></code></pre>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_shortcuts$ever"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $output.list</span></span>
-<span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_row.props</span></span>
-<span><span class="co">#&gt;                 study</span></span>
-<span><span class="co">#&gt; D_shortcuts$ever site</span></span>
-<span><span class="co">#&gt;                1    1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_col.props</span></span>
-<span><span class="co">#&gt;                 study</span></span>
-<span><span class="co">#&gt; D_shortcuts$ever site</span></span>
-<span><span class="co">#&gt;                1    1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_counts</span></span>
-<span><span class="co">#&gt;                 study</span></span>
-<span><span class="co">#&gt; D_shortcuts$ever site</span></span>
-<span><span class="co">#&gt;                1   28</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_proportions</span></span>
-<span><span class="co">#&gt; D_shortcuts$ever</span></span>
-<span><span class="co">#&gt; 1 </span></span>
-<span><span class="co">#&gt; 1 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_counts</span></span>
-<span><span class="co">#&gt; D_shortcuts$ever</span></span>
-<span><span class="co">#&gt;  1 </span></span>
-<span><span class="co">#&gt; 28 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validity.message</span></span>
-<span><span class="co">#&gt; [1] "Data in all studies were valid"</span></span></code></pre>
-<p>Everyone has ever = 1 because the index hemoglobin measurement itself is included. To ask about measurements strictly before entry use <code>window = omop_window(-365, -1)</code> instead. First/last/mean/min/max-value shortcuts use the same event and window model. <code><a href="../reference/omop_history.html">omop_history()</a></code> bundles named ever variables; it does not define a new language.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">shortcuts</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_shortcuts"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_shortcuts$ever"</span>,</span>
+<span>  useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Category</th>
+<th align="right">Count</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">1</td>
+<td align="right">28</td>
+</tr></tbody>
+</table>
+<p>All 28 people have ever = 1 because the index hemoglobin measurement itself is included. To ask about measurements strictly before entry use <code>window = omop_window(-365, -1)</code> instead. First/last/mean/min/max-value shortcuts use the same event and window model. <code><a href="../reference/omop_history.html">omop_history()</a></code> bundles named ever variables; it does not define a new language.</p>
 </div>
 <div class="section level2">
-<h2 id="what-the-mutate-contract-means">What the mutate contract means<a class="anchor" aria-label="anchor" href="#what-the-mutate-contract-means"></a>
+<h2 id="create-columns-on-an-assigned-table">Create columns on an assigned table<a class="anchor" aria-label="anchor" href="#create-columns-on-an-assigned-table"></a>
 </h2>
 <p><code><a href="../reference/ds.omop.mutate.html">ds.omop.mutate()</a></code> creates or replaces columns on a private <code>omop.table</code>. Although its notation looks like R, the client sends a <strong>mutate</strong> data request: the server validates a closed grammar and column types. It never runs arbitrary R code. Bare names refer to columns, including earlier assignments in the same call; literal numbers, strings, booleans and missing values are allowed.</p>
 <p>The grammar supports <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, comparisons of a column with a literal, <code>ifelse</code>, <code>case_when</code>, <code>coalesce</code>, and <code>cut</code> with public breaks. Date subtraction returns days; adding an integer to a date returns a date. Division by zero or nonfinite arithmetic gives missing values. Person, episode and set keys and other protected columns cannot be read or written; class-1 source names are also refused. <a href="book-12-privacy.html">Privacy</a> explains those protections.</p>
-<p>For derivation inside a new recipe, prefer the native expressions taught in <a href="book-15-formulas.html">Derived numeric formulas</a>. This chapter deliberately teaches standalone mutation of an <strong>already assigned</strong> table, including sequential assignments, new objects and rollback. Those remain useful operations.</p>
+<p>For derivation inside a new recipe, prefer the named formulas taught in <a href="book-15-formulas.html">Derived numeric formulas</a>. This chapter deliberately teaches standalone mutation of an <strong>already assigned</strong> table, including sequential assignments, new objects and rollback. Those remain useful operations.</p>
 </div>
 <div class="section level2">
 <h2 id="prepare-weight-and-height-at-the-same-date">Prepare weight and height at the same date<a class="anchor" aria-label="anchor" href="#prepare-weight-and-height-at-the-same-date"></a>
 </h2>
 <p>BMI is weight in kilograms divided by squared height in metres. Index each person at their first weight measurement, then select weight and height on that date. We require the recorded kg and cm units; we do not combine unrelated latest readings or silently substitute a height from another day.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<p>Look up the four inputs so that their names and IDs are visible together:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">body_concepts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3025315L</span>, <span class="fl">3036277L</span>, <span class="fl">9529L</span>, <span class="fl">8582L</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">body_concepts</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="right">concept_id</th>
+<th align="left">concept_name</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">9529</td>
+<td align="left">kilogram</td>
+</tr>
+<tr class="even">
+<td align="right">8582</td>
+<td align="left">centimeter</td>
+</tr>
+<tr class="odd">
+<td align="right">3025315</td>
+<td align="left">Body weight</td>
+</tr>
+<tr class="even">
+<td align="right">3036277</td>
+<td align="left">Body height</td>
+</tr>
+</tbody>
+</table>
+<p>Weight is <strong>3025315</strong>, height <strong>3036277</strong>, kilogram <strong>9529</strong>, and centimeter <strong>8582</strong>. These IDs identify the measurements and units used below.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">weight_event</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3025315L</span><span class="op">)</span></span>
 <span><span class="va">body</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">weight_event</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  weight_kg <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_value_at_index</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="fl">3025315L</span>,</span>
@@ -254,91 +309,100 @@
 <span>  age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_window.html">omop_anchor</a></span><span class="op">(</span><span class="va">weight_event</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  first_date <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_window.html">omop_anchor</a></span><span class="op">(</span><span class="va">weight_event</span>, which <span class="op">=</span> <span class="st">"first"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  last_date <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_date</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_window.html">omop_anchor</a></span><span class="op">(</span><span class="va">weight_event</span>, which <span class="op">=</span> <span class="st">"last"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_body"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; baseline </span></span>
-<span><span class="co">#&gt; "D_body"</span></span></code></pre>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">body</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_body"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>These are synthetic Synthea measurements, including children. Calculated BMI is a numeric teaching example, not an adult clinical classification.</p>
 </div>
 <div class="section level2">
 <h2 id="create-a-new-object">Create a new object<a class="anchor" aria-label="anchor" href="#create-a-new-object"></a>
 </h2>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_body"</span>, height_m <span class="op">=</span> <span class="va">height_cm</span> <span class="op">/</span> <span class="fl">100</span>,</span>
-<span>  bmi <span class="op">=</span> <span class="va">weight_kg</span> <span class="op">/</span> <span class="op">(</span><span class="va">height_m</span> <span class="op">*</span> <span class="va">height_m</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_bmi"</span></span></code></pre>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bmi_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">bmi_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_body"</span>, height_m <span class="op">=</span> <span class="va">height_cm</span> <span class="op">/</span> <span class="fl">100</span>,</span>
+<span>  bmi <span class="op">=</span> <span class="va">weight_kg</span> <span class="op">/</span> <span class="op">(</span><span class="va">height_m</span> <span class="op">*</span> <span class="va">height_m</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
 <th align="left">Statistic</th>
 <th align="right">Value</th>
+<th align="right">N valid</th>
+<th align="right">N missing</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">11.53374</td>
+<td align="right">11.53</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">13.62216</td>
+<td align="right">13.62</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">15.88957</td>
+<td align="right">15.89</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">23.86380</td>
+<td align="right">23.86</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">27.93787</td>
+<td align="right">27.94</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">30.20849</td>
+<td align="right">30.21</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">30.36386</td>
+<td align="right">30.36</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">22.11315</td>
+<td align="right">22.11</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 </tbody>
 </table>
-<p>The second assignment uses the newly created <code>height_m</code>. A missing input gives a missing BMI. <code>newobj = "D_bmi"</code> preserves <code>D_body</code>; neither table is downloaded.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<p>The mean BMI is 22.11 kg/m² across 28 people with no missing result. The second assignment uses the newly created <code>height_m</code>. A missing input gives a missing BMI. <code>newobj = "D_bmi"</code> preserves <code>D_body</code>; neither table is downloaded.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">body_columns</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_body"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="va">bmi_columns</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>original_has_bmi <span class="op">=</span> <span class="st">"bmi"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">body_columns</span><span class="op">$</span><span class="va">site</span>,</span>
-<span>  new_has_bmi <span class="op">=</span> <span class="st">"bmi"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">bmi_columns</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; original_has_bmi      new_has_bmi </span></span>
-<span><span class="co">#&gt;            FALSE             TRUE</span></span></code></pre>
-<p>The original has no BMI column, and the new object does.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">bmi_columns</span><span class="op">$</span><span class="va">site</span>, <span class="va">body_columns</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "height_m" "bmi"</span></span></code></pre>
+<p><code>height_m</code> and <code>bmi</code> are the two columns added to the new table. The source table still has its original columns.</p>
 </div>
 <div class="section level2">
 <h2 id="group-ages-with-public-breaks">Group ages with public breaks<a class="anchor" aria-label="anchor" href="#group-ages-with-public-breaks"></a>
 </h2>
 <p>Choose boundaries from the study design, not from private minimum/maximum ages. These broad age bands are for teaching. <code>right = FALSE</code> includes the lower bound and excludes the upper bound; ages outside the range remain missing.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, age_group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="va">age</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">18</span>, <span class="fl">121</span><span class="op">)</span>,</span>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, age_group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="va">age</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">18</span>, <span class="fl">121</span><span class="op">)</span>,</span>
 <span>  labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"under 18"</span>, <span class="st">"18 to 120"</span><span class="op">)</span>, right <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_grouped"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_grouped"</span></span></code></pre>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">age_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_grouped$age_group"</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_grouped"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">age_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_grouped$age_group"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">age_counts</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -361,15 +425,13 @@
 </tr>
 </tbody>
 </table>
-<p><code>cut</code> produces text labels in this grammar, not an ordered R factor. The table may display them alphabetically. <a href="book-14-labs.html">Chapter 14</a> shows how to assign an explicit factor level sequence for modelling and display.</p>
+<p>There are 14 people under 18 and 14 aged 18–120 at their first weight. <code>cut</code> produces text labels in this grammar, not an ordered R factor. The table may display them alphabetically. <a href="book-14-labs.html">Chapter 14</a> shows how to assign an explicit factor level sequence for modelling and display.</p>
 <p><strong>Exercise:</strong> create an adult flag using the same lower boundary of 18.</p>
 <details><p><summary>Solution — an age recode</summary></p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_grouped"</span>, adult <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;=</span> <span class="fl">18</span>, <span class="st">"yes"</span>, <span class="st">"no"</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_adults"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_adults"</span></span></code></pre>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">adult_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_adults$adult"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>,</span>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_grouped"</span>, adult <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;=</span> <span class="fl">18</span>, <span class="st">"yes"</span>, <span class="st">"no"</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_adults"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">adult_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_adults$adult"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">adult_counts</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -392,142 +454,170 @@
 </tr>
 </tbody>
 </table>
-<p>A missing age stays missing rather than becoming “no”. The adult count equals the 18-to-120 band; the under-18 band becomes “no”.</p>
+<p>A missing age stays missing rather than becoming “no”. The 14 adults match the 18-to-120 band; the 14 under-18s become “no”.</p>
 </details>
 </div>
 <div class="section level2">
 <h2 id="subtract-dates-on-the-server">Subtract dates on the server<a class="anchor" aria-label="anchor" href="#subtract-dates-on-the-server"></a>
 </h2>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, span_days <span class="op">=</span> <span class="va">last_date</span> <span class="op">-</span> <span class="va">first_date</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_span"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_span"</span></span></code></pre>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">span_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_span$span_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">span_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, span_days <span class="op">=</span> <span class="va">last_date</span> <span class="op">-</span> <span class="va">first_date</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_span"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_span$span_days"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
 <th align="left">Statistic</th>
 <th align="right">Value</th>
+<th align="right">N valid</th>
+<th align="right">N missing</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">952.700</td>
+<td align="right">952.70</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">1845.200</td>
+<td align="right">1845.20</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">6142.500</td>
+<td align="right">6142.50</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">6678.000</td>
+<td align="right">6678.00</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">6996.500</td>
+<td align="right">6996.50</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">7049.000</td>
+<td align="right">7049.00</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">7053.550</td>
+<td align="right">7053.55</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">5679.607</td>
+<td align="right">5679.61</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 </tbody>
 </table>
-<p>This is elapsed time between first and last recorded weights, in days. It is not age or duration under continuous observation. Exact dates stay private.</p>
+<p>The mean span is 5,679.61 days and the median is 6,678 days across 28 people. This is elapsed time between first and last recorded weights, in days. It is not age or duration under continuous observation. Exact dates stay private.</p>
 <p><strong>Exercise:</strong> express that duration in 365-day years, retaining the days column.</p>
 <details><p><summary>Solution — convert a duration</summary></p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_span"</span>, span_years <span class="op">=</span> <span class="va">span_days</span> <span class="op">/</span> <span class="fl">365</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_years"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_years"</span></span></code></pre>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">years_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_years$span_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">years_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_span"</span>, span_years <span class="op">=</span> <span class="va">span_days</span> <span class="op">/</span> <span class="fl">365</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_years"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_years$span_years"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
 <th align="left">Statistic</th>
 <th align="right">Value</th>
+<th align="right">N valid</th>
+<th align="right">N missing</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">2.610137</td>
+<td align="right">2.61</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">5.055343</td>
+<td align="right">5.06</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">16.828767</td>
+<td align="right">16.83</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">18.295890</td>
+<td align="right">18.30</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">19.168493</td>
+<td align="right">19.17</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">19.312329</td>
+<td align="right">19.31</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">19.324794</td>
+<td align="right">19.32</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">15.560567</td>
+<td align="right">15.56</td>
+<td align="right">28</td>
+<td align="right">0</td>
 </tr>
 </tbody>
 </table>
-<p>Each summary is the day summary divided by 365. These are fixed-length units, not completed birthdays; use <code>omop_age_at</code> for completed age.</p>
+<p>The mean is 15.56 years and the median is 18.30 years. Each summary is the day summary divided by 365. These are fixed-length units, not completed birthdays; use <code>omop_age_at</code> for completed age.</p>
 </details>
 </div>
 <div class="section level2">
 <h2 id="recode-with-case_when">Recode with case_when<a class="anchor" aria-label="anchor" href="#recode-with-case_when"></a>
 </h2>
 <p>Cases are checked in order. The first true condition wins. In mutate, an unknown condition gives a missing result immediately, rather than falling through to the default. Handle missingness explicitly when your study needs it.</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, life_stage <span class="op">=</span> <span class="fu">case_when</span><span class="op">(</span></span>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, life_stage <span class="op">=</span> <span class="fu">case_when</span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span> <span class="op">~</span> <span class="st">"unknown"</span>, <span class="va">age</span> <span class="op">&lt;</span> <span class="fl">5</span> <span class="op">~</span> <span class="st">"young child"</span>,</span>
 <span>  <span class="va">age</span> <span class="op">&lt;</span> <span class="fl">18</span> <span class="op">~</span> <span class="st">"older child"</span>, .default <span class="op">=</span> <span class="st">"adult"</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_stage"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_stage"</span></span></code></pre>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">stage_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_stage$life_stage"</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_stage"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">stage_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_stage$life_stage"</span>,</span>
 <span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">stage_counts</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -554,17 +644,14 @@
 </tr>
 </tbody>
 </table>
-<p>The declared default applies only after the preceding conditions are false. This recode distinguishes unknown age from a known age; it does not impute age.</p>
-<p><strong>Exercise:</strong> recode both child labels to “no”, and the adult label to “yes”.</p>
-<details><p><summary>Solution — recode a derived category</summary></p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_stage"</span>, adult <span class="op">=</span> <span class="fu">case_when</span><span class="op">(</span></span>
+<p>There are 9 young children, 5 older children and 14 adults. The declared default applies only after the preceding conditions are false. This recode distinguishes unknown age from a known age; it does not impute age.</p>
+<p>To recode a derived text category, combine both child labels as follows:</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_stage"</span>, adult <span class="op">=</span> <span class="fu">case_when</span><span class="op">(</span></span>
 <span>  <span class="va">life_stage</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"young child"</span>, <span class="st">"older child"</span><span class="op">)</span> <span class="op">~</span> <span class="st">"no"</span>,</span>
 <span>  <span class="va">life_stage</span> <span class="op">==</span> <span class="st">"unknown"</span> <span class="op">~</span> <span class="cn">NA</span>,</span>
-<span>  .default <span class="op">=</span> <span class="st">"yes"</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_recoded"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_recoded"</span></span></code></pre>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">recode_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_recoded$adult"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>,</span>
+<span>  .default <span class="op">=</span> <span class="st">"yes"</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_recoded"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">recode_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_recoded$adult"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>,</span>
 <span>  datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">recode_counts</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -588,32 +675,27 @@
 </tbody>
 </table>
 <p>These counts agree with the earlier adult flag. Here the synthetic source has complete ages, so the missingness branch introduces no extra category count.</p>
-</details>
 </div>
 <div class="section level2">
 <h2 id="replace-an-object-in-place">Replace an object in place<a class="anchor" aria-label="anchor" href="#replace-an-object-in-place"></a>
 </h2>
 <p>Use the same name for <code>x</code> and <code>newobj</code> to replace that server object. Omitting <code>newobj</code> instead generates a fresh name; it does not mean “in place”.</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, height_m <span class="op">=</span> <span class="va">height_cm</span> <span class="op">/</span> <span class="fl">100</span>,</span>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, height_m <span class="op">=</span> <span class="va">height_cm</span> <span class="op">/</span> <span class="fl">100</span>,</span>
 <span>  bmi <span class="op">=</span> <span class="va">weight_kg</span> <span class="op">/</span> <span class="op">(</span><span class="va">height_m</span> <span class="op">*</span> <span class="va">height_m</span><span class="op">)</span>, bmi_copy <span class="op">=</span> <span class="va">bmi</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_bmi"</span></span></code></pre>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">before_columns</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">before_bmi</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>copy_added <span class="op">=</span> <span class="st">"bmi_copy"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">before_columns</span><span class="op">$</span><span class="va">site</span>,</span>
-<span>  bmi_unchanged <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">bmi_result</span>, <span class="va">before_bmi</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;    copy_added bmi_unchanged </span></span>
-<span><span class="co">#&gt;          TRUE          TRUE</span></span></code></pre>
-<p>The replacement adds <code>bmi_copy</code> while preserving BMI. The client keeps a rollback copy until all participating sites succeed, restoring originals if assignment fails. This single-site practice example verifies that failure leaves the table usable; it does not simulate a network outage.</p>
+<span>  newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">before_columns</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">before_bmi</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_bmi$bmi"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">before_columns</span><span class="op">$</span><span class="va">site</span>, <span class="va">bmi_columns</span><span class="op">$</span><span class="va">site</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; [1] "bmi_copy"</span></span></code></pre>
+<p>The replacement adds <code>bmi_copy</code> to the same named object. Failed assignments must leave the previous object usable; the next example checks that behaviour.</p>
 </div>
 <div class="section level2">
 <h2 id="read-the-refusal-messages">Read the refusal messages<a class="anchor" aria-label="anchor" href="#read-the-refusal-messages"></a>
 </h2>
 <p>The following failures are intentional. First try an unknown function:</p>
 <!-- expected-refusal:start -->
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">unknown_message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, bmi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">bmi</span><span class="op">)</span>, newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span>  <span class="st">"Unexpected success"</span></span>
@@ -624,7 +706,7 @@
 <p><code>sqrt</code> is outside the closed grammar and is refused by the client before a request can alter the table. Use supported arithmetic or a documented analysis function; arbitrary R functions cannot be sent through mutate.</p>
 <p>Next try to copy a protected key. The server refuses this column reference:</p>
 <!-- expected-refusal:start -->
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">key_message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, copied <span class="op">=</span> <span class="va">person_id</span>,</span>
 <span>    newobj <span class="op">=</span> <span class="st">"D_key_copy"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
@@ -633,9 +715,9 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">key_message</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().</span></span></code></pre>
 <!-- expected-refusal:end -->
-<p>A class-1 source name is refused even when used as the name of a new column:</p>
+<p>The message refuses the protected person key. Next, a class-1 source name is refused even as the name of a new column:</p>
 <!-- expected-refusal:start -->
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">blocked_message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, person_source_value <span class="op">=</span> <span class="st">"label"</span>,</span>
 <span>    newobj <span class="op">=</span> <span class="st">"D_blocked_copy"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
@@ -647,7 +729,7 @@
 <p>This is a blocked source/assignment name, not a request to alter its protection. Use descriptive study-variable names for allowed derived values.</p>
 <p>Finally request an ordinary BMI change followed by a protected-key overwrite in the same in-place call. The whole request must fail:</p>
 <!-- expected-refusal:start -->
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rollback_message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, bmi <span class="op">=</span> <span class="va">bmi</span> <span class="op">+</span> <span class="fl">1</span>, person_id <span class="op">=</span> <span class="st">"replacement"</span>,</span>
 <span>    newobj <span class="op">=</span> <span class="st">"D_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
@@ -657,168 +739,214 @@
 <pre><code><span><span class="co">#&gt; OMOP mutate failed and 'D_bmi' was left unchanged: site: validation_error: omopMutateDS: 'person_id' is a protected identifier and cannot be written; There are some DataSHIELD errors, list them with datashield.errors()</span></span></code></pre>
 <!-- expected-refusal:end -->
 <p>The protected-identifier message applies to person, episode and set keys and any columns marked protected by the server. It prohibits both reads and writes. Renaming a key is not an allowed transformation.</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">after_columns</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="va">after_bmi</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>columns_preserved <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">before_columns</span>, <span class="va">after_columns</span><span class="op">)</span>,</span>
-<span>  bmi_preserved <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">before_bmi</span>, <span class="va">after_bmi</span><span class="op">)</span>,</span>
-<span>  refused_copies_absent <span class="op">=</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"D_key_copy"</span>, <span class="st">"D_blocked_copy"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span></span>
-<span>    <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.symbols.html" class="external-link">datashield.symbols</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span><span class="op">$</span><span class="va">site</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;     columns_preserved         bmi_preserved refused_copies_absent </span></span>
-<span><span class="co">#&gt;                  TRUE                  TRUE                  TRUE</span></span></code></pre>
-<p>All checks are true. Even the earlier <code>bmi + 1</code> assignment was not committed. These released checks establish schema and summary stability; the book’s synthetic-source verification additionally checks equality of the entire table.</p>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">after_bmi</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_bmi$bmi"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  State <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Before refused change"</span>, <span class="st">"After refused change"</span><span class="op">)</span>,</span>
+<span>  Mean_BMI <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">before_bmi</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"EstimatedMean"</span><span class="op">]</span>,</span>
+<span>    <span class="va">after_bmi</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"EstimatedMean"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">State</th>
+<th align="right">Mean_BMI</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Before refused change</td>
+<td align="right">22.11</td>
+</tr>
+<tr class="even">
+<td align="left">After refused change</td>
+<td align="right">22.11</td>
+</tr>
+</tbody>
+</table>
+<p>Both released means are 22.11. The earlier <code>bmi + 1</code> in the refused request did not raise the mean by one. This aggregate check demonstrates that the failed request left the original numeric result available.</p>
 </div>
 <div class="section level2">
 <h2 id="filter-using-a-predicate">Filter using a predicate<a class="anchor" aria-label="anchor" href="#filter-using-a-predicate"></a>
 </h2>
 <p>A <em>predicate</em> is a condition. Only TRUE rows survive; missing conditions are dropped. This retains adults without using a key to target a known person.</p>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;=</span> <span class="fl">18</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_adult_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_adult_bmi"</span></span></code></pre>
-<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">filtered_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_adult_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">filtered_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_bmi"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;=</span> <span class="fl">18</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_adult_bmi"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_adult_bmi$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
 <th align="left">Statistic</th>
 <th align="right">Value</th>
+<th align="right">N valid</th>
+<th align="right">N missing</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">22.75976</td>
+<td align="right">22.76</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">23.69819</td>
+<td align="right">23.70</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">25.78897</td>
+<td align="right">25.79</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">28.03959</td>
+<td align="right">28.04</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">29.79277</td>
+<td align="right">29.79</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">30.36457</td>
+<td align="right">30.36</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">30.45801</td>
+<td align="right">30.46</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">27.34679</td>
+<td align="right">27.35</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 </tbody>
 </table>
-<p>The subset meets the distinct-person release threshold in this practice data. It remains a private table. A small or empty final subset can be refused, as <a href="book-12-privacy.html">chapter 12</a> demonstrates.</p>
-<p><strong>Exercise:</strong> keep the adult category from <code>D_stage</code> with the same filter grammar.</p>
-<details><p><summary>Solution — filter a text category</summary></p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_stage"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">life_stage</span> <span class="op">==</span> <span class="st">"adult"</span><span class="op">)</span>,</span>
-<span>  newobj <span class="op">=</span> <span class="st">"D_working_age"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "D_working_age"</span></span></code></pre>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">working_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_working_age$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="va">working_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The 14 adults have a mean BMI of 27.35 kg/m², with no missing BMI. The subset meets the distinct-person release threshold in this practice data. It remains a private table. A small or empty final subset can be refused, as <a href="book-12-privacy.html">chapter 12</a> demonstrates.</p>
+<p>A text-category predicate can select the same adults:</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.filter.html">ds.omop.filter</a></span><span class="op">(</span><span class="st">"D_stage"</span>, expr <span class="op">=</span> <span class="fu"><a href="../reference/omop_where.html">omop_where</a></span><span class="op">(</span><span class="va">life_stage</span> <span class="op">==</span> <span class="st">"adult"</span><span class="op">)</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_working_age"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_summary</span><span class="op">(</span><span class="st">"D_working_age$bmi"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Site</th>
 <th align="left">Statistic</th>
 <th align="right">Value</th>
+<th align="right">N valid</th>
+<th align="right">N missing</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">22.75976</td>
+<td align="right">22.76</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">23.69819</td>
+<td align="right">23.70</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">25%</td>
-<td align="right">25.78897</td>
+<td align="right">25.79</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">28.03959</td>
+<td align="right">28.04</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">75%</td>
-<td align="right">29.79277</td>
+<td align="right">29.79</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">30.36457</td>
+<td align="right">30.36</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">30.45801</td>
+<td align="right">30.46</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">27.34679</td>
+<td align="right">27.35</td>
+<td align="right">14</td>
+<td align="right">0</td>
 </tr>
 </tbody>
 </table>
 <p>This category means ages 18 and over, so its summary agrees with the preceding filter. The earlier missingness case ensures an unknown age is not called adult.</p>
-</details>
 </div>
 <div class="section level2">
-<h2 id="try-it">Try it<a class="anchor" aria-label="anchor" href="#try-it"></a>
+<h2 id="exercise-change-the-index-setting">Exercise: change the index setting<a class="anchor" aria-label="anchor" href="#exercise-change-the-index-setting"></a>
 </h2>
 <p>Bind the same template to inpatient visits and summarise the prior-visit count. Do not alter the outpatient template in place.</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inpatient</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_param.html">recipe_bind</a></span><span class="op">(</span><span class="va">template</span>, setting <span class="op">=</span> <span class="fl">9201L</span><span class="op">)</span></span>
-<span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">inpatient</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_param_inpatient"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;            baseline </span></span>
-<span><span class="co">#&gt; "D_param_inpatient"</span></span></code></pre>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D_param_inpatient$prior_visits"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $site</span></span>
-<span><span class="co">#&gt; $site$class</span></span>
-<span><span class="co">#&gt; [1] "integer"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $site$length</span></span>
-<span><span class="co">#&gt; [1] 7</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $site$`quantiles &amp; mean`</span></span>
-<span><span class="co">#&gt;        5%       10%       25%       50%       75%       90%       95%      Mean </span></span>
-<span><span class="co">#&gt;  2.000000  2.000000  2.500000  6.000000  8.500000 11.000000 12.500000  6.285714</span></span></code></pre>
-<p>Each binding is a separate recipe. Its own index changes which earlier records fall into the lookback window. A numeric summary suits these varied counts; a categorical table can be refused when it creates too many distinct levels in a small population.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">inpatient</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_param_inpatient"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">inpatient_mean</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_param_inpatient$prior_visits"</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">inpatient_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">EstimatedMean</th>
+<th align="right">Nmissing</th>
+<th align="right">Nvalid</th>
+<th align="right">Ntotal</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">studiesCombined</td>
+<td align="right">6.285714</td>
+<td align="right">0</td>
+<td align="right">7</td>
+<td align="right">7</td>
+</tr></tbody>
+</table>
+<p>The mean prior-visit count is 6.29 among the inpatient entrants. This is a separate bound recipe: its index changes which earlier visits are in the window. There are only seven entrants, so avoid quantiles that could expose individual values in such a small group; the mean is sufficient for this comparison.</p>
 </details>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>Parameters change declared inputs, shortcuts express common native recipes, and mutate/filter operate privately on assigned tables. Each final object still passes publication checks.</p>
+<p>Parameters change declared inputs, shortcuts express common native recipes, and mutate/filter operate privately on assigned tables. Each final object still passes the server’s release checks.</p>
 <p><strong>Next:</strong> <a href="book-12-privacy.html">12. What stays private</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -58,7 +58,7 @@
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
-    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: describing the same population across two sites</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -93,10 +93,9 @@
     
 <div class="learn-box">
 <p><strong>What you will learn</strong></p>
-<p>Build education and cause-of-death columns, predict its output, and request category counts.</p>
+<p>Build education and cause-of-death columns, predict their output, and request category counts.</p>
 </div>
-<p>This chapter uses the synthetic questionnaire dataset described in <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and the matching practice connection described in <a href="book-00-start.html#before-you-start">Before you start</a>. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.</p>
-<p>Concept selections refer to the searches and saved definitions in <a href="book-04-vocabulary.html">chapter 4</a>, including the separate questionnaire catalogue. Additional body-measurement concepts are found on screen in the <a href="book-15-formulas.html#find-the-inputs-before-calculating">formula walkthrough</a>.</p>
+<p>This chapter uses the synthetic questionnaire dataset described in <a href="book-00-start.html">Getting started</a>. <strong>You need:</strong> the packages and helpers from <a href="book-00-start.html#before-you-start">Getting started</a>. Run the sections in order in a fresh R session in your <code>book-work</code> directory.</p>
 <div class="section level2">
 <h2 id="start-this-chapter">Start this chapter<a class="anchor" aria-label="anchor" href="#start-this-chapter"></a>
 </h2>
@@ -104,76 +103,73 @@
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/fixture.R"</span><span class="op">)</span></span>
-<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_fixture</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
-<p>The <code>site</code> connection is ready. This chapter creates its temporary questionnaire dataset locally.</p>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"questionnaire"</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<p>The connection is ready; <code>conns</code> identifies the server used by the analysis calls.</p>
+<p>The questionnaire has 48 people. Of these, 24 answered the education question (twice each), 36 have a recorded death, and 12 have neither education nor death. These are the teaching data described in <a href="book-00-start.html">Getting started</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="select-the-education-question">Select the education question<a class="anchor" aria-label="anchor" href="#select-the-education-question"></a>
 </h2>
 <p>An <em>event</em> describes records of interest. It is a definition on your computer, not a downloaded table. We have switched from chapter 4’s GiBleed asthma search to the questionnaire dataset. First look up its education question by concept:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">question</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fl">900001L</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">question</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="st">"concept_name"</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">question</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
 </tr></thead>
 <tbody><tr class="odd">
+<td align="right">900001</td>
 <td align="left">Education question</td>
 </tr></tbody>
 </table>
-<p>Now use that question to select observations:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">education_event</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"observation"</span>, concepts <span class="op">=</span> <span class="fl">900001L</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">education_event</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_event" "list"</span></span></code></pre>
+<p>Education question is concept <strong>900001</strong>, found in <a href="book-04-vocabulary.html">chapter 4</a>. Use that ID to select observations:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">education_event</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"observation"</span>, concepts <span class="op">=</span> <span class="fl">900001L</span><span class="op">)</span></span></code></pre></div>
 <p>The server will select observations whose question is Education question.</p>
 </div>
 <div class="section level2">
 <h2 id="choose-one-answer-per-person">Choose one answer per person<a class="anchor" aria-label="anchor" href="#choose-one-answer-per-person"></a>
 </h2>
 <p>A <em>reducer</em> turns possibly many records into one value. Use the latest nonmissing coded answer, ordered by the observation date:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">education</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span></span>
 <span>  event <span class="op">=</span> <span class="va">education_event</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_value"</span>, value <span class="op">=</span> <span class="st">"value_as_concept_id"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">education</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_variable" "list"</span></span></code></pre>
+<span><span class="va">education</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; omop_variable: &lt;unnamed&gt;</span></span>
+<span><span class="co">#&gt;    last_value of observation</span></span></code></pre>
 <p>This makes one categorical column. It does not create a separate binary column for every education level. A same-date tie uses the documented deterministic record ordering; it does not mean “largest answer ID”.</p>
 </div>
 <div class="section level2">
 <h2 id="add-cause-of-death">Add cause of death<a class="anchor" aria-label="anchor" href="#add-cause-of-death"></a>
 </h2>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cause</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span></span>
 <span>  event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span>,</span>
-<span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span>, value <span class="op">=</span> <span class="st">"cause_concept_id"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">cause</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_variable" "list"</span></span></code></pre>
-<p>Here the value comes from <code>cause_concept_id</code>. Do not substitute <code>cause_source_value</code>: that is free source text, not the curated coded cause used by this route.</p>
+<span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span>, value <span class="op">=</span> <span class="st">"cause_concept_id"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Here the value comes from <code>cause_concept_id</code>. Do not substitute <code>cause_source_value</code>: that is the verbatim source code, such as an ICD-10 code, rather than the standard concept used for translated categories. Source-value fields are blocked on this route.</p>
 </div>
 <div class="section level2">
 <h2 id="describe-a-wide-table">Describe a wide table<a class="anchor" aria-label="anchor" href="#describe-a-wide-table"></a>
 </h2>
 <p><em>Wide</em> means one column per variable. <em>Person grain</em> means one row per person. The native all-person population retains people who have neither answer nor death.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">people</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span></span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>education <span class="op">=</span> <span class="va">education</span>, cause_of_death <span class="op">=</span> <span class="va">cause</span><span class="op">)</span>,</span>
-<span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">people</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_recipe" "list"</span></span></code></pre>
+<span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><code>person_id</code> is included automatically as a pseudonym. Missing records produce missing values. The roster does not require an extra identifier variable.</p>
 </div>
 <div class="section level2">
 <h2 id="predict-read-the-recipe-explanation">Predict: read the recipe explanation<a class="anchor" aria-label="anchor" href="#predict-read-the-recipe-explanation"></a>
 </h2>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<p>Before running, predict <strong>48 rows and three columns</strong>: the automatic person key, education and cause of death. Education should have <strong>24 missing values</strong>. Both variables read all recorded history because no time window restricts them.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">explained</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">people</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">explained</span><span class="op">$</span><span class="va">text</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">explained</span><span class="op">$</span><span class="va">text</span>, <span class="fl">9</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Recipe plan</span></span>
 <span><span class="co">#&gt; Population 'base' (criteria): none</span></span>
 <span><span class="co">#&gt; Variables:</span></span>
@@ -182,77 +178,54 @@
 <span><span class="co">#&gt; Output 'people' [wide] rows 'base', grain person</span></span>
 <span><span class="co">#&gt; Published: people</span></span>
 <span><span class="co">#&gt; Defaults relied on:</span></span>
-<span><span class="co">#&gt;   - variable 'education': rows with a NULL value are skipped before the row is selected (missing = "skip")</span></span>
-<span><span class="co">#&gt;   - variable 'cause_of_death': rows with a NULL value are skipped before the row is selected (missing = "skip")</span></span>
-<span><span class="co">#&gt; Concept presentation: factors; identity is the declared concept class, preserved through aliases and value-preserving reducers.</span></span>
-<span><span class="co">#&gt; Label precedence: variable recode, recipe recode, vocabulary name, decimal ID fallback. Explicit equal recodes merge categories.</span></span>
-<span><span class="co">#&gt; Federation: permitted ID union, including declared unused levels; newest comparable vocabulary version, then bytewise name tie. Unresolved versions never establish recency.</span></span>
-<span><span class="co">#&gt; Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.</span></span>
-<span><span class="co">#&gt; variables.education: concept origin follows reducer last_value over value_as_concept_id; explicit variable name is retained.</span></span>
-<span><span class="co">#&gt; variables.cause_of_death: concept origin follows reducer first_value over cause_concept_id; explicit variable name is retained.</span></span>
-<span><span class="co">#&gt; Execution would use the publication protocol on every site.</span></span></code></pre>
-<p>Before running, predict one private row per person, two named categorical variables, and a pseudonymous key. With no time restriction, each variable reads all available history independently. That is a teaching definition to choose explicitly in a real study.</p>
-<details><p><summary>Full plan explanation (optional)</summary></p>
-<p>A label contract records the category names and their ordering. Federation reconciliation makes those categories agree across sites. A bytewise tie compares the bytes of text to make a repeated choice deterministic. You do not need to configure these for this first recipe.</p>
-<p>Read the lines in order: the population defines the row; each variable identifies its source and reducer; output defaults determine the shape; category reconciliation determines names. The explanation contains declarations, not observed patient frequencies.</p>
-<p>Print all the chosen defaults:</p>
-<p>The explanation above records the chosen defaults before execution.</p>
-</details>
+<span><span class="co">#&gt;   - variable 'education': rows with a NULL value are skipped before the row is selected (missing = "skip")</span></span></code></pre>
+<p>Read this short opening in order: the population sets one row per person; <code>education</code> takes the last coded observation answer; <code>cause_of_death</code> takes the first coded death cause; the output arranges them as columns. The remaining explanation describes technical defaults; these are not observed patient counts.</p>
 </div>
 <div class="section level2">
 <h2 id="run-assign-the-result">Run: assign the result<a class="anchor" aria-label="anchor" href="#run-assign-the-result"></a>
 </h2>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">people</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_people"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;     people </span></span>
-<span><span class="co">#&gt; "D_people"</span></span></code></pre>
-<p>The reply is a mapping of output names to server symbols. <code>D_people</code> is still on the server. Concept-valued columns are labelled factors because of their declared type. In 2.10.5 the names <code>education</code> and <code>cause_of_death</code> need no <code>_concept_id</code> suffix.</p>
+<pre><code><span><span class="co">#&gt; people → D_people</span></span></code></pre>
+<p>The reply says that the output named <code>people</code> was assigned to <code>D_people</code>. <code>D_people</code> is still on the server. Concept-valued columns are labelled factors because of their declared type. The names <code>education</code> and <code>cause_of_death</code> need no <code>_concept_id</code> suffix.</p>
 </div>
 <div class="section level2">
 <h2 id="verify-check-what-you-got">Verify: check what you got<a class="anchor" aria-label="anchor" href="#verify-check-what-you-got"></a>
 </h2>
-<p>Do this complete check once while learning a new extraction. <code>ds.ls</code> lists server symbols; <code>ds.dim</code> describes the result dimensions; <code>ds.colnames</code> names its columns; <code>ds.class</code> checks types. Then inspect one summary or table and missingness with <code>ds.numNA</code>. Every method applies its own release rules. None of these calls retrieves patient rows.</p>
-<p>On Opal, <code>ds.ls</code> searches the server workspace. With the installed DSLite/dsBase pair, it searches the R global environment instead, so the filtered result below is deliberately empty. That does <strong>not</strong> mean extraction failed. The driver’s <code>datashield.symbols</code> method correctly lists the assigned DSLite symbols; we show its <code>D_</code> analysis objects next. This is a practice-driver difference, not a reason to inspect patient rows.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.ls.html" class="external-link">ds.ls</a></span><span class="op">(</span>search.filter <span class="op">=</span> <span class="st">"D_*"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<p>Use <code><a href="https://datashield.github.io/DSI/reference/datashield.symbols.html" class="external-link">DSI::datashield.symbols()</a></code> to list assigned server objects. Then check the size, column names, type and missingness. These calls return metadata or checked aggregates; they never retrieve patient rows.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.symbols.html" class="external-link">datashield.symbols</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
-<span><span class="co">#&gt; $site$environment.searched</span></span>
-<span><span class="co">#&gt; [1] "R_GlobalEnv"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $site$objects.found</span></span>
-<span><span class="co">#&gt; character(0)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $site$search.filter.final</span></span>
-<span><span class="co">#&gt; [1] "D_*"</span></span></code></pre>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.symbols.html" class="external-link">datashield.symbols</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^D_"</span>, <span class="va">x</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $site</span></span>
-<span><span class="co">#&gt; [1] "D_people"</span></span></code></pre>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; [1] "D_people" "omop"</span></span></code></pre>
+<p><code>D_people</code> is present alongside the <code>omop</code> resource handle: the extraction has created a private analysis table.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_people"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $`dimensions of D_people in site`</span></span>
-<span><span class="co">#&gt; [1] 24  3</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [1] 48  3</span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; $`dimensions of D_people in combined studies`</span></span>
-<span><span class="co">#&gt; [1] 24  3</span></span></code></pre>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; [1] 48  3</span></span></code></pre>
+<p>The 48 rows correspond to all 48 people, including people with missing answers. The three columns match the prediction.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_people"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "person_id"      "education"      "cause_of_death"</span></span></code></pre>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<p><code>person_id</code> is the automatic protected key; the other two columns are the variables we requested.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.class.html" class="external-link">ds.class</a></span><span class="op">(</span><span class="st">"D_people$education"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
 <span><span class="co">#&gt; [1] "dsomop_concept_factor" "factor"</span></span></code></pre>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<p>Education is a factor, which stores categories. <code>dsomop_concept_factor</code> records that these categories come from OMOP concepts.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.numNA.html" class="external-link">ds.numNA</a></span><span class="op">(</span><span class="st">"D_people$education"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; $site</span></span>
-<span><span class="co">#&gt; [1] 12</span></span></code></pre>
-<p>The category table in the next step completes the check. Compare it with your prediction. Later lessons use at most one helpful schema or variable check per extraction; type checks recur only when the lesson is about types. Explain a recipe again when a new default, censoring, matching or presentation rule matters. This is the <strong>predict, run, verify</strong> habit of a careful federated analyst.</p>
+<span><span class="co">#&gt; [1] 24</span></span></code></pre>
+<p>The 24 missing values are people with no education answer. The next category table completes the <strong>predict, run, verify</strong> loop. In later lessons, choose the one check that helps answer the current question.</p>
 </div>
 <div class="section level2">
 <h2 id="count-the-education-categories">Count the education categories<a class="anchor" aria-label="anchor" href="#count-the-education-categories"></a>
 </h2>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">education_table_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_people$education"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">education_table_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -263,80 +236,55 @@
 <tbody>
 <tr class="odd">
 <td align="left">Secondary education</td>
-<td align="right">6</td>
+<td align="right">12</td>
 </tr>
 <tr class="even">
 <td align="left">University education</td>
-<td align="right">6</td>
+<td align="right">12</td>
 </tr>
 </tbody>
 </table>
-<details><p><summary>Full aggregate response</summary></p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">education_table_result</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $output.list</span></span>
-<span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_row.props</span></span>
-<span><span class="co">#&gt;                       study</span></span>
-<span><span class="co">#&gt; D_people$education     site</span></span>
-<span><span class="co">#&gt;   Secondary education     1</span></span>
-<span><span class="co">#&gt;   University education    1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_col.props</span></span>
-<span><span class="co">#&gt;                       study</span></span>
-<span><span class="co">#&gt; D_people$education     site</span></span>
-<span><span class="co">#&gt;   Secondary education   0.5</span></span>
-<span><span class="co">#&gt;   University education  0.5</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_counts</span></span>
-<span><span class="co">#&gt;                       study</span></span>
-<span><span class="co">#&gt; D_people$education     site</span></span>
-<span><span class="co">#&gt;   Secondary education     6</span></span>
-<span><span class="co">#&gt;   University education    6</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_proportions</span></span>
-<span><span class="co">#&gt; D_people$education</span></span>
-<span><span class="co">#&gt;  Secondary education University education </span></span>
-<span><span class="co">#&gt;                  0.5                  0.5 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_counts</span></span>
-<span><span class="co">#&gt; D_people$education</span></span>
-<span><span class="co">#&gt;  Secondary education University education </span></span>
-<span><span class="co">#&gt;                    6                    6 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validity.message</span></span>
-<span><span class="co">#&gt; [1] "Data in all studies were valid"</span></span></code></pre>
-</details><p>The Count column answers how many people have each answer. The full response also contains proportions (fractions of a row or column total); we select its <code>TABLES.COMBINED_all.sources_counts</code> component after checking that every site released a valid result. The helper stops on a withheld or incomplete result. The labels are names, not numeric codes. <code>useNA = "no"</code> excludes missing answers; the counts therefore need not add up to the whole population. DataSHIELD checks whether cells may be released before returning the table.</p>
+<p>There are 12 people whose <strong>latest</strong> answer is Secondary education and 12 whose latest answer is University education. Every respondent gave both answers at different times; these are counts of the selected latest answer, not everyone who ever gave each answer. <code>useNA = "no"</code> leaves out the 24 missing values.</p>
 </div>
 <div class="section level2">
 <h2 id="count-causes">Count causes<a class="anchor" aria-label="anchor" href="#count-causes"></a>
 </h2>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_people"</span>, <span class="st">"cause_of_death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; D_people$cause_of_death</span></span>
-<span><span class="co">#&gt; Myocardial infarction             Pneumonia </span></span>
-<span><span class="co">#&gt;                    12                     6</span></span></code></pre>
-<p><code><a href="../reference/ds.omop.table.html">ds.omop.table()</a></code> calls the real dsBase <code>ds.table()</code> and preserves the complete published category contract, including declared zero categories. It also protects labels containing punctuation. Prefer it when you need that complete contract.</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_people"</span>, <span class="st">"cause_of_death"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">D_people.cause_of_death</th>
+<th align="right">Freq</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Myocardial infarction</td>
+<td align="right">24</td>
+</tr>
+<tr class="even">
+<td align="left">Pneumonia</td>
+<td align="right">12</td>
+</tr>
+</tbody>
+</table>
+<p>The table shows 24 myocardial infarctions and 12 pneumonias. <code><a href="../reference/ds.omop.table.html">ds.omop.table()</a></code> is a shortcut that also retains categories with zero people. Missing causes are excluded here; the exercise below will include them. Absence of a death record is not proof of survival.</p>
 </div>
 <div class="section level2">
 <h2 id="give-a-question-your-own-yesno-labels">Give a question your own yes/no labels<a class="anchor" aria-label="anchor" href="#give-a-question-your-own-yesno-labels"></a>
 </h2>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<p><a href="book-04-vocabulary.html">Chapter 4</a> identifies Fever question as <strong>900002</strong>, Yes as <strong>900301</strong>, and No as <strong>900302</strong>. Here is a label map keyed by those answer IDs:</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fever</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span></span>
 <span>  event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"observation"</span>, concepts <span class="op">=</span> <span class="fl">900002L</span><span class="op">)</span>,</span>
 <span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"last_value"</span>, value <span class="op">=</span> <span class="st">"value_as_concept_id"</span><span class="op">)</span>,</span>
-<span>  labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"900301"</span> <span class="op">=</span> <span class="st">"yes"</span>, <span class="st">"900302"</span> <span class="op">=</span> <span class="st">"no"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">fever</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "omop_variable" "list"</span></span></code></pre>
+<span>  labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"900301"</span> <span class="op">=</span> <span class="st">"yes"</span>, <span class="st">"900302"</span> <span class="op">=</span> <span class="st">"no"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The map is keyed by answer concepts. It changes presentation, not which question is selected. Missing fever answers remain missing; they do not become “no”.</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">answers</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span></span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>education <span class="op">=</span> <span class="va">education</span>, fever <span class="op">=</span> <span class="va">fever</span>, cause_of_death <span class="op">=</span> <span class="va">cause</span><span class="op">)</span>,</span>
 <span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">answers</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_answers"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;      people </span></span>
-<span><span class="co">#&gt; "D_answers"</span></span></code></pre>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">answers</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_answers"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">yes_no_result</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_answers$fever"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">yes_no_result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
@@ -347,70 +295,59 @@
 <tbody>
 <tr class="odd">
 <td align="left">yes</td>
-<td align="right">6</td>
+<td align="right">12</td>
 </tr>
 <tr class="even">
 <td align="left">no</td>
-<td align="right">6</td>
+<td align="right">12</td>
 </tr>
 </tbody>
 </table>
-<details><p><summary>Full aggregate response</summary></p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">yes_no_result</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $output.list</span></span>
-<span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_row.props</span></span>
-<span><span class="co">#&gt;                study</span></span>
-<span><span class="co">#&gt; D_answers$fever site</span></span>
-<span><span class="co">#&gt;             yes    1</span></span>
-<span><span class="co">#&gt;             no     1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_col.props</span></span>
-<span><span class="co">#&gt;                study</span></span>
-<span><span class="co">#&gt; D_answers$fever site</span></span>
-<span><span class="co">#&gt;             yes  0.5</span></span>
-<span><span class="co">#&gt;             no   0.5</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLE_rvar.by.study_counts</span></span>
-<span><span class="co">#&gt;                study</span></span>
-<span><span class="co">#&gt; D_answers$fever site</span></span>
-<span><span class="co">#&gt;             yes    6</span></span>
-<span><span class="co">#&gt;             no     6</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_proportions</span></span>
-<span><span class="co">#&gt; D_answers$fever</span></span>
-<span><span class="co">#&gt; yes  no </span></span>
-<span><span class="co">#&gt; 0.5 0.5 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $output.list$TABLES.COMBINED_all.sources_counts</span></span>
-<span><span class="co">#&gt; D_answers$fever</span></span>
-<span><span class="co">#&gt; yes  no </span></span>
-<span><span class="co">#&gt;   6   6 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $validity.message</span></span>
-<span><span class="co">#&gt; [1] "Data in all studies were valid"</span></span></code></pre>
-</details><p>The table contains your lower-case labels. See <a href="book-10-harmonise.html">chapter 10</a> for the same operation across two different vocabularies.</p>
+<p>The table contains 12 “yes” and 12 “no” answers, using your lower-case labels. The other 24 people did not answer; they are excluded by <code>useNA = "no"</code>. See <a href="book-10-harmonise.html">chapter 10</a> for the same operation across two different vocabularies.</p>
 </div>
 <div class="section level2">
-<h2 id="try-it">Try it<a class="anchor" aria-label="anchor" href="#try-it"></a>
+<h2 id="exercise-1-first-answer-instead-of-last">Exercise 1: first answer instead of last<a class="anchor" aria-label="anchor" href="#exercise-1-first-answer-instead-of-last"></a>
 </h2>
-<p>Count education using the complete-contract helper instead of calling ds.table directly.</p>
+<p>Take each person’s first education answer. Do the totals for each category reveal that people changed answers?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_people"</span>, <span class="st">"education"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; D_people$education</span></span>
-<span><span class="co">#&gt;  Secondary education University education </span></span>
-<span><span class="co">#&gt;                    6                    6</span></span></code></pre>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">first_education</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">education_event</span>,</span>
+<span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span>, value <span class="op">=</span> <span class="st">"value_as_concept_id"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>first <span class="op">=</span> <span class="va">first_education</span>, last <span class="op">=</span> <span class="va">education</span><span class="op">)</span>,</span>
+<span>  outputs <span class="op">=</span> <span class="fu"><a href="../reference/omop_output.html">omop_output</a></span><span class="op">(</span><span class="st">"people"</span>, format <span class="op">=</span> <span class="st">"wide"</span>, grain <span class="op">=</span> <span class="st">"person"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">comparison</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>people <span class="op">=</span> <span class="st">"D_education_change"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_table2</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span></span>
+<span>  <span class="st">"D_education_change$first"</span>, <span class="st">"D_education_change$last"</span>, useNA <span class="op">=</span> <span class="st">"no"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">Secondary education</th>
+<th align="right">University education</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Secondary education</td>
+<td align="right">0</td>
+<td align="right">12</td>
+</tr>
+<tr class="even">
+<td align="left">University education</td>
+<td align="right">12</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p>Rows show first answers and columns show last answers. The off-diagonal cells show 12 people changing from Secondary to University and 12 changing in the opposite direction. The first and last category totals are both 12/12, so those totals alone hide every respondent’s change.</p>
 </details>
 </div>
 <div class="section level2">
-<h2 id="exercise-2-a-common-variant">Exercise 2: a common variant<a class="anchor" aria-label="anchor" href="#exercise-2-a-common-variant"></a>
+<h2 id="exercise-2-include-missing-causes">Exercise 2: include missing causes<a class="anchor" aria-label="anchor" href="#exercise-2-include-missing-causes"></a>
 </h2>
-<p>Count causes with dsBase directly, preserving missing causes.</p>
-<details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_people$cause_of_death"</span>, useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Count causes with dsBase and include people without a coded cause.</p>
+<details><p><summary>Solution</summary></p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_people$cause_of_death"</span>,</span>
+<span>  useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left">Category</th>
@@ -419,31 +356,37 @@
 <tbody>
 <tr class="odd">
 <td align="left">Myocardial infarction</td>
-<td align="right">12</td>
+<td align="right">24</td>
 </tr>
 <tr class="even">
 <td align="left">Pneumonia</td>
-<td align="right">6</td>
+<td align="right">12</td>
 </tr>
 <tr class="odd">
 <td align="left">NA</td>
-<td align="right">6</td>
+<td align="right">12</td>
 </tr>
 </tbody>
 </table>
-<p>Missing cause is not another coded cause and not proof that a person survived.</p>
+<p>The 24 myocardial infarctions, 12 pneumonias and 12 missing causes account for all 48 people. Missing is not another coded cause and does not establish survival.</p>
 </details>
 </div>
 <div class="section level2">
-<h2 id="exercise-3-a-pitfall-to-avoid">Exercise 3: a pitfall to avoid<a class="anchor" aria-label="anchor" href="#exercise-3-a-pitfall-to-avoid"></a>
+<h2 id="exercise-3-why-not-use-the-source-code">Exercise 3: why not use the source code?<a class="anchor" aria-label="anchor" href="#exercise-3-why-not-use-the-source-code"></a>
 </h2>
-<p>Verify the combined answer table has the three intended variables.</p>
-<details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.colnames.html" class="external-link">ds.colnames</a></span><span class="op">(</span><span class="st">"D_answers"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $site</span></span>
-<span><span class="co">#&gt; [1] "person_id"      "education"      "fever"          "cause_of_death"</span></span></code></pre>
-<p>The pseudonymous person key is automatic. The education, fever and cause columns come from separate declarations.</p>
+<p>Try compiling a cause variable based on <code>cause_source_value</code>. Does renaming it make that source field available?</p>
+<details><p><summary>Solution</summary></p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">message</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">source_cause</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span>variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cause <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span></span>
+<span>    event <span class="op">=</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"death"</span><span class="op">)</span>,</span>
+<span>    reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"first_value"</span>, value <span class="op">=</span> <span class="st">"cause_source_value"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">source_cause</span><span class="op">)</span></span>
+<span>  <span class="st">"Unexpected success"</span></span>
+<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">message</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: cause_source_value (variable 'cause' reducer value).</span></span></code></pre>
+<p>The source-value field is blocked before execution. A new variable name does not change its protection; use <code>cause_concept_id</code> for the coded cause.</p>
 </details>
 </div>
 <div class="section level2">

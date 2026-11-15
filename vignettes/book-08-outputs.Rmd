@@ -16,16 +16,8 @@ Choose a table shape for your question and run one small example of every format
 
 This chapter uses the public synthetic Synthea27Nj numeric connection from [Getting started](book-00-start.html).
 
-**You need:** the packages and the matching practice connection described in
-[Before you start](book-00-start.html#before-you-start).
-Run its sections in order. Each chapter starts from a fresh practice connection;
-all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
-The numbers describe teaching data, not clinical findings.
-
-Concept selections refer to the searches and saved definitions in
-[chapter 4](book-04-vocabulary.html), including the separate questionnaire
-catalogue. Additional body-measurement concepts are found on screen in the
-[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
+Run the sections in order in a fresh R session in your `book-work` directory.
 
 ## Start this chapter
 
@@ -37,17 +29,11 @@ Start a fresh R session in the `book-work` directory created in
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-source("tools/book/practice.R")
-practice <- if (book_driver == "DSLite") book_practice("numeric") else book_connect("numeric")
+practice <- book_connect("numeric")
 conns <- practice$conns
-names(conns)
 ```
 
-```
-#> [1] "site"
-```
-
-The `site` connection is ready. The shared `connection.R` selects DSLite or Opal and resolves the resource names.
+The connection is ready; `conns` identifies the server used by the analysis calls.
 
 ## Choose the shape for the analysis
 
@@ -70,47 +56,42 @@ an event or a time period. More rows do not create more independent people.
 | dictionary | Describe concepts used by outputs | Vocabulary entry |
 | joined | Combine compatible private outputs | Declared join grain |
 
-`features` and `baseline` are `type` presets which lower to native wide outputs;
-`panel` is the simple-layer name for `person_period`. We check every resulting
-recipe uses the recipe API. Use `format` for the native formats.
+`features` and `baseline` are wide-table presets selected with `type`.
+Use `format` to request the other shapes.
 
 ## Prepare one small study
 
-We will reuse these definitions so each example changes only the output.
+We will reuse these definitions to compare output shapes. For the baseline
+example we will also restrict the variables to information available at entry.
+[Chapter 4](book-04-vocabulary.html) identifies Inpatient Visit (**9201**),
+Outpatient Visit (**9202**), blood hemoglobin (**3000963**) and its g/dL unit
+(**8713**).
 
 
 ``` r
 visits <- omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "visits")
-rx <- omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "spans")
+spans <- omop_event("visit_occurrence", concepts = c(9201L, 9202L), name = "spans")
 inpatient <- omop_event("visit_occurrence", concepts = 9201L, name = "inpatient")
 visitors <- omop_population("visitors", index = omop_index(visits))
-class(visitors)
-```
-
-```
-#> [1] "omop_population" "list"
 ```
 
 Each first visit begins one episode. A later inpatient visit will be our outcome.
 
 
 ``` r
-base <- omop_recipe(events = list(visits, rx, inpatient),
-  populations = list(visitors), variables = list(
-    visits = omop_variable(event = visits, reducer = omop_reduce("count")),
-    age = omop_age(),
-    hemoglobin = omop_mean_value("measurement", 3000963L, unit = 8713L,
-      window = omop_window(NULL, NULL))),
+study_variables <- list(
+  visits = omop_variable(event = visits, reducer = omop_reduce("count")),
+  age = omop_age_at("index"),
+  hemoglobin = omop_mean_value("measurement", 3000963L, unit = 8713L,
+    window = omop_window(NULL, NULL)))
+base <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = study_variables,
   outputs = omop_output("wide", rows = "visitors", format = "wide"))
-class(base)
 ```
 
-```
-#> [1] "omop_recipe" "list"
-```
-
-The visit count reads all history here. Age uses annual year subtraction at entry.
-The template already contains an executable wide output.
+The count and hemoglobin mean use all history to illustrate shapes. They are
+not baseline covariates: a baseline analysis must restrict them to entry or
+before. Age is completed age at the first visit.
 
 ## Wide: named columns
 
@@ -121,21 +102,22 @@ book_symbols(wide_result)
 ```
 
 ```
-#>         wide 
-#> "D_fmt_wide"
+#> wide → D_fmt_wide
 ```
 
 ``` r
-dsBaseClient::ds.colnames("D_fmt_wide", datasources = conns)
+dsBaseClient::ds.dim("D_fmt_wide", datasources = conns)
 ```
 
 ```
-#> $site
-#> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          
-#> [6] "hemoglobin"
+#> $`dimensions of D_fmt_wide in site`
+#> [1] 28  6
+#>
+#> $`dimensions of D_fmt_wide in combined studies`
+#> [1] 28  6
 ```
 
-There is one row per episode and one column per requested variable. A person's
+There are 28 rows, one per first-visit episode, and one column per requested variable. A person's
 pseudonym and episode keys are supplied by the server.
 
 ## Long: keep event records
@@ -144,29 +126,41 @@ Use long when event order and repeated records matter. Select a named source ins
 
 
 ``` r
-long <- base
-long$outputs <- list(long = omop_output("long", rows = "visitors", format = "long",
+long <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = study_variables,
+  outputs = omop_output("long", rows = "visitors", format = "long",
   sources = "visits"))
-book_symbols(recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns))
+invisible(recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns))
+dsBaseClient::ds.dim("D_fmt_long", datasources = conns)
 ```
 
 ```
-#>         long 
-#> "D_fmt_long"
+#> $`dimensions of D_fmt_long in site`
+#> [1] 1735    9
+#>
+#> $`dimensions of D_fmt_long in combined studies`
+#> [1] 1735    9
 ```
+
+The long output has 1,735 rows, one per selected visit. Its columns include
+`concept_id` and `start_date`. Dates default to offsets from the index. One source makes the event-row meaning clear; multiple sources need an explicit event-log design.
+
 
 ``` r
-dsBaseClient::ds.colnames("D_fmt_long", datasources = conns)
+knitr::kable(book_counts(dsBaseClient::ds.table("D_fmt_long$concept_id",
+  useNA = "no", datasources = conns)))
 ```
 
-```
-#> $site
-#> [1] "row_id"                   "cohort_row_id"            "person_id"               
-#> [4] "concept_id"               "start_date"               "end_date"                
-#> [7] "visit_type_concept_id"    "admitted_from_concept_id" "discharged_to_concept_id"
-```
 
-The source columns become a normalised schema, including `concept_id` and `start_date`. Dates default to offsets from the index. One source makes the event-row meaning clear; multiple sources need an explicit event-log design.
+
+|Category         | Count|
+|:----------------|-----:|
+|Inpatient Visit  |    13|
+|Outpatient Visit |  1722|
+
+The 13 inpatient and 1,722 outpatient visits sum to 1,735 records. These are
+visits by setting, rather than numbers of people. A person
+may contribute many visits to either setting.
 
 ## Features: a wide preset
 
@@ -174,27 +168,22 @@ Use the features preset when a downstream analysis expects a feature table. Nati
 
 
 ``` r
-features <- base
-features$outputs <- list(features = omop_output("features", rows = "visitors", type = "features"))
-book_symbols(recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns))
+features <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = study_variables,
+  outputs = omop_output("features", rows = "visitors", type = "features"))
+invisible(recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns))
+dsBaseClient::ds.dim("D_fmt_features", datasources = conns)
 ```
 
 ```
-#>         features 
-#> "D_fmt_features"
+#> $`dimensions of D_fmt_features in site`
+#> [1] 28  6
+#>
+#> $`dimensions of D_fmt_features in combined studies`
+#> [1] 28  6
 ```
 
-``` r
-dsBaseClient::ds.colnames("D_fmt_features", datasources = conns)
-```
-
-```
-#> $site
-#> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          
-#> [6] "hemoglobin"
-```
-
-This is a wide table, not the sparse coordinate representation shown below.
+The features table has 28 rows, one per visitor, with the same values as wide.
 
 ## Baseline: characteristics at entry
 
@@ -202,27 +191,30 @@ Use baseline to name an entry-characteristics table. Define the time windows of 
 
 
 ``` r
-baseline <- base
-baseline$outputs <- list(baseline = omop_output("baseline", rows = "visitors", type = "baseline"))
-book_symbols(recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns))
+baseline_variables <- list(
+  visits = omop_count("visit_occurrence", window = omop_window(-365, 0)),
+  age = omop_age_at("index"),
+  hemoglobin = omop_value_at_index("measurement", 3000963L,
+    tolerance = c(-90, 0), unit = 8713L))
+baseline <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = baseline_variables,
+  outputs = omop_output("baseline", rows = "visitors", type = "baseline"))
+invisible(recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns))
+dsBaseClient::ds.dim("D_fmt_baseline", datasources = conns)
 ```
 
 ```
-#>         baseline 
-#> "D_fmt_baseline"
+#> $`dimensions of D_fmt_baseline in site`
+#> [1] 28  6
+#>
+#> $`dimensions of D_fmt_baseline in combined studies`
+#> [1] 28  6
 ```
 
-``` r
-dsBaseClient::ds.colnames("D_fmt_baseline", datasources = conns)
-```
-
-```
-#> $site
-#> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          
-#> [6] "hemoglobin"
-```
-
-The preset does not turn an all-history count into a pre-index count. Here the `omop_age()` baseline preset uses its banded annual-age default. Use `omop_age_at()` in a wide table for explicit completed age. The simple study layer makes baseline an ordinary wide output.
+The baseline preset also has 28 rows. Here we explicitly changed the variables
+to a visit count during days −365 to 0 and hemoglobin closest to entry within
+days −90 to 0. The preset itself neither restricts all-history values nor bands
+age; the variable definitions make these entry characteristics.
 
 ## Panels: one row per follow-up bin
 
@@ -230,31 +222,49 @@ A *bin* is a time interval. These are three 30-day bins after entry, not calenda
 
 
 ``` r
-panel <- base
-panel$outputs <- list(panel = omop_output("panel", rows = "visitors", format = "person_period",
+panel <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = study_variables,
+  outputs = omop_output("panel", rows = "visitors", format = "person_period",
   options = list(sources = list(visits), bins = list(width = 30L),
     window = omop_window(1, 90), analyses = "count", representation = "dense")))
-book_symbols(recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns))
+invisible(recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns))
+dsBaseClient::ds.dim("D_fmt_panel", datasources = conns)
 ```
 
 ```
-#>         panel 
-#> "D_fmt_panel"
+#> $`dimensions of D_fmt_panel in site`
+#> [1] 84  8
+#>
+#> $`dimensions of D_fmt_panel in combined studies`
+#> [1] 84  8
 ```
+
+The panel has 84 rows: 28 visitors × three bins. A dense panel retains empty
+bins with zero event counts. `bins = list(calendar = "month")` instead aligns to calendar months, whose lengths vary. Account for repeated rows per person in downstream analysis.
+
 
 ``` r
-dsBaseClient::ds.colnames("D_fmt_panel", datasources = conns)
+knitr::kable(book_summary("D_fmt_panel$visits_outpatient_visit_count",
+  datasources = conns), digits = 2)
 ```
 
-```
-#> $site
-#> [1] "row_id"                        "cohort_row_id"                
-#> [3] "person_id"                     "period_start_days"            
-#> [5] "period_end_days"               "days"                         
-#> [7] "visits_inpatient_visit_count"  "visits_outpatient_visit_count"
-```
 
-A dense panel retains the empty bins with zero event counts. `bins = list(calendar = "month")` instead aligns to calendar months, whose lengths vary. Account for repeated rows per person in downstream analysis.
+
+|Site |Statistic | Value| N valid| N missing|
+|:----|:---------|-----:|-------:|---------:|
+|site |5%        |  0.00|      84|         0|
+|site |10%       |  0.00|      84|         0|
+|site |25%       |  0.00|      84|         0|
+|site |50%       |  0.00|      84|         0|
+|site |75%       |  0.00|      84|         0|
+|site |90%       |  1.00|      84|         0|
+|site |95%       |  1.00|      84|         0|
+|site |Mean      |  0.19|      84|         0|
+
+The mean is 0.19 outpatient visits per person and 30-day bin, and the median
+is zero across 84 bins. Zero bins
+remain in the denominator; a mean per bin is different from an all-history
+visit count per person.
 
 ## Temporal covariates: sparse time bins
 
@@ -262,60 +272,36 @@ Use temporal covariates when you need nonzero covariate values with a time index
 
 
 ``` r
-temporal <- base
-temporal$outputs <- list(temporal = omop_output("temporal", rows = "visitors", format = "temporal_covariates",
+temporal <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = study_variables,
+  outputs = omop_output("temporal", rows = "visitors", format = "temporal_covariates",
   options = list(sources = list(visits), bin_width = 30L,
     window = omop_window(0, 89), analyses = "count")))
-book_symbols(recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns))
+temporal_result <- recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns)
+book_symbols(temporal_result)
 ```
 
 ```
-#> $site
-#> $site$temporal
-#> $site$temporal$temporal
-#> $site$temporal$temporal$symbol
-#> [1] "D_fmt_temporal"
-#> 
-#> $site$temporal$temporal$grain
-#> [1] "episode"
-#> 
-#> $site$temporal$temporal$n_columns
-#> [1] 6
-#> 
-#> 
-#> $site$temporal$covariateRef
-#> $site$temporal$covariateRef$symbol
-#> [1] "D_fmt_temporal.covariateRef"
-#> 
-#> $site$temporal$covariateRef$grain
-#> [1] "none"
-#> 
-#> $site$temporal$covariateRef$n_columns
-#> [1] 5
-#> 
-#> 
-#> $site$temporal$timeRef
-#> $site$temporal$timeRef$symbol
-#> [1] "D_fmt_temporal.timeRef"
-#> 
-#> $site$temporal$timeRef$grain
-#> [1] "none"
-#> 
-#> $site$temporal$timeRef$n_columns
-#> [1] 3
+#> temporal/temporal → D_fmt_temporal
+#> temporal/covariateRef → D_fmt_temporal.covariateRef
+#> temporal/timeRef → D_fmt_temporal.timeRef
 ```
 
 ``` r
-dsBaseClient::ds.colnames("D_fmt_temporal", datasources = conns)
+dsBaseClient::ds.dim("D_fmt_temporal", datasources = conns)
 ```
 
 ```
-#> $site
-#> [1] "row_id"          "cohort_row_id"   "person_id"       "time_id"        
-#> [5] "covariate_id"    "covariate_value"
+#> $`dimensions of D_fmt_temporal in site`
+#> [1] 36  6
+#>
+#> $`dimensions of D_fmt_temporal in combined studies`
+#> [1] 36  6
 ```
 
-The returned mapping also names the covariate and time reference tables. Keep those companions: numeric covariate/time keys need their definitions. Missing records and missing measurements are not automatically interchangeable.
+The 36 rows count nonzero covariate/bin entries rather than people.
+Keep the covariate and time reference tables returned with this result: their
+keys need those definitions. Missing records and missing measurements are not automatically interchangeable.
 
 ## Survival: state the censoring rule
 
@@ -323,30 +309,25 @@ A *time-at-risk window* says when outcomes count. *Censoring* ends follow-up wit
 
 
 ``` r
-survival <- base
-survival$outputs <- list(survival = omop_output("survival", rows = "visitors", format = "survival",
+survival <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = study_variables,
+  outputs = omop_output("survival", rows = "visitors", format = "survival",
   options = list(outcomes = list(admission = inpatient),
     tar = omop_window(1, NULL), censor = list("observation_end", "death"))))
-book_symbols(recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns))
+invisible(recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns))
+dsBaseClient::ds.dim("D_fmt_survival", datasources = conns)
 ```
 
 ```
-#>         survival 
-#> "D_fmt_survival"
+#> $`dimensions of D_fmt_survival in site`
+#> [1] 28  8
+#>
+#> $`dimensions of D_fmt_survival in combined studies`
+#> [1] 28  8
 ```
 
-``` r
-dsBaseClient::ds.colnames("D_fmt_survival", datasources = conns)
-```
-
-```
-#> $site
-#> [1] "row_id"                "cohort_row_id"         "person_id"            
-#> [4] "outcome_name"          "event"                 "entry_days_from_index"
-#> [7] "exit_days_from_index"  "follow_up_days"
-```
-
-Only the named censor sources cap follow-up: observation end and death here. The window also limits follow-up when its upper bound is finite. An episode end is not an extra censor unless requested. A censor is not a “no outcome ever” assertion. Always state the window: omitting it would use the 730-day compatibility default.
+The survival output has 28 rows, one per person for this single outcome.
+Only the named censor sources cap follow-up: observation end and death here. The window also limits follow-up when its upper bound is finite. An episode end is not an extra censor unless requested. A censor is not a “no outcome ever” assertion. Always state the window: omitting it would use the default 730-day window.
 
 
 ``` r
@@ -361,51 +342,31 @@ knitr::kable(book_counts(survival_result))
 |0        |    21|
 |1        |     7|
 
-<details><summary>Full aggregate response</summary>
+Seven people have `event = 1` (an observed admission); 21 have `event = 0`
+(follow-up ended without an admission in the risk window).
 
 
 ``` r
-survival_result
+knitr::kable(book_summary("D_fmt_survival$follow_up_days", datasources = conns), digits = 1)
 ```
 
-```
-#> $output.list
-#> $output.list$TABLE_rvar.by.study_row.props
-#>                     study
-#> D_fmt_survival$event site
-#>                    0    1
-#>                    1    1
-#> 
-#> $output.list$TABLE_rvar.by.study_col.props
-#>                     study
-#> D_fmt_survival$event site
-#>                    0 0.75
-#>                    1 0.25
-#> 
-#> $output.list$TABLE_rvar.by.study_counts
-#>                     study
-#> D_fmt_survival$event site
-#>                    0   21
-#>                    1    7
-#> 
-#> $output.list$TABLES.COMBINED_all.sources_proportions
-#> D_fmt_survival$event
-#>    0    1 
-#> 0.75 0.25 
-#> 
-#> $output.list$TABLES.COMBINED_all.sources_counts
-#> D_fmt_survival$event
-#>  0  1 
-#> 21  7 
-#> 
-#> 
-#> $validity.message
-#> [1] "Data in all studies were valid"
-```
 
-</details>
 
-Counts of the `event` flag distinguish observed outcomes from censored follow-up in this one-outcome example.
+|Site |Statistic |   Value| N valid| N missing|
+|:----|:---------|-------:|-------:|---------:|
+|site |5%        |   993.4|      28|         0|
+|site |10%       |  1913.5|      28|         0|
+|site |25%       |  3821.2|      28|         0|
+|site |50%       |  7462.0|      28|         0|
+|site |75%       | 14257.5|      28|         0|
+|site |90%       | 18489.0|      28|         0|
+|site |95%       | 21647.2|      28|         0|
+|site |Mean      |  9291.6|      28|         0|
+
+Median follow-up is 7,462 days and the mean is 9,291.6 days. This spans much
+of the simulated life histories because no upper time limit was imposed.
+`follow_up_days` describes time observed until admission or censoring. Different
+durations are why a survival analysis needs time as well as the event indicator.
 
 ## Intervals: keep a start and an end
 
@@ -413,28 +374,23 @@ Use intervals for recorded spans. These visit intervals have recorded start and 
 
 
 ``` r
-intervals <- base
-intervals$outputs <- list(intervals = omop_output("intervals", rows = "visitors", format = "intervals",
-  options = list(sources = list(rx), window = omop_window(0, NULL))))
-book_symbols(recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns))
+intervals <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = study_variables,
+  outputs = omop_output("intervals", rows = "visitors", format = "intervals",
+  options = list(sources = list(spans), window = omop_window(0, NULL))))
+invisible(recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns))
+dsBaseClient::ds.dim("D_fmt_intervals", datasources = conns)
 ```
 
 ```
-#>         intervals 
-#> "D_fmt_intervals"
+#> $`dimensions of D_fmt_intervals in site`
+#> [1] 1735    7
+#>
+#> $`dimensions of D_fmt_intervals in combined studies`
+#> [1] 1735    7
 ```
 
-``` r
-dsBaseClient::ds.colnames("D_fmt_intervals", datasources = conns)
-```
-
-```
-#> $site
-#> [1] "row_id"                "cohort_row_id"         "person_id"            
-#> [4] "interval_type"         "concept_id"            "start_days_from_index"
-#> [7] "end_days_from_index"
-```
-
+The 1,735 interval rows represent recorded visit spans, with a start and an end.
 Both bounds remain private, normally as index-relative days. Overlapping intervals are not automatically a union of covered days; define an era or a coverage reducer for that question.
 
 ## Sparse: nonzero covariates plus a reference
@@ -443,49 +399,33 @@ Use sparse for many covariates when most combinations have no contribution.
 
 
 ``` r
-sparse <- base
-sparse$outputs <- list(sparse = omop_output("sparse", rows = "visitors", format = "sparse",
+sparse <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = study_variables,
+  outputs = omop_output("sparse", rows = "visitors", format = "sparse",
   options = list(sources = list(visits), analyses = c("binary", "count"))))
 sparse_result <- recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns)
 book_symbols(sparse_result)
 ```
 
 ```
-#> $site
-#> $site$sparse
-#> $site$sparse$sparse
-#> $site$sparse$sparse$symbol
-#> [1] "D_fmt_sparse"
-#> 
-#> $site$sparse$sparse$grain
-#> [1] "episode"
-#> 
-#> $site$sparse$sparse$n_columns
-#> [1] 5
-#> 
-#> 
-#> $site$sparse$covariateRef
-#> $site$sparse$covariateRef$symbol
-#> [1] "D_fmt_sparse.covariateRef"
-#> 
-#> $site$sparse$covariateRef$grain
-#> [1] "none"
-#> 
-#> $site$sparse$covariateRef$n_columns
-#> [1] 5
+#> sparse/sparse → D_fmt_sparse
+#> sparse/covariateRef → D_fmt_sparse.covariateRef
 ```
 
 ``` r
-dsBaseClient::ds.colnames("D_fmt_sparse", datasources = conns)
+dsBaseClient::ds.dim("D_fmt_sparse", datasources = conns)
 ```
 
 ```
-#> $site
-#> [1] "row_id"          "cohort_row_id"   "person_id"       "covariate_id"   
-#> [5] "covariate_value"
+#> $`dimensions of D_fmt_sparse in site`
+#> [1] 70  5
+#>
+#> $`dimensions of D_fmt_sparse in combined studies`
+#> [1] 70  5
 ```
 
-The data contain a covariate key and value. The reference companion maps keys to source, concept and analysis. A missing sparse row is not a missing person roster: retain membership separately. Each published patient component must meet its own support rule.
+The 70 sparse rows each hold a nonzero value for one person and covariate, so this
+row count is not a population size. The data contain a covariate key and value. The reference companion maps keys to source, concept and analysis. A missing sparse row is not a missing person roster: retain membership separately. Each published patient component must meet its own support rule.
 
 ## Membership: retain the population roster
 
@@ -493,26 +433,22 @@ Use membership to keep entry/end dates and keys for every episode independently 
 
 
 ``` r
-membership <- base
-membership$outputs <- list(membership = omop_output("membership", rows = "visitors", format = "membership"))
-book_symbols(recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns))
+membership <- omop_recipe(events = list(visits, spans, inpatient),
+  populations = list(visitors), variables = study_variables,
+  outputs = omop_output("membership", rows = "visitors", format = "membership"))
+invisible(recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns))
+dsBaseClient::ds.dim("D_fmt_membership", datasources = conns)
 ```
 
 ```
-#>         membership 
-#> "D_fmt_membership"
+#> $`dimensions of D_fmt_membership in site`
+#> [1] 28  6
+#>
+#> $`dimensions of D_fmt_membership in combined studies`
+#> [1] 28  6
 ```
 
-``` r
-dsBaseClient::ds.colnames("D_fmt_membership", datasources = conns)
-```
-
-```
-#> $site
-#> [1] "row_id"            "cohort_row_id"     "person_id"         "cohort_start_date"
-#> [5] "cohort_end_date"   "index_source"
-```
-
+The membership output has 28 rows, one for each first-visit episode.
 This is still a patient-linked private object. It is not a public list of participants.
 
 ## Dictionary: describe the concepts
@@ -521,31 +457,25 @@ Use dictionary to describe vocabulary concepts used by a declared source output.
 
 
 ``` r
-dictionary <- base
-dictionary$outputs <- list(
+dictionary <- omop_recipe(events = list(visits), populations = list(visitors),
+  variables = study_variables, outputs = list(
   counts = omop_output("counts", rows = "visitors", format = "wide", columns = "visits"),
   dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary",
-    options = list(source_outputs = "counts")))
-dictionary$publish <- "dictionary"
-book_symbols(recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns))
+    options = list(source_outputs = "counts"))), publish = "dictionary")
+invisible(recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns))
+dsBaseClient::ds.dim("D_fmt_dictionary", datasources = conns)
 ```
 
 ```
-#>         dictionary 
-#> "D_fmt_dictionary"
+#> $`dimensions of D_fmt_dictionary in site`
+#> [1] 2 6
+#>
+#> $`dimensions of D_fmt_dictionary in combined studies`
+#> [1] 2 6
 ```
 
-``` r
-dsBaseClient::ds.colnames("D_fmt_dictionary", datasources = conns)
-```
-
-```
-#> $site
-#> [1] "concept_id"       "concept_name"     "domain_id"        "vocabulary_id"   
-#> [5] "concept_class_id" "source"
-```
-
-The schema contains vocabulary fields, not frequencies. A dictionary does not certify that a concept occurred in a particular person, and it is not a replacement for the sparse covariate reference.
+The two dictionary rows describe the two visit-setting concepts, not patients
+or frequencies. A dictionary does not certify that a concept occurred in a particular person, and it is not a replacement for the sparse covariate reference.
 
 ## Joined: combine private outputs
 
@@ -555,19 +485,13 @@ Keep input columns disjoint and state how many rows can match.
 
 
 ``` r
-joined <- base
-joined$outputs <- list(
+joined <- omop_recipe(events = list(visits), populations = list(visitors),
+  variables = study_variables, outputs = list(
   counts = omop_output("counts", rows = "visitors", format = "wide", columns = "visits"),
   ages = omop_output("ages", rows = "visitors", format = "wide", columns = "age"),
   joined = omop_output("joined", rows = "visitors", format = "joined",
     options = list(from = list(list(output = "counts"), list(output = "ages")),
-      how = "left", cardinality = "one_to_one")))
-joined$publish <- "joined"
-class(joined)
-```
-
-```
-#> [1] "omop_recipe" "list"
+      how = "left", cardinality = "one_to_one"))), publish = "joined")
 ```
 
 Only the final joined output is published. The two input outputs are private
@@ -576,24 +500,18 @@ intermediate steps and do not each need a separately published symbol.
 
 ``` r
 joined_result <- recipe_execute(joined, out = c(joined = "D_fmt_joined"), conns = conns)
-book_symbols(joined_result)
+dsBaseClient::ds.dim("D_fmt_joined", datasources = conns)
 ```
 
 ```
-#>         joined 
-#> "D_fmt_joined"
+#> $`dimensions of D_fmt_joined in site`
+#> [1] 28  5
+#>
+#> $`dimensions of D_fmt_joined in combined studies`
+#> [1] 28  5
 ```
 
-``` r
-dsBaseClient::ds.colnames("D_fmt_joined", datasources = conns)
-```
-
-```
-#> $site
-#> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"
-```
-
-A left join retains the first input's rows. Here each episode has exactly one
+The joined table retains 28 rows. A left join retains the first input's rows. Here each episode has exactly one
 counts row and one ages row. Repeated event rows would require a different,
 explicit cardinality; do not silently multiply a study population.
 
@@ -625,31 +543,28 @@ This is a local metadata operation. It does not count patient rows. Use the same
 call for long, period, survival or interval results; multi-component outputs
 return one entry per published table.
 
-**Exercise.** Inspect the sparse reference table's column types.
-
-<details><summary>Solution: choose the exact component</summary>
+Inspect the sparse reference table's column types:
 
 
 ``` r
 sparse_books <- recipe_codebook(sparse_result)
 reference_key <- grep("covariateRef$", names(sparse_books), value = TRUE)
-knitr::kable(sparse_books[[reference_key]]$columns[c("name", "r_type", "semantic_type")])
+knitr::kable(sparse_books[[reference_key]]$columns[c("name", "r_type")])
 ```
 
 
 
-|name         |r_type    |semantic_type |
-|:------------|:---------|:-------------|
-|covariate_id |integer   |numeric       |
-|source       |character |numeric       |
-|concept_id   |factor    |concept       |
-|concept_name |character |numeric       |
-|analysis     |character |numeric       |
+|name         |r_type    |
+|:------------|:---------|
+|covariate_id |integer   |
+|source       |character |
+|concept_id   |factor    |
+|concept_name |character |
+|analysis     |character |
 
 The covariate reference describes feature identities. It is distinct from the
 matrix of private person-linked values and from an observed-frequency table.
-
-</details>
+Read `r_type` as the R representation: text descriptions are character columns.
 
 ## Try it
 
@@ -659,48 +574,26 @@ Summarise the visit-count column of the joined output. Why is it the same as the
 
 
 ``` r
-solution_result <- dsBaseClient::ds.summary("D_fmt_joined$visits", datasources = conns)
-knitr::kable(book_summary(solution_result))
+knitr::kable(book_summary("D_fmt_joined$visits", datasources = conns), digits = 2)
 ```
 
 
 
-|Site |Statistic |     Value|
-|:----|:---------|---------:|
-|site |5%        |  11.75000|
-|site |10%       |  16.40000|
-|site |25%       |  23.75000|
-|site |50%       |  45.00000|
-|site |75%       |  75.25000|
-|site |90%       | 117.60000|
-|site |95%       | 152.20000|
-|site |Mean      |  61.96429|
+|Site |Statistic |  Value| N valid| N missing|
+|:----|:---------|------:|-------:|---------:|
+|site |5%        |  11.75|      28|         0|
+|site |10%       |  16.40|      28|         0|
+|site |25%       |  23.75|      28|         0|
+|site |50%       |  45.00|      28|         0|
+|site |75%       |  75.25|      28|         0|
+|site |90%       | 117.60|      28|         0|
+|site |95%       | 152.20|      28|         0|
+|site |Mean      |  61.96|      28|         0|
 
-<details><summary>Full aggregate response</summary>
-
-
-``` r
-solution_result
-```
-
-```
-#> $site
-#> $site$class
-#> [1] "integer"
-#> 
-#> $site$length
-#> [1] 28
-#> 
-#> $site$`quantiles & mean`
-#>        5%       10%       25%       50%       75%       90%       95%      Mean 
-#>  11.75000  16.40000  23.75000  45.00000  75.25000 117.60000 152.20000  61.96429
-```
+The mean is 61.96 visits per person across 28 people. Both outputs use the
+same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.
 
 </details>
-Both use the same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.
-
-</details>
-
 
 ## Another numeric exercise
 
@@ -711,24 +604,24 @@ of a long table's measurement rows give each person equal weight?
 
 
 ``` r
-output_lab <- dsBaseClient::ds.summary("D_fmt_wide$hemoglobin", datasources = conns)
-knitr::kable(book_summary(output_lab))
+knitr::kable(book_summary("D_fmt_wide$hemoglobin", datasources = conns), digits = 2)
 ```
 
 
 
-|Site |Statistic |    Value|
-|:----|:---------|--------:|
-|site |5%        | 12.90500|
-|site |10%       | 13.14667|
-|site |25%       | 13.78500|
-|site |50%       | 14.32500|
-|site |75%       | 15.33542|
-|site |90%       | 15.70000|
-|site |95%       | 15.92375|
-|site |Mean      | 14.46679|
+|Site |Statistic | Value| N valid| N missing|
+|:----|:---------|-----:|-------:|---------:|
+|site |5%        | 12.90|      28|         0|
+|site |10%       | 13.15|      28|         0|
+|site |25%       | 13.79|      28|         0|
+|site |50%       | 14.32|      28|         0|
+|site |75%       | 15.34|      28|         0|
+|site |90%       | 15.70|      28|         0|
+|site |95%       | 15.92|      28|         0|
+|site |Mean      | 14.47|      28|         0|
 
-The wide table gives each included person one mean in g/dL. An average over
+The overall mean is 14.47 g/dL across 28 person-level means. The wide table
+gives each included person one mean in g/dL. An average over
 measurement rows would give more weight to people with more measurements.
 [Working with lab values](book-14-labs.html) builds this distinction into a
 two-connection analysis. Neither shape grants access to individual rows.
@@ -738,26 +631,6 @@ two-connection analysis. Neither shape grants access to individual rows.
 [Chapter 16](book-16-longitudinal.html) develops these choices through irregular
 measurements, server reshaping, a discrete-time hazard and pooled mixed models.
 
-## Exercise 2: a common variant
-
-Inspect the wide schema before proposing a model.
-
-<details><summary>Solution 2</summary>
-
-
-``` r
-dsBaseClient::ds.colnames("D_fmt_wide", datasources = conns)
-```
-
-```
-#> $site
-#> [1] "row_id"        "cohort_row_id" "person_id"     "visits"        "age"          
-#> [6] "hemoglobin"
-```
-
-One column per variable and one row per declared population unit are modelling choices, not export permissions.
-
-</details>
 ## Recap
 
 Choose the population and row meaning before the format. Outputs stay private; multi-component outputs carry reference companions. Censoring and join cardinality are study decisions.

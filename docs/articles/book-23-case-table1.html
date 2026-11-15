@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>23. Case study: a harmonised Table 1 • dsOMOPClient</title>
+<title>23. Case study: describing the same population across two sites • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<script src="../extra.js"></script><meta property="og:title" content="23. Case study: a harmonised Table 1">
+<script src="../extra.js"></script><meta property="og:title" content="23. Case study: describing the same population across two sites">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -58,7 +58,7 @@
     <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
     <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
     <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
-    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: describing the same population across two sites</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -81,7 +81,7 @@
 <script src="book-23-case-table1_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>23. Case study: a harmonised Table 1</h1>
+      <h1>23. Case study: describing the same population across two sites</h1>
                         <h4 data-toc-skip class="author">David Sarrat González</h4>
             
       
@@ -93,231 +93,315 @@
     
 <div class="learn-box">
 <p><strong>What you will learn</strong></p>
-<p>Use identical factor definitions at disjoint sites and combine descriptive counts and means into a study characterisation table.</p>
+<p>Describe a shared study population with one column per site and a total, using baseline values, common categories and explicit missing counts.</p>
 </div>
-<p><strong>You need:</strong> <a href="book-00-start.html#before-you-start">the installed packages and practice resources</a>, <a href="book-04-vocabulary.html">concept discovery</a>, and the preceding tutorial chapters. Run these sections in order in a fresh <code>book-work</code> session. All observations are public synthetic teaching data; the numerical results are not clinical evidence.</p>
+<p><strong>You need:</strong> <a href="book-00-start.html">the setup and numeric resource</a>, and <a href="book-14-labs.html">the lab lesson</a>. Start a fresh R session in <code>book-work</code>.</p>
 <div class="section level2">
 <h2 id="research-question">Research question<a class="anchor" aria-label="anchor" href="#research-question"></a>
 </h2>
-<p>What are the age, sex and haemoglobin characteristics of the same explicitly selected population across two sites? Use disjoint Synthea people and a common first-haemoglobin index. Table 1 describes the cohort; it does not test causality.</p>
+<p>What are the age, sex and baseline haemoglobin characteristics of people entering at their first haemoglobin measurement? We build the descriptive table that opens most study reports, often called “Table 1”. The two practice sites contain disjoint halves of Synthea, so their people can be added without duplication.</p>
+<p>For real servers, replace the two lines assigning <code>practice_pair</code> and <code>two_conns</code> below with the <a href="book-00-start.html#connect-to-two-opal-sites">two-site Opal login</a>, which attaches the resources as <code>book_pool</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/practice.R"</span><span class="op">)</span></span>
-<span><span class="va">pair</span> <span class="op">&lt;-</span> <span class="fu">book_numeric_pair</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">two_conns</span> <span class="op">&lt;-</span> <span class="va">pair</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
+<span><span class="va">practice_pair</span> <span class="op">&lt;-</span> <span class="fu">book_connect</span><span class="op">(</span><span class="st">"numeric"</span>, two_sites <span class="op">=</span> <span class="cn">TRUE</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span></span>
+<span><span class="va">two_conns</span> <span class="op">&lt;-</span> <span class="va">practice_pair</span><span class="op">$</span><span class="va">conns</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="find-and-confirm-the-common-concept">Find and confirm the common concept<a class="anchor" aria-label="anchor" href="#find-and-confirm-the-common-concept"></a>
+<h2 id="confirm-the-measurement-and-units-at-both-sites">Confirm the measurement and units at both sites<a class="anchor" aria-label="anchor" href="#confirm-the-measurement-and-units-at-both-sites"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Hemoglobin"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>, <span class="st">"vocabulary_id"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.search.html">ds.omop.concept.search</a></span><span class="op">(</span><span class="st">"Hemoglobin"</span>, domain <span class="op">=</span> <span class="st">"Measurement"</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
+<span><span class="va">selected</span> <span class="op">&lt;-</span> <span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span> <span class="st">"Hemoglobin [Mass/volume] in Blood"</span>, <span class="op">]</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">selected</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"concept_id"</span>, <span class="st">"concept_name"</span>, <span class="st">"standard_concept"</span>, <span class="st">"vocabulary_id"</span><span class="op">)</span><span class="op">]</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
-<colgroup>
-<col width="73%">
-<col width="14%">
-<col width="12%">
-</colgroup>
 <thead><tr class="header">
+<th align="right">concept_id</th>
 <th align="left">concept_name</th>
 <th align="left">standard_concept</th>
 <th align="left">vocabulary_id</th>
 </tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">Hemoglobin and Hematocrit panel - Blood</td>
-<td align="left">S</td>
-<td align="left">LOINC</td>
-</tr>
-<tr class="even">
-<td align="left">Hemoglobin A1c/Hemoglobin.total in Blood</td>
-<td align="left">S</td>
-<td align="left">LOINC</td>
-</tr>
-<tr class="odd">
-<td align="left">Hemoglobin.gastrointestinal.lower [Presence] in Stool by Immunoassay –1st specimen</td>
-<td align="left">S</td>
-<td align="left">LOINC</td>
-</tr>
-<tr class="even">
-<td align="left">Hemoglobin [Presence] in Urine by Test strip</td>
-<td align="left">S</td>
-<td align="left">LOINC</td>
-</tr>
-<tr class="odd">
+<tbody><tr class="odd">
+<td align="right">3000963</td>
 <td align="left">Hemoglobin [Mass/volume] in Blood</td>
 <td align="left">S</td>
 <td align="left">LOINC</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hb_id</span> <span class="op">&lt;-</span> <span class="va">hits</span><span class="op">$</span><span class="va">concept_id</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">concept_name</span><span class="op">)</span> <span class="op">==</span> <span class="st">"Hemoglobin [Mass/volume] in Blood"</span><span class="op">]</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">hb_id</span>,</span>
-<span>  scope <span class="op">=</span> <span class="st">"pooled"</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">n</th>
-<th align="left">concept_name</th>
-<th align="left">value</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td align="right">100</td>
-<td align="left">gram per deciliter</td>
-<td align="left">8713</td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mapping</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.relationships.html">ds.omop.concept.relationships</a></span><span class="op">(</span><span class="va">hb_id</span>, relationship_id <span class="op">=</span> <span class="st">"Maps to"</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="va">children</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.descendants.html">ds.omop.concept.descendants</a></span><span class="op">(</span><span class="va">hb_id</span>, include_self <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">$</span><span class="va">pooled</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Maps_to_rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">NROW</a></span><span class="op">(</span><span class="va">mapping</span><span class="op">)</span>, Descendant_rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">NROW</a></span><span class="op">(</span><span class="va">children</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;   Maps_to_rows Descendant_rows</span></span>
-<span><span class="co">#&gt; 1            2               0</span></span></code></pre>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hb_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">hb_id</span><span class="op">)</span></span></code></pre></div>
-<p>The catalogue means and recorded unit must agree before pooling. A pooled search row alone does not establish clinical equivalence between differently mapped sites.</p>
-</div>
-<div class="section level2">
-<h2 id="use-one-definition-for-every-site">Use one definition for every site<a class="anchor" aria-label="anchor" href="#use-one-definition-for-every-site"></a>
-</h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">hb_set</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8713L</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">characterise</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">hb</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  age <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_age</a></span><span class="op">(</span><span class="op">)</span>, sex <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_sex</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  age_band <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_bins</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_age.html">omop_age</a></span><span class="op">(</span><span class="op">)</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">18</span>, <span class="fl">121</span><span class="op">)</span>,</span>
-<span>    labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"under 18"</span>, <span class="st">"adult"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  haemoglobin <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">hb</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">book_symbols</span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">characterise</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_table1"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;   baseline </span></span>
-<span><span class="co">#&gt; "D_table1"</span></span></code></pre>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.levels.html" class="external-link">ds.levels</a></span><span class="op">(</span><span class="st">"D_table1$age_band"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $north</span></span>
-<span><span class="co">#&gt; $north$Levels</span></span>
-<span><span class="co">#&gt; [1] "under 18" "adult"   </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $north$ValidityMessage</span></span>
-<span><span class="co">#&gt; [1] "VALID ANALYSIS"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $south</span></span>
-<span><span class="co">#&gt; $south$Levels</span></span>
-<span><span class="co">#&gt; [1] "under 18" "adult"   </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $south$ValidityMessage</span></span>
-<span><span class="co">#&gt; [1] "VALID ANALYSIS"</span></span></code></pre>
-<p>This type-focused check confirms identical public factor domains, including unused levels. It does not reveal private patient categories. The age is annual age at first haemoglobin; the haemoglobin variable is a person mean over history.</p>
-</div>
-<div class="section level2">
-<h2 id="build-table-1-from-released-aggregates">Build Table 1 from released aggregates<a class="anchor" aria-label="anchor" href="#build-table-1-from-released-aggregates"></a>
-</h2>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sex_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_table1$sex"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
-<span><span class="va">age_counts</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_table1$age_band"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
-<span><span class="va">hb_mean</span> <span class="op">&lt;-</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_table1$haemoglobin"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">sex_counts</span><span class="op">)</span>, Variable <span class="op">=</span> <span class="st">"Sex"</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="va">age_counts</span><span class="op">)</span>, Variable <span class="op">=</span> <span class="st">"Age band"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hb_id</span> <span class="op">&lt;-</span> <span class="va">selected</span><span class="op">$</span><span class="va">concept_id</span></span>
+<span><span class="va">unit_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.value.counts.html">ds.omop.value.counts</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="st">"unit_concept_id"</span>, concept_id <span class="op">=</span> <span class="va">hb_id</span>,</span>
+<span>  conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">$</span><span class="va">per_site</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">unit_counts</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">site</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Site <span class="op">=</span> <span class="va">site</span>, <span class="va">unit_counts</span><span class="op">[[</span><span class="va">site</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"value"</span>, <span class="st">"concept_name"</span>, <span class="st">"n"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Category</th>
-<th align="right">Count</th>
-<th align="left">Variable</th>
+<th align="left">Site</th>
+<th align="left">value</th>
+<th align="left">concept_name</th>
+<th align="right">n</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">F</td>
-<td align="right">13</td>
-<td align="left">Sex</td>
+<td align="left">north</td>
+<td align="left">8713</td>
+<td align="left">gram per deciliter</td>
+<td align="right">50</td>
 </tr>
 <tr class="even">
-<td align="left">M</td>
-<td align="right">15</td>
-<td align="left">Sex</td>
-</tr>
-<tr class="odd">
-<td align="left">NA</td>
-<td align="right">0</td>
-<td align="left">Sex</td>
-</tr>
-<tr class="even">
-<td align="left">under 18</td>
-<td align="right">13</td>
-<td align="left">Age band</td>
-</tr>
-<tr class="odd">
-<td align="left">adult</td>
-<td align="right">15</td>
-<td align="left">Age band</td>
-</tr>
-<tr class="even">
-<td align="left">NA</td>
-<td align="right">0</td>
-<td align="left">Age band</td>
+<td align="left">south</td>
+<td align="left">8713</td>
+<td align="left">gram per deciliter</td>
+<td align="right">50</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Variable <span class="op">=</span> <span class="st">"Person mean haemoglobin (g/dL)"</span>,</span>
-<span>  Mean <span class="op">=</span> <span class="va">hb_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span>, Nonmissing <span class="op">=</span> <span class="va">hb_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span><span class="fl">1</span>,<span class="st">"Nvalid"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hb_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_concept_set.html">omop_concept_set</a></span><span class="op">(</span><span class="va">hb_id</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">hb_set</span>, <span class="st">"baseline-haemoglobin.rds"</span><span class="op">)</span></span></code></pre></div>
+<p>The shared concept is <strong>3000963</strong>, and both sites record <strong>8713</strong>, gram per deciliter (g/dL). Each site reports the band 50–54 rows. Adding the band floors gives 100; it does not mean there are exactly 100 measurements. Meaning and units must agree before pooling, not merely the displayed name.</p>
+</div>
+<div class="section level2">
+<h2 id="use-only-information-available-at-entry">Use only information available at entry<a class="anchor" aria-label="anchor" href="#use-only-information-available-at-entry"></a>
+</h2>
+<p>Completed age is measured at the first haemoglobin date. Choose haemoglobin on that date, with no positive tolerance; an all-history mean would include future values and would not describe baseline. Sex is the recorded female/male category; <code><a href="../reference/omop_age.html">omop_sex()</a></code> represents it as F/M, labelled Female/Male in the report below.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">hb_set</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8713L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">characterise</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">hb</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"index"</span><span class="op">)</span>, sex <span class="op">=</span> <span class="fu"><a href="../reference/omop_age.html">omop_sex</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  age_band <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_bins</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="st">"index"</span><span class="op">)</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">18</span>, <span class="fl">121</span><span class="op">)</span>,</span>
+<span>    labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"under 18"</span>, <span class="st">"adult"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  haemoglobin <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_value_at_index</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">hb_set</span>,</span>
+<span>    tolerance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">90</span>, <span class="fl">0</span><span class="op">)</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8713L</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">characterise</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_baseline"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span></span>
+<span><span class="va">columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_codebook.html">recipe_codebook</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">columns</span></span>
+<span><span class="va">age_column</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="st">"age_band"</span>, <span class="va">columns</span><span class="op">$</span><span class="va">name</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Age_group <span class="op">=</span> <span class="va">columns</span><span class="op">$</span><span class="va">levels</span><span class="op">[[</span><span class="va">age_column</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">labels</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="left">Variable</th>
-<th align="right">Mean</th>
-<th align="right">Nonmissing</th>
+<th align="left">Age_group</th>
 </tr></thead>
-<tbody><tr class="odd">
-<td align="left">Person mean haemoglobin (g/dL)</td>
-<td align="right">14.46679</td>
-<td align="right">28</td>
-</tr></tbody>
+<tbody>
+<tr class="odd">
+<td align="left">under 18</td>
+</tr>
+<tr class="even">
+<td align="left">adult</td>
+</tr>
+</tbody>
 </table>
-<p>Counts add across disjoint populations. The numeric mean weights each nonmissing person equally, not each site equally. Missing categories and numeric denominators must be reported; a suppressed cell must never be silently filled with zero.</p>
+<p>Both sites use the declared age groups under 18 and adult, including any unused level. The same definition and index are required for comparable columns. The 90-day lookback cannot add earlier haemoglobin here because entry is the first haemoglobin; its selected value is the baseline reading itself.</p>
+</div>
+<div class="section level2">
+<h2 id="assemble-the-descriptive-table-from-released-aggregates">Assemble the descriptive table from released aggregates<a class="anchor" aria-label="anchor" href="#assemble-the-descriptive-table-from-released-aggregates"></a>
+</h2>
+<p>For each numeric variable, <code>ds.mean()</code> supplies its mean and nonmissing count; <code>ds.var()</code> supplies variance, whose square root is the standard deviation (SD). For categories, percentages use all people in that site, with missingness shown as its own row. No patient rows are combined locally.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">describe</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">connections</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">aggregate_mean</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_baseline$"</span>, <span class="va">column</span><span class="op">)</span>,</span>
+<span>    type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">connections</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span></span>
+<span>  <span class="va">variance</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.var.html" class="external-link">ds.var</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_baseline$"</span>, <span class="va">column</span><span class="op">)</span>,</span>
+<span>    type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">connections</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Variance</span></span>
+<span>  <span class="va">age</span> <span class="op">&lt;-</span> <span class="fu">aggregate_mean</span><span class="op">(</span><span class="st">"age"</span><span class="op">)</span>; <span class="va">lab</span> <span class="op">&lt;-</span> <span class="fu">aggregate_mean</span><span class="op">(</span><span class="st">"haemoglobin"</span><span class="op">)</span></span>
+<span>  <span class="va">n</span> <span class="op">&lt;-</span> <span class="va">age</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Ntotal"</span><span class="op">]</span></span>
+<span>  <span class="va">numeric_text</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">v</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"%.2f (%.2f)"</span>, <span class="va">x</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"EstimatedMean"</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">v</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"EstimatedVar"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">counts</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"D_baseline$"</span>, <span class="va">column</span><span class="op">)</span>,</span>
+<span>      useNA <span class="op">=</span> <span class="st">"always"</span>, datasources <span class="op">=</span> <span class="va">connections</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">Count</span>, <span class="va">x</span><span class="op">$</span><span class="va">Category</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">sex</span> <span class="op">&lt;-</span> <span class="fu">counts</span><span class="op">(</span><span class="st">"sex"</span><span class="op">)</span>; <span class="va">bands</span> <span class="op">&lt;-</span> <span class="fu">counts</span><span class="op">(</span><span class="st">"age_band"</span><span class="op">)</span></span>
+<span>  <span class="va">cell</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">numerator</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"%d (%.1f%%)"</span>, <span class="va">numerator</span>, <span class="fl">100</span> <span class="op">*</span> <span class="va">numerator</span> <span class="op">/</span> <span class="va">n</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>People <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>,</span>
+<span>    `Age, years: mean (SD)` <span class="op">=</span> <span class="fu">numeric_text</span><span class="op">(</span><span class="va">age</span>, <span class="fu">variance</span><span class="op">(</span><span class="st">"age"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    `Age missing, n` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">age</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nmissing"</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    `Female, n (%)` <span class="op">=</span> <span class="fu">cell</span><span class="op">(</span><span class="va">sex</span><span class="op">[[</span><span class="st">"F"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, `Male, n (%)` <span class="op">=</span> <span class="fu">cell</span><span class="op">(</span><span class="va">sex</span><span class="op">[[</span><span class="st">"M"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    `Sex missing, n (%)` <span class="op">=</span> <span class="fu">cell</span><span class="op">(</span><span class="va">sex</span><span class="op">[[</span><span class="st">"NA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    `Under 18, n (%)` <span class="op">=</span> <span class="fu">cell</span><span class="op">(</span><span class="va">bands</span><span class="op">[[</span><span class="st">"under 18"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, `Adult, n (%)` <span class="op">=</span> <span class="fu">cell</span><span class="op">(</span><span class="va">bands</span><span class="op">[[</span><span class="st">"adult"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    `Age group missing, n (%)` <span class="op">=</span> <span class="fu">cell</span><span class="op">(</span><span class="va">bands</span><span class="op">[[</span><span class="st">"NA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    `Baseline haemoglobin, g/dL: mean (SD)` <span class="op">=</span> <span class="fu">numeric_text</span><span class="op">(</span><span class="va">lab</span>, <span class="fu">variance</span><span class="op">(</span><span class="st">"haemoglobin"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    `Haemoglobin missing, n` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">lab</span><span class="op">[</span><span class="fl">1</span>, <span class="st">"Nmissing"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">site_a</span> <span class="op">&lt;-</span> <span class="fu">describe</span><span class="op">(</span><span class="va">two_conns</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">site_b</span> <span class="op">&lt;-</span> <span class="fu">describe</span><span class="op">(</span><span class="va">two_conns</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">total</span> <span class="op">&lt;-</span> <span class="fu">describe</span><span class="op">(</span><span class="va">two_conns</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Characteristic <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">total</span><span class="op">)</span>, north <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">site_a</span><span class="op">)</span>,</span>
+<span>  south <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">site_b</span><span class="op">)</span>, Total <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">total</span><span class="op">)</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<colgroup>
+<col width="47%">
+<col width="17%">
+<col width="17%">
+<col width="17%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Characteristic</th>
+<th align="left">north</th>
+<th align="left">south</th>
+<th align="left">Total</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">People</td>
+<td align="left">14</td>
+<td align="left">14</td>
+<td align="left">28</td>
+</tr>
+<tr class="even">
+<td align="left">Age, years: mean (SD)</td>
+<td align="left">18.64 (19.44)</td>
+<td align="left">25.36 (20.13)</td>
+<td align="left">22.00 (19.71)</td>
+</tr>
+<tr class="odd">
+<td align="left">Age missing, n</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="even">
+<td align="left">Female, n (%)</td>
+<td align="left">4 (28.6%)</td>
+<td align="left">9 (64.3%)</td>
+<td align="left">13 (46.4%)</td>
+</tr>
+<tr class="odd">
+<td align="left">Male, n (%)</td>
+<td align="left">10 (71.4%)</td>
+<td align="left">5 (35.7%)</td>
+<td align="left">15 (53.6%)</td>
+</tr>
+<tr class="even">
+<td align="left">Sex missing, n (%)</td>
+<td align="left">0 (0.0%)</td>
+<td align="left">0 (0.0%)</td>
+<td align="left">0 (0.0%)</td>
+</tr>
+<tr class="odd">
+<td align="left">Under 18, n (%)</td>
+<td align="left">7 (50.0%)</td>
+<td align="left">6 (42.9%)</td>
+<td align="left">13 (46.4%)</td>
+</tr>
+<tr class="even">
+<td align="left">Adult, n (%)</td>
+<td align="left">7 (50.0%)</td>
+<td align="left">8 (57.1%)</td>
+<td align="left">15 (53.6%)</td>
+</tr>
+<tr class="odd">
+<td align="left">Age group missing, n (%)</td>
+<td align="left">0 (0.0%)</td>
+<td align="left">0 (0.0%)</td>
+<td align="left">0 (0.0%)</td>
+</tr>
+<tr class="even">
+<td align="left">Baseline haemoglobin, g/dL: mean (SD)</td>
+<td align="left">14.01 (1.62)</td>
+<td align="left">13.96 (2.53)</td>
+<td align="left">13.99 (2.08)</td>
+</tr>
+<tr class="odd">
+<td align="left">Haemoglobin missing, n</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+</tbody>
+</table>
+<p>Each site contributes 14 people, for 28 total. The sites differ: female counts are 4 (28.6%) and 9 (64.3%). Mean completed age is 18.64 and 25.36 years, with pooled mean 22.00. Pooled baseline haemoglobin is <strong>13.99 g/dL</strong>, not the all-history mean 14.47. Missing rows state the denominator for each variable; a withheld cell must never be silently filled with zero.</p>
+<p>The total SD includes both within-site and between-site variation. It is not obtained by averaging site SDs. Site columns make population differences visible that a pooled column alone would hide.</p>
 </div>
 <div class="section level2">
 <h2 id="exercises">Exercises<a class="anchor" aria-label="anchor" href="#exercises"></a>
 </h2>
-<p><strong>1.</strong> Check the pooled numeric sample size.</p>
+<p><strong>1. Detect future information.</strong> Replace baseline haemoglobin with the mean over all history, keeping the same first-haemoglobin population. Quantify the difference.</p>
 <details><p><summary>Solution 1</summary></p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hb_mean</span><span class="op">$</span><span class="va">Global.Mean</span><span class="op">[</span>,<span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Nmissing"</span>, <span class="st">"Nvalid"</span>, <span class="st">"Ntotal"</span><span class="op">)</span>,drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;                 Nmissing Nvalid Ntotal</span></span>
-<span><span class="co">#&gt; studiesCombined        0     28     28</span></span></code></pre>
-<p>This states the denominator for this variable, not a universal denominator for all future variables in the table.</p>
-</details><p><strong>2.</strong> Summarise age with the same population and connection list.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">all_history</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">hb</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  baseline <span class="op">=</span> <span class="fu"><a href="../reference/omop_ever.html">omop_value_at_index</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">hb_set</span>, tolerance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8713L</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  history <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>event <span class="op">=</span> <span class="va">hb</span>, reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">all_history</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_history"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_history"</span>, difference <span class="op">=</span> <span class="va">history</span> <span class="op">-</span> <span class="va">baseline</span>,</span>
+<span>  newobj <span class="op">=</span> <span class="st">"D_history_difference"</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_history_difference$difference"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span><span class="op">$</span><span class="va">Global.Mean</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">EstimatedMean</th>
+<th align="right">Nmissing</th>
+<th align="right">Nvalid</th>
+<th align="right">Ntotal</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">studiesCombined</td>
+<td align="right">0.481</td>
+<td align="right">0</td>
+<td align="right">28</td>
+<td align="right">28</td>
+</tr></tbody>
+</table>
+<p>The mean difference is about 0.481 g/dL. The all-history mean includes later readings for 25 people and therefore cannot be used as a baseline characteristic.</p>
+</details><p><strong>2. Add a common haemoglobin category.</strong> Use a public teaching cutoff of 14 g/dL and show the counts separately at each site. Do equal definitions imply equal counts?</p>
 <details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.mean.html" class="external-link">ds.mean</a></span><span class="op">(</span><span class="st">"D_table1$age"</span>, type <span class="op">=</span> <span class="st">"combine"</span>, datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; $Global.Mean</span></span>
-<span><span class="co">#&gt;                 EstimatedMean Nmissing Nvalid Ntotal</span></span>
-<span><span class="co">#&gt; studiesCombined      22.21429        0     28     28</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $Nstudies</span></span>
-<span><span class="co">#&gt; [1] 2</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $ValidityMessage</span></span>
-<span><span class="co">#&gt;       ValidityMessage </span></span>
-<span><span class="co">#&gt; north "VALID ANALYSIS"</span></span>
-<span><span class="co">#&gt; south "VALID ANALYSIS"</span></span></code></pre>
-<p>The age variable is defined at entry. Current age would describe a different time.</p>
-</details><p><strong>3.</strong> Save the harmonised recipe and restore it.</p>
-<details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">restored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_import_json.html">recipe_import_json</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_export_json.html">recipe_export_json</a></span><span class="op">(</span><span class="va">characterise</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">characterise</span><span class="op">)</span>, <span class="fu"><a href="../reference/recipe_to_plan.html">recipe_to_plan</a></span><span class="op">(</span><span class="va">restored</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] TRUE</span></span></code></pre>
-<p>A shared definition preserves declared thresholds and units. Each site’s vocabulary and capability checks still matter when executing it later.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bands</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_study.html">omop_study</a></span><span class="op">(</span><span class="va">hb</span>, outputs <span class="op">=</span> <span class="st">"baseline"</span>, baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  band <span class="op">=</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_bins</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_ever.html">omop_value_at_index</a></span><span class="op">(</span><span class="st">"measurement"</span>, <span class="va">hb_set</span>,</span>
+<span>    tolerance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, unit <span class="op">=</span> <span class="fu"><a href="../reference/omop_unit.html">omop_unit</a></span><span class="op">(</span><span class="fl">8713L</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="cn">Inf</span>, <span class="fl">14</span>, <span class="cn">Inf</span><span class="op">)</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"below 14"</span>, <span class="st">"14 or above"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">bands</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>baseline <span class="op">=</span> <span class="st">"D_baseline_bands"</span><span class="op">)</span>, conns <span class="op">=</span> <span class="va">two_conns</span>, symbol <span class="op">=</span> <span class="st">"book_pool"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">two_conns</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">site</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span><span class="fu">book_counts</span><span class="op">(</span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">ds.table</a></span><span class="op">(</span><span class="st">"D_baseline_bands$band"</span>,</span>
+<span>    datasources <span class="op">=</span> <span class="va">two_conns</span><span class="op">[</span><span class="va">site</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>, Site <span class="op">=</span> <span class="va">site</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Category</th>
+<th align="right">Count</th>
+<th align="left">Site</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">below 14</td>
+<td align="right">8</td>
+<td align="left">north</td>
+</tr>
+<tr class="even">
+<td align="left">14 or above</td>
+<td align="right">6</td>
+<td align="left">north</td>
+</tr>
+<tr class="odd">
+<td align="left">NA</td>
+<td align="right">0</td>
+<td align="left">north</td>
+</tr>
+<tr class="even">
+<td align="left">below 14</td>
+<td align="right">7</td>
+<td align="left">south</td>
+</tr>
+<tr class="odd">
+<td align="left">14 or above</td>
+<td align="right">7</td>
+<td align="left">south</td>
+</tr>
+<tr class="even">
+<td align="left">NA</td>
+<td align="right">0</td>
+<td align="left">south</td>
+</tr>
+</tbody>
+</table>
+<p>Both sites use the same boundary and labels. Counts depend on their people; sharing a definition makes comparison meaningful without forcing distributions to match. The cutoff is a teaching rule, not a clinical reference interval.</p>
 </details>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
 </h2>
-<p>A Table 1 requires a common population, index, variable definitions and factor levels. Pool only compatible released summaries from disjoint people, preserve missingness, and record each variable’s denominator with its result.</p>
-<p><strong>Next:</strong> <a href="book-17-reproduce.html">Reproduce your study</a>.</p>
+<p>Describe the population at a shared entry point, keep future information out of baseline variables, and show each site beside the total. Report missingness and use pooled variance for the total SD.</p>
+<p><strong>Next:</strong> revisit the <a href="book-showcase.html">capability tour</a> to choose the next analysis for your study.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

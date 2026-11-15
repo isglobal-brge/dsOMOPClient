@@ -77,7 +77,7 @@ navbar:
           href: articles/book-21-case-glucose.html
         - text: "22. Case study: drug utilisation"
           href: articles/book-22-case-drug.html
-        - text: "23. Case study: a harmonised Table 1"
+        - text: "23. Case study: describing the same population across two sites"
           href: articles/book-23-case-table1.html
 articles:
   - title: Learn step by step

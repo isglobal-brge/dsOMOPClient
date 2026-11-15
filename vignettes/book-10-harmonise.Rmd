@@ -15,15 +15,8 @@ Use translated concept answers, distinguish recodes from column renames, and har
 </div>
 
 This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
-**You need:** the packages and the matching practice connection described in
-[Before you start](book-00-start.html#before-you-start).
-Run the sections in order in one R session. All printed results below were computed
-with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
-
-Concept selections refer to the searches and saved definitions in
-[chapter 4](book-04-vocabulary.html), including the separate questionnaire
-catalogue. Additional body-measurement concepts are found on screen in the
-[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
+Run the sections in order in a fresh R session in your `book-work` directory.
 
 ## Start this chapter
 
@@ -34,17 +27,17 @@ Start a fresh R session in the `book-work` directory created in
 ``` r
 library(dsOMOPClient)
 source("tools/book/display.R")
-source("tools/book/fixture.R")
-practice <- book_fixture(categories = TRUE)
+source("tools/book/connection.R")
+practice <- book_connect("questionnaire", categories = TRUE)
 conns <- practice$conns
-names(conns)
 ```
 
-```
-#> [1] "site"
-```
+The connection is ready; `conns` identifies the server used by the analysis calls.
 
-The `site` connection is ready. This chapter creates its temporary questionnaire dataset locally.
+[Chapter 4](book-04-vocabulary.html) identifies Education question (**900001**),
+Fever question (**900002**), Secondary education (**900101**), University
+education (**900102**), Yes (**900301**) and No (**900302**). The later discovery
+table in this chapter adds the concepts needed for ordering and classification.
 
 ## Translation follows the value type
 
@@ -57,11 +50,6 @@ the suffix `_concept_id`.
 education <- omop_variable(
   event = omop_event("observation", concepts = 900001L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
-class(education)
-```
-
-```
-#> [1] "omop_variable" "list"
 ```
 
 The event selects the education question; the reducer reads its last coded answer.
@@ -71,28 +59,27 @@ Selecting the question concept as the value would answer a different question.
 ``` r
 categories <- omop_recipe(variables = list(education = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(categories, out = c(people = "D_categories"), conns = conns))
-```
-
-```
-#>         people 
-#> "D_categories"
+invisible(recipe_execute(categories, out = c(people = "D_categories"), conns = conns))
 ```
 
 Translation is the default. The data values become labelled factors on the server.
 
 
 ``` r
-ds.omop.table("D_categories", "education", conns = conns)
+knitr::kable(book_counts(dsBaseClient::ds.table("D_categories$education",
+  useNA = "always", datasources = conns)))
 ```
 
-```
-#> D_categories$education
-#>  Secondary education University education 
-#>                    6                    6
-```
 
-You see category names and released counts. The concept IDs used in the definition
+
+|Category             | Count|
+|:--------------------|-----:|
+|Secondary education  |    12|
+|University education |    12|
+|NA                   |    24|
+
+The latest education answers are Secondary education for 12 people and
+University education for 12, with 24 missing. The concept IDs used in the definition
 are vocabulary identifiers; they do not appear as numeric answers in this table.
 
 ## Recode answers to yes and no
@@ -100,17 +87,35 @@ are vocabulary identifiers; they do not appear as numeric answers in this table.
 An explicit label map changes categories by concept identity. It does not search
 for text in each site's database.
 
+First inspect the default wording:
+
+
+``` r
+fever_default <- omop_variable(event = omop_event("observation", concepts = 900002L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"))
+fever_recipe <- omop_recipe(variables = list(fever = fever_default))
+invisible(recipe_execute(fever_recipe, out = "D_fever_default", conns = conns))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_fever_default$fever",
+  useNA = "always", datasources = conns)))
+```
+
+
+
+|Category | Count|
+|:--------|-----:|
+|Yes      |    12|
+|No       |    12|
+|NA       |    24|
+
+The default labels are No and Yes, with 12 people each and 24 missing. Now give
+those same concepts the study's lower-case wording:
+
 
 ``` r
 fever <- omop_variable(
   event = omop_event("observation", concepts = 900002L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"),
   labels = c("900301" = "yes", "900302" = "no"))
-class(fever)
-```
-
-```
-#> [1] "omop_variable" "list"
 ```
 
 Only the declared answer concepts receive those labels. A missing answer stays
@@ -120,12 +125,7 @@ missing; absence of a record is not a clinical “no”.
 ``` r
 answers <- omop_recipe(variables = list(fever = fever),
   outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(answers, out = c(people = "D_category_answers"), conns = conns))
-```
-
-```
-#>               people 
-#> "D_category_answers"
+invisible(recipe_execute(answers, out = c(people = "D_category_answers"), conns = conns))
 ```
 
 
@@ -138,56 +138,11 @@ knitr::kable(book_counts(recode_table_result))
 
 |Category | Count|
 |:--------|-----:|
-|yes      |     6|
-|no       |     6|
+|yes      |    12|
+|no       |    12|
 
-<details><summary>Full aggregate response</summary>
-
-
-``` r
-recode_table_result
-```
-
-```
-#> $output.list
-#> $output.list$TABLE_rvar.by.study_row.props
-#>                         study
-#> D_category_answers$fever site
-#>                      yes    1
-#>                      no     1
-#> 
-#> $output.list$TABLE_rvar.by.study_col.props
-#>                         study
-#> D_category_answers$fever site
-#>                      yes  0.5
-#>                      no   0.5
-#> 
-#> $output.list$TABLE_rvar.by.study_counts
-#>                         study
-#> D_category_answers$fever site
-#>                      yes    6
-#>                      no     6
-#> 
-#> $output.list$TABLES.COMBINED_all.sources_proportions
-#> D_category_answers$fever
-#> yes  no 
-#> 0.5 0.5 
-#> 
-#> $output.list$TABLES.COMBINED_all.sources_counts
-#> D_category_answers$fever
-#> yes  no 
-#>   6   6 
-#> 
-#> 
-#> $validity.message
-#> [1] "Data in all studies were valid"
-```
-
-</details>
-
-This real ds.table call excludes missing answers and shows the supplied labels.
-`ds.omop.table()` additionally retains the complete published category contract,
-including declared zero levels, and handles punctuation in labels.
+There are still 12 “no” and 12 “yes” answers. Only the wording changed; this
+call excludes missing answers. `ds.omop.table()` also shows declared zero levels.
 
 ## Rename the column separately
 
@@ -198,15 +153,7 @@ Name an explicit variable in the recipe list, without changing what its answers 
 ``` r
 renamed <- omop_recipe(variables = list(schooling = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(renamed, out = c(people = "D_renamed_categories"), conns = conns))
-```
-
-```
-#>                 people 
-#> "D_renamed_categories"
-```
-
-``` r
+invisible(recipe_execute(renamed, out = c(people = "D_renamed_categories"), conns = conns))
 dsBaseClient::ds.colnames("D_renamed_categories", datasources = conns)
 ```
 
@@ -226,8 +173,8 @@ ds.omop.table("D_renamed_categories", "schooling", conns = conns)
 
 ```
 #> D_renamed_categories$schooling
-#>  Secondary education University education 
-#>                    6                    6
+#>  Secondary education University education
+#>                   12                   12
 ```
 
 The education categories and counts are unchanged. Next we address differences
@@ -239,21 +186,44 @@ Some layouts expand one event into separate columns for each concept. A panel
 of inpatient/outpatient counts is one example. `column_names` targets their
 stable generated keys, not the explicit scalar variable from the previous step.
 
+Inpatient Visit is **9201** and Outpatient Visit is **9202**, found in chapter 4.
+First build the unrenamed panel and read its public codebook:
+
 
 ``` r
 visit_event <- omop_event("visit_occurrence", c(9201L, 9202L), name = "visits")
 visit_population <- omop_population("visitors", index = omop_index(visit_event))
-renamed_panel <- omop_recipe(events = list(visit_event),
-  populations = list(visit_population),
-  column_names = c(visits_9201_count = "admissions", visits_9202_count = "outpatient"),
-  outputs = omop_output("panel", rows = "visitors", format = "person_period",
-    options = list(sources = list(visit_event), bins = list(width = 30L),
-      window = omop_window(0, 29), analyses = "count")))
-class(renamed_panel)
+panel_output <- omop_output("panel", rows = "visitors", format = "person_period",
+  options = list(sources = list(visit_event), bins = list(width = 30L),
+    window = omop_window(0, 29), analyses = "count"))
+panel_recipe <- omop_recipe(events = list(visit_event),
+  populations = list(visit_population), outputs = panel_output)
+panel_result <- recipe_execute(panel_recipe, out = c(panel = "D_original_panel"), conns = conns)
+panel_columns <- recipe_codebook(panel_result)[[1]]$columns
+knitr::kable(panel_columns[c("stable_key", "name")])
 ```
 
-```
-#> [1] "omop_recipe" "list"
+
+
+|stable_key        |name                          |
+|:-----------------|:-----------------------------|
+|row_id            |row_id                        |
+|cohort_row_id     |cohort_row_id                 |
+|person_id         |person_id                     |
+|period_start_days |period_start_days             |
+|period_end_days   |period_end_days               |
+|days              |days                          |
+|visits_9201_count |visits_inpatient_visit_count  |
+|visits_9202_count |visits_outpatient_visit_count |
+
+The count columns have stable keys `visits_9201_count` and `visits_9202_count`.
+Use those keys in the rename map:
+
+
+``` r
+renamed_panel <- omop_recipe(events = list(visit_event),
+  populations = list(visit_population), outputs = panel_output,
+  column_names = c(visits_9201_count = "admissions", visits_9202_count = "outpatient"))
 ```
 
 The keys combine the source name, concept identity and analysis. They remain
@@ -262,15 +232,7 @@ readable. An explicit name cannot collide with a protected or another final colu
 
 
 ``` r
-book_symbols(recipe_execute(renamed_panel, out = c(panel = "D_renamed_panel"), conns = conns))
-```
-
-```
-#>             panel 
-#> "D_renamed_panel"
-```
-
-``` r
+invisible(recipe_execute(renamed_panel, out = c(panel = "D_renamed_panel"), conns = conns))
 dsBaseClient::ds.colnames("D_renamed_panel", datasources = conns)
 ```
 
@@ -294,53 +256,40 @@ Search the catalogue before choosing an order or a rollup.
 ``` r
 catalogue <- ds.omop.concept.search(NULL, standard_only = FALSE, limit = 100,
   conns = conns)$pooled
-knitr::kable(catalogue[c("concept_name", "vocabulary_id", "concept_class_id", "standard_concept")])
+classification <- catalogue[catalogue$vocabulary_id %in% c("ATC", "ICD10", "Language") |
+  catalogue$concept_id %in% c(900101L, 900102L, 900103L, 900201L, 900202L, 950001L), ]
+knitr::kable(classification[c("concept_id", "concept_name", "vocabulary_id", "concept_class_id")], row.names = FALSE)
 ```
 
 
 
-|concept_name                 |vocabulary_id |concept_class_id |standard_concept |
-|:----------------------------|:-------------|:----------------|:----------------|
-|Education question           |Fixture       |Fixture          |S                |
-|Fever question               |Fixture       |Fixture          |S                |
-|Secondary education          |Fixture       |Fixture          |S                |
-|University education         |Fixture       |Fixture          |S                |
-|Myocardial infarction        |Fixture       |Fixture          |S                |
-|Pneumonia                    |Fixture       |Fixture          |S                |
-|Yes                          |Fixture       |Fixture          |S                |
-|FEMALE                       |Gender        |Gender           |S                |
-|MALE                         |Gender        |Gender           |S                |
-|No                           |Fixture       |Fixture          |S                |
-|Inpatient Visit              |Fixture       |Fixture          |S                |
-|Outpatient Visit             |Fixture       |Fixture          |S                |
-|Education answer             |Fixture       |Fixture          |S                |
-|Practice medicine            |Fixture       |Fixture          |S                |
-|Practice measurement         |Fixture       |Fixture          |S                |
-|kilogram                     |Fixture       |Fixture          |S                |
-|Primary education            |Fixture       |Fixture          |S                |
-|English language             |Language      |Language         |S                |
-|Teaching ATC first level     |ATC           |ATC 1st          |C                |
-|Teaching ATC second level    |ATC           |ATC 2nd          |C                |
-|Teaching circulatory code    |ICD10         |ICD10 Hierarchy  |NA               |
-|Teaching respiratory code    |ICD10         |ICD10 Hierarchy  |NA               |
-|Teaching circulatory chapter |ICD10         |ICD10 Chapter    |C                |
-|Teaching respiratory chapter |ICD10         |ICD10 Chapter    |C                |
+| concept_id|concept_name                 |vocabulary_id |concept_class_id |
+|----------:|:----------------------------|:-------------|:----------------|
+|     900101|Secondary education          |Questionnaire |Questionnaire    |
+|     900102|University education         |Questionnaire |Questionnaire    |
+|     900201|Myocardial infarction        |Questionnaire |Questionnaire    |
+|     900202|Pneumonia                    |Questionnaire |Questionnaire    |
+|     950001|Questionnaire study medicine |Questionnaire |Questionnaire    |
+|     900103|Primary education            |Questionnaire |Questionnaire    |
+|    4180186|English language             |Language      |Language         |
+|     960001|Teaching ATC first level     |ATC           |ATC 1st          |
+|     960002|Teaching ATC second level    |ATC           |ATC 2nd          |
+|     960010|Teaching circulatory code    |ICD10         |ICD10 Hierarchy  |
+|     960011|Teaching respiratory code    |ICD10         |ICD10 Hierarchy  |
+|     960020|Teaching circulatory chapter |ICD10         |ICD10 Chapter    |
+|     960021|Teaching respiratory chapter |ICD10         |ICD10 Chapter    |
 
 ``` r
 ids <- setNames(catalogue$concept_id, catalogue$concept_name)
 education_ids <- ids[c("Primary education", "Secondary education", "University education")]
 education_keys <- paste0("concept:", education_ids)
 education_set <- omop_concept_set(unname(education_ids))
-category_file <- tempfile(fileext = ".rds")
+category_file <- "category-concepts.rds"
 saveRDS(list(answers = education_set), category_file)
-identical(readRDS(category_file)$answers, education_set)
 ```
 
-```
-#> [1] TRUE
-```
-
-The question and answer concepts were located in observation in
+The `concept_id` column supplies the IDs we select below, including Primary
+education (900103) and English language (4180186). The question and answer concepts were located in observation in
 [chapter 4](book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes).
 Primary education is declared in this catalogue but is not an observed answer.
 A complete public category domain can include an unused level.
@@ -362,19 +311,17 @@ ds.omop.table("D_ordered", "education", conns = conns)
 
 ```
 #> D_ordered$education
-#>   primary secondary  tertiary 
-#>         0         6         6
+#>   primary secondary  tertiary
+#>         0        12        12
 ```
 
-The table follows primary < secondary < tertiary, including the declared zero
-level. The ordering is a protocol assertion, not a rank inferred from frequency.
+The table follows primary < secondary < tertiary, with primary = 0, secondary = 12 and tertiary = 12. The 24 missing
+answers are omitted by `ds.omop.table()`. The order is chosen by the study, not inferred from frequency.
 Ordered factors use polynomial contrasts; set `ordered = FALSE` if your model
 needs nominal treatment contrasts instead. A treatment reference and display
 order are separate choices.
 
-**Exercise.** Check the actual type of this column.
-
-<details><summary>Solution: an ordered category</summary>
+Check the actual type of this column.
 
 
 ``` r
@@ -387,8 +334,6 @@ dsBaseClient::ds.class("D_ordered$education", datasources = conns)
 ```
 
 It is an ordered factor, not the integers used internally to store a factor.
-
-</details>
 
 ## Choose labels and language
 
@@ -410,16 +355,14 @@ ds.omop.table("D_styled", "local_name", conns = conns)
 
 ```
 #> D_styled$local_name
-#> Secondary schooling  Tertiary schooling 
-#>                   6                   6
+#> Secondary schooling  Tertiary schooling
+#>                  12                  12
 ```
 
 The teaching vocabulary supplies “Secondary schooling” and “Tertiary schooling”
-as English synonyms. The category identity is unchanged by these labels.
+as English synonyms, still with 12 people each. The category identity is unchanged by these labels.
 
-**Exercise.** Display the code-and-name variant from the same extraction.
-
-<details><summary>Solution: a second label style</summary>
+Display the code-and-name variant from the same extraction.
 
 
 ``` r
@@ -428,19 +371,19 @@ ds.omop.table("D_styled", "code_and_name", conns = conns)
 
 ```
 #> D_styled$code_and_name
-#> secondary - Secondary education tertiary - University education 
-#>                               6                               6
+#> secondary - Secondary education tertiary - University education
+#>                              12                              12
 ```
 
-Use `code` or `vocabulary_code` when that public coding context is needed.
+The counts remain 12/12; each label now includes its public vocabulary code.
+Use `code` or `vocabulary_code` when that coding context is needed.
 `source_code` is refused on this route because source-code disclosure needs a
 separately admitted policy. Prefer names for an ordinary analysis table.
 
-</details>
-
 ## Keep Missing and Unknown distinct
 
-Missing means there is no usable value; Unknown represents OMOP concept zero.
+Missing means there is no usable value; Unknown represents OMOP concept zero,
+“No matching concept”. It does not mean a respondent answered “Don’t know”.
 Neither means a recorded “no”. The missing policy can make each an explicit
 factor level without inventing a clinical answer.
 
@@ -457,18 +400,17 @@ ds.omop.table("D_missing_categories", "education", conns = conns)
 
 ```
 #> D_missing_categories$education
-#>  Secondary education University education              Missing              Unknown 
-#>                    6                    6                   12                    0
+#>  Secondary education University education              Missing              Unknown
+#>                   12                   12                   24                    0
 ```
 
-Missing answers are now visible as Missing. The public Unknown level may have
+The 24 missing answers are now visible as Missing, alongside 12 Secondary and
+12 University answers. The public Unknown level may have
 zero count; declaring it does not assert that anyone has an unknown answer.
 The sex column contains FEMALE and MALE; its declared Missing and Unknown levels
 remain empty.
 
-**Exercise.** Check which declared sex levels are actually observed.
-
-<details><summary>Solution: declared and observed levels</summary>
+Check which declared sex levels are actually observed.
 
 
 ``` r
@@ -477,14 +419,12 @@ ds.omop.table("D_missing_categories", "sex", conns = conns)
 
 ```
 #> D_missing_categories$sex
-#>    MALE  FEMALE Missing Unknown 
-#>      12      12       0       0
+#>    MALE  FEMALE Missing Unknown
+#>      28      20       0       0
 ```
 
-The two observed levels each contain twelve people. A declared Unknown level
+There are 20 FEMALE and 28 MALE values. A declared Unknown level
 does not turn an observed FEMALE or MALE value into an unknown value.
-
-</details>
 
 ## Present a semantic flag as an integer, logical or factor
 
@@ -504,17 +444,16 @@ ds.omop.table("D_flags", "named_flag", conns = conns)
 
 ```
 #> D_flags$named_flag
-#>  no yes 
-#>   6  18
+#>  no yes
+#>  12  36
 ```
 
-This “no” means no selected visit in the defined history. It does not mean a
+There are 12 “no” and 36 “yes” values. This “no” means no selected visit in the
+defined history. It does not mean a
 negative answer to the fever question. Binary presentation is for semantic flags,
 not an arbitrary two-level concept column.
 
-**Exercise.** Inspect the published types without reading patient rows.
-
-<details><summary>Solution: three representations</summary>
+Inspect the published types without reading patient rows.
 
 
 ``` r
@@ -531,7 +470,8 @@ knitr::kable(flag_columns[c("name", "r_type")])
 |logical_flag |logical   |
 |named_flag   |factor    |
 
-</details>
+The three columns represent the same flag as integer, logical and factor values.
+Their R types tell you which representation a downstream method receives.
 
 ## Roll up drug classes and cause chapters
 
@@ -541,37 +481,41 @@ relationships; a similar-looking code prefix is insufficient.
 
 
 ``` r
-drug_id <- ids[["Practice medicine"]]
-knitr::kable(ds.omop.concept.ancestors(drug_id, conns = conns)$pooled)
+drug_id <- ids[["Questionnaire study medicine"]]
+ancestors <- ds.omop.concept.ancestors(drug_id, conns = conns)$pooled
+knitr::kable(ancestors[c("concept_id", "concept_name", "min_levels_of_separation")])
 ```
 
 
 
-|direction | concept_id|concept_name              |domain_id |vocabulary_id | min_levels_of_separation| max_levels_of_separation|
-|:---------|----------:|:-------------------------|:---------|:-------------|------------------------:|------------------------:|
-|ancestor  |     960001|Teaching ATC first level  |Drug      |ATC           |                        2|                        2|
-|ancestor  |     960002|Teaching ATC second level |Drug      |ATC           |                        1|                        1|
+| concept_id|concept_name              | min_levels_of_separation|
+|----------:|:-------------------------|------------------------:|
+|     960001|Teaching ATC first level  |                        2|
+|     960002|Teaching ATC second level |                        1|
+
+The medicine has two teaching ATC ancestors: 960001 and 960002. The separation
+counts describe the links; ATC level itself comes from the vocabulary class.
+
 
 ``` r
 icd_id <- ids[["Teaching circulatory code"]]
-knitr::kable(ds.omop.concept.relationships(icd_id, relationship_id = "Maps to", conns = conns)$pooled)
+links <- rbind(
+  ds.omop.concept.relationships(icd_id, relationship_id = "Maps to", conns = conns)$pooled,
+  ds.omop.concept.relationships(icd_id, relationship_id = "Is a", conns = conns)$pooled)
+knitr::kable(links[c("concept_id", "relationship_id", "related_concept_id", "related_concept_name")])
 ```
 
 
 
-|direction | concept_id|relationship_id | related_concept_id|related_concept_name  |invalid_reason |
-|:---------|----------:|:---------------|------------------:|:---------------------|:--------------|
-|forward   |     960010|Maps to         |             900201|Myocardial infarction |NA             |
+| concept_id|relationship_id | related_concept_id|related_concept_name         |
+|----------:|:---------------|------------------:|:----------------------------|
+|     960010|Maps to         |             900201|Myocardial infarction        |
+|     960010|Is a            |             960020|Teaching circulatory chapter |
 
-``` r
-knitr::kable(ds.omop.concept.relationships(icd_id, relationship_id = "Is a", conns = conns)$pooled)
-```
+Teaching circulatory code (960010) maps to Myocardial infarction (900201)
+and belongs to Teaching circulatory chapter (960020). These are synthetic
+relationships used only for this lesson.
 
-
-
-|direction | concept_id|relationship_id | related_concept_id|related_concept_name         |invalid_reason |
-|:---------|----------:|:---------------|------------------:|:----------------------------|:--------------|
-|forward   |     960010|Is a            |             960020|Teaching circulatory chapter |NA             |
 
 ``` r
 knitr::kable(ds.omop.concept.locate(c(drug_id, ids[["Myocardial infarction"]]),
@@ -582,16 +526,23 @@ knitr::kable(ds.omop.concept.locate(c(drug_id, ids[["Myocardial infarction"]]),
 
 | concept_id|table_name    |concept_column   | n_records| n_persons|
 |----------:|:-------------|:----------------|---------:|---------:|
-|     900201|death         |cause_concept_id |        10|        10|
-|     950001|drug_exposure |drug_concept_id  |        15|        15|
+|     900201|death         |cause_concept_id |        20|        20|
+|     950001|drug_exposure |drug_concept_id  |        35|        35|
 
 ``` r
-classification_sets <- list(drug = omop_concept_set(drug_id),
+classification_sets <- list(answers = education_set, drug = omop_concept_set(drug_id),
   causes = omop_concept_set(unname(ids[c("Myocardial infarction", "Pneumonia")])))
 saveRDS(classification_sets, category_file)
 ```
 
-Now choose the public domain to be classified. Ambiguous targets fail by default;
+The locator shows banded counts: 35 medicine users means 35–39 and 20
+myocardial-infarction records means 20–24. Later category tables release exact
+counts when permitted; the 24 infarctions are consistent with the band 20.
+
+Now choose the public domain to be classified. Here *domain* means the declared
+set of source concepts, not the OMOP domain such as Drug or Condition.
+`omop_category_rows()` selects the concept category on each event row;
+`omop_category_reduce()` then chooses one category per person using a reducer. Ambiguous targets fail by default;
 resolve them in the study protocol with explicit priority or multiple membership.
 Do not resolve ambiguity by inspecting patient frequencies.
 
@@ -616,37 +567,35 @@ ds.omop.table("D_rollups", "chapter", conns = conns)
 
 ```
 #> D_rollups$chapter
-#> Teaching circulatory chapter Teaching respiratory chapter 
-#>                           12                            6
+#> Teaching circulatory chapter Teaching respiratory chapter
+#>                           24                           12
 ```
 
-The cause counts are now grouped by the synthetic chapter relationships.
+There are 24 people in the circulatory chapter and 12 in the respiratory
+chapter. The 12 people with no cause are omitted from this table. The cause counts are grouped by the synthetic chapter relationships.
 The underlying person roster is unchanged. Use a validated clinical vocabulary
 for a real cause-of-death classification.
 
-**Exercise.** Compare the two ATC levels in the public codebook.
-
-<details><summary>Solution: levels come from vocabulary classes</summary>
+Compare the two ATC levels in the public codebook.
 
 
 ``` r
 rollup_columns <- recipe_codebook(rollup_result)[[1]]$columns
-lapply(rollup_columns$levels[match(c("atc_first", "atc_second"), rollup_columns$name)],
-  function(x) x$labels)
+knitr::kable(data.frame(
+  Variable = c("atc_first", "atc_second"),
+  Category = vapply(rollup_columns$levels[match(c("atc_first", "atc_second"), rollup_columns$name)],
+    function(x) paste(x$labels, collapse = ", "), character(1))))
 ```
 
-```
-#> [[1]]
-#> [1] "Teaching ATC first level"
-#> 
-#> [[2]]
-#> [1] "Teaching ATC second level"
-```
+
+
+|Variable   |Category                  |
+|:----------|:-------------------------|
+|atc_first  |Teaching ATC first level  |
+|atc_second |Teaching ATC second level |
 
 The first and second levels have different labels even though the same drug
 records contribute to both. Neither level is selected by counting observed drugs.
-
-</details>
 
 ## Read the codebook of each table
 
@@ -658,239 +607,198 @@ marked explicitly.
 
 ``` r
 book <- recipe_codebook(ordered_result)
-print(book[[1]][c("status", "row_grain", "row_keys")])
-```
-
-```
-#> $status
-#> [1] "published"
-#> 
-#> $row_grain
-#> [1] "person"
-#> 
-#> $row_keys
-#> [1] "person_id"
-```
-
-``` r
-knitr::kable(book[[1]]$columns[c("stable_key", "name", "semantic_type", "r_type",
-  "unit", "privacy_class", "missing_policy")])
+knitr::kable(book[[1]]$columns[c("stable_key", "name", "semantic_type", "r_type")])
 ```
 
 
 
-|stable_key |name      |semantic_type |r_type         |unit           |privacy_class |missing_policy                                                                             |
-|:----------|:---------|:-------------|:--------------|:--------------|:-------------|:------------------------------------------------------------------------------------------|
-|person_id  |person_id |key           |character      |not_applicable |1             |Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA |
-|education  |education |category      |ordered_factor |not_applicable |3             |Ordinary available NA follows the declaration; unavailable and undefined anchors remain NA |
+|stable_key |name      |semantic_type |r_type         |
+|:----------|:---------|:-------------|:--------------|
+|person_id  |person_id |key           |character      |
+|education  |education |category      |ordered_factor |
 
 The stable key identifies the column before a display rename. Semantic type tells
 you what a value means; R type tells you how it is represented. Units, category
 levels, ordering, reference, contrasts and derivation belong with the analysis
 protocol. None of these fields is a count or a missingness estimate.
 
-## Open two practice connections
+## Two sites with different wording and different answers
 
-The other lessons use one server. This check uses two DSLite
-connections. Both synthetic databases hold the same answer IDs. The second
-vocabulary calls University education “University qualification” and declares
-a newer vocabulary version. No patient records are downloaded.
-
-
-``` r
-ds.omop.disconnect(conns = conns)
-DSI::datashield.logout(conns)
-pair <- book_fixture(two_sites = TRUE)
-two_conns <- pair$conns
-names(two_conns)
-```
-
-```
-#> [1] "site"  "site2"
-```
-
-Each name represents a separate DataSHIELD session with its own private table.
-
-## See the vocabulary difference
+Site2 has no Secondary education answers: all its respondents have University
+answers. Its newer vocabulary calls concept 900102 “University qualification”.
+Switch resources through the same connection helper. For real servers, replace
+this block with the `conns` / `site` / `site2` variant in the
+[two-site Opal instructions](book-00-start.html#connect-to-two-opal-sites):
 
 
 ``` r
-lookup <- ds.omop.concept.lookup(900102L, conns = two_conns)
-lapply(lookup$per_site, function(x) x["concept_name"])
+practice <- book_switch("questionnaire", two_sites = TRUE)
+conns <- practice$conns
 ```
 
-```
-#> $site
-#>           concept_name
-#> 1 University education
-#> 
-#> $site2
-#>               concept_name
-#> 1 University qualification
-```
-
-This is permitted vocabulary metadata, not observed answer frequencies.
-
-## Declare a shared label
+Inspect the vocabulary wording before looking at patient counts:
 
 
 ``` r
-harmonised <- omop_recipe(variables = list(education = omop_variable(
-  event = omop_event("observation", concepts = 900001L),
-  reducer = omop_reduce("last_value", value = "value_as_concept_id"),
-  labels = c("900102" = "University education"))),
-  outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(harmonised, out = c(people = "D_shared"), conns = two_conns))
+lookup <- ds.omop.concept.lookup(900102L, conns = conns)
+knitr::kable(do.call(rbind, lapply(names(lookup$per_site), function(site)
+  cbind(Site = site, lookup$per_site[[site]][c("concept_id", "concept_name")]))))
 ```
 
-```
-#>     people 
-#> "D_shared"
-```
 
-A common explicit label resolves the known wording difference. Harmonisation is
-based on concept identity and the published label contract, not on matching
-patient records or guessing that similar words mean the same thing.
 
-## Compare released category sets
+|Site  | concept_id|concept_name             |
+|:-----|----------:|:------------------------|
+|site  |     900102|University education     |
+|site2 |     900102|University qualification |
+
+Both names belong to concept 900102. The ID, not the text, establishes the
+shared category.
+
+## Let the default reconciliation work
+
+Execute the original unlabelled education recipe on both connections:
 
 
 ``` r
-site_tables <- lapply(names(two_conns), function(site)
-  ds.omop.table("D_shared", "education", conns = two_conns[site]))
-names(site_tables) <- names(two_conns)
-site_tables
+invisible(recipe_execute(categories, out = c(people = "D_default_pair"), conns = conns))
+paired_counts <- dsBaseClient::ds.table("D_default_pair$education",
+  useNA = "always", datasources = conns)
+knitr::kable(book_counts(paired_counts))
 ```
 
-```
-#> $site
-#> D_shared$education
-#>  Secondary education University education 
-#>                    6                    6 
-#> 
-#> $site2
-#> D_shared$education
-#>  Secondary education University education 
-#>                    6                    6
-```
+
+
+|Category                 | Count|
+|:------------------------|-----:|
+|Secondary education      |    12|
+|University qualification |    36|
+|NA                       |    48|
+
+The pooled counts are Secondary education = 12, University qualification = 36,
+and missing = 48. Execution already chooses one category per concept ID and
+uses the newest vocabulary wording. No label map was needed to combine them.
+
+The same two-site response contains counts for each site. Select the count
+matrix, leaving out the proportion matrices:
 
 
 ``` r
-identical(dimnames(site_tables[[1]]), dimnames(site_tables[[2]]))
+site_counts <- book_site_counts(paired_counts)
+colnames(site_counts) <- names(conns)
+knitr::kable(site_counts)
 ```
 
-```
-#> [1] TRUE
-```
-
-Both real executions returned the same category set. Now combine their counts:
 
 
-``` r
-ds.omop.table("D_shared", "education", conns = two_conns)
-```
+|                         | site| site2|
+|:------------------------|----:|-----:|
+|Secondary education      |   12|     0|
+|University qualification |   12|    24|
+|NA                       |   24|    24|
 
-```
-#> D_shared$education
-#>  Secondary education University education 
-#>                   12                   12
-```
+Site has 12 Secondary and 12 University qualification answers, plus 24 missing.
+Site2 has Secondary = 0, University qualification = 24 and missing = 24.
+The joint response includes the zero cell and shared wording. Adding its two
+columns gives the pooled counts above. These are counts from separate sites;
+this operation does not link people across sites.
 
-The pooled counts add released cells. They do not link people across sites.
-In a real network, confirm the concept meanings as well as their labels.
+## Exercise 1: fix the study's wording
 
-## Try it
-
-Confirm that the shared definition is a recipe, then close both temporary connections.
+Keep “University education” as the shared label even when a site has a newer
+name. Does this change the counts?
 
 <details><summary>Solution</summary>
 
 
-
 ``` r
-class(harmonised)
+harmonised <- omop_recipe(variables = list(education = education),
+  labels = c("900102" = "University education"),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+invisible(recipe_execute(harmonised, out = c(people = "D_shared"), conns = conns))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_shared$education",
+  useNA = "always", datasources = conns)))
 ```
 
-```
-#> [1] "omop_recipe" "list"
-```
 
-``` r
-ds.omop.disconnect(conns = two_conns)
-DSI::datashield.logout(two_conns)
-unlink(pair$path)
-```
+
+|Category             | Count|
+|:--------------------|-----:|
+|Secondary education  |    12|
+|University education |    36|
+|NA                   |    48|
+
+The counts remain 12 Secondary, 36 University and 48 missing. The explicit map
+fixes wording; it changes neither the question selected nor the answer IDs.
 
 </details>
 
-## Exercise 2: a common variant
+## Exercise 2: combine two answer categories deliberately
 
-Does a label map change a concept set? Inspect the recipe object locally, compare
-its selection with the original education variable, and resolve the answer
-identities using the vocabulary lookup already returned above.
+Give Secondary and University the same label, “Recorded education”. Predict the
+pooled count and missing count before executing.
 
-<details><summary>Solution 2</summary>
+<details><summary>Solution</summary>
 
 
 ``` r
-selected <- harmonised$variables$education
-without_labels <- selected
-without_labels$labels <- NULL
-label_ids <- as.integer(names(selected$labels))
-answer_names <- lookup$per_site[[1L]]
-knitr::kable(data.frame(
-  Answer = answer_names$concept_name[match(label_ids, answer_names$concept_id)],
-  Shared_label = unname(selected$labels)))
+merged <- omop_recipe(variables = list(education = education),
+  labels = c("900101" = "Recorded education", "900102" = "Recorded education"))
+invisible(recipe_execute(merged, out = "D_merged_answers", conns = conns))
+knitr::kable(book_counts(dsBaseClient::ds.table("D_merged_answers$education",
+  useNA = "always", datasources = conns)))
 ```
 
 
 
-|Answer               |Shared_label         |
-|:--------------------|:--------------------|
-|University education |University education |
+|Category           | Count|
+|:------------------|-----:|
+|Recorded education |    48|
+|NA                 |    48|
 
-``` r
-identical(selected$event$concepts, education$event$concepts)
-```
-
-```
-#> [1] TRUE
-```
-
-``` r
-identical(selected$event$concepts, without_labels$event$concepts)
-```
-
-```
-#> [1] TRUE
-```
-
-The label map names the University education answer. Removing that map leaves
-the observation selection identical (`TRUE`): it changes the displayed answer
-label, not which question is selected. Concept meaning still requires study review.
+Equal labels merge the two categories: 48 people have Recorded education and
+48 remain missing across the two sites. This discards the education-level
+distinction; shared wording alone cannot establish clinical equivalence.
 
 </details>
 
-## Exercise 3: a pitfall to avoid
+## Exercise 3: change the reducer at both sites
 
-Check that the recipe remains serialisable after harmonisation.
+Take the first education answer instead of the last. Does either site's
+marginal distribution change?
 
-<details><summary>Solution 3</summary>
+<details><summary>Solution</summary>
 
 
 ``` r
-is.character(recipe_export_json(harmonised))
+first_answers <- omop_recipe(variables = list(education = omop_variable(
+  event = omop_event("observation", concepts = 900001L),
+  reducer = omop_reduce("first_value", value = "value_as_concept_id"))))
+invisible(recipe_execute(first_answers, out = "D_first_pair", conns = conns))
+first_counts <- dsBaseClient::ds.table("D_first_pair$education",
+  useNA = "always", datasources = conns)
+first_site_counts <- book_site_counts(first_counts)
+colnames(first_site_counts) <- names(conns)
+knitr::kable(first_site_counts)
 ```
 
-```
-#> [1] TRUE
-```
 
-TRUE means this definition can be recorded. It does not prove that two different concepts are clinically equivalent.
+
+|                         | site| site2|
+|:------------------------|----:|-----:|
+|Secondary education      |   12|     0|
+|University qualification |   12|    24|
+|NA                       |   24|    24|
+
+Site remains 12 Secondary, 12 University qualification and 24 missing; site2
+remains 0, 24 and 24. Adding the columns again gives pooled totals 12, 36 and 48. At site, opposite individual changes cancel in the margins, as
+chapter 5 showed. At site2 every recorded answer is University. Equal totals
+do not prove that the first and last selections identify the same answers.
 
 </details>
 ## Recap
 
-Concept values translate by default. Label maps recode answers; column maps rename variables. Shared labels give common categories across vocabulary wording differences, after you confirm concept meanings.
+Concept values translate by default. Label maps recode answers; column maps rename variables. Execution reconciles categories by concept ID; explicit labels fix study wording.
+A missing category at one site remains an explicit zero after reconciliation.
 
 **Next:** [11. Reusable studies and standalone verbs](book-11-parameters.html).

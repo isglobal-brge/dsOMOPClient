@@ -1,12 +1,32 @@
 # Tutorial helpers
 
-These scripts belong to the dsOMOPClient tutorial book. Readers download them, as one ZIP or one by one, from the book's
-Getting started page, and keep them under `book-work/tools/book/`.
+Download the helper ZIP from Getting started and keep its `tools/book/` folder
+inside your working directory.
 
-- `load-practice.R` downloads the two public synthetic datasets (GiBleed and Synthea27Nj) and loads them into local SQLite files. It uses `load-numeric.R`.
-- `practice.R` opens the local practice server, DSLite, with both datasets as resources.
-- `connection.R` holds the connection settings. Switching to a real Opal server changes only this file.
-- `fixture.R` builds the small synthetic questionnaire dataset of the education and cause-of-death chapters.
-- `display.R` prints the book's outputs.
-- `case-helpers.R` and `capstone.R` support the case studies and the capstone.
-- `EunomiaDatasets-LICENSE.txt` is the licence of the public synthetic datasets.
+- `load-practice.R` loads the public synthetic GiBleed and Synthea27Nj datasets;
+  it uses `load-numeric.R`.
+- `connection.R` opens a practice connection with `book_connect("gibleed")` or
+  `book_connect("numeric")`. Use `book_switch(name)` to close it and open another
+  resource, then set `conns <- practice$conns` from the returned object. Existing
+  Opal settings survive re-sourcing; see the chapter's analyst login example.
+- `practice.R` supplies the local practice server used by `book_connect()`.
+- `fixture.R` supplies the synthetic questionnaire through
+  `book_connect("questionnaire")` and describes its inputs with
+  `book_fixture_structure()`. It has four groups of twelve people, education
+  answers that change over time, visits, and deaths in 2023 and 2024. Optional
+  `two_sites = TRUE` supplies different education levels and wording;
+  `formulas = TRUE` adds serum creatinine and repeated same-day weights.
+- `display.R` formats released results: `book_counts()` for one-way counts,
+  `book_table2()` for two-way counts, `book_columns()` for selected column
+  metadata, and `book_symbols()` for the names of assigned tables.
+  `book_summary("D_people$age", datasources = conns)` includes valid and missing
+  counts. To format a saved `ds.summary()` result, also pass the corresponding
+  `ds.numNA()` result as `missing`. `book_group_comparison()` shows category
+  counts and states the overall mean once on its own row.
+- `case-helpers.R` and `capstone.R` support the case studies and capstone.
+- `EunomiaDatasets-LICENSE.txt` is the licence for the public synthetic datasets.
+
+The questionnaire medicine (950001) supports new-user and supply examples.
+Questionnaire body weight (950002) and kilogram (9529) support numeric examples;
+with the formula option, twelve people have two weights on the same day.
+These local teaching concepts are separate from the public clinical datasets.
