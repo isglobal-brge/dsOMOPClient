@@ -15,15 +15,24 @@ Combine ages, questionnaire answers, visit periods and causes in one private tab
 then use it to compare causes across age groups.
 </div>
 
-**You need:** [the setup and questionnaire dataset](book-00-start.html),
-plus the date and category lessons. Start a fresh R session in `book-work`.
+**You need:** the Opal login from [Getting started](book-00-start.html), plus
+the date and category lessons. This chapter uses `omop.questionnaire`.
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("questionnaire")$conns
 ```
 
 ## Find the concepts
@@ -87,15 +96,16 @@ remain private; we use month and quarter categories for calendar counts.
 ## Check age and missingness
 
 ```{r age-counts}
-book_counts(dsBaseClient::ds.table("D_capstone$age_at_death",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_capstone$age_at_death",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Ages 32, 33, 42 and 43 each occur six times. The 24 missing ages combine 12 deaths
 with incomplete birth dates and 12 survivors. Missing age is not a fifth age band.
 
 ```{r first-visit-age}
-book_summary("D_capstone$age_at_first_visit", datasources = conns)
+dsBaseClient::ds.summary("D_capstone$age_at_first_visit", datasources = conns)
+dsBaseClient::ds.numNA("D_capstone$age_at_first_visit", datasources = conns)
 ```
 
 There are 24 valid ages and 24 missing. The valid ages are 29 and 39, with a mean
@@ -104,16 +114,20 @@ of 34 years. These describe the age at first care, not the later age at death.
 ## Read the answers and calendar periods
 
 ```{r answer-counts}
-book_counts(dsBaseClient::ds.table("D_capstone$education", datasources = conns))
-book_counts(dsBaseClient::ds.table("D_capstone$fever", useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_capstone$education",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
+dsBaseClient::ds.table("D_capstone$fever",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Education has 12 Secondary, 12 University and 24 Missing answers. Fever has 12
 Yes, 12 No and 24 missing answers. No is an observed response; it is not a substitute for missingness.
 
 ```{r visit-periods}
-book_counts(dsBaseClient::ds.table("D_capstone$visit_month", useNA = "always", datasources = conns))
-book_counts(dsBaseClient::ds.table("D_capstone$visit_quarter", useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_capstone$visit_month",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
+dsBaseClient::ds.table("D_capstone$visit_quarter",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 March, June and July each contain 12 first visits, with 12 people lacking a visit.
@@ -123,8 +137,9 @@ unchanged. In other data, several months may merge into one quarter.
 ## Use the table: cause by age at death
 
 ```{r cause-age}
-book_table2(dsBaseClient::ds.table("D_capstone$cause",
-  "D_capstone$age_band", useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_capstone$cause",
+  "D_capstone$age_band", useNA = "always",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The 12 pneumonia deaths are under 40. Of 24 myocardial-infarction deaths, 12 are
@@ -147,8 +162,8 @@ before_death <- omop_variable(event = education_event,
     window = omop_window(NULL, 0, anchor = omop_anchor(omop_event("death"), which = "first"))))
 restricted <- omop_recipe(variables = list(education = before_death))
 recipe_execute(restricted, out = "D_before_death", conns = conns)
-book_counts(dsBaseClient::ds.table("D_before_death$education",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_before_death$education",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The counts remain 12 Secondary, 12 University and 24 missing: all observed
@@ -165,7 +180,7 @@ Then check how its type differs from the exact date and month category.
 <details><summary>Solution 2</summary>
 
 ```{r year-and-types, table.row.names = FALSE}
-book_summary("D_capstone$visit_year", datasources = conns)
+dsBaseClient::ds.summary("D_capstone$visit_year", datasources = conns)
 columns <- recipe_codebook(result)[[1]]$columns
 columns[columns$name %in% c("visit_date", "visit_month", "visit_year"), c("name", "r_type")]
 ```

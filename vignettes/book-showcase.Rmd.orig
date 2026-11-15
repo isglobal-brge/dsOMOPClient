@@ -14,18 +14,27 @@ vignette: >
 See six useful results, then choose the chapter that teaches your next step.
 </div>
 
-Read the cards as a tour, or run them in order. **You need:** the packages,
-downloaded helpers **and loaded practice data** from
-[Getting started](book-00-start.html#before-you-start). Start in `book-work`.
-The first four cards use the 48-person synthetic questionnaire dataset; the
-last two use Synthea27Nj labs.
+Read the cards as a tour, or run them in order after the Opal login in
+[Getting started](book-00-start.html). The first four cards use the 48-person
+synthetic questionnaire study on two sites; the last two use Synthea27Nj labs.
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("questionnaire", two_sites = TRUE)
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("site", "site2"),
+  resource = c(site = "omop.questionnaire", site2 = "omop.questionnaire_site2"))$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("questionnaire", two_sites = TRUE)$conns
 ```
 
 <div class="capability-card">
@@ -41,10 +50,10 @@ gets the same name across sites, using the newest available vocabulary wording.
 education <- omop_variable(event = omop_event("observation", 900001L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 named <- omop_recipe(variables = list(education = education))
-assigned <- recipe_execute(named, out = c(output = "D_tour_named"), conns = conns)
+recipe_execute(named, out = c(output = "D_tour_named"), conns = conns)
 education_counts <- dsBaseClient::ds.table("D_tour_named$education",
   useNA = "always", datasources = conns)
-book_site_counts(education_counts)
+education_counts$output.list$TABLE_rvar.by.study_counts
 ```
 
 Site 1 has 12 Secondary and 12 University answers; site 2 has 0 and 24.
@@ -57,9 +66,15 @@ These two teaching sites are related copies for comparison, not independent stud
 
 The next three cards use one questionnaire site:
 
-```{r showcase-one-site}
-practice <- book_switch("questionnaire")
-conns <- practice$conns
+```{r showcase-one-site, eval = FALSE}
+ds.omop.disconnect(conns = conns)
+DSI::datashield.logout(conns)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
+```
+
+```{r showcase-one-site-local-5, include = FALSE}
+conns <- book_switch("questionnaire")$conns
 ```
 
 <div class="capability-card">
@@ -71,9 +86,8 @@ death dates. Incomplete dates stay missing by default.
 
 ```{r showcase-ages, table.digits = 1, table.row.names = FALSE}
 dates <- omop_recipe(variables = list(age = omop_age_at("death")))
-assigned <- recipe_execute(dates, out = c(output = "D_tour_dates"), conns = conns)
-age_summary <- book_summary("D_tour_dates$age", datasources = conns)
-age_summary[age_summary$Statistic %in% c("50%", "Mean"), ]
+recipe_execute(dates, out = c(output = "D_tour_dates"), conns = conns)
+dsBaseClient::ds.quantileMean("D_tour_dates$age", datasources = conns)
 ```
 
 The 24 complete ages are 32, 33, 42 and 43, with mean and median 37.5 years. The median is the midpoint
@@ -110,7 +124,7 @@ study <- omop_recipe(events = list(visits), populations = list(visitors),
   outputs = shapes)
 targets <- c(wide = "D_tour_wide", long = "D_tour_long",
   panel = "D_tour_panel", survival = "D_tour_survival")
-assigned <- recipe_execute(study, out = targets, conns = conns)
+recipe_execute(study, out = targets, conns = conns)
 shape_sizes <- do.call(rbind, lapply(names(targets), function(shape)
   data.frame(Shape = shape, Rows = dsBaseClient::ds.dim(targets[[shape]],
     datasources = conns)[[1L]][1L])))
@@ -128,16 +142,19 @@ Repeated rows are not independent participants.
 
 ## A cause-of-death wide table
 
-Combine age, education, fever, visit periods and coded cause in one private
-table. The helper below builds the recipe taught step by step in the capstone;
-its concept definitions come from
+Give every person one row with their coded cause of death, then count the
+causes. The capstone adds age, education, fever and visit periods to the same
+table; the cause concepts come from
 [chapter 4](book-04-vocabulary.html#find-the-questionnaire-questions-answers-and-causes).
 
 ```{r showcase-causes}
-source("tools/book/capstone.R")
-assigned <- recipe_execute(book_capstone_recipe(), out = c(people = "D_tour_causes"), conns = conns)
-book_counts(dsBaseClient::ds.table("D_tour_causes$cause",
-  useNA = "always", datasources = conns))
+cause <- omop_variable(event = omop_event("death"),
+  reducer = omop_reduce("first_value", value = "cause_concept_id"))
+causes <- omop_recipe(variables = list(cause = cause),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+recipe_execute(causes, out = c(people = "D_tour_causes"), conns = conns)
+dsBaseClient::ds.table("D_tour_causes$cause",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are 24 myocardial infarction deaths, 12 pneumonia deaths and 12 people
@@ -148,9 +165,13 @@ without a death record. The person key and individual answers stay private.
 
 Switch to Synthea27Nj for numeric values:
 
-```{r showcase-numeric-connection}
-practice <- book_switch("numeric")
-conns <- practice$conns
+```{r showcase-numeric-connection, eval = FALSE}
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.synthea", conns = conns)
+```
+
+```{r showcase-numeric-connection-local-10, include = FALSE}
+conns <- book_switch("numeric")$conns
 ```
 
 <div class="capability-card">
@@ -167,7 +188,7 @@ hb <- omop_variable(event = omop_event("measurement", 3000963L,
 band_names <- c("below 14", "14 to below 15", "15 or above")
 labs <- omop_recipe(variables = list(hb = hb,
   band = omop_number_bins(hb, breaks = c(-Inf, 14, 15, Inf), labels = band_names)))
-assigned <- recipe_execute(labs, out = c(output = "D_tour_labs"), conns = conns)
+recipe_execute(labs, out = c(output = "D_tour_labs"), conns = conns)
 groups <- dsBaseClient::ds.meanSdGp("D_tour_labs$hb", "D_tour_labs$band",
   type = "combine", datasources = conns)
 data.frame(`Band (g/dL)` = band_names,
@@ -204,13 +225,12 @@ changes the scale, while the filter below changes which people are included.
 converted <- omop_recipe(variables = list(hb = hb,
   hb_gl = omop_number(hb, omop_number_spec(
     unit = omop_number_unit("unit:8713", paste0("unit:", gl_id), 10)))))
-assigned <- recipe_execute(converted, out = c(output = "D_tour_converted"), conns = conns)
+recipe_execute(converted, out = c(output = "D_tour_converted"), conns = conns)
 ds.omop.mutate("D_tour_converted", above_cutoff = ifelse(hb >= 14, 1L, 0L),
   newobj = "D_tour_flagged", conns = conns)
 ds.omop.filter("D_tour_flagged", expr = omop_where(above_cutoff == 1L),
   newobj = "D_tour_selected", conns = conns)
-selected <- book_summary("D_tour_selected$hb_gl", datasources = conns)
-selected[selected$Statistic == "Mean", ]
+dsBaseClient::ds.mean("D_tour_selected$hb_gl", datasources = conns)$Mean.by.Study
 ```
 
 The selected group has 19 people with no missing haemoglobin means. Its mean is

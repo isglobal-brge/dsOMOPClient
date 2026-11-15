@@ -15,17 +15,26 @@ Find a lab and its units, reduce repeated readings, present numbers without losi
 their meaning, and fit a model that requires an actual follow-up measurement.
 </div>
 
-**You need:** [the setup and numeric resource](book-00-start.html), and
-[events and reducers](book-06-events.html). Start a fresh session in `book-work`.
-This chapter uses synthetic Synthea measurements.
+**You need:** the Opal login from [Getting started](book-00-start.html) and
+[events and reducers](book-06-events.html). This chapter uses `omop.synthea`,
+then its two-site split.
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
 source("tools/book/practice.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("numeric")$conns
 ```
 
 ## Find haemoglobin and its unit
@@ -112,7 +121,8 @@ indexed <- omop_study(omop_index(lab, offset = 7L), outputs = "baseline",
   baseline = list(at_index = omop_value_at_index("measurement", lab_id,
     tolerance = c(-7, 0), unit = omop_unit(8713L))))
 recipe_execute(indexed, out = c(baseline = "D_index"), conns = conns)
-book_summary("D_index$at_index", datasources = conns)
+dsBaseClient::ds.summary("D_index$at_index", datasources = conns)
+dsBaseClient::ds.numNA("D_index$at_index", datasources = conns)
 ```
 
 All 28 values are present. The mean becomes 14.150 g/dL because one person's
@@ -132,8 +142,9 @@ changes <- omop_recipe(variables = list(
   target_days = omop_number_change(lab, "time_to_threshold", threshold = 14,
     op = "ge", reference = "first", time_unit = "days")))
 recipe_execute(changes, out = "D_change", conns = conns)
-book_summary("D_change$change", datasources = conns)
-book_summary("D_change$per_year", datasources = conns)
+dsBaseClient::ds.summary("D_change$change", datasources = conns)
+dsBaseClient::ds.numNA("D_change$change", datasources = conns)
+dsBaseClient::ds.summary("D_change$per_year", datasources = conns)
 ```
 
 There are 25 valid changes and three missing: single-reading people do not have
@@ -166,7 +177,8 @@ band_means <- dsBaseClient::ds.meanSdGp("D_flags$mean", "D_flags$band",
   type = "combine", datasources = conns)
 data.frame(Band = band_labels, People = as.numeric(band_means$Nvalid_gp),
   Mean_g_dl = as.numeric(band_means$Mean_gp))
-book_counts(dsBaseClient::ds.table("D_flags$converted_band", datasources = conns))
+dsBaseClient::ds.table("D_flags$converted_band",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Both presentations give category counts 9, 9 and 10 here. The within-band means
@@ -191,8 +203,10 @@ decimal, whereas 140.75 rounds to 140.8. Classifying before rounding would answe
 a different question.
 
 ```{r category-and-flag}
-book_counts(dsBaseClient::ds.table("D_flags$control", datasources = conns))
-book_counts(dsBaseClient::ds.table("D_flags$high", datasources = conns))
+dsBaseClient::ds.table("D_flags$control",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
+dsBaseClient::ds.table("D_flags$high",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The high flag is one for 10 people. The category thresholds define low <14,
@@ -203,25 +217,30 @@ Synthea has no haemoglobin reference bounds; missing bounds cannot establish nor
 ## Pool two disjoint sites
 
 A last value equal to first because no second reading exists is not a follow-up
-outcome. Index on the first lab and restrict last to days 1 onward. Use two
-disjoint practice sites; their combined population is the same 28 people.
-`book_pool` is this connection's server-side OMOP handle name.
-The named `paired` session keeps the earlier single-site tables available for
-the exercises below.
+outcome. Index on the first lab and restrict last to days 1 onward. Use the two
+Synthea sites, which hold disjoint halves of the same 28 people. Log in to both
+as a second connection, `two_conns`. Its handle is named `pair` because `omop`
+is already attached through `conns`, whose tables the exercises below still use.
 
-For real servers, replace the next two connection lines with the
-[two-site Opal login](book-00-start.html#connect-to-two-opal-sites).
-Keep the earlier `conns` connection for the later single-site exercises.
+```{r two-sites, eval = FALSE}
+two_conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("north", "south"),
+  resource = c(north = "omop.synthea_north", south = "omop.synthea_south"),
+  symbol = "pair")$conns
+```
 
-```{r two-sites, table.digits = 3}
-practice_pair <- book_connect("numeric", two_sites = TRUE, symbol = "book_pool", session = "paired")
-two_conns <- practice_pair$conns
+```{r two-sites-local-12, include = FALSE}
+two_conns <- book_connect("numeric", two_sites = TRUE, symbol = "pair", session = "paired")$conns
+```
+
+```{r two-sites-13, table.digits = 3}
 followup <- omop_study(lab, outputs = "baseline", baseline = list(
   first = omop_value_at_index("measurement", lab_id, tolerance = c(0, 0), unit = omop_unit(8713L)),
   last = omop_variable(event = lab, reducer = omop_reduce("last_value", window = omop_window(1, NULL))),
   followup_days = omop_variable(event = lab, reducer = omop_reduce("last_date", window = omop_window(1, NULL))),
   mean = average))
-recipe_execute(followup, out = c(baseline = "D_pool"), conns = two_conns, symbol = "book_pool")
+recipe_execute(followup, out = c(baseline = "D_pool"), conns = two_conns, symbol = "pair")
 pooled_mean <- dsBaseClient::ds.mean("D_pool$mean", type = "combine", datasources = two_conns)$Global.Mean
 pooled_mean
 ```
@@ -230,8 +249,7 @@ The pooled mean remains 14.467 g/dL across 28 people. Each nonmissing person
 receives equal weight; opening two connections to the same people would double-count them.
 
 ```{r pooled-quantiles, table.digits = 3}
-quantiles <- dsBaseClient::ds.quantileMean("D_pool$mean", type = "combine", datasources = two_conns)
-data.frame(Statistic = names(quantiles), Value = as.numeric(quantiles))
+dsBaseClient::ds.quantileMean("D_pool$mean", type = "combine", datasources = two_conns)
 ```
 
 These are weighted averages of site quantiles, not exact quantiles of all people
@@ -242,12 +260,14 @@ weights site means by their nonmissing N.
 
 The model relates last to first haemoglobin only among the 25 people with a
 later reading. Their first and last readings are about 6–18 years apart. The
-summary below describes those actual intervals at each site; its valid counts
-sum to the model's 25 complete cases. Its quantiles describe the spread, not the
+summary below describes those actual intervals at each site. Each site's length
+minus its missing count gives the valid values, 11 and 14, which sum to the model's
+25 complete cases. Its quantiles describe the spread, not the
 minimum and maximum.
 
 ```{r model-followup, table.digits = 3}
-book_summary("D_pool$followup_days", datasources = two_conns)
+dsBaseClient::ds.summary("D_pool$followup_days", datasources = two_conns)
+dsBaseClient::ds.numNA("D_pool$followup_days", datasources = two_conns)
 ```
 
 ```{r pooled-model, warning=FALSE, table.digits = 3}
@@ -273,7 +293,7 @@ of that person's logged readings?
 logged <- omop_recipe(variables = list(log_mean = omop_number(average,
   omop_number_spec(transform = omop_number_transform("log")))))
 recipe_execute(logged, out = "D_log", conns = conns)
-book_summary("D_log$log_mean", datasources = conns)
+dsBaseClient::ds.summary("D_log$log_mean", datasources = conns)
 ```
 
 The median is about 2.662, the log of the median person mean, 14.325.
@@ -287,7 +307,8 @@ haemoglobin ≥14. How do zero and missing differ?
 <details><summary>Solution 2</summary>
 
 ```{r target-days, table.digits = 3}
-book_summary("D_change$target_days", datasources = conns)
+dsBaseClient::ds.summary("D_change$target_days", datasources = conns)
+dsBaseClient::ds.numNA("D_change$target_days", datasources = conns)
 ```
 
 There are 26 observed attainments and two missing; median time among observed
@@ -308,7 +329,7 @@ copy <- omop_recipe(variables = list(mean = average),
     number_columns = list(rounded = omop_number_column("mean",
       number_spec = omop_number_spec(rounding = omop_number_round("decimals", 1))))))
 recipe_execute(copy, out = "D_copy", conns = conns)
-book_summary("D_copy$rounded", datasources = conns)
+dsBaseClient::ds.summary("D_copy$rounded", datasources = conns)
 ```
 
 The overall rounded mean is 14.457 g/dL. Each person's copy has one decimal, but averaging those values can produce more

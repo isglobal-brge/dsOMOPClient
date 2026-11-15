@@ -14,21 +14,29 @@ vignette: >
 Build education and cause-of-death columns, predict their output, and request category counts.
 </div>
 
-This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
-**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work` directory.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.questionnaire`,
+the synthetic questionnaire study described there.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+Log in first:
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("questionnaire")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the analysis calls.
@@ -119,11 +127,11 @@ explanation describes technical defaults; these are not observed patient counts.
 ## Run: assign the result
 
 ```{r execute}
-book_symbols(recipe_execute(people, out = c(people = "D_people"), conns = conns))
+recipe_execute(people, out = c(people = "D_people"), conns = conns)
 ```
 
-The reply says that the output named `people` was assigned to `D_people`. `D_people` is still on
-the server. Concept-valued columns are labelled factors because of their declared
+Nothing comes back to you: the output named `people` is now `D_people`, a table
+kept on the server. Concept-valued columns are labelled factors because of their declared
 type. The names `education` and `cause_of_death` need no `_concept_id` suffix.
 
 ## Verify: check what you got
@@ -172,7 +180,7 @@ one check that helps answer the current question.
 
 ```{r education-table}
 education_table_result <- dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
-book_counts(education_table_result)
+education_table_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are 12 people whose **latest** answer is Secondary education and 12 whose
@@ -214,7 +222,7 @@ recipe_execute(answers, out = c(people = "D_answers"), conns = conns)
 
 ```{r yes-no}
 yes_no_result <- dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
-book_counts(yes_no_result)
+yes_no_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The table contains 12 “yes” and 12 “no” answers, using your lower-case labels.
@@ -234,8 +242,9 @@ first_education <- omop_variable(event = education_event,
 comparison <- omop_recipe(variables = list(first = first_education, last = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
 recipe_execute(comparison, out = c(people = "D_education_change"), conns = conns)
-book_table2(dsBaseClient::ds.table(
-  "D_education_change$first", "D_education_change$last", useNA = "no", datasources = conns))
+dsBaseClient::ds.table(
+  "D_education_change$first", "D_education_change$last", useNA = "no",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Rows show first answers and columns show last answers. The off-diagonal cells
@@ -252,8 +261,8 @@ Count causes with dsBase and include people without a coded cause.
 <details><summary>Solution</summary>
 
 ```{r missing-causes}
-book_counts(dsBaseClient::ds.table("D_people$cause_of_death",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_people$cause_of_death",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The 24 myocardial infarctions, 12 pneumonias and 12 missing causes account for

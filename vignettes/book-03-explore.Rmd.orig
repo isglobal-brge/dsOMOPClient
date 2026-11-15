@@ -14,19 +14,26 @@ vignette: >
 Find the right fields, distinguish rows from people, and check numeric coverage.
 </div>
 
-**You need:** the packages, helpers and loaded practice data from
-[Getting started](book-00-start.html#before-you-start). Start a fresh R session
-in `book-work` and run the sections in order.
-This chapter uses GiBleed.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.gibleed`.
 
 ## Start this chapter
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("gibleed")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.gibleed", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("gibleed")$conns
 ```
 
 ## Read metadata before selecting records
@@ -52,9 +59,10 @@ the server also checks the operation and the support for each result.
 ## Separate what was observed from its value
 
 ```{r observation-columns, table.row.names = FALSE}
-book_columns(ds.omop.columns("observation", conns = conns),
-  rows = c("observation_concept_id", "value_as_concept_id", "value_as_number",
-    "value_as_string", "observation_date"))
+columns <- ds.omop.columns("observation", conns = conns)$site
+subset(columns, column_name %in% c("observation_concept_id", "value_as_concept_id",
+  "value_as_number", "value_as_string", "observation_date"),
+  select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
 
 `observation_concept_id` identifies what was observed; in a questionnaire it
@@ -74,8 +82,10 @@ The questionnaire chapters use a separate dataset for those answers.
 ## Find the visit date and setting
 
 ```{r visit-columns, table.row.names = FALSE}
-book_columns(ds.omop.columns("visit_occurrence", conns = conns),
-  rows = c("visit_start_date", "visit_end_date", "visit_concept_id", "visit_type_concept_id"))
+columns <- ds.omop.columns("visit_occurrence", conns = conns)$site
+subset(columns, column_name %in% c("visit_start_date", "visit_end_date",
+  "visit_concept_id", "visit_type_concept_id"),
+  select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
 
 `visit_start_date` is when the visit started. `visit_concept_id` describes its
@@ -97,8 +107,9 @@ a count of deaths.
 <details><summary>Solution</summary>
 
 ```{r death-columns, table.row.names = FALSE}
-book_columns(ds.omop.columns("death", conns = conns),
-  rows = c("death_date", "cause_concept_id", "cause_source_value"))
+columns <- ds.omop.columns("death", conns = conns)$site
+subset(columns, column_name %in% c("death_date", "cause_concept_id", "cause_source_value"),
+  select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
 
 `cause_concept_id` is the coded cause. `cause_source_value` is the original source
@@ -125,8 +136,10 @@ that somebody took the medicine every day?
 <details><summary>Solution</summary>
 
 ```{r drug-fields, table.row.names = FALSE}
-book_columns(ds.omop.columns("drug_exposure", conns = conns),
-  rows = c("drug_exposure_start_date", "drug_exposure_end_date", "days_supply"))
+columns <- ds.omop.columns("drug_exposure", conns = conns)$site
+subset(columns, column_name %in% c("drug_exposure_start_date",
+  "drug_exposure_end_date", "days_supply"),
+  select = c(column_name, cdm_datatype, is_date, is_blocked))
 ```
 
 The two dates delimit the recorded exposure and `days_supply` describes the
@@ -146,8 +159,8 @@ that lab values can be analysed? Check the column itself.
 ds.omop.table.stats("measurement", conns = conns)
 ```
 
-The row band begins at 44,050. The loader in chapter 0 reported exactly 44,053
-rows because it ran as custodian of the public data; this analyst call rounds down.
+The row band begins at 44,050. The public GiBleed data have exactly 44,053
+measurement rows; this analyst call rounds down to its band.
 
 ```{r numeric-missing}
 ds.omop.column.stats("measurement", "value_as_number", conns = conns)

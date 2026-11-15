@@ -14,19 +14,27 @@ vignette: >
 Search for a meaning, inspect its hierarchy and clinical use, then save a concept set.
 </div>
 
-**You need:** the packages, helpers and loaded practice data from
-[Getting started](book-00-start.html#before-you-start). Start a fresh R session
-in `book-work` and run the sections in order.
-Start with GiBleed; later sections switch to questionnaire data and Synthea27Nj.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter starts with `omop.gibleed`;
+later sections switch to the questionnaire resources and `omop.synthea`.
 
 ## Start this chapter
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("gibleed")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.gibleed", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("gibleed")$conns
 ```
 
 ## Search a name, then narrow the meaning
@@ -229,12 +237,19 @@ In an unfamiliar private dataset, an absent locator row could also be withheld.
 ## Find the questionnaire questions, answers and causes
 
 Switch to the separate synthetic dataset described in
-[chapter 0](book-00-start.html#the-questionnaire-dataset). Its local question and
+[chapter 0](book-00-start.html#the-resources-on-the-server). Its local question and
 answer codes are teaching examples, not codes to copy into a clinical study.
 
-```{r questionnaire-catalogue}
-practice <- book_switch("questionnaire")
-conns <- practice$conns
+```{r questionnaire-catalogue, eval = FALSE}
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.questionnaire", conns = conns)
+```
+
+```{r questionnaire-catalogue-local-19, include = FALSE}
+conns <- book_switch("questionnaire")$conns
+```
+
+```{r questionnaire-catalogue-20}
 questionnaire <- ds.omop.concept.search(NULL, standard_only = FALSE,
   limit = 100, conns = conns)$pooled
 questionnaire[c("concept_id", "concept_name", "domain_id")]
@@ -276,9 +291,16 @@ search miss them even when they are present? Use the optional teaching catalogue
 
 <details><summary>Solution</summary>
 
-```{r atc-default}
-practice <- book_switch("questionnaire", categories = TRUE)
-conns <- practice$conns
+```{r atc-default, eval = FALSE}
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.questionnaire_vocab", conns = conns)
+```
+
+```{r atc-default-local-24, include = FALSE}
+conns <- book_switch("questionnaire", categories = TRUE)$conns
+```
+
+```{r atc-default-25}
 atc_default <- ds.omop.concept.search(NULL, vocabulary = "ATC", conns = conns)$pooled
 atc_default
 ```
@@ -303,9 +325,16 @@ search filter: a missing standard-only hit does not prove a class is absent.
 Switch to the numeric resource. The vocabulary spells haemoglobin “Hemoglobin”.
 Select a precise test and specimen, rather than every name containing the word.
 
-```{r numeric-catalogue}
-practice <- book_switch("numeric")
-conns <- practice$conns
+```{r numeric-catalogue, eval = FALSE}
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.synthea", conns = conns)
+```
+
+```{r numeric-catalogue-local-28, include = FALSE}
+conns <- book_switch("numeric")$conns
+```
+
+```{r numeric-catalogue-29}
 lab_hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)$pooled
 lab_hits[c("concept_id", "concept_name", "standard_concept")]
 hb_id <- lab_hits$concept_id[lab_hits$concept_name == "Hemoglobin [Mass/volume] in Blood"]

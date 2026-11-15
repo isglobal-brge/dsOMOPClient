@@ -14,24 +14,24 @@ vignette: >
 Choose who enters a study, define episodes and observation coverage, reuse a cohort, identify new users and sample controls at case time.
 </div>
 
-This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
-
-**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work` directory.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.questionnaire`,
+the synthetic questionnaire study described there.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+Log in first:
+
+
 
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
+
+
 
 The connection is ready; `conns` identifies the server used by the analysis calls.
 
@@ -135,15 +135,15 @@ dsBaseClient::ds.dim("D_eligible", datasources = conns)
 ```
 
 ``` r
-book_counts(dsBaseClient::ds.table("D_eligible$visits",
-  useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_eligible$visits",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category | Count|
-|:--------|-----:|
-|2        |    24|
+```
+#> D_eligible$visits
+#>  2
+#> 24
+```
 
 There are 24 eligible people, each with two visits through entry. Their first
 visit was outpatient; their second visit is the first eligible inpatient visit.
@@ -231,15 +231,15 @@ The era uses a 30-day gap and ends at the treatment interval end.
 
 
 ``` r
-book_counts(dsBaseClient::ds.table("D_new_users$prior_fills",
-  useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_new_users$prior_fills",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category | Count|
-|:--------|-----:|
-|0        |    36|
+```
+#> D_new_users$prior_fills
+#>  0
+#> 36
+```
 
 All 36 new users have zero prior fills in days −365 to −1. That is an
 eligibility requirement, not a result to discover after admitting people.
@@ -295,8 +295,8 @@ copy or summarise.
 
 
 ``` r
-book_table2(dsBaseClient::ds.table("D_matched$is_case", "D_matched$sex",
-  useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_matched$is_case", "D_matched$sex",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 

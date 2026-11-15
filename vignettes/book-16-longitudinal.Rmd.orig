@@ -16,9 +16,10 @@ periods; reshape privately; and fit a discrete-time hazard model and repeated-me
 mixed models across two connections.
 </div>
 
-**You need:** [Before you start](book-00-start.html#before-you-start),
+**You need:** the Opal login from [Getting started](book-00-start.html),
 [output formats](book-08-outputs.html) and [lab values](book-14-labs.html).
-Start a fresh session in `book-work` and run every section in order, including solutions.
+Run every section in order, including solutions. This chapter uses `omop.gibleed`,
+`omop.synthea` and the two Synthea sites.
 GiBleed and Synthea are public **synthetic** resources. Their results teach analysis
 mechanics, not clinical conclusions.
 
@@ -77,13 +78,25 @@ they are not automatically nonoverlapping. Chapter 8 executes all five shapes.
 
 Start with GiBleed and request visit rows directly from a recipe.
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
 source("tools/book/practice.R")
-practice <- book_connect("gibleed")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.gibleed", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("gibleed")$conns
+```
+
+```{r chapter-setup-3}
 visits <- omop_event("visit_occurrence", concepts = 9201L, name = "admission")
 visitors <- omop_population("visitors", index = omop_index(visits))
 visit_recipe <- omop_recipe(events = list(visits), populations = list(visitors),
@@ -96,7 +109,7 @@ The long table remains private. Release the setting counts to describe its rows.
 
 ```{r visit-shape}
 visit_counts <- dsBaseClient::ds.table("D_visit_long$concept_id", datasources = conns)
-book_counts(visit_counts)
+visit_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The table counts exactly 1,037 admission rows; chapter 4's locator count was
@@ -109,7 +122,8 @@ visits_per_person <- omop_study(visits, outputs = "baseline", baseline = list(
 recipe_execute(visits_per_person, out = c(baseline = "D_visitors"), conns = conns)
 ds.omop.mutate("D_visitors", pattern = ifelse(admissions == 1,
   "One admission", "Repeated admissions"), newobj = "D_visit_patterns", conns = conns)
-book_counts(dsBaseClient::ds.table("D_visit_patterns$pattern", datasources = conns))
+dsBaseClient::ds.table("D_visit_patterns$pattern",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are 890 visitors: 756 with one admission and 134 with repeated admissions. A long table does not guarantee repeated visits for every person.
@@ -134,8 +148,11 @@ admissions. Switch to Synthea for repeated numeric measurements.
 ## Irregular measurements: define windows first
 
 ```{r numeric-connection}
-practice <- book_switch("numeric")
-conns <- practice$conns
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.synthea", conns = conns)
+```
+
+```{r numeric-connection-9}
 lab <- omop_event("measurement", concepts = 3000963L, value = "value_as_number",
   unit = omop_unit(8713L), name = "hb")
 entry <- omop_population("entry", index = omop_index(lab))
@@ -196,11 +213,12 @@ ds.omop.mutate("D_windows",
   missing2 = ifelse(is.na(first2), "missing", "observed"),
   missing3 = ifelse(is.na(first3), "missing", "observed"),
   newobj = "D_missing", conns = conns)
-missing_counts <- lapply(1:3, function(period) {
-  result <- dsBaseClient::ds.table(paste0("D_missing$missing", period), datasources = conns)
-  transform(book_counts(result), Period = period)
-})
-do.call(rbind, missing_counts)
+dsBaseClient::ds.table("D_missing$missing1",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
+dsBaseClient::ds.table("D_missing$missing2",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
+dsBaseClient::ds.table("D_missing$missing3",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The tables show 28, 10 and 15 observed people: therefore 0, 18 and 13
@@ -240,8 +258,9 @@ lab a year away represents a clinical five-year visit.
 <details><summary>Solution: a scheduled column</summary>
 
 ```{r repeated-summary, table.digits = 3}
-book_summary(
+dsBaseClient::ds.summary(
   "D_timepoints$measurements_hb_year5", datasources = conns)
+dsBaseClient::ds.numNA("D_timepoints$measurements_hb_year5", datasources = conns)
 ```
 
 The five-year point has 15 observed and 13 missing values, with a mean of
@@ -288,7 +307,7 @@ Only the person key and three first values enter this reshape; last values are
 not copied into every period. Its `period` is 1, 2 or 3, **not an
 actual measurement date**. A reshape cannot recover dates or readings discarded
 by a reducer. `ds.reShape` also depends on the server's allowed privacy profile;
-this run uses the installed practice configuration.
+our server allows it.
 
 For a dense panel with last values and event counts, ask the recipe directly.
 The native panel supports `last` and `mean`, but not a `first` analysis. The wide
@@ -314,7 +333,7 @@ the right shape keeps keys, windows, coverage and event semantics in one checked
 
 ```{r reshape-exercise}
 period_counts <- dsBaseClient::ds.table("D_reshaped$period", datasources = conns)
-book_counts(period_counts)
+period_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are 28 rows in each period, including rows with missing measurements.
@@ -330,18 +349,22 @@ not illness or death. Start on day 1 after the first reading, and stop at the fi
 subsequent reading, death, observation end or day 7300, whichever comes first.
 The absence of a repeat lab is not a normal result.
 
-For this section use the same disjoint public Synthea split as chapter 14:
-14 people at each of two local DSLite servers. No people are duplicated. A real
-multisite study must establish nonoverlapping populations separately.
-The named `paired` session keeps the earlier single-site connection available.
+For this section use the same two Synthea sites as chapter 14: 14 different
+people at each. No people are duplicated; a real multisite study must establish
+nonoverlapping populations separately. As there, the second connection uses the
+handle `pair`, and the earlier `conns` connection stays available for the later
+single-site exercises.
 
-For real servers, replace the next two connection lines with the
-[two-site Opal login](book-00-start.html#connect-to-two-opal-sites).
-Keep the earlier `conns` connection for the later single-site exercises.
+```{r two-sites, eval = FALSE}
+two_conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("north", "south"),
+  resource = c(north = "omop.synthea_north", south = "omop.synthea_south"),
+  symbol = "pair")$conns
+```
 
-```{r two-sites}
-practice_pair <- book_connect("numeric", two_sites = TRUE, symbol = "book_pool", session = "paired")
-two_conns <- practice_pair$conns
+```{r two-sites-local-20, include = FALSE}
+two_conns <- book_connect("numeric", two_sites = TRUE, symbol = "pair", session = "paired")$conns
 ```
 
 The panel already stops at observation coverage. Attach one first-outcome day
@@ -362,7 +385,7 @@ hazard <- omop_recipe(events = list(lab, death), populations = list(entry), vari
     omop_output("risk", rows = "entry", format = "joined",
       options = list(from = list(list(output = "daily"), list(output = "ends")),
         how = "left", cardinality = "many_to_one"))), publish = "risk")
-recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "book_pool")
+recipe_execute(hazard, out = c(risk = "D_days"), conns = two_conns, symbol = "pair")
 ```
 
 Remove days after the first repeat or death. A missing next-day value means
@@ -372,16 +395,16 @@ We count an event on the death day if both dates coincide; state this tie rule.
 ```{r hazard-risk-set}
 ds.omop.mutate("D_days", to_next = next_day - period_start_days,
   to_death = death_day - period_start_days,
-  newobj = "D_remaining", conns = two_conns, symbol = "book_pool")
+  newobj = "D_remaining", conns = two_conns, symbol = "pair")
 ds.omop.filter("D_remaining",
   expr = omop_where((is.na(to_next) | to_next >= 0) &
   (is.na(to_death) | to_death >= 0)),
-  newobj = "D_risk", conns = two_conns, symbol = "book_pool")
+  newobj = "D_risk", conns = two_conns, symbol = "pair")
 ds.omop.mutate("D_risk", event = ifelse(hb_count > 0, 1L, 0L),
   years = period_start_days / 365.25,
-  newobj = "D_hazard", conns = two_conns, symbol = "book_pool")
+  newobj = "D_hazard", conns = two_conns, symbol = "pair")
 hazard_counts <- dsBaseClient::ds.table("D_hazard$event", datasources = two_conns)
-book_counts(hazard_counts)
+hazard_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Each row is one observed day at risk. More than one lab on that day is still one
@@ -441,7 +464,7 @@ bmi_entry <- omop_population("bmi_entry", index = omop_index(bmi))
 repeated <- omop_recipe(events = list(bmi), populations = list(bmi_entry),
   outputs = omop_output("long", rows = "bmi_entry", format = "long", sources = "bmi",
     options = list(columns_derived = c("value", "unit", "days_since_previous"))))
-recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "book_pool")
+recipe_execute(repeated, out = c(long = "D_long"), conns = two_conns, symbol = "pair")
 dsBaseClient::ds.colnames("D_long", datasources = two_conns)
 ```
 
@@ -456,7 +479,7 @@ use `person_id` to group repeated observations of the same person;
 ```{r repeated-variables, table.digits = 3}
 ds.omop.mutate("D_long", years = start_date / 365.25,
   above_cutoff = ifelse(value >= 25, 1L, 0L),
-  newobj = "D_repeat", conns = two_conns, symbol = "book_pool")
+  newobj = "D_repeat", conns = two_conns, symbol = "pair")
 repeat_groups <- dsBaseClient::ds.meanSdGp("D_repeat$value", "D_repeat$above_cutoff",
   type = "combine", datasources = two_conns)
 data.frame(Band = c("below 25", "25 or above"),

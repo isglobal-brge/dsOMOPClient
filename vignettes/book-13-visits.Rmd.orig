@@ -14,15 +14,24 @@ vignette: >
 Measure time since entry, distinguish people from visits, and count visits by month and setting.
 </div>
 
-**You need:** [the setup and questionnaire dataset](book-00-start.html).
-Start a fresh R session in `book-work` and run the sections in order.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.questionnaire`.
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("questionnaire")$conns
 ```
 
 ## Measure time from each person's first visit
@@ -37,7 +46,8 @@ visit_study <- omop_study(visit, outputs = "baseline", baseline = list(
   first_days = omop_first_date("visit_occurrence"),
   last_days = omop_last_date("visit_occurrence")))
 recipe_execute(visit_study, out = c(baseline = "D_visit_study"), conns = conns)
-book_summary("D_visit_study$last_days", datasources = conns)
+dsBaseClient::ds.summary("D_visit_study$last_days", datasources = conns)
+dsBaseClient::ds.numNA("D_visit_study$last_days", datasources = conns)
 ```
 
 The 36 valid values describe visitors. The last visit is 0, 366 or 1,203 days after
@@ -59,8 +69,8 @@ months <- omop_recipe(variables = list(visit_month = omop_date("first_visit",
   omop_date_spec(precision = "month", level_range = c("2020-03-01", "2020-07-31")))),
   outputs = omop_output("people", format = "wide", grain = "person"))
 recipe_execute(months, out = c(people = "D_months"), conns = conns)
-book_counts(dsBaseClient::ds.table("D_months$visit_month",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_months$visit_month",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 March, June and July each contain 12 first visitors.
@@ -93,8 +103,9 @@ long_visits <- omop_recipe(
   outputs = omop_output("visits", format = "long", sources = "visits"),
   date_spec = omop_date_spec(precision = "month"))
 recipe_execute(long_visits, out = c(visits = "D_visits"), conns = conns)
-book_table2(dsBaseClient::ds.table("D_visits$start_date",
-  "D_visits$concept_id", useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_visits$start_date",
+  "D_visits$concept_id", useNA = "no",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The table counts 24 inpatient and 36 outpatient visits: 60 records from 36
@@ -112,7 +123,8 @@ counts relate to the 60 rows in the long table.
 counts <- omop_recipe(variables = list(visits = omop_variable(event = visit,
   reducer = omop_reduce("count"))))
 recipe_execute(counts, out = "D_visit_counts", conns = conns)
-book_counts(dsBaseClient::ds.table("D_visit_counts$visits", datasources = conns))
+dsBaseClient::ds.table("D_visit_counts$visits",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Twelve people have zero visits, 12 have one and 24 have two.
@@ -130,8 +142,8 @@ last_visit <- omop_anchor(visit, which = "last")
 quarters <- omop_recipe(variables = list(last_quarter = omop_date(last_visit,
   omop_date_spec(precision = "quarter"))))
 recipe_execute(quarters, out = "D_quarters", conns = conns)
-book_counts(dsBaseClient::ds.table("D_quarters$last_quarter",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_quarters$last_quarter",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are 12 people in each of 2020-Q3, 2021-Q1 and 2023-Q4, and 12 with no visit.

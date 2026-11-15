@@ -15,10 +15,10 @@ Find the study concepts, define mutually exclusive new-user entry, account for
 censoring, and fit a pooled adjusted constant-hazard survival model.
 </div>
 
-**You need:** [the installed packages and practice resources](book-00-start.html#before-you-start),
+**You need:** the Opal login from [Getting started](book-00-start.html),
 [concept discovery](book-04-vocabulary.html), and the preceding tutorial chapters.
-Run these sections in order in a fresh `book-work` session. All observations are
-public synthetic teaching data; the numerical results are not clinical evidence.
+This chapter uses the two GiBleed sites. All observations are public synthetic
+teaching data; the numerical results are not clinical evidence.
 
 ## Research question
 
@@ -26,28 +26,35 @@ Among people beginning celecoxib or diclofenac after a year without either drug,
 how does first GI bleeding during the following year differ? We adjust for age.
 This is a methods exercise; age adjustment alone does not identify a causal drug effect.
 
-For real servers, replace the two lines assigning `practice_pair` and
-`two_conns` below with the [two-site Opal login](book-00-start.html#connect-to-two-opal-sites),
-which attaches the resources as `book_pool`.
-
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
 source("tools/book/practice.R")
-practice_pair <- book_connect("gibleed", two_sites = TRUE, symbol = "book_pool")
-two_conns <- practice_pair$conns
 ```
 
-The helper partitions public GiBleed people into two disjoint sites. It never
-splits or downloads a real site's records through an analyst connection.
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+two_conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("north", "south"),
+  resource = c(north = "omop.gibleed_north", south = "omop.gibleed_south"))$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+two_conns <- book_connect("gibleed", two_sites = TRUE)$conns
+```
+
+The two GiBleed resources hold disjoint halves of the public GiBleed people, so
+no person is counted twice when the sites are pooled.
 
 ## Find the drugs and outcome
 
 ```{r comparison-discovery}
-ce <- ds.omop.concept.search("celecoxib", domain = "Drug", conns = two_conns, symbol = "book_pool")$pooled
-di <- ds.omop.concept.search("diclofenac", domain = "Drug", conns = two_conns, symbol = "book_pool")$pooled
-gi <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition", conns = two_conns, symbol = "book_pool")$pooled
+ce <- ds.omop.concept.search("celecoxib", domain = "Drug", conns = two_conns)$pooled
+di <- ds.omop.concept.search("diclofenac", domain = "Drug", conns = two_conns)$pooled
+gi <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition", conns = two_conns)$pooled
 rbind(ce, di, gi)[c("concept_id", "concept_name", "standard_concept", "concept_class_id")]
 ceid <- ce$concept_id[trimws(ce$concept_name) == "celecoxib"]
 diid <- di$concept_id[trimws(di$concept_name) == "Diclofenac"]
@@ -65,10 +72,10 @@ catalogue match for the capsule therefore does not establish a descendant
 relationship, which is why only the seed appears below.
 
 ```{r comparison-descendants}
-ce_children <- ds.omop.concept.descendants(ceid, conns = two_conns, symbol = "book_pool")$pooled
+ce_children <- ds.omop.concept.descendants(ceid, conns = two_conns)$pooled
 ce_children[c("concept_id", "concept_name")]
 ds.omop.concept.locate(c(ceid, diid, giid), scope = "pooled",
-  conns = two_conns, symbol = "book_pool")$pooled
+  conns = two_conns)$pooled
 study_sets <- list(celecoxib = omop_concept_set(ceid, descendants = TRUE),
   diclofenac = omop_concept_set(diid, descendants = TRUE),
   bleeding = omop_concept_set(giid, descendants = TRUE))
@@ -120,8 +127,7 @@ comparison <- omop_recipe(populations = list(users),
     omop_output("analysis", rows = "users", format = "joined", options = list(
       from = list(list(output = "baseline"), list(output = "survival")),
       how = "inner", cardinality = "one_to_one"))), publish = "analysis")
-recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool")
-
+recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns)
 ```
 
 The censor list and 365-day window define the estimand. Event = 0 means censored
@@ -148,10 +154,11 @@ ds.omop.mutate("D_comparison", years = follow_up_days / 365.25,
   month_difference = entry_month - birth_month, day_difference = entry_day - birth_day,
   age = entry_year - birth_year - ifelse(month_difference < 0 |
     (month_difference == 0 & day_difference < 0), 1L, 0L),
-  newobj = "D_comparison_model", conns = two_conns, symbol = "book_pool")
-book_counts(dsBaseClient::ds.table("D_comparison_model$zero_time", datasources = two_conns))
-book_table2(dsBaseClient::ds.table("D_comparison$celecoxib",
-  "D_comparison$event", datasources = two_conns))
+  newobj = "D_comparison_model", conns = two_conns)
+dsBaseClient::ds.table("D_comparison_model$zero_time",
+  datasources = two_conns)$output.list$TABLES.COMBINED_all.sources_counts
+dsBaseClient::ds.table("D_comparison$celecoxib",
+  "D_comparison$event", datasources = two_conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 All 2,630 episodes have positive time. Treatment 0 is diclofenac and 1 is
@@ -162,7 +169,7 @@ leaves these counts unchanged while making the study definition explicit.
 ```{r arm-summary, table.digits = 2}
 arm_summary <- do.call(rbind, lapply(0:1, function(arm) {
   ds.omop.filter("D_comparison_model", var = "celecoxib", op = "==", value = arm,
-    newobj = paste0("D_arm", arm), conns = two_conns, symbol = "book_pool")
+    newobj = paste0("D_arm", arm), conns = two_conns)
   aggregate <- function(column) dsBaseClient::ds.mean(paste0("D_arm", arm, "$", column),
     type = "combine", datasources = two_conns)$Global.Mean
   time <- aggregate("years"); event <- aggregate("event"); age <- aggregate("age")
@@ -226,8 +233,9 @@ changes little here; they do not rule out other confounding.
 
 ```{r comparison-censoring}
 ds.omop.mutate("D_comparison", early_censor = ifelse(event == 0 & follow_up_days < 364, 1L, 0L),
-  newobj = "D_censor", conns = two_conns, symbol = "book_pool")
-book_counts(dsBaseClient::ds.table("D_censor$early_censor", datasources = two_conns))
+  newobj = "D_censor", conns = two_conns)
+dsBaseClient::ds.table("D_censor$early_censor",
+  datasources = two_conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The 52 early censored episodes end at observation end; GiBleed has no recorded

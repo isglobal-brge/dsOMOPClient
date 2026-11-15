@@ -15,22 +15,23 @@ Save a study definition and its data-source information, repeat it at another
 site, and inspect unsupported cohort rules before running them.
 </div>
 
-**You need:** [the setup and questionnaire dataset](book-00-start.html).
-Start a fresh R session in `book-work`. The two questionnaire sites have different
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses the two questionnaire
+sites, `omop.questionnaire` and `omop.questionnaire_site2`. They have different
 education answers and vocabulary dates, so identical recipes need not give identical results.
 
-For real servers, replace the two local connection lines below with the
-`conns` / `site` / `site2` variant in the
-[two-site Opal instructions](book-00-start.html#connect-to-two-opal-sites).
+
 
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire", two_sites = TRUE)
-conns <- practice$conns
+conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("site", "site2"),
+  resource = c(site = "omop.questionnaire", site2 = "omop.questionnaire_site2"))$conns
 ```
+
+
 
 ## Record the data actually used
 
@@ -149,17 +150,15 @@ a database has stayed unchanged.
 restored <- recipe_load(file.path(record_dir, "recipe.json"))
 second_result <- recipe_execute(restored, out = c(people = "D_repeated"), conns = conns["site2"])
 saveRDS(recipe_codebook(second_result), file.path(record_dir, "codebook-site2.rds"))
-book_counts(dsBaseClient::ds.table("D_repeated$death_period",
-  useNA = "always", datasources = conns["site2"]))
+dsBaseClient::ds.table("D_repeated$death_period",
+  useNA = "always", datasources = conns["site2"])$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category | Count|
-|:--------|-----:|
-|2023     |    18|
-|2024     |    18|
-|NA       |    12|
+```
+#> D_repeated$death_period
+#> 2023 2024   NA
+#>   18   18   12
+```
 
 The second site has 18 deaths in 2023, 18 in 2024, and 12 people without a death
 year. The counts describe its data; the saved recipe describes how those categories were obtained.
@@ -173,23 +172,26 @@ the separate runs. What changed?
 
 
 ``` r
-first_counts <- book_counts(dsBaseClient::ds.table("D_documented$education",
-  useNA = "always", datasources = conns["site"]))
-second_counts <- book_counts(dsBaseClient::ds.table("D_repeated$education",
-  useNA = "always", datasources = conns["site2"]))
-rbind(transform(first_counts, Site = "site"),
-      transform(second_counts, Site = "site2"))
+dsBaseClient::ds.table("D_documented$education",
+  useNA = "always", datasources = conns["site"])$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
+```
+#> D_documented$education
+#>  Secondary education University education                   NA
+#>                   12                   12                   24
+```
 
+``` r
+dsBaseClient::ds.table("D_repeated$education",
+  useNA = "always", datasources = conns["site2"])$output.list$TABLES.COMBINED_all.sources_counts
+```
 
-|Category                 | Count|Site  |
-|:------------------------|-----:|:-----|
-|Secondary education      |    12|site  |
-|University education     |    12|site  |
-|NA                       |    24|site  |
-|University qualification |    24|site2 |
-|NA                       |    24|site2 |
+```
+#> D_repeated$education
+#> University qualification                       NA
+#>                       24                       24
+```
 
 Site has 12 Secondary and 12 University answers; site2 has 24 University answers.
 Both have 24 missing answers. The newer catalogue calls University education

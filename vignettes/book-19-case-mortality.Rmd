@@ -15,8 +15,8 @@ Define a calendar-year risk set, calculate cause-specific deaths and person-year
 and compare crude rates by sex, age at period start and year.
 </div>
 
-**You need:** [the setup and questionnaire dataset](book-00-start.html), and
-[the cause-of-death capstone](book-18-capstone.html). Start a fresh R session in `book-work`.
+**You need:** the Opal login from [Getting started](book-00-start.html) and
+[the cause-of-death capstone](book-18-capstone.html). This chapter uses `omop.questionnaire`.
 
 ## Research question
 
@@ -28,13 +28,15 @@ to death. In a dataset with gaps or later entry, intersect each observation
 interval with the analysis year as well.
 
 
+
+
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
+
+
 
 ## Find the causes
 
@@ -109,8 +111,9 @@ it does not change the actual 366-day calendar boundary.
 
 
 ``` r
-book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
-  "D_risk_2024$sex", useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_risk_2024$cause",
+  "D_risk_2024$sex", useNA = "always",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 
@@ -129,8 +132,9 @@ study it could also contain other causes. The denominators include survivors' ti
 
 
 ``` r
-book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
-  "D_risk_2024$age_group", useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_risk_2024$cause",
+  "D_risk_2024$age_group", useNA = "always",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 

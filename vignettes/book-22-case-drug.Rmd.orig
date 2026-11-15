@@ -15,8 +15,9 @@ Select a drug class, distinguish stockpiled supply from persistence, and calcula
 proportion of days covered with an explicit follow-up denominator.
 </div>
 
-**You need:** [the setup and practice resources](book-00-start.html).
-Start a fresh R session in `book-work`.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.questionnaire_drugs`,
+then `omop.gibleed`.
 
 ## Research question and supply patterns
 
@@ -35,12 +36,21 @@ of fill intervals covers 345 days, but carrying unused supply forward covers 365
 A gap over 30 days starts a new era. Predict covered days and first-era duration
 before examining the summaries.
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("questionnaire", categories = TRUE, drug_histories = TRUE)
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire_drugs", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("questionnaire", categories = TRUE, drug_histories = TRUE)$conns
 ```
 
 ## Find a class and its descendants
@@ -82,7 +92,7 @@ study <- omop_study(users, outputs = "baseline", require = list(followup = 364),
     discontinued = omop_number_flag(persistence, "lt", 365)))
 recipe_execute(study, out = c(baseline = "D_supply"), conns = conns)
 ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns)
-book_summary("D_use$pdc", datasources = conns)
+dsBaseClient::ds.summary("D_use$pdc", datasources = conns)
 ```
 
 Mean PDC is **0.4977** across 36 people: (365 + 120 + 60)/(3 × 365).
@@ -91,7 +101,8 @@ not ingestion. This class contains one ingredient; a class with several would
 also need a rule about whether switching preserves persistence.
 
 ```{r covered-days}
-book_counts(dsBaseClient::ds.table("D_use$covered", datasources = conns))
+dsBaseClient::ds.table("D_use$covered",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Twelve people each have 60, 120 and 365 covered days, matching the three patterns.
@@ -106,7 +117,8 @@ why it differs from total covered days for the restarted course.
 <details><summary>Solution 1</summary>
 
 ```{r persistence}
-book_counts(dsBaseClient::ds.table("D_use$persistence", datasources = conns))
+dsBaseClient::ds.table("D_use$persistence",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 First eras last 30, 120 and 365 days, with 12 people in each and mean **171.67**
@@ -122,7 +134,8 @@ is complete? Does this prove permanent cessation?
 <details><summary>Solution 2</summary>
 
 ```{r discontinuation}
-book_counts(dsBaseClient::ds.table("D_use$discontinued", datasources = conns))
+dsBaseClient::ds.table("D_use$discontinued",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are **24** indicators of one and **12** of zero. The definition says the
@@ -136,9 +149,16 @@ third pattern demonstrates; it does not prove permanent cessation.
 GiBleed has no ATC hierarchy, but [chapter 20](book-20-case-gibleed.html#find-the-drugs-and-outcome) identifies celecoxib ingredient
 **1118084**. Check what its available exposure spans can support.
 
-```{r gibleed-feasibility}
-practice <- book_switch("gibleed")
-conns <- practice$conns
+```{r gibleed-feasibility, eval = FALSE}
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.gibleed", conns = conns)
+```
+
+```{r gibleed-feasibility-local-9, include = FALSE}
+conns <- book_switch("gibleed")$conns
+```
+
+```{r gibleed-feasibility-10}
 hits <- ds.omop.concept.search("celecoxib", domain = "Drug", vocabulary = "RxNorm", conns = conns)$pooled
 hits[c("concept_id", "concept_name", "standard_concept")]
 ingredient <- hits$concept_id[trimws(hits$concept_name) == "celecoxib"]
@@ -155,7 +175,7 @@ feasibility <- omop_study(omop_new_users(ingredient, washout_days = 365),
     covered = omop_variable(event = gibleed_era, reducer = omop_reduce("covered_days",
       window = omop_window(0, 364), coverage = "effective_supply"))))
 recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns)
-book_summary("D_feasibility$covered", datasources = conns)
+dsBaseClient::ds.summary("D_feasibility$covered", datasources = conns)
 ```
 
 Every covered-days summary is one day because the source has zero days supplied

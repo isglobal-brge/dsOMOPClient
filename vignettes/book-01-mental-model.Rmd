@@ -14,21 +14,21 @@ vignette: >
 Distinguish a database, a private server object and a released summary.
 </div>
 
-**You need:** the packages, helpers and loaded practice data from
-[Getting started](book-00-start.html#before-you-start). Start a fresh R session
-in `book-work` and run the sections in order.
-This chapter uses GiBleed.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.gibleed`.
 
 ## Start this chapter
 
 
+
+
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("gibleed")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.gibleed", server = "site")$conns
 ```
+
+
 
 ## A shared table structure
 

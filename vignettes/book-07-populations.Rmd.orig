@@ -14,22 +14,29 @@ vignette: >
 Choose who enters a study, define episodes and observation coverage, reuse a cohort, identify new users and sample controls at case time.
 </div>
 
-This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
-
-**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work` directory.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.questionnaire`,
+the synthetic questionnaire study described there.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+Log in first:
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("questionnaire")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the analysis calls.
@@ -109,8 +116,8 @@ The count includes visits through the chosen index day.
 
 ```{r eligible-result}
 dsBaseClient::ds.dim("D_eligible", datasources = conns)
-book_counts(dsBaseClient::ds.table("D_eligible$visits",
-  useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_eligible$visits",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are 24 eligible people, each with two visits through entry. Their first
@@ -181,8 +188,8 @@ The era uses a 30-day gap and ends at the treatment interval end.
 “New user” means no recorded use during this washout, not no lifetime use.
 
 ```{r new-users-result}
-book_counts(dsBaseClient::ds.table("D_new_users$prior_fills",
-  useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_new_users$prior_fills",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 All 36 new users have zero prior fills in days −365 to −1. That is an
@@ -235,8 +242,8 @@ for matching, such as conditional logistic regression; it is not a covariate to
 copy or summarise.
 
 ```{r matched-result}
-book_table2(dsBaseClient::ds.table("D_matched$is_case", "D_matched$sex",
-  useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_matched$is_case", "D_matched$sex",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Rows 1 and 0 represent cases and controls. Each has 14 females and 22 males:

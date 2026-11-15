@@ -15,8 +15,8 @@ Define a calendar-year risk set, calculate cause-specific deaths and person-year
 and compare crude rates by sex, age at period start and year.
 </div>
 
-**You need:** [the setup and questionnaire dataset](book-00-start.html), and
-[the cause-of-death capstone](book-18-capstone.html). Start a fresh R session in `book-work`.
+**You need:** the Opal login from [Getting started](book-00-start.html) and
+[the cause-of-death capstone](book-18-capstone.html). This chapter uses `omop.questionnaire`.
 
 ## Research question
 
@@ -27,12 +27,21 @@ population alive at each year's start can contribute the whole year or time up
 to death. In a dataset with gaps or later entry, intersect each observation
 interval with the analysis year as well.
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("questionnaire")$conns
 ```
 
 ## Find the causes
@@ -85,8 +94,9 @@ it does not change the actual 366-day calendar boundary.
 ## Look at deaths before calculating rates
 
 ```{r cause-by-sex}
-book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
-  "D_risk_2024$sex", useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_risk_2024$cause",
+  "D_risk_2024$sex", useNA = "always",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 F means female and M means male. In 2024 there are four female and eight male myocardial-infarction deaths, and
@@ -95,8 +105,9 @@ The “Neither selected cause” row contains survivors in this dataset; in anot
 study it could also contain other causes. The denominators include survivors' time.
 
 ```{r cause-by-age}
-book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
-  "D_risk_2024$age_group", useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_risk_2024$cause",
+  "D_risk_2024$age_group", useNA = "always",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Six pneumonia deaths are under 40 at period start. Six myocardial-infarction

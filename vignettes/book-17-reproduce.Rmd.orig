@@ -15,20 +15,28 @@ Save a study definition and its data-source information, repeat it at another
 site, and inspect unsupported cohort rules before running them.
 </div>
 
-**You need:** [the setup and questionnaire dataset](book-00-start.html).
-Start a fresh R session in `book-work`. The two questionnaire sites have different
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses the two questionnaire
+sites, `omop.questionnaire` and `omop.questionnaire_site2`. They have different
 education answers and vocabulary dates, so identical recipes need not give identical results.
 
-For real servers, replace the two local connection lines below with the
-`conns` / `site` / `site2` variant in the
-[two-site Opal instructions](book-00-start.html#connect-to-two-opal-sites).
-
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("questionnaire", two_sites = TRUE)
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("site", "site2"),
+  resource = c(site = "omop.questionnaire", site2 = "omop.questionnaire_site2"))$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("questionnaire", two_sites = TRUE)$conns
 ```
 
 ## Record the data actually used
@@ -112,8 +120,8 @@ a database has stayed unchanged.
 restored <- recipe_load(file.path(record_dir, "recipe.json"))
 second_result <- recipe_execute(restored, out = c(people = "D_repeated"), conns = conns["site2"])
 saveRDS(recipe_codebook(second_result), file.path(record_dir, "codebook-site2.rds"))
-book_counts(dsBaseClient::ds.table("D_repeated$death_period",
-  useNA = "always", datasources = conns["site2"]))
+dsBaseClient::ds.table("D_repeated$death_period",
+  useNA = "always", datasources = conns["site2"])$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The second site has 18 deaths in 2023, 18 in 2024, and 12 people without a death
@@ -127,12 +135,10 @@ the separate runs. What changed?
 <details><summary>Solution 1</summary>
 
 ```{r compare-education}
-first_counts <- book_counts(dsBaseClient::ds.table("D_documented$education",
-  useNA = "always", datasources = conns["site"]))
-second_counts <- book_counts(dsBaseClient::ds.table("D_repeated$education",
-  useNA = "always", datasources = conns["site2"]))
-rbind(transform(first_counts, Site = "site"),
-      transform(second_counts, Site = "site2"))
+dsBaseClient::ds.table("D_documented$education",
+  useNA = "always", datasources = conns["site"])$output.list$TABLES.COMBINED_all.sources_counts
+dsBaseClient::ds.table("D_repeated$education",
+  useNA = "always", datasources = conns["site2"])$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Site has 12 Secondary and 12 University answers; site2 has 24 University answers.

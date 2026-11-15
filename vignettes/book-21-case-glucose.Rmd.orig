@@ -15,8 +15,8 @@ Describe first and later glucose readings, distinguish change from slope, handle
 unobserved threshold attainment, and interpret a model with only ten people.
 </div>
 
-**You need:** [the setup and numeric resource](book-00-start.html), and
-[the lab lesson](book-14-labs.html). Start a fresh R session in `book-work`.
+**You need:** the Opal login from [Getting started](book-00-start.html) and
+[the lab lesson](book-14-labs.html). This chapter uses `omop.synthea`.
 
 ## Research question
 
@@ -24,12 +24,21 @@ Among people with blood-glucose measurements, how do values change over recorded
 follow-up? This is a lab-defined population, not a diagnosis-confirmed diabetes
 cohort. The Synthea data are synthetic; the cutoffs below are teaching rules.
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("numeric")$conns
 ```
 
 ## Choose a populated measurement
@@ -58,7 +67,7 @@ person with only a baseline reading cannot supply a follow-up outcome.
 A slope uses all readings and their actual spacing; last minus first ignores
 how long the change took.
 
-```{r glucose-recipe, table.digits = 3, table.row.names = FALSE}
+```{r glucose-recipe, table.digits = 3}
 glucose <- omop_event("measurement", glucose_set, unit = omop_unit(8840L))
 first <- omop_variable(event = glucose, reducer = omop_reduce("first_value", window = omop_window(0, 0)))
 last <- omop_variable(event = glucose, reducer = omop_reduce("last_value", window = omop_window(1, NULL)))
@@ -73,11 +82,8 @@ trajectory <- omop_recipe(populations = list(cohort), variables = list(
   target_days = omop_number_change(glucose, "time_to_threshold", threshold = 95, op = "ge")),
   outputs = omop_output("people", rows = "measured", format = "wide"))
 recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns)
-trajectory_summary <- do.call(rbind, lapply(c("first", "last", "change", "per_year", "followup_days"), function(column) {
-  x <- book_summary(paste0("D_glucose$", column), datasources = conns)
-  transform(x[x$Statistic %in% c("50%", "Mean"), ], Variable = column)
-}))
-trajectory_summary
+sapply(c("first", "last", "change", "per_year", "followup_days"), function(column)
+  dsBaseClient::ds.quantileMean(paste0("D_glucose$", column), datasources = conns))
 ```
 
 All ten people have later values, with median follow-up about 18 years.
@@ -88,7 +94,8 @@ straight-line slope can miss fluctuations between readings.
 ## Classify values and distinguish unobserved attainment
 
 ```{r glucose-control}
-book_counts(dsBaseClient::ds.table("D_glucose$control", datasources = conns))
+dsBaseClient::ds.table("D_glucose$control",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Four people are below 90 and six are at least 90 mg/dL.
@@ -102,7 +109,8 @@ study the threshold comes from the protocol, and a withheld result is reported
 as withheld, not avoided by changing the cutoff.
 
 ```{r glucose-target, table.digits = 3}
-book_summary("D_glucose$target_days", datasources = conns)
+dsBaseClient::ds.summary("D_glucose$target_days", datasources = conns)
+dsBaseClient::ds.numNA("D_glucose$target_days", datasources = conns)
 ```
 
 Eight people have an observed attainment and two are missing. The median among
@@ -144,7 +152,8 @@ retain the number with missing attainment.
 ```{r glucose-years, table.digits = 3}
 ds.omop.mutate("D_glucose", target_years = target_days / 365.25,
   newobj = "D_glucose_years", conns = conns)
-book_summary("D_glucose_years$target_years", datasources = conns)
+dsBaseClient::ds.summary("D_glucose_years$target_years", datasources = conns)
+dsBaseClient::ds.numNA("D_glucose_years$target_years", datasources = conns)
 ```
 
 The median becomes 3.20 years and the mean 5.75 years. Divide the day summary
@@ -161,7 +170,7 @@ server and compare with the native change summary. Does agreement prove a steady
 ```{r glucose-difference, table.digits = 3}
 ds.omop.mutate("D_glucose", difference = last - first,
   newobj = "D_difference", conns = conns)
-book_summary("D_difference$difference", datasources = conns)
+dsBaseClient::ds.summary("D_difference$difference", datasources = conns)
 ```
 
 The difference agrees with native change because both calculate last minus

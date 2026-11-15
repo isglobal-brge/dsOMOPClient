@@ -14,22 +14,29 @@ vignette: >
 Separate date sources from presentation, choose factor/number/date periods, extract parts, calculate anchored ages, and handle partial dates explicitly.
 </div>
 
-This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
-
-**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work` directory.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.questionnaire`,
+the synthetic questionnaire study described there.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+Log in first:
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("questionnaire")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the analysis calls.
@@ -97,7 +104,8 @@ numbers <- omop_recipe(variables = list(month_index = omop_date("first_visit",
 recipe_execute(numbers, out = c(people = "D_date_numbers"), conns = conns)
 ```
 ```{r number-result, table.digits = 2}
-book_summary("D_date_numbers$month_index", datasources = conns)
+dsBaseClient::ds.summary("D_date_numbers$month_index", datasources = conns)
+dsBaseClient::ds.numNA("D_date_numbers$month_index", datasources = conns)
 ```
 
 January 2020 is zero, February one and March two. The mean 4.33 averages
@@ -125,7 +133,8 @@ ds.omop.mutate("D_date_bounds", days = end - start + 1L,
   newobj = "D_month_lengths", conns = conns)
 ```
 ```{r bounds-result, table.digits = 2}
-book_summary("D_month_lengths$days", datasources = conns)
+dsBaseClient::ds.summary("D_month_lengths$days", datasources = conns)
+dsBaseClient::ds.numNA("D_month_lengths$days", datasources = conns)
 ```
 
 The mean inclusive month length is 30.67 days across 36 visitors: March and
@@ -174,8 +183,8 @@ ages <- omop_recipe(variables = list(at_death = omop_age_at("death"),
 recipe_execute(ages, out = c(people = "D_date_ages"), conns = conns)
 ```
 ```{r age-death-result}
-book_counts(dsBaseClient::ds.table("D_date_ages$at_death",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_date_ages$at_death",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Six people each died at completed ages 32, 33, 42 and 43. The 24 missing ages
@@ -184,8 +193,8 @@ A table makes these few ages clearer than interpolated summary quantiles. A Febr
 completes on March 1 in a non-leap year. Exact age does not equal year subtraction.
 
 ```{r age-anchor-result}
-book_counts(dsBaseClient::ds.table("D_date_ages$at_question",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_date_ages$at_question",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 At the first education question, 12 people were 29 and 12 were 39; the
@@ -219,8 +228,8 @@ estimated <- omop_recipe(variables = list(age = omop_age_at("death",
 recipe_execute(estimated, out = c(people = "D_date_estimated"), conns = conns)
 ```
 ```{r estimated-result}
-book_counts(dsBaseClient::ds.table("D_date_estimated$age",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_date_estimated$age",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The estimate adds six people aged 23 and six aged 24. Missing age at death
@@ -291,7 +300,8 @@ Calculate elapsed days from first visit to death and request a summary. Why are 
 elapsed <- omop_recipe(variables = list(days = omop_time_between("first_visit", "death")),
   outputs = omop_output("people", format = "wide", grain = "person"))
 recipe_execute(elapsed, out = c(people = "D_date_elapsed"), conns = conns)
-book_summary("D_date_elapsed$days", datasources = conns)
+dsBaseClient::ds.summary("D_date_elapsed$days", datasources = conns)
+dsBaseClient::ds.numNA("D_date_elapsed$days", datasources = conns)
 ```
 The mean duration is 1,334.33 days, with 36 valid durations and 12 missing, because 12 people have neither
 a visit nor a death date. Elapsed days need both dates. This calculation does not need a complete birth date, unlike exact age. It is a duration, not a calendar label.

@@ -14,22 +14,29 @@ vignette: >
 Choose a table shape for your question and run one small example of every format, including explicit survival censoring.
 </div>
 
-This chapter uses the public synthetic Synthea27Nj numeric connection from [Getting started](book-00-start.html).
-
-**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work` directory.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.synthea`, the
+public synthetic Synthea27Nj data.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+Log in first:
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("numeric")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the analysis calls.
@@ -94,7 +101,6 @@ before. Age is completed age at the first visit.
 
 ```{r wide}
 wide_result <- recipe_execute(base, out = c(wide = "D_fmt_wide"), conns = conns)
-book_symbols(wide_result)
 dsBaseClient::ds.dim("D_fmt_wide", datasources = conns)
 ```
 
@@ -118,8 +124,8 @@ The long output has 1,735 rows, one per selected visit. Its columns include
 `concept_id` and `start_date`. Dates default to offsets from the index. One source makes the event-row meaning clear; multiple sources need an explicit event-log design.
 
 ```{r long-settings}
-book_counts(dsBaseClient::ds.table("D_fmt_long$concept_id",
-  useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_fmt_long$concept_id",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The 13 inpatient and 1,722 outpatient visits sum to 1,735 records. These are
@@ -180,7 +186,7 @@ The panel has 84 rows: 28 visitors × three bins. A dense panel retains empty
 bins with zero event counts. `bins = list(calendar = "month")` instead aligns to calendar months, whose lengths vary. Account for repeated rows per person in downstream analysis.
 
 ```{r panel-counts, table.digits = 2}
-book_summary("D_fmt_panel$visits_outpatient_visit_count",
+dsBaseClient::ds.summary("D_fmt_panel$visits_outpatient_visit_count",
   datasources = conns)
 ```
 
@@ -200,12 +206,13 @@ temporal <- omop_recipe(events = list(visits, spans, inpatient),
   options = list(sources = list(visits), bin_width = 30L,
     window = omop_window(0, 89), analyses = "count")))
 temporal_result <- recipe_execute(temporal, out = c(temporal = "D_fmt_temporal"), conns = conns)
-book_symbols(temporal_result)
+DSI::datashield.symbols(conns)
 dsBaseClient::ds.dim("D_fmt_temporal", datasources = conns)
 ```
 
+The server now also holds `D_fmt_temporal.covariateRef` and `D_fmt_temporal.timeRef`.
 The 36 rows count nonzero covariate/bin entries rather than people.
-Keep the covariate and time reference tables returned with this result: their
+Keep the covariate and time reference tables with this result: their
 keys need those definitions. Missing records and missing measurements are not automatically interchangeable.
 
 ## Survival: state the censoring rule
@@ -227,14 +234,14 @@ Only the named censor sources cap follow-up: observation end and death here. The
 
 ```{r survival-result}
 survival_result <- dsBaseClient::ds.table("D_fmt_survival$event", useNA = "no", datasources = conns)
-book_counts(survival_result)
+survival_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Seven people have `event = 1` (an observed admission); 21 have `event = 0`
 (follow-up ended without an admission in the risk window).
 
 ```{r survival-duration, table.digits = 1}
-book_summary("D_fmt_survival$follow_up_days", datasources = conns)
+dsBaseClient::ds.summary("D_fmt_survival$follow_up_days", datasources = conns)
 ```
 
 Median follow-up is 7,462 days and the mean is 9,291.6 days. This spans much
@@ -268,10 +275,11 @@ sparse <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("sparse", rows = "visitors", format = "sparse",
   options = list(sources = list(visits), analyses = c("binary", "count"))))
 sparse_result <- recipe_execute(sparse, out = c(sparse = "D_fmt_sparse"), conns = conns)
-book_symbols(sparse_result)
+DSI::datashield.symbols(conns)
 dsBaseClient::ds.dim("D_fmt_sparse", datasources = conns)
 ```
 
+`D_fmt_sparse` comes with its reference table `D_fmt_sparse.covariateRef`.
 The 70 sparse rows each hold a nonzero value for one person and covariate, so this
 row count is not a population size. The data contain a covariate key and value. The reference companion maps keys to source, concept and analysis. A missing sparse row is not a missing person roster: retain membership separately. Each published patient component must meet its own support rule.
 
@@ -372,7 +380,7 @@ Summarise the visit-count column of the joined output. Why is it the same as the
 <details><summary>Solution</summary>
 
 ```{r solution, table.digits = 2}
-book_summary("D_fmt_joined$visits", datasources = conns)
+dsBaseClient::ds.summary("D_fmt_joined$visits", datasources = conns)
 ```
 
 The mean is 61.96 visits per person across 28 people. Both outputs use the
@@ -388,7 +396,7 @@ of a long table's measurement rows give each person equal weight?
 <details><summary>Solution</summary>
 
 ```{r numeric-output-exercise, table.digits = 2}
-book_summary("D_fmt_wide$hemoglobin", datasources = conns)
+dsBaseClient::ds.summary("D_fmt_wide$hemoglobin", datasources = conns)
 ```
 
 The overall mean is 14.47 g/dL across 28 person-level means. The wide table

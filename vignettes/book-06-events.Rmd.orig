@@ -14,22 +14,29 @@ vignette: >
 Select records, set inclusive time windows, and reduce them to first, last, count, ever, closest, any and all values.
 </div>
 
-This chapter uses the public synthetic Synthea27Nj numeric connection from [Getting started](book-00-start.html).
-
-**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work` directory.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.synthea`, the
+public synthetic Synthea27Nj data.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+Log in first:
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("numeric")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the analysis calls.
@@ -138,21 +145,22 @@ The columns are now in `D_reducers` on the server. Request one approved
 aggregate at a time:
 
 ```{r first-result, table.digits = 2}
-book_summary("D_reducers$first", datasources = conns)
+dsBaseClient::ds.summary("D_reducers$first", datasources = conns)
+dsBaseClient::ds.numNA("D_reducers$first", datasources = conns)
 ```
 
 All 28 people have a first nonmissing measurement. Their mean is 13.99 g/dL;
 this gives each person one observation regardless of how often they were tested.
 
 ```{r last-result, table.digits = 2}
-book_summary("D_reducers$last", datasources = conns)
+dsBaseClient::ds.summary("D_reducers$last", datasources = conns)
 ```
 
 The last readings average 14.89 g/dL across the same 28 people. First and last
 can coincide for someone with only one reading.
 
 ```{r days-result, table.digits = 2}
-book_summary("D_reducers$days", datasources = conns)
+dsBaseClient::ds.summary("D_reducers$days", datasources = conns)
 ```
 
 The mean is 3.86 measurement days per person, with a median of 4. A frequency table of each
@@ -170,7 +178,7 @@ The message withholds the table. It does not say that these people have no measu
 
 ```{r ever-result}
 ever_result <- dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
-book_counts(ever_result)
+ever_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Everyone in this public dataset has a hemoglobin measurement. A person without
@@ -178,7 +186,7 @@ one would have ever = 0 in this defined window.
 
 ```{r any-result}
 any_result <- dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
-book_counts(any_result)
+any_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The released counts show 19 people with at least one reading at or above 16 g/dL
@@ -187,7 +195,7 @@ alongside an unknown value.
 
 ```{r all-result}
 all_result <- dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = conns)
-book_counts(all_result)
+all_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 Four people have all readings at or above 14 g/dL; 24 do not.
@@ -196,7 +204,7 @@ All distinguishes unknown comparisons from an empty set of records.
 ## Read the mean summary
 
 ```{r mean-result, table.digits = 2}
-book_summary("D_reducers$mean", datasources = conns)
+dsBaseClient::ds.summary("D_reducers$mean", datasources = conns)
 ```
 
 The mean of the 28 person-level means is 14.47 g/dL. Averaging all measurement
@@ -236,7 +244,7 @@ The tolerance excludes later measurements. The shortcut uses `closest_value`;
 its default tolerance would include 90 days before and 30 days after.
 
 ```{r at-index-result, table.digits = 2}
-book_summary("D_at_index$hemoglobin", datasources = conns)
+dsBaseClient::ds.summary("D_at_index$hemoglobin", datasources = conns)
 ```
 
 The mean is again 13.99 g/dL: because the index is the first hemoglobin reading,
@@ -277,7 +285,7 @@ recipe_execute(converted, out = c(people = "D_converted"), conns = conns)
 ```
 
 ```{r conversion-result, table.digits = 2}
-book_summary("D_converted$mean_gl", datasources = conns)
+dsBaseClient::ds.summary("D_converted$mean_gl", datasources = conns)
 ```
 
 The overall mean is 144.67 g/L, ten times 14.47 g/dL. This run uses the dataset's unchanged
@@ -304,9 +312,7 @@ model contrasts.
 
 ```{r bins-result}
 bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
-bin_display <- book_counts(bins_result)
-bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
-bin_display[order(bin_display$Category, na.last = TRUE), ]
+bins_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are 9 people below 14, 9 from 14 to below 15, and 10 at or above 15 g/dL.
@@ -316,8 +322,8 @@ the entire table to be withheld; a refusal is not an empty or zero table.
 The left boundary is included and the right boundary excluded in these bins.
 
 ```{r high-flag}
-book_counts(dsBaseClient::ds.table("D_lab_bins$high",
-  useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_lab_bins$high",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 The high flag is 1 for the same 10 people in the top band and 0 for the other 18.
@@ -340,7 +346,7 @@ row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
 recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns)
-book_summary("D_row_count$rows", datasources = conns)
+dsBaseClient::ds.summary("D_row_count$rows", datasources = conns)
 ```
 
 The row and day summaries are identical here because nobody has two hemoglobin
@@ -359,7 +365,8 @@ for people with at least two readings. Is this the same quantity as a slope?
 ```{r numeric-change-exercise, table.digits = 2}
 change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
 recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns)
-book_summary("D_event_change$change", datasources = conns)
+dsBaseClient::ds.summary("D_event_change$change", datasources = conns)
+dsBaseClient::ds.numNA("D_event_change$change", datasources = conns)
 ```
 
 The mean change is 1.016 g/dL among 25 people; 3 are missing because they have

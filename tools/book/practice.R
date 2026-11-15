@@ -1,8 +1,9 @@
-# Two public, synthetic Eunomia resources on one real DSLite server.
+# Two public, synthetic Eunomia resources on one real DSLite server, named as on the
+# book's Opal so that ds.omop.connect(resource = "omop.synthea") works unchanged.
 # Load the practice data once with load_book_practice() before connecting.
 # Chapters enter through book_connect(); this function opens the local backend.
 book_practice <- function(resource=c("gibleed","numeric"), env=parent.frame(),
-                          resource_names=c(gibleed="gibleed", numeric="numeric"), symbol="omop") {
+                          resource_names=c(gibleed="omop.gibleed", numeric="omop.synthea"), symbol="omop") {
   force(env)
   resource<-match.arg(resource)
   library(dsOMOP); library(dsOMOPClient); library(DSLite)

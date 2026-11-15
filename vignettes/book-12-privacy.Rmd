@@ -14,24 +14,24 @@ vignette: >
 Distinguish a private assignment from an aggregate release, understand distinct-person support, and recognise refused identifiers and free text.
 </div>
 
-This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
-
-**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work` directory.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.questionnaire`,
+the synthetic questionnaire study described there.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+Log in first:
+
+
 
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire", server = "site")$conns
 ```
+
+
 
 The connection is ready; `conns` identifies the server used by the analysis calls.
 
@@ -52,11 +52,7 @@ not make a patient-level table suitable for download.
 ``` r
 private <- omop_recipe(variables = list(age = omop_age_at("2024-06-01"), sex = omop_sex()),
   outputs = omop_output("people", format = "wide", grain = "person"))
-book_symbols(recipe_execute(private, out = c(people = "D_private"), conns = conns))
-```
-
-```
-#> people → D_private
+recipe_execute(private, out = c(people = "D_private"), conns = conns)
 ```
 
 The reply names `D_private`, the server table holding age and sex. Exact
@@ -73,21 +69,30 @@ analysis calls in your DataSHIELD session.
 
 
 ``` r
-book_summary("D_private$age", datasources = conns)
+dsBaseClient::ds.summary("D_private$age", datasources = conns)
 ```
 
+```
+#> $site
+#> $site$class
+#> [1] "integer"
+#>
+#> $site$length
+#> [1] 48
+#>
+#> $site$`quantiles & mean`
+#>   5%  10%  25%  50%  75%  90%  95% Mean
+#>   34   34   34   43   49   49   49   42
+```
 
+``` r
+dsBaseClient::ds.numNA("D_private$age", datasources = conns)
+```
 
-|Site |Statistic | Value| N valid| N missing|
-|:----|:---------|-----:|-------:|---------:|
-|site |5%        |    34|      36|        12|
-|site |10%       |    34|      36|        12|
-|site |25%       |    34|      36|        12|
-|site |50%       |    43|      36|        12|
-|site |75%       |    49|      36|        12|
-|site |90%       |    49|      36|        12|
-|site |95%       |    49|      36|        12|
-|site |Mean      |    42|      36|        12|
+```
+#> $site
+#> [1] 12
+```
 
 The mean completed age on 2024-06-01 is 42 years across 36 valid values;
 12 people with year-only births have missing completed age. The roster includes
@@ -106,10 +111,10 @@ A private assignment is not a row download. Every later aggregate uses the discl
 
 Each final patient component needs enough **distinct persons** for the server's
 `nfilter.subset`. Many events from one person still contribute only one person to
-this check. The practice server sets `nfilter.subset = 5`, stricter than the
+this check. Our server sets `nfilter.subset = 5`, stricter than the
 dsBase default of 3. Each data owner chooses the server policy.
 
-| Rule | What it checks | Practice value |
+| Rule | What it checks | Value on this server |
 |---|---|---:|
 | `nfilter.subset` | Distinct people in a final assigned patient table | 5 |
 | `nfilter.tab` | Nonzero cells in a dsBase frequency table | 3 |
@@ -219,7 +224,7 @@ same request returns the same answer.
 
 Keep female participants whose completed age is 43 on the declared date.
 The public questionnaire description places four people in this group. Predict
-whether the practice server can assign that final subset.
+whether the server can assign that final subset.
 
 <details><summary>Solution</summary>
 

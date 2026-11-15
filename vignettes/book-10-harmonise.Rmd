@@ -14,23 +14,24 @@ vignette: >
 Use translated concept answers, distinguish recodes from column renames, and harmonise two different site vocabularies.
 </div>
 
-This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
-**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work` directory.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.questionnaire_vocab`,
+then the two questionnaire sites.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+Log in first:
+
+
 
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-practice <- book_connect("questionnaire", categories = TRUE)
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.questionnaire_vocab", server = "site")$conns
 ```
+
+
 
 The connection is ready; `conns` identifies the server used by the analysis calls.
 
@@ -66,17 +67,15 @@ Translation is the default. The data values become labelled factors on the serve
 
 
 ``` r
-book_counts(dsBaseClient::ds.table("D_categories$education",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_categories$education",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category             | Count|
-|:--------------------|-----:|
-|Secondary education  |    12|
-|University education |    12|
-|NA                   |    24|
+```
+#> D_categories$education
+#>  Secondary education University education                   NA
+#>                   12                   12                   24
+```
 
 The latest education answers are Secondary education for 12 people and
 University education for 12, with 24 missing. The concept IDs used in the definition
@@ -95,17 +94,15 @@ fever_default <- omop_variable(event = omop_event("observation", concepts = 9000
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 fever_recipe <- omop_recipe(variables = list(fever = fever_default))
 recipe_execute(fever_recipe, out = "D_fever_default", conns = conns)
-book_counts(dsBaseClient::ds.table("D_fever_default$fever",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_fever_default$fever",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category | Count|
-|:--------|-----:|
-|Yes      |    12|
-|No       |    12|
-|NA       |    24|
+```
+#> D_fever_default$fever
+#> Yes  No  NA
+#>  12  12  24
+```
 
 The default labels are No and Yes, with 12 people each and 24 missing. Now give
 those same concepts the study's lower-case wording:
@@ -131,15 +128,14 @@ recipe_execute(answers, out = c(people = "D_category_answers"), conns = conns)
 
 ``` r
 recode_table_result <- dsBaseClient::ds.table("D_category_answers$fever", useNA = "no", datasources = conns)
-book_counts(recode_table_result)
+recode_table_result$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category | Count|
-|:--------|-----:|
-|yes      |    12|
-|no       |    12|
+```
+#> D_category_answers$fever
+#> yes  no
+#>  12  12
+```
 
 There are still 12 “no” and 12 “yes” answers. Only the wording changed; this
 call excludes missing answers. `ds.omop.table()` also shows declared zero levels.
@@ -247,7 +243,7 @@ an explicit scalar name such as `education` would not rename that scalar column.
 
 ## Find and save the category identities
 
-For the next examples, the questionnaire helper includes a small synthetic
+For the next examples, `omop.questionnaire_vocab` includes a small synthetic
 classification catalogue. Its teaching ATC and ICD-10 entries illustrate the
 hierarchy structure; they are not clinical mappings to reuse in a study.
 Search the catalogue before choosing an order or a rollup.
@@ -626,15 +622,20 @@ protocol. None of these fields is a count or a missingness estimate.
 
 Site2 has no Secondary education answers: all its respondents have University
 answers. Its newer vocabulary calls concept 900102 “University qualification”.
-Switch resources through the same connection helper. For real servers, replace
-this block with the `conns` / `site` / `site2` variant in the
-[two-site Opal instructions](book-00-start.html#connect-to-two-opal-sites):
+Log in to both sites. In a real federation each site has its own server URL;
+here both resources are on our Opal:
 
 
 ``` r
-practice <- book_switch("questionnaire", two_sites = TRUE)
-conns <- practice$conns
+ds.omop.disconnect(conns = conns)
+DSI::datashield.logout(conns)
+conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("site", "site2"),
+  resource = c(site = "omop.questionnaire", site2 = "omop.questionnaire_site2"))$conns
 ```
+
+
 
 Inspect the vocabulary wording before looking at patient counts:
 
@@ -664,16 +665,14 @@ Execute the original unlabelled education recipe on both connections:
 recipe_execute(categories, out = c(people = "D_default_pair"), conns = conns)
 paired_counts <- dsBaseClient::ds.table("D_default_pair$education",
   useNA = "always", datasources = conns)
-book_counts(paired_counts)
+paired_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category                 | Count|
-|:------------------------|-----:|
-|Secondary education      |    12|
-|University qualification |    36|
-|NA                       |    48|
+```
+#> D_default_pair$education
+#>      Secondary education University qualification                       NA
+#>                       12                       36                       48
+```
 
 The pooled counts are Secondary education = 12, University qualification = 36,
 and missing = 48. Execution already chooses one category per concept ID and
@@ -684,7 +683,7 @@ matrix, leaving out the proportion matrices:
 
 
 ``` r
-site_counts <- book_site_counts(paired_counts)
+site_counts <- paired_counts$output.list$TABLE_rvar.by.study_counts
 colnames(site_counts) <- names(conns)
 site_counts
 ```
@@ -716,17 +715,15 @@ harmonised <- omop_recipe(variables = list(education = education),
   labels = c("900102" = "University education"),
   outputs = omop_output("people", format = "wide", grain = "person"))
 recipe_execute(harmonised, out = c(people = "D_shared"), conns = conns)
-book_counts(dsBaseClient::ds.table("D_shared$education",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_shared$education",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category             | Count|
-|:--------------------|-----:|
-|Secondary education  |    12|
-|University education |    36|
-|NA                   |    48|
+```
+#> D_shared$education
+#>  Secondary education University education                   NA
+#>                   12                   36                   48
+```
 
 The counts remain 12 Secondary, 36 University and 48 missing. The explicit map
 fixes wording; it changes neither the question selected nor the answer IDs.
@@ -745,16 +742,15 @@ pooled count and missing count before executing.
 merged <- omop_recipe(variables = list(education = education),
   labels = c("900101" = "Recorded education", "900102" = "Recorded education"))
 recipe_execute(merged, out = "D_merged_answers", conns = conns)
-book_counts(dsBaseClient::ds.table("D_merged_answers$education",
-  useNA = "always", datasources = conns))
+dsBaseClient::ds.table("D_merged_answers$education",
+  useNA = "always", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category           | Count|
-|:------------------|-----:|
-|Recorded education |    48|
-|NA                 |    48|
+```
+#> D_merged_answers$education
+#> Recorded education                 NA
+#>                 48                 48
+```
 
 Equal labels merge the two categories: 48 people have Recorded education and
 48 remain missing across the two sites. This discards the education-level
@@ -777,7 +773,7 @@ first_answers <- omop_recipe(variables = list(education = omop_variable(
 recipe_execute(first_answers, out = "D_first_pair", conns = conns)
 first_counts <- dsBaseClient::ds.table("D_first_pair$education",
   useNA = "always", datasources = conns)
-first_site_counts <- book_site_counts(first_counts)
+first_site_counts <- first_counts$output.list$TABLE_rvar.by.study_counts
 colnames(first_site_counts) <- names(conns)
 first_site_counts
 ```

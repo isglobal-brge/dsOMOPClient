@@ -15,19 +15,20 @@ Find a lab and its units, reduce repeated readings, present numbers without losi
 their meaning, and fit a model that requires an actual follow-up measurement.
 </div>
 
-**You need:** [the setup and numeric resource](book-00-start.html), and
-[events and reducers](book-06-events.html). Start a fresh session in `book-work`.
-This chapter uses synthetic Synthea measurements.
+**You need:** the Opal login from [Getting started](book-00-start.html) and
+[events and reducers](book-06-events.html). This chapter uses `omop.synthea`,
+then its two-site split.
+
+
 
 
 ``` r
 library(dsOMOPClient)
-source("tools/book/display.R")
-source("tools/book/connection.R")
-source("tools/book/practice.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
 ```
+
+
 
 ## Find haemoglobin and its unit
 
@@ -155,21 +156,30 @@ indexed <- omop_study(omop_index(lab, offset = 7L), outputs = "baseline",
   baseline = list(at_index = omop_value_at_index("measurement", lab_id,
     tolerance = c(-7, 0), unit = omop_unit(8713L))))
 recipe_execute(indexed, out = c(baseline = "D_index"), conns = conns)
-book_summary("D_index$at_index", datasources = conns)
+dsBaseClient::ds.summary("D_index$at_index", datasources = conns)
 ```
 
+```
+#> $site
+#> $site$class
+#> [1] "numeric"
+#>
+#> $site$length
+#> [1] 28
+#>
+#> $site$`quantiles & mean`
+#>     5%    10%    25%    50%    75%    90%    95%   Mean
+#> 11.810 12.480 12.975 13.700 15.425 16.190 16.855 14.150
+```
 
+``` r
+dsBaseClient::ds.numNA("D_index$at_index", datasources = conns)
+```
 
-|Site |Statistic |  Value| N valid| N missing|
-|:----|:---------|------:|-------:|---------:|
-|site |5%        | 11.810|      28|         0|
-|site |10%       | 12.480|      28|         0|
-|site |25%       | 12.975|      28|         0|
-|site |50%       | 13.700|      28|         0|
-|site |75%       | 15.425|      28|         0|
-|site |90%       | 16.190|      28|         0|
-|site |95%       | 16.855|      28|         0|
-|site |Mean      | 14.150|      28|         0|
+```
+#> $site
+#> [1] 0
+```
 
 All 28 values are present. The mean becomes 14.150 g/dL because one person's
 next-day reading, 11.6, replaces their first reading, 7.0. Those values belong to
@@ -189,38 +199,49 @@ changes <- omop_recipe(variables = list(
   target_days = omop_number_change(lab, "time_to_threshold", threshold = 14,
     op = "ge", reference = "first", time_unit = "days")))
 recipe_execute(changes, out = "D_change", conns = conns)
-book_summary("D_change$change", datasources = conns)
+dsBaseClient::ds.summary("D_change$change", datasources = conns)
 ```
 
-
-
-|Site |Statistic |  Value| N valid| N missing|
-|:----|:---------|------:|-------:|---------:|
-|site |5%        | -2.940|      25|         3|
-|site |10%       | -2.580|      25|         3|
-|site |25%       | -1.400|      25|         3|
-|site |50%       |  1.600|      25|         3|
-|site |75%       |  2.400|      25|         3|
-|site |90%       |  3.200|      25|         3|
-|site |95%       |  3.760|      25|         3|
-|site |Mean      |  1.016|      25|         3|
+```
+#> $site
+#> $site$class
+#> [1] "numeric"
+#>
+#> $site$length
+#> [1] 28
+#>
+#> $site$`quantiles & mean`
+#>     5%    10%    25%    50%    75%    90%    95%   Mean
+#> -2.940 -2.580 -1.400  1.600  2.400  3.200  3.760  1.016
+```
 
 ``` r
-book_summary("D_change$per_year", datasources = conns)
+dsBaseClient::ds.numNA("D_change$change", datasources = conns)
 ```
 
+```
+#> $site
+#> [1] 3
+```
 
+``` r
+dsBaseClient::ds.summary("D_change$per_year", datasources = conns)
+```
 
-|Site |Statistic |  Value| N valid| N missing|
-|:----|:---------|------:|-------:|---------:|
-|site |5%        | -0.263|      25|         3|
-|site |10%       | -0.224|      25|         3|
-|site |25%       | -0.051|      25|         3|
-|site |50%       |  0.081|      25|         3|
-|site |75%       |  0.152|      25|         3|
-|site |90%       |  0.286|      25|         3|
-|site |95%       |  0.403|      25|         3|
-|site |Mean      |  0.052|      25|         3|
+```
+#> $site
+#> $site$class
+#> [1] "numeric"
+#>
+#> $site$length
+#> [1] 28
+#>
+#> $site$`quantiles & mean`
+#>          5%         10%         25%         50%         75%         90%         95%
+#> -0.26315218 -0.22388661 -0.05065106  0.08067385  0.15150943  0.28608626  0.40257901
+#>        Mean
+#>  0.05215555
+```
 
 There are 25 valid changes and three missing: single-reading people do not have
 observed change. Mean change is 1.016 g/dL. The median slope is about 0.081 g/dL
@@ -264,17 +285,15 @@ data.frame(Band = band_labels, People = as.numeric(band_means$Nvalid_gp),
 |15 or above    |     10|    15.607|
 
 ``` r
-book_counts(dsBaseClient::ds.table("D_flags$converted_band", datasources = conns))
+dsBaseClient::ds.table("D_flags$converted_band",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category         | Count|
-|:----------------|-----:|
-|below 140        |     9|
-|140 to below 150 |     9|
-|150 or above     |    10|
-|NA               |     0|
+```
+#> D_flags$converted_band
+#>        below 140 140 to below 150     150 or above               NA
+#>                9                9               10                0
+```
 
 Both presentations give category counts 9, 9 and 10 here. The within-band means
 are 13.341, 14.325 and 15.607 g/dL: each person contributes their all-history mean
@@ -306,29 +325,26 @@ a different question.
 
 
 ``` r
-book_counts(dsBaseClient::ds.table("D_flags$control", datasources = conns))
+dsBaseClient::ds.table("D_flags$control",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category | Count|
-|:--------|-----:|
-|low      |     9|
-|normal   |     9|
-|high     |    10|
-|NA       |     0|
+```
+#> D_flags$control
+#>    low normal   high     NA
+#>      9      9     10      0
+```
 
 ``` r
-book_counts(dsBaseClient::ds.table("D_flags$high", datasources = conns))
+dsBaseClient::ds.table("D_flags$high",
+  datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
-
-
-|Category | Count|
-|:--------|-----:|
-|0        |    18|
-|1        |    10|
-|NA       |     0|
+```
+#> D_flags$high
+#>  0  1 NA
+#> 18 10  0
+```
 
 The high flag is one for 10 people. The category thresholds define low <14,
 normal 14–15 **inclusive**, and high >15, whereas the flag uses ≥15. Thus a value
@@ -338,26 +354,30 @@ Synthea has no haemoglobin reference bounds; missing bounds cannot establish nor
 ## Pool two disjoint sites
 
 A last value equal to first because no second reading exists is not a follow-up
-outcome. Index on the first lab and restrict last to days 1 onward. Use two
-disjoint practice sites; their combined population is the same 28 people.
-`book_pool` is this connection's server-side OMOP handle name.
-The named `paired` session keeps the earlier single-site tables available for
-the exercises below.
-
-For real servers, replace the next two connection lines with the
-[two-site Opal login](book-00-start.html#connect-to-two-opal-sites).
-Keep the earlier `conns` connection for the later single-site exercises.
+outcome. Index on the first lab and restrict last to days 1 onward. Use the two
+Synthea sites, which hold disjoint halves of the same 28 people. Log in to both
+as a second connection, `two_conns`. Its handle is named `pair` because `omop`
+is already attached through `conns`, whose tables the exercises below still use.
 
 
 ``` r
-practice_pair <- book_connect("numeric", two_sites = TRUE, symbol = "book_pool", session = "paired")
-two_conns <- practice_pair$conns
+two_conns <- ds.omop.login(rep("https://localhost:8443", 2), user = "administrator",
+  password = "password",
+  server = c("north", "south"),
+  resource = c(north = "omop.synthea_north", south = "omop.synthea_south"),
+  symbol = "pair")$conns
+```
+
+
+
+
+``` r
 followup <- omop_study(lab, outputs = "baseline", baseline = list(
   first = omop_value_at_index("measurement", lab_id, tolerance = c(0, 0), unit = omop_unit(8713L)),
   last = omop_variable(event = lab, reducer = omop_reduce("last_value", window = omop_window(1, NULL))),
   followup_days = omop_variable(event = lab, reducer = omop_reduce("last_date", window = omop_window(1, NULL))),
   mean = average))
-recipe_execute(followup, out = c(baseline = "D_pool"), conns = two_conns, symbol = "book_pool")
+recipe_execute(followup, out = c(baseline = "D_pool"), conns = two_conns, symbol = "pair")
 pooled_mean <- dsBaseClient::ds.mean("D_pool$mean", type = "combine", datasources = two_conns)$Global.Mean
 pooled_mean
 ```
@@ -373,22 +393,13 @@ receives equal weight; opening two connections to the same people would double-c
 
 
 ``` r
-quantiles <- dsBaseClient::ds.quantileMean("D_pool$mean", type = "combine", datasources = two_conns)
-data.frame(Statistic = names(quantiles), Value = as.numeric(quantiles))
+dsBaseClient::ds.quantileMean("D_pool$mean", type = "combine", datasources = two_conns)
 ```
 
-
-
-|Statistic |  Value|
-|:---------|------:|
-|5%        | 13.020|
-|10%       | 13.290|
-|25%       | 13.851|
-|50%       | 14.289|
-|75%       | 15.306|
-|90%       | 15.725|
-|95%       | 15.910|
-|Mean      | 14.467|
+```
+#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#> 13.02050 13.29000 13.85104 14.28917 15.30625 15.72500 15.91000 14.46679
+```
 
 These are weighted averages of site quantiles, not exact quantiles of all people
 combined. The mean always agrees with the pooled mean because this function
@@ -398,35 +409,52 @@ weights site means by their nonmissing N.
 
 The model relates last to first haemoglobin only among the 25 people with a
 later reading. Their first and last readings are about 6–18 years apart. The
-summary below describes those actual intervals at each site; its valid counts
-sum to the model's 25 complete cases. Its quantiles describe the spread, not the
+summary below describes those actual intervals at each site. Each site's length
+minus its missing count gives the valid values, 11 and 14, which sum to the model's
+25 complete cases. Its quantiles describe the spread, not the
 minimum and maximum.
 
 
 ``` r
-book_summary("D_pool$followup_days", datasources = two_conns)
+dsBaseClient::ds.summary("D_pool$followup_days", datasources = two_conns)
 ```
 
+```
+#> $north
+#> $north$class
+#> [1] "integer"
+#>
+#> $north$length
+#> [1] 14
+#>
+#> $north$`quantiles & mean`
+#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#> 4056.500 4081.000 4340.000 5565.000 5853.500 5957.000 6100.500 5112.818
+#>
+#>
+#> $south
+#> $south$class
+#> [1] "integer"
+#>
+#> $south$length
+#> [1] 14
+#>
+#> $south$`quantiles & mean`
+#>      5%     10%     25%     50%     75%     90%     95%    Mean
+#> 2177.00 2636.90 4630.50 5565.00 5570.25 6108.90 6284.95 5012.00
+```
 
+``` r
+dsBaseClient::ds.numNA("D_pool$followup_days", datasources = two_conns)
+```
 
-|Site  |Statistic |    Value| N valid| N missing|
-|:-----|:---------|--------:|-------:|---------:|
-|north |5%        | 4056.500|      11|         3|
-|north |10%       | 4081.000|      11|         3|
-|north |25%       | 4340.000|      11|         3|
-|north |50%       | 5565.000|      11|         3|
-|north |75%       | 5853.500|      11|         3|
-|north |90%       | 5957.000|      11|         3|
-|north |95%       | 6100.500|      11|         3|
-|north |Mean      | 5112.818|      11|         3|
-|south |5%        | 2177.000|      14|         0|
-|south |10%       | 2636.900|      14|         0|
-|south |25%       | 4630.500|      14|         0|
-|south |50%       | 5565.000|      14|         0|
-|south |75%       | 5570.250|      14|         0|
-|south |90%       | 6108.900|      14|         0|
-|south |95%       | 6284.950|      14|         0|
-|south |Mean      | 5012.000|      14|         0|
+```
+#> $north
+#> [1] 3
+#>
+#> $south
+#> [1] 0
+```
 
 
 ``` r
@@ -459,21 +487,21 @@ of that person's logged readings?
 logged <- omop_recipe(variables = list(log_mean = omop_number(average,
   omop_number_spec(transform = omop_number_transform("log")))))
 recipe_execute(logged, out = "D_log", conns = conns)
-book_summary("D_log$log_mean", datasources = conns)
+dsBaseClient::ds.summary("D_log$log_mean", datasources = conns)
 ```
 
-
-
-|Site |Statistic | Value| N valid| N missing|
-|:----|:---------|-----:|-------:|---------:|
-|site |5%        | 2.558|      28|         0|
-|site |10%       | 2.576|      28|         0|
-|site |25%       | 2.624|      28|         0|
-|site |50%       | 2.662|      28|         0|
-|site |75%       | 2.730|      28|         0|
-|site |90%       | 2.754|      28|         0|
-|site |95%       | 2.768|      28|         0|
-|site |Mean      | 2.669|      28|         0|
+```
+#> $site
+#> $site$class
+#> [1] "numeric"
+#>
+#> $site$length
+#> [1] 28
+#>
+#> $site$`quantiles & mean`
+#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#> 2.557554 2.576166 2.623579 2.661968 2.730164 2.753634 2.767809 2.669345
+```
 
 The median is about 2.662, the log of the median person mean, 14.325.
 Reduction precedes the transform: log of a mean generally differs from mean of logs.
@@ -487,21 +515,30 @@ haemoglobin ≥14. How do zero and missing differ?
 
 
 ``` r
-book_summary("D_change$target_days", datasources = conns)
+dsBaseClient::ds.summary("D_change$target_days", datasources = conns)
 ```
 
+```
+#> $site
+#> $site$class
+#> [1] "integer"
+#>
+#> $site$length
+#> [1] 28
+#>
+#> $site$`quantiles & mean`
+#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#>    0.000    0.000    0.000  185.500 2192.750 3052.000 4166.750 1274.808
+```
 
+``` r
+dsBaseClient::ds.numNA("D_change$target_days", datasources = conns)
+```
 
-|Site |Statistic |    Value| N valid| N missing|
-|:----|:---------|--------:|-------:|---------:|
-|site |5%        |    0.000|      26|         2|
-|site |10%       |    0.000|      26|         2|
-|site |25%       |    0.000|      26|         2|
-|site |50%       |  185.500|      26|         2|
-|site |75%       | 2192.750|      26|         2|
-|site |90%       | 3052.000|      26|         2|
-|site |95%       | 4166.750|      26|         2|
-|site |Mean      | 1274.808|      26|         2|
+```
+#> $site
+#> [1] 2
+```
 
 There are 26 observed attainments and two missing; median time among observed
 attainments is 185.5 days. Zero means the first reading already meets the rule. Missing means no qualifying
@@ -522,21 +559,21 @@ copy <- omop_recipe(variables = list(mean = average),
     number_columns = list(rounded = omop_number_column("mean",
       number_spec = omop_number_spec(rounding = omop_number_round("decimals", 1))))))
 recipe_execute(copy, out = "D_copy", conns = conns)
-book_summary("D_copy$rounded", datasources = conns)
+dsBaseClient::ds.summary("D_copy$rounded", datasources = conns)
 ```
 
-
-
-|Site |Statistic |  Value| N valid| N missing|
-|:----|:---------|------:|-------:|---------:|
-|site |5%        | 12.905|      28|         0|
-|site |10%       | 13.170|      28|         0|
-|site |25%       | 13.775|      28|         0|
-|site |50%       | 14.300|      28|         0|
-|site |75%       | 15.325|      28|         0|
-|site |90%       | 15.690|      28|         0|
-|site |95%       | 15.965|      28|         0|
-|site |Mean      | 14.457|      28|         0|
+```
+#> $site
+#> $site$class
+#> [1] "numeric"
+#>
+#> $site$length
+#> [1] 28
+#>
+#> $site$`quantiles & mean`
+#>       5%      10%      25%      50%      75%      90%      95%     Mean
+#> 12.90500 13.17000 13.77500 14.30000 15.32500 15.69000 15.96500 14.45714
+```
 
 The overall rounded mean is 14.457 g/dL. Each person's copy has one decimal, but averaging those values can produce more
 decimals. The original mean remains available for analysis; rounding does not

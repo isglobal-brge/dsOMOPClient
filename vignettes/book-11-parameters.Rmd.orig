@@ -14,22 +14,29 @@ vignette: >
 Bind typed parameters, use omop_study and shortcuts, then derive and filter columns without bringing rows to your computer.
 </div>
 
-This chapter uses the public synthetic Synthea27Nj numeric connection from [Getting started](book-00-start.html).
-
-**You need:** the packages and helpers from [Getting started](book-00-start.html#before-you-start).
-Run the sections in order in a fresh R session in your `book-work` directory.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.synthea`, the
+public synthetic Synthea27Nj data.
 
 ## Start this chapter
 
-Start a fresh R session in the `book-work` directory created in
-[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+Log in first:
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("numeric")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.synthea", server = "site")$conns
+```
+
+```{r chapter-setup-local-2, include = FALSE}
+conns <- book_connect("numeric")$conns
 ```
 
 The connection is ready; `conns` identifies the server used by the analysis calls.
@@ -83,12 +90,13 @@ Inpatient Visit is **9201**. These select setting, not the record's provenance t
 
 ```{r run, table.digits = 2}
 recipe_execute(outpatient, out = c(baseline = "D_param_outpatient"), conns = conns)
-book_summary("D_param_outpatient$age", datasources = conns)
+dsBaseClient::ds.summary("D_param_outpatient$age", datasources = conns)
+dsBaseClient::ds.numNA("D_param_outpatient$age", datasources = conns)
 ```
 
 The server computes completed age at the first outpatient visit. The median
 is 2.5 years, reflecting that many first visits in this synthetic life history
-occur in childhood. The valid/missing columns show how many ages contributed.
+occur in childhood. `ds.numNA()` reports no missing age: all 28 people contribute.
 
 ## Read the simple-layer defaults
 
@@ -123,8 +131,8 @@ shortcuts <- omop_study(omop_event("measurement", 3000963L), outputs = "baseline
 recipe_execute(shortcuts, out = c(baseline = "D_shortcuts"), conns = conns)
 ```
 ```{r shortcut-result}
-book_counts(dsBaseClient::ds.table("D_shortcuts$ever",
-  useNA = "no", datasources = conns))
+dsBaseClient::ds.table("D_shortcuts$ever",
+  useNA = "no", datasources = conns)$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 All 28 people have ever = 1 because the index hemoglobin measurement itself is included. To ask about
@@ -190,7 +198,8 @@ is a numeric teaching example, not an adult clinical classification.
 ```{r bmi-new, table.digits = 2}
 ds.omop.mutate("D_body", height_m = height_cm / 100,
   bmi = weight_kg / (height_m * height_m), newobj = "D_bmi", conns = conns)
-book_summary("D_bmi$bmi", datasources = conns)
+dsBaseClient::ds.summary("D_bmi$bmi", datasources = conns)
+dsBaseClient::ds.numNA("D_bmi$bmi", datasources = conns)
 ```
 
 The mean BMI is 22.11 kg/m² across 28 people with no missing result.
@@ -218,7 +227,7 @@ ds.omop.mutate("D_bmi", age_group = cut(age, c(0, 18, 121),
   newobj = "D_grouped", conns = conns)
 age_counts <- dsBaseClient::ds.table("D_grouped$age_group",
   useNA = "always", datasources = conns)
-book_counts(age_counts)
+age_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are 14 people under 18 and 14 aged 18–120 at their first weight.
@@ -235,7 +244,7 @@ ds.omop.mutate("D_grouped", adult = ifelse(age >= 18, "yes", "no"),
   newobj = "D_adults", conns = conns)
 adult_counts <- dsBaseClient::ds.table("D_adults$adult", useNA = "always",
   datasources = conns)
-book_counts(adult_counts)
+adult_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 A missing age stays missing rather than becoming “no”. The 14 adults match
@@ -248,7 +257,7 @@ the 18-to-120 band; the 14 under-18s become “no”.
 ```{r date-difference, table.digits = 2}
 ds.omop.mutate("D_bmi", span_days = last_date - first_date,
   newobj = "D_span", conns = conns)
-book_summary("D_span$span_days", datasources = conns)
+dsBaseClient::ds.summary("D_span$span_days", datasources = conns)
 ```
 
 The mean span is 5,679.61 days and the median is 6,678 days across 28 people.
@@ -262,7 +271,7 @@ not age or duration under continuous observation. Exact dates stay private.
 ```{r duration-solution, table.digits = 2}
 ds.omop.mutate("D_span", span_years = span_days / 365,
   newobj = "D_years", conns = conns)
-book_summary("D_years$span_years", datasources = conns)
+dsBaseClient::ds.summary("D_years$span_years", datasources = conns)
 ```
 
 The mean is 15.56 years and the median is 18.30 years. Each summary is the
@@ -284,7 +293,7 @@ ds.omop.mutate("D_bmi", life_stage = case_when(
   newobj = "D_stage", conns = conns)
 stage_counts <- dsBaseClient::ds.table("D_stage$life_stage",
   useNA = "always", datasources = conns)
-book_counts(stage_counts)
+stage_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 There are 9 young children, 5 older children and 14 adults. The declared
@@ -300,7 +309,7 @@ ds.omop.mutate("D_stage", adult = case_when(
   .default = "yes"), newobj = "D_recoded", conns = conns)
 recode_counts <- dsBaseClient::ds.table("D_recoded$adult", useNA = "always",
   datasources = conns)
-book_counts(recode_counts)
+recode_counts$output.list$TABLES.COMBINED_all.sources_counts
 ```
 
 These counts agree with the earlier adult flag. Here the synthetic source has
@@ -393,11 +402,12 @@ dropped. This retains adults without using a key to target a known person.
 ```{r filter, table.digits = 2}
 ds.omop.filter("D_bmi", expr = omop_where(age >= 18),
   newobj = "D_adult_bmi", conns = conns)
-book_summary("D_adult_bmi$bmi", datasources = conns)
+dsBaseClient::ds.summary("D_adult_bmi$bmi", datasources = conns)
+dsBaseClient::ds.numNA("D_adult_bmi$bmi", datasources = conns)
 ```
 
 The 14 adults have a mean BMI of 27.35 kg/m², with no missing BMI.
-The subset meets the distinct-person release threshold in this practice data.
+The subset meets the server's distinct-person release threshold.
 It remains a private table. A small or empty final subset can be refused, as
 [chapter 12](book-12-privacy.html) demonstrates.
 
@@ -406,7 +416,7 @@ A text-category predicate can select the same adults:
 ```{r filter-solution, table.digits = 2}
 ds.omop.filter("D_stage", expr = omop_where(life_stage == "adult"),
   newobj = "D_working_age", conns = conns)
-book_summary("D_working_age$bmi", datasources = conns)
+dsBaseClient::ds.summary("D_working_age$bmi", datasources = conns)
 ```
 
 This category means ages 18 and over, so its summary agrees with the preceding

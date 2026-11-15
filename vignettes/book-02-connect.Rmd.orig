@@ -14,37 +14,42 @@ vignette: >
 Distinguish a connection, a resource and a symbol, and change databases deliberately.
 </div>
 
-**You need:** the packages, helpers and loaded practice data from
-[Getting started](book-00-start.html#before-you-start). Start a fresh R session
-in `book-work` and run the sections in order.
+**You need:** the client packages and the Opal login from
+[Getting started](book-00-start.html). This chapter uses `omop.gibleed` and
+`omop.synthea`.
 
 ## Start this chapter
 
-```{r chapter-setup}
+```{r book-local-server, include = FALSE}
+# Outputs come from a local DataSHIELD server holding the same resources as the Opal in the text.
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/connection.R")
-practice <- book_connect("gibleed")
-conns <- practice$conns
+```
+
+```{r chapter-setup, eval = FALSE}
+library(dsOMOPClient)
+conns <- ds.omop.login("https://localhost:8443", user = "administrator",
+  password = "password", resource = "omop.gibleed", server = "site")$conns
+```
+
+```{r chapter-setup-local, include = FALSE}
+conns <- book_connect("gibleed")$conns
 ```
 
 ## Three names with different jobs
 
 A **connection** is a logged-in DataSHIELD session. A **resource** describes how
 the server opens a database. A **symbol** is an object name in that session.
-Here `site` names the connection, `gibleed` selects the resource and `omop` names
-the attached database handle.
+Here `site` names the connection, `omop.gibleed` selects the resource and `omop`
+names the attached database handle.
 
 ```{r handle}
 DSI::datashield.symbols(conns)
 ```
 
-Under `site`, `omop` is the private handle created by `book_connect()`. Later,
+Under `site`, `omop` is the private handle that `ds.omop.login()` created. Later,
 `D_people` will name a table created by a recipe, rather than a database handle.
-
-For an Opal study server, use the
-[login block in Getting started](book-00-start.html#connect-to-your-opal-server).
-Your administrator provides resource names including their project prefix.
 
 ## Use a handle explicitly
 
@@ -60,23 +65,21 @@ available methods, independently of any database handle.
 
 ## Switch resources
 
-The practice helper closes the current session and opens the requested resource.
-Always replace `conns` with the returned connection:
+Release the attached resource, then attach another one through the same login:
 
 ```{r switch-to-numeric}
-practice <- book_switch("numeric")
-conns <- practice$conns
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.synthea", conns = conns)
 ds.omop.table.stats("person", conns = conns)
 ```
 
-The person band is now 25–29, containing Synthea27Nj's 28 people. The handle can
-still be called `omop` even though its database changed. Switching does not
-combine the two populations. On Opal, use the disconnect/attach pair in
-[Getting started](book-00-start.html#connect-to-your-opal-server) instead.
+The person band is now 25–29, containing Synthea27Nj's 28 people. The handle is
+still called `omop` even though its database changed. Switching does not combine
+the two populations.
 
 ```{r switch-back}
-practice <- book_switch("gibleed")
-conns <- practice$conns
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = "omop.gibleed", conns = conns)
 ds.omop.table.stats("person", conns = conns)
 ```
 
@@ -85,26 +88,21 @@ resource explicitly prevents running a lab analysis against its empty numeric fi
 
 ## Exercise 1: keep two handles in one session
 
-Attach the numeric resource as `labs`, keeping `omop` attached to GiBleed.
-List the names and count people through each. Does attaching `labs` combine them?
-For Opal, substitute the supplied numeric resource name.
+Attach `omop.synthea` as `labs`, keeping `omop` attached to GiBleed. List the
+names and count people through each. Does attaching `labs` combine them?
 
 <details><summary>Solution</summary>
 
 ```{r two-handles}
-labs_session <- ds.omop.connect(resource = "numeric", symbol = "labs", conns = conns)
+ds.omop.connect(resource = "omop.synthea", symbol = "labs", conns = conns)
 DSI::datashield.symbols(conns)
 ```
 
 `labs` and `omop` are two distinct handles in the same session.
 
-```{r two-counts, table.row.names = FALSE}
-handle_counts <- lapply(c("omop", "labs"), function(handle) {
-  counts <- ds.omop.table.stats("person", stats = "persons",
-    symbol = handle, conns = conns)$per_site$site
-  data.frame(Handle = handle, counts)
-})
-do.call(rbind, handle_counts)
+```{r two-counts}
+ds.omop.table.stats("person", stats = "persons", symbol = "omop", conns = conns)
+ds.omop.table.stats("person", stats = "persons", symbol = "labs", conns = conns)
 ds.omop.disconnect(symbol = "labs", conns = conns)
 ```
 
@@ -140,7 +138,7 @@ DSI::datashield.logout(conns)
 ```
 
 Disconnect releases the database handle; logout ends the DataSHIELD session.
-The next chapter opens a fresh connection.
+The next chapter logs in again.
 
 ## Recap
 
