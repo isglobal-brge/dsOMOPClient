@@ -2,7 +2,8 @@
 
 **What you will learn**
 
-Rebuild the offline book and recognise the old recipe conventions.
+Save the recipe, its explanation, the codebook, software versions and
+plan digest, then run the same definition on another connection.
 
 This chapter uses the synthetic questionnaire dataset described in
 [Getting
@@ -30,15 +31,16 @@ Run this setup first:
 library(dsOMOPClient)
 source("tools/book/display.R")
 source("tools/book/fixture.R")
-practice <- book_fixture()
+practice <- book_fixture(two_sites = TRUE)
 conns <- practice$conns
 names(conns)
 ```
 
-    #> [1] "site"
+    #> [1] "site"  "site2"
 
-The `site` connection is ready. This chapter creates its temporary
-questionnaire fixture locally.
+The `site` and `site2` connections are ready. Both use the questionnaire
+dataset; the second catalogue uses a different label for one education
+answer.
 
 ## Keep a reproducible study record
 
@@ -48,8 +50,9 @@ resource as well: a repeatable definition does not guarantee that a
 database has stayed unchanged.
 
 ``` r
-vapply(c("dsOMOP", "dsOMOPClient", "DSI", "DSLite", "dsBase", "dsBaseClient"),
+package_versions <- vapply(c("dsOMOP", "dsOMOPClient", "DSI", "DSLite", "dsBase", "dsBaseClient"),
        function(p) as.character(packageVersion(p)), character(1))
+package_versions
 ```
 
     #>       dsOMOP dsOMOPClient          DSI       DSLite       dsBase dsBaseClient 
@@ -82,7 +85,7 @@ check <- omop_recipe(variables = list(
   outputs = omop_output("people", format = "wide", grain = "person"),
   category_spec = omop_category_spec(ordered = TRUE))
 prospective <- recipe_codebook(check)
-result <- recipe_execute(check, out = c(people = "D_documented"), conns = conns)
+result <- recipe_execute(check, out = c(people = "D_documented"), conns = conns["site"])
 published <- recipe_codebook(result)
 print(c(before = prospective[[1]]$status, after = published[[1]]$status))
 ```
@@ -124,6 +127,66 @@ identical(recipe_to_plan(check), recipe_to_plan(restored))
 TRUE means the definition survived the round trip. Keep the published
 codebook with it so that later analysis can distinguish planned and
 actual types.
+
+## Save the study record
+
+Create a directory for the study definition and its public metadata. The
+recipe contains the selection and presentation rules; the explanation
+records their meaning. Keep the actual published codebook, rather than
+only the prospective one.
+
+``` r
+record_dir <- "study-record"
+dir.create(record_dir, showWarnings = FALSE)
+recipe_save(check, file.path(record_dir, "recipe.json"))
+explanation <- recipe_explain(check)
+writeLines(explanation$text, file.path(record_dir, "explanation.txt"))
+saveRDS(published, file.path(record_dir, "codebook.rds"))
+write.csv(data.frame(package = names(package_versions), version = unname(package_versions)),
+  file.path(record_dir, "packages.csv"), row.names = FALSE)
+writeLines(explanation$digest, file.path(record_dir, "plan-digest.txt"))
+jsonlite::write_json(manifest, file.path(record_dir, "datasets.json"), pretty = TRUE, auto_unbox = TRUE)
+list.files(record_dir)
+```
+
+    #> [1] "codebook.rds"    "datasets.json"   "explanation.txt" "packages.csv"   
+    #> [5] "plan-digest.txt" "recipe.json"
+
+The plan digest identifies the normalized definition. Matching digests
+do not prove matching data: retain the resource and vocabulary
+information alongside it, and check the second connection’s published
+codebook.
+
+## Run the saved recipe on another connection
+
+Use the second connection from the setup. In a study, substitute the
+connection to your next participating site without editing the saved
+recipe.
+
+``` r
+second_recipe <- recipe_load(file.path(record_dir, "recipe.json"))
+second_result <- recipe_execute(second_recipe, out = c(people = "D_repeated"),
+  conns = conns["site2"])
+second_codebook <- recipe_codebook(second_result)
+c(same_definition = identical(recipe_explain(second_recipe)$digest,
+    readLines(file.path(record_dir, "plan-digest.txt"))),
+  same_columns = identical(published[[1]]$columns$name, second_codebook[[1]]$columns$name))
+```
+
+    #> same_definition    same_columns 
+    #>            TRUE            TRUE
+
+``` r
+ds.omop.table("D_repeated", "death_period", conns = conns["site2"])
+```
+
+    #> D_repeated$death_period
+    #> 2024 
+    #>   18
+
+Both checks concern the definition and schema. The protected table
+confirms the calendar-period categories on this connection; it does not
+retrieve patient rows.
 
 ## Strict Circe imports preserve the question
 
@@ -224,10 +287,11 @@ component in the same way.
 
 ## Recap
 
-Keep the definition, software and vocabulary versions, and published
-codebooks. Read import and constructor refusals as unresolved study
-decisions. Metadata explains the table’s contract; protected summaries
-describe its data.
+Keep the recipe, explanation, plan digest, software and vocabulary
+versions, and published codebooks. Reload the saved recipe to repeat it
+on another connection. Read import and constructor refusals as
+unresolved study decisions. Metadata explains the table’s contract;
+protected summaries describe its data.
 
 **Next:** [18. Capstone: a cause-of-death wide
 table](https://isglobal-brge.github.io/dsOMOPClient/articles/book-18-capstone.md).

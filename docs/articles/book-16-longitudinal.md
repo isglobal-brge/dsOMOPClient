@@ -25,10 +25,9 @@ walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formu
 
 ## The same people, two shapes
 
-*Longitudinal* means following the same people over time. Here is a tiny
-invented picture, **not a DataSHIELD row release**. The same three
-fictional people have these measurements; days are relative to each
-person’s entry.
+*Longitudinal* means following the same people over time. A small
+invented example: three people measured on two days. Days are relative
+to each person’s entry.
 
 | Person | Value on day 0 | Value on day 30 |
 | ------ | -------------: | --------------: |

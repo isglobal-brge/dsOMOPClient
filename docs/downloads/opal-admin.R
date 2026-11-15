@@ -13,6 +13,10 @@ stopifnot(nzchar(admin_password), nzchar(analyst), nzchar(analyst_password),
 local({
   opal <- opal.login(admin_user, admin_password, url = opal_url)
   on.exit(opal.logout(opal))
+  # Allow the administrator to install R packages, as in Opal's General settings.
+  if (!isTRUE(opal.get(opal, "system", "conf", "general")$allowRPackageManagement))
+    invisible(opal.put(opal, "system", "conf", "general", "_rPackage"))
+  stopifnot(isTRUE(opal.get(opal, "system", "conf", "general")$allowRPackageManagement))
   if (!dsadmin.profile_exists(opal, opal_profile))
     dsadmin.profile_create(opal, opal_profile, cluster = "default")
   stopifnot(dsadmin.install_github_package(opal, "dsBase", username = "datashield",

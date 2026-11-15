@@ -307,11 +307,11 @@ knitr::kable(ds.omop.columns("death", symbol = "omop", conns = conns)$site)
 | cause\_source\_concept\_id | integer       | real         | source\_concept    | concept         |              | FALSE    | FALSE         | FALSE                   | TRUE          | TRUE        | FALSE                 |
 
 ``` r
-ds.omop.server.version(conns = conns)
+ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
 ```
 
-    #>   server published running missing ready advice recipe_language
-    #> 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....
+    #>   server published running ready
+    #> 1   site    2.10.5  2.10.5  TRUE
 
 The same handle routes both calls to the current resource. A symbol name
 does not describe which dataset it contains.

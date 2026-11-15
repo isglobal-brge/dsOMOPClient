@@ -1,12 +1,10 @@
-# OHDSI QueryLibrary Sticky Redesigns
+# OHDSI QueryLibrary protected analyses
 
-## Corrected contracts in 2.10.5
+## Protected analysis contracts
 
 Pinned analysis loaders seal the final presented frame inside the
-original read snapshot. Re-run an affected loader before a typed
-protected release; provenance verification remains strict. The
-query-library redesign is deferred in this release, so continue to use
-the existing reviewed mappings below.
+original read snapshot. Provenance verification remains strict. Use the
+reviewed mappings below for supported questions.
 
 Incidence `clean_window` and FE prevalence `time_windows` values other
 than zero are refused because those catalog routes do not implement the
@@ -16,10 +14,10 @@ not an equivalent analysis.
 
 The QueryLibrary integration distinguishes an upstream clinical question
 from its published SQL. The SQL is training/reference material and is
-never executed by the sticky redesign path. Instead, a typed recipe or
-plan defines the population and variables, the server prepares a
-person-local `omop.table` sealed for DP, and a pinned mapping fixes one
-of the seven sticky primitives and its longitudinal reducer.
+never executed by the sticky redesign path. Instead, a typed recipe
+defines the population and variables, the server prepares a person-local
+`omop.table` sealed for DP, and a pinned mapping fixes one of the seven
+sticky primitives and its longitudinal reducer.
 
 The roles are those of DataSHIELD: the analyst chooses the question (the
 population, the derived variables such as an age at a public reference
@@ -27,7 +25,7 @@ year, and the public bins or levels); the data custodian owns every
 privacy setting (whether DP is available, epsilon, caps and the
 community tools’ protection mode). No client argument changes those.
 
-## Automatic questions in 2.10.4
+## Automatic questions
 
 Common reviewed questions need no explicit preparation. With the default
 `dsomop.tools.mode = "auto"`, the catalog routes protected
@@ -53,12 +51,11 @@ printed.
 
 ## Sticky redesigns
 
-The core never uses differential privacy (dsOMOP 2.8.0 and later):
-tables loaded with `ds.omop.plan.execute()` or `recipe_execute()` carry
-no DP provenance, and the server refuses them as DP inputs. A sticky
-redesign is released on a table prepared for DP from a typed recipe or
-plan (`ds.omop.dp.prepare()`, dsOMOP 2.9.1 or later). The release
-prepares it for you when the redesign carries its recipe.
+The core does not use differential privacy: tables loaded with
+`recipe_execute()` carry no DP provenance, and the server refuses them
+as DP inputs. A sticky redesign is released on a table prepared for DP
+from a typed recipe (`ds.omop.dp.prepare()`). The release prepares it
+for you when the redesign carries its recipe.
 
 This is deliberately not a QueryLibrary SQL runner or an arbitrary
 join/query gateway. An upstream ID selects only a reviewed semantic
@@ -67,14 +64,12 @@ data-dependent query. Preparation and release remain two explicit, typed
 steps.
 
 The client cannot choose epsilon, seed, nonce, privacy epoch or rerolls.
-Servers 2.10.3 and 2.10.4 report `privacy_contract =
-"protected_release_fixed_basis_or_realised_v1"`. Fixed-synopsis releases
-share a registered public basis; realised-contribution reuse is
-heuristic and has no mechanism epsilon. Signed components are pooled
-only when the contracts and logical source identities are compatible.
-Old per-release payloads cannot be pooled with this contract; retain
-per-site results during an incompatible upgrade and upgrade both
-packages together.
+The server reports its protected-release contract in metadata.
+Fixed-synopsis releases share a registered public basis;
+realised-contribution reuse is heuristic and has no mechanism epsilon.
+Signed components are pooled only when the contracts and logical source
+identities are compatible. Retain per-site results when those contracts
+differ.
 
 Noise is generated deterministically on demand, with no stored answers,
 lifetime budget, query quota or privacy accountant. Exact support gates,
@@ -123,8 +118,8 @@ prepared on every server, released, and removed:
 
 ``` r
 recipe <- omop_recipe(
-  variables = omop_variable_age(name = "age_at_2025", year = 2025),
-  outputs = omop_output(name = "ages", type = "wide")
+  variables = list(age_at_2025 = omop_age_at("2025-01-01", unit = "annual_years")),
+  outputs = omop_output("ages", format = "wide", grain = "person")
 )
 age_at_2025 <- omop_querylibrary_sticky(
   "PE12", variable = "age_at_2025", breaks = seq(0, 120, by = 10),
@@ -142,9 +137,9 @@ result <- ds.omop.querylibrary.sticky.release("DP_ages", age_at_2025,
                                               datasources = conns)
 ```
 
-The whole release population must be defined in the recipe or plan:
-filtering, merging or otherwise manipulating a prepared table drops its
-DP provenance. Preparation requires person-local lineage. Matching
+The whole release population must be defined in the recipe: filtering,
+merging or otherwise manipulating a prepared table drops its DP
+provenance. Preparation requires person-local lineage. Matching
 descendants and unsealed external frames are refused; an assigned age or
 date alone does not certify DP provenance. Use the explicit preparation
 route for the intended population.

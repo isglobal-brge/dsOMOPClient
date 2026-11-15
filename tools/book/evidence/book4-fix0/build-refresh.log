@@ -1,0 +1,18 @@
+Reading vignettes/book-00-start.Rmd
+Writing `articles/book-00-start.html`
+── Building docs for llms ──────────────────────────────────────────────────────
+── Building news ───────────────────────────────────────────────────────────────
+── Building docs for llms ──────────────────────────────────────────────────────
+  adding: tools/book/load-practice.R (deflated 59%)
+  adding: tools/book/load-numeric.R (deflated 58%)
+  adding: tools/book/practice.R (deflated 62%)
+  adding: tools/book/fixture.R (deflated 68%)
+  adding: tools/book/connection.R (deflated 57%)
+  adding: tools/book/display.R (deflated 57%)
+  adding: tools/book/case-helpers.R (deflated 41%)
+  adding: tools/book/opal-admin.R (deflated 64%)
+  adding: tools/book/check-opal.R (deflated 47%)
+  adding: tools/book/book-compose.sh (deflated 40%)
+  adding: tools/book/book-rock.yml (deflated 25%)
+  adding: tools/book/capstone.R (deflated 61%)
+[1] TRUE

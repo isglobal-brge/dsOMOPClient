@@ -25,11 +25,14 @@ every package used by the lessons, the offline server and the helpers.
 install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
                    "resourcer", "withr", "openssl", "jsonlite", "knitr",
                    "rmarkdown", "pkgdown", "bslib", "opalr", "duckdb"))
-remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
-remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
-remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never")
-remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never")
+remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never", auth_token = NULL)
+remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never", auth_token = NULL)
 ```
+
+These public repositories need no GitHub credentials; `auth_token =
+NULL` prevents an expired stored token from interrupting installation.
 
 The *client* is the package on your computer. The *server* runs requests
 near the data; DSLite lets you run it locally for practice. Record the
@@ -173,11 +176,11 @@ assigning `conns`; this is always local DSLite.
 ## Check the server
 
 ``` r
-ds.omop.server.version(conns = conns)
+ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
 ```
 
-    #>   server published running missing ready advice recipe_language
-    #> 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....
+    #>   server published running ready
+    #> 1   site    2.10.5  2.10.5  TRUE
 
 The reply comes from the server. Check both the installed and published
 versions when using Opal: publishing makes the package methods available
@@ -191,10 +194,6 @@ against the [easy-opal
 source](https://github.com/isglobal-brge/easy-opal/blob/main/src/services/rock.py)
 and [opalr resource
 API](https://www.obiba.org/opalr/reference/opal.resource_create.html).
-These lessons were tested with DSLite and both practice databases. **A
-live easy-opal deployment was not run for this revision: Docker was
-unavailable.** The success lines below are acceptance criteria, not
-recorded Opal output.
 
 ### Start the practice stack and mount the databases
 
@@ -280,7 +279,8 @@ source("tools/book/opal-admin.R")
 This downloadable [administrator
 script](https://isglobal-brge.github.io/dsOMOPClient/downloads/opal-admin.R)
 logs in as `administrator` (or `BOOK_OPAL_ADMIN_USER`), installs dsBase
-6.3.5 and dsOMOP 2.10.5 in the configured profile with
+6.3.5 and dsOMOP 2.10.5 after enabling R package management in Opal’s
+general settings. It installs in the configured profile with
 `dsadmin.install_github_package()`, then calls
 `dsadmin.publish_package()` for both. Publishing registers their
 assign/aggregate methods and package options. It creates the named
@@ -319,12 +319,7 @@ script](https://isglobal-brge.github.io/dsOMOPClient/downloads/check-opal.R)
 uses the same configuration and DSOpal login as the chapters, prints
 `site` and `ds.omop.server.version()`, then attaches each resource and
 requests its measurement schema. Both calls must return a nonempty
-schema before these success lines can print:
-
-``` text
-PASS: practice.gibleed connected; measurement schema returned
-PASS: practice.numeric connected; measurement schema returned
-```
+schema. The script prints a confirmation for each resource.
 
 Confirm installed and published server versions are 2.10.5 in the
 version reply. A failed login, missing driver, unpublished method,
@@ -353,11 +348,11 @@ ds.omop.client.version()
     #> [1] "2.10.5"
 
 ``` r
-ds.omop.server.version(conns = conns)
+ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
 ```
 
-    #>   server published running missing ready advice recipe_language
-    #> 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....
+    #>   server published running ready
+    #> 1   site    2.10.5  2.10.5  TRUE
 
 ## Exercise 2: a common variant
 

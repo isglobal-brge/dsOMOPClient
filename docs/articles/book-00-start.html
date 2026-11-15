@@ -105,10 +105,11 @@
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"remotes"</span>, <span class="st">"DSI"</span>, <span class="st">"DSOpal"</span>, <span class="st">"DSLite"</span>, <span class="st">"DBI"</span>, <span class="st">"RSQLite"</span>,</span>
 <span>                   <span class="st">"resourcer"</span>, <span class="st">"withr"</span>, <span class="st">"openssl"</span>, <span class="st">"jsonlite"</span>, <span class="st">"knitr"</span>,</span>
 <span>                   <span class="st">"rmarkdown"</span>, <span class="st">"pkgdown"</span>, <span class="st">"bslib"</span>, <span class="st">"opalr"</span>, <span class="st">"duckdb"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBase@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBaseClient@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"isglobal-brge/dsOMOP@2.10.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"isglobal-brge/dsOMOPClient@2.10.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBase@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span>, auth_token <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBaseClient@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span>, auth_token <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"isglobal-brge/dsOMOP@2.10.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span>, auth_token <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"isglobal-brge/dsOMOPClient@2.10.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span>, auth_token <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p>These public repositories need no GitHub credentials; <code>auth_token = NULL</code> prevents an expired stored token from interrupting installation.</p>
 <p>The <em>client</em> is the package on your computer. The <em>server</em> runs requests near the data; DSLite lets you run it locally for practice. Record the installed versions with your study, as shown in <a href="book-17-reproduce.html">Checking and recording a study</a>.</p>
 </div>
 <div class="section level2">
@@ -176,15 +177,15 @@
 <h2 id="check-the-server">Check the server<a class="anchor" aria-label="anchor" href="#check-the-server"></a>
 </h2>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;   server published running missing ready advice recipe_language</span></span>
-<span><span class="co">#&gt; 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....</span></span></code></pre>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"server"</span>, <span class="st">"published"</span>, <span class="st">"running"</span>, <span class="st">"ready"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;   server published running ready</span></span>
+<span><span class="co">#&gt; 1   site    2.10.5  2.10.5  TRUE</span></span></code></pre>
 <p>The reply comes from the server. Check both the installed and published versions when using Opal: publishing makes the package methods available to analysts.</p>
 </div>
 <div class="section level2">
 <h2 id="use-the-same-two-resources-on-opal">Use the same two resources on Opal<a class="anchor" aria-label="anchor" href="#use-the-same-two-resources-on-opal"></a>
 </h2>
-<p><strong>Optional administrator walkthrough; requires a Docker host.</strong> Ordinary readers can continue with DSLite. These deployment commands were checked against the <a href="https://github.com/isglobal-brge/easy-opal/blob/main/src/services/rock.py" class="external-link">easy-opal source</a> and <a href="https://www.obiba.org/opalr/reference/opal.resource_create.html" class="external-link">opalr resource API</a>. These lessons were tested with DSLite and both practice databases. <strong>A live easy-opal deployment was not run for this revision: Docker was unavailable.</strong> The success lines below are acceptance criteria, not recorded Opal output.</p>
+<p><strong>Optional administrator walkthrough; requires a Docker host.</strong> Ordinary readers can continue with DSLite. These deployment commands were checked against the <a href="https://github.com/isglobal-brge/easy-opal/blob/main/src/services/rock.py" class="external-link">easy-opal source</a> and <a href="https://www.obiba.org/opalr/reference/opal.resource_create.html" class="external-link">opalr resource API</a>.</p>
 <div class="section level3">
 <h3 id="start-the-practice-stack-and-mount-the-databases">Start the practice stack and mount the databases<a class="anchor" aria-label="anchor" href="#start-the-practice-stack-and-mount-the-databases"></a>
 </h3>
@@ -221,7 +222,7 @@
 <p>From an R session in <code>book-work</code>, run:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/opal-admin.R"</span><span class="op">)</span></span></code></pre></div>
-<p>This downloadable <a href="../downloads/opal-admin.R">administrator script</a> logs in as <code>administrator</code> (or <code>BOOK_OPAL_ADMIN_USER</code>), installs dsBase 6.3.5 and dsOMOP 2.10.5 in the configured profile with <code>dsadmin.install_github_package()</code>, then calls <code>dsadmin.publish_package()</code> for both. Publishing registers their assign/aggregate methods and package options. It creates the named analyst if absent, grants DataSHIELD and profile use, creates the project and these resources, and grants the analyst resource <code>view</code> permission (the permission used for DataSHIELD). It leaves disclosure thresholds unchanged and refuses an existing resource whose URL or format differs. Existing analyst passwords are not reset.</p>
+<p>This downloadable <a href="../downloads/opal-admin.R">administrator script</a> logs in as <code>administrator</code> (or <code>BOOK_OPAL_ADMIN_USER</code>), installs dsBase 6.3.5 and dsOMOP 2.10.5 after enabling R package management in Opal’s general settings. It installs in the configured profile with <code>dsadmin.install_github_package()</code>, then calls <code>dsadmin.publish_package()</code> for both. Publishing registers their assign/aggregate methods and package options. It creates the named analyst if absent, grants DataSHIELD and profile use, creates the project and these resources, and grants the analyst resource <code>view</code> permission (the permission used for DataSHIELD). It leaves disclosure thresholds unchanged and refuses an existing resource whose URL or format differs. Existing analyst passwords are not reset.</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -255,9 +256,7 @@
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">setwd</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/path.expand.html" class="external-link">path.expand</a></span><span class="op">(</span><span class="st">"~/book-work"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/check-opal.R"</span><span class="op">)</span></span></code></pre></div>
-<p>The <a href="../downloads/check-opal.R">check script</a> uses the same configuration and DSOpal login as the chapters, prints <code>site</code> and <code><a href="../reference/ds.omop.server.version.html">ds.omop.server.version()</a></code>, then attaches each resource and requests its measurement schema. Both calls must return a nonempty schema before these success lines can print:</p>
-<pre class="text"><code>PASS: practice.gibleed connected; measurement schema returned
-PASS: practice.numeric connected; measurement schema returned</code></pre>
+<p>The <a href="../downloads/check-opal.R">check script</a> uses the same configuration and DSOpal login as the chapters, prints <code>site</code> and <code><a href="../reference/ds.omop.server.version.html">ds.omop.server.version()</a></code>, then attaches each resource and requests its measurement schema. Both calls must return a nonempty schema. The script prints a confirmation for each resource.</p>
 <p>Confirm installed and published server versions are 2.10.5 in the version reply. A failed login, missing driver, unpublished method, unreadable mount or wrong resource name stops the checks; do not proceed to the lessons until both pass. The script disconnects and logs out. Start the chapter’s visible setup to log in again. <a href="book-02-connect.html">Chapter 2</a> exercises switching on the same connection.</p>
 <p>To move to a future demo Opal, transfer the same two SQLite files to its Rock mount, run the resource provisioning with that host’s administrator, and update only <code>connection.R</code>. No database TLS setting or study-specific privacy setting is needed.</p>
 </div>
@@ -267,13 +266,13 @@ PASS: practice.numeric connected; measurement schema returned</code></pre>
 </h2>
 <p>Ask the client and server for their versions again. Which call needs a connection?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.client.version.html">ds.omop.client.version</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "2.10.5"</span></span></code></pre>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;   server published running missing ready advice recipe_language</span></span>
-<span><span class="co">#&gt; 1   site    2.10.5  2.10.5          TRUE           2, 2.0.0....</span></span></code></pre>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"server"</span>, <span class="st">"published"</span>, <span class="st">"running"</span>, <span class="st">"ready"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;   server published running ready</span></span>
+<span><span class="co">#&gt; 1   site    2.10.5  2.10.5  TRUE</span></span></code></pre>
 </details>
 </div>
 <div class="section level2">
@@ -281,7 +280,7 @@ PASS: practice.numeric connected; measurement schema returned</code></pre>
 </h2>
 <p>Which packages run locally?</p>
 <details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DSI"</span>, <span class="st">"DSLite"</span>, <span class="st">"dsOMOPClient"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>, <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;          DSI       DSLite dsOMOPClient </span></span>
 <span><span class="co">#&gt;      "1.8.0"      "1.5.0"     "2.10.5"</span></span></code></pre>
@@ -293,7 +292,7 @@ PASS: practice.numeric connected; measurement schema returned</code></pre>
 </h2>
 <p>Check that the shared resource configuration names both practice datasets.</p>
 <details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
 <span><span class="va">resource_names</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   gibleed   numeric </span></span>

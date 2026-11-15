@@ -191,7 +191,7 @@ turning a workspace `omop.table` into a reusable cohort with
 
 ## Disclosure-Gated Manipulation of Extracted Tables
 
-Once a plan or recipe has produced a server-side `omop.table` (see
+Once a recipe has produced a server-side `omop.table` (see
 *Extraction*), you can reshape it **without** pulling any row-level data
 using disclosure-aware verbs. Each verb takes the *name(s)* of
 server-side `omop.table` symbols, computes the new frame on every
@@ -239,8 +239,8 @@ comparison$server_only     # tables unique to particular servers
 comparison$column_diffs    # column differences across servers
 ```
 
-This comparison feeds plan harmonization (see the *Multi-Server*
-vignette).
+Use this comparison before the [multi-site category
+lesson](https://isglobal-brge.github.io/dsOMOPClient/articles/book-10-harmonise.md).
 
 ## Schema Snapshot
 

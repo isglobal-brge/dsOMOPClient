@@ -61,6 +61,8 @@ knitr::kable(va_catalogue[c("concept_name", "domain_id", "standard_concept")])
 | Myocardial infarction | Condition   | S                 |
 | Pneumonia             | Condition   | S                 |
 | Yes                   | Meas Value  | S                 |
+| FEMALE                | Gender      | S                 |
+| MALE                  | Gender      | S                 |
 | No                    | Meas Value  | S                 |
 | Inpatient Visit       | Meas Value  | S                 |
 | Outpatient Visit      | Meas Value  | S                 |
@@ -219,7 +221,6 @@ explanation <- recipe_explain(va, conns = conns)
 cat(grep("date|precision|age", explanation$text, value = TRUE), sep = "\n")
 ```
 
-    #> Recipe plan (language 2.0, semantic 2.0.0)
     #>   age_at_death: age_at
     #>   age_at_first_visit: age_at
     #>   visit_date: calendar_date

@@ -126,7 +126,9 @@ shown.</p>
     <p>An <code>omop_recipe_explain</code> object: <code>$text</code> (character
   lines), <code>$selected</code> (<code>"v1"</code> or <code>"v2"</code>), <code>$payload</code>
   (the selected wire plan), <code>$plan</code> (the normalised plan, or
-  <code>NULL</code> for an offline v1 explanation), <code>$defaults</code> (a data
+  <code>NULL</code> for an offline v1 explanation), <code>$language_version</code>
+  and <code>$semantic_version</code> (from <code>$plan$meta</code>, or <code>NULL</code>
+  when the normalised plan is unavailable), <code>$defaults</code> (a data
   frame of the defaults relied on), <code>$digest</code> (the semantic digest,
   or <code>NULL</code> when unavailable), <code>$server</code> (per-server explain
   payloads, when <code>conns</code> is given) and <code>$refusal</code> (why

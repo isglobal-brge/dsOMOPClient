@@ -809,14 +809,14 @@
 <td align="left">Fixture</td>
 </tr>
 <tr class="even">
-<td align="left">Female equation branch</td>
+<td align="left">FEMALE</td>
 <td align="left">S</td>
-<td align="left">Fixture</td>
+<td align="left">Gender</td>
 </tr>
 <tr class="odd">
-<td align="left">Male equation branch</td>
+<td align="left">MALE</td>
 <td align="left">S</td>
-<td align="left">Fixture</td>
+<td align="left">Gender</td>
 </tr>
 </tbody>
 </table>
@@ -868,8 +868,8 @@
 <span><span class="va">egfr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_formula_bmi.html">omop_formula_egfr_ckdepi2021</a></span><span class="op">(</span><span class="va">creatinine</span>,</span>
 <span>  age <span class="op">=</span> <span class="fu"><a href="../reference/omop_date_spec.html">omop_age_at</a></span><span class="op">(</span><span class="fu"><a href="../reference/omop_window.html">omop_anchor</a></span><span class="op">(</span><span class="va">serum_event</span>, which <span class="op">=</span> <span class="st">"first"</span>, scope <span class="op">=</span> <span class="st">"episode"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  sex <span class="op">=</span> <span class="fu"><a href="../reference/omop_variable.html">omop_variable</a></span><span class="op">(</span>table <span class="op">=</span> <span class="st">"person"</span>, column <span class="op">=</span> <span class="st">"gender_concept_id"</span><span class="op">)</span>,</span>
-<span>  sex_map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>female <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"concept:"</span>, <span class="va">sex_ids</span><span class="op">[[</span><span class="st">"Female equation branch"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
-<span>    male <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"concept:"</span>, <span class="va">sex_ids</span><span class="op">[[</span><span class="st">"Male equation branch"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  sex_map <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>female <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"concept:"</span>, <span class="va">sex_ids</span><span class="op">[[</span><span class="st">"FEMALE"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    male <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"concept:"</span>, <span class="va">sex_ids</span><span class="op">[[</span><span class="st">"MALE"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">egfr_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_recipe.html">omop_recipe</a></span><span class="op">(</span></span>
 <span>  populations <span class="op">=</span> <span class="fu"><a href="../reference/omop_population.html">omop_population</a></span><span class="op">(</span><span class="st">"measurements"</span>, index <span class="op">=</span> <span class="fu"><a href="../reference/omop_index.html">omop_index</a></span><span class="op">(</span><span class="va">serum_event</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>egfr <span class="op">=</span> <span class="va">egfr</span><span class="op">)</span>,</span>
@@ -886,12 +886,12 @@
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">5%</td>
-<td align="right">45.57251</td>
+<td align="right">34.11223</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">10%</td>
-<td align="right">45.57251</td>
+<td align="right">34.11223</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
@@ -901,7 +901,7 @@
 <tr class="even">
 <td align="left">site</td>
 <td align="left">50%</td>
-<td align="right">109.98299</td>
+<td align="right">98.00762</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
@@ -911,17 +911,17 @@
 <tr class="even">
 <td align="left">site</td>
 <td align="left">90%</td>
-<td align="right">114.93547</td>
+<td align="right">117.24833</td>
 </tr>
 <tr class="odd">
 <td align="left">site</td>
 <td align="left">95%</td>
-<td align="right">114.93547</td>
+<td align="right">117.24833</td>
 </tr>
 <tr class="even">
 <td align="left">site</td>
 <td align="left">Mean</td>
-<td align="right">90.16366</td>
+<td align="right">84.64730</td>
 </tr>
 </tbody>
 </table>

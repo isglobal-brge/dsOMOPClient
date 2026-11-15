@@ -318,6 +318,18 @@
 <td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="left">FEMALE</td>
+<td align="left">Gender</td>
+<td align="left">Gender</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">MALE</td>
+<td align="left">Gender</td>
+<td align="left">Gender</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
 <td align="left">No</td>
 <td align="left">Fixture</td>
 <td align="left">Fixture</td>
@@ -485,15 +497,15 @@
 <pre><code><span><span class="co">#&gt; D_missing_categories$education</span></span>
 <span><span class="co">#&gt;  Secondary education University education              Missing              Unknown </span></span>
 <span><span class="co">#&gt;                    6                    6                   12                    0</span></span></code></pre>
-<p>Missing answers are now visible as Missing. The public Unknown level may have zero count; declaring it does not assert that anyone has an unknown answer. The questionnaire’s sex codes, in contrast, are all concept zero.</p>
-<p><strong>Exercise.</strong> Confirm the distinction by counting sex.</p>
-<details><p><summary>Solution: Unknown is a recorded code</summary></p>
+<p>Missing answers are now visible as Missing. The public Unknown level may have zero count; declaring it does not assert that anyone has an unknown answer. The sex column contains FEMALE and MALE; its declared Missing and Unknown levels remain empty.</p>
+<p><strong>Exercise.</strong> Check which declared sex levels are actually observed.</p>
+<details><p><summary>Solution: declared and observed levels</summary></p>
 <div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_missing_categories"</span>, <span class="st">"sex"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; D_missing_categories$sex</span></span>
-<span><span class="co">#&gt; Missing Unknown </span></span>
-<span><span class="co">#&gt;       0      24</span></span></code></pre>
-<p>Unknown is not a justified female/male assignment. It cannot supply the sex input for a sex-specific formula or an informative sex comparison.</p>
+<span><span class="co">#&gt;    MALE  FEMALE Missing Unknown </span></span>
+<span><span class="co">#&gt;      12      12       0       0</span></span></code></pre>
+<p>The two observed levels each contain twelve people. A declared Unknown level does not turn an observed FEMALE or MALE value into an unknown value.</p>
 </details>
 </div>
 <div class="section level2">

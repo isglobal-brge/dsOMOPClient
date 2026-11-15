@@ -8,7 +8,7 @@ local({
   on.exit({try(ds.omop.disconnect(conns=conns), silent=TRUE)
            DSI::datashield.logout(conns)})
   print(names(conns))
-  print(ds.omop.server.version(conns=conns))
+  print(ds.omop.server.version(conns=conns)[c("server", "published", "running", "ready")])
   for (key in names(resource_names)) {
     ds.omop.disconnect(conns=conns)
     ds.omop.connect(resource=resource_names[[key]], conns=conns)

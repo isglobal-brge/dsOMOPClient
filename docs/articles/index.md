@@ -56,12 +56,7 @@
   - [23. Case study: a harmonised
     Table 1](https://isglobal-brge.github.io/dsOMOPClient/articles/book-23-case-table1.md):
 
-### Earlier reference guides
-
-  - [Getting Started with
-    dsOMOP](https://isglobal-brge.github.io/dsOMOPClient/articles/v01_getting_started.md):
-    
-    Connect to OMOP CDM resources and run a first reviewed workflow.
+### Reference guides
 
   - [Schema
     Exploration](https://isglobal-brge.github.io/dsOMOPClient/articles/v02_exploration.md):
@@ -80,17 +75,11 @@
     Build wide, longitudinal and survival outputs with the simple and
     advanced recipe layers.
 
-  - [Multi-Server Federated
-    Analysis](https://isglobal-brge.github.io/dsOMOPClient/articles/v05_multi_server.md):
-    
-    Negotiate common schemas, age grids and operational limits across
-    sites.
-
   - [Security and Disclosure
     Controls](https://isglobal-brge.github.io/dsOMOPClient/articles/v06_security.md):
     
     Understand disclosure gates, pseudonym keys and deployment
     boundaries.
 
-  - [OHDSI QueryLibrary Sticky
-    Redesigns](https://isglobal-brge.github.io/dsOMOPClient/articles/v07_querylibrary_sticky.md):
+  - [OHDSI QueryLibrary protected
+    analyses](https://isglobal-brge.github.io/dsOMOPClient/articles/v07_querylibrary_sticky.md):

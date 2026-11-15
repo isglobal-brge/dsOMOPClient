@@ -1,0 +1,3994 @@
+{
+  "files_scanned": 998,
+  "reader_site_hits": [],
+  "preserved_exported_function_reference_hits": [
+    {
+      "file": "docs/reference/dot-dp_statuses.html",
+      "terms": [
+        "legacy",
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_statuses.md",
+      "terms": [
+        "legacy",
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_unpatched_warnings.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_unpatched_warnings.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-ds_encode_lossless.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-ds_encode_lossless.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-harmonizeOneSymbol.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-harmonizeOneSymbol.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-jsonSchemaAssert.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-jsonSchemaAssert.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-jsonSchemaPackaged.html",
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-jsonSchemaPackaged.md",
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-lint_v2_rows.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-lint_v2_rows.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-mutate_request.html",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-mutate_request.md",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-planNormalizeV2.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-planNormalizeV2.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-planNormalizedDigest.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-planNormalizedDigest.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.html",
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.md",
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_protocol_refusal.html",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_protocol_refusal.md",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_digest.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_digest.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_federation.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_federation.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_manifest.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_manifest.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_preview.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_preview.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-pool_protected_record_moments.html",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-pool_protected_record_moments.md",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.html",
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.md",
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "terms": [
+        "language 2",
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.md",
+      "terms": [
+        "language 2",
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "terms": [
+        "legacy",
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.md",
+      "terms": [
+        "legacy",
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v1.html",
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v1.md",
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v2.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v2.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_v2_constructs.html",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_v2_constructs.md",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.html",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.md",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_assert_schema.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_assert_schema.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.html",
+      "terms": [
+        "Legacy",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.md",
+      "terms": [
+        "Legacy",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.html",
+      "terms": [
+        "Legacy",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.md",
+      "terms": [
+        "Legacy",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "terms": [
+        "Legacy",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.md",
+      "terms": [
+        "Legacy",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_temporal_options.html",
+      "terms": [
+        "Legacy",
+        "legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_temporal_options.md",
+      "terms": [
+        "Legacy",
+        "legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_plan_schema.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_plan_schema.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_support_gaps.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_support_gaps.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_wire_of.html",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_wire_of.md",
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.achilles.distribution.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.achilles.distribution.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.achilles.results.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.achilles.results.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.analysis.run.html",
+      "terms": [
+        "legacy",
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.analysis.run.md",
+      "terms": [
+        "legacy",
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.column.stats.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.column.stats.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.drilldown.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.drilldown.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.locate.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.locate.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.prevalence.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.prevalence.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.summary.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.summary.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.crosstab.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.crosstab.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.date.counts.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.date.counts.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.domain.coverage.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.domain.coverage.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "terms": [
+        "Legacy",
+        "legacy",
+        "upgrade",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "terms": [
+        "Legacy",
+        "legacy",
+        "upgrade",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.html",
+      "terms": [
+        "Legacy",
+        "legacy",
+        "upgrade",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.md",
+      "terms": [
+        "Legacy",
+        "legacy",
+        "upgrade",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.missingness.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.missingness.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.ohdsi.results.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.ohdsi.results.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.plan.execute.html",
+      "terms": [
+        "language 2",
+        "legacy",
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.plan.execute.md",
+      "terms": [
+        "language 2",
+        "legacy",
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.exec.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.exec.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.get.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.get.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.querylibrary.sticky.release.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.querylibrary.sticky.release.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.safe.cutpoints.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.safe.cutpoints.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.html",
+      "terms": [
+        "legacy",
+        "upgrade",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.md",
+      "terms": [
+        "legacy",
+        "upgrade",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.table.stats.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.table.stats.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.counts.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.counts.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.histogram.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.histogram.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.quantiles.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.quantiles.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_age.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_age.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_date_spec.html",
+      "terms": [
+        "language 2",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_date_spec.md",
+      "terms": [
+        "language 2",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter.html",
+      "terms": [
+        "language 2",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter.md",
+      "terms": [
+        "language 2",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter_group.html",
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter_group.md",
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_index.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_index.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.html",
+      "terms": [
+        "language 2",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.md",
+      "terms": [
+        "language 2",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.html",
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.md",
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_reduce.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_reduce.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable.html",
+      "terms": [
+        "Language 2",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable.md",
+      "terms": [
+        "Language 2",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable_block.html",
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable_block.md",
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_circe_support.html",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_circe_support.md",
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.html",
+      "terms": [
+        "legacy",
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.md",
+      "terms": [
+        "legacy",
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_lint.html",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_lint.md",
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "terms": [
+        "Plan version",
+        "language 2",
+        "legacy",
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.md",
+      "terms": [
+        "Plan version",
+        "language 2",
+        "legacy",
+        "v1",
+        "v2"
+      ]
+    }
+  ],
+  "raw_grep_hits": [
+    {
+      "file": "docs/articles/book-00-start.html",
+      "line": 108,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/articles/book-00-start.html",
+      "line": 109,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/articles/book-00-start.html",
+      "line": 110,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/articles/book-00-start.html",
+      "line": 111,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/articles/book-00-start.md",
+      "line": 28,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/articles/book-00-start.md",
+      "line": 29,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/articles/book-00-start.md",
+      "line": 30,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/articles/book-00-start.md",
+      "line": 31,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_statuses.html",
+      "line": 4,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_statuses.html",
+      "line": 6,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_statuses.html",
+      "line": 9,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_statuses.html",
+      "line": 11,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_statuses.html",
+      "line": 78,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_statuses.html",
+      "line": 80,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_statuses.md",
+      "line": 5,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_statuses.md",
+      "line": 7,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_unpatched_warnings.html",
+      "line": 3,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_unpatched_warnings.html",
+      "line": 5,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_unpatched_warnings.html",
+      "line": 71,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-dp_unpatched_warnings.md",
+      "line": 4,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-ds_encode_lossless.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-ds_encode_lossless.html",
+      "line": 68,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-ds_encode_lossless.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-harmonizeOneSymbol.html",
+      "line": 7,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-harmonizeOneSymbol.html",
+      "line": 12,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-harmonizeOneSymbol.html",
+      "line": 81,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-harmonizeOneSymbol.md",
+      "line": 8,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-jsonSchemaAssert.html",
+      "line": 73,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-jsonSchemaAssert.md",
+      "line": 10,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-jsonSchemaPackaged.html",
+      "line": 79,
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-jsonSchemaPackaged.md",
+      "line": 15,
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-lint_v2_rows.html",
+      "line": 2,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-lint_v2_rows.html",
+      "line": 60,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-lint_v2_rows.html",
+      "line": 66,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-lint_v2_rows.md",
+      "line": 1,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-lint_v2_rows.md",
+      "line": 3,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-mutate_request.html",
+      "line": 2,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-mutate_request.html",
+      "line": 60,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-mutate_request.html",
+      "line": 66,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-mutate_request.md",
+      "line": 1,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-mutate_request.md",
+      "line": 3,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-planNormalizeV2.html",
+      "line": 116,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-planNormalizeV2.md",
+      "line": 32,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-planNormalizedDigest.html",
+      "line": 83,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-planNormalizedDigest.md",
+      "line": 19,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.html",
+      "line": 2,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.html",
+      "line": 7,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.html",
+      "line": 70,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.html",
+      "line": 72,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.html",
+      "line": 76,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.html",
+      "line": 86,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.html",
+      "line": 103,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.md",
+      "line": 1,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.md",
+      "line": 4,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.md",
+      "line": 13,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_execute_legacy.md",
+      "line": 29,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_protocol_refusal.html",
+      "line": 87,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_protocol_refusal.md",
+      "line": 21,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_protocol_refusal.md",
+      "line": 23,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_digest.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_digest.html",
+      "line": 66,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_digest.html",
+      "line": 88,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_digest.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_digest.md",
+      "line": 18,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_federation.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_federation.html",
+      "line": 68,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_federation.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_manifest.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_manifest.html",
+      "line": 60,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_manifest.html",
+      "line": 66,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_manifest.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_manifest.md",
+      "line": 3,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.html",
+      "line": 3,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.html",
+      "line": 5,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.html",
+      "line": 64,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.html",
+      "line": 71,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.html",
+      "line": 85,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.md",
+      "line": 4,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_operations.md",
+      "line": 17,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_preview.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_preview.html",
+      "line": 60,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_preview.html",
+      "line": 66,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_preview.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-plan_v2_preview.md",
+      "line": 3,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-pool_protected_record_moments.html",
+      "line": 130,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-pool_protected_record_moments.md",
+      "line": 42,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.html",
+      "line": 2,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.html",
+      "line": 3,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.html",
+      "line": 5,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.html",
+      "line": 64,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.html",
+      "line": 71,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.html",
+      "line": 85,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.md",
+      "line": 1,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.md",
+      "line": 4,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-query_id_to_name.md",
+      "line": 17,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.html",
+      "line": 2,
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.html",
+      "line": 3,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.html",
+      "line": 5,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.html",
+      "line": 6,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.html",
+      "line": 66,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.html",
+      "line": 72,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.html",
+      "line": 73,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.md",
+      "line": 3,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_needs_v2.md",
+      "line": 4,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 4,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 5,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 6,
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 8,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 9,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 10,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 74,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 76,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 77,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.html",
+      "line": 78,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.md",
+      "line": 3,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.md",
+      "line": 5,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.md",
+      "line": 6,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_plan_for_execution.md",
+      "line": 7,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 3,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 4,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 6,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 7,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 8,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 9,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 10,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 12,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 13,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 14,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 79,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 80,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 82,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 83,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 84,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 102,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.html",
+      "line": 103,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.md",
+      "line": 4,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.md",
+      "line": 5,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.md",
+      "line": 7,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.md",
+      "line": 8,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.md",
+      "line": 9,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_select_plan.md",
+      "line": 26,
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v1.html",
+      "line": 2,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v1.html",
+      "line": 60,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v1.html",
+      "line": 66,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v1.md",
+      "line": 1,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v1.md",
+      "line": 3,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v2.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v2.html",
+      "line": 60,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v2.html",
+      "line": 66,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v2.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_to_plan_v2.md",
+      "line": 3,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_v2_constructs.html",
+      "line": 2,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_v2_constructs.html",
+      "line": 60,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_v2_constructs.html",
+      "line": 66,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_v2_constructs.md",
+      "line": 1,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-recipe_v2_constructs.md",
+      "line": 3,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.html",
+      "line": 2,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.html",
+      "line": 10,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.html",
+      "line": 18,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.html",
+      "line": 76,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.html",
+      "line": 82,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.html",
+      "line": 90,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.md",
+      "line": 1,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.md",
+      "line": 3,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v1_newly_permitted.md",
+      "line": 11,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_assert_schema.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_assert_schema.html",
+      "line": 60,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_assert_schema.html",
+      "line": 66,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_assert_schema.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_assert_schema.md",
+      "line": 3,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.html",
+      "line": 2,
+      "terms": [
+        "Legacy",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.html",
+      "line": 60,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.html",
+      "line": 61,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.html",
+      "line": 62,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.html",
+      "line": 66,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.html",
+      "line": 71,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.md",
+      "line": 1,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.md",
+      "line": 3,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_intervals_options.md",
+      "line": 8,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.html",
+      "line": 2,
+      "terms": [
+        "Legacy",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.html",
+      "line": 60,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.html",
+      "line": 61,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.html",
+      "line": 62,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.html",
+      "line": 66,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.html",
+      "line": 71,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.md",
+      "line": 1,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.md",
+      "line": 3,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_sparse_options.md",
+      "line": 9,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 2,
+      "terms": [
+        "Legacy",
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 4,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 5,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 10,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 11,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 72,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 73,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 74,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 80,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 81,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.html",
+      "line": 89,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.md",
+      "line": 1,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.md",
+      "line": 5,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.md",
+      "line": 6,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_survival_options.md",
+      "line": 14,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_temporal_options.html",
+      "line": 2,
+      "terms": [
+        "Legacy",
+        "legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_temporal_options.html",
+      "line": 72,
+      "terms": [
+        "Legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_temporal_options.html",
+      "line": 73,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_temporal_options.html",
+      "line": 74,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_temporal_options.html",
+      "line": 89,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_temporal_options.md",
+      "line": 1,
+      "terms": [
+        "Legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_temporal_options.md",
+      "line": 14,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.html",
+      "line": 2,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.html",
+      "line": 60,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.html",
+      "line": 61,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.html",
+      "line": 62,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.html",
+      "line": 66,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.html",
+      "line": 71,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.html",
+      "line": 79,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.md",
+      "line": 1,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.md",
+      "line": 3,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.md",
+      "line": 8,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_legacy_variable_event.md",
+      "line": 15,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_plan_schema.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_plan_schema.html",
+      "line": 60,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_plan_schema.html",
+      "line": 66,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_plan_schema.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_plan_schema.md",
+      "line": 3,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_support_gaps.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_support_gaps.html",
+      "line": 60,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_support_gaps.html",
+      "line": 66,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_support_gaps.html",
+      "line": 79,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_support_gaps.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_support_gaps.md",
+      "line": 3,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_support_gaps.md",
+      "line": 15,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_wire_of.html",
+      "line": 2,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_wire_of.html",
+      "line": 66,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/dot-v2_wire_of.md",
+      "line": 1,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.achilles.distribution.html",
+      "line": 132,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.achilles.distribution.md",
+      "line": 59,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.achilles.results.html",
+      "line": 137,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.achilles.results.md",
+      "line": 62,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.analysis.run.html",
+      "line": 215,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.analysis.run.html",
+      "line": 216,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.analysis.run.md",
+      "line": 128,
+      "terms": [
+        "legacy",
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.column.stats.html",
+      "line": 145,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.column.stats.md",
+      "line": 74,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.drilldown.html",
+      "line": 142,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.drilldown.md",
+      "line": 67,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.locate.html",
+      "line": 130,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.locate.md",
+      "line": 55,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.prevalence.html",
+      "line": 177,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.prevalence.md",
+      "line": 103,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.summary.html",
+      "line": 188,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.concept.summary.md",
+      "line": 85,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.crosstab.html",
+      "line": 192,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.crosstab.md",
+      "line": 108,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.date.counts.html",
+      "line": 152,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.date.counts.md",
+      "line": 78,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.domain.coverage.html",
+      "line": 121,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.domain.coverage.md",
+      "line": 48,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 129,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 139,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 148,
+      "terms": [
+        "legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 149,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 152,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 164,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 166,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 168,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 169,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 170,
+      "terms": [
+        "legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 171,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.html",
+      "line": 194,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 54,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 63,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 71,
+      "terms": [
+        "legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 72,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 75,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 87,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 90,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 92,
+      "terms": [
+        "legacy",
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 93,
+      "terms": [
+        "legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 94,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.release.md",
+      "line": 118,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.html",
+      "line": 98,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.html",
+      "line": 117,
+      "terms": [
+        "Legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.html",
+      "line": 118,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.html",
+      "line": 119,
+      "terms": [
+        "legacy",
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.html",
+      "line": 120,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.html",
+      "line": 121,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.html",
+      "line": 146,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.md",
+      "line": 30,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.md",
+      "line": 51,
+      "terms": [
+        "Legacy",
+        "legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.md",
+      "line": 52,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.md",
+      "line": 53,
+      "terms": [
+        "legacy",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.md",
+      "line": 54,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.dp.status.md",
+      "line": 79,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.missingness.html",
+      "line": 142,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.missingness.md",
+      "line": 68,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.ohdsi.results.html",
+      "line": 154,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.ohdsi.results.md",
+      "line": 75,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.plan.execute.html",
+      "line": 132,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.plan.execute.html",
+      "line": 133,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.plan.execute.html",
+      "line": 179,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.plan.execute.md",
+      "line": 35,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.plan.execute.md",
+      "line": 36,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.plan.execute.md",
+      "line": 84,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.exec.html",
+      "line": 5,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.exec.html",
+      "line": 12,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.exec.html",
+      "line": 83,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.exec.html",
+      "line": 106,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.exec.md",
+      "line": 6,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.exec.md",
+      "line": 28,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.get.html",
+      "line": 85,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.query.get.md",
+      "line": 17,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.querylibrary.sticky.release.html",
+      "line": 138,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.querylibrary.sticky.release.md",
+      "line": 56,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.safe.cutpoints.html",
+      "line": 140,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.safe.cutpoints.md",
+      "line": 70,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.html",
+      "line": 122,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.html",
+      "line": 125,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.html",
+      "line": 126,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.html",
+      "line": 128,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.md",
+      "line": 46,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.md",
+      "line": 51,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.md",
+      "line": 52,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.server.version.md",
+      "line": 54,
+      "terms": [
+        "upgrade"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.table.stats.html",
+      "line": 132,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.table.stats.md",
+      "line": 61,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.counts.html",
+      "line": 154,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.counts.md",
+      "line": 80,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.histogram.html",
+      "line": 192,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.histogram.md",
+      "line": 115,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.quantiles.html",
+      "line": 178,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/ds.omop.value.quantiles.md",
+      "line": 102,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_age.html",
+      "line": 132,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_age.html",
+      "line": 172,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_age.md",
+      "line": 64,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_age.md",
+      "line": 103,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_date_spec.html",
+      "line": 297,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_date_spec.html",
+      "line": 298,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_date_spec.md",
+      "line": 232,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_date_spec.md",
+      "line": 233,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter.html",
+      "line": 356,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter.html",
+      "line": 359,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter.md",
+      "line": 269,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter.md",
+      "line": 272,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter_group.html",
+      "line": 96,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter_group.html",
+      "line": 97,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter_group.md",
+      "line": 23,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_filter_group.md",
+      "line": 24,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_index.html",
+      "line": 6,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_index.html",
+      "line": 14,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_index.html",
+      "line": 86,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_index.md",
+      "line": 7,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.html",
+      "line": 6,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.html",
+      "line": 10,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.html",
+      "line": 78,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.html",
+      "line": 281,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.html",
+      "line": 362,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.md",
+      "line": 7,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.md",
+      "line": 211,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_number_spec.md",
+      "line": 291,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.html",
+      "line": 123,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.html",
+      "line": 164,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.html",
+      "line": 165,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.html",
+      "line": 192,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.html",
+      "line": 197,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.md",
+      "line": 48,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.md",
+      "line": 87,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.md",
+      "line": 88,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.md",
+      "line": 114,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_output.md",
+      "line": 119,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_reduce.html",
+      "line": 184,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_reduce.md",
+      "line": 91,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable.html",
+      "line": 222,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable.html",
+      "line": 275,
+      "terms": [
+        "Language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable.md",
+      "line": 150,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable.md",
+      "line": 200,
+      "terms": [
+        "Language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable_block.html",
+      "line": 187,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/omop_variable_block.md",
+      "line": 114,
+      "terms": [
+        "Legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_circe_support.html",
+      "line": 2,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_circe_support.html",
+      "line": 4,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_circe_support.html",
+      "line": 70,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_circe_support.html",
+      "line": 82,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_circe_support.md",
+      "line": 3,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_circe_support.md",
+      "line": 16,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.html",
+      "line": 127,
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.html",
+      "line": 129,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.html",
+      "line": 145,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.html",
+      "line": 146,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.html",
+      "line": 154,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.html",
+      "line": 157,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.md",
+      "line": 46,
+      "terms": [
+        "v1",
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.md",
+      "line": 47,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.md",
+      "line": 61,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.md",
+      "line": 62,
+      "terms": [
+        "legacy",
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.md",
+      "line": 70,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_explain.md",
+      "line": 73,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_lint.html",
+      "line": 170,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_lint.md",
+      "line": 103,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 3,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 4,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 6,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 10,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 11,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 12,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 14,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 18,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 83,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 84,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 86,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 90,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 107,
+      "terms": [
+        "Plan version"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 119,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 120,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.html",
+      "line": 122,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.md",
+      "line": 4,
+      "terms": [
+        "language 2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.md",
+      "line": 5,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.md",
+      "line": 7,
+      "terms": [
+        "legacy"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.md",
+      "line": 11,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.md",
+      "line": 27,
+      "terms": [
+        "Plan version"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.md",
+      "line": 37,
+      "terms": [
+        "v1"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.md",
+      "line": 38,
+      "terms": [
+        "v2"
+      ]
+    },
+    {
+      "file": "docs/reference/recipe_to_plan.md",
+      "line": 42,
+      "terms": [
+        "legacy"
+      ]
+    }
+  ]
+}

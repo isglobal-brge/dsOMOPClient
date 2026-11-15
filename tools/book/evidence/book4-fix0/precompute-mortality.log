@@ -1,0 +1,5 @@
+PRECOMPUTE vignettes/book-19-case-mortality.Rmd.orig
+BOOK4 MORTALITY PASS: deaths, missing ages, clipped risk time and released rates
+ASSERTIONS PASS book-19-case-mortality.Rmd.orig
+All chapter chunks executed successfully
+All chapters passed in separate R processes using visible setup

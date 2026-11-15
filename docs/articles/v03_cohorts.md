@@ -2,7 +2,7 @@
 
 ## Imported populations in 2.10.5
 
-Re-import OHDSI definitions to attach the executable `ohdsi-import-1`
+Import OHDSI definitions to attach the executable `ohdsi-import-1`
 vocabulary validity policy. A matching capable server checks included
 and excluded public concepts; unsupported clauses refuse with structural
 diagnostics from `recipe_circe_check()`. `recipe_circe_support()`
@@ -154,7 +154,7 @@ inputs, not a way to retrieve rows.
 ## Inspect, execute and retain the inventory
 
 ``` r
-ds.omop.server.version(conns)
+ds.omop.server.version(conns)[c("server", "published", "running", "ready")]
 recipe_lint(recipe)
 recipe_validate(recipe, conns = conns)
 recipe_explain(recipe, conns = conns)

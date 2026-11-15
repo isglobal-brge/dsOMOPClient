@@ -161,6 +161,16 @@
 <td align="left">S</td>
 </tr>
 <tr class="even">
+<td align="left">FEMALE</td>
+<td align="left">Gender</td>
+<td align="left">S</td>
+</tr>
+<tr class="odd">
+<td align="left">MALE</td>
+<td align="left">Gender</td>
+<td align="left">S</td>
+</tr>
+<tr class="even">
 <td align="left">No</td>
 <td align="left">Meas Value</td>
 <td align="left">S</td>
@@ -299,8 +309,7 @@
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">explanation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_explain.html">recipe_explain</a></span><span class="op">(</span><span class="va">va</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"date|precision|age"</span>, <span class="va">explanation</span><span class="op">$</span><span class="va">text</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Recipe plan (language 2.0, semantic 2.0.0)</span></span>
-<span><span class="co">#&gt;   age_at_death: age_at</span></span>
+<pre><code><span><span class="co">#&gt;   age_at_death: age_at</span></span>
 <span><span class="co">#&gt;   age_at_first_visit: age_at</span></span>
 <span><span class="co">#&gt;   visit_date: calendar_date</span></span>
 <span><span class="co">#&gt;   visit_month: calendar_date</span></span>

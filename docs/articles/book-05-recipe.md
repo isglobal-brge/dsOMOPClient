@@ -128,7 +128,7 @@ explained <- recipe_explain(people, conns = conns)
 cat(explained$text, sep = "\n")
 ```
 
-    #> Recipe plan (language 2.0, semantic 2.0.0)
+    #> Recipe plan
     #> Population 'base' (criteria): none
     #> Variables:
     #>   education: last_value of event 'obs_900001' (value 'value_as_concept_id') over any time; missing = "skip"

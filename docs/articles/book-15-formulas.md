@@ -481,8 +481,8 @@ knitr::kable(rbind(formula_hits, sex_hits)[c("concept_name", "standard_concept",
 | concept\_name                          | standard\_concept | vocabulary\_id |
 | :------------------------------------- | :---------------- | :------------- |
 | Teaching standardized serum creatinine | S                 | Fixture        |
-| Female equation branch                 | S                 | Fixture        |
-| Male equation branch                   | S                 | Fixture        |
+| FEMALE                                 | S                 | Gender         |
+| MALE                                   | S                 | Gender         |
 
 ``` r
 formula_id <- formula_hits$concept_id
@@ -522,8 +522,8 @@ creatinine <- omop_number(creatinine, omop_number_spec(unit =
 egfr <- omop_formula_egfr_ckdepi2021(creatinine,
   age = omop_age_at(omop_anchor(serum_event, which = "first", scope = "episode")),
   sex = omop_variable(table = "person", column = "gender_concept_id"),
-  sex_map = list(female = paste0("concept:", sex_ids[["Female equation branch"]]),
-    male = paste0("concept:", sex_ids[["Male equation branch"]])))
+  sex_map = list(female = paste0("concept:", sex_ids[["FEMALE"]]),
+    male = paste0("concept:", sex_ids[["MALE"]])))
 egfr_recipe <- omop_recipe(
   populations = omop_population("measurements", index = omop_index(serum_event)),
   variables = list(egfr = egfr),
@@ -534,14 +534,14 @@ knitr::kable(book_summary(dsBaseClient::ds.summary("D_egfr$egfr", datasources = 
 
 | Site | Statistic |     Value |
 | :--- | :-------- | --------: |
-| site | 5%        |  45.57251 |
-| site | 10%       |  45.57251 |
+| site | 5%        |  34.11223 |
+| site | 10%       |  34.11223 |
 | site | 25%       |  45.57251 |
-| site | 50%       | 109.98299 |
+| site | 50%       |  98.00762 |
 | site | 75%       | 114.93547 |
-| site | 90%       | 114.93547 |
-| site | 95%       | 114.93547 |
-| site | Mean      |  90.16366 |
+| site | 90%       | 117.24833 |
+| site | 95%       | 117.24833 |
+| site | Mean      |  84.64730 |
 
 The output is an adult estimate in mL/min/1.73 m². Age is completed
 calendar years at the selected creatinine measurement. Missing age or an

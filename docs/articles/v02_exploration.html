@@ -230,7 +230,7 @@
 <div class="section level2">
 <h2 id="disclosure-gated-manipulation-of-extracted-tables">Disclosure-Gated Manipulation of Extracted Tables<a class="anchor" aria-label="anchor" href="#disclosure-gated-manipulation-of-extracted-tables"></a>
 </h2>
-<p>Once a plan or recipe has produced a server-side <code>omop.table</code> (see <em>Extraction</em>), you can reshape it <strong>without</strong> pulling any row-level data using disclosure-aware verbs. Each verb takes the <em>name(s)</em> of server-side <code>omop.table</code> symbols, computes the new frame on every server, and stores it under <code>newobj</code>. Only <code>omop.table</code> inputs are accepted; the result is re-gated on the number of <strong>distinct person tokens</strong> and re-tagged as an <code>omop.table</code>. Merge and row-bind can increase row counts (and a person-key join can multiply longitudinal rows), so analysts must still choose the intended grain. The distinct-person gate is reapplied and the verbs fail closed when support is insufficient.</p>
+<p>Once a recipe has produced a server-side <code>omop.table</code> (see <em>Extraction</em>), you can reshape it <strong>without</strong> pulling any row-level data using disclosure-aware verbs. Each verb takes the <em>name(s)</em> of server-side <code>omop.table</code> symbols, computes the new frame on every server, and stores it under <code>newobj</code>. Only <code>omop.table</code> inputs are accepted; the result is re-gated on the number of <strong>distinct person tokens</strong> and re-tagged as an <code>omop.table</code>. Merge and row-bind can increase row counts (and a person-key join can multiply longitudinal rows), so analysts must still choose the intended grain. The distinct-person gate is reapplied and the verbs fail closed when support is insufficient.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Join two token-keyed frames on the person key (only the person key is allowed)</span></span>
 <span><span class="va">joined</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.merge.html">ds.omop.merge</a></span><span class="op">(</span><span class="st">"baseline"</span>, <span class="st">"labs"</span>, by <span class="op">=</span> <span class="st">"person_id"</span>, type <span class="op">=</span> <span class="st">"left"</span>,</span>
@@ -258,7 +258,7 @@
 <span><span class="va">comparison</span><span class="op">$</span><span class="va">common_tables</span>   <span class="co"># tables present on every server</span></span>
 <span><span class="va">comparison</span><span class="op">$</span><span class="va">server_only</span>     <span class="co"># tables unique to particular servers</span></span>
 <span><span class="va">comparison</span><span class="op">$</span><span class="va">column_diffs</span>    <span class="co"># column differences across servers</span></span></code></pre></div>
-<p>This comparison feeds plan harmonization (see the <em>Multi-Server</em> vignette).</p>
+<p>Use this comparison before the <a href="book-10-harmonise.html">multi-site category lesson</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="schema-snapshot">Schema Snapshot<a class="anchor" aria-label="anchor" href="#schema-snapshot"></a>

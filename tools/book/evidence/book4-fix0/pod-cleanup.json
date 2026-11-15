@@ -1,0 +1,18 @@
+[
+  {
+    "path": "/root/rt/wt/book/dsOMOPClient",
+    "bytes": 70304035
+  },
+  {
+    "path": "/root/rt/wt/book/runtime-server",
+    "bytes": 17481868
+  },
+  {
+    "path": "/root/rt/wt/book/runtime-client",
+    "bytes": 58788622
+  },
+  {
+    "path": "/root/rt/wt/book/ci-chunks",
+    "bytes": 1463
+  }
+]
