@@ -34,24 +34,24 @@ conns <- practice$conns
 
 ``` r
 hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = conns)$pooled
-knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
+hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 
 
-| concept_id|concept_name                                                                        |standard_concept |
-|----------:|:-----------------------------------------------------------------------------------|:----------------|
-|    3001643|Hemoglobin and Hematocrit panel - Blood                                             |S                |
-|    3004410|Hemoglobin A1c/Hemoglobin.total in Blood                                            |S                |
-|   40761014|Hemoglobin.gastrointestinal.lower [Presence] in Stool by Immunoassay --1st specimen |S                |
-|    3011397|Hemoglobin [Presence] in Urine by Test strip                                        |S                |
-|    3000963|Hemoglobin [Mass/volume] in Blood                                                   |S                |
+| concept_id|concept_name                                                                          |standard_concept |
+|----------:|:-------------------------------------------------------------------------------------|:----------------|
+|    3001643|Hemoglobin and Hematocrit panel - Blood                                               |S                |
+|    3004410|Hemoglobin A1c/Hemoglobin.total in Blood                                              |S                |
+|   40761014|Hemoglobin.gastrointestinal.lower [Presence] in Stool by Immunoassay \-\-1st specimen |S                |
+|    3011397|Hemoglobin [Presence] in Urine by Test strip                                          |S                |
+|    3000963|Hemoglobin [Mass/volume] in Blood                                                     |S                |
 
 ``` r
 lab_id <- hits$concept_id[trimws(hits$concept_name) == "Hemoglobin [Mass/volume] in Blood"]
 units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = lab_id,
   scope = "pooled", conns = conns)$pooled
-knitr::kable(units[c("value", "concept_name", "n")])
+units[c("value", "concept_name", "n")]
 ```
 
 
@@ -81,13 +81,13 @@ average <- omop_variable(event = lab, reducer = omop_reduce("mean"))
 values <- omop_recipe(variables = list(first = first, last = last, mean = average,
   minimum = omop_variable(event = lab, reducer = omop_reduce("min")),
   maximum = omop_variable(event = lab, reducer = omop_reduce("max"))))
-invisible(recipe_execute(values, out = "D_labs", conns = conns))
+recipe_execute(values, out = "D_labs", conns = conns)
 reducer_means <- do.call(rbind, lapply(c("first", "last", "mean", "minimum", "maximum"), function(column) {
   x <- dsBaseClient::ds.mean(paste0("D_labs$", column), type = "combine", datasources = conns)$Global.Mean
   data.frame(Reducer = column, Mean_g_dl = x[1, "EstimatedMean"],
     Valid = x[1, "Nvalid"], Missing = x[1, "Nmissing"])
 }))
-knitr::kable(reducer_means, digits = 3)
+reducer_means
 ```
 
 
@@ -120,14 +120,14 @@ grouped <- omop_recipe(variables = list(first = first, last = last,
     labels = c("below 14.5", "14.5 or above")),
   last_group = omop_number_bins(last, breaks = c(-Inf, 14.5, Inf),
     labels = c("below 14.5", "14.5 or above"))))
-invisible(recipe_execute(grouped, out = "D_groups", conns = conns))
+recipe_execute(grouped, out = "D_groups", conns = conns)
 comparison <- lapply(c("first", "last"), function(column) {
   groups <- dsBaseClient::ds.meanSdGp(paste0("D_groups$", column),
     paste0("D_groups$", column, "_group"), type = "combine", datasources = conns)
   data.frame(Number = column, Category = c("below 14.5", "14.5 or above"),
     People = as.numeric(groups$Nvalid_gp), Mean_g_dl = as.numeric(groups$Mean_gp))
 })
-knitr::kable(do.call(rbind, comparison), digits = 3)
+do.call(rbind, comparison)
 ```
 
 
@@ -154,8 +154,8 @@ from the first.
 indexed <- omop_study(omop_index(lab, offset = 7L), outputs = "baseline",
   baseline = list(at_index = omop_value_at_index("measurement", lab_id,
     tolerance = c(-7, 0), unit = omop_unit(8713L))))
-invisible(recipe_execute(indexed, out = c(baseline = "D_index"), conns = conns))
-knitr::kable(book_summary("D_index$at_index", datasources = conns), digits = 3)
+recipe_execute(indexed, out = c(baseline = "D_index"), conns = conns)
+book_summary("D_index$at_index", datasources = conns)
 ```
 
 
@@ -188,8 +188,8 @@ changes <- omop_recipe(variables = list(
     omop_number_spec(transform = omop_number_transform("affine", factor = 365))),
   target_days = omop_number_change(lab, "time_to_threshold", threshold = 14,
     op = "ge", reference = "first", time_unit = "days")))
-invisible(recipe_execute(changes, out = "D_change", conns = conns))
-knitr::kable(book_summary("D_change$change", datasources = conns), digits = 3)
+recipe_execute(changes, out = "D_change", conns = conns)
+book_summary("D_change$change", datasources = conns)
 ```
 
 
@@ -206,7 +206,7 @@ knitr::kable(book_summary("D_change$change", datasources = conns), digits = 3)
 |site |Mean      |  1.016|      25|         3|
 
 ``` r
-knitr::kable(book_summary("D_change$per_year", datasources = conns), digits = 3)
+book_summary("D_change$per_year", datasources = conns)
 ```
 
 
@@ -248,11 +248,11 @@ flags <- omop_recipe(variables = list(mean = average,
   converted_band = omop_number(average, presentation),
   control = omop_number_category(average, range = "thresholds", thresholds = c(14, 15)),
   high = omop_number_flag(average, "ge", 15)))
-invisible(recipe_execute(flags, out = "D_flags", conns = conns))
+recipe_execute(flags, out = "D_flags", conns = conns)
 band_means <- dsBaseClient::ds.meanSdGp("D_flags$mean", "D_flags$band",
   type = "combine", datasources = conns)
-knitr::kable(data.frame(Band = band_labels, People = as.numeric(band_means$Nvalid_gp),
-  Mean_g_dl = as.numeric(band_means$Mean_gp)), digits = 3)
+data.frame(Band = band_labels, People = as.numeric(band_means$Nvalid_gp),
+  Mean_g_dl = as.numeric(band_means$Mean_gp))
 ```
 
 
@@ -264,7 +264,7 @@ knitr::kable(data.frame(Band = band_labels, People = as.numeric(band_means$Nvali
 |15 or above    |     10|    15.607|
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_flags$converted_band", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_flags$converted_band", datasources = conns))
 ```
 
 
@@ -289,8 +289,8 @@ public example near the boundary:
 
 ``` r
 x <- 13.996
-knitr::kable(data.frame(Input_g_dl = x, Converted_g_l = 10 * x,
-  Rounded_g_l = round(10 * x, 1), Before = "below 140", After = "140 to below 150"))
+data.frame(Input_g_dl = x, Converted_g_l = 10 * x,
+  Rounded_g_l = round(10 * x, 1), Before = "below 140", After = "140 to below 150")
 ```
 
 
@@ -306,7 +306,7 @@ a different question.
 
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_flags$control", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_flags$control", datasources = conns))
 ```
 
 
@@ -319,7 +319,7 @@ knitr::kable(book_counts(dsBaseClient::ds.table("D_flags$control", datasources =
 |NA       |     0|
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_flags$high", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_flags$high", datasources = conns))
 ```
 
 
@@ -357,9 +357,9 @@ followup <- omop_study(lab, outputs = "baseline", baseline = list(
   last = omop_variable(event = lab, reducer = omop_reduce("last_value", window = omop_window(1, NULL))),
   followup_days = omop_variable(event = lab, reducer = omop_reduce("last_date", window = omop_window(1, NULL))),
   mean = average))
-invisible(recipe_execute(followup, out = c(baseline = "D_pool"), conns = two_conns, symbol = "book_pool"))
+recipe_execute(followup, out = c(baseline = "D_pool"), conns = two_conns, symbol = "book_pool")
 pooled_mean <- dsBaseClient::ds.mean("D_pool$mean", type = "combine", datasources = two_conns)$Global.Mean
-knitr::kable(pooled_mean, digits = 3)
+pooled_mean
 ```
 
 
@@ -374,7 +374,7 @@ receives equal weight; opening two connections to the same people would double-c
 
 ``` r
 quantiles <- dsBaseClient::ds.quantileMean("D_pool$mean", type = "combine", datasources = two_conns)
-knitr::kable(data.frame(Statistic = names(quantiles), Value = as.numeric(quantiles)), digits = 3)
+data.frame(Statistic = names(quantiles), Value = as.numeric(quantiles))
 ```
 
 
@@ -404,7 +404,7 @@ minimum and maximum.
 
 
 ``` r
-knitr::kable(book_summary("D_pool$followup_days", datasources = two_conns), digits = 3)
+book_summary("D_pool$followup_days", datasources = two_conns)
 ```
 
 
@@ -433,8 +433,8 @@ knitr::kable(book_summary("D_pool$followup_days", datasources = two_conns), digi
 fit <- dsBaseClient::ds.glm("last ~ first", data = "D_pool", family = "gaussian", datasources = two_conns)
 b <- fit$coefficients["first", "Estimate"]
 se <- fit$coefficients["first", "Std. Error"]
-knitr::kable(data.frame(N = fit$Nvalid, df = fit$df, Estimate = b, Lower_95 = b - qt(.975, fit$df) * se,
-  Upper_95 = b + qt(.975, fit$df) * se), digits = 3)
+data.frame(N = fit$Nvalid, df = fit$df, Estimate = b, Lower_95 = b - qt(.975, fit$df) * se,
+  Upper_95 = b + qt(.975, fit$df) * se)
 ```
 
 
@@ -458,8 +458,8 @@ of that person's logged readings?
 ``` r
 logged <- omop_recipe(variables = list(log_mean = omop_number(average,
   omop_number_spec(transform = omop_number_transform("log")))))
-invisible(recipe_execute(logged, out = "D_log", conns = conns))
-knitr::kable(book_summary("D_log$log_mean", datasources = conns), digits = 3)
+recipe_execute(logged, out = "D_log", conns = conns)
+book_summary("D_log$log_mean", datasources = conns)
 ```
 
 
@@ -487,7 +487,7 @@ haemoglobin ≥14. How do zero and missing differ?
 
 
 ``` r
-knitr::kable(book_summary("D_change$target_days", datasources = conns), digits = 3)
+book_summary("D_change$target_days", datasources = conns)
 ```
 
 
@@ -521,8 +521,8 @@ copy <- omop_recipe(variables = list(mean = average),
   outputs = omop_output("people", format = "wide", columns = c("mean", "rounded"),
     number_columns = list(rounded = omop_number_column("mean",
       number_spec = omop_number_spec(rounding = omop_number_round("decimals", 1))))))
-invisible(recipe_execute(copy, out = "D_copy", conns = conns))
-knitr::kable(book_summary("D_copy$rounded", datasources = conns), digits = 3)
+recipe_execute(copy, out = "D_copy", conns = conns)
+book_summary("D_copy$rounded", datasources = conns)
 ```
 
 

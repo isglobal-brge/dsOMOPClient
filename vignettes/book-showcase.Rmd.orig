@@ -44,7 +44,7 @@ named <- omop_recipe(variables = list(education = education))
 assigned <- recipe_execute(named, out = c(output = "D_tour_named"), conns = conns)
 education_counts <- dsBaseClient::ds.table("D_tour_named$education",
   useNA = "always", datasources = conns)
-knitr::kable(book_site_counts(education_counts))
+book_site_counts(education_counts)
 ```
 
 Site 1 has 12 Secondary and 12 University answers; site 2 has 0 and 24.
@@ -69,12 +69,11 @@ conns <- practice$conns
 Completed age at death counts birthdays reached, using the available birth and
 death dates. Incomplete dates stay missing by default.
 
-```{r showcase-ages}
+```{r showcase-ages, table.digits = 1, table.row.names = FALSE}
 dates <- omop_recipe(variables = list(age = omop_age_at("death")))
 assigned <- recipe_execute(dates, out = c(output = "D_tour_dates"), conns = conns)
 age_summary <- book_summary("D_tour_dates$age", datasources = conns)
-knitr::kable(age_summary[age_summary$Statistic %in% c("50%", "Mean"), ],
-  digits = 1, row.names = FALSE)
+age_summary[age_summary$Statistic %in% c("50%", "Mean"), ]
 ```
 
 The 24 complete ages are 32, 33, 42 and 43, with mean and median 37.5 years. The median is the midpoint
@@ -94,7 +93,7 @@ time bins; survival records follow-up until an outcome or censoring.
 Visit settings **9201** (inpatient) and **9202** (outpatient) come from
 [chapter 4](book-04-vocabulary.html#find-inpatient-and-outpatient-visits).
 
-```{r showcase-shapes}
+```{r showcase-shapes, table.row.names = FALSE}
 visits <- omop_event("visit_occurrence", c(9201L, 9202L), name = "visits")
 visitors <- omop_population("visitors", index = omop_index(visits))
 shapes <- list(
@@ -115,7 +114,7 @@ assigned <- recipe_execute(study, out = targets, conns = conns)
 shape_sizes <- do.call(rbind, lapply(names(targets), function(shape)
   data.frame(Shape = shape, Rows = dsBaseClient::ds.dim(targets[[shape]],
     datasources = conns)[[1L]][1L])))
-knitr::kable(shape_sizes, row.names = FALSE)
+shape_sizes
 ```
 
 All four use the same 36 visitors. Long has 60 visits; the panel has 108 rows
@@ -137,8 +136,8 @@ its concept definitions come from
 ```{r showcase-causes}
 source("tools/book/capstone.R")
 assigned <- recipe_execute(book_capstone_recipe(), out = c(people = "D_tour_causes"), conns = conns)
-knitr::kable(book_counts(dsBaseClient::ds.table("D_tour_causes$cause",
-  useNA = "always", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_tour_causes$cause",
+  useNA = "always", datasources = conns))
 ```
 
 There are 24 myocardial infarction deaths, 12 pneumonia deaths and 12 people
@@ -162,7 +161,7 @@ Take each person's mean haemoglobin, then compare means within three teaching
 bands. Measurement **3000963** and g/dL unit **8713** are identified in
 [chapter 4](book-04-vocabulary.html#find-haemoglobin-glucose-and-their-units-in-synthea).
 
-```{r showcase-numbers}
+```{r showcase-numbers, table.digits = 2}
 hb <- omop_variable(event = omop_event("measurement", 3000963L,
   unit = omop_unit(8713L)), reducer = omop_reduce("mean"))
 band_names <- c("below 14", "14 to below 15", "15 or above")
@@ -171,9 +170,9 @@ labs <- omop_recipe(variables = list(hb = hb,
 assigned <- recipe_execute(labs, out = c(output = "D_tour_labs"), conns = conns)
 groups <- dsBaseClient::ds.meanSdGp("D_tour_labs$hb", "D_tour_labs$band",
   type = "combine", datasources = conns)
-knitr::kable(data.frame(`Band (g/dL)` = band_names,
+data.frame(`Band (g/dL)` = band_names,
   People = as.numeric(groups$Nvalid_gp), `Mean (g/dL)` = as.numeric(groups$Mean_gp),
-  check.names = FALSE), digits = 2)
+  check.names = FALSE)
 ```
 
 The groups contain 9, 9 and 10 people, with means 13.34, 14.32 and 15.61 g/dL
@@ -190,18 +189,18 @@ breaks are teaching choices, not clinical reference ranges.
 Convert the person means to g/L, then keep people at or above the teaching
 cutoff of 14 g/dL. Find the target unit by its exact name:
 
-```{r showcase-target-unit}
+```{r showcase-target-unit, table.row.names = FALSE}
 target_units <- ds.omop.concept.search("gram per liter", domain = "Unit",
   standard_only = FALSE, conns = conns)$pooled
 target_unit <- target_units[target_units$concept_name == "gram per liter", ]
-knitr::kable(target_unit[c("concept_id", "concept_name")], row.names = FALSE)
+target_unit[c("concept_id", "concept_name")]
 gl_id <- target_unit$concept_id
 ```
 
 The selected unit is **8636**, gram per liter. One g/dL is ten g/L; the conversion
 changes the scale, while the filter below changes which people are included.
 
-```{r showcase-verbs}
+```{r showcase-verbs, table.digits = 2, table.row.names = FALSE}
 converted <- omop_recipe(variables = list(hb = hb,
   hb_gl = omop_number(hb, omop_number_spec(
     unit = omop_number_unit("unit:8713", paste0("unit:", gl_id), 10)))))
@@ -211,7 +210,7 @@ ds.omop.mutate("D_tour_converted", above_cutoff = ifelse(hb >= 14, 1L, 0L),
 ds.omop.filter("D_tour_flagged", expr = omop_where(above_cutoff == 1L),
   newobj = "D_tour_selected", conns = conns)
 selected <- book_summary("D_tour_selected$hb_gl", datasources = conns)
-knitr::kable(selected[selected$Statistic == "Mean", ], digits = 2, row.names = FALSE)
+selected[selected$Statistic == "Mean", ]
 ```
 
 The selected group has 19 people with no missing haemoglobin means. Its mean is

@@ -46,7 +46,7 @@ named <- omop_recipe(variables = list(education = education))
 assigned <- recipe_execute(named, out = c(output = "D_tour_named"), conns = conns)
 education_counts <- dsBaseClient::ds.table("D_tour_named$education",
   useNA = "always", datasources = conns)
-knitr::kable(book_site_counts(education_counts))
+book_site_counts(education_counts)
 ```
 
 
@@ -85,8 +85,7 @@ death dates. Incomplete dates stay missing by default.
 dates <- omop_recipe(variables = list(age = omop_age_at("death")))
 assigned <- recipe_execute(dates, out = c(output = "D_tour_dates"), conns = conns)
 age_summary <- book_summary("D_tour_dates$age", datasources = conns)
-knitr::kable(age_summary[age_summary$Statistic %in% c("50%", "Mean"), ],
-  digits = 1, row.names = FALSE)
+age_summary[age_summary$Statistic %in% c("50%", "Mean"), ]
 ```
 
 
@@ -135,7 +134,7 @@ assigned <- recipe_execute(study, out = targets, conns = conns)
 shape_sizes <- do.call(rbind, lapply(names(targets), function(shape)
   data.frame(Shape = shape, Rows = dsBaseClient::ds.dim(targets[[shape]],
     datasources = conns)[[1L]][1L])))
-knitr::kable(shape_sizes, row.names = FALSE)
+shape_sizes
 ```
 
 
@@ -167,8 +166,8 @@ its concept definitions come from
 ``` r
 source("tools/book/capstone.R")
 assigned <- recipe_execute(book_capstone_recipe(), out = c(people = "D_tour_causes"), conns = conns)
-knitr::kable(book_counts(dsBaseClient::ds.table("D_tour_causes$cause",
-  useNA = "always", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_tour_causes$cause",
+  useNA = "always", datasources = conns))
 ```
 
 
@@ -211,9 +210,9 @@ labs <- omop_recipe(variables = list(hb = hb,
 assigned <- recipe_execute(labs, out = c(output = "D_tour_labs"), conns = conns)
 groups <- dsBaseClient::ds.meanSdGp("D_tour_labs$hb", "D_tour_labs$band",
   type = "combine", datasources = conns)
-knitr::kable(data.frame(`Band (g/dL)` = band_names,
+data.frame(`Band (g/dL)` = band_names,
   People = as.numeric(groups$Nvalid_gp), `Mean (g/dL)` = as.numeric(groups$Mean_gp),
-  check.names = FALSE), digits = 2)
+  check.names = FALSE)
 ```
 
 
@@ -243,7 +242,7 @@ cutoff of 14 g/dL. Find the target unit by its exact name:
 target_units <- ds.omop.concept.search("gram per liter", domain = "Unit",
   standard_only = FALSE, conns = conns)$pooled
 target_unit <- target_units[target_units$concept_name == "gram per liter", ]
-knitr::kable(target_unit[c("concept_id", "concept_name")], row.names = FALSE)
+target_unit[c("concept_id", "concept_name")]
 ```
 
 
@@ -270,7 +269,7 @@ ds.omop.mutate("D_tour_converted", above_cutoff = ifelse(hb >= 14, 1L, 0L),
 ds.omop.filter("D_tour_flagged", expr = omop_where(above_cutoff == 1L),
   newobj = "D_tour_selected", conns = conns)
 selected <- book_summary("D_tour_selected$hb_gl", datasources = conns)
-knitr::kable(selected[selected$Statistic == "Mean", ], digits = 2, row.names = FALSE)
+selected[selected$Statistic == "Mean", ]
 ```
 
 

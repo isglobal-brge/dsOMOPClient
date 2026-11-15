@@ -22,7 +22,9 @@ inside your working directory.
   `book_summary("D_people$age", datasources = conns)` includes valid and missing
   counts. To format a saved `ds.summary()` result, also pass the corresponding
   `ds.numNA()` result as `missing`. `book_group_comparison()` shows category
-  counts and states the overall mean once on its own row.
+  counts and states the overall mean once on its own row. In a knitted report,
+  such as this book, a data frame or matrix left at the end of a step prints as
+  a table.
 - `case-helpers.R` and `capstone.R` support the case studies and capstone.
 - `EunomiaDatasets-LICENSE.txt` is the licence for the public synthetic datasets.
 

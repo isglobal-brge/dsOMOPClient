@@ -54,8 +54,10 @@ The ZIP creates `tools/book/` inside `book-work`. In each new R session, run
 
 The helpers open the practice connection and print summaries as readable tables.
 `connection.R` supplies `book_connect()`, `book_switch()` and `book_disconnect()`;
-`display.R` supplies the display functions. Each chapter shows which files to
-source. No patient rows are fetched by the display helpers.
+`display.R` supplies the display functions. It also shows a data frame left at
+the end of a step as a table in this book; your R console prints it as usual.
+Each chapter shows which files to source. No patient rows are fetched by the
+display helpers.
 
 ## Check the client
 
@@ -76,16 +78,12 @@ numeric lab values, so the lab chapters use Synthea27Nj.
 
 Run the loader once from `book-work`. It downloads the public
 [Eunomia datasets](https://github.com/OHDSI/EunomiaDatasets) and prepares the two
-local databases. We keep only its short data summary on screen:
+local databases, then prints a short summary of each:
 
-```{r load-practice-data}
+```{r load-practice-data, table.row.names = FALSE}
+source("tools/book/display.R")
 source("tools/book/load-practice.R")
-loader_log <- capture.output(data_info <- load_book_practice("../practice-data"))
-knitr::kable(do.call(rbind, lapply(data_info, function(x)
-  data.frame(Dataset = x$dataset, People = x$tables$person,
-    Measurements = x$measurements$rows,
-    `Numeric values` = x$measurements$numeric_values, check.names = FALSE))),
-  row.names = FALSE)
+load_book_practice("../practice-data")
 ```
 
 GiBleed has 2,694 people and 44,053 measurement rows, but zero numeric values.
@@ -105,7 +103,7 @@ The following table describes the public teaching data before any analysis:
 
 ```{r questionnaire-structure}
 source("tools/book/fixture.R")
-knitr::kable(book_fixture_structure())
+book_fixture_structure()
 ```
 
 There are 24 education respondents but 48 education answer rows: an answer row
@@ -235,7 +233,7 @@ you are no longer querying GiBleed?
 ```{r numeric-exercise}
 practice <- book_switch("numeric")
 conns <- practice$conns
-knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
+ds.omop.table.stats("person", conns = conns)
 ```
 
 The person count is 25, meaning 25–29 people. That band contains Synthea27Nj's
@@ -254,7 +252,7 @@ a person count, rather than checking only that a connection has a name.
 book_disconnect()
 practice <- book_connect("gibleed")
 conns <- practice$conns
-knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
+ds.omop.table.stats("person", conns = conns)
 ```
 
 The count is back to the 2,690–2,694 band. Disconnect closes the database handle;

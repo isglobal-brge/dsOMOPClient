@@ -139,7 +139,7 @@ This differs from R's `all(logical(0))`, which is TRUE.
 reducers <- omop_recipe(variables = list(first = first, last = last,
   mean = mean_value, days = n, ever = ever, any_high = any_high, all_high = all_high),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns))
+recipe_execute(reducers, out = c(people = "D_reducers"), conns = conns)
 ```
 
 The columns are now in `D_reducers` on the server. Request one approved
@@ -147,7 +147,7 @@ aggregate at a time:
 
 
 ``` r
-knitr::kable(book_summary("D_reducers$first", datasources = conns), digits = 2)
+book_summary("D_reducers$first", datasources = conns)
 ```
 
 
@@ -168,7 +168,7 @@ this gives each person one observation regardless of how often they were tested.
 
 
 ``` r
-knitr::kable(book_summary("D_reducers$last", datasources = conns), digits = 2)
+book_summary("D_reducers$last", datasources = conns)
 ```
 
 
@@ -189,7 +189,7 @@ can coincide for someone with only one reading.
 
 
 ``` r
-knitr::kable(book_summary("D_reducers$days", datasources = conns), digits = 2)
+book_summary("D_reducers$days", datasources = conns)
 ```
 
 
@@ -214,11 +214,11 @@ all exact count frequencies. See the table refusal once:
 
 ``` r
 day_table <- dsBaseClient::ds.table("D_reducers$days", useNA = "no", datasources = conns)
-cat(day_table$validity.message, "\n")
+day_table$validity.message
 ```
 
 ```
-#> All studies failed for reasons identified below
+#> [1] "All studies failed for reasons identified below"
 ```
 
 The message withholds the table. It does not say that these people have no measurements.
@@ -226,7 +226,7 @@ The message withholds the table. It does not say that these people have no measu
 
 ``` r
 ever_result <- dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasources = conns)
-knitr::kable(book_counts(ever_result))
+book_counts(ever_result)
 ```
 
 
@@ -241,7 +241,7 @@ one would have ever = 0 in this defined window.
 
 ``` r
 any_result <- dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
-knitr::kable(book_counts(any_result))
+book_counts(any_result)
 ```
 
 
@@ -259,7 +259,7 @@ alongside an unknown value.
 
 ``` r
 all_result <- dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", datasources = conns)
-knitr::kable(book_counts(all_result))
+book_counts(all_result)
 ```
 
 
@@ -277,7 +277,7 @@ All distinguishes unknown comparisons from an empty set of records.
 
 
 ``` r
-knitr::kable(book_summary("D_reducers$mean", datasources = conns), digits = 2)
+book_summary("D_reducers$mean", datasources = conns)
 ```
 
 
@@ -302,11 +302,11 @@ rows instead would give more weight to people measured more often.
 ``` r
 recent <- omop_recipe(variables = list(last = omop_variable(event = measure,
   reducer = omop_reduce("last_value", window = lookback))))
-invisible(recipe_execute(recent, out = "D_recent", conns = conns))
+recipe_execute(recent, out = "D_recent", conns = conns)
 recent_mean <- dsBaseClient::ds.mean("D_recent$last", type = "combine", datasources = conns)
 recent_missing <- dsBaseClient::ds.numNA("D_recent$last", datasources = conns)
-knitr::kable(data.frame(Mean_g_dL = recent_mean$Global.Mean[1, "EstimatedMean"],
-  N_missing = recent_missing$site), digits = 2)
+data.frame(Mean_g_dL = recent_mean$Global.Mean[1, "EstimatedMean"],
+  N_missing = recent_missing$site)
 ```
 
 
@@ -331,7 +331,7 @@ means closest within a chosen tolerance; it need not occur on the index day.
 at_index <- omop_study(measure, outputs = "baseline",
   baseline = list(hemoglobin = omop_value_at_index("measurement", 3000963L,
     tolerance = c(-30, 0), unit = 8713L)))
-invisible(recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns))
+recipe_execute(at_index, out = c(baseline = "D_at_index"), conns = conns)
 ```
 
 The tolerance excludes later measurements. The shortcut uses `closest_value`;
@@ -339,7 +339,7 @@ its default tolerance would include 90 days before and 30 days after.
 
 
 ``` r
-knitr::kable(book_summary("D_at_index$hemoglobin", datasources = conns), digits = 2)
+book_summary("D_at_index$hemoglobin", datasources = conns)
 ```
 
 
@@ -371,7 +371,7 @@ names for the input and target units:
 
 ``` r
 units <- ds.omop.concept.lookup(c(8713L, 8636L), conns = conns)
-knitr::kable(units$pooled[c("concept_id", "concept_name")])
+units$pooled[c("concept_id", "concept_name")]
 ```
 
 
@@ -399,12 +399,12 @@ ranges. Use the same target and conversion map across sites before pooling.
 converted <- omop_recipe(variables = list(mean_gl = omop_variable(event = lab_gl,
   reducer = omop_reduce("mean"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(converted, out = c(people = "D_converted"), conns = conns))
+recipe_execute(converted, out = c(people = "D_converted"), conns = conns)
 ```
 
 
 ``` r
-knitr::kable(book_summary("D_converted$mean_gl", datasources = conns), digits = 2)
+book_summary("D_converted$mean_gl", datasources = conns)
 ```
 
 
@@ -437,7 +437,7 @@ binned <- omop_recipe(variables = list(mean = mean_value,
   band = omop_number_bins(mean_value, breaks = c(-Inf, 14, 15, Inf), labels = band_levels),
   high = omop_number_flag(mean_value, "ge", 15),
   low = omop_number_flag(mean_value, "lt", 14)))
-invisible(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
+recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns)
 ```
 
 The band is an ordered factor directly on the server. Its order matters for
@@ -448,7 +448,7 @@ model contrasts.
 bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
 bin_display <- book_counts(bins_result)
 bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
-knitr::kable(bin_display[order(bin_display$Category, na.last = TRUE), ])
+bin_display[order(bin_display$Category, na.last = TRUE), ]
 ```
 
 
@@ -468,8 +468,8 @@ The left boundary is included and the right boundary excluded in these bins.
 
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_lab_bins$high",
-  useNA = "no", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_lab_bins$high",
+  useNA = "no", datasources = conns))
 ```
 
 
@@ -499,8 +499,8 @@ with the measurement-day summary above.
 row_count <- omop_recipe(variables = list(rows = omop_variable(event = measure,
   reducer = omop_reduce("count", window = history, distinct = "row"))),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns))
-knitr::kable(book_summary("D_row_count$rows", datasources = conns), digits = 2)
+recipe_execute(row_count, out = c(people = "D_row_count"), conns = conns)
+book_summary("D_row_count$rows", datasources = conns)
 ```
 
 
@@ -532,8 +532,8 @@ for people with at least two readings. Is this the same quantity as a slope?
 
 ``` r
 change_recipe <- omop_recipe(variables = list(change = omop_number_change(measure)))
-invisible(recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns))
-knitr::kable(book_summary("D_event_change$change", datasources = conns), digits = 2)
+recipe_execute(change_recipe, out = c(output = "D_event_change"), conns = conns)
+book_summary("D_event_change$change", datasources = conns)
 ```
 
 

@@ -36,11 +36,11 @@ OMOP is a common data model (CDM): a shared set of tables and column meanings.
 holds other observations, which can include questionnaire answers. A *concept*
 is a coded meaning, such as a diagnosis. Its vocabulary supplies a name.
 
-```{r tables}
+```{r tables, table.row.names = FALSE}
 tables <- ds.omop.tables(conns = conns)$site
-knitr::kable(tables[tables$table_name %in% c("person", "visit_occurrence",
+tables[tables$table_name %in% c("person", "visit_occurrence",
   "condition_occurrence", "drug_exposure", "measurement", "observation", "death"),
-  c("table_name", "has_person_id")], row.names = FALSE)
+  c("table_name", "has_person_id")]
 ```
 
 These seven clinical tables have a person field that links records to people.
@@ -64,7 +64,7 @@ object behind it. Later, a recipe will create a private analysis table such as
 ## Send a question to the data
 
 ```{r safe-size}
-knitr::kable(as.data.frame(ds.omop.table.stats("person", conns = conns)$per_site$site))
+ds.omop.table.stats("person", conns = conns)
 ```
 
 `2690` is the lower end of a five-person band: 2690–2694 people. This endpoint
@@ -89,7 +89,7 @@ contribute more than one visit?
 <details><summary>Solution</summary>
 
 ```{r visit-exercise}
-knitr::kable(as.data.frame(ds.omop.table.stats("visit_occurrence", conns = conns)$per_site$site))
+ds.omop.table.stats("visit_occurrence", conns = conns)
 ```
 
 There are 1,035–1,039 visit rows from 890–894 people. Even allowing for banding,
@@ -107,8 +107,7 @@ that nobody died?
 
 <!-- expected-refusal:start -->
 ```{r death-exercise}
-death_stats <- ds.omop.table.stats("death", conns = conns)
-print(as.data.frame(death_stats$per_site$site))
+ds.omop.table.stats("death", conns = conns)
 ```
 <!-- expected-refusal:end -->
 

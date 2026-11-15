@@ -73,7 +73,7 @@ analysis calls in your DataSHIELD session.
 
 
 ``` r
-knitr::kable(book_summary("D_private$age", datasources = conns), digits = 2)
+book_summary("D_private$age", datasources = conns)
 ```
 
 
@@ -124,16 +124,13 @@ Here we intentionally request a subset with no qualifying rows:
 
 
 ``` r
-small_message <- tryCatch({
-  ds.omop.filter("D_private", expr = omop_where(age > 200L),
-    newobj = "D_too_small", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(small_message, "\n")
+ds.omop.filter("D_private", expr = omop_where(age > 200L),
+  newobj = "D_too_small", conns = conns)
 ```
 
 ```
-#> OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().
+#> Error:
+#> ! OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().
 ```
 
 The refusal reports the policy boundary without providing the small private
@@ -151,19 +148,16 @@ Fever question is **900002**, found in [chapter 4](book-04-vocabulary.html).
 
 
 ``` r
-text_message <- tryCatch({
-  blocked <- omop_recipe(variables = list(answer = omop_variable(
-    event = omop_event("observation", concepts = 900002L, value = "value_as_string"),
-    reducer = omop_reduce("first_value"))),
-    outputs = omop_output("people", format = "wide", grain = "person"))
-  recipe_to_plan(blocked)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(text_message, "\n")
+blocked <- omop_recipe(variables = list(answer = omop_variable(
+  event = omop_event("observation", concepts = 900002L, value = "value_as_string"),
+  reducer = omop_reduce("first_value"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+recipe_to_plan(blocked)
 ```
 
 ```
-#> Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: value_as_string (event 'obs_900002' value).
+#> Error:
+#> ! Disclosive: the plan requests blocked (class-1) column(s) that the server can never release or filter on: value_as_string (event 'obs_900002' value).
 ```
 
 This definition is refused before execution. Use the reviewed coded answer
@@ -181,7 +175,7 @@ aggregates and any category labels still face the applicable release controls.
 ``` r
 date_recipe <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns))
+recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns)
 dsBaseClient::ds.colnames("D_private_date", datasources = conns)
 ```
 
@@ -200,16 +194,13 @@ approved aggregate; do not encode a disallowed field into another name or type.
 
 
 ``` r
-key_message <- tryCatch({
-  ds.omop.mutate("D_private", copied = person_id,
-    newobj = "D_key_copy", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(key_message, "\n")
+ds.omop.mutate("D_private", copied = person_id,
+  newobj = "D_key_copy", conns = conns)
 ```
 
 ```
-#> OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().
+#> Error:
+#> ! OMOP mutate failed and was rolled back: site: validation_error: omopMutateDS: column 'person_id' is a protected identifier and cannot be used in an expression; There are some DataSHIELD errors, list them with datashield.errors().
 ```
 
 The server needs keys to align rows and joins; an analyst mutation cannot copy,
@@ -234,16 +225,13 @@ whether the practice server can assign that final subset.
 
 
 ``` r
-message <- tryCatch({
-  ds.omop.filter("D_private", expr = omop_where(age == 43 & sex == "F"),
-    newobj = "D_small_group", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(message, "\n")
+ds.omop.filter("D_private", expr = omop_where(age == 43 & sex == "F"),
+  newobj = "D_small_group", conns = conns)
 ```
 
 ```
-#> OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().
+#> Error:
+#> ! OMOP filter failed and was rolled back: site: Disclosive: operation blocked - insufficient individuals to meet disclosure threshold. No further details available.; There are some DataSHIELD errors, list them with datashield.errors().
 ```
 
 The four-person group is below `nfilter.subset = 5`, so it is refused just as

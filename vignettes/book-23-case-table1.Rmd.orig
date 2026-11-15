@@ -40,15 +40,15 @@ two_conns <- practice_pair$conns
 
 ## Confirm the measurement and units at both sites
 
-```{r table-discovery}
+```{r table-discovery, table.row.names = FALSE}
 hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement", conns = two_conns, symbol = "book_pool")$pooled
 selected <- hits[trimws(hits$concept_name) == "Hemoglobin [Mass/volume] in Blood", ]
-knitr::kable(selected[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")], row.names = FALSE)
+selected[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 hb_id <- selected$concept_id
 unit_counts <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = hb_id,
   conns = two_conns, symbol = "book_pool")$per_site
-knitr::kable(do.call(rbind, lapply(names(unit_counts), function(site)
-  data.frame(Site = site, unit_counts[[site]][c("value", "concept_name", "n")]))))
+do.call(rbind, lapply(names(unit_counts), function(site)
+  data.frame(Site = site, unit_counts[[site]][c("value", "concept_name", "n")])))
 hb_set <- omop_concept_set(hb_id)
 saveRDS(hb_set, "baseline-haemoglobin.rds")
 ```
@@ -76,7 +76,7 @@ characterise <- omop_study(hb, outputs = "baseline", baseline = list(
 result <- recipe_execute(characterise, out = c(baseline = "D_baseline"), conns = two_conns, symbol = "book_pool")
 columns <- recipe_codebook(result)[[1]]$columns
 age_column <- match("age_band", columns$name)
-knitr::kable(data.frame(Age_group = columns$levels[[age_column]]$labels))
+data.frame(Age_group = columns$levels[[age_column]]$labels)
 ```
 
 Both sites use the declared age groups under 18 and adult, including any unused
@@ -91,7 +91,7 @@ For each numeric variable, `ds.mean()` supplies its mean and nonmissing count;
 For categories, percentages use all people in that site, with missingness shown
 as its own row. No patient rows are combined locally.
 
-```{r descriptive-table}
+```{r descriptive-table, table.row.names = FALSE}
 describe <- function(connections) {
   aggregate_mean <- function(column) dsBaseClient::ds.mean(paste0("D_baseline$", column),
     type = "combine", datasources = connections)$Global.Mean
@@ -120,8 +120,8 @@ describe <- function(connections) {
 site_a <- describe(two_conns[1])
 site_b <- describe(two_conns[2])
 total <- describe(two_conns)
-knitr::kable(data.frame(Characteristic = names(total), north = unname(site_a),
-  south = unname(site_b), Total = unname(total)), row.names = FALSE)
+data.frame(Characteristic = names(total), north = unname(site_a),
+  south = unname(site_b), Total = unname(total))
 ```
 
 Each site contributes 14 people, for 28 total. The sites differ: female counts are
@@ -141,14 +141,14 @@ over all history, keeping the same first-haemoglobin population. Quantify the di
 
 <details><summary>Solution 1</summary>
 
-```{r future-information}
+```{r future-information, table.digits = 3}
 all_history <- omop_study(hb, outputs = "baseline", baseline = list(
   baseline = omop_value_at_index("measurement", hb_set, tolerance = c(0, 0), unit = omop_unit(8713L)),
   history = omop_variable(event = hb, reducer = omop_reduce("mean"))))
-invisible(recipe_execute(all_history, out = c(baseline = "D_history"), conns = two_conns, symbol = "book_pool"))
-invisible(ds.omop.mutate("D_history", difference = history - baseline,
-  newobj = "D_history_difference", conns = two_conns, symbol = "book_pool"))
-knitr::kable(dsBaseClient::ds.mean("D_history_difference$difference", type = "combine", datasources = two_conns)$Global.Mean, digits = 3)
+recipe_execute(all_history, out = c(baseline = "D_history"), conns = two_conns, symbol = "book_pool")
+ds.omop.mutate("D_history", difference = history - baseline,
+  newobj = "D_history_difference", conns = two_conns, symbol = "book_pool")
+dsBaseClient::ds.mean("D_history_difference$difference", type = "combine", datasources = two_conns)$Global.Mean
 ```
 
 The mean difference is about 0.481 g/dL. The all-history mean includes later
@@ -166,10 +166,10 @@ bands <- omop_study(hb, outputs = "baseline", baseline = list(
   band = omop_number_bins(omop_value_at_index("measurement", hb_set,
     tolerance = c(0, 0), unit = omop_unit(8713L)),
     breaks = c(-Inf, 14, Inf), labels = c("below 14", "14 or above"))))
-invisible(recipe_execute(bands, out = c(baseline = "D_baseline_bands"), conns = two_conns, symbol = "book_pool"))
-knitr::kable(do.call(rbind, lapply(names(two_conns), function(site)
+recipe_execute(bands, out = c(baseline = "D_baseline_bands"), conns = two_conns, symbol = "book_pool")
+do.call(rbind, lapply(names(two_conns), function(site)
   transform(book_counts(dsBaseClient::ds.table("D_baseline_bands$band",
-    datasources = two_conns[site])), Site = site))))
+    datasources = two_conns[site])), Site = site)))
 ```
 
 Both sites use the same boundary and labels. Counts depend on their people;

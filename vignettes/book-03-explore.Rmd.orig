@@ -51,10 +51,10 @@ the server also checks the operation and the support for each result.
 
 ## Separate what was observed from its value
 
-```{r observation-columns}
-knitr::kable(book_columns(ds.omop.columns("observation", conns = conns),
+```{r observation-columns, table.row.names = FALSE}
+book_columns(ds.omop.columns("observation", conns = conns),
   rows = c("observation_concept_id", "value_as_concept_id", "value_as_number",
-    "value_as_string", "observation_date")), row.names = FALSE)
+    "value_as_string", "observation_date"))
 ```
 
 `observation_concept_id` identifies what was observed; in a questionnaire it
@@ -63,7 +63,7 @@ and `value_as_number` a numeric value. `value_as_string` is blocked free text.
 Selecting the observation and choosing its value field are separate decisions.
 
 ```{r observation-stats}
-knitr::kable(as.data.frame(ds.omop.table.stats("observation", conns = conns)$per_site$site))
+ds.omop.table.stats("observation", conns = conns)
 ```
 
 The bands begin at 1,475 rows and 670 people: one person can contribute several
@@ -73,9 +73,9 @@ The questionnaire chapters use a separate dataset for those answers.
 
 ## Find the visit date and setting
 
-```{r visit-columns}
-knitr::kable(book_columns(ds.omop.columns("visit_occurrence", conns = conns),
-  rows = c("visit_start_date", "visit_end_date", "visit_concept_id", "visit_type_concept_id")), row.names = FALSE)
+```{r visit-columns, table.row.names = FALSE}
+book_columns(ds.omop.columns("visit_occurrence", conns = conns),
+  rows = c("visit_start_date", "visit_end_date", "visit_concept_id", "visit_type_concept_id"))
 ```
 
 `visit_start_date` is when the visit started. `visit_concept_id` describes its
@@ -83,7 +83,7 @@ setting, such as inpatient or outpatient. `visit_type_concept_id` describes
 where the record came from; use the setting field to select inpatient visits.
 
 ```{r visit-statistics}
-knitr::kable(as.data.frame(ds.omop.table.stats("visit_occurrence", conns = conns)$per_site$site))
+ds.omop.table.stats("visit_occurrence", conns = conns)
 ```
 
 The bands are 1,035–1,039 visits and 890–894 people. Repeated visits explain why
@@ -96,9 +96,9 @@ a count of deaths.
 
 <details><summary>Solution</summary>
 
-```{r death-columns}
-knitr::kable(book_columns(ds.omop.columns("death", conns = conns),
-  rows = c("death_date", "cause_concept_id", "cause_source_value")), row.names = FALSE)
+```{r death-columns, table.row.names = FALSE}
+book_columns(ds.omop.columns("death", conns = conns),
+  rows = c("death_date", "cause_concept_id", "cause_source_value"))
 ```
 
 `cause_concept_id` is the coded cause. `cause_source_value` is the original source
@@ -107,8 +107,7 @@ does not establish that any deaths were recorded.
 
 <!-- expected-refusal:start -->
 ```{r death-support}
-death_stats <- ds.omop.table.stats("death", conns = conns)
-print(as.data.frame(death_stats$per_site$site))
+ds.omop.table.stats("death", conns = conns)
 ```
 <!-- expected-refusal:end -->
 
@@ -125,9 +124,9 @@ that somebody took the medicine every day?
 
 <details><summary>Solution</summary>
 
-```{r drug-fields}
-knitr::kable(book_columns(ds.omop.columns("drug_exposure", conns = conns),
-  rows = c("drug_exposure_start_date", "drug_exposure_end_date", "days_supply")), row.names = FALSE)
+```{r drug-fields, table.row.names = FALSE}
+book_columns(ds.omop.columns("drug_exposure", conns = conns),
+  rows = c("drug_exposure_start_date", "drug_exposure_end_date", "days_supply"))
 ```
 
 The two dates delimit the recorded exposure and `days_supply` describes the
@@ -144,15 +143,14 @@ that lab values can be analysed? Check the column itself.
 <details><summary>Solution</summary>
 
 ```{r numeric-coverage}
-knitr::kable(as.data.frame(ds.omop.table.stats("measurement", conns = conns)$per_site$site))
+ds.omop.table.stats("measurement", conns = conns)
 ```
 
 The row band begins at 44,050. The loader in chapter 0 reported exactly 44,053
 rows because it ran as custodian of the public data; this analyst call rounds down.
 
 ```{r numeric-missing}
-coverage <- ds.omop.column.stats("measurement", "value_as_number", conns = conns)
-knitr::kable(as.data.frame(coverage$per_site$site)[c("n_persons", "n_missing", "n_distinct")])
+ds.omop.column.stats("measurement", "value_as_number", conns = conns)
 ```
 
 `n_missing` equals `n_persons`, both 2,685 (the band 2,685–2,689). The same

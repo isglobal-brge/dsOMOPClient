@@ -45,7 +45,7 @@ to the questionnaire dataset. First look up its education question by concept:
 
 ```{r education-question}
 question <- ds.omop.concept.lookup(900001L, conns = conns)
-knitr::kable(question$pooled[c("concept_id", "concept_name")])
+question$pooled[c("concept_id", "concept_name")]
 ```
 
 Education question is concept **900001**, found in [chapter 4](book-04-vocabulary.html).
@@ -108,7 +108,7 @@ Both variables read all recorded history because no time window restricts them.
 
 ```{r explain}
 explained <- recipe_explain(people, conns = conns)
-cat(head(explained$text, 9), sep = "\n")
+writeLines(head(explained$text, 9))
 ```
 
 Read this short opening in order: the population sets one row per person;
@@ -172,7 +172,7 @@ one check that helps answer the current question.
 
 ```{r education-table}
 education_table_result <- dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
-knitr::kable(book_counts(education_table_result))
+book_counts(education_table_result)
 ```
 
 There are 12 people whose **latest** answer is Secondary education and 12 whose
@@ -183,7 +183,7 @@ who ever gave each answer. `useNA = "no"` leaves out the 24 missing values.
 ## Count causes
 
 ```{r cause-table}
-knitr::kable(ds.omop.table("D_people", "cause_of_death", conns = conns))
+ds.omop.table("D_people", "cause_of_death", conns = conns)
 ```
 
 The table shows 24 myocardial infarctions and 12 pneumonias. `ds.omop.table()`
@@ -209,12 +209,12 @@ is selected. Missing fever answers remain missing; they do not become “no”.
 answers <- omop_recipe(
   variables = list(education = education, fever = fever, cause_of_death = cause),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
+recipe_execute(answers, out = c(people = "D_answers"), conns = conns)
 ```
 
 ```{r yes-no}
 yes_no_result <- dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
-knitr::kable(book_counts(yes_no_result))
+book_counts(yes_no_result)
 ```
 
 The table contains 12 “yes” and 12 “no” answers, using your lower-case labels.
@@ -233,9 +233,9 @@ first_education <- omop_variable(event = education_event,
   reducer = omop_reduce("first_value", value = "value_as_concept_id"))
 comparison <- omop_recipe(variables = list(first = first_education, last = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(comparison, out = c(people = "D_education_change"), conns = conns))
-knitr::kable(book_table2(dsBaseClient::ds.table(
-  "D_education_change$first", "D_education_change$last", useNA = "no", datasources = conns)))
+recipe_execute(comparison, out = c(people = "D_education_change"), conns = conns)
+book_table2(dsBaseClient::ds.table(
+  "D_education_change$first", "D_education_change$last", useNA = "no", datasources = conns))
 ```
 
 Rows show first answers and columns show last answers. The off-diagonal cells
@@ -252,8 +252,8 @@ Count causes with dsBase and include people without a coded cause.
 <details><summary>Solution</summary>
 
 ```{r missing-causes}
-knitr::kable(book_counts(dsBaseClient::ds.table("D_people$cause_of_death",
-  useNA = "always", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_people$cause_of_death",
+  useNA = "always", datasources = conns))
 ```
 
 The 24 myocardial infarctions, 12 pneumonias and 12 missing causes account for
@@ -268,15 +268,11 @@ make that source field available?
 
 <details><summary>Solution</summary>
 
-```{r source-refusal}
-message <- tryCatch({
-  source_cause <- omop_recipe(variables = list(cause = omop_variable(
-    event = omop_event("death"),
-    reducer = omop_reduce("first_value", value = "cause_source_value"))))
-  recipe_to_plan(source_cause)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(message, "\n")
+```{r source-refusal, error = TRUE}
+source_cause <- omop_recipe(variables = list(cause = omop_variable(
+  event = omop_event("death"),
+  reducer = omop_reduce("first_value", value = "cause_source_value"))))
+recipe_to_plan(source_cause)
 ```
 
 The source-value field is blocked before execution. A new variable name does

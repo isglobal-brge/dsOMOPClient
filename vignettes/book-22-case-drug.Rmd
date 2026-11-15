@@ -49,7 +49,7 @@ conns <- practice$conns
 
 ``` r
 classes <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE, conns = conns)$pooled
-knitr::kable(classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")])
+classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")]
 ```
 
 
@@ -62,7 +62,7 @@ knitr::kable(classes[c("concept_id", "concept_name", "concept_class_id", "standa
 ``` r
 class_id <- classes$concept_id[classes$concept_class_id == "ATC 2nd"]
 children <- ds.omop.concept.descendants(class_id, conns = conns)$pooled
-knitr::kable(children[c("concept_id", "concept_name")])
+children[c("concept_id", "concept_name")]
 ```
 
 
@@ -72,7 +72,7 @@ knitr::kable(children[c("concept_id", "concept_name")])
 |     950001|Questionnaire study medicine |
 
 ``` r
-knitr::kable(ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = conns)$pooled)
+ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = conns)$pooled
 ```
 
 
@@ -111,9 +111,9 @@ persistence <- omop_variable(event = era, reducer = omop_reduce("first_era_days"
 study <- omop_study(users, outputs = "baseline", require = list(followup = 364),
   baseline = list(covered = covered, persistence = persistence,
     discontinued = omop_number_flag(persistence, "lt", 365)))
-invisible(recipe_execute(study, out = c(baseline = "D_supply"), conns = conns))
-invisible(ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns))
-knitr::kable(book_summary("D_use$pdc", datasources = conns), digits = 3)
+recipe_execute(study, out = c(baseline = "D_supply"), conns = conns)
+ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns)
+book_summary("D_use$pdc", datasources = conns)
 ```
 
 
@@ -136,7 +136,7 @@ also need a rule about whether switching preserves persistence.
 
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_use$covered", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_use$covered", datasources = conns))
 ```
 
 
@@ -161,7 +161,7 @@ why it differs from total covered days for the restarted course.
 
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_use$persistence", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_use$persistence", datasources = conns))
 ```
 
 
@@ -187,7 +187,7 @@ is complete? Does this prove permanent cessation?
 
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_use$discontinued", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_use$discontinued", datasources = conns))
 ```
 
 
@@ -214,7 +214,7 @@ GiBleed has no ATC hierarchy, but [chapter 20](book-20-case-gibleed.html#find-th
 practice <- book_switch("gibleed")
 conns <- practice$conns
 hits <- ds.omop.concept.search("celecoxib", domain = "Drug", vocabulary = "RxNorm", conns = conns)$pooled
-knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
+hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 
@@ -239,8 +239,8 @@ feasibility <- omop_study(omop_new_users(ingredient, washout_days = 365),
   outputs = "baseline", require = list(followup = 364), baseline = list(
     covered = omop_variable(event = gibleed_era, reducer = omop_reduce("covered_days",
       window = omop_window(0, 364), coverage = "effective_supply"))))
-invisible(recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns))
-knitr::kable(book_summary("D_feasibility$covered", datasources = conns), digits = 3)
+recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns)
+book_summary("D_feasibility$covered", datasources = conns)
 ```
 
 

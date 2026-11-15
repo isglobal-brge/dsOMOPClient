@@ -118,3 +118,33 @@ book_symbols <- function(result) {
   cat(paste(unique(lines), collapse = "\n"), "\n", sep = "")
   invisible(result)
 }
+
+# In a knitted report that sources this file, such as this book, a data frame or
+# matrix left at the end of a step prints as a table, without row numbers. The
+# chunk options table.digits and table.row.names = FALSE round its numbers and
+# leave out its row names. The console print is unchanged.
+if (isNamespaceLoaded("knitr")) local({
+  # Text such as $.path, x^2 or --1st is shown as written, never read as Markdown.
+  literal <- function(text) {
+    text <- gsub("([\\\\`*$^~<>|@])", "\\\\\\1", text, perl = TRUE)
+    text <- gsub("((?<=-)-|-(?=-)|(?<=\\.)\\.|\\.(?=\\.))", "\\\\\\1", text, perl = TRUE)
+    gsub("(?<![[:alnum:]])_|_(?![[:alnum:]])", "\\\\_", text, perl = TRUE)
+  }
+  print_table <- function(x, options = list(), ...) {
+    # Other classes, and one-way counts, keep their usual print.
+    if (is.data.frame(x) && !identical(class(x), "data.frame") || length(dim(x)) != 2L)
+      return(knitr::normal_print(x))
+    no_names <- is.data.frame(x) && all(grepl("^[0-9]+$", rownames(x))) ||
+      isFALSE(options$table.row.names)
+    if (is.data.frame(x)) {
+      text <- vapply(x, function(column) is.character(column) || is.factor(column), logical(1))
+      x[text] <- lapply(x[text], function(column) literal(as.character(column)))
+    } else if (is.character(x)) x[] <- literal(x)
+    dimnames(x) <- lapply(dimnames(x), function(names) if (is.null(names)) NULL else literal(names))
+    args <- list(x, row.names = if (no_names) FALSE else NA)
+    if (!is.null(options$table.digits)) args$digits <- options$table.digits
+    knitr::knit_print(do.call(knitr::kable, args), options = options, ...)
+  }
+  for (type in c("data.frame", "matrix", "table"))
+    registerS3method("knit_print", type, print_table, envir = asNamespace("knitr"))
+})

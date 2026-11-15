@@ -36,11 +36,11 @@ conns <- practice$conns
 
 ```{r glucose-discovery}
 hits <- ds.omop.concept.search("Glucose", domain = "Measurement", vocabulary = "LOINC", conns = conns)$pooled
-knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
+hits[c("concept_id", "concept_name", "standard_concept")]
 glucose_id <- hits$concept_id[trimws(hits$concept_name) == "Glucose [Mass/volume] in Blood"]
-knitr::kable(ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled)
-knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = glucose_id,
-  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")])
+ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled
+ds.omop.value.counts("measurement", "unit_concept_id", concept_id = glucose_id,
+  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")]
 glucose_set <- omop_concept_set(glucose_id)
 saveRDS(glucose_set, "glucose-concept.rds")
 ```
@@ -58,7 +58,7 @@ person with only a baseline reading cannot supply a follow-up outcome.
 A slope uses all readings and their actual spacing; last minus first ignores
 how long the change took.
 
-```{r glucose-recipe}
+```{r glucose-recipe, table.digits = 3, table.row.names = FALSE}
 glucose <- omop_event("measurement", glucose_set, unit = omop_unit(8840L))
 first <- omop_variable(event = glucose, reducer = omop_reduce("first_value", window = omop_window(0, 0)))
 last <- omop_variable(event = glucose, reducer = omop_reduce("last_value", window = omop_window(1, NULL)))
@@ -72,12 +72,12 @@ trajectory <- omop_recipe(populations = list(cohort), variables = list(
   followup_days = omop_variable(event = glucose, reducer = omop_reduce("last_date", window = omop_window(1, NULL))),
   target_days = omop_number_change(glucose, "time_to_threshold", threshold = 95, op = "ge")),
   outputs = omop_output("people", rows = "measured", format = "wide"))
-invisible(recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns))
+recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns)
 trajectory_summary <- do.call(rbind, lapply(c("first", "last", "change", "per_year", "followup_days"), function(column) {
   x <- book_summary(paste0("D_glucose$", column), datasources = conns)
   transform(x[x$Statistic %in% c("50%", "Mean"), ], Variable = column)
 }))
-knitr::kable(trajectory_summary, digits = 3, row.names = FALSE)
+trajectory_summary
 ```
 
 All ten people have later values, with median follow-up about 18 years.
@@ -88,7 +88,7 @@ straight-line slope can miss fluctuations between readings.
 ## Classify values and distinguish unobserved attainment
 
 ```{r glucose-control}
-knitr::kable(book_counts(dsBaseClient::ds.table("D_glucose$control", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_glucose$control", datasources = conns))
 ```
 
 Four people are below 90 and six are at least 90 mg/dL.
@@ -101,8 +101,8 @@ released summary, so the lesson uses 95 mg/dL as a teaching threshold. In a real
 study the threshold comes from the protocol, and a withheld result is reported
 as withheld, not avoided by changing the cutoff.
 
-```{r glucose-target}
-knitr::kable(book_summary("D_glucose$target_days", datasources = conns), digits = 3)
+```{r glucose-target, table.digits = 3}
+book_summary("D_glucose$target_days", datasources = conns)
 ```
 
 Eight people have an observed attainment and two are missing. The median among
@@ -120,12 +120,12 @@ A Gaussian regression describes the association between first and last readings.
 With ten complete people and two coefficients, use a t interval with eight
 residual degrees of freedom rather than the large-sample z interval.
 
-```{r glucose-model, warning=FALSE}
+```{r glucose-model, warning=FALSE, table.digits = 3}
 fit <- dsBaseClient::ds.glm("last ~ first", data = "D_glucose", family = "gaussian", datasources = conns)
 b <- fit$coefficients["first", "Estimate"]
 se <- fit$coefficients["first", "Std. Error"]
-knitr::kable(data.frame(N = fit$Nvalid, df = fit$df, Estimate = b, Lower_95 = b - qt(.975, fit$df) * se,
-  Upper_95 = b + qt(.975, fit$df) * se, P_t = 2 * pt(-abs(b / se), df = fit$df)), digits = 3)
+data.frame(N = fit$Nvalid, df = fit$df, Estimate = b, Lower_95 = b - qt(.975, fit$df) * se,
+  Upper_95 = b + qt(.975, fit$df) * se, P_t = 2 * pt(-abs(b / se), df = fit$df))
 ```
 
 The coefficient is about −0.75: a 1 mg/dL higher first value is associated with
@@ -141,10 +141,10 @@ retain the number with missing attainment.
 
 <details><summary>Solution 1</summary>
 
-```{r glucose-years}
-invisible(ds.omop.mutate("D_glucose", target_years = target_days / 365.25,
-  newobj = "D_glucose_years", conns = conns))
-knitr::kable(book_summary("D_glucose_years$target_years", datasources = conns), digits = 3)
+```{r glucose-years, table.digits = 3}
+ds.omop.mutate("D_glucose", target_years = target_days / 365.25,
+  newobj = "D_glucose_years", conns = conns)
+book_summary("D_glucose_years$target_years", datasources = conns)
 ```
 
 The median becomes 3.20 years and the mean 5.75 years. Divide the day summary
@@ -158,10 +158,10 @@ server and compare with the native change summary. Does agreement prove a steady
 
 <details><summary>Solution 2</summary>
 
-```{r glucose-difference}
-invisible(ds.omop.mutate("D_glucose", difference = last - first,
-  newobj = "D_difference", conns = conns))
-knitr::kable(book_summary("D_difference$difference", datasources = conns), digits = 3)
+```{r glucose-difference, table.digits = 3}
+ds.omop.mutate("D_glucose", difference = last - first,
+  newobj = "D_difference", conns = conns)
+book_summary("D_difference$difference", datasources = conns)
 ```
 
 The difference agrees with native change because both calculate last minus

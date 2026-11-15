@@ -47,11 +47,11 @@ conns <- practice$conns
 
 ```{r class-discovery}
 classes <- ds.omop.concept.search(NULL, vocabulary = "ATC", standard_only = FALSE, conns = conns)$pooled
-knitr::kable(classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")])
+classes[c("concept_id", "concept_name", "concept_class_id", "standard_concept")]
 class_id <- classes$concept_id[classes$concept_class_id == "ATC 2nd"]
 children <- ds.omop.concept.descendants(class_id, conns = conns)$pooled
-knitr::kable(children[c("concept_id", "concept_name")])
-knitr::kable(ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = conns)$pooled)
+children[c("concept_id", "concept_name")]
+ds.omop.concept.prevalence("drug_exposure", scope = "pooled", conns = conns)$pooled
 class_set <- omop_concept_set(class_id, descendants = TRUE)
 saveRDS(class_set, "utilisation-class.rds")
 ```
@@ -69,7 +69,7 @@ contain 365 eligible days. This complete-follow-up restriction simplifies the
 denominator but can select people with more stable observation. A different
 study may instead use variable observed follow-up.
 
-```{r utilisation-definition}
+```{r utilisation-definition, table.digits = 3}
 users <- omop_new_users(class_set, washout_days = 365)
 drug <- omop_event("drug_exposure", class_set)
 era <- omop_era(drug, gap = 30, by = "ingredient", stockpile = TRUE)
@@ -80,9 +80,9 @@ persistence <- omop_variable(event = era, reducer = omop_reduce("first_era_days"
 study <- omop_study(users, outputs = "baseline", require = list(followup = 364),
   baseline = list(covered = covered, persistence = persistence,
     discontinued = omop_number_flag(persistence, "lt", 365)))
-invisible(recipe_execute(study, out = c(baseline = "D_supply"), conns = conns))
-invisible(ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns))
-knitr::kable(book_summary("D_use$pdc", datasources = conns), digits = 3)
+recipe_execute(study, out = c(baseline = "D_supply"), conns = conns)
+ds.omop.mutate("D_supply", pdc = covered / 365, newobj = "D_use", conns = conns)
+book_summary("D_use$pdc", datasources = conns)
 ```
 
 Mean PDC is **0.4977** across 36 people: (365 + 120 + 60)/(3 × 365).
@@ -91,7 +91,7 @@ not ingestion. This class contains one ingredient; a class with several would
 also need a rule about whether switching preserves persistence.
 
 ```{r covered-days}
-knitr::kable(book_counts(dsBaseClient::ds.table("D_use$covered", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_use$covered", datasources = conns))
 ```
 
 Twelve people each have 60, 120 and 365 covered days, matching the three patterns.
@@ -106,7 +106,7 @@ why it differs from total covered days for the restarted course.
 <details><summary>Solution 1</summary>
 
 ```{r persistence}
-knitr::kable(book_counts(dsBaseClient::ds.table("D_use$persistence", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_use$persistence", datasources = conns))
 ```
 
 First eras last 30, 120 and 365 days, with 12 people in each and mean **171.67**
@@ -122,7 +122,7 @@ is complete? Does this prove permanent cessation?
 <details><summary>Solution 2</summary>
 
 ```{r discontinuation}
-knitr::kable(book_counts(dsBaseClient::ds.table("D_use$discontinued", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_use$discontinued", datasources = conns))
 ```
 
 There are **24** indicators of one and **12** of zero. The definition says the
@@ -140,22 +140,22 @@ GiBleed has no ATC hierarchy, but [chapter 20](book-20-case-gibleed.html#find-th
 practice <- book_switch("gibleed")
 conns <- practice$conns
 hits <- ds.omop.concept.search("celecoxib", domain = "Drug", vocabulary = "RxNorm", conns = conns)$pooled
-knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
+hits[c("concept_id", "concept_name", "standard_concept")]
 ingredient <- hits$concept_id[trimws(hits$concept_name) == "celecoxib"]
 ```
 
 Select the standard celecoxib ingredient by its exact name. An ingredient
 analysis does not become a class analysis merely by giving it an ATC label.
 
-```{r recorded-supply}
+```{r recorded-supply, table.digits = 3}
 gibleed_drug <- omop_event("drug_exposure", ingredient)
 gibleed_era <- omop_era(gibleed_drug, gap = 30, by = "ingredient", stockpile = TRUE)
 feasibility <- omop_study(omop_new_users(ingredient, washout_days = 365),
   outputs = "baseline", require = list(followup = 364), baseline = list(
     covered = omop_variable(event = gibleed_era, reducer = omop_reduce("covered_days",
       window = omop_window(0, 364), coverage = "effective_supply"))))
-invisible(recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns))
-knitr::kable(book_summary("D_feasibility$covered", datasources = conns), digits = 3)
+recipe_execute(feasibility, out = c(baseline = "D_feasibility"), conns = conns)
+book_summary("D_feasibility$covered", datasources = conns)
 ```
 
 Every covered-days summary is one day because the source has zero days supplied

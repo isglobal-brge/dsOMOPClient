@@ -24,8 +24,9 @@ load_book_practice <- function(directory) {
       stage <- tempfile("book-numeric-loader-", tmpdir=directory)
       dir.create(stage)
       stopifnot(file.copy(archive, file.path(stage, filename)))
-      withr::with_envvar(c(NUMERIC_POSTGRES="0", NUMERIC_DUCKDB="1"),
-        load_numeric_cdm(stage))
+      # Its printed record is replaced by the short summary returned below.
+      utils::capture.output(withr::with_envvar(c(NUMERIC_POSTGRES="0", NUMERIC_DUCKDB="1"),
+        load_numeric_cdm(stage)))
       input <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), file.path(stage,"numeric_cdm.duckdb"), read_only=TRUE)
       output <- DBI::dbConnect(RSQLite::SQLite(), database)
       counts <- list()
@@ -98,8 +99,10 @@ load_book_practice <- function(directory) {
     },finally={DBI::dbDisconnect(db);unlink(csvdir,recursive=TRUE)})
   }
   jsonlite::write_json(manifest,file.path(directory,"manifest.json"),auto_unbox=TRUE,pretty=TRUE)
-  print(lapply(manifest,function(x)x[c("dataset","sha256","measurements")]))
-  invisible(manifest)
+  # A short summary of each database; manifest.json keeps the full record.
+  do.call(rbind,unname(lapply(manifest,function(x)
+    data.frame(Dataset=x$dataset,People=x$tables$person,Measurements=x$measurements$rows,
+      `Numeric values`=x$measurements$numeric_values,check.names=FALSE))))
 }
 if (sys.nframe()==0L) {
   args<-commandArgs(TRUE)

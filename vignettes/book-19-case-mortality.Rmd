@@ -41,7 +41,7 @@ conns <- practice$conns
 
 ``` r
 catalogue <- ds.omop.concept.lookup(c(900201L, 900202L), conns = conns)$pooled
-knitr::kable(catalogue[c("concept_id", "concept_name", "domain_id")])
+catalogue[c("concept_id", "concept_name", "domain_id")]
 ```
 
 
@@ -52,7 +52,7 @@ knitr::kable(catalogue[c("concept_id", "concept_name", "domain_id")])
 |     900202|Pneumonia             |Condition |
 
 ``` r
-knitr::kable(ds.omop.concept.prevalence("death", scope = "pooled", conns = conns)$pooled)
+ds.omop.concept.prevalence("death", scope = "pooled", conns = conns)$pooled
 ```
 
 
@@ -89,15 +89,15 @@ period_recipe <- function(start, days) {
     mi = omop_variable(event = mi, reducer = omop_reduce("binary", window = window)),
     pneumonia = omop_variable(event = pneumonia, reducer = omop_reduce("binary", window = window))))
 }
-invisible(recipe_execute(period_recipe("2024-01-01", 366), out = "D_2024", conns = conns))
-invisible(ds.omop.filter("D_2024", expr = omop_where(is.na(death_days) | death_days >= 0),
-  newobj = "D_alive_2024", conns = conns))
-invisible(ds.omop.mutate("D_alive_2024", potential_days = coalesce(death_days, 366),
+recipe_execute(period_recipe("2024-01-01", 366), out = "D_2024", conns = conns)
+ds.omop.filter("D_2024", expr = omop_where(is.na(death_days) | death_days >= 0),
+  newobj = "D_alive_2024", conns = conns)
+ds.omop.mutate("D_alive_2024", potential_days = coalesce(death_days, 366),
   risk_days = ifelse(potential_days > 366, 366, potential_days),
   age_group = ifelse(is.na(age), "Missing", ifelse(age < 40, "under 40", "40 and over")),
   cause = ifelse(mi == 1, "Myocardial infarction",
     ifelse(pneumonia == 1, "Pneumonia", "Neither selected cause")),
-  newobj = "D_risk_2024", conns = conns))
+  newobj = "D_risk_2024", conns = conns)
 ```
 
 Remove people already dead before January 1. A survivor contributes 366 days in
@@ -109,8 +109,8 @@ it does not change the actual 366-day calendar boundary.
 
 
 ``` r
-knitr::kable(book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
-  "D_risk_2024$sex", useNA = "always", datasources = conns)))
+book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
+  "D_risk_2024$sex", useNA = "always", datasources = conns))
 ```
 
 
@@ -129,8 +129,8 @@ study it could also contain other causes. The denominators include survivors' ti
 
 
 ``` r
-knitr::kable(book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
-  "D_risk_2024$age_group", useNA = "always", datasources = conns)))
+book_table2(dsBaseClient::ds.table("D_risk_2024$cause",
+  "D_risk_2024$age_group", useNA = "always", datasources = conns))
 ```
 
 
@@ -173,7 +173,7 @@ released_rates <- function(table, group, year) {
   }))
 }
 rates_2024 <- released_rates("D_risk_2024", "All", 2024)
-knitr::kable(rates_2024, digits = 2, row.names = FALSE)
+rates_2024
 ```
 
 
@@ -196,17 +196,17 @@ example, not an estimate for a clinical population.
 
 ``` r
 sex_rates <- do.call(rbind, lapply(c("F", "M"), function(label) {
-  invisible(ds.omop.filter("D_risk_2024", var = "sex", op = "==", value = label,
-    newobj = paste0("D_sex_", label), conns = conns))
+  ds.omop.filter("D_risk_2024", var = "sex", op = "==", value = label,
+    newobj = paste0("D_sex_", label), conns = conns)
   released_rates(paste0("D_sex_", label), if (label == "F") "Female" else "Male", 2024)
 }))
 age_rates <- do.call(rbind, lapply(c("under 40", "40 and over", "Missing"), function(label) {
   object <- paste0("D_age_", match(label, c("under 40", "40 and over", "Missing")))
-  invisible(ds.omop.filter("D_risk_2024", var = "age_group", op = "==", value = label,
-    newobj = object, conns = conns))
+  ds.omop.filter("D_risk_2024", var = "age_group", op = "==", value = label,
+    newobj = object, conns = conns)
   released_rates(object, label, 2024)
 }))
-knitr::kable(sex_rates, digits = 2, row.names = FALSE)
+sex_rates
 ```
 
 
@@ -219,7 +219,7 @@ knitr::kable(sex_rates, digits = 2, row.names = FALSE)
 | 2024|Male   |Pneumonia             |     17|      3|        12.48|        240.35|    49.57|   702.40|
 
 ``` r
-knitr::kable(age_rates, digits = 2, row.names = FALSE)
+age_rates
 ```
 
 
@@ -250,14 +250,14 @@ of deaths imply the same rate?
 
 
 ``` r
-invisible(recipe_execute(period_recipe("2023-01-01", 365), out = "D_2023", conns = conns))
-invisible(ds.omop.filter("D_2023", expr = omop_where(is.na(death_days) | death_days >= 0),
-  newobj = "D_alive_2023", conns = conns))
-invisible(ds.omop.mutate("D_alive_2023", potential_days = coalesce(death_days, 365),
+recipe_execute(period_recipe("2023-01-01", 365), out = "D_2023", conns = conns)
+ds.omop.filter("D_2023", expr = omop_where(is.na(death_days) | death_days >= 0),
+  newobj = "D_alive_2023", conns = conns)
+ds.omop.mutate("D_alive_2023", potential_days = coalesce(death_days, 365),
   risk_days = ifelse(potential_days > 365, 365, potential_days),
-  newobj = "D_risk_2023", conns = conns))
+  newobj = "D_risk_2023", conns = conns)
 rates_2023 <- released_rates("D_risk_2023", "All", 2023)
-knitr::kable(rbind(rates_2023, rates_2024), digits = 2, row.names = FALSE)
+rbind(rates_2023, rates_2024)
 ```
 
 
@@ -284,9 +284,9 @@ of 2024 die from each cause during that year?
 
 
 ``` r
-knitr::kable(data.frame(Cause = rates_2024$Cause,
+data.frame(Cause = rates_2024$Cause,
   Deaths = rates_2024$Deaths, People_at_start = rates_2024$People,
-  Percent = 100 * rates_2024$Deaths / rates_2024$People))
+  Percent = 100 * rates_2024$Deaths / rates_2024$People)
 ```
 
 

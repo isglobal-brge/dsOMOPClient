@@ -36,7 +36,7 @@ conns <- practice$conns
 Keep the vocabulary and source information returned by these connections.
 A record for another dataset would not document this study.
 
-```{r source-record}
+```{r source-record, table.row.names = FALSE}
 vocabularies <- ds.omop.vocab.vocabularies(conns = conns)$per_site
 sources <- ds.omop.cdm.source(conns = conns)$per_site
 vocabulary_rows <- do.call(rbind, lapply(names(vocabularies), function(site) {
@@ -44,10 +44,10 @@ vocabulary_rows <- do.call(rbind, lapply(names(vocabularies), function(site) {
   x <- x[x$vocabulary_id == "Questionnaire", c("vocabulary_id", "vocabulary_version"), drop = FALSE]
   data.frame(Site = site, x)
 }))
-knitr::kable(vocabulary_rows)
+vocabulary_rows
 source_rows <- do.call(rbind, lapply(names(sources), function(site)
   data.frame(Site = site, sources[[site]][c("cdm_source_name", "cdm_version", "source_release_date")])))
-knitr::kable(source_rows, row.names = FALSE)
+source_rows
 ```
 
 The questionnaire vocabulary dates are 2025-01-01 and 2026-01-01. Retain both:
@@ -70,7 +70,7 @@ check <- omop_recipe(variables = list(education = education,
   outputs = omop_output("people", format = "wide", grain = "person"))
 result <- recipe_execute(check, out = c(people = "D_documented"), conns = conns["site"])
 published <- recipe_codebook(result)
-knitr::kable(published[[1]]$columns[c("name", "semantic_type", "r_type", "unit")])
+published[[1]]$columns[c("name", "semantic_type", "r_type", "unit")]
 ```
 
 Read `r_type`: age is numeric, while education and death period are factors.
@@ -84,7 +84,7 @@ and its digest identifies the definition. Save the codebook, software informatio
 and both sites' source metadata alongside it. These files contain definitions and
 metadata, not patient rows.
 
-```{r save-study-record}
+```{r save-study-record, table.row.names = FALSE}
 record_dir <- "questionnaire-study"
 dir.create(record_dir, showWarnings = FALSE)
 recipe_save(check, file.path(record_dir, "recipe.json"))
@@ -99,7 +99,7 @@ package_versions <- vapply(c("dsOMOPClient", "DSI", "dsBaseClient"),
 write.csv(data.frame(Package = names(package_versions), Release = unname(package_versions)),
   file.path(record_dir, "client-packages.csv"), row.names = FALSE)
 saveRDS(ds.omop.server.version(conns = conns), file.path(record_dir, "server-packages.rds"))
-knitr::kable(data.frame(File = list.files(record_dir)))
+list.files(record_dir)
 ```
 
 The filenames identify the definition, software and data sources needed to repeat
@@ -112,8 +112,8 @@ a database has stayed unchanged.
 restored <- recipe_load(file.path(record_dir, "recipe.json"))
 second_result <- recipe_execute(restored, out = c(people = "D_repeated"), conns = conns["site2"])
 saveRDS(recipe_codebook(second_result), file.path(record_dir, "codebook-site2.rds"))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_repeated$death_period",
-  useNA = "always", datasources = conns["site2"])))
+book_counts(dsBaseClient::ds.table("D_repeated$death_period",
+  useNA = "always", datasources = conns["site2"]))
 ```
 
 The second site has 18 deaths in 2023, 18 in 2024, and 12 people without a death
@@ -131,8 +131,8 @@ first_counts <- book_counts(dsBaseClient::ds.table("D_documented$education",
   useNA = "always", datasources = conns["site"]))
 second_counts <- book_counts(dsBaseClient::ds.table("D_repeated$education",
   useNA = "always", datasources = conns["site2"]))
-knitr::kable(rbind(transform(first_counts, Site = "site"),
-                  transform(second_counts, Site = "site2")))
+rbind(transform(first_counts, Site = "site"),
+      transform(second_counts, Site = "site2"))
 ```
 
 Site has 12 Secondary and 12 University answers; site2 has 24 University answers.
@@ -151,15 +151,14 @@ Does a successful strict import establish the intended clinical meaning?
 circe_json <- jsonlite::toJSON(list(AdditionalCriteria = list(Type = "ALL",
   CriteriaList = list(list(unsupported = TRUE)))), auto_unbox = TRUE)
 circe_check <- recipe_circe_check(circe_json)
-cat(paste0(circe_check$issues$path, ": ", circe_check$issues$remedy), sep = "\n")
+circe_check$issues[c("path", "remedy")]
 ```
 
 The check identifies structural problems in this example, so it is not ready for
 extraction. Attempt the strict import and read its refusal:
 
-```{r strict-circe-import}
-tryCatch(recipe_import_circe(circe_json),
-  error = function(e) cat(conditionMessage(e), "\n"))
+```{r strict-circe-import, error = TRUE}
+recipe_import_circe(circe_json)
 ```
 
 `unsupported_circe_construct` identifies the unsupported `AdditionalCriteria`
@@ -178,8 +177,8 @@ column represent, and are they ordered?
 ```{r codebook-fields}
 columns <- recipe_codebook(result)[[1]]$columns
 period <- match("death_period", columns$name)
-knitr::kable(data.frame(Year = columns$levels[[period]]$labels,
-  Type = columns$r_type[[period]]))
+data.frame(Year = columns$levels[[period]]$labels,
+  Type = columns$r_type[[period]])
 ```
 
 The levels are 2023 and 2024 in chronological order. A column called “year” could
@@ -196,10 +195,10 @@ analysis declares its supported settings, so inspect its definition with
 
 For a small successful example, the person-count analysis needs no settings:
 
-```{r prebuilt-analysis, warning=FALSE}
+```{r prebuilt-analysis, warning=FALSE, table.row.names = FALSE}
 person_counts <- ds.omop.analysis.run("dsomop:demo.person_count_by_gender",
   conns = conns["site"])
-knitr::kable(person_counts$pooled[c("gender_name", "n_persons")], row.names = FALSE)
+person_counts$pooled[c("gender_name", "n_persons")]
 ```
 
 The default run describes all people at this site. Its male count of 25 and
@@ -214,10 +213,9 @@ which scientific rule must the alternative preserve?
 
 <details><summary>Solution: keep the outcome-free observation period</summary>
 
-```{r unsupported-analysis-setting}
-tryCatch(ds.omop.analysis.run("dsomop:incidence.rate",
-  params = list(clean_window = 365), conns = conns),
-  error = function(e) cat(conditionMessage(e), "\n"))
+```{r unsupported-analysis-setting, error = TRUE}
+ds.omop.analysis.run("dsomop:incidence.rate",
+  params = list(clean_window = 365), conns = conns)
 ```
 
 `unsupported_clean_window` means this analysis cannot implement the required

@@ -48,7 +48,7 @@ splits or downloads a real site's records through an analyst connection.
 ce <- ds.omop.concept.search("celecoxib", domain = "Drug", conns = two_conns, symbol = "book_pool")$pooled
 di <- ds.omop.concept.search("diclofenac", domain = "Drug", conns = two_conns, symbol = "book_pool")$pooled
 gi <- ds.omop.concept.search("Gastrointestinal hemorrhage", domain = "Condition", conns = two_conns, symbol = "book_pool")$pooled
-knitr::kable(rbind(ce, di, gi)[c("concept_id", "concept_name", "standard_concept", "concept_class_id")])
+rbind(ce, di, gi)[c("concept_id", "concept_name", "standard_concept", "concept_class_id")]
 ceid <- ce$concept_id[trimws(ce$concept_name) == "celecoxib"]
 diid <- di$concept_id[trimws(di$concept_name) == "Diclofenac"]
 giid <- gi$concept_id[trimws(gi$concept_name) == "Gastrointestinal hemorrhage"]
@@ -66,9 +66,9 @@ relationship, which is why only the seed appears below.
 
 ```{r comparison-descendants}
 ce_children <- ds.omop.concept.descendants(ceid, conns = two_conns, symbol = "book_pool")$pooled
-knitr::kable(ce_children[c("concept_id", "concept_name")])
-knitr::kable(ds.omop.concept.locate(c(ceid, diid, giid), scope = "pooled",
-  conns = two_conns, symbol = "book_pool")$pooled)
+ce_children[c("concept_id", "concept_name")]
+ds.omop.concept.locate(c(ceid, diid, giid), scope = "pooled",
+  conns = two_conns, symbol = "book_pool")$pooled
 study_sets <- list(celecoxib = omop_concept_set(ceid, descendants = TRUE),
   diclofenac = omop_concept_set(diid, descendants = TRUE),
   bleeding = omop_concept_set(giid, descendants = TRUE))
@@ -120,7 +120,7 @@ comparison <- omop_recipe(populations = list(users),
     omop_output("analysis", rows = "users", format = "joined", options = list(
       from = list(list(output = "baseline"), list(output = "survival")),
       how = "inner", cardinality = "one_to_one"))), publish = "analysis")
-invisible(recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool"))
+recipe_execute(comparison, out = c(analysis = "D_comparison"), conns = two_conns, symbol = "book_pool")
 
 ```
 
@@ -143,15 +143,15 @@ entry. A day-1 outcome would therefore have zero time; check this before taking
 a logarithm rather than silently adding time or dropping those events.
 
 ```{r comparison-describe}
-invisible(ds.omop.mutate("D_comparison", years = follow_up_days / 365.25,
+ds.omop.mutate("D_comparison", years = follow_up_days / 365.25,
   zero_time = ifelse(follow_up_days <= 0, 1L, 0L),
   month_difference = entry_month - birth_month, day_difference = entry_day - birth_day,
   age = entry_year - birth_year - ifelse(month_difference < 0 |
     (month_difference == 0 & day_difference < 0), 1L, 0L),
-  newobj = "D_comparison_model", conns = two_conns, symbol = "book_pool"))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_comparison_model$zero_time", datasources = two_conns)))
-knitr::kable(book_table2(dsBaseClient::ds.table("D_comparison$celecoxib",
-  "D_comparison$event", datasources = two_conns)))
+  newobj = "D_comparison_model", conns = two_conns, symbol = "book_pool")
+book_counts(dsBaseClient::ds.table("D_comparison_model$zero_time", datasources = two_conns))
+book_table2(dsBaseClient::ds.table("D_comparison$celecoxib",
+  "D_comparison$event", datasources = two_conns))
 ```
 
 All 2,630 episodes have positive time. Treatment 0 is diclofenac and 1 is
@@ -159,10 +159,10 @@ celecoxib; event 1 is bleeding and 0 is censoring. The event counts are 124 and
 355 respectively. No prior bleeding is present in these synthetic data, so the exclusion
 leaves these counts unchanged while making the study definition explicit.
 
-```{r arm-summary}
+```{r arm-summary, table.digits = 2}
 arm_summary <- do.call(rbind, lapply(0:1, function(arm) {
-  invisible(ds.omop.filter("D_comparison_model", var = "celecoxib", op = "==", value = arm,
-    newobj = paste0("D_arm", arm), conns = two_conns, symbol = "book_pool"))
+  ds.omop.filter("D_comparison_model", var = "celecoxib", op = "==", value = arm,
+    newobj = paste0("D_arm", arm), conns = two_conns, symbol = "book_pool")
   aggregate <- function(column) dsBaseClient::ds.mean(paste0("D_arm", arm, "$", column),
     type = "combine", datasources = two_conns)$Global.Mean
   time <- aggregate("years"); event <- aggregate("event"); age <- aggregate("age")
@@ -173,7 +173,7 @@ arm_summary <- do.call(rbind, lapply(0:1, function(arm) {
     Events = events, Person_years = py, Rate_per_1000 = 1000 * events / py,
     Mean_followup_days = 365.25 * py / n, Mean_age = age[1, "EstimatedMean"])
 }))
-knitr::kable(arm_summary, digits = 2)
+arm_summary
 ```
 
 Celecoxib contributes 1,800 people, 355 events and 1,470.74 person-years; diclofenac
@@ -188,14 +188,14 @@ Fit a Poisson model of the event indicator with log(person-years) as an offset.
 The treatment coefficient is a log hazard ratio against diclofenac, conditional
 on completed age at entry. This is not a Cox model.
 
-```{r comparison-model, warning=FALSE}
+```{r comparison-model, warning=FALSE, table.digits = 3}
 dsBaseClient::ds.log("D_comparison_model$years", newobj = "log_years", datasources = two_conns)
 comparison_fit <- dsBaseClient::ds.glm("event ~ celecoxib + age",
   data = "D_comparison_model", family = "poisson", offset = "log_years", datasources = two_conns)
 beta <- comparison_fit$coefficients["celecoxib", "Estimate"]
 se <- comparison_fit$coefficients["celecoxib", "Std. Error"]
-knitr::kable(data.frame(Hazard_ratio = exp(beta),
-  Lower_95 = exp(beta - 1.96 * se), Upper_95 = exp(beta + 1.96 * se)), digits = 3)
+data.frame(Hazard_ratio = exp(beta),
+  Lower_95 = exp(beta - 1.96 * se), Upper_95 = exp(beta + 1.96 * se))
 ```
 
 After age adjustment, celecoxib starters have about 1.38 times the bleeding
@@ -210,9 +210,9 @@ ratio from the arm table. Does agreement establish adequate adjustment?
 
 <details><summary>Solution 1</summary>
 
-```{r comparison-crude}
-knitr::kable(data.frame(Crude_rate_ratio = arm_summary$Rate_per_1000[2] /
-  arm_summary$Rate_per_1000[1], Adjusted_hazard_ratio = exp(beta)), digits = 3)
+```{r comparison-crude, table.digits = 3}
+data.frame(Crude_rate_ratio = arm_summary$Rate_per_1000[2] /
+  arm_summary$Rate_per_1000[1], Adjusted_hazard_ratio = exp(beta))
 ```
 
 Both ratios are about 1.38. Similar estimates only show that this age adjustment
@@ -225,9 +225,9 @@ changes little here; they do not rule out other confounding.
 <details><summary>Solution 2</summary>
 
 ```{r comparison-censoring}
-invisible(ds.omop.mutate("D_comparison", early_censor = ifelse(event == 0 & follow_up_days < 364, 1L, 0L),
-  newobj = "D_censor", conns = two_conns, symbol = "book_pool"))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_censor$early_censor", datasources = two_conns)))
+ds.omop.mutate("D_comparison", early_censor = ifelse(event == 0 & follow_up_days < 364, 1L, 0L),
+  newobj = "D_censor", conns = two_conns, symbol = "book_pool")
+book_counts(dsBaseClient::ds.table("D_censor$early_censor", datasources = two_conns))
 ```
 
 The 52 early censored episodes end at observation end; GiBleed has no recorded

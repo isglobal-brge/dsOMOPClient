@@ -45,7 +45,7 @@ Search weight and height separately and inspect their standard status. Select an
 ``` r
 weight_hits <- ds.omop.concept.search("Body weight", domain = "Measurement", conns = conns)$pooled
 height_hits <- ds.omop.concept.search("Body height", domain = "Measurement", conns = conns)$pooled
-knitr::kable(rbind(weight_hits, height_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")])
+rbind(weight_hits, height_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 ```
 
 
@@ -70,7 +70,7 @@ weight_units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_i
   scope = "pooled", conns = conns)$pooled
 height_units <- ds.omop.value.counts("measurement", "unit_concept_id", concept_id = height_id,
   scope = "pooled", conns = conns)$pooled
-knitr::kable(weight_units[c("value", "concept_name", "n")])
+weight_units[c("value", "concept_name", "n")]
 ```
 
 
@@ -80,7 +80,7 @@ knitr::kable(weight_units[c("value", "concept_name", "n")])
 |9529  |kilogram     | 510|
 
 ``` r
-knitr::kable(height_units[c("value", "concept_name", "n")])
+height_units[c("value", "concept_name", "n")]
 ```
 
 
@@ -122,8 +122,8 @@ height_m <- omop_number(height, omop_number_spec(unit =
 bmi <- omop_formula_bmi(weight_kg, height_m)
 body <- omop_study(weight_event, outputs = "baseline",
   baseline = list(weight = weight, height = height, bmi = bmi))
-invisible(recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns))
-knitr::kable(book_summary("D_formula_body$bmi", datasources = conns), digits = 3)
+recipe_execute(body, out = c(baseline = "D_formula_body"), conns = conns)
+book_summary("D_formula_body$bmi", datasources = conns)
 ```
 
 
@@ -154,8 +154,8 @@ unrounded formula available.
 body_rounded <- omop_study(weight_event, outputs = "baseline",
   baseline = list(bmi = bmi, rounded = omop_number(bmi,
     omop_number_spec(rounding = omop_number_round("decimals", 1)))))
-invisible(recipe_execute(body_rounded, out = c(baseline = "D_formula_rounded"), conns = conns))
-knitr::kable(book_summary("D_formula_rounded$rounded", datasources = conns), digits = 3)
+recipe_execute(body_rounded, out = c(baseline = "D_formula_rounded"), conns = conns)
+book_summary("D_formula_rounded$rounded", datasources = conns)
 ```
 
 
@@ -186,7 +186,7 @@ to the same systolic measurement date. The familiar approximate MAP formula is
 ``` r
 sbp_hits <- ds.omop.concept.search("Systolic blood pressure", domain = "Measurement", conns = conns)$pooled
 dbp_hits <- ds.omop.concept.search("Diastolic blood pressure", domain = "Measurement", conns = conns)$pooled
-knitr::kable(rbind(sbp_hits, dbp_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")])
+rbind(sbp_hits, dbp_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 ```
 
 
@@ -209,7 +209,7 @@ dbp_id <- dbp_hits$concept_id[trimws(dbp_hits$concept_name) == "Diastolic blood 
 pressure_units <- lapply(c(Systolic = sbp_id, Diastolic = dbp_id), function(id)
   ds.omop.value.counts("measurement", "unit_concept_id", concept_id = id,
     scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")])
-knitr::kable(do.call(rbind, pressure_units))
+do.call(rbind, pressure_units)
 ```
 
 
@@ -234,8 +234,8 @@ dbp_mmhg <- omop_number(dbp, omop_number_spec(unit =
 map <- omop_formula_map(sbp_mmhg, dbp_mmhg)
 ratio <- omop_formula_ratio(sbp_mmhg, dbp_mmhg, unit = "1")
 pressure <- omop_study(sbp_event, outputs = "baseline", baseline = list(map = map, ratio = ratio))
-invisible(recipe_execute(pressure, out = c(baseline = "D_formula_pressure"), conns = conns))
-knitr::kable(book_summary("D_formula_pressure$map", datasources = conns), digits = 3)
+recipe_execute(pressure, out = c(baseline = "D_formula_pressure"), conns = conns)
+book_summary("D_formula_pressure$map", datasources = conns)
 ```
 
 
@@ -260,7 +260,7 @@ The MAP summary describes the same-day formula, in mmHg; its mean is about
 
 
 ``` r
-knitr::kable(book_summary("D_formula_pressure$ratio", datasources = conns), digits = 3)
+book_summary("D_formula_pressure$ratio", datasources = conns)
 ```
 
 
@@ -298,7 +298,7 @@ This check distinguishes vocabulary availability from observed use:
 ``` r
 creatinine_hits <- ds.omop.concept.search("Creatinine", domain = "Measurement",
   vocabulary = "LOINC", conns = conns)$pooled
-knitr::kable(creatinine_hits[c("concept_id", "concept_name", "standard_concept")])
+creatinine_hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 
@@ -314,7 +314,7 @@ serum_id <- creatinine_hits$concept_id[trimws(creatinine_hits$concept_name) ==
   "Creatinine [Mass/volume] in Serum or Plasma"]
 serum_set <- omop_concept_set(serum_id)
 serum_locations <- ds.omop.concept.locate(serum_id, scope = "pooled", conns = conns)
-knitr::kable(serum_locations$per_site[[1]])
+serum_locations$per_site[[1]]
 ```
 
 
@@ -359,8 +359,8 @@ episodes <- omop_population("weights", index = omop_index(weight_event, select =
 collapsed <- omop_recipe(populations = list(episodes), variables = list(weight = weight),
   outputs = omop_output("people", rows = "weights", format = "wide", grain = "person",
     collapse = "first_episode"))
-invisible(recipe_execute(collapsed, out = c(people = "D_collapsed_weights"), conns = conns))
-knitr::kable(book_summary("D_collapsed_weights$weight", datasources = conns), digits = 3)
+recipe_execute(collapsed, out = c(people = "D_collapsed_weights"), conns = conns)
+book_summary("D_collapsed_weights$weight", datasources = conns)
 ```
 
 
@@ -390,8 +390,8 @@ Compare the last eligible episode with the first one.
 last_episode <- omop_recipe(populations = list(episodes), variables = list(weight = weight),
   outputs = omop_output("people", rows = "weights", format = "wide", grain = "person",
     collapse = "last_episode"))
-invisible(recipe_execute(last_episode, out = c(people = "D_last_weights"), conns = conns))
-knitr::kable(book_summary("D_last_weights$weight", datasources = conns), digits = 3)
+recipe_execute(last_episode, out = c(people = "D_last_weights"), conns = conns)
+book_summary("D_last_weights$weight", datasources = conns)
 ```
 
 
@@ -426,7 +426,7 @@ conns <- practice$conns
 formula_hits <- ds.omop.concept.search("Teaching standardized serum creatinine",
   domain = "Measurement", conns = conns)$pooled
 sex_hits <- ds.omop.concept.search(NULL, domain = "Gender", conns = conns)$pooled
-knitr::kable(rbind(formula_hits, sex_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")])
+rbind(formula_hits, sex_hits)[c("concept_id", "concept_name", "standard_concept", "vocabulary_id")]
 ```
 
 
@@ -441,8 +441,8 @@ knitr::kable(rbind(formula_hits, sex_hits)[c("concept_id", "concept_name", "stan
 formula_id <- formula_hits$concept_id
 formula_set <- omop_concept_set(formula_id)
 
-knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = formula_id,
-  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")])
+ds.omop.value.counts("measurement", "unit_concept_id", concept_id = formula_id,
+  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")]
 ```
 
 
@@ -482,7 +482,7 @@ egfr_recipe <- omop_recipe(
   variables = list(egfr = egfr),
   outputs = omop_output("people", rows = "measurements", format = "wide"))
 egfr_result <- recipe_execute(egfr_recipe, out = "D_egfr", conns = conns)
-knitr::kable(book_summary("D_egfr$egfr", datasources = conns), digits = 3)
+book_summary("D_egfr$egfr", datasources = conns)
 ```
 
 
@@ -510,19 +510,15 @@ category remains missing; the helper never guesses a branch or adds a race term.
 
 ``` r
 formula_record <- recipe_codebook(egfr_result)[[1]]$formulas[[1]]
-cat("Equation:", formula_record$equation, "\n")
+formula_record[c("equation", "unit")]
 ```
 
 ```
-#> Equation: 142*min(Scr/k,1)^alpha*max(Scr/k,1)^(-1.200)*0.9938^age*sex_factor
-```
-
-``` r
-cat("Unit:", formula_record$unit, "\n")
-```
-
-```
-#> Unit: coordinate:ml_min_1_73m2
+#> $equation
+#> [1] "142*min(Scr/k,1)^alpha*max(Scr/k,1)^(-1.200)*0.9938^age*sex_factor"
+#>
+#> $unit
+#> [1] "coordinate:ml_min_1_73m2"
 ```
 
 The equation and unit identify what was calculated. Keep the full formula record
@@ -542,7 +538,7 @@ duplicates, so they cannot demonstrate this difference.
 
 ``` r
 weight_info <- ds.omop.concept.lookup(c(950002L, 9529L), conns = conns)$pooled
-knitr::kable(weight_info[c("concept_id", "concept_name")])
+weight_info[c("concept_id", "concept_name")]
 ```
 
 
@@ -560,14 +556,14 @@ rows <- omop_number_rows(omop_event("measurement", 950002L, unit = omop_unit(952
 daily <- omop_recipe(variables = list(
   daily_mean = omop_number_daily(rows, reducer = omop_reduce("mean"), within_day = "mean"),
   daily_max = omop_number_daily(rows, reducer = omop_reduce("mean"), within_day = "max")))
-invisible(recipe_execute(daily, out = "D_daily", conns = conns))
+recipe_execute(daily, out = "D_daily", conns = conns)
 daily_mean <- book_summary("D_daily$daily_mean", datasources = conns)
 daily_max <- book_summary("D_daily$daily_max", datasources = conns)
-knitr::kable(data.frame(
+data.frame(
   Statistic = c(daily_mean$Statistic, "N valid", "N missing"),
   `Daily mean` = c(daily_mean$Value, daily_mean$`N valid`[1], daily_mean$`N missing`[1]),
   `Daily maximum` = c(daily_max$Value, daily_max$`N valid`[1], daily_max$`N missing`[1]),
-  check.names = FALSE), digits = 3, row.names = FALSE)
+  check.names = FALSE)
 ```
 
 

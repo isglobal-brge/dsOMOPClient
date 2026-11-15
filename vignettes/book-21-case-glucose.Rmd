@@ -38,7 +38,7 @@ conns <- practice$conns
 
 ``` r
 hits <- ds.omop.concept.search("Glucose", domain = "Measurement", vocabulary = "LOINC", conns = conns)$pooled
-knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
+hits[c("concept_id", "concept_name", "standard_concept")]
 ```
 
 
@@ -52,7 +52,7 @@ knitr::kable(hits[c("concept_id", "concept_name", "standard_concept")])
 
 ``` r
 glucose_id <- hits$concept_id[trimws(hits$concept_name) == "Glucose [Mass/volume] in Blood"]
-knitr::kable(ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled)
+ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled
 ```
 
 
@@ -62,8 +62,8 @@ knitr::kable(ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)
 |    3000483|measurement |measurement_concept_id |       225|        10|
 
 ``` r
-knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = glucose_id,
-  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")])
+ds.omop.value.counts("measurement", "unit_concept_id", concept_id = glucose_id,
+  scope = "pooled", conns = conns)$pooled[c("value", "concept_name", "n")]
 ```
 
 
@@ -105,12 +105,12 @@ trajectory <- omop_recipe(populations = list(cohort), variables = list(
   followup_days = omop_variable(event = glucose, reducer = omop_reduce("last_date", window = omop_window(1, NULL))),
   target_days = omop_number_change(glucose, "time_to_threshold", threshold = 95, op = "ge")),
   outputs = omop_output("people", rows = "measured", format = "wide"))
-invisible(recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns))
+recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns)
 trajectory_summary <- do.call(rbind, lapply(c("first", "last", "change", "per_year", "followup_days"), function(column) {
   x <- book_summary(paste0("D_glucose$", column), datasources = conns)
   transform(x[x$Statistic %in% c("50%", "Mean"), ], Variable = column)
 }))
-knitr::kable(trajectory_summary, digits = 3, row.names = FALSE)
+trajectory_summary
 ```
 
 
@@ -137,7 +137,7 @@ straight-line slope can miss fluctuations between readings.
 
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_glucose$control", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_glucose$control", datasources = conns))
 ```
 
 
@@ -160,7 +160,7 @@ as withheld, not avoided by changing the cutoff.
 
 
 ``` r
-knitr::kable(book_summary("D_glucose$target_days", datasources = conns), digits = 3)
+book_summary("D_glucose$target_days", datasources = conns)
 ```
 
 
@@ -196,8 +196,8 @@ residual degrees of freedom rather than the large-sample z interval.
 fit <- dsBaseClient::ds.glm("last ~ first", data = "D_glucose", family = "gaussian", datasources = conns)
 b <- fit$coefficients["first", "Estimate"]
 se <- fit$coefficients["first", "Std. Error"]
-knitr::kable(data.frame(N = fit$Nvalid, df = fit$df, Estimate = b, Lower_95 = b - qt(.975, fit$df) * se,
-  Upper_95 = b + qt(.975, fit$df) * se, P_t = 2 * pt(-abs(b / se), df = fit$df)), digits = 3)
+data.frame(N = fit$Nvalid, df = fit$df, Estimate = b, Lower_95 = b - qt(.975, fit$df) * se,
+  Upper_95 = b + qt(.975, fit$df) * se, P_t = 2 * pt(-abs(b / se), df = fit$df))
 ```
 
 
@@ -221,9 +221,9 @@ retain the number with missing attainment.
 
 
 ``` r
-invisible(ds.omop.mutate("D_glucose", target_years = target_days / 365.25,
-  newobj = "D_glucose_years", conns = conns))
-knitr::kable(book_summary("D_glucose_years$target_years", datasources = conns), digits = 3)
+ds.omop.mutate("D_glucose", target_years = target_days / 365.25,
+  newobj = "D_glucose_years", conns = conns)
+book_summary("D_glucose_years$target_years", datasources = conns)
 ```
 
 
@@ -252,9 +252,9 @@ server and compare with the native change summary. Does agreement prove a steady
 
 
 ``` r
-invisible(ds.omop.mutate("D_glucose", difference = last - first,
-  newobj = "D_difference", conns = conns))
-knitr::kable(book_summary("D_difference$difference", datasources = conns), digits = 3)
+ds.omop.mutate("D_glucose", difference = last - first,
+  newobj = "D_difference", conns = conns)
+book_summary("D_difference$difference", datasources = conns)
 ```
 
 

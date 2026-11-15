@@ -56,14 +56,14 @@ Selecting the question concept as the value would answer a different question.
 ```{r default-translation}
 categories <- omop_recipe(variables = list(education = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(categories, out = c(people = "D_categories"), conns = conns))
+recipe_execute(categories, out = c(people = "D_categories"), conns = conns)
 ```
 
 Translation is the default. The data values become labelled factors on the server.
 
 ```{r default-table}
-knitr::kable(book_counts(dsBaseClient::ds.table("D_categories$education",
-  useNA = "always", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_categories$education",
+  useNA = "always", datasources = conns))
 ```
 
 The latest education answers are Secondary education for 12 people and
@@ -81,9 +81,9 @@ First inspect the default wording:
 fever_default <- omop_variable(event = omop_event("observation", concepts = 900002L),
   reducer = omop_reduce("last_value", value = "value_as_concept_id"))
 fever_recipe <- omop_recipe(variables = list(fever = fever_default))
-invisible(recipe_execute(fever_recipe, out = "D_fever_default", conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_fever_default$fever",
-  useNA = "always", datasources = conns)))
+recipe_execute(fever_recipe, out = "D_fever_default", conns = conns)
+book_counts(dsBaseClient::ds.table("D_fever_default$fever",
+  useNA = "always", datasources = conns))
 ```
 
 The default labels are No and Yes, with 12 people each and 24 missing. Now give
@@ -102,12 +102,12 @@ missing; absence of a record is not a clinical “no”.
 ```{r recode-run}
 answers <- omop_recipe(variables = list(fever = fever),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(answers, out = c(people = "D_category_answers"), conns = conns))
+recipe_execute(answers, out = c(people = "D_category_answers"), conns = conns)
 ```
 
 ```{r recode-table}
 recode_table_result <- dsBaseClient::ds.table("D_category_answers$fever", useNA = "no", datasources = conns)
-knitr::kable(book_counts(recode_table_result))
+book_counts(recode_table_result)
 ```
 
 There are still 12 “no” and 12 “yes” answers. Only the wording changed; this
@@ -121,7 +121,7 @@ Name an explicit variable in the recipe list, without changing what its answers 
 ```{r column-rename}
 renamed <- omop_recipe(variables = list(schooling = education),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(renamed, out = c(people = "D_renamed_categories"), conns = conns))
+recipe_execute(renamed, out = c(people = "D_renamed_categories"), conns = conns)
 dsBaseClient::ds.colnames("D_renamed_categories", datasources = conns)
 ```
 
@@ -155,7 +155,7 @@ panel_recipe <- omop_recipe(events = list(visit_event),
   populations = list(visit_population), outputs = panel_output)
 panel_result <- recipe_execute(panel_recipe, out = c(panel = "D_original_panel"), conns = conns)
 panel_columns <- recipe_codebook(panel_result)[[1]]$columns
-knitr::kable(panel_columns[c("stable_key", "name")])
+panel_columns[c("stable_key", "name")]
 ```
 
 The count columns have stable keys `visits_9201_count` and `visits_9202_count`.
@@ -172,7 +172,7 @@ stable when a vocabulary changes its wording; your chosen column names remain
 readable. An explicit name cannot collide with a protected or another final column.
 
 ```{r generated-run}
-invisible(recipe_execute(renamed_panel, out = c(panel = "D_renamed_panel"), conns = conns))
+recipe_execute(renamed_panel, out = c(panel = "D_renamed_panel"), conns = conns)
 dsBaseClient::ds.colnames("D_renamed_panel", datasources = conns)
 ```
 
@@ -186,12 +186,12 @@ classification catalogue. Its teaching ATC and ICD-10 entries illustrate the
 hierarchy structure; they are not clinical mappings to reuse in a study.
 Search the catalogue before choosing an order or a rollup.
 
-```{r category-discovery}
+```{r category-discovery, table.row.names = FALSE}
 catalogue <- ds.omop.concept.search(NULL, standard_only = FALSE, limit = 100,
   conns = conns)$pooled
 classification <- catalogue[catalogue$vocabulary_id %in% c("ATC", "ICD10", "Language") |
   catalogue$concept_id %in% c(900101L, 900102L, 900103L, 900201L, 900202L, 950001L), ]
-knitr::kable(classification[c("concept_id", "concept_name", "vocabulary_id", "concept_class_id")], row.names = FALSE)
+classification[c("concept_id", "concept_name", "vocabulary_id", "concept_class_id")]
 ids <- setNames(catalogue$concept_id, catalogue$concept_name)
 education_ids <- ids[c("Primary education", "Secondary education", "University education")]
 education_keys <- paste0("concept:", education_ids)
@@ -321,7 +321,7 @@ Inspect the published types without reading patient rows.
 
 ```{r category-binary-types}
 flag_columns <- recipe_codebook(flag_result)[[1]]$columns
-knitr::kable(flag_columns[c("name", "r_type")])
+flag_columns[c("name", "r_type")]
 ```
 
 The three columns represent the same flag as integer, logical and factor values.
@@ -336,7 +336,7 @@ relationships; a similar-looking code prefix is insufficient.
 ```{r category-hierarchy-discovery}
 drug_id <- ids[["Questionnaire study medicine"]]
 ancestors <- ds.omop.concept.ancestors(drug_id, conns = conns)$pooled
-knitr::kable(ancestors[c("concept_id", "concept_name", "min_levels_of_separation")])
+ancestors[c("concept_id", "concept_name", "min_levels_of_separation")]
 ```
 
 The medicine has two teaching ATC ancestors: 960001 and 960002. The separation
@@ -347,7 +347,7 @@ icd_id <- ids[["Teaching circulatory code"]]
 links <- rbind(
   ds.omop.concept.relationships(icd_id, relationship_id = "Maps to", conns = conns)$pooled,
   ds.omop.concept.relationships(icd_id, relationship_id = "Is a", conns = conns)$pooled)
-knitr::kable(links[c("concept_id", "relationship_id", "related_concept_id", "related_concept_name")])
+links[c("concept_id", "relationship_id", "related_concept_id", "related_concept_name")]
 ```
 
 Teaching circulatory code (960010) maps to Myocardial infarction (900201)
@@ -355,8 +355,8 @@ and belongs to Teaching circulatory chapter (960020). These are synthetic
 relationships used only for this lesson.
 
 ```{r rollup-occurrence}
-knitr::kable(ds.omop.concept.locate(c(drug_id, ids[["Myocardial infarction"]]),
-  scope = "pooled", conns = conns)$pooled)
+ds.omop.concept.locate(c(drug_id, ids[["Myocardial infarction"]]),
+  scope = "pooled", conns = conns)$pooled
 classification_sets <- list(answers = education_set, drug = omop_concept_set(drug_id),
   causes = omop_concept_set(unname(ids[c("Myocardial infarction", "Pneumonia")])))
 saveRDS(classification_sets, category_file)
@@ -400,10 +400,10 @@ Compare the two ATC levels in the public codebook.
 
 ```{r category-atc-codebook}
 rollup_columns <- recipe_codebook(rollup_result)[[1]]$columns
-knitr::kable(data.frame(
+data.frame(
   Variable = c("atc_first", "atc_second"),
   Category = vapply(rollup_columns$levels[match(c("atc_first", "atc_second"), rollup_columns$name)],
-    function(x) paste(x$labels, collapse = ", "), character(1))))
+    function(x) paste(x$labels, collapse = ", "), character(1)))
 ```
 
 The first and second levels have different labels even though the same drug
@@ -418,7 +418,7 @@ marked explicitly.
 
 ```{r category-codebook}
 book <- recipe_codebook(ordered_result)
-knitr::kable(book[[1]]$columns[c("stable_key", "name", "semantic_type", "r_type")])
+book[[1]]$columns[c("stable_key", "name", "semantic_type", "r_type")]
 ```
 
 The stable key identifies the column before a display rename. Semantic type tells
@@ -443,8 +443,8 @@ Inspect the vocabulary wording before looking at patient counts:
 
 ```{r two-vocabularies}
 lookup <- ds.omop.concept.lookup(900102L, conns = conns)
-knitr::kable(do.call(rbind, lapply(names(lookup$per_site), function(site)
-  cbind(Site = site, lookup$per_site[[site]][c("concept_id", "concept_name")]))))
+do.call(rbind, lapply(names(lookup$per_site), function(site)
+  cbind(Site = site, lookup$per_site[[site]][c("concept_id", "concept_name")])))
 ```
 
 Both names belong to concept 900102. The ID, not the text, establishes the
@@ -455,10 +455,10 @@ shared category.
 Execute the original unlabelled education recipe on both connections:
 
 ```{r two-default}
-invisible(recipe_execute(categories, out = c(people = "D_default_pair"), conns = conns))
+recipe_execute(categories, out = c(people = "D_default_pair"), conns = conns)
 paired_counts <- dsBaseClient::ds.table("D_default_pair$education",
   useNA = "always", datasources = conns)
-knitr::kable(book_counts(paired_counts))
+book_counts(paired_counts)
 ```
 
 The pooled counts are Secondary education = 12, University qualification = 36,
@@ -471,7 +471,7 @@ matrix, leaving out the proportion matrices:
 ```{r site-counts}
 site_counts <- book_site_counts(paired_counts)
 colnames(site_counts) <- names(conns)
-knitr::kable(site_counts)
+site_counts
 ```
 
 Site has 12 Secondary and 12 University qualification answers, plus 24 missing.
@@ -491,9 +491,9 @@ name. Does this change the counts?
 harmonised <- omop_recipe(variables = list(education = education),
   labels = c("900102" = "University education"),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(harmonised, out = c(people = "D_shared"), conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_shared$education",
-  useNA = "always", datasources = conns)))
+recipe_execute(harmonised, out = c(people = "D_shared"), conns = conns)
+book_counts(dsBaseClient::ds.table("D_shared$education",
+  useNA = "always", datasources = conns))
 ```
 
 The counts remain 12 Secondary, 36 University and 48 missing. The explicit map
@@ -511,9 +511,9 @@ pooled count and missing count before executing.
 ```{r merge-labels}
 merged <- omop_recipe(variables = list(education = education),
   labels = c("900101" = "Recorded education", "900102" = "Recorded education"))
-invisible(recipe_execute(merged, out = "D_merged_answers", conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_merged_answers$education",
-  useNA = "always", datasources = conns)))
+recipe_execute(merged, out = "D_merged_answers", conns = conns)
+book_counts(dsBaseClient::ds.table("D_merged_answers$education",
+  useNA = "always", datasources = conns))
 ```
 
 Equal labels merge the two categories: 48 people have Recorded education and
@@ -533,12 +533,12 @@ marginal distribution change?
 first_answers <- omop_recipe(variables = list(education = omop_variable(
   event = omop_event("observation", concepts = 900001L),
   reducer = omop_reduce("first_value", value = "value_as_concept_id"))))
-invisible(recipe_execute(first_answers, out = "D_first_pair", conns = conns))
+recipe_execute(first_answers, out = "D_first_pair", conns = conns)
 first_counts <- dsBaseClient::ds.table("D_first_pair$education",
   useNA = "always", datasources = conns)
 first_site_counts <- book_site_counts(first_counts)
 colnames(first_site_counts) <- names(conns)
-knitr::kable(first_site_counts)
+first_site_counts
 ```
 
 Site remains 12 Secondary, 12 University qualification and 24 missing; site2

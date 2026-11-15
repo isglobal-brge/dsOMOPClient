@@ -130,7 +130,7 @@ long <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("long", rows = "visitors", format = "long",
   sources = "visits"))
-invisible(recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns))
+recipe_execute(long, out = c(long = "D_fmt_long"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_long", datasources = conns)
 ```
 
@@ -147,8 +147,8 @@ The long output has 1,735 rows, one per selected visit. Its columns include
 
 
 ``` r
-knitr::kable(book_counts(dsBaseClient::ds.table("D_fmt_long$concept_id",
-  useNA = "no", datasources = conns)))
+book_counts(dsBaseClient::ds.table("D_fmt_long$concept_id",
+  useNA = "no", datasources = conns))
 ```
 
 
@@ -171,7 +171,7 @@ Use the features preset when a downstream analysis expects a feature table. Nati
 features <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("features", rows = "visitors", type = "features"))
-invisible(recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns))
+recipe_execute(features, out = c(features = "D_fmt_features"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_features", datasources = conns)
 ```
 
@@ -199,7 +199,7 @@ baseline_variables <- list(
 baseline <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = baseline_variables,
   outputs = omop_output("baseline", rows = "visitors", type = "baseline"))
-invisible(recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns))
+recipe_execute(baseline, out = c(baseline = "D_fmt_baseline"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_baseline", datasources = conns)
 ```
 
@@ -227,7 +227,7 @@ panel <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("panel", rows = "visitors", format = "person_period",
   options = list(sources = list(visits), bins = list(width = 30L),
     window = omop_window(1, 90), analyses = "count", representation = "dense")))
-invisible(recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns))
+recipe_execute(panel, out = c(panel = "D_fmt_panel"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_panel", datasources = conns)
 ```
 
@@ -244,8 +244,8 @@ bins with zero event counts. `bins = list(calendar = "month")` instead aligns to
 
 
 ``` r
-knitr::kable(book_summary("D_fmt_panel$visits_outpatient_visit_count",
-  datasources = conns), digits = 2)
+book_summary("D_fmt_panel$visits_outpatient_visit_count",
+  datasources = conns)
 ```
 
 
@@ -314,7 +314,7 @@ survival <- omop_recipe(events = list(visits, spans, inpatient),
   outputs = omop_output("survival", rows = "visitors", format = "survival",
   options = list(outcomes = list(admission = inpatient),
     tar = omop_window(1, NULL), censor = list("observation_end", "death"))))
-invisible(recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns))
+recipe_execute(survival, out = c(survival = "D_fmt_survival"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_survival", datasources = conns)
 ```
 
@@ -332,7 +332,7 @@ Only the named censor sources cap follow-up: observation end and death here. The
 
 ``` r
 survival_result <- dsBaseClient::ds.table("D_fmt_survival$event", useNA = "no", datasources = conns)
-knitr::kable(book_counts(survival_result))
+book_counts(survival_result)
 ```
 
 
@@ -347,7 +347,7 @@ Seven people have `event = 1` (an observed admission); 21 have `event = 0`
 
 
 ``` r
-knitr::kable(book_summary("D_fmt_survival$follow_up_days", datasources = conns), digits = 1)
+book_summary("D_fmt_survival$follow_up_days", datasources = conns)
 ```
 
 
@@ -378,7 +378,7 @@ intervals <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("intervals", rows = "visitors", format = "intervals",
   options = list(sources = list(spans), window = omop_window(0, NULL))))
-invisible(recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns))
+recipe_execute(intervals, out = c(intervals = "D_fmt_intervals"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_intervals", datasources = conns)
 ```
 
@@ -436,7 +436,7 @@ Use membership to keep entry/end dates and keys for every episode independently 
 membership <- omop_recipe(events = list(visits, spans, inpatient),
   populations = list(visitors), variables = study_variables,
   outputs = omop_output("membership", rows = "visitors", format = "membership"))
-invisible(recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns))
+recipe_execute(membership, out = c(membership = "D_fmt_membership"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_membership", datasources = conns)
 ```
 
@@ -462,7 +462,7 @@ dictionary <- omop_recipe(events = list(visits), populations = list(visitors),
   counts = omop_output("counts", rows = "visitors", format = "wide", columns = "visits"),
   dictionary = omop_output("dictionary", rows = "visitors", format = "dictionary",
     options = list(source_outputs = "counts"))), publish = "dictionary")
-invisible(recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns))
+recipe_execute(dictionary, out = c(dictionary = "D_fmt_dictionary"), conns = conns)
 dsBaseClient::ds.dim("D_fmt_dictionary", datasources = conns)
 ```
 
@@ -525,9 +525,9 @@ reference components each have their own schema and row meaning.
 ``` r
 books <- c(recipe_codebook(wide_result), recipe_codebook(sparse_result),
   recipe_codebook(joined_result))
-knitr::kable(do.call(rbind, lapply(books, function(x) data.frame(
+do.call(rbind, lapply(books, function(x) data.frame(
   Output = x$output, Component = x$component, Status = x$status,
-  Grain = x$row_grain, Columns = nrow(x$columns)))))
+  Grain = x$row_grain, Columns = nrow(x$columns))))
 ```
 
 
@@ -549,7 +549,7 @@ Inspect the sparse reference table's column types:
 ``` r
 sparse_books <- recipe_codebook(sparse_result)
 reference_key <- grep("covariateRef$", names(sparse_books), value = TRUE)
-knitr::kable(sparse_books[[reference_key]]$columns[c("name", "r_type")])
+sparse_books[[reference_key]]$columns[c("name", "r_type")]
 ```
 
 
@@ -574,7 +574,7 @@ Summarise the visit-count column of the joined output. Why is it the same as the
 
 
 ``` r
-knitr::kable(book_summary("D_fmt_joined$visits", datasources = conns), digits = 2)
+book_summary("D_fmt_joined$visits", datasources = conns)
 ```
 
 
@@ -604,7 +604,7 @@ of a long table's measurement rows give each person equal weight?
 
 
 ``` r
-knitr::kable(book_summary("D_fmt_wide$hemoglobin", datasources = conns), digits = 2)
+book_summary("D_fmt_wide$hemoglobin", datasources = conns)
 ```
 
 

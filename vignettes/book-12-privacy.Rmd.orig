@@ -65,8 +65,8 @@ analysis calls in your DataSHIELD session.
 
 ## Request an aggregate
 
-```{r aggregate}
-knitr::kable(book_summary("D_private$age", datasources = conns), digits = 2)
+```{r aggregate, table.digits = 2}
+book_summary("D_private$age", datasources = conns)
 ```
 
 The mean completed age on 2024-06-01 is 42 years across 36 valid values;
@@ -102,13 +102,9 @@ at final publication; a joined result's private inputs do not need separate
 published symbols. A standalone filter produces a final object and is gated.
 Here we intentionally request a subset with no qualifying rows:
 
-```{r small-refusal, warning=FALSE}
-small_message <- tryCatch({
-  ds.omop.filter("D_private", expr = omop_where(age > 200L),
-    newobj = "D_too_small", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(small_message, "\n")
+```{r small-refusal, warning=FALSE, error = TRUE}
+ds.omop.filter("D_private", expr = omop_where(age > 200L),
+  newobj = "D_too_small", conns = conns)
 ```
 
 The refusal reports the policy boundary without providing the small private
@@ -124,16 +120,12 @@ text column. The following intentionally invalid definition demonstrates that ch
 
 Fever question is **900002**, found in [chapter 4](book-04-vocabulary.html).
 
-```{r blocked-text}
-text_message <- tryCatch({
-  blocked <- omop_recipe(variables = list(answer = omop_variable(
-    event = omop_event("observation", concepts = 900002L, value = "value_as_string"),
-    reducer = omop_reduce("first_value"))),
-    outputs = omop_output("people", format = "wide", grain = "person"))
-  recipe_to_plan(blocked)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(text_message, "\n")
+```{r blocked-text, error = TRUE}
+blocked <- omop_recipe(variables = list(answer = omop_variable(
+  event = omop_event("observation", concepts = 900002L, value = "value_as_string"),
+  reducer = omop_reduce("first_value"))),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+recipe_to_plan(blocked)
 ```
 
 This definition is refused before execution. Use the reviewed coded answer
@@ -150,7 +142,7 @@ aggregates and any category labels still face the applicable release controls.
 ```{r date-allowed}
 date_recipe <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
   outputs = omop_output("people", format = "wide", grain = "person"))
-invisible(recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns))
+recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns)
 dsBaseClient::ds.colnames("D_private_date", datasources = conns)
 ```
 
@@ -162,13 +154,9 @@ approved aggregate; do not encode a disallowed field into another name or type.
 
 ## Protected keys cannot become analyst variables
 
-```{r key-refusal, warning=FALSE}
-key_message <- tryCatch({
-  ds.omop.mutate("D_private", copied = person_id,
-    newobj = "D_key_copy", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(key_message, "\n")
+```{r key-refusal, warning=FALSE, error = TRUE}
+ds.omop.mutate("D_private", copied = person_id,
+  newobj = "D_key_copy", conns = conns)
 ```
 
 The server needs keys to align rows and joins; an analyst mutation cannot copy,
@@ -191,13 +179,9 @@ whether the practice server can assign that final subset.
 
 <details><summary>Solution</summary>
 
-```{r small-nonempty, warning=FALSE}
-message <- tryCatch({
-  ds.omop.filter("D_private", expr = omop_where(age == 43 & sex == "F"),
-    newobj = "D_small_group", conns = conns)
-  "Unexpected success"
-}, error = function(e) conditionMessage(e))
-cat(message, "\n")
+```{r small-nonempty, warning=FALSE, error = TRUE}
+ds.omop.filter("D_private", expr = omop_where(age == 43 & sex == "F"),
+  newobj = "D_small_group", conns = conns)
 ```
 
 The four-person group is below `nfilter.subset = 5`, so it is refused just as
