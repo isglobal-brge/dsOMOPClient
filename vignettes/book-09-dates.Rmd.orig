@@ -298,11 +298,10 @@ a visit nor a death date. Elapsed days need both dates. This calculation does no
 
 </details>
 
-## Exercise 2: a common variant
+## Exercise 2: distinguish a period from a duration
 
-Compare the month calendar variable with the elapsed-days variable. Read their
-sources and the month precision/representation instead of inferring meaning from
-a number.
+Which variable represents a calendar category and which measures elapsed time?
+Confirm using the short descriptions from `recipe_explain()`.
 
 <details><summary>Solution 2</summary>
 
@@ -312,8 +311,9 @@ duration_explanation <- recipe_explain(elapsed)$text
 cat(grep("^  (month|days):", c(month_explanation, duration_explanation), value = TRUE), sep = "\n")
 ```
 
-The month variable uses `first_visit`, month precision and factor representation.
-The elapsed variable measures the duration from first visit to death. A calendar
+`calendar_date` identifies the calendar variable; its definition above chooses
+month precision. `time_between` identifies the elapsed-days variable, whose
+definition measures first visit to death. A calendar
 period and a day duration answer different questions.
 
 </details>

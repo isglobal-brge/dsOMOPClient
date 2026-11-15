@@ -60,7 +60,8 @@ Use `format` to request the other shapes.
 
 ## Prepare one small study
 
-We will reuse these definitions so each example changes only the output.
+We will reuse these definitions to compare output shapes. For the baseline
+example we will also restrict the variables to information available at entry.
 [Chapter 4](book-04-vocabulary.html) identifies Inpatient Visit (**9201**),
 Outpatient Visit (**9202**), blood hemoglobin (**3000963**) and its g/dL unit
 (**8713**).
@@ -204,7 +205,8 @@ dsBaseClient::ds.dim("D_fmt_temporal", datasources = conns)
 ```
 
 The 36 rows count nonzero covariate/bin entries rather than people.
-Keep the covariate and time reference tables returned with this result. Keep those companions: numeric covariate/time keys need their definitions. Missing records and missing measurements are not automatically interchangeable.
+Keep the covariate and time reference tables returned with this result: their
+keys need those definitions. Missing records and missing measurements are not automatically interchangeable.
 
 ## Survival: state the censoring rule
 
@@ -227,7 +229,6 @@ Only the named censor sources cap follow-up: observation end and death here. The
 survival_result <- dsBaseClient::ds.table("D_fmt_survival$event", useNA = "no", datasources = conns)
 knitr::kable(book_counts(survival_result))
 ```
-
 
 Seven people have `event = 1` (an observed admission); 21 have `event = 0`
 (follow-up ended without an admission in the risk window).
@@ -378,7 +379,6 @@ The mean is 61.96 visits per person across 28 people. Both outputs use the
 same reducer and episodes. Joining one row to one row adds a column without duplicating those counts.
 
 </details>
-
 
 ## Another numeric exercise
 

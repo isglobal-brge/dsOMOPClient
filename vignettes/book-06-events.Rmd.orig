@@ -141,7 +141,6 @@ aggregate at a time:
 knitr::kable(book_summary("D_reducers$first", datasources = conns), digits = 2)
 ```
 
-
 All 28 people have a first nonmissing measurement. Their mean is 13.99 g/dL;
 this gives each person one observation regardless of how often they were tested.
 
@@ -149,14 +148,12 @@ this gives each person one observation regardless of how often they were tested.
 knitr::kable(book_summary("D_reducers$last", datasources = conns), digits = 2)
 ```
 
-
 The last readings average 14.89 g/dL across the same 28 people. First and last
 can coincide for someone with only one reading.
 
 ```{r days-result}
 knitr::kable(book_summary("D_reducers$days", datasources = conns), digits = 2)
 ```
-
 
 The mean is 3.86 measurement days per person, with a median of 4. A frequency table of each
 exact count is withheld on this dataset because some nonzero cells are below
@@ -176,7 +173,6 @@ ever_result <- dsBaseClient::ds.table("D_reducers$ever", useNA = "no", datasourc
 knitr::kable(book_counts(ever_result))
 ```
 
-
 Everyone in this public dataset has a hemoglobin measurement. A person without
 one would have ever = 0 in this defined window.
 
@@ -184,7 +180,6 @@ one would have ever = 0 in this defined window.
 any_result <- dsBaseClient::ds.table("D_reducers$any_high", useNA = "always", datasources = conns)
 knitr::kable(book_counts(any_result))
 ```
-
 
 The released counts show 19 people with at least one reading at or above 16 g/dL
 and 9 without one. A known qualifying measurement is enough for any, even
@@ -195,7 +190,6 @@ all_result <- dsBaseClient::ds.table("D_reducers$all_high", useNA = "always", da
 knitr::kable(book_counts(all_result))
 ```
 
-
 Four people have all readings at or above 14 g/dL; 24 do not.
 All distinguishes unknown comparisons from an empty set of records.
 
@@ -204,7 +198,6 @@ All distinguishes unknown comparisons from an empty set of records.
 ```{r mean-result}
 knitr::kable(book_summary("D_reducers$mean", datasources = conns), digits = 2)
 ```
-
 
 The mean of the 28 person-level means is 14.47 g/dL. Averaging all measurement
 rows instead would give more weight to people measured more often.
@@ -246,7 +239,6 @@ its default tolerance would include 90 days before and 30 days after.
 knitr::kable(book_summary("D_at_index$hemoglobin", datasources = conns), digits = 2)
 ```
 
-
 The mean is again 13.99 g/dL: because the index is the first hemoglobin reading,
 the closest value in [-30, 0] is that same reading. This equality follows from
 the chosen index; an index such as a diagnosis need not coincide with a lab.
@@ -287,7 +279,6 @@ invisible(recipe_execute(converted, out = c(people = "D_converted"), conns = con
 knitr::kable(book_summary("D_converted$mean_gl", datasources = conns), digits = 2)
 ```
 
-
 The overall mean is 144.67 g/L, ten times 14.47 g/dL. This run uses the dataset's unchanged
 recorded units; it does not pretend that the source already had mixed units.
 
@@ -310,14 +301,12 @@ invisible(recipe_execute(binned, out = c(output = "D_lab_bins"), conns = conns))
 The band is an ordered factor directly on the server. Its order matters for
 model contrasts.
 
-
 ```{r bins-result}
 bins_result <- dsBaseClient::ds.table("D_lab_bins$band", useNA = "always", datasources = conns)
 bin_display <- book_counts(bins_result)
 bin_display$Category <- ordered(bin_display$Category, levels = band_levels)
 knitr::kable(bin_display[order(bin_display$Category, na.last = TRUE), ])
 ```
-
 
 There are 9 people below 14, 9 from 14 to below 15, and 10 at or above 15 g/dL.
 All nonzero cells meet the release threshold. You see
@@ -358,7 +347,6 @@ records on the same day. With duplicates, row counts would count each record
 while day counts would count that date once.
 
 </details>
-
 
 ## Another numeric exercise
 

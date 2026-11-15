@@ -175,7 +175,6 @@ education_table_result <- dsBaseClient::ds.table("D_people$education", useNA = "
 knitr::kable(book_counts(education_table_result))
 ```
 
-
 There are 12 people whose **latest** answer is Secondary education and 12 whose
 latest answer is University education. Every respondent gave both answers at
 different times; these are counts of the selected latest answer, not everyone
@@ -218,15 +217,14 @@ yes_no_result <- dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasou
 knitr::kable(book_counts(yes_no_result))
 ```
 
-
 The table contains 12 “yes” and 12 “no” answers, using your lower-case labels.
 The other 24 people did not answer; they are excluded by `useNA = "no"`. See [chapter 10](book-10-harmonise.html)
 for the same operation across two different vocabularies.
 
 ## Exercise 1: first answer instead of last
 
-Take each person's first education answer. Do the marginal counts reveal that
-people changed answers?
+Take each person's first education answer. Do the totals for each category
+reveal that people changed answers?
 
 <details><summary>Solution</summary>
 
@@ -240,8 +238,9 @@ knitr::kable(book_table2(dsBaseClient::ds.table(
   "D_education_change$first", "D_education_change$last", useNA = "no", datasources = conns)))
 ```
 
-The off-diagonal cells show 12 people changing from Secondary to University and
-12 changing in the opposite direction. The first and last marginal counts are
+Rows show first answers and columns show last answers. The off-diagonal cells
+show 12 people changing from Secondary to University and
+12 changing in the opposite direction. The first and last category totals are
 both 12/12, so those totals alone hide every respondent's change.
 
 </details>

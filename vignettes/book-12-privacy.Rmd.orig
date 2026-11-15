@@ -70,10 +70,11 @@ knitr::kable(book_summary("D_private$age", datasources = conns), digits = 2)
 ```
 
 The mean completed age on 2024-06-01 is 42 years across 36 valid values;
-12 people with year-only births have missing completed age. An approved
+12 people with year-only births have missing completed age. The roster includes
+all people; a fixed-date age calculation does not establish survival to that date.
+An approved
 aggregate method checks its own disclosure rules. A successfully
 assigned table does not guarantee every later summary or model will be releasable.
-
 
 <div class="book-note">
 **Note**

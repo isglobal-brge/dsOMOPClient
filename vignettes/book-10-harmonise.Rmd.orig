@@ -110,7 +110,6 @@ recode_table_result <- dsBaseClient::ds.table("D_category_answers$fever", useNA 
 knitr::kable(book_counts(recode_table_result))
 ```
 
-
 There are still 12 “no” and 12 “yes” answers. Only the wording changed; this
 call excludes missing answers. `ds.omop.table()` also shows declared zero levels.
 
@@ -235,7 +234,6 @@ dsBaseClient::ds.class("D_ordered$education", datasources = conns)
 
 It is an ordered factor, not the integers used internally to store a factor.
 
-
 ## Choose labels and language
 
 `name` displays the concept name. `code_name` adds its vocabulary code; it does
@@ -266,7 +264,6 @@ The counts remain 12/12; each label now includes its public vocabulary code.
 Use `code` or `vocabulary_code` when that coding context is needed.
 `source_code` is refused on this route because source-code disclosure needs a
 separately admitted policy. Prefer names for an ordinary analysis table.
-
 
 ## Keep Missing and Unknown distinct
 
@@ -299,7 +296,6 @@ ds.omop.table("D_missing_categories", "sex", conns = conns)
 
 There are 20 FEMALE and 28 MALE values. A declared Unknown level
 does not turn an observed FEMALE or MALE value into an unknown value.
-
 
 ## Present a semantic flag as an integer, logical or factor
 
@@ -412,7 +408,6 @@ knitr::kable(data.frame(
 
 The first and second levels have different labels even though the same drug
 records contribute to both. Neither level is selected by counting observed drugs.
-
 
 ## Read the codebook of each table
 
@@ -537,12 +532,15 @@ first_answers <- omop_recipe(variables = list(education = omop_variable(
   event = omop_event("observation", concepts = 900001L),
   reducer = omop_reduce("first_value", value = "value_as_concept_id"))))
 invisible(recipe_execute(first_answers, out = "D_first_pair", conns = conns))
-knitr::kable(book_counts(dsBaseClient::ds.table("D_first_pair$education",
-  useNA = "always", datasources = conns)))
+first_counts <- dsBaseClient::ds.table("D_first_pair$education",
+  useNA = "always", datasources = conns)
+first_site_counts <- first_counts$output.list$TABLE_rvar.by.study_counts
+colnames(first_site_counts) <- names(conns)
+knitr::kable(first_site_counts)
 ```
 
-The pooled totals remain 12 Secondary, 36 University qualification and 48
-missing. At site, opposite individual changes cancel in the margins, as
+Site remains 12 Secondary, 12 University qualification and 24 missing; site2
+remains 0, 24 and 24. Adding the columns again gives pooled totals 12, 36 and 48. At site, opposite individual changes cancel in the margins, as
 chapter 5 showed. At site2 every recorded answer is University. Equal totals
 do not prove that the first and last selections identify the same answers.
 
