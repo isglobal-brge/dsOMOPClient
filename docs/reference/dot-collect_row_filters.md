@@ -11,7 +11,7 @@ Collect all row-level filters from a recipe, flattening groups
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
 ## Value

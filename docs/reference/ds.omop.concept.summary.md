@@ -42,29 +42,29 @@ ds.omop.concept.summary(
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name (e.g., `"measurement"`,
     `"observation"`).
 
   - concept\_id:
-
+    
     Integer; the OMOP concept ID to scope the value column(s) to (e.g.,
     the HbA1c measurement concept).
 
   - column:
-
+    
     Character or NULL; a single value column to summarise. If NULL
     (default), the table's columns are fetched via `ds.omop.columns` and
     whichever of `c("value_as_number", "value_as_concept_id")` are
     present are summarised.
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`. Passed through to
     the underlying calls.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"` (Best Effort).
     Passed through to the underlying value-counts, column-stats and
     quantile calls so that, when pooled, categories/values present on
@@ -72,15 +72,15 @@ ds.omop.concept.summary(
     suppressed.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - type:
-
+    
     Optional result view propagated to every aggregate component:
     `"split"`, `"combine"`, or `"both"`. When omitted, legacy `scope`
     behaviour is preserved.

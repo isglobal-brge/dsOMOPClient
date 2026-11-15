@@ -19,11 +19,11 @@ recipe_to_plan(recipe, version = 2L)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - version:
-
+    
     Plan version: `2` (default) or `1`.
 
 ## Value

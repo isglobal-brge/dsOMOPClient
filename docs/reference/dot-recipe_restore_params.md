@@ -16,7 +16,7 @@ intact.
 ## Arguments
 
   - params:
-
+    
     Named list of filter parameters.
 
 ## Value

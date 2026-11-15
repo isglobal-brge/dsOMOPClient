@@ -8,19 +8,18 @@
 <title>Schema Exploration • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Schema Exploration">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<script src="../extra.js"></script><meta property="og:title" content="Schema Exploration">
 <meta name="description" content="Explore OMOP schemas, concepts and protected summaries.">
 <meta property="og:description" content="Explore OMOP schemas, concepts and protected summaries.">
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
@@ -33,20 +32,39 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/v01_getting_started.html">Getting Started with dsOMOP v2</a></li>
-    <li><a class="dropdown-item" href="../articles/v02_exploration.html">Schema Exploration</a></li>
-    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Populations, index dates and study recipes</a></li>
-    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Events, reducers and analysis outputs</a></li>
-    <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
-    <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Get started</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorial-chapters" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorial chapters</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-tutorial-chapters">
+<li><a class="dropdown-item" href="../articles/book-showcase.html">What you can do with dsOMOP</a></li>
+    <li><a class="dropdown-item" href="../articles/book-00-start.html">0. Getting started</a></li>
+    <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. What DataSHIELD and OMOP mean</a></li>
+    <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Resources, connections and symbols</a></li>
+    <li><a class="dropdown-item" href="../articles/book-03-explore.html">3. Exploring the CDM</a></li>
+    <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Finding the concept IDs you need</a></li>
+    <li><a class="dropdown-item" href="../articles/book-05-recipe.html">5. A first recipe</a></li>
+    <li><a class="dropdown-item" href="../articles/book-06-events.html">6. Events, windows and reducers</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations and index events</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Choosing an output format</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates, periods and ages</a></li>
+    <li><a class="dropdown-item" href="../articles/book-10-harmonise.html">10. Concepts as categories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and standalone verbs</a></li>
+    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. What stays private</a></li>
+    <li><a class="dropdown-item" href="../articles/book-13-visits.html">13. Visit dates, one idea at a time</a></li>
+    <li><a class="dropdown-item" href="../articles/book-14-labs.html">14. Working with lab values</a></li>
+    <li><a class="dropdown-item" href="../articles/book-15-formulas.html">15. Derived numeric formulas</a></li>
+    <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a></li>
+    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Checking and recording a study</a></li>
+    <li><a class="dropdown-item" href="../articles/book-18-capstone.html">18. Capstone: a cause-of-death wide table</a></li>
+    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: cause-specific mortality by age, sex and period</a></li>
+    <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
+    <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -58,7 +76,7 @@
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -66,14 +84,14 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Schema Exploration</h1>
-
-
+            
+      
       <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/v02_exploration.Rmd" class="external-link"><code>vignettes/v02_exploration.Rmd</code></a></small>
       <div class="d-none name"><code>v02_exploration.Rmd</code></div>
     </div>
 
-
-
+    
+    
 <div class="section level2">
 <h2 id="numeric-and-category-metadata-in-2-10-5">Numeric and category metadata in 2.10.5<a class="anchor" aria-label="anchor" href="#numeric-and-category-metadata-in-2-10-5"></a>
 </h2>
@@ -82,7 +100,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>Before extracting data, you need to understand what’s available in each CDM. dsOMOP v2 provides schema metadata and <strong>aggregate</strong> exploration functions without returning clinical rows to the client.</p>
+<p>Before extracting data, you need to understand what’s available in each CDM. dsOMOP provides schema metadata and <strong>aggregate</strong> exploration functions without returning clinical rows to the client.</p>
 <p>Each reviewed aggregate has its own disclosure contract. Person-bearing summaries gate on distinct persons; counts/cells may then be banded, omitted or blocked (see the <em>Security</em> vignette). This is not a blanket guarantee for unrestricted adaptive queries or for methods exported by other server packages. Client wrappers return a <code>dsomop_result</code> object with a <code>$per_site</code> list (one entry per server), an optional <code>$pooled</code> slot (when <code>scope = "pooled"</code>), and a <code>$meta</code> slot that records the generated call and any server warnings.</p>
 </div>
 <div class="section level2">
@@ -212,7 +230,7 @@
 <div class="section level2">
 <h2 id="disclosure-gated-manipulation-of-extracted-tables">Disclosure-Gated Manipulation of Extracted Tables<a class="anchor" aria-label="anchor" href="#disclosure-gated-manipulation-of-extracted-tables"></a>
 </h2>
-<p>Once a plan or recipe has produced a server-side <code>omop.table</code> (see <em>Extraction</em>), you can reshape it <strong>without</strong> pulling any row-level data using disclosure-aware verbs. Each verb takes the <em>name(s)</em> of server-side <code>omop.table</code> symbols, computes the new frame on every server, and stores it under <code>newobj</code>. Only <code>omop.table</code> inputs are accepted; the result is re-gated on the number of <strong>distinct person tokens</strong> and re-tagged as an <code>omop.table</code>. Merge and row-bind can increase row counts (and a person-key join can multiply longitudinal rows), so analysts must still choose the intended grain. The distinct-person gate is reapplied and the verbs fail closed when support is insufficient.</p>
+<p>Once a recipe has produced a server-side <code>omop.table</code> (see <em>Extraction</em>), you can reshape it <strong>without</strong> pulling any row-level data using disclosure-aware verbs. Each verb takes the <em>name(s)</em> of server-side <code>omop.table</code> symbols, computes the new frame on every server, and stores it under <code>newobj</code>. Only <code>omop.table</code> inputs are accepted; the result is re-gated on the number of <strong>distinct person tokens</strong> and re-tagged as an <code>omop.table</code>. Merge and row-bind can increase row counts (and a person-key join can multiply longitudinal rows), so analysts must still choose the intended grain. The distinct-person gate is reapplied and the verbs fail closed when support is insufficient.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Join two token-keyed frames on the person key (only the person key is allowed)</span></span>
 <span><span class="va">joined</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.merge.html">ds.omop.merge</a></span><span class="op">(</span><span class="st">"baseline"</span>, <span class="st">"labs"</span>, by <span class="op">=</span> <span class="st">"person_id"</span>, type <span class="op">=</span> <span class="st">"left"</span>,</span>
@@ -240,7 +258,7 @@
 <span><span class="va">comparison</span><span class="op">$</span><span class="va">common_tables</span>   <span class="co"># tables present on every server</span></span>
 <span><span class="va">comparison</span><span class="op">$</span><span class="va">server_only</span>     <span class="co"># tables unique to particular servers</span></span>
 <span><span class="va">comparison</span><span class="op">$</span><span class="va">column_diffs</span>    <span class="co"># column differences across servers</span></span></code></pre></div>
-<p>This comparison feeds plan harmonization (see the <em>Multi-Server</em> vignette).</p>
+<p>Use this comparison before the <a href="book-10-harmonise.html">multi-site category lesson</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="schema-snapshot">Schema Snapshot<a class="anchor" aria-label="anchor" href="#schema-snapshot"></a>
@@ -255,16 +273,20 @@
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
-  <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
+    <footer><div class="pkgdown-footer-left">
+  <p>Book by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>.</p>
 </div>
 
 <div class="pkgdown-footer-right">
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

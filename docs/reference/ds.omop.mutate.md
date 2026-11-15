@@ -29,25 +29,25 @@ ds.omop.mutate(x = NULL, ..., newobj = NULL, symbol = "omop", conns = NULL)
 ## Arguments
 
   - x:
-
+    
     Name of the server-side `omop.table` symbol (default: the session's
     most recent output).
 
   - ...:
-
+    
     Named expressions, `name = expression`.
 
   - newobj:
-
+    
     Name of the symbol to create (default: a fresh name); `newobj = x`
     replaces `x`.
 
   - symbol:
-
+    
     Session symbol (default `"omop"`).
 
   - conns:
-
+    
     DSI connections (default: the session's).
 
 ## Value

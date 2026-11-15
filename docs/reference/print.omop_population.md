@@ -12,11 +12,11 @@ print(x, ...)
 ## Arguments
 
   - x:
-
+    
     An `omop_population` object.
 
   - ...:
-
+    
     Additional arguments (ignored).
 
 ## Value

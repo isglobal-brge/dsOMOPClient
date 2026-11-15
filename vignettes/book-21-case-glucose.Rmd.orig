@@ -1,0 +1,161 @@
+---
+title: "21. Case study: glucose trajectories"
+author: "David Sarrat González"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{21. Case study: glucose trajectories}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Choose a populated glucose measurement, describe trajectories and observed
+target attainment, and fit a small Gaussian model.
+</div>
+
+**You need:** [the installed packages and practice resources](book-00-start.html#before-you-start),
+[concept discovery](book-04-vocabulary.html), and the preceding tutorial chapters.
+Run these sections in order in a fresh `book-work` session. All observations are
+public synthetic teaching data; the numerical results are not clinical evidence.
+
+## Research question
+
+Among Synthea people with blood-glucose measurements, how do first and last
+values relate, and when is a declared teaching target first observed? We select
+a lab-defined population, not a diagnosis-confirmed diabetes cohort.
+
+```{r chapter-setup}
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- book_connect("numeric")
+conns <- practice$conns
+```
+
+## Find the exact glucose concept
+
+```{r glucose-discovery}
+hits <- ds.omop.concept.search("Glucose", domain = "Measurement", vocabulary = "LOINC", conns = conns)$pooled
+knitr::kable(hits[c("concept_name", "standard_concept", "concept_class_id")])
+glucose_id <- hits$concept_id[trimws(hits$concept_name) == "Glucose [Mass/volume] in Blood"]
+knitr::kable(ds.omop.concept.locate(glucose_id, scope = "pooled", conns = conns)$pooled)
+knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = glucose_id,
+  scope = "pooled", conns = conns)$pooled)
+mapping <- ds.omop.concept.relationships(glucose_id, relationship_id = "Maps to",
+  conns = conns, symbol = "omop")$pooled
+children <- ds.omop.concept.descendants(glucose_id, include_self = FALSE,
+  conns = conns, symbol = "omop")$pooled
+print(data.frame(Maps_to_rows = NROW(mapping), Descendant_rows = NROW(children)))
+glucose_set <- omop_concept_set(glucose_id)
+```
+
+This populated Blood concept differs from Serum or Plasma. Its recorded unit is
+mg/dL. The categories below are public teaching thresholds, not treatment advice.
+
+## Cohort, values and trajectories
+
+```{r glucose-recipe}
+glucose <- omop_event("measurement", glucose_set, unit = omop_unit(8840L))
+first <- omop_variable(event = glucose, reducer = omop_reduce("first_value"))
+last <- omop_variable(event = glucose, reducer = omop_reduce("last_value"))
+cohort <- omop_population("measured", index = omop_index(glucose))
+trajectory <- omop_recipe(populations = list(cohort), variables = list(
+  first = first, last = last,
+  control = omop_number_category(last, range = "thresholds", thresholds = c(70, 140)),
+  change = omop_number_change(glucose),
+  target_days = omop_number_change(glucose, "time_to_threshold", threshold = 140, op = "le")),
+  outputs = omop_output("people", rows = "measured", format = "wide"))
+book_symbols(recipe_execute(trajectory, out = c(people = "D_glucose"), conns = conns))
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_glucose$change", datasources = conns)))
+```
+
+All available history contributes to first and last. A difference in person-level
+values is not a slope or an intervention effect. Selecting people with a test can
+also select on disease severity and healthcare use.
+
+## Categories and time to target
+
+The prescribed three-level rule produces a small category in this tiny sample.
+This deliberately shows a refusal: the table is withheld, not a zero-frequency
+result. Keep the planned thresholds and report that limitation.
+
+<!-- expected-refusal:start -->
+```{r glucose-control}
+control_message <- tryCatch(ds.omop.table("D_glucose", "control", conns = conns),
+  error = function(e) conditionMessage(e))
+print(control_message)
+```
+<!-- expected-refusal:end -->
+
+An observed target time is missing for someone never observed below the threshold.
+Day zero means already meeting it at the first reading. Measurement schedules
+can move observed attainment later than the underlying biological change.
+
+```{r glucose-target}
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_glucose$target_days", datasources = conns)))
+```
+
+## Model the last value
+
+Fit last glucose against first glucose. This small synthetic Gaussian model
+teaches a workflow; it is not a validated diabetes risk model. The local-start
+warnings are the documented dsBase setup behaviour, not hidden output.
+
+<!-- expected-glm-warning:start -->
+```{r glucose-model}
+glucose_fit <- dsBaseClient::ds.glm("last ~ first", data = "D_glucose",
+  family = "gaussian", datasources = conns)
+knitr::kable(glucose_fit$coefficients)
+```
+<!-- expected-glm-warning:end -->
+
+## Exercises
+
+**1.** Summarise first glucose in its declared unit.
+
+<details><summary>Solution 1</summary>
+
+```{r glucose-first}
+knitr::kable(book_summary(dsBaseClient::ds.summary("D_glucose$first", datasources = conns)))
+```
+
+The unit is mg/dL. A unit declaration must match the recorded source.
+
+</details>
+
+**2.** Explain why target-time missingness should not be replaced with zero.
+
+<details><summary>Solution 2</summary>
+
+```{r glucose-target-definition}
+trajectory$variables$target_days$derived[c("method", "threshold", "op", "reference")]
+```
+
+Zero represents immediate observed attainment. Missing instead means no observed
+attainment in the eligible records; a censored analysis needs follow-up times too.
+
+</details>
+
+**3.** Inspect the fitted sample size and convergence information.
+
+<details><summary>Solution 3</summary>
+
+```{r glucose-diagnostics}
+glucose_fit[c("Nvalid", "Nmissing", "iter", "errorMessage")]
+```
+
+A successful recipe does not guarantee enough complete observations for a model.
+Keep diagnostics beside the coefficients in a study record.
+
+</details>
+
+## Recap
+
+Find a populated measurement, state the selected population, define units and
+thresholds, preserve temporal meaning, then interpret a model within those choices.
+Rare categories and small complete-case samples can limit what is releasable.
+
+**Next:** [22. Case study: drug utilisation](book-22-case-drug.html).

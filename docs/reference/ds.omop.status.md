@@ -12,7 +12,7 @@ ds.omop.status(symbol = "omop")
 ## Arguments
 
   - symbol:
-
+    
     Character; session symbol (default: "omop").
 
 ## Value

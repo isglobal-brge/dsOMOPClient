@@ -18,16 +18,16 @@ new dependency). Both a FIXED-effect and a random-effects
 ## Arguments
 
   - per\_site\_logest:
-
+    
     Named numeric vector of per-site log-effect estimates.
 
   - per\_site\_se:
-
+    
     Named numeric vector of per-site SEs of the log-estimate (same
     names).
 
   - policy:
-
+    
     Character; `"strict"` (any NA site aborts) or `"pooled_only_ok"`
     (drop NA sites, pool the rest).
 

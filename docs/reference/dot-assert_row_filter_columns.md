@@ -16,15 +16,15 @@ all (a site extension) is left to the server's own validation.
 ## Arguments
 
   - tree:
-
+    
     Compiled row-filter tree for the output's table.
 
   - table:
-
+    
     The output's event table.
 
   - output\_name:
-
+    
     The plan output name.
 
 ## Value

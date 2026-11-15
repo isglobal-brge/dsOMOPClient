@@ -12,11 +12,11 @@ Convert an omop\_filter to a leaf node matching the server's
 ## Arguments
 
   - f:
-
+    
     An `omop_filter` object.
 
   - table:
-
+    
     Character or `NULL`; OMOP table used for standard date column
     inference.
 

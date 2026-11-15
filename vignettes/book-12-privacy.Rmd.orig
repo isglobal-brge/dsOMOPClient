@@ -1,0 +1,230 @@
+---
+title: "12. What stays private"
+author: "David Sarrat González"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{12. What stays private}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Distinguish a private assignment from an aggregate release, understand distinct-person support, and recognise refused identifiers and free text.
+</div>
+
+This chapter uses the synthetic questionnaire dataset described in [Getting started](book-00-start.html).
+
+**You need:** the packages and the matching practice connection described in
+[Before you start](book-00-start.html#before-you-start).
+Run its sections in order. Each chapter starts from a fresh practice connection;
+all the outputs below come from real dsOMOP and dsOMOPClient 2.10.5 calls.
+The numbers describe teaching data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](book-04-vocabulary.html), including the separate questionnaire
+catalogue. Additional body-measurement concepts are found on screen in the
+[formula walkthrough](book-15-formulas.html#find-the-inputs-before-calculating).
+
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in
+[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+
+```{r chapter-setup}
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/fixture.R")
+practice <- book_fixture()
+conns <- practice$conns
+names(conns)
+```
+
+The `site` connection is ready. This chapter creates its temporary questionnaire dataset locally.
+
+## Know which side holds each object
+
+| On your computer | On each server |
+|---|---|
+| Recipe definitions, concept sets and parameters | Database records and credentials |
+| Public table/column/vocabulary metadata | Pseudonymous person and episode rows |
+| Output symbol names | Exact permitted dates, ages and derived columns |
+| Disclosure-checked aggregates | Intermediate populations and joins |
+
+A *symbol* is the name of a server object. Seeing the name does not give you its
+contents. Pseudonymisation replaces person IDs for protected processing; it does
+not make a patient-level table suitable for download.
+
+```{r private}
+private <- omop_recipe(variables = list(age = omop_age_at("2024-06-01")),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+book_symbols(recipe_execute(private, out = c(people = "D_private"), conns = conns))
+```
+
+The mapping is the result you receive from recipe execution. Exact completed age
+stays beside the source data. This is called publication into the DataSHIELD
+session; it is not public publication on the internet or a row export.
+
+<div class="book-flow" role="img" aria-label="Your recipe goes to the server; private rows stay there; checked summaries return to you.">
+<div><strong>You</strong>Choose events, variables and outputs.</div><span aria-hidden="true">→</span>
+<div><strong>Server</strong>Compute with private records and apply release checks.</div><span aria-hidden="true">→</span>
+<div><strong>You see</strong>Symbol names, schemas and checked summaries.</div>
+</div>
+
+## Request an aggregate
+
+```{r aggregate}
+dsBaseClient::ds.summary("D_private$age", datasources = conns)
+```
+
+An approved aggregate method checks its own disclosure rules. A successfully
+assigned table does not guarantee every later summary or model will be releasable.
+The book's outputs are genuine results of those methods, not downloaded rows.
+
+<div class="book-note">
+**Note**
+
+A private assignment is not a row download. Every later aggregate uses the disclosure rules of its own method.
+</div>
+
+## The final release rule
+
+Each final patient component needs enough **distinct persons** for the server's
+`nfilter.subset`. Many events from one person still contribute only one person to
+this check. The practice server uses the ordinary threshold of five. Thresholds are
+server policy, not something the analyst lowers to obtain a desired answer.
+
+Intermediate calculations may contain small populations privately. The gate is
+at final publication; a joined result's private inputs do not need separate
+published symbols. A standalone filter produces a final object and is gated.
+Here we intentionally request a subset with no qualifying rows:
+
+```{r small-refusal, warning=FALSE}
+small_message <- tryCatch({
+  ds.omop.filter("D_private", expr = omop_where(age > 200L),
+    newobj = "D_too_small", conns = conns)
+  "Unexpected success"
+}, error = function(e) conditionMessage(e))
+cat(small_message, "\n")
+```
+
+The refusal reports the policy boundary without providing the small private
+count. The previous `D_private` object remains available. Empty and undersized
+results share this protection; do not interpret the diagnostic as a patient count.
+
+## Why identifiers and source text are refused
+
+*Class 1* includes direct identifiers, source identifiers and free text that may
+contain identifiers. Renaming a source field does not make it safe. Both output
+values and predicates are checked, so a count cannot be used to probe a forbidden
+text column. The following intentionally invalid definition demonstrates that check:
+
+```{r blocked-text}
+text_message <- tryCatch({
+  blocked <- omop_recipe(variables = list(answer = omop_variable(
+    event = omop_event("observation", concepts = 900002L, value = "value_as_string"),
+    reducer = omop_reduce("first_value"))),
+    outputs = omop_output("people", format = "wide", grain = "person"))
+  recipe_to_plan(blocked)
+  "Unexpected success"
+}, error = function(e) conditionMessage(e))
+cat(text_message, "\n")
+```
+
+This definition is refused before execution. Use the reviewed coded answer
+`value_as_concept_id` and translated categories when it answers the question,
+as in [chapter 10](book-10-harmonise.html). Free text is not needed for that analysis.
+
+## Why dates and ages can remain private columns
+
+*Class 2* means a quasi-identifier: a value that may help identify someone when
+combined with other facts. Exact dates, birth components and ages are permitted
+on these private assignment paths, without an owner-side date switch. Their
+aggregates and any category labels still face the applicable release controls.
+
+```{r date-allowed}
+date_recipe <- omop_recipe(variables = list(visit_date = omop_date("first_visit")),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+book_symbols(recipe_execute(date_recipe, out = c(people = "D_private_date"), conns = conns))
+dsBaseClient::ds.colnames("D_private_date", datasources = conns)
+```
+
+You see the schema, not the dates. Turning an exact date into a factor publishes
+category labels as metadata, which needs its own support checks. A fine custom
+date pattern can therefore be refused even when a private Date column is permitted.
+Coarsen to the scientifically appropriate month/quarter/year and request an
+approved aggregate; do not encode a disallowed field into another name or type.
+
+## Protected keys cannot become analyst variables
+
+```{r key-refusal, warning=FALSE}
+key_message <- tryCatch({
+  ds.omop.mutate("D_private", copied = person_id,
+    newobj = "D_key_copy", conns = conns)
+  "Unexpected success"
+}, error = function(e) conditionMessage(e))
+cat(key_message, "\n")
+```
+
+The server needs keys to align rows and joins; an analyst mutation cannot copy,
+rewrite or filter them. Use the declared population and join operations instead.
+
+## Recipe protection is not a DP promise
+
+The recipes, table assignments and dsBase analyses in this book use ordinary
+DataSHIELD disclosure controls. They do not acquire a differential-privacy
+(DP) guarantee just because dsOMOP also provides protected OHDSI release routes.
+Those routes have separate contracts and provenance; inspect them when using
+those services. Deterministic noise is not a reason to repeat a request until
+an answer changes. There are no per-analyst call budgets or history-dependent
+answers in this design.
+
+No chapter needs raw-row download methods, weaker thresholds, database TLS changes
+or owner configuration to make its normal protected recipe route work.
+
+## Try it
+
+After the refused small filter, confirm you can still summarise the original private age column.
+
+<details><summary>Solution</summary>
+
+```{r solution}
+dsBaseClient::ds.summary("D_private$age", datasources = conns)
+```
+The original object remains usable. A refusal is not permission to bypass its release rule with another encoding.
+
+</details>
+
+## Exercise 2: a common variant
+
+Confirm a failed key-copy attempt left the original schema usable.
+
+<details><summary>Solution 2</summary>
+
+```{r book4-exercise-2}
+dsBaseClient::ds.colnames("D_private", datasources = conns)
+```
+
+The protected key was not turned into an analyst variable; the original private object remains.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Check a valid date recipe is still a local definition. Does serialisation release dates?
+
+<details><summary>Solution 3</summary>
+
+```{r book4-exercise-3}
+is.character(recipe_export_json(date_recipe))
+```
+
+No. A JSON definition is public study logic. The resulting dates remain private and aggregates still face release checks.
+
+</details>
+## Recap
+
+A recipe creates private objects and returns their names. Final patient outputs need distinct-person support; aggregates and category metadata have further checks. Class-1 fields and protected-key expressions are refused.
+
+**Next:** [13. Visit dates, one idea at a time](book-13-visits.html).

@@ -24,28 +24,28 @@ omop_censor(
 ## Arguments
 
   - source:
-
+    
     An event, era or registry name.
 
   - which:
-
+    
     `"first_end_after_entry"`, `"first_start_after_entry"` or
     `"containing_entry_end"`.
 
   - offset:
-
+    
     Integer days added (e.g. a grace period).
 
   - search:
-
+    
     `NULL` or an `omop_window()`.
 
   - missing:
-
+    
     `"ignore"` or `"ineligible"`.
 
   - when\_index\_source:
-
+    
     `NULL` or a non-empty unique character vector of index-source tags
     (arm names of the consumer's index).
 

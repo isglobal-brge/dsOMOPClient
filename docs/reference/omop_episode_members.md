@@ -20,23 +20,23 @@ omop_episode_members(
 ## Arguments
 
   - episode:
-
+    
     An `omop_event` over the `episode` table (or its name).
 
   - tables:
-
+    
     Optional member tables to keep (default: every mapped table).
 
   - where:
-
+    
     Optional row predicate over the member rows.
 
   - name:
-
+    
     Event name.
 
   - on\_missing\_table:
-
+    
     `"error"` or `"unavailable"`.
 
 ## Value

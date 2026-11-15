@@ -14,11 +14,11 @@ spec via `.vocabExpandConceptSet` at execution time.
 ## Arguments
 
   - vs:
-
+    
     List of `omop_variable` objects contributing the concepts.
 
   - ids:
-
+    
     Integer vector of concept IDs.
 
 ## Value

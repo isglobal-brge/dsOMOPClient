@@ -1,0 +1,470 @@
+# 5\. A first recipe
+
+**What you will learn**
+
+Build education and cause-of-death columns, predict its output, and
+request category counts.
+
+This chapter uses the synthetic questionnaire dataset described in
+[Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.md).
+**You need:** the packages and the matching practice connection
+described in [Before you
+start](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#before-you-start).
+Run the sections in order in one R session. All printed results below
+were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching
+data, not clinical findings.
+
+Concept selections refer to the searches and saved definitions in
+[chapter 4](https://isglobal-brge.github.io/dsOMOPClient/articles/book-04-vocabulary.md),
+including the separate questionnaire catalogue. Additional
+body-measurement concepts are found on screen in the [formula
+walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-15-formulas.html#find-the-inputs-before-calculating).
+
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in [Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#get-the-book-helpers).
+Run this setup first:
+
+``` r
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/fixture.R")
+practice <- book_fixture()
+conns <- practice$conns
+names(conns)
+```
+
+    #> [1] "site"
+
+The `site` connection is ready. This chapter creates its temporary
+questionnaire dataset locally.
+
+## Select the education question
+
+An *event* describes records of interest. It is a definition on your
+computer, not a downloaded table. We have switched from chapter 4’s
+GiBleed asthma search to the questionnaire dataset. First look up its
+education question by concept:
+
+``` r
+question <- ds.omop.concept.lookup(900001L, conns = conns)
+knitr::kable(question$pooled["concept_name"])
+```
+
+| concept\_name      |
+| :----------------- |
+| Education question |
+
+Now use that question to select observations:
+
+``` r
+education_event <- omop_event("observation", concepts = 900001L)
+class(education_event)
+```
+
+    #> [1] "omop_event" "list"
+
+The server will select observations whose question is Education
+question.
+
+## Choose one answer per person
+
+A *reducer* turns possibly many records into one value. Use the latest
+nonmissing coded answer, ordered by the observation date:
+
+``` r
+education <- omop_variable(
+  event = education_event,
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"))
+class(education)
+```
+
+    #> [1] "omop_variable" "list"
+
+This makes one categorical column. It does not create a separate binary
+column for every education level. A same-date tie uses the documented
+deterministic record ordering; it does not mean “largest answer ID”.
+
+## Add cause of death
+
+``` r
+cause <- omop_variable(
+  event = omop_event("death"),
+  reducer = omop_reduce("first_value", value = "cause_concept_id"))
+class(cause)
+```
+
+    #> [1] "omop_variable" "list"
+
+Here the value comes from `cause_concept_id`. Do not substitute
+`cause_source_value`: that is free source text, not the curated coded
+cause used by this route.
+
+## Describe a wide table
+
+*Wide* means one column per variable. *Person grain* means one row per
+person. The native all-person population retains people who have neither
+answer nor death.
+
+``` r
+people <- omop_recipe(
+  variables = list(education = education, cause_of_death = cause),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+class(people)
+```
+
+    #> [1] "omop_recipe" "list"
+
+`person_id` is included automatically as a pseudonym. Missing records
+produce missing values. The roster does not require an extra identifier
+variable.
+
+## Predict: read the recipe explanation
+
+``` r
+explained <- recipe_explain(people, conns = conns)
+cat(explained$text, sep = "\n")
+```
+
+    #> Recipe plan
+    #> Population 'base' (criteria): none
+    #> Variables:
+    #>   education: last_value of event 'obs_900001' (value 'value_as_concept_id') over any time; missing = "skip"
+    #>   cause_of_death: first_value of event 'death' (value 'cause_concept_id') over any time; missing = "skip"
+    #> Output 'people' [wide] rows 'base', grain person
+    #> Published: people
+    #> Defaults relied on:
+    #>   - variable 'education': rows with a NULL value are skipped before the row is selected (missing = "skip")
+    #>   - variable 'cause_of_death': rows with a NULL value are skipped before the row is selected (missing = "skip")
+    #> Concept presentation: factors; identity is the declared concept class, preserved through aliases and value-preserving reducers.
+    #> Label precedence: variable recode, recipe recode, vocabulary name, decimal ID fallback. Explicit equal recodes merge categories.
+    #> Federation: permitted ID union, including declared unused levels; newest comparable vocabulary version, then bytewise name tie. Unresolved versions never establish recency.
+    #> Generated names: ASCII snake_case vocabulary tokens; colliding automatic names gain concept-ID suffixes. Vocabulary-dependent names are unresolved until permitted federation reconciliation.
+    #> variables.education: concept origin follows reducer last_value over value_as_concept_id; explicit variable name is retained.
+    #> variables.cause_of_death: concept origin follows reducer first_value over cause_concept_id; explicit variable name is retained.
+    #> Execution would use the publication protocol on every site.
+
+Before running, predict one private row per person, two named
+categorical variables, and a pseudonymous key. With no time restriction,
+each variable reads all available history independently. That is a
+teaching definition to choose explicitly in a real study.
+
+Full plan explanation (optional)
+
+A label contract records the category names and their ordering.
+Federation reconciliation makes those categories agree across sites. A
+bytewise tie compares the bytes of text to make a repeated choice
+deterministic. You do not need to configure these for this first recipe.
+
+Read the lines in order: the population defines the row; each variable
+identifies its source and reducer; output defaults determine the shape;
+category reconciliation determines names. The explanation contains
+declarations, not observed patient frequencies.
+
+Print all the chosen defaults:
+
+The explanation above records the chosen defaults before execution.
+
+## Run: assign the result
+
+``` r
+book_symbols(recipe_execute(people, out = c(people = "D_people"), conns = conns))
+```
+
+    #>     people 
+    #> "D_people"
+
+The reply is a mapping of output names to server symbols. `D_people` is
+still on the server. Concept-valued columns are labelled factors because
+of their declared type. In 2.10.5 the names `education` and
+`cause_of_death` need no `_concept_id` suffix.
+
+## Verify: check what you got
+
+Do this complete check once while learning a new extraction. `ds.ls`
+lists server symbols; `ds.dim` describes the result dimensions;
+`ds.colnames` names its columns; `ds.class` checks types. Then inspect
+one summary or table and missingness with `ds.numNA`. Every method
+applies its own release rules. None of these calls retrieves patient
+rows.
+
+On Opal, `ds.ls` searches the server workspace. With the installed
+DSLite/dsBase pair, it searches the R global environment instead, so the
+filtered result below is deliberately empty. That does **not** mean
+extraction failed. The driver’s `datashield.symbols` method correctly
+lists the assigned DSLite symbols; we show its `D_` analysis objects
+next. This is a practice-driver difference, not a reason to inspect
+patient rows.
+
+``` r
+dsBaseClient::ds.ls(search.filter = "D_*", datasources = conns)
+```
+
+    #> $site
+    #> $site$environment.searched
+    #> [1] "R_GlobalEnv"
+    #> 
+    #> $site$objects.found
+    #> character(0)
+    #> 
+    #> $site$search.filter.final
+    #> [1] "D_*"
+
+``` r
+lapply(DSI::datashield.symbols(conns), function(x) x[grepl("^D_", x)])
+```
+
+    #> $site
+    #> [1] "D_people"
+
+``` r
+dsBaseClient::ds.dim("D_people", datasources = conns)
+```
+
+    #> $`dimensions of D_people in site`
+    #> [1] 24  3
+    #> 
+    #> $`dimensions of D_people in combined studies`
+    #> [1] 24  3
+
+``` r
+dsBaseClient::ds.colnames("D_people", datasources = conns)
+```
+
+    #> $site
+    #> [1] "person_id"      "education"      "cause_of_death"
+
+``` r
+dsBaseClient::ds.class("D_people$education", datasources = conns)
+```
+
+    #> $site
+    #> [1] "dsomop_concept_factor" "factor"
+
+``` r
+dsBaseClient::ds.numNA("D_people$education", datasources = conns)
+```
+
+    #> $site
+    #> [1] 12
+
+The category table in the next step completes the check. Compare it with
+your prediction. Later lessons use at most one helpful schema or
+variable check per extraction; type checks recur only when the lesson is
+about types. Explain a recipe again when a new default, censoring,
+matching or presentation rule matters. This is the **predict, run,
+verify** habit of a careful federated analyst.
+
+## Count the education categories
+
+``` r
+education_table_result <- dsBaseClient::ds.table("D_people$education", useNA = "no", datasources = conns)
+knitr::kable(book_counts(education_table_result))
+```
+
+| Category             | Count |
+| :------------------- | ----: |
+| Secondary education  |     6 |
+| University education |     6 |
+
+Full aggregate response
+
+``` r
+education_table_result
+```
+
+    #> $output.list
+    #> $output.list$TABLE_rvar.by.study_row.props
+    #>                       study
+    #> D_people$education     site
+    #>   Secondary education     1
+    #>   University education    1
+    #> 
+    #> $output.list$TABLE_rvar.by.study_col.props
+    #>                       study
+    #> D_people$education     site
+    #>   Secondary education   0.5
+    #>   University education  0.5
+    #> 
+    #> $output.list$TABLE_rvar.by.study_counts
+    #>                       study
+    #> D_people$education     site
+    #>   Secondary education     6
+    #>   University education    6
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_proportions
+    #> D_people$education
+    #>  Secondary education University education 
+    #>                  0.5                  0.5 
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_counts
+    #> D_people$education
+    #>  Secondary education University education 
+    #>                    6                    6 
+    #> 
+    #> 
+    #> $validity.message
+    #> [1] "Data in all studies were valid"
+
+The Count column answers how many people have each answer. The full
+response also contains proportions (fractions of a row or column total);
+we select its `TABLES.COMBINED_all.sources_counts` component after
+checking that every site released a valid result. The helper stops on a
+withheld or incomplete result. The labels are names, not numeric codes.
+`useNA = "no"` excludes missing answers; the counts therefore need not
+add up to the whole population. DataSHIELD checks whether cells may be
+released before returning the table.
+
+## Count causes
+
+``` r
+ds.omop.table("D_people", "cause_of_death", conns = conns)
+```
+
+    #> D_people$cause_of_death
+    #> Myocardial infarction             Pneumonia 
+    #>                    12                     6
+
+`ds.omop.table()` calls the real dsBase `ds.table()` and preserves the
+complete published category contract, including declared zero
+categories. It also protects labels containing punctuation. Prefer it
+when you need that complete contract.
+
+## Give a question your own yes/no labels
+
+``` r
+fever <- omop_variable(
+  event = omop_event("observation", concepts = 900002L),
+  reducer = omop_reduce("last_value", value = "value_as_concept_id"),
+  labels = c("900301" = "yes", "900302" = "no"))
+class(fever)
+```
+
+    #> [1] "omop_variable" "list"
+
+The map is keyed by answer concepts. It changes presentation, not which
+question is selected. Missing fever answers remain missing; they do not
+become “no”.
+
+``` r
+answers <- omop_recipe(
+  variables = list(education = education, fever = fever, cause_of_death = cause),
+  outputs = omop_output("people", format = "wide", grain = "person"))
+book_symbols(recipe_execute(answers, out = c(people = "D_answers"), conns = conns))
+```
+
+    #>      people 
+    #> "D_answers"
+
+``` r
+yes_no_result <- dsBaseClient::ds.table("D_answers$fever", useNA = "no", datasources = conns)
+knitr::kable(book_counts(yes_no_result))
+```
+
+| Category | Count |
+| :------- | ----: |
+| yes      |     6 |
+| no       |     6 |
+
+Full aggregate response
+
+``` r
+yes_no_result
+```
+
+    #> $output.list
+    #> $output.list$TABLE_rvar.by.study_row.props
+    #>                study
+    #> D_answers$fever site
+    #>             yes    1
+    #>             no     1
+    #> 
+    #> $output.list$TABLE_rvar.by.study_col.props
+    #>                study
+    #> D_answers$fever site
+    #>             yes  0.5
+    #>             no   0.5
+    #> 
+    #> $output.list$TABLE_rvar.by.study_counts
+    #>                study
+    #> D_answers$fever site
+    #>             yes    6
+    #>             no     6
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_proportions
+    #> D_answers$fever
+    #> yes  no 
+    #> 0.5 0.5 
+    #> 
+    #> $output.list$TABLES.COMBINED_all.sources_counts
+    #> D_answers$fever
+    #> yes  no 
+    #>   6   6 
+    #> 
+    #> 
+    #> $validity.message
+    #> [1] "Data in all studies were valid"
+
+The table contains your lower-case labels. See
+[chapter 10](https://isglobal-brge.github.io/dsOMOPClient/articles/book-10-harmonise.md)
+for the same operation across two different vocabularies.
+
+## Try it
+
+Count education using the complete-contract helper instead of calling
+ds.table directly.
+
+Solution
+
+``` r
+ds.omop.table("D_people", "education", conns = conns)
+```
+
+    #> D_people$education
+    #>  Secondary education University education 
+    #>                    6                    6
+
+## Exercise 2: a common variant
+
+Count causes with dsBase directly, preserving missing causes.
+
+Solution 2
+
+``` r
+knitr::kable(book_counts(dsBaseClient::ds.table("D_people$cause_of_death", useNA = "always", datasources = conns)))
+```
+
+| Category              | Count |
+| :-------------------- | ----: |
+| Myocardial infarction |    12 |
+| Pneumonia             |     6 |
+| NA                    |     6 |
+
+Missing cause is not another coded cause and not proof that a person
+survived.
+
+## Exercise 3: a pitfall to avoid
+
+Verify the combined answer table has the three intended variables.
+
+Solution 3
+
+``` r
+dsBaseClient::ds.colnames("D_answers", datasources = conns)
+```
+
+    #> $site
+    #> [1] "person_id"      "education"      "fever"          "cause_of_death"
+
+The pseudonymous person key is automatic. The education, fever and cause
+columns come from separate declarations.
+
+## Recap
+
+An event selects records, a reducer selects a value, and a wide output
+arranges private rows. Only the aggregate returns to you.
+
+**Next:** [6. Events, windows and
+reducers](https://isglobal-brge.github.io/dsOMOPClient/articles/book-06-events.md).

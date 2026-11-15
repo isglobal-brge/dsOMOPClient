@@ -15,17 +15,17 @@ dsomop_result(per_site, pooled = NULL, meta = list())
 ## Arguments
 
   - per\_site:
-
+    
     Named list mapping server names to their raw results (data frames,
     lists, or scalars).
 
   - pooled:
-
+    
     `NULL` (default) or a single aggregated result (typically a data
     frame) combining all servers.
 
   - meta:
-
+    
     Named list of metadata. Recognised elements: `call_code` (character;
     reproducible R code), `scope` (character; `"per_site"` or
     `"pooled"`), `type` (character; `"split"`, `"combine"`, or

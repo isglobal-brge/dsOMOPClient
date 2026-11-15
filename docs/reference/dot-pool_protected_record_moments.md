@@ -22,15 +22,15 @@ by some servers (sums over those servers).
 ## Arguments
 
   - payloads:
-
+    
     Named list of `dsomop_release` payloads.
 
   - policy:
-
+    
     `"strict"` or `"pooled_only_ok"`.
 
   - columns:
-
+    
     Optional contracted columns (their names are the schema).
 
 ## Value

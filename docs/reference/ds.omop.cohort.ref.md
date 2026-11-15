@@ -14,7 +14,7 @@ ds.omop.cohort.ref(cohort_definition_id)
 ## Arguments
 
   - cohort\_definition\_id:
-
+    
     Integer; the ID of an existing cohort definition that has already
     been created on the server(s). Referencing an absent or
     sub-threshold id is accepted here but fails closed when resolved

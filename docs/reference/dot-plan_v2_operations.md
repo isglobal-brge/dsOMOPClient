@@ -13,7 +13,7 @@ every server advertises what it needs (design section 4.4).
 ## Arguments
 
   - plan:
-
+    
     A v2 plan.
 
 ## Value

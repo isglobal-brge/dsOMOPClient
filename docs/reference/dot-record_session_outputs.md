@@ -17,11 +17,11 @@ session simply skips recording.
 ## Arguments
 
   - symbol:
-
+    
     Character; the session symbol used for the execution.
 
   - out:
-
+    
     Named list of exact produced component symbols, or a character
     vector for backwards-compatible internal use.
 

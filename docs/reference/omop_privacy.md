@@ -38,32 +38,32 @@ omop_privacy(
 ## Arguments
 
   - statistic:
-
+    
     One of `"count"`, `"bounded_record_count"`,
     `"categorical_histogram"`, `"numeric_histogram"`,
     `"bounded_distinct"`, `"bounded_mean"`, or `"binary_rate"`.
 
   - variable:
-
+    
     Bare column name except for `"count"` and `"bounded_record_count"`.
 
   - levels:
-
+    
     Public character labels for a categorical histogram. On 2.10.3 these
     must be a view of the server's complete registered domain. The
     server returns every requested level, including zero-count levels.
 
   - breaks:
-
+    
     Public, fixed, strictly increasing finite numbers, canonical
     `YYYY-MM-DD` dates, or `YYYY-MM-DDTHH:MM:SSZ` UTC datetimes.
 
   - lower, upper:
-
+    
     Public finite bounds for a bounded mean.
 
   - reducer:
-
+    
     Per-person reducer. Categorical histograms accept `"presence"`,
     `"mode"`, `"first"`, `"last"`, and `"records"`; numeric histograms
     also accept `"min"`, `"max"`, `"mean"`, `"median"`, and `"records"`;
@@ -74,29 +74,29 @@ omop_privacy(
     canonicalize it to their sole reducer.
 
   - max\_contributions:
-
+    
     Positive integer person-level contribution cap. Values above one
     apply to bounded record counts, bounded distinct counts, categorical
     `"presence"`/`"records"` histograms, and numeric `"records"`
     histograms.
 
   - positive:
-
+    
     Non-empty public value vector defining positive binary-rate records.
     It is canonicalized to sorted, unique character labels.
 
   - order\_by:
-
+    
     Optional bare column defining longitudinal order. Required for
     `"first"` and `"last"`.
 
   - denominator:
-
+    
     Binary-rate denominator: all persons or only persons with a
     non-missing value.
 
   - population\_id:
-
+    
     Optional public compatibility label for the population represented
     by `x`. When omitted, `ds.omop.dp.release()` derives it from the
     bare server symbol `x`. This label is metadata, not sticky release

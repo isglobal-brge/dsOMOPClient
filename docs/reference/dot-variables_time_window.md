@@ -14,7 +14,7 @@ unioned (which would broaden at least one variable).
 ## Arguments
 
   - vars:
-
+    
     List of `omop_variable` objects.
 
 ## Value

@@ -15,7 +15,7 @@ in `list(...)`. Returns a `.codegen_raw()` value so the enclosing
 ## Arguments
 
   - code\_strings:
-
+    
     Character vector of constructor-call code strings.
 
 ## Value

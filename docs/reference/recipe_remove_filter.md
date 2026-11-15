@@ -11,11 +11,11 @@ recipe_remove_filter(recipe, id)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - id:
-
+    
     Character; filter ID to remove.
 
 ## Value

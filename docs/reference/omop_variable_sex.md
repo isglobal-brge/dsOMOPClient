@@ -12,7 +12,7 @@ omop_variable_sex(name = "sex")
 ## Arguments
 
   - name:
-
+    
     Character; output column name (default `"sex"`).
 
 ## Value

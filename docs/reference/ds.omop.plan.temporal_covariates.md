@@ -24,41 +24,41 @@ ds.omop.plan.temporal_covariates(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - table:
-
+    
     Character; source OMOP table to extract covariates from.
 
   - concept\_set:
-
+    
     Optional concept IDs or an OHDSI-style concept-set spec with
     `concepts`, `include_descendants`, `include_mapped`, and `exclude`.
     When `NULL`, all concepts present in the bounded event stream are
     retained, subject to the server concept cap.
 
   - bin\_width:
-
+    
     Integer; width of each time bin in days.
 
   - window\_start:
-
+    
     Integer; start of the observation window in days relative to the
     cohort index date (negative = before index).
 
   - window\_end:
-
+    
     Integer; end of the observation window in days relative to the
     cohort index date (0 = index date).
 
   - analyses:
-
+    
     Character vector; types of analyses to compute. Supported values
     include `"binary"` and `"count"`.
 
   - name:
-
+    
     Character; output name used as a key in the plan's outputs list.
 
 ## Value

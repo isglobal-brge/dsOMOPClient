@@ -19,24 +19,24 @@ omop.date_handling(
 ## Arguments
 
   - mode:
-
+    
     Character; transformation mode. Defaults to `"remove"`
     (privacy-preserving). One of `"absolute"` (keep original dates),
     `"relative"` (convert to days from reference), `"binned"` (aggregate
     into calendar bins), or `"remove"` (drop all date columns).
 
   - reference:
-
+    
     Character; reference point for relative mode. Currently only
     `"index"` (cohort index date) is supported.
 
   - bin\_width:
-
+    
     Character; bin granularity for binned mode. One of `"week"`,
     `"month"`, or `"year"`.
 
   - date\_columns:
-
+    
     Character vector; specific date columns to transform. If `NULL`, all
     date columns in the output are transformed.
 

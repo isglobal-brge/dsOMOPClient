@@ -25,16 +25,16 @@ ds.omop.column.stats(
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name (e.g., `"condition_occurrence"`).
 
   - column:
-
+    
     Character; the column name to profile (e.g.,
     `"condition_start_date"`, `"value_as_number"`).
 
   - concept\_id:
-
+    
     Integer or NULL; optional concept ID to restrict rows to a single
     concept of the table before computing the column statistics (e.g.,
     `value_as_number` for one measurement concept). Default: NULL for
@@ -42,34 +42,34 @@ ds.omop.column.stats(
     concept-filtered population.
 
   - cohort:
-
+    
     Cohort reference (a `dsomop_cohort_handle`, a
     `cohort_definition_id`, or a server-side cohort table name), or
     NULL.
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"`.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - execute:
-
+    
     Logical; if `FALSE`, return a dry-run result containing only the
     generated call code (default: `TRUE`).
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, legacy `scope` behaviour is preserved.
 

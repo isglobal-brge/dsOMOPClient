@@ -11,20 +11,20 @@ ds.omop.ohdsi.summary(tool_id, symbol = "omop", conns = NULL, type = NULL)
 ## Arguments
 
   - tool\_id:
-
+    
     Character; which tool to summarize (e.g., `"cohort_diagnostics"`,
     `"cohort_incidence"`, `"characterization"`).
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL`, uses active session.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. Tool
     summaries are site-specific, so a combined view has no value and
     records that reason.

@@ -14,11 +14,11 @@ ds.omop.disconnect(symbol = "omop", conns = NULL)
 ## Arguments
 
   - symbol:
-
+    
     Character; the session symbol to disconnect (default: "omop").
 
   - conns:
-
+    
     DSI connections. `NULL` uses the session's stored connections. When
     supplied, it must contain exactly the same named connection objects;
     subsets and replacements are rejected before cleanup.

@@ -36,58 +36,58 @@ omop_strata(event, before = NULL, window = NULL)
 ## Arguments
 
   - cases:
-
+    
     Population id (or object) whose episodes are cases.
 
   - controls:
-
+    
     Criteria population id (or object) used as a template.
 
   - outcome:
-
+    
     Event giving the complete outcome history.
 
   - at:
-
+    
     `"index"`.
 
   - match:
-
+    
     List of `"sex"`, `"calendar_year"`, `omop_age_band()` and
     `omop_strata()` items.
 
   - controls\_per\_case:
-
+    
     Controls per case.
 
   - prior\_outcome, future\_cases, replacement, insufficient,
     missing\_strata:
-
+    
     Sampling policies (see the design).
 
   - seed:
-
+    
     Non-negative integer seed.
 
   - max\_candidates:
-
+    
     Cap on the candidate pairs (exceeding it is a typed refusal, never a
     truncation).
 
   - width:
-
+    
     Age band width (years) at case time.
 
   - event:
-
+    
     An event (strata presence before case time).
 
   - before:
-
+    
     Strata: presence in the `before` days up to case time.
 
   - window:
-
+    
     Strata: an explicit window around case time.
 
 ## Value

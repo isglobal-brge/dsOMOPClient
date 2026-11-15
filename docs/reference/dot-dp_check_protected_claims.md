@@ -22,15 +22,15 @@ than displayed.
 ## Arguments
 
   - value:
-
+    
     Payload or `dsomop_protection` label.
 
   - server:
-
+    
     Server name (for messages).
 
   - what:
-
+    
     Description of `value` (for messages).
 
 ## Value

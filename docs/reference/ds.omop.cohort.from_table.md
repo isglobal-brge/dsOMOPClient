@@ -18,21 +18,21 @@ ds.omop.cohort.from_table(x, new_name = NULL, symbol = "omop", conns = NULL)
 ## Arguments
 
   - x:
-
+    
     Character; the name of a server-side `omop.table` symbol.
 
   - new\_name:
-
+    
     Character; TABLE name for the cohort. If `NULL` (the default), an
     auto-generated name is used.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

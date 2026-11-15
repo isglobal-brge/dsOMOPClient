@@ -13,7 +13,7 @@ concept-scope column) from a set of variables, "first one set wins".
 ## Arguments
 
   - x:
-
+    
     A list.
 
 ## Value

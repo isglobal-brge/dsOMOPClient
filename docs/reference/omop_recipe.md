@@ -36,32 +36,32 @@ omop_recipe(
 ## Arguments
 
   - variables:
-
+    
     A single `omop_variable` (including the convenience
     `omop_variable_*` derived constructors) or a list of them.
 
   - filters:
-
+    
     A single `omop_filter` / `omop_filter_group` or a list of them. A
     *named* list uses each name as the filter ID.
 
   - outputs:
-
+    
     A single `omop_output` or a list of them.
 
   - populations:
-
+    
     A single `omop_population` or a list of them (the implicit `"base"`
     population always exists; parents must be declared before their
     children).
 
   - blocks:
-
+    
     A single `omop_variable_block` or a list of them; each block is
     expanded into individual variables.
 
   - cohort:
-
+    
     Recipe-level *scope*. Any form – a scalar OMOP
     `cohort_definition_id`, a cohort handle (`dsomop_cohort_handle`), or
     a server-side cohort table name – resolves to a gated person set
@@ -71,70 +71,70 @@ omop_recipe(
     ...)`. `NULL` sets no scope.
 
   - tables:
-
+    
     Character vector of server-side `omop.table` symbol names, or
     `NULL`. Their distinct persons form a recipe-level scope folded with
     any `cohort` scope by `combine` and intersected into every
     population (the server resolves the symbol names to frames).
 
   - combine:
-
+    
     Character; how to fold multiple scope sources together: `"union"`
     (the default) or `"intersect"`.
 
   - options:
-
+    
     Named list of plan-wide options (`translate_concepts`,
     `block_sensitive`, `factor_concepts`); only supplied keys override
     the defaults.
 
   - output:
-
+    
     Convenience alias for a single `omop_output`; use it instead of
     `outputs` when the recipe has just one output.
 
   - concept\_sets:
-
+    
     (2.10.3) Named concept sets (`omop_concept_set`) referenced by name
     from events.
 
   - events:
-
+    
     (2.10.3) Declared `omop_event`s (events used inline elsewhere are
     declared automatically).
 
   - intervals:
-
+    
     (2.10.3) Declared `omop_era`s.
 
   - coverage:
-
+    
     (2.10.3) Default `omop_coverage` for the recipe's populations.
 
   - publish:
-
+    
     (2.10.3) `NULL` (every output is published) or the names of the
     outputs to publish; other outputs are computed privately when
     another output depends on them and are never released.
 
   - labels:
-
+    
     Recipe-wide concept-ID to category-label map; variable maps win.
 
   - column\_names:
-
+    
     Recipe-wide stable generated-column key to final-name map.
 
   - date\_spec:
-
+    
     Recipe-wide defaults created with omop\_date\_spec().
 
   - number\_spec:
-
+    
     Recipe-wide numeric presentation defaults.
 
   - category\_spec:
-
+    
     Recipe-wide category presentation defaults.
 
 ## Value

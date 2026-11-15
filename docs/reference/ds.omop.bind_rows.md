@@ -15,28 +15,28 @@ ds.omop.bind_rows(x = NULL, y, newobj = NULL, symbol = "omop", conns = NULL)
 ## Arguments
 
   - x:
-
+    
     Character; name of the first (top) server-side `omop.table` symbol.
     If `NULL` (the default), the session's most recently produced output
     symbol is used.
 
   - y:
-
+    
     Character; name of the second (bottom) server-side `omop.table`
     symbol (must have identical column names to `x` server-side).
 
   - newobj:
-
+    
     Character; name of the server-side symbol to create. If `NULL`
     (default), a unique name is generated.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

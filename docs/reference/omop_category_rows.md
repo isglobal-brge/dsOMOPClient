@@ -13,27 +13,27 @@ omop_category_indicators(variable, keys, missing = "propagate")
 ## Arguments
 
   - event:
-
+    
     Typed event or registered event name.
 
   - value:
-
+    
     Registered concept-valued role; NULL selects the primary concept.
 
   - category\_spec:
-
+    
     Explicit category presentation.
 
   - variable:
-
+    
     A category variable declaration.
 
   - keys:
-
+    
     Named stable category keys; names are suffixes.
 
   - missing:
-
+    
     propagate or zero for ordinary available NA.
 
 ## Value

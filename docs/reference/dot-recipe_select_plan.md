@@ -18,7 +18,7 @@ plan.
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe`.
 
 ## Value

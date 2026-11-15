@@ -11,7 +11,7 @@ Format an R value for code generation
 ## Arguments
 
   - x:
-
+    
     An R value to format as code
 
 ## Value

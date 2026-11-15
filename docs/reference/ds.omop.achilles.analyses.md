@@ -19,24 +19,24 @@ ds.omop.achilles.analyses(
 ## Arguments
 
   - domain:
-
+    
     Character; optional domain filter. Valid values include `"person"`,
     `"condition"`, `"drug"`, `"measurement"`, `"procedure"`,
     `"observation"`, `"visit"`, and `"device"`. `NULL` (the default)
     returns all domains.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. The
     historical default is `"both"`.
 

@@ -16,11 +16,11 @@ suppressed cell. Frames without an id column are returned untouched
 ## Arguments
 
   - result:
-
+    
     A `dsomop_result`.
 
   - concept\_id:
-
+    
     Integer vector of concept ids to keep, or `NULL`.
 
 ## Value

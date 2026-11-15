@@ -1,0 +1,138 @@
+---
+title: "23. Case study: a harmonised Table 1"
+author: "David Sarrat González"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{23. Case study: a harmonised Table 1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Use identical factor definitions at disjoint sites and combine descriptive
+counts and means into a study characterisation table.
+</div>
+
+**You need:** [the installed packages and practice resources](book-00-start.html#before-you-start),
+[concept discovery](book-04-vocabulary.html), and the preceding tutorial chapters.
+Run these sections in order in a fresh `book-work` session. All observations are
+public synthetic teaching data; the numerical results are not clinical evidence.
+
+## Research question
+
+What are the age, sex and haemoglobin characteristics of the same explicitly
+selected population across two sites? Use disjoint Synthea people and a common
+first-haemoglobin index. Table 1 describes the cohort; it does not test causality.
+
+```{r chapter-setup}
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+pair <- book_numeric_pair()
+two_conns <- pair$conns
+```
+
+## Find and confirm the common concept
+
+```{r table1-discovery}
+hits <- ds.omop.concept.search("Hemoglobin", domain = "Measurement",
+  conns = two_conns, symbol = "book_pool")$pooled
+knitr::kable(hits[c("concept_name", "standard_concept", "vocabulary_id")])
+hb_id <- hits$concept_id[trimws(hits$concept_name) == "Hemoglobin [Mass/volume] in Blood"]
+knitr::kable(ds.omop.value.counts("measurement", "unit_concept_id", concept_id = hb_id,
+  scope = "pooled", conns = two_conns, symbol = "book_pool")$pooled)
+mapping <- ds.omop.concept.relationships(hb_id, relationship_id = "Maps to",
+  conns = two_conns, symbol = "book_pool")$pooled
+children <- ds.omop.concept.descendants(hb_id, include_self = FALSE,
+  conns = two_conns, symbol = "book_pool")$pooled
+print(data.frame(Maps_to_rows = NROW(mapping), Descendant_rows = NROW(children)))
+hb_set <- omop_concept_set(hb_id)
+```
+
+The catalogue means and recorded unit must agree before pooling. A pooled search
+row alone does not establish clinical equivalence between differently mapped sites.
+
+## Use one definition for every site
+
+```{r table1-recipe}
+hb <- omop_event("measurement", hb_set, unit = omop_unit(8713L))
+characterise <- omop_study(hb, outputs = "baseline", baseline = list(
+  age = omop_age(), sex = omop_sex(),
+  age_band = omop_number_bins(omop_age(), breaks = c(0, 18, 121),
+    labels = c("under 18", "adult")),
+  haemoglobin = omop_variable(event = hb, reducer = omop_reduce("mean"))))
+book_symbols(recipe_execute(characterise, out = c(baseline = "D_table1"), conns = two_conns, symbol = "book_pool"))
+dsBaseClient::ds.levels("D_table1$age_band", datasources = two_conns)
+```
+
+This type-focused check confirms identical public factor domains, including
+unused levels. It does not reveal private patient categories. The age is annual
+age at first haemoglobin; the haemoglobin variable is a person mean over history.
+
+## Build Table 1 from released aggregates
+
+```{r table1-results}
+sex_counts <- dsBaseClient::ds.table("D_table1$sex", datasources = two_conns)
+age_counts <- dsBaseClient::ds.table("D_table1$age_band", datasources = two_conns)
+hb_mean <- dsBaseClient::ds.mean("D_table1$haemoglobin", type = "combine", datasources = two_conns)
+knitr::kable(rbind(transform(book_counts(sex_counts), Variable = "Sex"),
+  transform(book_counts(age_counts), Variable = "Age band")))
+knitr::kable(data.frame(Variable = "Person mean haemoglobin (g/dL)",
+  Mean = hb_mean$Global.Mean[1,1], Nonmissing = hb_mean$Global.Mean[1,"Nvalid"]))
+```
+
+Counts add across disjoint populations. The numeric mean weights each nonmissing
+person equally, not each site equally. Missing categories and numeric denominators
+must be reported; a suppressed cell must never be silently filled with zero.
+
+## Exercises
+
+**1.** Check the pooled numeric sample size.
+
+<details><summary>Solution 1</summary>
+
+```{r table1-size}
+hb_mean$Global.Mean[,c("Nmissing", "Nvalid", "Ntotal"),drop = FALSE]
+```
+
+This states the denominator for this variable, not a universal denominator for
+all future variables in the table.
+
+</details>
+
+**2.** Summarise age with the same population and connection list.
+
+<details><summary>Solution 2</summary>
+
+```{r table1-age}
+dsBaseClient::ds.mean("D_table1$age", type = "combine", datasources = two_conns)
+```
+
+The age variable is defined at entry. Current age would describe a different time.
+
+</details>
+
+**3.** Save the harmonised recipe and restore it.
+
+<details><summary>Solution 3</summary>
+
+```{r table1-roundtrip}
+restored <- recipe_import_json(recipe_export_json(characterise))
+identical(recipe_to_plan(characterise), recipe_to_plan(restored))
+```
+
+A shared definition preserves declared thresholds and units. Each site's
+vocabulary and capability checks still matter when executing it later.
+
+</details>
+
+## Recap
+
+A Table 1 requires a common population, index, variable definitions and factor
+levels. Pool only compatible released summaries from disjoint people, preserve
+missingness, and record each variable's denominator with its result.
+
+**Next:** [Reproduce your study](book-17-reproduce.html).

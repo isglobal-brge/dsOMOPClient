@@ -34,56 +34,56 @@ ds.omop.plan.survival(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - outcome\_table:
-
+    
     Character; OMOP table containing outcome events (e.g.
     `"condition_occurrence"`, `"procedure_occurrence"`).
 
   - outcome\_concepts:
-
+    
     Numeric vector; concept IDs defining the historical composite
     outcome. Omit when using \`outcomes\`.
 
   - tar:
-
+    
     Named list; time-at-risk window with `start_offset` and `end_offset`
     (integer days relative to cohort\_start\_date).
 
   - event\_order:
-
+    
     Character; `"first"` or `"last"` to select which event occurrence
     determines the time-to-event value; advanced
     recurrent/counting/multi-state formats also accept \`all\`.
 
   - name:
-
+    
     Character; output name used as a key in the plan's outputs list.
 
   - outcomes:
-
+    
     Named list of endpoint specifications. Each endpoint contains
     \`table\`, \`concept\_set\`, and optional safe row \`filters\`.
 
   - censoring:
-
+    
     Named list controlling observation-period, death, cohort-end, and
     optional administrative-date censoring.
 
   - format:
-
+    
     Character; \`survival\`, \`competing\_risk\`, \`recurrent\_events\`,
     \`counting\_process\`, or \`multi\_state\`.
 
   - washout\_days:
-
+    
     Non-negative integer washout between events of the same named
     endpoint.
 
   - tie\_policy:
-
+    
     Character; \`priority\`, \`all\`, or \`sequential\`. \`all\` is
     restricted to recurrent events. \`sequential\` orders simultaneous
     reachable state transitions within their observed day and is
@@ -92,21 +92,21 @@ ds.omop.plan.survival(
     disclosure oracle.
 
   - transitions:
-
+    
     For \`multi\_state\`, either an \`mstate\` transition matrix, a
     named adjacency list, or the canonical \`list(states, edges)\` form.
 
   - initial\_state:
-
+    
     Initial state name for \`multi\_state\` (default \`index\`).
 
   - state\_hierarchy:
-
+    
     Optional public state priority used to resolve tied dates. Omitted
     states are appended in transition-state order.
 
   - state\_step:
-
+    
     Positive within-day analytic offset used only by \`tie\_policy =
     "sequential"\`; defaults to 0.01 days.
 

@@ -18,11 +18,10 @@ a valid sealed input.
 
 ## Overview
 
-dsOMOP v2 applies endpoint-specific disclosure controls to its
-assignment and aggregate methods. It reads standard DataSHIELD
-thresholds plus `dsomop.*` server options configured by the
-administrator; the client cannot change these options through the dsOMOP
-API.
+dsOMOP applies endpoint-specific disclosure controls to its assignment
+and aggregate methods. It reads standard DataSHIELD thresholds plus
+`dsomop.*` server options configured by the administrator; the client
+cannot change these options through the dsOMOP API.
 
 These controls are one layer of a DataSHIELD deployment, not a complete
 security boundary by themselves. The administrator must also review the
@@ -76,8 +75,8 @@ replaced by a pseudonymous person token:
     token while the same persisted resource key is available.
   - Resource-separated keys produce different tokens, preventing direct
     token matching across independently configured resources. The
-    deprecated legacy global key is an exception and does not provide
-    that separation.
+    optional global key is an exception and does not provide that
+    separation.
   - Its form is `p2<ciphertext>.<HMAC>`. The `p` prefix makes numeric
     coercion fail, and the HMAC is verified before any server-side
     reversal.
@@ -119,22 +118,20 @@ For exceptional resource-specific key management,
 `DSOMOP_PSEUDONYM_KEY_<resource-hash>` supplies the exact resource key.
 `<resource-hash>` is the first 32 lowercase hexadecimal characters of
 SHA-256 over the UTF-8 stable resource identity; the node-root setting
-is simpler for ordinary deployments. The historical
-`DSOMOP_PSEUDONYM_KEY`/`dsomop.pseudonym_key` setting is default-deny.
-Preserving its old token namespace requires an explicit administrator
-opt-in via `DSOMOP_ALLOW_LEGACY_GLOBAL_PSEUDONYMS=true` (or
-`options(dsomop.allow_legacy_global_pseudonyms = TRUE)`). It remains
-deprecated because using it for several resources enables cross-resource
-token matching; prefer a node root or exact resource-scoped key.
-Rotating any effective key intentionally invalidates existing tokens.
-Raw key bytes are re-resolved when needed and are not cached in the
-serializable DataSHIELD workspace handle. No secret supplied through an
-environment variable or R option is copied into dsOMOP’s state files.
+is simpler for ordinary deployments. The global-key option is
+default-deny because using one key for several resources enables
+cross-resource token matching. Prefer a node root or exact
+resource-scoped key. See the server administrator reference for the
+optional global-key controls. Rotating any effective key intentionally
+invalidates existing tokens. Raw key bytes are re-resolved when needed
+and are not cached in the serializable DataSHIELD workspace handle. No
+secret supplied through an environment variable or R option is copied
+into dsOMOP’s state files.
 
 The derivation context is the stable resource identity (normally its
 resource URL, then name/server fallback). Renaming or repointing a
 resource can therefore change its tokens even when the node root is
-unchanged. Treat such a change as a key migration, or pin the old exact
+unchanged. Treat such a change as a key rotation, or pin the exact
 per-resource key while saved objects are still in use.
 
 This root controls pseudonym identity only. It is not the secret root
@@ -175,8 +172,8 @@ standard installation.
   - `dsomop.query_strict` (default `TRUE`): only reviewed Query Library
     entries may execute. The heuristic non-strict fallback is for
     development and must not be exposed to analysts.
-  - `dsomop.allow_absolute_dates` (default `FALSE`): legacy option;
-    exact-date assignment in 2.10.4 does not require it. Aggregate date
+  - `dsomop.allow_absolute_dates` (default `FALSE`): administrator
+    option; exact-date assignment does not require it. Aggregate date
     controls remain in force.
   - `dsomop.allow_sensitive_columns` (default `FALSE`):
     server-controlled opt-in to fields classified as sensitive.
@@ -364,9 +361,9 @@ and is not a scheduler, so operators should also provide lifecycle
 monitoring appropriate to their deployment.
 
 Staged files that carry person tokens require a resource-scoped key
-provider. The deprecated global legacy pseudonym key remains readable
-for historical in-memory objects but cannot be used to create this wider
-interoperability surface.
+provider. The optional global pseudonym key is readable for in-memory
+objects but cannot be used to create this wider interoperability
+surface.
 
 ## DP scope and the exclusive channel
 
@@ -387,12 +384,12 @@ route in `meta$protection`.
 
 ## Limits of the current model
 
-Since 2.10.3 the server advertises `privacy_contract =
-"protected_release_fixed_basis_or_realised_v1"`. Fixed-synopsis releases
-share complete public component bases; flexible scopes can use heuristic
-realised-contribution reuse. The latter reports no mechanism epsilon and
-is not a DP guarantee. Exact support admission remains a DataSHIELD
-control, and combining routes has no full-transcript DP guarantee.
+The server advertises its protected-release contract in metadata.
+Fixed-synopsis releases share complete public component bases; flexible
+scopes can use heuristic realised-contribution reuse. The latter reports
+no mechanism epsilon and is not a DP guarantee. Exact support admission
+remains a DataSHIELD control, and combining routes has no
+full-transcript DP guarantee.
 
 The server generates deterministic noise on demand. The noise root and
 pseudonymisation key are the only persistent service state: there is no
@@ -403,12 +400,12 @@ residual risk. A `snapshot_id` is display metadata, not an
 analyst-controlled reroll.
 
 Matching clients validate signed component payloads and derive pooled
-views once from compatible bases. They refuse unsupported mixed old/new
-contracts and duplicate logical source identities. Use per-site results
-during an incompatible transition; installing a new client does not
-repair an old server. Fixed-synopsis epsilon is scoped to its declared
-vectors, before exact support gates, not to an evolving API transcript.
-Neither repeats nor package upgrades erase earlier disclosures.
+views once from compatible bases. They refuse incompatible contracts and
+duplicate logical source identities. Use per-site results when the
+participating contracts differ. Fixed-synopsis epsilon is scoped to its
+declared vectors, before exact support gates, not to an evolving API
+transcript. Neither repeats nor package replacements erase earlier
+disclosures.
 
 See the server’s `DISCLOSURE_CONTROL.md` for mechanism allocation,
 utility costs, scope equality leakage, exact-support and evolving-data

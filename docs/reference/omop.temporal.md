@@ -19,18 +19,18 @@ omop.temporal(
 ## Arguments
 
   - index\_window:
-
+    
     Named list with `start` and `end` (integer days relative to the
     cohort index date). Negative values denote time before the index
     date.
 
   - calendar:
-
+    
     Named list with `start` and `end` (character ISO 8601 dates, e.g.
     `"2020-01-01"`).
 
   - event\_select:
-
+    
     Named list with `order` (`"first"` or `"last"`), `n` (integer;
     number of events), and optional `by = "grain"` (default) or `by =
     "concept"`. Concept mode keeps the first/last N independently for
@@ -38,7 +38,7 @@ omop.temporal(
     otherwise within each person.
 
   - min\_gap:
-
+    
     Positive integer days, or a named list with `days`, optional `by =
     "concept"` or `"grain"`, and optional `keep = "first"` or `"last"`.
     Adjacent events no more than `days` apart form one chain. The

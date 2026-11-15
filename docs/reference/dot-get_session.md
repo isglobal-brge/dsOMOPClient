@@ -13,7 +13,7 @@ no session with that symbol exists.
 ## Arguments
 
   - symbol:
-
+    
     Character; the session symbol to look up.
 
 ## Value

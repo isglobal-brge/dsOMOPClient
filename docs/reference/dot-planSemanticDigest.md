@@ -11,7 +11,7 @@ Semantic digest of a normalised plan IR
 ## Arguments
 
   - ir:
-
+    
     The normalised IR (named list as parsed with simplifyVector = FALSE,
     or the identical structure built in R).
 

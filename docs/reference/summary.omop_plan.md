@@ -15,11 +15,11 @@ summary(object, ...)
 ## Arguments
 
   - object:
-
+    
     An `omop_plan` object.
 
   - ...:
-
+    
     Additional arguments (ignored).
 
 ## Value

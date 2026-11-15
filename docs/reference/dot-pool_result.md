@@ -11,15 +11,15 @@ Dispatch pooling by result type
 ## Arguments
 
   - per\_site:
-
+    
     Named list of per-server results
 
   - result\_type:
-
+    
     Character; one of the recognized result types
 
   - policy:
-
+    
     Character; "strict" or "pooled\_only\_ok"
 
 ## Value

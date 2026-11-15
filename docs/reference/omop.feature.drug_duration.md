@@ -13,16 +13,16 @@ omop.feature.drug_duration(concept_set, agg = "mean", name = NULL)
 ## Arguments
 
   - concept\_set:
-
+    
     Numeric vector of concept IDs, or an `omop_concept_set` object.
 
   - agg:
-
+    
     Character; aggregation function — `"mean"`, `"sum"`, or `"max"`
     (default `"mean"`).
 
   - name:
-
+    
     Character; optional custom name for the feature column.
 
 ## Value

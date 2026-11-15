@@ -12,7 +12,7 @@ constructor and returns a named list of feature spec objects.
 ## Arguments
 
   - vs:
-
+    
     List of `omop_variable` objects.
 
 ## Value

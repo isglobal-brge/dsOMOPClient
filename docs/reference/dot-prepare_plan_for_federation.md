@@ -14,15 +14,15 @@ fully re-introspected.
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan`.
 
   - symbol:
-
+    
     Client OMOP session name.
 
   - conns:
-
+    
     DSI connections.
 
 ## Value

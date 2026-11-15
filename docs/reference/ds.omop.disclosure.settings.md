@@ -20,11 +20,11 @@ ds.omop.disclosure.settings(symbol = "omop", conns = NULL)
 ## Arguments
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or `NULL` to use the session default.
 
 ## Value

@@ -23,28 +23,28 @@ ds.omop.concept.relationships(
 ## Arguments
 
   - concept\_ids:
-
+    
     Integer or numeric vector of concept IDs to fetch relationships for
     (e.g., `c(201826)`).
 
   - relationship\_id:
-
+    
     Character; optional single `relationship_id` filter (e.g. `"Maps
     to"`, `"Is a"`, `"Subsumes"`). `NULL` (the default) returns all
     relationship types.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - execute:
-
+    
     Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
     only the reproducible R code without contacting the servers.
 

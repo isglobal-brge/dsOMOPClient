@@ -11,15 +11,15 @@ Pool proportions weighted by denominator
 ## Arguments
 
   - per\_site\_num:
-
+    
     Named numeric vector of numerators
 
   - per\_site\_denom:
-
+    
     Named numeric vector of denominators
 
   - policy:
-
+    
     Character; pooling policy
 
 ## Value

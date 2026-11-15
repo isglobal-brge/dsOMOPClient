@@ -15,7 +15,7 @@ recipe_import_json(json)
 ## Arguments
 
   - json:
-
+    
     Character; a JSON string, or a file path to a JSON file.
 
 ## Value

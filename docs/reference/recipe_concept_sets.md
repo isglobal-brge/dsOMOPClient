@@ -22,15 +22,15 @@ recipe_import_concept_sets(recipe, x)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe`.
 
   - file:
-
+    
     Optional path; `NULL` returns the JSON string.
 
   - x:
-
+    
     A JSON string or file with one concept-set expression (`list(items =
     ...)`), a named list of them, or an ATLAS `ConceptSets` array
     (elements with `name` and `expression`). Concept IDs must be scalar

@@ -17,24 +17,24 @@ omop_number_daily(
 ## Arguments
 
   - input:
-
+    
     Numeric event rows or an unreduced same-event numeric expression.
 
   - reducer:
-
+    
     Explicit numeric omop\_reduce declaration, with value/unit omitted.
 
   - within\_day:
-
+    
     mean, max or first in canonical event order.
 
   - missing:
-
+    
     skip or propagate within each day, independently of the outer
     reducer.
 
   - number\_spec:
-
+    
     Final numeric presentation after both reductions.
 
 ## Value

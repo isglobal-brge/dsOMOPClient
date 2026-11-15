@@ -24,37 +24,37 @@ ds.omop.achilles.distribution(
 ## Arguments
 
   - analysis\_ids:
-
+    
     Integer vector; distribution analysis IDs to retrieve (e.g.,
     `c(103, 105)` for age and observation length distributions).
 
   - scope:
-
+    
     Character; `"per_site"` returns each server's results separately,
     `"pooled"` additionally attempts weighted aggregation.
 
   - pooling\_policy:
-
+    
     Character; controls how suppressed (NA) cells are handled during
     pooling. `"strict"` (the default) or `"pooled_only_ok"`.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - execute:
-
+    
     Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
     only the reproducible R code without contacting the servers.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, legacy `scope` behaviour is preserved.
 

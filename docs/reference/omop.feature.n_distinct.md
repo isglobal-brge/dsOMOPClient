@@ -13,12 +13,12 @@ omop.feature.n_distinct(concept_set = integer(0), name = NULL)
 ## Arguments
 
   - concept\_set:
-
+    
     Numeric vector of concept IDs (default `integer(0)`, meaning all
     concepts in the table).
 
   - name:
-
+    
     Character; optional custom name for the feature column.
 
 ## Value

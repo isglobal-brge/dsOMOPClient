@@ -24,7 +24,7 @@ ds.omop.cohort.create(
 ## Arguments
 
   - spec:
-
+    
     Named list defining the cohort. Must contain at least `type`
     (character; one of `"condition"`, `"drug"`, `"measurement"`,
     `"observation"`, `"procedure"`) and `concept_set` (integer vector or
@@ -32,34 +32,34 @@ ds.omop.cohort.create(
     `value_bin` filter returned by `ds.omop.safe.filter.value()`.
 
   - mode:
-
+    
     Character; `"temporary"` (the default) creates a session-scoped temp
     table, `"persistent"` writes to the cohort schema for reuse across
     sessions. Persistent creation is restricted to one server because
     DataSHIELD cannot provide a distributed database commit.
 
   - cohort\_id:
-
+    
     Integer; cohort definition ID. If `NULL`, an auto-generated ID is
     used.
 
   - name:
-
+    
     Character; human-readable cohort name for display purposes.
     Optional.
 
   - overwrite:
-
+    
     Logical; if `TRUE`, an existing cohort with the same `cohort_id`
     will be replaced. Default: `FALSE`.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

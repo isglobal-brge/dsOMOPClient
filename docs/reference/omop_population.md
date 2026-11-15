@@ -28,31 +28,31 @@ omop_population(
 ## Arguments
 
   - id:
-
+    
     Character; population ID (must be unique within the recipe).
 
   - label:
-
+    
     Character; human-readable label.
 
   - parent\_id:
-
+    
     Character or `NULL`; parent population ID (`NULL` for root).
     Informational provenance only; set-op membership is the executable
     dependency.
 
   - filters:
-
+    
     List of `omop_filter` or `omop_filter_group` objects (criteria
     populations only).
 
   - cohort\_definition\_id:
-
+    
     Integer or `NULL`; base cohort definition ID (if the population is
     defined by a pre-existing cohort).
 
   - episode\_policy:
-
+    
     Character or `NULL`; explicit semantics for index-dependent filters
     when the index cohort can contain multiple episodes per person. One
     of `"any_episode"`, `"all_episodes"`, `"first_episode"`, or
@@ -60,31 +60,31 @@ omop_population(
     index-dependent filtering of recurrent cohorts.
 
   - union, intersect, setdiff:
-
+    
     Character vector of two or more population IDs to derive this
     population from by the named set operation on the person key.
     Exactly one may be supplied, and only for a set-op population
     (mutually exclusive with `filters` / `cohort_definition_id`).
 
   - index\_event:
-
+    
     An `omop_index_event` or `NULL`. When present, population filters
     are evaluated for each retained event episode and the event's
     start/end dates are preserved.
 
   - index:
-
+    
     (2.10.3) An `omop_index`: an indexed population whose episodes are
     the selected index events; `filters` may then hold language-2
     criteria (`omop_has`, ...), evaluated per episode.
 
   - match:
-
+    
     (2.10.3) An `omop_match`: a matched / nested case-control
     population.
 
   - coverage:
-
+    
     (2.10.3) An `omop_coverage` observation policy (default for indexed
     populations: unique/drop/drop).
 

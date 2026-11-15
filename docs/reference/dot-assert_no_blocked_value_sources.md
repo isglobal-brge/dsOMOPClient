@@ -11,7 +11,7 @@ Reject variables whose value\_source / raw column is a blocked column
 ## Arguments
 
   - variables:
-
+    
     Named list of `omop_variable` objects.
 
 ## Value

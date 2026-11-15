@@ -24,31 +24,33 @@ recipe_explain(
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe`.
 
   - detail:
-
+    
     `"summary"` (one line per node) or `"semantics"` (every default and
     rule spelled out).
 
   - conns:
-
+    
     Optional DSI connections (uses the active OMOP session).
 
   - symbol:
-
+    
     OMOP session symbol used with `conns`.
 
 ## Value
 
 An `omop_recipe_explain` object: `$text` (character lines), `$selected`
 (`"v1"` or `"v2"`), `$payload` (the selected wire plan), `$plan` (the
-normalised plan, or `NULL` for an offline v1 explanation), `$defaults`
-(a data frame of the defaults relied on), `$digest` (the semantic
-digest, or `NULL` when unavailable), `$server` (per-server explain
-payloads, when `conns` is given) and `$refusal` (why execution on these
-servers would be refused, if it would). Printing it shows the text.
+normalised plan, or `NULL` for an offline v1 explanation),
+`$language_version` and `$semantic_version` (from `$plan$meta`, or
+`NULL` when the normalised plan is unavailable), `$defaults` (a data
+frame of the defaults relied on), `$digest` (the semantic digest, or
+`NULL` when unavailable), `$server` (per-server explain payloads, when
+`conns` is given) and `$refusal` (why execution on these servers would
+be refused, if it would). Printing it shows the text.
 
 ## Details
 

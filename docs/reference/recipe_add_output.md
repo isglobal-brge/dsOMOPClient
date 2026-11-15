@@ -13,11 +13,11 @@ recipe_add_output(recipe, output)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - output:
-
+    
     An `omop_output` object.
 
 ## Value

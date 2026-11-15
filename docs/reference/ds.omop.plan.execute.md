@@ -30,50 +30,50 @@ ds.omop.plan.execute(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object, or a language-2 plan (`omop_plan_v2`, from
     `recipe_to_plan`). A v2 plan needs every server to advertise recipe
     language 2 and every operation it uses; it is sent losslessly and
     published through the same status protocol.
 
   - out:
-
+    
     Optional output-to-symbol mapping. Three forms are accepted:
-
+    
       - **Missing or `NULL` (default):** symbol names are auto-derived
         for *every* plan output exactly as `recipe_execute` does — the
         output's own `result_symbol` when set, otherwise `D_<name>` (so
         an output named `baseline` becomes symbol `D_baseline`).
         Single-output plans therefore just work with no `out`.
-
+    
       - **A bare unnamed string** (e.g. `out = "D"`): allowed only when
         the plan has exactly *one* output, which is bound to that
         symbol. With multiple outputs this stops with an error asking
         you to use the named form.
-
+    
       - **A named character vector** (e.g. `c(baseline = "D_base",
         survival = "D_tte")`): maps each named plan output to its
         server-side symbol. This advanced multi-output form is unchanged
         and fully backward compatible.
 
   - symbol:
-
+    
     Character; name of the OMOP session symbol on the server (default
     `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL`, uses the connections stored in
     the session.
 
   - output\_mode:
-
+    
     Character; `"memory"` (default, backwards compatible) or `"staged"`
     (writes server-local files and returns descriptors). Arrow provides
     Parquet; without it the server uses CSV.
 
   - on\_small\_site:
-
+    
     Character; `"error"` (default) or `"skip"`. Only insufficient final
     person support is skippable. Skip requests an all-or-none server
     commit: a rejected site publishes nothing and returns `NULL`. With

@@ -27,39 +27,39 @@ omop_anchor(
 ## Arguments
 
   - start, end:
-
+    
     Day offsets, `NULL`/`-Inf`/`Inf`, or `omop_bound()`.
 
   - anchor:
-
+    
     Anchor of integer offsets (default `"index"`).
 
   - offset:
-
+    
     Integer day offset of a bound.
 
   - event:
-
+    
     An `omop_event`, `omop_era` or registry name.
 
   - which:
-
+    
     `"first"`, `"last"`, `"nth"` or `"latest_end"`.
 
   - n:
-
+    
     Row number for `which = "nth"`.
 
   - field:
-
+    
     `"start"` or `"end"` of the selected row.
 
   - scope:
-
+    
     `"person"` (default, may precede the index) or `"episode"`.
 
   - search:
-
+    
     `NULL` or an `omop_window()` restricting candidates.
 
 ## Value

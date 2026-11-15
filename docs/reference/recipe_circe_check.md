@@ -15,11 +15,11 @@ recipe_circe_check(x, direction = "import")
 ## Arguments
 
   - x:
-
+    
     A JSON string, file or parsed list for import; a recipe for export.
 
   - direction:
-
+    
     Exactly `"import"` or `"export"`.
 
 ## Value

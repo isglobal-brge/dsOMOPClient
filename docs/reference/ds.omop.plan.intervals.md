@@ -30,56 +30,56 @@ ds.omop.plan.intervals(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - tables:
-
+    
     Character vector; OMOP tables to extract intervals from. Defaults to
     observation\_period, visit\_occurrence, drug\_exposure, and
     condition\_occurrence.
 
   - concept\_filter:
-
+    
     Named list; each table maps to concept IDs or a standard concept-set
     specification with `concepts`, optional descendant/mapped expansion,
     and exclusions. If `NULL`, no concept filtering is applied.
 
   - filters:
-
+    
     Optional uniquely named per-table list of reviewed filter DSL trees.
     Each tree applies only to its named source table.
 
   - window:
-
+    
     Optional index-relative window. Supply start/end offsets for
     overlap, start, or end matching, or an at offset for active-at
     matching.
 
   - interval\_match:
-
+    
     Interval relationship: `"overlaps"`, `"starts_in"`, `"ends_in"`, or
     `"active_at"`. Without an explicit window, matching is against the
     cohort episode itself.
 
   - event\_select:
-
+    
     Repeated-event policy: `"all"`, `"first"`, `"last"`, or `"nearest"`.
 
   - select\_n:
-
+    
     Positive number of intervals retained per selection group.
 
   - select\_by:
-
+    
     Group selection by episode and source, optionally also by concept.
 
   - anchor:
-
+    
     Integer days from index used by nearest-event selection.
 
   - name:
-
+    
     Character; output name used as a key in the plan's outputs list.
 
 ## Value

@@ -15,7 +15,7 @@ omop_variable_hfrs(name = "hfrs")
 ## Arguments
 
   - name:
-
+    
     Character; output column name (default `"hfrs"`).
 
 ## Value

@@ -16,16 +16,16 @@ it. An explicit value always wins.
 ## Arguments
 
   - x:
-
+    
     The caller-supplied symbol name, or `NULL` to use the session
     default.
 
   - session:
-
+    
     The `omop_session` object.
 
   - arg:
-
+    
     Character; the argument name, used only in error messages.
 
 ## Value

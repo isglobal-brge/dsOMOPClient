@@ -11,19 +11,19 @@ Validate an instance against a schema (2020-12 subset)
 ## Arguments
 
   - schema:
-
+    
     Parsed schema (list) or a boolean schema.
 
   - instance:
-
+    
     Parsed instance.
 
   - root:
-
+    
     Root schema used to resolve local references.
 
   - path:
-
+    
     JSON pointer of the instance being validated (for messages).
 
 ## Value

@@ -23,22 +23,22 @@ ds.omop.analysis.list(
 ## Arguments
 
   - domain:
-
+    
     Character; optional clinical-domain filter (e.g. `"condition"`,
     `"person"`). `NULL` (the default) returns entries for all domains.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - type:
-
+    
     Result view: `"both"` (default), `"split"`, or `"combine"`;
     dsBaseClient-style aliases are accepted. A split view can inspect
     nodes whose catalogs differ; combined views require equality.

@@ -19,19 +19,19 @@ recipe_preview_stats(
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - scope:
-
+    
     Character; `"per_site"`, `"pooled"`, or `"both"`.
 
   - symbol:
-
+    
     Character; OMOP session symbol on the server (default `"omop"`).
 
   - conns:
-
+    
     DSI connections or `NULL` (uses active connections).
 
 ## Value

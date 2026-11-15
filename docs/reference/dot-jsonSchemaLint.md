@@ -11,11 +11,11 @@ Lint a schema: every branch may use only the supported keywords
 ## Arguments
 
   - schema:
-
+    
     Parsed schema.
 
   - path:
-
+    
     Pointer used in messages.
 
 ## Value

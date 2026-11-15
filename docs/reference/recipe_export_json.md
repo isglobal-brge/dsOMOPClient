@@ -13,11 +13,11 @@ recipe_export_json(recipe, file = NULL)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - file:
-
+    
     Character or `NULL`; file path to write. If `NULL`, returns the JSON
     string directly.
 

@@ -12,11 +12,11 @@ recipe_remove_population(recipe, id)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - id:
-
+    
     Character; population ID to remove (must not be `"base"`).
 
 ## Value

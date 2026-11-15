@@ -13,7 +13,7 @@ truncating to 50 characters.
 ## Arguments
 
   - x:
-
+    
     Character; the name to sanitize.
 
 ## Value

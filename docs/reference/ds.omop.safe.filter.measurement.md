@@ -22,24 +22,24 @@ ds.omop.safe.filter.measurement(
 ## Arguments
 
   - concept\_id:
-
+    
     One measurement concept ID.
 
   - min\_value, max\_value:
-
+    
     Finite requested interval limits. Both are required and must lie
     inside the common public grid.
 
   - n\_bins:
-
+    
     Integer; the number of bins for cutpoint computation (default: 10).
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
 ## Value

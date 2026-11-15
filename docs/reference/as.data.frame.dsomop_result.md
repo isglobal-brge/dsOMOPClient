@@ -17,11 +17,11 @@ as.data.frame(x, ...)
 ## Arguments
 
   - x:
-
+    
     A `dsomop_result` object.
 
   - ...:
-
+    
     Additional arguments (ignored).
 
 ## Value

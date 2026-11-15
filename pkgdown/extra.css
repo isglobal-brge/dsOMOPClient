@@ -1,0 +1,95 @@
+/* OHDSI web palette and its native system sans font stack. */
+:root { --book-blue: #003142; --book-accent: #f19119; --book-link: #246b9e; }
+.navbar { border-bottom: 4px solid var(--book-accent); box-shadow: 0 2px 12px #0031420d; }
+.navbar-brand { font-weight: 750; letter-spacing: -.035em; }
+.navbar .dropdown-menu { max-height: 75vh; overflow-y: auto; }
+.page-header { border-bottom: 1px solid #d9e5eb; padding: .5rem 0 1.5rem; margin-bottom: 2rem; }
+main { max-width: 54rem; line-height: 1.75; }
+main h1 { letter-spacing: -.035em; line-height: 1.15; color: var(--book-blue); }
+main h2 { color: var(--book-blue); margin-top: 2.8rem; letter-spacing: -.02em; }
+main p { margin-bottom: 1.15rem; }
+.learn-box, .book-note, .book-tip { border-left: 4px solid var(--book-accent); background: #f1f7f9;
+  padding: 1.1rem 1.4rem; margin: 1.5rem 0 2rem; border-radius: 0 8px 8px 0; }
+.learn-box strong:first-child { color: var(--book-blue); }
+.book-note { border-color: #337ab7; background: #f3f8fc; }
+.book-tip { border-color: #3b8275; background: #f2f8f4; }
+.learn-box p:last-child, .book-note p:last-child, .book-tip p:last-child { margin-bottom: 0; }
+pre { border: 1px solid #d9e5eb; border-radius: 8px; padding: 1.1rem; font-size: .87rem; }
+.sourceCode { background-color: #f5f8fb; }
+main pre:not(.sourceCode) { background: #fff; border-left: 3px solid #b7cbdc;
+  color: #415c68; margin-top: -.3rem; font-size: .82rem; }
+main table { font-size: .92rem; margin: 1.5rem 0; }
+main table th { color: var(--book-blue); background: #edf4f8; border-bottom: 2px solid #b7cbdc; }
+main table td, main table th { padding: .7rem .8rem; }
+main table tbody tr:nth-child(even) { background: #f8fafb; }
+details { margin: 1.3rem 0; border: 1px solid #b7cbdc; border-radius: 8px; padding: 1rem 1.25rem; }
+summary { color: var(--book-blue); font-weight: 650; cursor: pointer; }
+details[open] summary { margin-bottom: 1rem; }
+.exercise-heading { border-top: 3px solid var(--book-accent); padding-top: 1.4rem; }
+a { text-underline-offset: .2em; }
+.chapter-sidebar { display: none; }
+.chapter-pager { display: flex; justify-content: space-between; gap: 1.5rem;
+  padding: 1.5rem 0; margin-top: 2.5rem; border-top: 1px solid #d9e5eb; font-size: .9rem; }
+.chapter-pager a { flex: 1; text-decoration: none; }
+.chapter-pager a:last-child { text-align: right; }
+.book-flow { display: flex; align-items: stretch; gap: .6rem; padding: 1rem 0; margin: 1rem 0; }
+.book-flow > div { flex: 1; padding: 1rem; background: #edf4f8; border-top: 3px solid #337ab7; border-radius: 6px; }
+.book-flow > div strong { display: block; color: var(--book-blue); }
+.book-flow > span { align-self: center; font-size: 1.4rem; color: #337ab7; }
+@media (min-width: 1200px) {
+  .book-page .container { width: 100%; max-width: min(1440px, calc(100% - 2rem)); }
+  .book-page .template-article > .row { display: grid; grid-template-columns: minmax(180px, 210px) minmax(0,1fr) minmax(150px, 180px); gap: 1.5rem; margin-inline: 0; }
+  .book-page main { width: 100%; min-width: 0; max-width: none; }
+  .book-page .template-article aside { width: 100%; min-width: 0; margin-inline: 0; padding: 0; overflow-wrap: anywhere; }
+  .book-page .template-article > .row > * { min-width: 0; }
+  .book-page #toc { width: 100%; max-width: 100%; }
+  .chapter-sidebar { display: block; align-self: start; position: sticky; top: 90px;
+    max-height: calc(100vh - 120px); overflow-y: auto; padding-right: .6rem; }
+  .chapter-sidebar h2 { font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; color: #627b86; margin: 1rem 0; }
+  .chapter-sidebar ol { list-style: none; padding: 0; }
+  .chapter-sidebar a { display: block; padding: .4rem .65rem; margin: .15rem 0;
+    font-size: .84rem; line-height: 1.4; text-decoration: none; border-radius: 4px; color: #415c68; }
+  .chapter-sidebar a[aria-current] { background: #e8f1f6; color: var(--book-blue); font-weight: 700; border-left: 3px solid var(--book-accent); }
+  .chapter-sidebar a:hover { background: #f0f5f8; }
+}
+@media (max-width: 767px) {
+  main { font-size: 1rem; }
+  pre { font-size: .78rem; }
+  .book-flow { flex-direction: column; }
+  .book-flow > span { transform: rotate(90deg); }
+  .learn-box, .book-note, .book-tip { padding: 1rem; }
+  .chapter-pager { flex-direction: column; }
+  .chapter-pager a:last-child { text-align: left; }
+}
+main .table { display: block; max-width: 100%; overflow-x: auto; }
+.mobile-contents { display: none; }
+@media (max-width: 1199px) {
+  .mobile-contents { display: block; background: #f7fafc; }
+  .mobile-contents ul { list-style: none; padding-left: .5rem; }
+  .mobile-contents li { padding: .2rem 0; }
+}
+
+.book-page td.book-number { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* The capability tour uses the same reading width and palette as lessons. */
+.capability-card { border: 1px solid #c6d9e3; border-top: 4px solid var(--book-accent);
+  border-radius: 10px; padding: 1.3rem; margin: 2rem 0; background: #fff;
+  box-shadow: 0 4px 18px #00314208; min-width: 0; }
+.capability-card h2 { margin-top: .25rem; }
+@media (max-width: 767px) { .capability-card { padding: .8rem; } }
+
+/* Keep short blocks natural; long code and recorded output scroll at any width. */
+.book-page main pre {
+  max-height: 400px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.book-page main div.sourceCode { max-height: none; }
+@media (max-width: 575.98px) {
+  .book-page main pre { max-height: min(400px, 60vh); }
+}
+/* Recorded Markdown tables are outputs too; retain horizontal scrolling. */
+.book-page main .table { max-height: 400px; overflow-y: auto; }
+@media (max-width: 575.98px) {
+  .book-page main .table { max-height: min(400px, 60vh); }
+}

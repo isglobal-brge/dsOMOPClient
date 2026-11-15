@@ -33,84 +33,84 @@ omop_variable_block(
 ## Arguments
 
   - id:
-
+    
     Character or `NULL`; block ID (auto-generated from table and concept
     count if `NULL`).
 
   - table:
-
+    
     Character; shared source OMOP CDM table (e.g.
     `"condition_occurrence"`).
 
   - concept\_ids:
-
+    
     Integer vector; concept IDs for all variables in the block.
 
   - concept\_names:
-
+    
     Character vector or `NULL`; human-readable names matching
     `concept_ids` positionally.
 
   - time\_window:
-
+    
     Named list with `start`/`end` offsets, or `NULL` for no window.
 
   - format:
-
+    
     Character; default output format for variables in this block (e.g.
     `"binary"`, `"count"`).
 
   - value\_source:
-
+    
     Character or `NULL`; default value source column (e.g.
     `"value_as_number"`).
 
   - suffix\_mode:
-
+    
     Character; naming mode for multi-column expansion (`"index"`,
     `"range"`, or `"label"`).
 
   - filters:
-
+    
     List of `omop_filter` objects; row-level filters applied to all
     variables in the block.
 
   - population\_id:
-
+    
     Character; which population this block belongs to (default
     `"base"`).
 
   - expand:
-
+    
     Logical; if `TRUE`, expand the block's concepts to include
     vocabulary descendants server-side (default `FALSE`).
 
   - reference\_date:
-
+    
     Character/Date or `NULL`; fixed reference date required for a
     `"time_since"` block.
 
   - unit:
-
+    
     Character or `NULL`; `"day"` (default for `time_since`) or complete
     calendar `"month"` units.
 
   - where:
-
+    
     (2.10.3) A row predicate from `omop_where` applied to every variable
     of the block.
 
   - visit:
-
+    
     (2.10.3) `NULL`, `list(type = <visit_concept_ids>)` or `"index"`,
     for every variable of the block.
 
   - concept\_col:
-
+    
     (2.10.3) Concept column the block's concepts scope.
 
   - visit\_filter:
-
+    
     (2.10.3) Legacy alias of `visit`, spelled as in `omop_variable`:
     `list(concept_ids = <visit_concept_ids>)` is `visit = list(type =
     <visit_concept_ids>)`. Giving both is an error.

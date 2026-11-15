@@ -14,7 +14,7 @@ can be inspected or reused (section 12.1: "JSON = section 4").
 ## Arguments
 
   - x:
-
+    
     A language-2 object (concept set, event, era, criterion, window,
     anchor, index, censor, reducer, match or variable) or a recipe.
 

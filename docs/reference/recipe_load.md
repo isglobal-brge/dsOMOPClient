@@ -12,7 +12,7 @@ recipe_load(file)
 ## Arguments
 
   - file:
-
+    
     Character; source path ending in `.json`, `.yml`, or `.yaml`.
 
 ## Value

@@ -22,25 +22,25 @@ ds.omop.comorbidity(
 ## Arguments
 
   - conceptA:
-
+    
     Integer; the first concept ID (row presence axis).
 
   - conceptB:
-
+    
     Integer; the second concept ID (column presence axis).
 
   - tableA:
-
+    
     Character; the CDM table holding `conceptA` (default:
     `"condition_occurrence"`).
 
   - tableB:
-
+    
     Character; the CDM table holding `conceptB` (default: same as
     `tableA`).
 
   - ...:
-
+    
     Additional arguments forwarded to `ds.omop.crosstab` (e.g.,
     `cohort_table`, `scope`, `pooling_policy`, `symbol`, `conns`,
     `execute`).

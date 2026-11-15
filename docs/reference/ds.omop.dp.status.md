@@ -13,7 +13,7 @@ ds.omop.dp.status(datasources = NULL)
 ## Arguments
 
   - datasources:
-
+    
     Named DataSHIELD connection list. `NULL` uses
     `DSI::datashield.connections_find()`.
 

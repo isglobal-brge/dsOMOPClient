@@ -2,3 +2,12 @@
 *-Ex.R
 inst/doc
 errorReportSql.txt
+
+# Reproducible public practice databases (tools/book/load-practice.R)
+tools/book/data/
+
+# Local public concept definitions created by the book exercise.
+/book-concepts.rds
+
+# Local book build and review evidence.
+tools/book/evidence/

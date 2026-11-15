@@ -11,15 +11,15 @@ Pool means weighted by count
 ## Arguments
 
   - per\_site\_means:
-
+    
     Named numeric vector of means
 
   - per\_site\_counts:
-
+    
     Named numeric vector of counts (same names)
 
   - policy:
-
+    
     Character; pooling policy
 
 ## Value

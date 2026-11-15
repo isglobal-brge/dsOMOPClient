@@ -2,3 +2,6 @@
 ^\.Rproj\.user$
 ^_pkgdown\.yml$
 ^docs$
+^pkgdown$
+^tools/book$
+^tools/book/evidence/

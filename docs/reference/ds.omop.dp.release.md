@@ -23,33 +23,33 @@ ds.omop.dp.release(
 ## Arguments
 
   - x:
-
+    
     One bare DataSHIELD symbol containing a server-side `omop.table`.
 
   - privacy:
-
+    
     An `omop_privacy` specification. If it does not contain an explicit
     `population_id`, the bare symbol `x` is used as its public
     compatibility label. This label does not control sticky identity.
 
   - datasources:
-
+    
     Named DataSHIELD connection list. `NULL` uses
     `DSI::datashield.connections_find()`.
 
   - pool:
-
+    
     Logical; pool the complete set of noisy site releases.
 
   - format:
-
+    
     Client-only pooled-result format: long data frame, one-row wide data
     frame, named vector, or raw list. Histogram releases support all
     four forms; other statistics retain their typed list. This argument
     never enters the server specification or sticky-release identity.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, the legacy `pool` argument is preserved: `TRUE` means both
     views and `FALSE` means split only.

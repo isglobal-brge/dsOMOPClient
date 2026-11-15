@@ -26,20 +26,20 @@ omop_new_users(
 ## Arguments
 
   - drug:
-
+    
     Concept IDs, an `omop_concept_set`, the name of a registry concept
     set, or an `omop_event()` over `drug_exposure`.
 
   - washout\_days:
-
+    
     Washout in days (a non-negative integer).
 
   - select:
-
+    
     Index selection (see `omop_index`).
 
   - by:
-
+    
     Era grouping: `"ingredient"` (default), `"concept"` or `"event"`.
 
 ## Value

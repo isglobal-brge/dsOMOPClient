@@ -11,7 +11,7 @@ Is a value an unbound recipe parameter placeholder?
 ## Arguments
 
   - x:
-
+    
     Any value.
 
 ## Value

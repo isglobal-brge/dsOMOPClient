@@ -11,7 +11,7 @@ Generate a verbatim \`filters = list(...)\` argument value
 ## Arguments
 
   - filters:
-
+    
     List of `omop_filter`/`omop_filter_group` objects.
 
 ## Value

@@ -17,41 +17,41 @@ omop_formula_egfr_ckdepi2021(creatinine, age, sex, sex_map, version = "1.0.0")
 ## Arguments
 
   - weight, height:
-
+    
     Typed numeric variables in coordinate:kg and coordinate:metres.
 
   - version:
-
+    
     Installed exact definition version, currently 1.0.0.
 
   - systolic, diastolic:
-
+    
     Typed numeric variables in coordinate:mmHg.
 
   - numerator, denominator:
-
+    
     Aligned numeric declarations with resolved units.
 
   - unit:
-
+    
     Declared result coordinate for a ratio.
 
   - creatinine:
-
+    
     Typed selected creatinine in coordinate:idms\_creatinine\_mg\_dl.
 
   - age:
-
+    
     Completed calendar years from omop\_age\_at at the creatinine
     anchor.
 
   - sex:
-
+    
     Admitted categorical variable whose source is justified by the
     study.
 
   - sex\_map:
-
+    
     Named list female and male, each a nonempty vector of disjoint
     stable category identities; no missing, unknown or wildcard
     identities.

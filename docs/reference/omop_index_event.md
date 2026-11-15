@@ -24,12 +24,12 @@ omop_index_event(
 ## Arguments
 
   - concept\_id:
-
+    
     Integer concept ID(s), or `NULL` for any event in the selected
     table.
 
   - table:
-
+    
     Character OMOP event table: any table with an event role record in
     the role registry (condition\_occurrence, drug\_exposure,
     procedure\_occurrence, device\_exposure, measurement, observation,
@@ -38,20 +38,20 @@ omop_index_event(
     episode). The server checks it against its own CDM version.
 
   - concept\_name:
-
+    
     Optional human-readable concept-set name.
 
   - primary\_limit:
-
+    
     Character; `"first"`, `"last"`, or `"all"` candidate events per
     person.
 
   - include\_descendants, include\_mapped:
-
+    
     Logical concept-set expansion flags.
 
   - end\_strategy:
-
+    
     `NULL` for the OHDSI/Circe default (exit at the end of the unique
     observation period covering the index), or the transport-safe OHDSI
     DateOffset shape `list(DateOffset = list(DateField =
@@ -60,7 +60,7 @@ omop_index_event(
     observation-period end, as in Circe).
 
   - validity\_policy:
-
+    
     NULL for native semantics, or `"ohdsi-import-1"` for the
     server-enforced imported-vocabulary validity contract.
 

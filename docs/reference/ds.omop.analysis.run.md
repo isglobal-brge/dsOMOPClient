@@ -34,17 +34,17 @@ ds.omop.analysis.run(
 ## Arguments
 
   - name:
-
+    
     Character; the entry id, or a shorthand for it (native id without
     the `"dsomop:"` prefix, or a unique id suffix).
 
   - params:
-
+    
     Named list; parameter values for the entry (see
     `ds.omop.analysis.get` for the entry's parameter specs).
 
   - cohort:
-
+    
     Optional cohort reference to scope the population to: a
     `dsomop_cohort_handle` (from `ds.omop.cohort.create`,
     `ds.omop.cohort.combine`, or `ds.omop.cohort.from_table`), a
@@ -52,7 +52,7 @@ ds.omop.analysis.run(
     (the default) means no cohort scoping.
 
   - tables:
-
+    
     Optional character vector of server-side `omop.table` symbol names
     to scope the population to (their distinct persons). May be combined
     with `cohort`. Each table crosses DataSHIELD as its own bare named
@@ -60,12 +60,12 @@ ds.omop.analysis.run(
     `c()` AggregateMethod.
 
   - combine:
-
+    
     Character; how to fold multiple scope sources together: `"union"`
     (the default) or `"intersect"`.
 
   - pooling\_policy:
-
+    
     Character; how suppressed (NA) cells are handled when pooling
     aggregate results across servers. `"strict"` (default) requires each
     pooled group on every server; `"pooled_only_ok"` pools only
@@ -74,7 +74,7 @@ ds.omop.analysis.run(
     cumulative.
 
   - plot:
-
+    
     Logical; when `TRUE` AND the entry ships a plot recipe, build a
     `ggplot` CLIENT-SIDE over the pooled, gate-passed data and attach it
     to the result (also returned via the `"plot"` attribute and
@@ -85,23 +85,23 @@ ds.omop.analysis.run(
     and a `NULL` plot — it never costs you the returned data.
 
   - date\_handling:
-
+    
     For assign-mode loaders, the server-side date policy: `"remove"`
     (default), `"relative"`, `"binned"`, or server-authorized
     `"absolute"`. Ignored for aggregate entries.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - type:
-
+    
     Result view, following dsBaseClient terminology: `"both"` (default)
     returns per-server and correctly combined results, `"split"` returns
     only per-server results, and `"combine"` returns only the combined

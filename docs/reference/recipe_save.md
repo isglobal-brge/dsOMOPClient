@@ -13,15 +13,15 @@ recipe_save(recipe, file, format = NULL)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - file:
-
+    
     Character; destination path ending in `.json`, `.yml`, or `.yaml`.
 
   - format:
-
+    
     Character or `NULL`; optional explicit format: `"json"` or `"yaml"`.
 
 ## Value

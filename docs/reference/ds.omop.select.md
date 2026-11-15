@@ -13,27 +13,27 @@ ds.omop.select(x = NULL, cols, newobj = NULL, symbol = "omop", conns = NULL)
 ## Arguments
 
   - x:
-
+    
     Character; name of the server-side `omop.table` symbol. If `NULL`
     (the default), the session's most recently produced output symbol is
     used.
 
   - cols:
-
+    
     Character vector; the columns to keep.
 
   - newobj:
-
+    
     Character; name of the server-side symbol to create. If `NULL`
     (default), a unique name is generated.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 

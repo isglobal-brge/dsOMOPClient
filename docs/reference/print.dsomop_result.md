@@ -13,11 +13,11 @@ print(x, ...)
 ## Arguments
 
   - x:
-
+    
     A `dsomop_result` object.
 
   - ...:
-
+    
     Additional arguments (ignored).
 
 ## Value

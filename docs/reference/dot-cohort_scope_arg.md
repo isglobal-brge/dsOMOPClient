@@ -29,7 +29,7 @@ cohort\_definition\_id.
 ## Arguments
 
   - cohort:
-
+    
     The unified `cohort` argument.
 
 ## Value

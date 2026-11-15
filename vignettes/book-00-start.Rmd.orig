@@ -1,0 +1,258 @@
+---
+title: "0. Getting started"
+author: "David Sarrat González"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{0. Getting started}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Install the client, open a practice connection, and check both package versions.
+</div>
+
+This chapter creates the public synthetic GiBleed practice connection.
+Run the sections in order in one R session. All printed results below were computed
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
+
+## Before you start
+
+You need R 4.1 or newer and internet access for installation and the practice
+data download. The lessons use a local DSLite practice server. RStudio is a convenient editor; ordinary R also works. Download the book helpers below; you do not need a Git checkout.
+
+Run this **installation block once**, before the examples. It installs every
+package needed by the client, the local practice server and the helpers.
+
+```{r install-prerequisites, eval = FALSE}
+install.packages(c("remotes", "DSI", "DSOpal", "DSLite", "DBI", "RSQLite",
+                   "resourcer", "withr", "openssl", "jsonlite", "knitr",
+                   "rmarkdown", "duckdb", "lme4"))
+remotes::install_github("datashield/dsBase@6.3.5", upgrade = "never")
+remotes::install_github("datashield/dsBaseClient@6.3.5", upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOP@2.10.5", upgrade = "never")
+remotes::install_github("isglobal-brge/dsOMOPClient@2.10.5", upgrade = "never")
+```
+
+The *client* is the package on your computer. The *server* runs requests near the
+data; DSLite lets you run it locally for practice. Record the installed versions with your study, as shown in
+[Checking and recording a study](book-17-reproduce.html).
+
+## Get the book helpers
+
+The book helpers are distributed separately from the package.
+Download [book-helpers.zip](../downloads/book-helpers.zip) from this site, leaving
+it zipped in your Downloads folder. In R, run this block and select that ZIP
+when the file chooser opens:
+
+```r
+book_dir <- path.expand("~/book-work")
+dir.create(book_dir, recursive = TRUE, showWarnings = FALSE)
+unzip(file.choose(), exdir = book_dir)
+setwd(book_dir)
+stopifnot(all(file.exists(file.path("tools/book",
+  c("practice.R", "fixture.R", "connection.R", "display.R", "load-practice.R", "load-numeric.R", "case-helpers.R")))),
+  file.exists("tools/book/capstone.R"))
+getwd()
+```
+
+The last line prints your home directory followed by `/book-work`. In every new
+R session run `setwd(path.expand("~/book-work"))` before the chapter setup.
+The ZIP preserves `tools/book/` automatically. Alternatively, save the individual
+[practice](../downloads/practice.R), [fixture](../downloads/fixture.R),
+[connection](../downloads/connection.R), [display](../downloads/display.R) and
+[practice loader](../downloads/load-practice.R) and
+[numeric loader](../downloads/load-numeric.R) and
+[formula helpers](../downloads/case-helpers.R) files under `book-work/tools/book/`.
+Keep the numeric loader filename `load-numeric.R`; the practice loader sources it.
+Save the [capstone helper](../downloads/capstone.R) in `book-work/tools/book/`;
+chapter 18's solution uses it.
+
+`display.R` formats released summaries, tables and returned symbol mappings for reading. It does not
+retrieve patient rows. `practice.R` defines the local practice server.
+`connection.R` defines `book_connect()`, which reads the connection settings and
+attaches the selected resource. Source these downloaded files in the order shown in each chapter.
+
+Leave `connection.R` at its defaults for local practice. The
+[Opal connection chunk](#connect-to-your-opal-server) below replaces those defaults
+for a session on your study server.
+
+## Check the client
+
+```{r client-version}
+library(dsOMOPClient)
+vapply(c("dsOMOPClient", "dsOMOP", "DSI", "DSLite", "dsBaseClient"),
+       function(package) as.character(packageVersion(package)), character(1))
+ds.omop.client.version()
+```
+
+This reports the package on your computer. A correct client version alone does not
+prove that the server has the matching methods.
+
+## Load two public synthetic datasets
+
+The practice server has two resources. **GiBleed** supports the introductory
+schema and vocabulary lessons. **Synthea27Nj** supplies hemoglobin and other
+numeric measurements with units for [Working with lab values](book-14-labs.html). Both contain fictional patients; “numeric”
+means populated numeric fields, not real patient records. GiBleed has 44,053
+measurement rows but no populated `value_as_number`, so it cannot teach lab-value
+reducers on its own.
+
+The local practice loader is [tools/book/load-practice.R](../downloads/load-practice.R).
+It downloads the two [Eunomia datasets](https://github.com/OHDSI/EunomiaDatasets)
+and creates the SQLite databases used by the lessons. Run it once from `book-work`:
+
+```{r load-practice-data}
+source("tools/book/load-practice.R")
+load_book_practice("../practice-data")
+stopifnot(file.exists("../practice-data/gibleed.sqlite"),
+          file.exists("../practice-data/numeric.sqlite"))
+```
+
+The output reports both loaded datasets. GiBleed has 44,053 measurement rows
+and zero numeric values; Synthea has 10,040 rows, including 9,107 numeric values
+and 8,403 numeric values with a mapped unit. The checks confirm that both local
+databases exist.
+
+It uses the installed DBI, RSQLite, duckdb, withr, openssl and jsonlite packages. The source data are Apache-2.0 licensed;
+keep their [license](https://github.com/OHDSI/EunomiaDatasets/blob/3d349dcdd79cc346b8e36eb837e49feffe7f7497/LICENSE)
+with redistributed copies. 
+
+<div class="book-note">
+**Note**
+
+The categorical, date and mortality lessons also use a small **synthetic
+questionnaire dataset**, created temporarily by `fixture.R`. It contains education,
+fever, visits and causes of death, including missing answers and partial birth dates.
+Its category and formula exercises add clearly labelled synthetic vocabulary
+relationships and standardized creatinine inputs.
+It is separate from the two practice resources; each chapter identifies its dataset.
+</div>
+
+## Open the practice server
+
+Use `book-work` as your R working directory after running the installation block above. DSLite executes real DataSHIELD methods inside R;
+this helper creates one server with both loaded resources and attaches GiBleed.
+
+```{r practice-login}
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
+conns <- practice$conns
+names(conns)
+```
+
+`conns` holds connections, not patient rows. The other resource is named `numeric`.
+Every chapter includes its complete fresh-session setup, including assigning
+`conns <- practice$conns`. Numeric chapters select `"numeric"` through the same
+configuration. Questionnaire chapters source `fixture.R` and call
+`practice <- book_fixture()` before assigning `conns`; this is always local DSLite.
+
+## Check the server
+
+```{r server-version}
+ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
+```
+
+The reply comes from the server. `ready` confirms that the running package and
+the methods available to your session agree.
+
+## Connect to your Opal server
+
+Your administrator has already set up the server and gives you its URL, your user
+and password (or token), the resource names and the DataSHIELD profile. Use those
+details in this connection chunk.
+
+In a fresh session, replace the chapter's local connection chunk with the block
+below. It is not executed here: the printed chapter results use the local
+practice data. Use `"numeric"` instead of `"gibleed"` in the final attach call for
+a numeric-data chapter; the analysis code that follows the connection is the same.
+
+```{r opal-login, eval = FALSE}
+library(dsOMOPClient)
+library(DSOpal)
+source("tools/book/display.R")
+source("tools/book/connection.R", local = TRUE)
+source("tools/book/practice.R")
+book_driver <- "Opal"
+opal_url <- "<server-url>"
+opal_project <- "<project>"
+opal_resources <- c(gibleed = "<gibleed-resource>", numeric = "<numeric-resource>")
+opal_profile <- "<profile>"
+resource_names <- book_resource_names(book_driver, opal_project, opal_resources)
+Sys.setenv(BOOK_OPAL_USER = "<user>", BOOK_OPAL_PASSWORD = "<password>")
+builder <- DSI::newDSLoginBuilder()
+builder$append(server = "site", url = opal_url,
+  user = Sys.getenv("BOOK_OPAL_USER"), password = Sys.getenv("BOOK_OPAL_PASSWORD"),
+  driver = "OpalDriver", profile = opal_profile)
+conns <- DSI::datashield.login(builder$build(), assign = FALSE)
+ds.omop.connect(resource = resource_names[["gibleed"]], conns = conns)
+practice <- list(conns = conns, path = character())
+names(conns)
+```
+
+Keep credentials in your private R session, outside shared study scripts. If you
+receive an access token, set `Sys.setenv(BOOK_OPAL_TOKEN = "<token>")` instead
+of the user and password, and replace the builder's `user` and `password`
+arguments with `token = Sys.getenv("BOOK_OPAL_TOKEN")`. Later calls to
+`book_connect()` use the same token. Resource names include their project prefix, for example
+`study.measurements`; enter the project and resource parts separately above.
+The two names in `opal_resources` map the book's datasets to the resources you
+were given. Your study data will produce different results from the practice data.
+
+[Chapter 2](book-02-connect.html) explains attaching resources and switching
+between them. Chapters that introduce the synthetic questionnaire or a local
+two-site example identify that practice setup explicitly.
+
+## Try it
+
+Ask the client and server for their versions again. Which call needs a connection?
+
+<details><summary>Solution</summary>
+
+
+```{r solution}
+ds.omop.client.version()
+ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
+```
+
+</details>
+
+## Exercise 2: a common variant
+
+Which packages run locally?
+
+<details><summary>Solution 2</summary>
+
+```{r book4-exercise-2}
+vapply(c("DSI", "DSLite", "dsOMOPClient"), function(x) as.character(packageVersion(x)), "")
+```
+
+DSI and dsOMOPClient handle analyst requests. DSLite runs the practice server
+locally, using the dsOMOP and dsBase packages installed in the same block.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Check that the shared resource configuration names both practice datasets.
+
+<details><summary>Solution 3</summary>
+
+```{r book4-exercise-3}
+source("tools/book/connection.R")
+resource_names
+```
+
+These names select the two local practice datasets. The Opal connection chunk
+replaces them with the resource names supplied by your administrator.
+
+</details>
+## Recap
+
+You can distinguish your client installation from the server installation and have a practice connection.
+
+**Next:** [1. What DataSHIELD and OMOP mean](book-01-mental-model.html).

@@ -13,7 +13,7 @@ releases); a newer client cannot repair a server, and never claims to.
 ## Arguments
 
   - versions:
-
+    
     Named character vector of server dsOMOP versions (NA when unknown).
 
 ## Value

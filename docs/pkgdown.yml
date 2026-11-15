@@ -2,14 +2,37 @@ pandoc: 2.9.2.1
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
-  v01_getting_started: v01_getting_started.html
+  book-00-start: book-00-start.html
+  book-01-mental-model: book-01-mental-model.html
+  book-02-connect: book-02-connect.html
+  book-03-explore: book-03-explore.html
+  book-04-vocabulary: book-04-vocabulary.html
+  book-05-recipe: book-05-recipe.html
+  book-06-events: book-06-events.html
+  book-07-populations: book-07-populations.html
+  book-08-outputs: book-08-outputs.html
+  book-09-dates: book-09-dates.html
+  book-10-harmonise: book-10-harmonise.html
+  book-11-parameters: book-11-parameters.html
+  book-12-privacy: book-12-privacy.html
+  book-13-visits: book-13-visits.html
+  book-14-labs: book-14-labs.html
+  book-15-formulas: book-15-formulas.html
+  book-16-longitudinal: book-16-longitudinal.html
+  book-17-reproduce: book-17-reproduce.html
+  book-18-capstone: book-18-capstone.html
+  book-19-case-mortality: book-19-case-mortality.html
+  book-20-case-gibleed: book-20-case-gibleed.html
+  book-21-case-glucose: book-21-case-glucose.html
+  book-22-case-drug: book-22-case-drug.html
+  book-23-case-table1: book-23-case-table1.html
+  book-showcase: book-showcase.html
   v02_exploration: v02_exploration.html
   v03_cohorts: v03_cohorts.html
   v04_extraction: v04_extraction.html
-  v05_multi_server: v05_multi_server.html
   v06_security: v06_security.html
   v07_querylibrary_sticky: v07_querylibrary_sticky.html
-last_built: 2026-11-15T01:44Z
+last_built: 2026-11-15T04:35Z
 urls:
   reference: https://isglobal-brge.github.io/dsOMOPClient/reference
   article: https://isglobal-brge.github.io/dsOMOPClient/articles

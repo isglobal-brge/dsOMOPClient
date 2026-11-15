@@ -17,7 +17,7 @@ recipe_to_code(recipe)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
 ## Value

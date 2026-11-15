@@ -14,7 +14,7 @@ Aggregate admission is a separate server policy.
 ## Arguments
 
   - col:
-
+    
     Character; a column name (case-insensitive).
 
 ## Value

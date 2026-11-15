@@ -1,11 +1,10 @@
 # Events, reducers and analysis outputs
 
-These 2.10.5 examples use the integrated recipe-language-2
-implementation. They are not evaluated during documentation builds
-because they need live DataSHIELD connections and study-specific
-vocabulary inputs. Patient tables are assigned beside the data; use
-reviewed DataSHIELD methods to analyse them. The previous chapter
-explains populations and index dates.
+These 2.10.5 examples use the integrated recipe API implementation. They
+are not evaluated during documentation builds because they need live
+DataSHIELD connections and study-specific vocabulary inputs. Patient
+tables are assigned beside the data; use reviewed DataSHIELD methods to
+analyse them. The previous chapter explains populations and index dates.
 
 ## Choose rows, then columns
 
@@ -178,11 +177,9 @@ weeks are available in `omop_date_spec()`.
 `omop_age_at()` counts completed anniversaries at its own reference
 date; February 29 birthdays use March 1 in non-leap years. Incomplete
 birth dates return NA unless an explicit imputation is chosen. `unit =
-"annual_years"` requests calendar-year age instead. Legacy `omop_age()`
-remains annual age, and omitted native specifications preserve legacy
-first/last-date offsets. An explicit `omop_date_spec()` on a
-first/last-date reducer selects native Date presentation. Do not overlap
-a native specification with legacy `date_handling`.
+"annual_years"` requests calendar-year age instead. `omop_age()` also
+returns annual age. Use an explicit `omop_date_spec()` on a
+first/last-date reducer to select Date presentation.
 
 For a reproducible future-date policy, use `omop_date_spec(future =
 "na", as_of = "2026-01-01")`. The policy applies after row selection: a
@@ -243,9 +240,9 @@ columns and zero/NA rules; an unavailable source is NA. Multi-concept
 source columns retain concept identity. Carry-forward is per source and
 concept, evaluated at period start.
 
-Survival windows and censoring are explicit. Native v2 adds no implicit
-cohort-end cap; request `index_end` when intended. A named TAR yields
-its own inventory entry, such as `D_tte.itt`. Each independently
+Survival windows and censoring are explicit. The recipe API adds no
+implicit cohort-end cap; request `index_end` when intended. A named TAR
+yields its own inventory entry, such as `D_tte.itt`. Each independently
 accessible patient component must pass distinct-person support; a
 passing roster does not permit a small event component to escape.
 Reference companions are released only with their passing family.
@@ -338,5 +335,5 @@ Inspect `recipe_codebook(recipe)` before execution and
 preserves column order, numeric/date/ category copies, membership
 provenance and lossless character row keys. Execution resolves source
 availability and concrete storage types, so those fields need not equal
-unresolved prospective metadata. Rebuild old codebooks after upgrading
-and keep native row keys as opaque strings.
+unresolved prospective metadata. Keep the published codebook with the
+study and treat row keys as opaque strings.

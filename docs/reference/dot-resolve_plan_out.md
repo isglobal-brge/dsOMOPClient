@@ -17,15 +17,15 @@ returned unchanged.
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - out:
-
+    
     `NULL`, a bare unnamed string, or a named character vector.
 
   - reserved\_symbols:
-
+    
     Optional server symbols that outputs may not replace.
 
 ## Value

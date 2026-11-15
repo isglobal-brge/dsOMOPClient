@@ -12,11 +12,11 @@ level
 ## Arguments
 
   - filters:
-
+    
     List of `omop_filter` and/or `omop_filter_group` objects.
 
   - level:
-
+    
     Character or `NULL`; filter level to keep (`NULL` keeps all).
 
 ## Value

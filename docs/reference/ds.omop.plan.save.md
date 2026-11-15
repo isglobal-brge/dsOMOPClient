@@ -19,16 +19,16 @@ ds.omop.plan.save(plan, file, format = NULL)
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object, or a language-2 plan (`omop_plan_v2`, saved
     as its wire plan).
 
   - file:
-
+    
     Character; destination path ending in `.json`, `.yml`, or `.yaml`.
 
   - format:
-
+    
     Character or `NULL`; optional explicit format (`"json"` or `"yaml"`)
     overriding the extension.
 

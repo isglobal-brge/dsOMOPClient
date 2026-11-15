@@ -20,27 +20,27 @@ ds.omop.concept.descendants(
 ## Arguments
 
   - ancestor\_ids:
-
+    
     Integer or numeric vector of ancestor concept IDs to expand (e.g.,
     `c(201820)`).
 
   - include\_self:
-
+    
     Logical; if `TRUE` (the default), the ancestor concepts themselves
     are included in the result alongside their descendants.
 
   - symbol:
-
+    
     Character; the session symbol used when the OMOP connection was
     initialised (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL` (the default), the connections
     stored in the active session are used.
 
   - execute:
-
+    
     Logical; if `FALSE`, returns a dry-run `dsomop_result` containing
     only the reproducible R code without contacting the servers.
 

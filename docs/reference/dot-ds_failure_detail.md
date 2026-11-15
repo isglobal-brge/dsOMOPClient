@@ -14,15 +14,15 @@ known.
 ## Arguments
 
   - errors:
-
+    
     Named list or character vector of messages per server.
 
   - condition:
-
+    
     Optional condition raised by DSI.
 
   - servers:
-
+    
     Servers that did not succeed.
 
 ## Value

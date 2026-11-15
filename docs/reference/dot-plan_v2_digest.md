@@ -14,7 +14,7 @@ serialisation of the normalised plan without its advisory fields.
 ## Arguments
 
   - plan:
-
+    
     A v2 plan.
 
 ## Value

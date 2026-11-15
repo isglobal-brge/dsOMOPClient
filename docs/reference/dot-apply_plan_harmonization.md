@@ -14,11 +14,11 @@ analysis.
 ## Arguments
 
   - plan:
-
+    
     Extraction plan.
 
   - contract:
-
+    
     Compatible federation contract.
 
 ## Value

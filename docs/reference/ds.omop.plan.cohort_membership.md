@@ -16,11 +16,11 @@ ds.omop.plan.cohort_membership(plan, name = "cohort_membership")
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - name:
-
+    
     Character; output name used as a key in the plan's outputs list.
 
 ## Value

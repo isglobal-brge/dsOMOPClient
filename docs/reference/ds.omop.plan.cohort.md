@@ -16,16 +16,16 @@ ds.omop.plan.cohort(plan, cohort_definition_id = NULL, spec = NULL)
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - cohort\_definition\_id:
-
+    
     Integer; ID of an existing cohort in the cohort table. Mutually
     exclusive with `spec`.
 
   - spec:
-
+    
     Named list; inline cohort specification DSL describing inclusion
     criteria. Mutually exclusive with `cohort_definition_id`.
 

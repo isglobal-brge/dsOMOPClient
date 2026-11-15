@@ -8,19 +8,18 @@
 <title>Security and Disclosure Controls • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Security and Disclosure Controls">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<script src="../extra.js"></script><meta property="og:title" content="Security and Disclosure Controls">
 <meta name="description" content="Understand disclosure gates, pseudonym keys and deployment boundaries.">
 <meta property="og:description" content="Understand disclosure gates, pseudonym keys and deployment boundaries.">
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
@@ -33,20 +32,39 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/v01_getting_started.html">Getting Started with dsOMOP v2</a></li>
-    <li><a class="dropdown-item" href="../articles/v02_exploration.html">Schema Exploration</a></li>
-    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Populations, index dates and study recipes</a></li>
-    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Events, reducers and analysis outputs</a></li>
-    <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
-    <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Get started</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorial-chapters" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorial chapters</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-tutorial-chapters">
+<li><a class="dropdown-item" href="../articles/book-showcase.html">What you can do with dsOMOP</a></li>
+    <li><a class="dropdown-item" href="../articles/book-00-start.html">0. Getting started</a></li>
+    <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. What DataSHIELD and OMOP mean</a></li>
+    <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Resources, connections and symbols</a></li>
+    <li><a class="dropdown-item" href="../articles/book-03-explore.html">3. Exploring the CDM</a></li>
+    <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Finding the concept IDs you need</a></li>
+    <li><a class="dropdown-item" href="../articles/book-05-recipe.html">5. A first recipe</a></li>
+    <li><a class="dropdown-item" href="../articles/book-06-events.html">6. Events, windows and reducers</a></li>
+    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations and index events</a></li>
+    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Choosing an output format</a></li>
+    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates, periods and ages</a></li>
+    <li><a class="dropdown-item" href="../articles/book-10-harmonise.html">10. Concepts as categories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and standalone verbs</a></li>
+    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. What stays private</a></li>
+    <li><a class="dropdown-item" href="../articles/book-13-visits.html">13. Visit dates, one idea at a time</a></li>
+    <li><a class="dropdown-item" href="../articles/book-14-labs.html">14. Working with lab values</a></li>
+    <li><a class="dropdown-item" href="../articles/book-15-formulas.html">15. Derived numeric formulas</a></li>
+    <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a></li>
+    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Checking and recording a study</a></li>
+    <li><a class="dropdown-item" href="../articles/book-18-capstone.html">18. Capstone: a cause-of-death wide table</a></li>
+    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: cause-specific mortality by age, sex and period</a></li>
+    <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
+    <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
+    <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
+    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -58,7 +76,7 @@
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -66,14 +84,14 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Security and Disclosure Controls</h1>
-
-
+            
+      
       <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/v06_security.Rmd" class="external-link"><code>vignettes/v06_security.Rmd</code></a></small>
       <div class="d-none name"><code>v06_security.Rmd</code></div>
     </div>
 
-
-
+    
+    
 <div class="section level2">
 <h2 id="release-2-10-5-behavior">Release 2.10.5 behavior<a class="anchor" aria-label="anchor" href="#release-2-10-5-behavior"></a>
 </h2>
@@ -83,7 +101,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>dsOMOP v2 applies endpoint-specific disclosure controls to its assignment and aggregate methods. It reads standard DataSHIELD thresholds plus <code>dsomop.*</code> server options configured by the administrator; the client cannot change these options through the dsOMOP API.</p>
+<p>dsOMOP applies endpoint-specific disclosure controls to its assignment and aggregate methods. It reads standard DataSHIELD thresholds plus <code>dsomop.*</code> server options configured by the administrator; the client cannot change these options through the dsOMOP API.</p>
 <p>These controls are one layer of a DataSHIELD deployment, not a complete security boundary by themselves. The administrator must also review the complete method allowlist: the <code>omop.table</code> class and <code>dsomop_protected</code> attributes are enforced by dsOMOP methods, but do not constrain arbitrary methods exported by another server package.</p>
 <p><code><a href="../reference/ds.omop.connect.html">ds.omop.connect()</a></code> enforces one non-negotiable allowlist preflight: every connected node must return a complete AggregateMethods inventory, and the connection is rejected if a method is named <code>c</code>/<code>list</code> or aliases an unqualified or qualified <code>c</code>/<code>list</code> target (<code>c</code>, <code>list</code>, <code><a href="https://rdrr.io/r/base/c.html" class="external-link">base::c</a></code> or <code><a href="https://rdrr.io/r/base/list.html" class="external-link">base::list</a></code>). Those generic containers can otherwise wrap and return a protected object without passing through a reviewed disclosure endpoint. This check applies even with <code>strict = FALSE</code>; administrators must remove such methods from all server profiles before dsOMOPClient will assign the resource. It is defence in depth rather than a server sandbox: a caller using DSI directly does not pass through this client preflight.</p>
 </div>
@@ -100,7 +118,7 @@
 <p>Row-level person and subject keys in dsOMOP assignment outputs are replaced by a pseudonymous person token:</p>
 <ul>
 <li>It contains deterministic AES-256-CBC ciphertext under a per-resource secret and a keyed HMAC. The same id maps to the same token while the same persisted resource key is available.</li>
-<li>Resource-separated keys produce different tokens, preventing direct token matching across independently configured resources. The deprecated legacy global key is an exception and does not provide that separation.</li>
+<li>Resource-separated keys produce different tokens, preventing direct token matching across independently configured resources. The optional global key is an exception and does not provide that separation.</li>
 <li>Its form is <code>p2&lt;ciphertext&gt;.&lt;HMAC&gt;</code>. The <code>p</code> prefix makes numeric coercion fail, and the HMAC is verified before any server-side reversal.</li>
 <li>Reversal is used only on the server for controlled operations such as <code><a href="../reference/ds.omop.cohort.from_table.html">ds.omop.cohort.from_table()</a></code>; the key never goes to the client.</li>
 </ul>
@@ -111,8 +129,8 @@
 </h2>
 <p><code>configure</code> may prepare the state directories, but it deliberately does not create key material: installation may run as root or while building an image. <code>.onLoad()</code> performs no key generation either. The first real resource-handle creation validates an injected secret or atomically creates a 32-byte node root in the automatically resolved state directory (<code>$DSOMOP_STATE_DIR</code> can optionally override it); installation/check/dev loads do not bootstrap it. No owner setting or manual key provisioning is needed. The directory is shared by workers representing the same logical node; the secret directory and file are required to have modes <code>0700</code> and <code>0600</code> respectively.</p>
 <p>An optional externally managed setting is <code>DSOMOP_PSEUDONYM_ROOT</code> (or the server-only R option <code>dsomop.pseudonym_root</code>). It accepts exactly 64 hexadecimal characters or at least 32 bytes of non-hex text; text is reduced to 32 bytes with SHA-256. dsOMOP derives a different key for each stable resource identity with keyed HMAC. An injected root is validated but <strong>not</strong> copied into the state directory, so the deployment secret manager must inject the same value into every worker and after every restart. Supplying it only to <code>R CMD INSTALL</code> or the package <code>configure</code> process is therefore insufficient; it belongs in the actual DataSHIELD service-runtime environment.</p>
-<p>For exceptional resource-specific key management, <code>DSOMOP_PSEUDONYM_KEY_&lt;resource-hash&gt;</code> supplies the exact resource key. <code>&lt;resource-hash&gt;</code> is the first 32 lowercase hexadecimal characters of SHA-256 over the UTF-8 stable resource identity; the node-root setting is simpler for ordinary deployments. The historical <code>DSOMOP_PSEUDONYM_KEY</code>/<code>dsomop.pseudonym_key</code> setting is default-deny. Preserving its old token namespace requires an explicit administrator opt-in via <code>DSOMOP_ALLOW_LEGACY_GLOBAL_PSEUDONYMS=true</code> (or <code>options(dsomop.allow_legacy_global_pseudonyms = TRUE)</code>). It remains deprecated because using it for several resources enables cross-resource token matching; prefer a node root or exact resource-scoped key. Rotating any effective key intentionally invalidates existing tokens. Raw key bytes are re-resolved when needed and are not cached in the serializable DataSHIELD workspace handle. No secret supplied through an environment variable or R option is copied into dsOMOP’s state files.</p>
-<p>The derivation context is the stable resource identity (normally its resource URL, then name/server fallback). Renaming or repointing a resource can therefore change its tokens even when the node root is unchanged. Treat such a change as a key migration, or pin the old exact per-resource key while saved objects are still in use.</p>
+<p>For exceptional resource-specific key management, <code>DSOMOP_PSEUDONYM_KEY_&lt;resource-hash&gt;</code> supplies the exact resource key. <code>&lt;resource-hash&gt;</code> is the first 32 lowercase hexadecimal characters of SHA-256 over the UTF-8 stable resource identity; the node-root setting is simpler for ordinary deployments. The global-key option is default-deny because using one key for several resources enables cross-resource token matching. Prefer a node root or exact resource-scoped key. See the server administrator reference for the optional global-key controls. Rotating any effective key intentionally invalidates existing tokens. Raw key bytes are re-resolved when needed and are not cached in the serializable DataSHIELD workspace handle. No secret supplied through an environment variable or R option is copied into dsOMOP’s state files.</p>
+<p>The derivation context is the stable resource identity (normally its resource URL, then name/server fallback). Renaming or repointing a resource can therefore change its tokens even when the node root is unchanged. Treat such a change as a key rotation, or pin the exact per-resource key while saved objects are still in use.</p>
 <p>This root controls pseudonym identity only. It is not the secret root used for sticky privacy noise.</p>
 </div>
 <div class="section level2">
@@ -143,7 +161,7 @@
 <li>
 <code>dsomop.query_strict</code> (default <code>TRUE</code>): only reviewed Query Library entries may execute. The heuristic non-strict fallback is for development and must not be exposed to analysts.</li>
 <li>
-<code>dsomop.allow_absolute_dates</code> (default <code>FALSE</code>): legacy option; exact-date assignment in 2.10.4 does not require it. Aggregate date controls remain in force.</li>
+<code>dsomop.allow_absolute_dates</code> (default <code>FALSE</code>): administrator option; exact-date assignment does not require it. Aggregate date controls remain in force.</li>
 <li>
 <code>dsomop.allow_sensitive_columns</code> (default <code>FALSE</code>): server-controlled opt-in to fields classified as sensitive.</li>
 <li>
@@ -264,9 +282,9 @@
 </h2>
 <p>Staged mode can stream untranslated long-event and interval chunks to Parquet row groups in one file when Arrow is available, with CSV as the fallback. SQL-first temporal/person-period components are streamed in the same way. Outputs that inherently require an R-side reshape are materialized before being staged, so staged mode does not make every representation memory-bounded.</p>
 <p>Files live under a private server directory with <code>0700</code> directories and <code>0600</code> files and are governed by row, byte, output-count, directory and TTL limits. A local staging transaction deletes its new directory on a pre-commit error and writes <code>manifest.json</code> version 2 only after every file and descriptor is complete. Each descriptor binds its dataset/source/origin/token identity, path, format, permissions and expiry, plus its pseudonym-key ID/epoch, exact component <code>semantic_contract</code> and shared output-level <code>bundle_contract</code>.</p>
-<p>The returned object is a server-side descriptor, not a URL, a DataSHIELD download or automatic interoperability with another package. A consumer running as the same operating-system identity should resolve it through <code>dsOMOP::omopStagedDatasetPath()</code>, which rechecks those identities and contracts as well as path confinement, format, expiry and owner-only permissions. Sibling components must share the expected <code>bundle_contract</code>, key ID and epoch; their exact component semantic contracts intentionally differ by shape. A different identity, host or service needs an explicitly reviewed broker that rechecks authorization, expiry and path confinement.</p>
+<p>The returned object is a server-side descriptor, not a URL, a DataSHIELD download or automatic interoperability with another package. A consumer running as the same operating-system identity should resolve it through <code><a href="https://rdrr.io/pkg/dsOMOP/man/omopStagedDatasetPath.html" class="external-link">dsOMOP::omopStagedDatasetPath()</a></code>, which rechecks those identities and contracts as well as path confinement, format, expiry and owner-only permissions. Sibling components must share the expected <code>bundle_contract</code>, key ID and epoch; their exact component semantic contracts intentionally differ by shape. A different identity, host or service needs an explicitly reviewed broker that rechecks authorization, expiry and path confinement.</p>
 <p>Cross-node execution is all-or-none only for DataSHIELD-visible symbols. If a node fails after another has committed its local manifest, client cleanup removes the descriptors but the already committed private files may remain registered with the successful handle until handle cleanup, disconnect or TTL cleanup. Stale cleanup occurs on package load/attach and is not a scheduler, so operators should also provide lifecycle monitoring appropriate to their deployment.</p>
-<p>Staged files that carry person tokens require a resource-scoped key provider. The deprecated global legacy pseudonym key remains readable for historical in-memory objects but cannot be used to create this wider interoperability surface.</p>
+<p>Staged files that carry person tokens require a resource-scoped key provider. The optional global pseudonym key is readable for in-memory objects but cannot be used to create this wider interoperability surface.</p>
 </div>
 <div class="section level2">
 <h2 id="dp-scope-and-the-exclusive-channel">DP scope and the exclusive channel<a class="anchor" aria-label="anchor" href="#dp-scope-and-the-exclusive-channel"></a>
@@ -277,9 +295,9 @@
 <div class="section level2">
 <h2 id="limits-of-the-current-model">Limits of the current model<a class="anchor" aria-label="anchor" href="#limits-of-the-current-model"></a>
 </h2>
-<p>Since 2.10.3 the server advertises <code>privacy_contract = "protected_release_fixed_basis_or_realised_v1"</code>. Fixed-synopsis releases share complete public component bases; flexible scopes can use heuristic realised-contribution reuse. The latter reports no mechanism epsilon and is not a DP guarantee. Exact support admission remains a DataSHIELD control, and combining routes has no full-transcript DP guarantee.</p>
+<p>The server advertises its protected-release contract in metadata. Fixed-synopsis releases share complete public component bases; flexible scopes can use heuristic realised-contribution reuse. The latter reports no mechanism epsilon and is not a DP guarantee. Exact support admission remains a DataSHIELD control, and combining routes has no full-transcript DP guarantee.</p>
 <p>The server generates deterministic noise on demand. The noise root and pseudonymisation key are the only persistent service state: there is no answer store, query counter, budget, accountant or history-dependent admission. Fixed components bind to person membership within the request snapshot; clinical edits with unchanged membership retain the documented residual risk. A <code>snapshot_id</code> is display metadata, not an analyst-controlled reroll.</p>
-<p>Matching clients validate signed component payloads and derive pooled views once from compatible bases. They refuse unsupported mixed old/new contracts and duplicate logical source identities. Use per-site results during an incompatible transition; installing a new client does not repair an old server. Fixed-synopsis epsilon is scoped to its declared vectors, before exact support gates, not to an evolving API transcript. Neither repeats nor package upgrades erase earlier disclosures.</p>
+<p>Matching clients validate signed component payloads and derive pooled views once from compatible bases. They refuse incompatible contracts and duplicate logical source identities. Use per-site results when the participating contracts differ. Fixed-synopsis epsilon is scoped to its declared vectors, before exact support gates, not to an evolving API transcript. Neither repeats nor package replacements erase earlier disclosures.</p>
 <p>See the server’s <code>DISCLOSURE_CONTROL.md</code> for mechanism allocation, utility costs, scope equality leakage, exact-support and evolving-data limitations. The ordinary deployment allowlist and each downstream package’s controls remain necessary.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -288,16 +306,20 @@
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
-  <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
+    <footer><div class="pkgdown-footer-left">
+  <p>Book by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>.</p>
 </div>
 
 <div class="pkgdown-footer-right">
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

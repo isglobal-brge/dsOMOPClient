@@ -14,7 +14,7 @@ server.
 ## Arguments
 
   - statuses:
-
+    
     Result of `.dp_statuses`.
 
 ## Value

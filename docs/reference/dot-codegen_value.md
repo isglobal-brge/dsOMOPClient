@@ -13,7 +13,7 @@ integers, and emits valid literals for (nested) named lists.
 ## Arguments
 
   - x:
-
+    
     An R value, or a string wrapped with `.codegen_raw()`.
 
 ## Value

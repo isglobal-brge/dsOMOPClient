@@ -59,42 +59,42 @@ omop_study(
 ## Arguments
 
   - index:
-
+    
     An `omop_event`, `omop_era`, `list(cohort_definition_id = )`,
     `omop_any_of()`, an `omop_index()` or an indexed `omop_population`.
 
   - select:
-
+    
     Index selection: `"first"` (default), `"first_eligible"`, `"all"` or
     `"last"`.
 
   - require:
-
+    
     Named list of requirements (see Details).
 
   - baseline:
-
+    
     Named list of baseline variables.
 
   - outcomes:
-
+    
     Named list of outcome events.
 
   - follow\_up:
-
+    
     `list(start = 1, end = NULL, censor = c("observation_end",
     "death"))`; give only the entries to change.
 
   - outputs:
-
+    
     Subset of `"baseline"`, `"survival"`, `"long"`, `"panel"`.
 
   - name:
-
+    
     Population name.
 
   - coverage:
-
+    
     Observation coverage of the population (`omop_coverage`).
 
 ## Value

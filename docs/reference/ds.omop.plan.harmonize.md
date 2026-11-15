@@ -26,30 +26,30 @@ ds.omop.plan.harmonize(
 ## Arguments
 
   - plan:
-
+    
     An `omop_plan` object.
 
   - mode:
-
+    
     Character; harmonization strategy. Only `"intersection"` is
     currently executable. The former `"union_with_missing"` placeholder
     is rejected until typed missing columns can be synthesized
     consistently on every backend.
 
   - strict:
-
+    
     Logical; fail when any requested dependency is not common (default).
     If false, trim raw optional columns/tables or remove whole
     incompatible outputs with explicit warnings; population semantics
     are never weakened.
 
   - symbol:
-
+    
     Character; name of the OMOP session symbol on the server (default
     `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL`, uses the connections stored in
     the session.
 

@@ -37,73 +37,73 @@ ds.omop.crosstab(
 ## Arguments
 
   - table:
-
+    
     Character; the CDM table name (e.g., `"person"`).
 
   - row:
-
+    
     Character; the column for table rows (e.g., `"gender_concept_id"`).
 
   - col:
-
+    
     Character; the column for table columns (e.g., `"race_concept_id"`).
 
   - by:
-
+    
     Character; `"persons"` (default, distinct person counts) or
     `"records"` (row counts).
 
   - row\_concept\_id:
-
+    
     Integer/vector or NULL; optional concept ID(s) to restrict the row
     axis. Default: NULL.
 
   - col\_concept\_id:
-
+    
     Integer/vector or NULL; optional concept ID(s) to restrict the
     column axis. Default: NULL.
 
   - cohort\_table:
-
+    
     Character or NULL; optional cohort table to scope the population
     (inner join on `subject_id`). Default: NULL.
 
   - stratify\_by:
-
+    
     Character or NULL; optional third categorical column to produce a
     named list of independent stratified 2-way slices. Default: NULL.
 
   - cohort:
-
+    
     Cohort reference (a `dsomop_cohort_handle`, a
     `cohort_definition_id`, or a server-side cohort table name), or
     NULL. Takes precedence over `cohort_table`.
 
   - scope:
-
+    
     Character; `"per_site"` (default) or `"pooled"`.
 
   - pooling\_policy:
-
+    
     Character; `"strict"` (default) or `"pooled_only_ok"`. Under
     `strict`, a cell absent or suppressed on any site is suppressed in
     the pooled table.
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s) or NULL to use the session default.
 
   - execute:
-
+    
     Logical; if `FALSE`, return a dry-run result containing only the
     generated call code (default: `TRUE`).
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. When
     omitted, legacy `scope` behaviour is preserved.
 

@@ -24,29 +24,29 @@ omop_concept_set(
 ## Arguments
 
   - concepts:
-
+    
     Integer vector of concept IDs (may be empty: a set that matches
     nothing).
 
   - descendants:
-
+    
     Logical; include descendants.
 
   - mapped:
-
+    
     Logical; include source concepts that map to the set.
 
   - exclude:
-
+    
     `NULL`, an integer vector of exact concept IDs, or an unnamed
     `omop_concept_set()` expanded with its own flags.
 
   - name:
-
+    
     Optional registry name.
 
   - validity\_policy:
-
+    
     NULL retains native semantics. The versioned `"ohdsi-import-1"`
     policy requires valid explicit vocabulary records and excludes
     invalid expanded records; OHDSI importers select it explicitly.

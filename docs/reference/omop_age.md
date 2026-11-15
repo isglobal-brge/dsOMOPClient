@@ -47,48 +47,48 @@ omop_population_column(
 ## Arguments
 
   - reference:
-
+    
     `"index"` or `"today"` (today's date is recorded at construction so
     executions stay reproducible).
 
   - year:
-
+    
     Optional reference year (shorthand for `reference_date`).
 
   - reference\_date:
-
+    
     Optional fixed ISO reference date.
 
   - bands:
-
+    
     Logical; legacy `age_group` bands.
 
   - age\_breaks:
-
+    
     `NULL` or integer band lower bounds starting at 0.
 
   - width:
-
+    
     Birth-year band width (years).
 
   - before:
-
+    
     Optional day offset: died before index + `before`.
 
   - period\_policy:
-
+    
     Observation-duration policy.
 
   - window:
-
+    
     An `omop_window()` for `omop_observed_days()`.
 
   - type:
-
+    
     Score type.
 
   - name:
-
+    
     Population column: `"index_source"`, `"set_id"`, `"is_case"` or
     `"sampling_weight"`.
 

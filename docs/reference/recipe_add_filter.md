@@ -14,15 +14,15 @@ recipe_add_filter(recipe, filter, id = NULL)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - filter:
-
+    
     An `omop_filter` or `omop_filter_group` object.
 
   - id:
-
+    
     Character or `NULL`; filter ID (auto-generated from type and
     sequence number if `NULL`).
 

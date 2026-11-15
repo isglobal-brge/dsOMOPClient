@@ -11,15 +11,15 @@ Refusal of an execution that needs the publication protocol on old sites
 ## Arguments
 
   - route:
-
+    
     A `.plan_protocol_route()` result.
 
   - what:
-
+    
     What needs the protocol.
 
   - v1\_refusal:
-
+    
     Why a newly permitted shape has no v1 plan, or NULL.
 
 ## Value

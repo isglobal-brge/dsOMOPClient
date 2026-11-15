@@ -19,7 +19,7 @@ ordering.
 ## Arguments
 
   - per\_server:
-
+    
     List of per-server results, each a list with `levels` (named list of
     column -\> character levels), `unsafe` (character vector of
     disclosive columns), and `nfilter_levels_max` (numeric server cap).

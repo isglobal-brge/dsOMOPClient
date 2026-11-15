@@ -11,11 +11,11 @@ recipe_remove_variable(recipe, name)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - name:
-
+    
     Character; variable name to remove.
 
 ## Value

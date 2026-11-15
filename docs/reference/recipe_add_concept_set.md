@@ -31,22 +31,22 @@ recipe_set_publish(recipe, publish)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe`.
 
   - concept\_set, event, interval:
-
+    
     The object to declare (a registry concept set must be named; events
     and intervals without a name get a deterministic one when compiled).
     Declaring an existing name again with a different definition is an
     error.
 
   - name:
-
+    
     Name of the node to remove.
 
   - publish:
-
+    
     Character vector of output names, `character(0)` for none (every
     output is then a private computed input), or `NULL` for all.
 

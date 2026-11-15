@@ -14,7 +14,7 @@ recipe_preview_schema(recipe)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
 ## Value

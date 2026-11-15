@@ -1,0 +1,170 @@
+---
+title: "2. Resources, connections and symbols"
+author: "David Sarrat González"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{2. Resources, connections and symbols}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<div class="learn-box">
+**What you will learn**
+
+Attach a resource and learn the two kinds of name used in a session.
+</div>
+
+This chapter uses the public synthetic GiBleed practice connection from [Getting started](book-00-start.html).
+**You need:** the packages and the matching practice connection described in
+[Before you start](book-00-start.html#before-you-start).
+Run the sections in order in one R session. All printed results below were computed
+with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.
+
+## Start this chapter
+
+Start a fresh R session in the `book-work` directory created in
+[Getting started](book-00-start.html#get-the-book-helpers). Run this setup first:
+
+```{r chapter-setup}
+library(dsOMOPClient)
+source("tools/book/display.R")
+source("tools/book/connection.R")
+source("tools/book/practice.R")
+practice <- if (book_driver == "DSLite") book_practice("gibleed") else book_connect("gibleed")
+conns <- practice$conns
+names(conns)
+```
+
+The `site` connection is ready. The shared `connection.R` selects DSLite or Opal and resolves the resource names.
+
+## One connection list
+
+A *connection* is a logged-in session. Our DSLite helper made one, named `site`.
+
+```{r connection-names}
+names(conns)
+```
+
+Most calls accept `conns`. Passing it explicitly makes clear where a request goes.
+
+## The Opal login path
+
+For a study server, replace the local connection chunk with the
+[Opal login chunk in Getting started](book-00-start.html#connect-to-your-opal-server).
+It uses DSI and DSOpal with the URL, credentials, profile and resources supplied
+by your administrator. The attach and analysis calls below then use that `conns`
+list and its resource names.
+
+For local practice, keep the setup above. `book_connect()` reads the same
+connection settings when a later section changes datasets. Questionnaire
+chapters identify their separate local dataset.
+
+```{r resolved-resources}
+resource_names
+```
+
+These are the names used by every attach and switch below. With Opal they include
+the configured project prefix, even when you rename either resource.
+
+## A resource is a route to a database
+
+A *resource* stores the connection details on the server. On the practice server its name
+is `gibleed`. On Opal, use the project-qualified name supplied by your administrator.
+
+A *symbol* is an R object name inside the DataSHIELD session. Attach the resource
+and deliberately name the session handle `omop`:
+
+```{r attach}
+ds.omop.disconnect(conns = conns)
+ds.omop.connect(resource = resource_names[["gibleed"]], symbol = "omop", conns = conns)
+```
+
+The server opens its database connection. This does not copy the database into R
+on your laptop. The shared configuration supplies the correct resource name for either driver.
+
+## Reuse the handle
+
+```{r handle}
+ds.omop.columns("person", symbol = "omop", conns = conns)$site
+```
+
+Subsequent calls can omit `symbol` because its default is `omop`. An output symbol
+such as `D_people` is different: it names a table built later by a recipe.
+
+## End a session deliberately
+
+At the end of your own work, call `ds.omop.disconnect(conns = conns)` and then
+`DSI::datashield.logout(conns)`. Start again with the practice helper for another
+chapter.
+
+## Switch between the two practice resources
+
+The same practice server also offers the numeric Synthea27Nj database. Disconnect
+the current OMOP handle, then attach that resource on the same login connection:
+
+```{r switch-to-numeric}
+ds.omop.disconnect(conns = conns)
+numeric_session <- ds.omop.connect(resource = resource_names[["numeric"]], conns = conns)
+class(numeric_session)
+```
+
+This changes the database behind the OMOP handle. It does not copy or combine
+patient rows between resources. On Opal, `resource_names[["numeric"]]` selects the resource you configured.
+Return to GiBleed for the next introductory chapters:
+
+```{r switch-back}
+ds.omop.disconnect(conns = conns)
+session <- ds.omop.connect(resource = resource_names[["gibleed"]], conns = conns)
+class(session)
+```
+
+The numeric chapters will open their own fresh `numeric` session. Keeping resource
+selection explicit prevents accidentally running a lab recipe against GiBleed's
+empty numeric-value fields.
+
+## Try it
+
+Repeat the column request without specifying the symbol.
+
+<details><summary>Solution</summary>
+
+
+```{r solution}
+ds.omop.columns("person", conns = conns)$site
+```
+
+</details>
+
+## Exercise 2: a common variant
+
+Resolve resource names for an Opal project called teaching. Do you need to reconnect for this local calculation?
+
+<details><summary>Solution 2</summary>
+
+```{r book4-exercise-2}
+book_resource_names("Opal", "teaching", c(gibleed = "bleeding", numeric = "labs"))
+```
+
+No. Name resolution is local; attaching the resolved resource is a separate server operation.
+
+</details>
+
+## Exercise 3: a pitfall to avoid
+
+Use an explicit handle for a different table, then verify the current server version.
+
+<details><summary>Solution 3</summary>
+
+```{r book4-exercise-3}
+knitr::kable(ds.omop.columns("death", symbol = "omop", conns = conns)$site)
+ds.omop.server.version(conns = conns)[c("server", "published", "running", "ready")]
+```
+
+The same handle routes both calls to the current resource. A symbol name does not describe which dataset it contains.
+
+</details>
+## Recap
+
+The resource identifies a database; `omop` is its session handle; `D_people` will name a private result.
+
+**Next:** [3. Exploring the CDM](book-03-explore.html).

@@ -22,12 +22,12 @@ omop_history(
 ## Arguments
 
   - condition, drug, procedure:
-
+    
     Items over `condition_occurrence`, `drug_exposure` and
     `procedure_occurrence`.
 
   - days\_before:
-
+    
     Lookback in days (`Inf`: any time up to the index).
 
 ## Value

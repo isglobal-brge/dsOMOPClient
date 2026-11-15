@@ -11,12 +11,12 @@ Pool histograms by bin-wise sum
 ## Arguments
 
   - per\_site\_histograms:
-
+    
     Named list of histogram data frames (each with bin\_start, bin\_end,
     count, suppressed)
 
   - policy:
-
+    
     Character; pooling policy
 
 ## Value

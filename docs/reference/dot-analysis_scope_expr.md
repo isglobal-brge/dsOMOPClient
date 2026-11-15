@@ -17,12 +17,12 @@ evaluate an unreviewed container around protected objects.
 ## Arguments
 
   - cohort:
-
+    
     Cohort reference (a `dsomop_cohort_handle`, a
     `cohort_definition_id`, or a server-side table name) or `NULL`.
 
   - tables:
-
+    
     Character vector of server-side `omop.table` symbol names, or
     `NULL`.
 

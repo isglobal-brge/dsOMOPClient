@@ -11,11 +11,11 @@ Validate a server-owned analysis pooling contract
 ## Arguments
 
   - contract:
-
+    
     Contract returned by omopAnalysisGetDS().
 
   - per\_site:
-
+    
     Optional named list of returned data frames. When supplied, each
     frame must have exactly the contracted schema, including empty
     frames.

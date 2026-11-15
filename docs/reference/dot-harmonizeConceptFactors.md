@@ -17,11 +17,11 @@ behave correctly on the federated factor.
 ## Arguments
 
   - owned:
-
+    
     Named list mapping plan outputs to their exact server symbols.
 
   - conns:
-
+    
     DSI connections object.
 
 ## Value

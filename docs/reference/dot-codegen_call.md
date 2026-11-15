@@ -13,11 +13,11 @@ arguments are dropped.
 ## Arguments
 
   - fn\_name:
-
+    
     Character; fully qualified function name.
 
   - ...:
-
+    
     Named arguments to include in the call.
 
 ## Value

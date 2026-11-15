@@ -11,7 +11,7 @@ Informational assignment quasi-identifier classification
 ## Arguments
 
   - col:
-
+    
     Character; a column name (case-insensitive).
 
 ## Value

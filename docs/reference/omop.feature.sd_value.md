@@ -17,15 +17,15 @@ omop.feature.sd_value(
 ## Arguments
 
   - concept\_set:
-
+    
     Numeric vector of concept IDs.
 
   - value\_column:
-
+    
     Character; numeric column (default `"value_as_number"`).
 
   - name:
-
+    
     Character; optional custom column name.
 
 ## Value

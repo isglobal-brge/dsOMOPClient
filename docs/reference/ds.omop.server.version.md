@@ -16,11 +16,11 @@ ds.omop.server.version(conns = NULL, symbol = "omop")
 ## Arguments
 
   - conns:
-
+    
     DSI connections (default: the DSI default connections).
 
   - symbol:
-
+    
     OMOP session symbol whose capability blocks (read by
     `ds.omop.connect`) are reported.
 

@@ -39,72 +39,72 @@ omop_reduce(
 ## Arguments
 
   - fn:
-
+    
     Reducer name (see `fn` in the plan schema).
 
   - value:
-
+    
     Value column (default: the normalised `value` for value reducers).
 
   - window:
-
+    
     `NULL` or an `omop_window()`.
 
   - which:
-
+    
     `NULL` or `"first"`, `"last"`, `"nth"`, `"closest"`.
 
   - n:
-
+    
     Row number(s) for `nth_value` (a vector gives suffixed columns).
 
   - side:
-
+    
     `closest_value`: `"either"`, `"before"`, `"after"`.
 
   - missing:
-
+    
     `"skip"` (default) or `"keep"` NULL values before selection.
 
   - distinct:
-
+    
     `count`: `"row"`, `"day"`, `"visit"`, `"concept"`.
 
   - p:
-
+    
     Quantile probability in (0, 1\].
 
   - agg:
-
+    
     `drug_duration`: `"mean"`, `"sum"`, `"max"`.
 
   - reference:
-
+    
     Anchor for `days_since`/`days_until`.
 
   - predicate:
-
+    
     `any`/`all`: an `omop_where()` predicate.
 
   - reference\_date:
-
+    
     `time_since`: fixed ISO date (legacy).
 
   - unit:
-
+    
     `time_since`: `"day"` or `"month"`.
 
   - coverage:
-
+    
     `covered_days`: `"recorded"` or `"effective_supply"` (stockpiled
     eras only).
 
   - fills:
-
+    
     `supply_days`: `"start_in_window"` or `"clipped"`.
 
   - observed\_only:
-
+    
     `covered_days`: intersect with observed days.
 
 ## Value

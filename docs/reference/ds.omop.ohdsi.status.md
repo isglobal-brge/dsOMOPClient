@@ -13,15 +13,15 @@ ds.omop.ohdsi.status(symbol = "omop", conns = NULL, type = NULL)
 ## Arguments
 
   - symbol:
-
+    
     Character; the session symbol (default: `"omop"`).
 
   - conns:
-
+    
     DSI connection object(s). If `NULL`, uses active session.
 
   - type:
-
+    
     Optional result view: `"split"`, `"combine"`, or `"both"`. Status is
     site-specific, so a combined view has no value and records that
     reason.

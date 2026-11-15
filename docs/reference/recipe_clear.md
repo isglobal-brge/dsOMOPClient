@@ -12,7 +12,7 @@ recipe_clear(recipe)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object (used only for type validation).
 
 ## Value

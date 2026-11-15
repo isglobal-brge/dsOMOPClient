@@ -11,7 +11,7 @@ Collect population-level filter items while preserving groups
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
 ## Value

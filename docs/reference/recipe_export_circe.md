@@ -15,15 +15,15 @@ recipe_export_circe(recipe, population_id = "base", file = NULL)
 ## Arguments
 
   - recipe:
-
+    
     An `omop_recipe` object.
 
   - population\_id:
-
+    
     Character; which population to export (default `"base"`).
 
   - file:
-
+    
     Character or `NULL`; path to write the Circe JSON to. If `NULL`, the
     JSON string is returned.
 

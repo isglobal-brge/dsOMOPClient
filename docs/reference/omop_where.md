@@ -20,11 +20,11 @@ omop_where_tree(tree)
 ## Arguments
 
   - ...:
-
+    
     Predicate expressions (unevaluated).
 
   - tree:
-
+    
     A predicate tree.
 
 ## Value
