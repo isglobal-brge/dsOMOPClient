@@ -249,8 +249,9 @@ as English synonyms. The category identity is unchanged by these labels.
 ds.omop.table("D_styled", "code_and_name", conns = conns)
 ```
 
-Use `code`, `vocabulary_code` or `source_code` when that public coding context is
-needed. Prefer names for an ordinary analysis table.
+Use `code` or `vocabulary_code` when that public coding context is needed.
+`source_code` is refused on this route because source-code disclosure needs a
+separately admitted policy. Prefer names for an ordinary analysis table.
 
 </details>
 
