@@ -25,7 +25,9 @@ recipe_explain(
 An \code{omop_recipe_explain} object: \code{$text} (character
   lines), \code{$selected} (\code{"v1"} or \code{"v2"}), \code{$payload}
   (the selected wire plan), \code{$plan} (the normalised plan, or
-  \code{NULL} for an offline v1 explanation), \code{$defaults} (a data
+  \code{NULL} for an offline v1 explanation), \code{$language_version}
+  and \code{$semantic_version} (from \code{$plan$meta}, or \code{NULL}
+  when the normalised plan is unavailable), \code{$defaults} (a data
   frame of the defaults relied on), \code{$digest} (the semantic digest,
   or \code{NULL} when unavailable), \code{$server} (per-server explain
   payloads, when \code{conns} is given) and \code{$refusal} (why
