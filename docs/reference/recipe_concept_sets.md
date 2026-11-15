@@ -33,7 +33,11 @@ recipe_import_concept_sets(recipe, x)
     
     A JSON string or file with one concept-set expression (`list(items =
     ...)`), a named list of them, or an ATLAS `ConceptSets` array
-    (elements with `name` and `expression`).
+    (elements with `name` and `expression`). Concept IDs must be scalar
+    integral JSON numbers in 0..2147483647. Present flags must be scalar
+    Booleans; omitted means false and null is invalid. Duplicate object
+    keys and unsupported item fields are refused before include/exclude
+    partitioning.
 
 ## Value
 

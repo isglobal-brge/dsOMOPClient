@@ -66,7 +66,7 @@ test_that("ds.omop.client.version reports the installed client", {
 test_that("server errors are reported by their own cause", {
   ssl <- paste0(
     "Command 'omopInitDS(\"dsO.6AvjEF\", cdm_schema = NULL, vocab_schema = NULL, \n",
-    "    results_schema = NULL, temp_schema = NULL)' failed on 'Ethiopia': Error ",
+    "    results_schema = NULL, temp_schema = NULL)' failed on 'site_a': Error ",
     "while evaluating 'is.null(base::assign('omop', value={dsOMOP::omopInitDS(",
     "\"dsO.6AvjEF\", cdm_schema = NULL)}))' -> Error : connection to server at ",
     "\"broadsea-atlasdb\" (172.20.0.3), port 5432 failed: server does not support ",
@@ -81,8 +81,8 @@ test_that("server errors are reported by their own cause", {
   missing <- paste0("[Client error: (400) Bad Request] No such DataSHIELD ",
                     "'ASSIGN' method with name: omopInitDS")
   expect_identical(dsOMOPClient:::.ds_error_core(missing), missing)
-  detail <- dsOMOPClient:::.ds_failure_detail(list(Ethiopia = missing))
-  expect_match(detail, "^Ethiopia: \\[Client error")
+  detail <- dsOMOPClient:::.ds_failure_detail(list(site_a = missing))
+  expect_match(detail, "^site_a: \\[Client error")
   expect_match(detail, "does not publish dsOMOP's omopInitDS")
   expect_match(detail, "Packages > dsOMOP > Publish")
   expect_null(dsOMOPClient:::.ds_failure_hint("timeout"))
@@ -101,7 +101,7 @@ test_that("ds.omop.server.version says when a server is ready", {
 
 test_that("ds.omop.server.version explains a profile left on dsOMOP 1.x", {
   .mock_server("1.1.1", legacy = TRUE)
-  v <- ds.omop.server.version(list(Ethiopia = "FAKE"))
+  v <- ds.omop.server.version(list(site_a = "FAKE"))
   expect_false(v$ready)
   expect_true(is.na(v$running))
   expect_match(v$advice, "methods of dsOMOP 1.1.1")
@@ -194,9 +194,9 @@ test_that("ds.omop.connect stops before assigning anything when dsOMOP is not pu
     .package = "DSI"
   )
   expect_error(
-    ds.omop.connect(resource = "VA_data.hararghe_hdss", symbol = "not_ready",
-                    conns = list(Ethiopia = "FAKE")),
-    "dsOMOP is not ready on Ethiopia:\nEthiopia: \\[Client error: \\(400\\) Bad Request\\] No such DataSHIELD 'AGGREGATE' method with name: omopPingDS The server's DataSHIELD profile does not publish dsOMOP's omopPingDS"
+    ds.omop.connect(resource = "project.omop", symbol = "not_ready",
+                    conns = list(site_a = "FAKE")),
+    "dsOMOP is not ready on site_a:\nsite_a: \\[Client error: \\(400\\) Bad Request\\] No such DataSHIELD 'AGGREGATE' method with name: omopPingDS The server's DataSHIELD profile does not publish dsOMOP's omopPingDS"
   )
   expect_false(assigned)
 })

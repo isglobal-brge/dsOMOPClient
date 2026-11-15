@@ -95,7 +95,9 @@ outputs (how to shape the result), the base cohort, and plan-wide options.</p>
 <span>  publish <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  column_names <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  date_spec <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  date_spec <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  number_spec <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  category_spec <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -197,6 +199,14 @@ when another output depends on them and are never released.</p></dd>
 
 <dt id="arg-date-spec">date_spec<a class="anchor" aria-label="anchor" href="#arg-date-spec"></a></dt>
 <dd><p>Recipe-wide defaults created with omop_date_spec().</p></dd>
+
+
+<dt id="arg-number-spec">number_spec<a class="anchor" aria-label="anchor" href="#arg-number-spec"></a></dt>
+<dd><p>Recipe-wide numeric presentation defaults.</p></dd>
+
+
+<dt id="arg-category-spec">category_spec<a class="anchor" aria-label="anchor" href="#arg-category-spec"></a></dt>
+<dd><p>Recipe-wide category presentation defaults.</p></dd>
 
 </dl></div>
     <div class="section level2">

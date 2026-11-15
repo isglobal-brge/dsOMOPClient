@@ -24,6 +24,8 @@
 # Decode a B64:-prefixed, url-safe base64 param blob (mirrors .ds_encode).
 .shc_decode_params <- function(blob) {
   raw <- gsub("_", "/", gsub("-", "+", sub("^B64:", "", blob)))
+  # The production URL-safe transport deliberately omits base64 padding.
+  raw <- paste0(raw, strrep("=", (4L - nchar(raw) %% 4L) %% 4L))
   jsonlite::fromJSON(rawToChar(jsonlite::base64_dec(raw)))
 }
 

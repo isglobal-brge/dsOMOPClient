@@ -122,160 +122,160 @@ omop_number_derive(
 ## Arguments
 
   - unit:
-    
+
     A source map, fixed unit conversion, source, or expression
     coordinate.
 
   - transform:
-    
+
     One transform or an ordered nonempty transform list.
 
   - rounding:
-    
+
     A numeric rounding declaration.
 
   - representation:
-    
+
     number, bins, category, flag, present or missing.
 
   - breaks:
-    
+
     Strictly increasing public boundaries; optional infinite tails.
 
   - grid:
-    
+
     count\_1\_2\_5, proportion\_quarters or signed\_decades.
 
   - closed:
-    
+
     left or right interval closure.
 
   - labels:
-    
+
     Complete unique public labels, in numeric order.
 
   - range:
-    
+
     reference, thresholds or bins.
 
   - thresholds:
-    
+
     Public thresholds in the incoming numeric coordinate.
 
   - op:
-    
+
     lt, le, gt, ge, eq, ne, inside or outside.
 
   - category\_map:
-    
+
     Complete nondecreasing bin-to-category mapping.
 
   - levels:
-    
+
     Complete ordered public category domain.
 
   - pipeline:
-    
+
     Ordered typed steps, atomic for inheritance.
 
   - ...:
-    
+
     Typed pipeline steps.
 
   - from, to:
-    
+
     Canonical fixed-unit tokens.
 
   - factor, offset:
-    
+
     Public affine parameters.
 
   - method:
-    
+
     Transform, rounding or longitudinal method.
 
   - center, scale:
-    
+
     Public standardisation constants; scale must be positive.
 
   - lower, upper:
-    
+
     Finite clipping bounds.
 
   - digits:
-    
+
     Decimal places (-308..308) or significant digits (1..17).
 
   - exprs:
-    
+
     Closed mutate-v1 request, never executable R/SQL.
 
   - result:
-    
+
     Assignment selected as result; defaults to the last assignment.
 
   - variable:
-    
+
     A numeric variable declaration.
 
   - stage:
-    
+
     canonical or presented numeric input.
 
   - number\_spec:
-    
+
     Numeric presentation declaration.
 
   - broadcast:
-    
+
     Explicit scalar broadcast to event rows (default false).
 
   - event:
-    
+
     Typed event or registered source name.
 
   - value:
-    
+
     Registered numeric value role/column.
 
   - column:
-    
+
     Stable pre-rename logical numeric output column key.
 
   - component:
-    
+
     Declared patient row-frame component name.
 
   - window:
-    
+
     Explicit eligible-event window; NULL is unbounded.
 
   - kind:
-    
+
     nonmissing or missing numeric row count.
 
   - missing:
-    
+
     skip or keep endpoint missingness; slopes/thresholds require skip.
 
   - reference:
-    
+
     First observation, anchor, index or fixed ISO origin.
 
   - time\_unit:
-    
+
     days or weeks for slopes/attainment times.
 
   - threshold:
-    
+
     Public observed-attainment threshold.
 
   - inputs:
-    
+
     Named numeric declarations or explicit input bindings.
 
   - reducer:
-    
+
     Optional numeric reducer, applied after same-event expressions.
 
 ## Value

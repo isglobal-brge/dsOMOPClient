@@ -84,7 +84,8 @@ index-relative filters are evaluated (the ordering used by OHDSI Circe).</p>
 <span>  primary_limit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"first"</span>, <span class="st">"last"</span>, <span class="st">"all"</span><span class="op">)</span>,</span>
 <span>  include_descendants <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  include_mapped <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  end_strategy <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  end_strategy <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  validity_policy <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -126,6 +127,11 @@ OHDSI DateOffset shape <code>list(DateOffset = list(DateField =
 "StartDate"|"EndDate", Offset = &lt;integer&gt;))</code>. Use <code>EndDate</code> with
 offset zero to select the physical event end (capped at observation-period
 end, as in Circe).</p></dd>
+
+
+<dt id="arg-validity-policy">validity_policy<a class="anchor" aria-label="anchor" href="#arg-validity-policy"></a></dt>
+<dd><p>NULL for native semantics, or <code>"ohdsi-import-1"</code>
+for the server-enforced imported-vocabulary validity contract.</p></dd>
 
 </dl></div>
     <div class="section level2">

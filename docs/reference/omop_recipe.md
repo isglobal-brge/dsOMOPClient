@@ -27,7 +27,9 @@ omop_recipe(
   publish = NULL,
   labels = NULL,
   column_names = NULL,
-  date_spec = NULL
+  date_spec = NULL,
+  number_spec = NULL,
+  category_spec = NULL
 )
 ```
 
@@ -126,6 +128,14 @@ omop_recipe(
   - date\_spec:
     
     Recipe-wide defaults created with omop\_date\_spec().
+
+  - number\_spec:
+
+    Recipe-wide numeric presentation defaults.
+
+  - category\_spec:
+
+    Recipe-wide category presentation defaults.
 
 ## Value
 

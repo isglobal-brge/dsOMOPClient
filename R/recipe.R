@@ -168,6 +168,8 @@
 #' @param column_names Named character map from stable untranslated generated
 #'   column keys to complete, valid R names. Variable maps override recipe maps.
 #' @export
+#' @param category_spec Native category identity and presentation.
+#' @param number_spec Native numeric presentation created with omop_number_spec().
 #' @param date_spec Native date presentation; variable fields override recipe defaults.
 omop_variable <- function(name = NULL,
                           table = NULL,
@@ -205,7 +207,9 @@ omop_variable <- function(name = NULL,
                           where = NULL,
                           visit = NULL,
                           broadcast = FALSE,
-                          labels = NULL, column_names = NULL, date_spec = NULL) {
+                          labels = NULL, column_names = NULL, date_spec = NULL, number_spec = NULL, category_spec = NULL) {
+  category_spec <- .categoryArg(category_spec)
+  number_spec <- .numberSpecArg(number_spec)
   date_spec <- .dateSpecArg(date_spec)
   labels <- .conceptMap(labels, "omop_variable(): labels")
   column_names <- .conceptMap(column_names, "omop_variable(): column_names", TRUE)
@@ -229,6 +233,7 @@ omop_variable <- function(name = NULL,
       stop("omop_variable(): the event/reducer spelling needs both event and ",
            "reducer.", call. = FALSE)
     }
+    if(!is.null(reducer) && (reducer$fn %||% "") %in% c("any","all") && is.null(reducer$predicate)) stop("omop_variable(): any/all need a predicate; typed flags use omop_category_reduce().",call.=FALSE)
     event <- .v2_source(event, "omop_variable(): event")
     if (!inherits(reducer, "omop_reducer") && !.v2_is_param(reducer)) {
       stop("omop_variable(): reducer must be created with omop_reduce().",
@@ -240,7 +245,7 @@ omop_variable <- function(name = NULL,
                         broadcast = .v2_flag(broadcast, "omop_variable(): broadcast"),
                         name = .v2_name(name, "omop_variable(): name"),
                         labels = if (length(labels)) labels,
-                        column_names = if (length(column_names)) column_names, date_spec = date_spec))
+                        column_names = if (length(column_names)) column_names, date_spec = date_spec, number_spec = number_spec, category_spec = category_spec))
   }
   if (is.null(table)) {
     stop("omop_variable(): table is required (or give event = and reducer =).",
@@ -328,6 +333,8 @@ omop_variable <- function(name = NULL,
   if (isTRUE(broadcast)) obj$broadcast <- TRUE
   if (length(labels)) obj$labels <- labels
   if (length(column_names)) obj$column_names <- column_names
+  if (!is.null(category_spec)) obj$category_spec <- category_spec
+  if (!is.null(number_spec)) obj$number_spec <- number_spec
   if (!is.null(date_spec)) obj$date_spec <- date_spec
   class(obj) <- c("omop_variable", "list")
   obj
@@ -1744,6 +1751,8 @@ omop_filter_missing_measurement <- function(concept_id, window = NULL,
 #' @param primary_limit Character; \code{"first"}, \code{"last"}, or
 #'   \code{"all"} candidate events per person.
 #' @param include_descendants,include_mapped Logical concept-set expansion flags.
+#' @param validity_policy NULL for native semantics, or \code{"ohdsi-import-1"}
+#'   for the server-enforced imported-vocabulary validity contract.
 #' @param end_strategy \code{NULL} for the OHDSI/Circe default (exit at the end
 #'   of the unique observation period covering the index), or the transport-safe
 #'   OHDSI DateOffset shape \code{list(DateOffset = list(DateField =
@@ -1758,7 +1767,7 @@ omop_index_event <- function(concept_id = NULL,
                              primary_limit = c("first", "last", "all"),
                              include_descendants = FALSE,
                              include_mapped = FALSE,
-                             end_strategy = NULL) {
+                             end_strategy = NULL, validity_policy = NULL) {
   # Defect B-20: the event tables of the server's role registry (design-2.10.3
   # section 6.2, vendored inst/ohdsi/roles-*.csv), not a fixed allowlist. The
   # server checks the table against its own CDM version.
@@ -1825,6 +1834,7 @@ omop_index_event <- function(concept_id = NULL,
     include_mapped = include_mapped
   )
   if (!is.null(end_strategy)) obj$end_strategy <- end_strategy
+  if (!is.null(validity_policy)) obj$validity_policy <- .ohdsiValidityPolicy(validity_policy)
   class(obj) <- c("omop_index_event", "list")
   obj
 }
@@ -2337,6 +2347,8 @@ print.omop_variable_block <- function(x, ...) {
 #' }
 #' @seealso \code{\link{omop_recipe}}, \code{\link{recipe_to_plan}}
 #' @export
+#' @param category_columns Named categorical copies over original typed output columns.
+#' @param number_columns Named numeric column copies/formulas over the canonical output frame.
 omop_output <- function(name = "output_1",
                         type = NULL,
                         variables = NULL,
@@ -2348,7 +2360,7 @@ omop_output <- function(name = "output_1",
                         columns = NULL,
                         format = NULL,
                         sources = NULL,
-                        collapse = NULL) {
+                        collapse = NULL, number_columns = NULL, category_columns = NULL) {
   if (!is.null(type) && !is.null(format)) {
     stop("omop_output(): type (legacy preset) and format are alternatives; ",
          "give one.", call. = FALSE)
@@ -2448,6 +2460,16 @@ omop_output <- function(name = "output_1",
   if (!is.null(grain)) obj$grain <- grain
   if (!is.null(collapse)) obj$collapse <- collapse
   if (!is.null(sources)) obj$sources <- sources
+  if (!is.null(category_columns)) {
+    category_columns<-.categoryExpandBundles(category_columns)
+    .numberNames(names(category_columns));lapply(category_columns,.numberVariableArg)
+    obj$category_columns<-category_columns
+  }
+  if (!is.null(number_columns)) {
+    .numberNames(names(number_columns))
+    lapply(number_columns, .numberVariableArg)
+    obj$number_columns <- number_columns
+  }
   class(obj) <- c("omop_output", "list")
   obj
 }
@@ -2657,6 +2679,8 @@ print.omop_output <- function(x, ...) {
 #' @param labels Recipe-wide concept-ID to category-label map; variable maps win.
 #' @param column_names Recipe-wide stable generated-column key to final-name map.
 #' @export
+#' @param category_spec Recipe-wide category presentation defaults.
+#' @param number_spec Recipe-wide numeric presentation defaults.
 #' @param date_spec Recipe-wide defaults created with omop_date_spec().
 omop_recipe <- function(variables = NULL,
                         filters = NULL,
@@ -2673,10 +2697,12 @@ omop_recipe <- function(variables = NULL,
                         intervals = NULL,
                         coverage = NULL,
                         publish = NULL,
-                        labels = NULL, column_names = NULL, date_spec = NULL) {
+                        labels = NULL, column_names = NULL, date_spec = NULL, number_spec = NULL, category_spec = NULL) {
   recipe <- .omop_recipe_empty()
+  if (!is.null(category_spec)) recipe$options$category_spec <- .categoryArg(category_spec)
+  if (!is.null(number_spec)) recipe$options$number_spec <- .numberSpecArg(number_spec)
   if (!is.null(date_spec)) recipe$options$date_spec <- .dateSpecArg(date_spec)
-  variables <- .dateExpandBundles(variables)
+  variables <- .dateExpandBundles(.categoryExpandBundles(variables))
   labels <- .conceptMap(labels, "omop_recipe(): labels")
   column_names <- .conceptMap(column_names, "omop_recipe(): column_names", TRUE)
   if (length(labels)) recipe$options$labels <- labels
@@ -3693,13 +3719,14 @@ print.omop_recipe <- function(x, ...) {
     concept_set <- NULL
     if (!is.null(ie$concept_id)) {
       concept_set <- if (isTRUE(ie$include_descendants) ||
-                         isTRUE(ie$include_mapped)) {
+                         isTRUE(ie$include_mapped) || !is.null(ie$validity_policy)) {
         list(concepts = as.integer(ie$concept_id),
              include_descendants = isTRUE(ie$include_descendants),
              include_mapped = isTRUE(ie$include_mapped))
       } else {
         as.integer(ie$concept_id)
       }
+      if (!is.null(ie$validity_policy)) concept_set$validity_policy <- ie$validity_policy
     }
     spec$index_event <- list(
       table = ie$table,
@@ -5534,7 +5561,7 @@ recipe_set_options <- function(recipe,
 .codegen_value <- function(x) {
   if (is.null(x)) return("NULL")
   if (inherits(x, "codegen_raw")) return(as.character(x))
-  paste(deparse(x, width.cutoff = 500L), collapse = " ")
+  paste(deparse(x, width.cutoff = 500L, control = c("keepNA", "keepInteger", "niceNames", "showAttributes", "digits17")), collapse = " ")
 }
 
 #' Mark a string as already-generated R code
@@ -5691,6 +5718,7 @@ recipe_to_code <- function(recipe) {
           primary_limit = ie$primary_limit,
           include_descendants = if (isTRUE(ie$include_descendants)) TRUE else NULL,
           include_mapped = if (isTRUE(ie$include_mapped)) TRUE else NULL,
+          validity_policy = ie$validity_policy,
           end_strategy = ie$end_strategy))
       }
       pop_code <- c(pop_code, .codegen_call("omop_population",
@@ -5712,6 +5740,12 @@ recipe_to_code <- function(recipe) {
           "), coverage = ", .v2_codegen(p$circe_v2$coverage), "); p })(",
           pop_code[[length(pop_code)]], ")")
       }
+    }
+    if (!is.null(p$circe_provenance)) {
+      pop_code[[length(pop_code)]] <- paste0(
+        "(function(p) { p$circe_provenance <- ",
+        .codegen_value(.circe_refresh_provenance(p)$circe_provenance),
+        "; p })(", pop_code[[length(pop_code)]], ")")
     }
     if (!is.null(p$simple)) {
       pop_code[[length(pop_code)]] <- paste0(
@@ -5936,6 +5970,8 @@ recipe_to_code <- function(recipe) {
       factor_concepts    = o$factor_concepts    %||% TRUE)
   }
 
+  if (!is.null(o$category_spec)) slot_args$category_spec <- .codegen_raw(.v2_codegen(o$category_spec))
+  if (!is.null(o$number_spec)) slot_args$number_spec <- .codegen_raw(.v2_codegen(o$number_spec))
   if (!is.null(o$date_spec)) slot_args$date_spec <- .codegen_raw(.v2_codegen(o$date_spec))
 
   # Language-2 recipe slots.
@@ -5980,6 +6016,10 @@ recipe_to_code <- function(recipe) {
 #' @return Character; R code that recreates the filter.
 #' @keywords internal
 .codegen_filter <- function(f) {
+  if (!is.null(f$params$concept_set)) {
+    return(.codegen_call("omop_filter", type = f$type, level = f$level,
+                        params = f$params, label = f$label))
+  }
   if (f$type == "sex") {
     .codegen_call("omop_filter_sex", value = f$params$value)
   } else if (f$type == "cohort") {
@@ -6111,12 +6151,12 @@ recipe_to_code <- function(recipe) {
     # Schema version. Only bump this on a real BREAKING schema change (a change
     # that an older reader could not load); additive fields do not bump it.
     version     = "1",
-    populations = .recipe_strip_classes(recipe$populations),
+    populations = .recipe_strip_classes(lapply(recipe$populations, .circe_refresh_provenance)),
     blocks      = .recipe_strip_classes(recipe$blocks),
     variables   = .recipe_strip_classes(recipe$variables),
     filters     = .recipe_strip_classes(recipe$filters),
     outputs     = .recipe_strip_classes(recipe$outputs),
-    options     = recipe$options %||% list(),
+    options     = .recipe_strip_classes(recipe$options %||% list()),
     meta        = .recipe_strip_classes(recipe$meta)
   )
   # Only serialize the scope when set, so an unscoped recipe round-trips
@@ -6313,6 +6353,7 @@ recipe_to_code <- function(recipe) {
             primary_limit = ie$primary_limit %||% "first",
             include_descendants = isTRUE(ie$include_descendants),
             include_mapped = isTRUE(ie$include_mapped),
+            validity_policy = ie$validity_policy,
             end_strategy = ie$end_strategy
           )
         }
@@ -6334,6 +6375,10 @@ recipe_to_code <- function(recipe) {
       }
       if (!is.null(p$simple)) {
         recipe$populations[[pid]]$simple <- .v2_restore(p$simple)
+      }
+      if (!is.null(p$circe_provenance)) {
+        recipe$populations[[pid]]$circe_provenance <- p$circe_provenance
+        recipe$populations[[pid]] <- .circe_refresh_provenance(recipe$populations[[pid]])
       }
     }
   }
@@ -6447,7 +6492,7 @@ recipe_to_code <- function(recipe) {
     # serialized `key: null` keeps its key (and an older export carrying a now-
     # removed option such as min_persons imports without error, simply ignored).
     recipe$options <- utils::modifyList(recipe$options %||% list(),
-                                        data$options, keep.null = TRUE)
+                                        .v2_restore(data$options), keep.null = TRUE)
   }
 
   for (cs in .v2_restore(data$concept_sets %||% list())) {
@@ -6506,10 +6551,11 @@ recipe_to_code <- function(recipe) {
 #' @seealso \code{\link{recipe_import_json}}, \code{\link{recipe_to_code}}
 #' @export
 recipe_export_json <- function(recipe, file = NULL) {
-  # digits = NA: every number keeps its full precision (unit conversion
-  # factors and value thresholds must round-trip exactly).
-  json <- jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
-                            null = "null", digits = NA)
+  # Numeric declarations use exact round-tripping scalar serialization so
+  # conversion factors and adjacent boundaries survive interchange.
+  json <- if(.numberHas(recipe)) .ds_json_lossless(.numberRecipePlain(.recipe_plain(recipe))) else
+    jsonlite::toJSON(.recipe_plain(recipe), auto_unbox = TRUE, pretty = TRUE,
+                    null = "null", digits = NA)
   if (is.null(file)) return(as.character(json))
   writeLines(as.character(json), file)
   invisible(file)
@@ -6560,7 +6606,8 @@ recipe_import_json <- function(json) {
 recipe_export_yaml <- function(recipe, file = NULL) {
   if (!requireNamespace("yaml", quietly = TRUE))
     stop("Package 'yaml' is required for YAML export.", call. = FALSE)
-  text <- yaml::as.yaml(.recipe_plain(recipe), precision = 15L)
+  text <- yaml::as.yaml(if(.numberHas(recipe)).numberRecipePlain(.recipe_plain(recipe)) else .recipe_plain(recipe), precision = 17L,
+    handlers = list(numeric = .numberYamlNumeric))
   if (is.null(file)) return(text)
   writeLines(text, file)
   invisible(file)
@@ -6731,7 +6778,9 @@ recipe_import_yaml <- function(yaml) {
     stop("Circe export: a fixed-reference occurrence filter is not ",
          "index-relative and cannot be represented equivalently.", call. = FALSE)
   }
-  cs <- .circe_codeset(sets, p$concept_id, name = p$concept_name)
+  cs <- .circe_codeset(sets, p$concept_id, name = p$concept_name,
+    include_descendants = isTRUE(p$concept_set$include_descendants),
+    include_mapped = isTRUE(p$concept_set$include_mapped))
   inner <- stats::setNames(list(list(CodesetId = cs$id)), domain)
   # not_has_concept -> exactly 0; concept_count / has_concept -> at least N.
   occ <- if (identical(f$type, "not_has_concept"))
@@ -6762,7 +6811,9 @@ recipe_import_yaml <- function(yaml) {
     stop("Circe export: a fixed-reference measurement filter cannot be ",
          "represented as an index-relative Circe criterion.", call. = FALSE)
   }
-  cs <- .circe_codeset(sets, p$concept_id)
+  cs <- .circe_codeset(sets, p$concept_id,
+    include_descendants = isTRUE(p$concept_set$include_descendants),
+    include_mapped = isTRUE(p$concept_set$include_mapped))
   meas <- list(CodesetId = cs$id)
   if (!is.null(p$min_value)) {
     meas$ValueAsNumber <- list(Value = p$min_value, Op = "gte")
@@ -6995,6 +7046,10 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   if (is.null(pop))
     stop("Population '", population_id, "' not found in recipe.", call. = FALSE)
 
+  selected <- recipe
+  selected$populations <- list(pop)
+  .circe_require_supported(recipe_circe_check(selected, "export"))
+
   if (!is.null(pop$setop)) {
     stop("Circe export: set-operation populations are person-set operations ",
          "and are not equivalent to one Circe entry-event expression.",
@@ -7095,47 +7150,19 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
     valid_set_id <- length(set_num) == 1L && is.finite(set_num) &&
       length(set_id) == 1L && !is.na(set_id) && set_num == set_id && set_id >= 0L
     if (isTRUE(valid_set_id) && identical(set_id, id_int)) {
-      items <- s$expression$items %||% list()
-      if (length(items) == 0L) {
-        stop("Circe import: referenced concept set is empty.", call. = FALSE)
-      }
-      allowed_item <- c("concept", "isExcluded", "includeDescendants",
-                        "includeMapped")
-      for (it in items) {
-        unknown_item <- setdiff(names(it) %||% character(0), allowed_item)
-        if (length(unknown_item) > 0L) {
-          stop("Circe import: unsupported concept-set item field(s): ",
-               paste(unknown_item, collapse = ", "), ".", call. = FALSE)
-        }
-        for (flag in allowed_item[-1]) {
-          if (!is.null(it[[flag]]) &&
-              (!is.logical(it[[flag]]) || length(it[[flag]]) != 1L ||
-               is.na(it[[flag]]))) {
-            stop("Circe import: concept-set flags must be JSON booleans.",
-                 call. = FALSE)
-          }
-        }
-      }
-      excluded <- vapply(items, function(it) isTRUE(it$isExcluded), logical(1))
+      items <- .ohdsi_concept_items(s$expression)
+      excluded <- vapply(items, `[[`, logical(1), "is_excluded")
       if (any(excluded)) {
         stop("Circe import: excluded concept-set items are not supported by ",
              "omop_index_event/recipe filters.", call. = FALSE)
       }
-      descendants <- vapply(items, function(it) isTRUE(it$includeDescendants),
-                            logical(1))
-      mapped <- vapply(items, function(it) isTRUE(it$includeMapped), logical(1))
+      descendants <- vapply(items, `[[`, logical(1), "include_descendants")
+      mapped <- vapply(items, `[[`, logical(1), "include_mapped")
       if (length(unique(descendants)) > 1L || length(unique(mapped)) > 1L) {
         stop("Circe import: concept-set expansion flags must be uniform across ",
              "all items.", call. = FALSE)
       }
-      ids <- vapply(items, function(it) {
-        id <- suppressWarnings(as.integer(it$concept$CONCEPT_ID))
-        if (length(id) != 1L || is.na(id) || id < 0L) {
-          stop("Circe import: concept sets must contain non-negative integer ",
-               "CONCEPT_ID values.", call. = FALSE)
-        }
-        id
-      }, integer(1))
+      ids <- vapply(items, `[[`, integer(1), "concept_id")
       return(list(ids = unique(ids),
                   include_descendants = descendants[[1]],
                   include_mapped = mapped[[1]],
@@ -7155,6 +7182,51 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
 #' Convert one Circe occurrence criteria back into a recipe filter
 #' @keywords internal
 .circe_criteria_to_filter <- function(crit, concept_sets) {
+  out <- .circe_criteria_to_filter_unchecked(crit, concept_sets)
+  domain <- intersect(names(crit$Criteria %||% crit), unlist(.circe_domain_map))[[1L]]
+  spec <- (crit$Criteria %||% crit)[[domain]]
+  d <- .circe_codeset_details(spec$CodesetId, concept_sets)
+  out$params$concept_set <- list(concepts = d$ids, include_descendants = d$include_descendants,
+    include_mapped = d$include_mapped, validity_policy = "ohdsi-import-1")
+  out
+}
+
+.circe_occurrence_spec <- function(occ, domain, has_bounds = FALSE) {
+  occ <- occ %||% list(Type = 2L, Count = 1L)
+  if (!is.list(occ)) {
+    stop("Circe import: Occurrence must be an object.", call. = FALSE)
+  }
+  unknown_occ <- setdiff(names(occ) %||% character(0), c("Type", "Count"))
+  if (length(unknown_occ) > 0L) {
+    stop("Circe import: unsupported Occurrence field(s): ",
+         paste(unknown_occ, collapse = ", "), ".", call. = FALSE)
+  }
+  type_num <- suppressWarnings(as.numeric(occ$Type %||% 2L))
+  count_num <- suppressWarnings(as.numeric(occ$Count %||% 1L))
+  occurrence_type <- suppressWarnings(as.integer(occ$Type %||% 2L))
+  count <- suppressWarnings(as.integer(occ$Count %||% 1L))
+  if (length(type_num) != 1L || !is.finite(type_num) ||
+      length(occurrence_type) != 1L || is.na(occurrence_type) ||
+      type_num != occurrence_type || length(count_num) != 1L ||
+      !is.finite(count_num) || length(count) != 1L || is.na(count) ||
+      count_num != count || count < 0L) {
+    stop("Circe import: Occurrence Type/Count must be non-negative integers.",
+         call. = FALSE)
+  }
+  if (has_bounds &&
+      (!identical(occurrence_type, 2L) || count != 1L)) {
+    stop("Circe import: numeric measurement criteria require occurrence at least one.",
+         call. = FALSE)
+  }
+  if (!(identical(occurrence_type, 0L) && identical(count, 0L)) &&
+      (!identical(occurrence_type, 2L) || count < 1L ||
+       (identical(domain, "Measurement") && count != 1L))) {
+    stop("Circe import: only at least N or exactly zero is supported; measurement requires at least one.", call. = FALSE)
+  }
+  list(type = occurrence_type, count = count)
+}
+
+.circe_criteria_to_filter_unchecked <- function(crit, concept_sets) {
   allowed_wrapper <- c("Criteria", "StartWindow", "EndWindow", "Occurrence",
                        "RestrictVisit", "IgnoreObservationPeriod")
   unknown_wrapper <- setdiff(names(crit) %||% character(0), allowed_wrapper)
@@ -7191,32 +7263,9 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
   table <- .circe_table_from_domain(domain)
   ids <- .circe_ids_for_codeset(spec$CodesetId, concept_sets)
   window <- .circe_window_to_recipe(crit$StartWindow)
-  occ <- crit$Occurrence %||% list(Type = 2L, Count = 1L)
-  if (!is.list(occ)) {
-    stop("Circe import: Occurrence must be an object.", call. = FALSE)
-  }
-  unknown_occ <- setdiff(names(occ) %||% character(0), c("Type", "Count"))
-  if (length(unknown_occ) > 0L) {
-    stop("Circe import: unsupported Occurrence field(s): ",
-         paste(unknown_occ, collapse = ", "), ".", call. = FALSE)
-  }
-  type_num <- suppressWarnings(as.numeric(occ$Type %||% 2L))
-  count_num <- suppressWarnings(as.numeric(occ$Count %||% 1L))
-  occurrence_type <- suppressWarnings(as.integer(occ$Type %||% 2L))
-  count <- suppressWarnings(as.integer(occ$Count %||% 1L))
-  if (length(type_num) != 1L || !is.finite(type_num) ||
-      length(occurrence_type) != 1L || is.na(occurrence_type) ||
-      type_num != occurrence_type || length(count_num) != 1L ||
-      !is.finite(count_num) || length(count) != 1L || is.na(count) ||
-      count_num != count || count < 0L) {
-    stop("Circe import: Occurrence Type/Count must be non-negative integers.",
-         call. = FALSE)
-  }
-  if (!is.null(spec$ValueAsNumber) &&
-      (!identical(occurrence_type, 2L) || count != 1L)) {
-    stop("Circe import: numeric measurement criteria require occurrence at least one.",
-         call. = FALSE)
-  }
+  occurrence <- .circe_occurrence_spec(crit$Occurrence, domain, !is.null(spec$ValueAsNumber))
+  occurrence_type <- occurrence$type
+  count <- occurrence$count
   if (identical(occurrence_type, 0L) && identical(count, 0L)) {
     return(omop_filter_not_has_concept(concept_id = ids, table = table,
                                        window = window))
@@ -7330,7 +7379,7 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
          "domain criterion.", call. = FALSE)
   }
   domain <- domains[[1]]
-  spec <- primary[[domain]]
+  spec <- .circe_primary_spec(domain, primary[[domain]])
   unknown <- setdiff(names(spec) %||% character(0), "CodesetId")
   if (length(unknown) > 0L) {
     stop("Circe import: unsupported PrimaryCriteria field(s): ",
@@ -7353,6 +7402,7 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
     primary_limit = primary_limit,
     include_descendants = details$include_descendants,
     include_mapped = details$include_mapped,
+    validity_policy = if (!is.null(details$ids)) "ohdsi-import-1" else NULL,
     end_strategy = end_strategy
   )
 }
@@ -7382,7 +7432,11 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
 #' semantics are rejected rather than warned about and dropped. See
 #' \code{\link{recipe_export_circe}} for the full supported-constructs list.
 #'
-#' @param file_or_json Character; a Circe JSON string, or a path to a JSON file.
+#' @param file_or_json A Circe JSON string, a path to a JSON file, or a parsed
+#'   list. Concept IDs must be scalar integral JSON numbers in 0..2147483647;
+#'   text, arrays and classed numbers are refused. Present expansion/exclusion
+#'   flags must be scalar Booleans; omitted flags mean false, while null is
+#'   invalid. Duplicate object keys and unsupported item fields are refused.
 #' @param id Character or \code{NULL}; population ID for the result (defaults to
 #'   the \code{.dsomop} round-trip hint, else \code{"imported"}).
 #' @param label Character or \code{NULL}; population label (defaults likewise).
@@ -7393,14 +7447,31 @@ recipe_export_circe <- function(recipe, population_id = "base", file = NULL) {
 #' recipe <- omop_recipe(populations = pop,
 #'                       outputs = omop_output(population_id = pop$id))
 #' }
-#' @seealso \code{\link{recipe_export_circe}}, \code{\link{omop_population}}
+#' @param origin Optional public provenance list with uri, phenotype_id, release,
+#'   review_status and deprecation_status. URI credentials/query/fragment are
+#'   stripped; no URI is fetched. Original JSON bytes/hash and adapter/digests
+#'   stay client-side and survive recipe serialization. Edited populations are
+#'   marked derivative when serialized; the original definition is retained.
+#' @seealso \code{\link{recipe_export_circe}}, \code{\link{omop_population}},
+#'   \code{\link{recipe_circe_check}}
 #' @export
-recipe_import_circe <- function(file_or_json, id = NULL, label = NULL) {
-  if (length(file_or_json) == 1 && file.exists(file_or_json)) {
-    file_or_json <- paste(readLines(file_or_json, warn = FALSE), collapse = "\n")
-  }
-  expr <- jsonlite::fromJSON(file_or_json, simplifyVector = FALSE)
+recipe_import_circe <- function(file_or_json, id = NULL, label = NULL, origin = NULL) {
+  expr <- .ohdsi_read_definition(file_or_json)
+  .circe_require_supported(recipe_circe_check(expr))
+  pop <- .circe_import_unchecked(expr, id = id, label = label)
+  pop$circe_provenance <- .circe_provenance(file_or_json, expr, pop, origin)
+  pop
+}
+
+.circe_import_unchecked <- function(file_or_json, id = NULL, label = NULL) {
+  expr <- .ohdsi_read_definition(file_or_json)
   concept_sets <- expr$ConceptSets %||% list()
+  # Validate ALL definitions, including unreferenced and excluded items, before
+  # interpreting the supported cohort subset.
+  for (i in seq_along(concept_sets)) {
+    .ohdsi_concept_items(concept_sets[[i]]$expression,
+                         paste0("$.ConceptSets[", i, "].expression"))
+  }
 
   unsupported_top <- c("AdditionalCriteria", "CensoringCriteria",
                        "CensorWindow")
@@ -7581,7 +7652,8 @@ recipe_import_circe <- function(file_or_json, id = NULL, label = NULL) {
       paste0("concept_set_", as.integer(spec$CodesetId))
     }
     cs <- omop_concept_set(d$ids, descendants = isTRUE(d$include_descendants),
-                           mapped = isTRUE(d$include_mapped), name = cs_name)
+                           mapped = isTRUE(d$include_mapped), name = cs_name,
+                           validity_policy = "ohdsi-import-1")
   }
   end <- omop_end("observation_end")
   if (!is.null(end_strategy)) {

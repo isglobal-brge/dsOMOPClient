@@ -7,7 +7,7 @@
 # import (the constructor is called again, so imported objects are validated
 # exactly like hand-written ones) and the generated R code.
 
-.V2_TAGGED_CLASSES <- c("omop_date_spec", "omop_date_source", "omop_variable_bundle", "omop_concept_set", "omop_event", "omop_predicate", "omop_unit",
+.V2_TAGGED_CLASSES <- c("omop_timepoint", "omop_timepoints", "omop_visits", "omop_category_spec", "omop_category_order", "omop_category_recode", "omop_category_rollup", "omop_category_language", "omop_category_missing", "omop_category_binary", "omop_number_spec", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_date_spec", "omop_date_source", "omop_variable_bundle", "omop_concept_set", "omop_event", "omop_predicate", "omop_unit",
                         "omop_criterion", "omop_window", "omop_bound", "omop_anchor",
                         "omop_index", "omop_any_of", "omop_end", "omop_coverage",
                         "omop_interval", "omop_censor", "omop_reducer", "omop_match",
@@ -16,11 +16,30 @@
 .V2_CTOR_TAG <- "omop_ctor"
 
 .v2_is_tagged <- function(x) {
-  inherits(x, .V2_TAGGED_CLASSES) || .v2_is_v2_variable(x)
+  inherits(x, .V2_TAGGED_CLASSES) || .v2_is_v2_variable(x) ||
+    inherits(x,"omop_variable") && identical(x$format,"raw") && identical(x$table,"person")
 }
 
 # Constructor name and arguments that rebuild a language-2 object.
 .v2_ctor_spec <- function(x) {
+  if(!is.null(attr(x,"omop_formula"))) {
+    p<-.formulaProvenance(x);attr(x,"omop_formula")<-NULL
+    return(list(ctor=".formulaRestore",args=list(variable=x,provenance=p)))
+  }
+  if(inherits(x,c("omop_timepoint","omop_timepoints","omop_visits"))) {a<-unclass(x);a$kind<-NULL;return(list(ctor=class(x)[1L],args=a))}
+  if(inherits(x,"omop_variable") && !is.null(x$category_spec)) {
+    s<-x$category_spec;x$category_spec<-NULL
+    return(list(ctor="omop_category",args=list(variable=x,category_spec=s)))
+  }
+  if(inherits(x,c("omop_category_spec", "omop_category_order", "omop_category_recode", "omop_category_rollup", "omop_category_language", "omop_category_missing", "omop_category_binary"))) {
+    a<-unclass(x);if(!inherits(x,"omop_category_rollup"))a$kind<-NULL
+    return(list(ctor=class(x)[1L],args=a))
+  }
+  if(inherits(x,"omop_variable") && !is.null(x$number_spec) && !identical(x$kind,"reducer") && !(x$derived$kind %||% "") %in% .NUMBER_KINDS) {
+    s<-x$number_spec;x$number_spec<-NULL
+    return(list(ctor="omop_number",args=list(variable=x,number_spec=s)))
+  }
+  if(inherits(x,c("omop_number_spec","omop_number_unit","omop_number_transform","omop_number_round","omop_number_expr","omop_number_input"))) return(list(ctor=class(x)[1L],args=unclass(x)))
   if(inherits(x,"omop_date_spec")) return(list(ctor="omop_date_spec",args=unclass(x)))
   if(inherits(x,"omop_date_source")) {
     a<-unclass(x);a$kind<-NULL
@@ -33,13 +52,26 @@
       return(list(ctor = "omop_variable",
                   args = list(name = x$name, event = x$event, reducer = x$reducer,
                               where = x$where, visit = x$visit,
-                              broadcast = if (isTRUE(x$broadcast)) TRUE, date_spec=x$date_spec)))
+                              broadcast = if (isTRUE(x$broadcast)) TRUE, date_spec=x$date_spec, number_spec=x$number_spec)))
     }
     if (identical(x$kind, "population_column")) {
       return(list(ctor = "omop_population_column", args = list(name = x$population_column),
                   name = x$name))
     }
     d <- x$derived
+    if(identical(d$kind,"repeated"))return(list(ctor=".repeatedScalar",args=list(declaration=d,broadcast=x$broadcast),name=x$name))
+    if(identical(d$kind,"category_reduce"))return(list(ctor="omop_category_reduce",args=list(variable=d$variable,reducer=d$reducer,broadcast=x$broadcast),name=x$name))
+    if(identical(d$kind,"category_column"))return(list(ctor="omop_category_column",args=list(column=d$column,component=d$component),name=x$name))
+    if(identical(d$kind,"category_rows"))return(list(ctor="omop_category_rows",args=list(event=d$source,value=d$value),name=x$name))
+    if(identical(d$kind,"category_indicators"))return(list(ctor=".categoryIndicatorScalar",args=list(variable=d$variable,key=d$key,missing=d$missing),name=x$name))
+    if((d$kind %||% "") %in% .NUMBER_KINDS) {
+      ctor <- paste0("omop_",d$kind);d$kind<-NULL
+      if(!is.null(d$source)){d$event<-d$source;d$source<-NULL}
+      if(!is.null(d$count_kind)){d$kind<-d$count_kind;d$count_kind<-NULL}
+      d$number_spec<-x$number_spec
+      if(!ctor %in% c("omop_number_rows","omop_number_column","omop_number_daily")) d$broadcast<-x$broadcast
+      return(list(ctor=ctor,args=d,name=x$name))
+    }
     if((d$kind %||% "") %in% .DATE_KINDS) {
       kind<-d$kind;d$kind<-NULL
       if(kind=="date_part") {d$parts<-if(is.null(x$name)) d$part else setNames(d$part,x$name);d$part<-NULL}
@@ -64,15 +96,18 @@
     spec$name <- x$name
     return(spec)
   }
+  if(inherits(x,"omop_variable") && identical(x$format,"raw") && identical(x$table,"person"))
+    return(list(ctor="omop_variable",args=x[intersect(names(x),names(formals(omop_variable)))]))
   cls <- class(x)[[1L]]
   switch(cls,
     omop_param = list(ctor = "omop_param", args = list(
       name = x$name, type = x$type, default = x$default, description = x$description)),
     omop_param_op = list(ctor = ".v2_param_op", args = list(
       op = x$op, e1 = x$args[[1L]], e2 = if (length(x$args) > 1L) x$args[[2L]])),
-    omop_concept_set = list(ctor = "omop_concept_set", args = list(
+    omop_concept_set = list(ctor = "omop_concept_set", args = c(list(
       concepts = x$concepts, descendants = x$descendants, mapped = x$mapped,
-      exclude = x$exclude, name = x$name)),
+      exclude = x$exclude, name = x$name),
+      if (!is.null(x$validity_policy)) list(validity_policy = x$validity_policy))),
     omop_event = switch(x$kind %||% "table",
       table = list(ctor = "omop_event", args = list(
         table = x$table, concepts = x$concepts, where = x$where, visit = x$visit,
@@ -126,7 +161,7 @@
       source = x$source, which = x$which, offset = x$offset, search = x$search,
       missing = x$missing, when_index_source = x$when_index_source)),
     omop_reducer = list(ctor = "omop_reduce", args = list(
-      fn = x$fn, value = x$value, window = x$window, which = x$which, n = x$n,
+      fn = x$fn, value = if(isFALSE(attr(x,"number_value_explicit"))) NULL else x$value, window = x$window, which = x$which, n = x$n,
       side = x$side, missing = x$missing, distinct = x$distinct, p = x$p, agg = x$agg,
       reference = x$reference, predicate = x$predicate, reference_date = x$reference_date,
       unit = x$unit, coverage = x$coverage, fills = x$fills,
@@ -232,7 +267,7 @@
     return(out)
   }
   ctor <- as.character(ctor)[[1L]]
-  allowed <- c("omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
+  allowed <- c(".formulaRestore","omop_number_daily","omop_category_column","omop_category_reduce","omop_timepoint", "omop_timepoints", "omop_visits", ".repeatedScalar", ".categoryIndicatorScalar", "omop_category_rows", "omop_category_indicators", "omop_category", "omop_category_spec", "omop_category_order", "omop_category_recode", "omop_category_rollup", "omop_category_language", "omop_category_missing", "omop_category_binary", "omop_number", "omop_number_spec", "omop_number_pipeline", "omop_number_unit", "omop_number_transform", "omop_number_round", "omop_number_expr", "omop_number_input", "omop_number_rows", "omop_number_column", "omop_number_count", "omop_number_change", "omop_number_derive", "omop_date_spec", "omop_date_components", "omop_date", "omop_date_parts", "omop_time_between", "omop_age_at", "omop_variable", "omop_population_column", "omop_age", "omop_sex", "omop_race",
                "omop_ethnicity", "omop_birth_year_band", "omop_died", "omop_days_to_death",
                "omop_n_observation_periods", "omop_obs_duration", "omop_prior_obs",
                "omop_followup", "omop_observed_days", "omop_score", "omop_concept_set",
@@ -260,6 +295,7 @@
     # JSON arrays of scalars come back as lists: restore atomic vectors (a
     # predicate tree, match items and nested objects stay lists).
     keep_list <- c("tree", "match", "criteria", "convert")
+    if(startsWith(ctor,"omop_number"))keep_list<-c(keep_list,"breaks")
     for (nm in setdiff(names(args), keep_list)) {
       a <- args[[nm]]
       if (is.list(a) && length(a) > 0L && is.null(names(a)) &&
@@ -339,7 +375,7 @@
   }
   # Built by hand: do.call(.codegen_call, ...) would partially match an
   # argument called `fn` to its `fn_name` formal.
-  code <- paste0(spec$ctor, "(", paste(parts, collapse = ", "), ")")
+  code <- paste0(if(startsWith(spec$ctor,"."))paste0("dsOMOPClient:::",spec$ctor) else spec$ctor, "(", paste(parts, collapse = ", "), ")")
   if (inherits(x, "omop_predicate") &&
       !identical(.v2_tree_canonical(x$tree), x$tree)) {
     # Validate the original tree before embedding it: restoring literal

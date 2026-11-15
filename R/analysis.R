@@ -162,6 +162,7 @@ utils::globalVariables(".data")
 #' @keywords internal
 .analysis_run_call <- function(fn, res_symbol, name, params, scope_args,
                                combine, date_handling = NULL) {
+  params <- .auditEffectiveSettings(name, params)
   args <- list(as.name(fn), res_symbol, name, .ds_encode(params))
   if (!is.null(scope_args)) {
     if (!is.list(scope_args) || is.null(names(scope_args)) ||
@@ -679,6 +680,7 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
                                  date_handling = NULL,
                                  symbol = "omop", conns = NULL,
                                  type = "both") {
+  params <- .auditEffectiveSettings(name, params)
   combine <- match.arg(combine, c("union", "intersect"))
   pooling_policy <- match.arg(pooling_policy, c("strict", "pooled_only_ok"))
   type <- .resolve_result_type(type = type, default_type = "both")
@@ -714,6 +716,7 @@ ds.omop.analysis.run <- function(name, params = list(), cohort = NULL,
   entry_meta <- .analysis_consistent_metadata(
     metadata, names(conns), paste0("analysis metadata for '", name, "'")
   )
+  params <- .auditEffectiveSettings(entry_meta$name, params, entry_meta$meta$alias_target)
   if (!is.list(entry_meta) || !is.character(entry_meta$mode) ||
       length(entry_meta$mode) != 1L || is.na(entry_meta$mode) ||
       !entry_meta$mode %in% c("aggregate", "assign")) {

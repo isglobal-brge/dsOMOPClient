@@ -8,18 +8,19 @@
 <title>Events, reducers and analysis outputs • dsOMOPClient</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<script src="../extra.js"></script><meta property="og:title" content="Events, reducers and analysis outputs">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Events, reducers and analysis outputs">
 <meta name="description" content="Build wide, longitudinal and survival outputs with the simple and advanced recipe layers.">
 <meta property="og:description" content="Build wide, longitudinal and survival outputs with the simple and advanced recipe layers.">
 </head>
 <body>
-    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
@@ -32,39 +33,20 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../articles/book-00-start.html">Get started</a></li>
-<li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorial-chapters" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorial chapters</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-tutorial-chapters">
-<li><a class="dropdown-item" href="../articles/book-showcase.html">What you can do with dsOMOP</a></li>
-    <li><a class="dropdown-item" href="../articles/book-00-start.html">0. Getting started</a></li>
-    <li><a class="dropdown-item" href="../articles/book-01-mental-model.html">1. What DataSHIELD and OMOP mean</a></li>
-    <li><a class="dropdown-item" href="../articles/book-02-connect.html">2. Resources, connections and symbols</a></li>
-    <li><a class="dropdown-item" href="../articles/book-03-explore.html">3. Exploring the CDM</a></li>
-    <li><a class="dropdown-item" href="../articles/book-04-vocabulary.html">4. Finding the concept IDs you need</a></li>
-    <li><a class="dropdown-item" href="../articles/book-05-recipe.html">5. A first recipe</a></li>
-    <li><a class="dropdown-item" href="../articles/book-06-events.html">6. Events, windows and reducers</a></li>
-    <li><a class="dropdown-item" href="../articles/book-07-populations.html">7. Populations and index events</a></li>
-    <li><a class="dropdown-item" href="../articles/book-08-outputs.html">8. Choosing an output format</a></li>
-    <li><a class="dropdown-item" href="../articles/book-09-dates.html">9. Dates, periods and ages</a></li>
-    <li><a class="dropdown-item" href="../articles/book-10-harmonise.html">10. Concepts as categories</a></li>
-    <li><a class="dropdown-item" href="../articles/book-11-parameters.html">11. Reusable studies and standalone verbs</a></li>
-    <li><a class="dropdown-item" href="../articles/book-12-privacy.html">12. What stays private</a></li>
-    <li><a class="dropdown-item" href="../articles/book-13-visits.html">13. Visit dates, one idea at a time</a></li>
-    <li><a class="dropdown-item" href="../articles/book-14-labs.html">14. Working with lab values</a></li>
-    <li><a class="dropdown-item" href="../articles/book-15-formulas.html">15. Derived numeric formulas</a></li>
-    <li><a class="dropdown-item" href="../articles/book-16-longitudinal.html">16. Longitudinal data: from events to analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/book-17-reproduce.html">17. Reproduction and migration notes</a></li>
-    <li><a class="dropdown-item" href="../articles/book-18-verbal-autopsy.html">18. Capstone: a verbal-autopsy wide table</a></li>
-    <li><a class="dropdown-item" href="../articles/book-19-case-mortality.html">19. Case study: HDSS-style mortality</a></li>
-    <li><a class="dropdown-item" href="../articles/book-20-case-gibleed.html">20. Case study: celecoxib versus diclofenac</a></li>
-    <li><a class="dropdown-item" href="../articles/book-21-case-glucose.html">21. Case study: glucose trajectories</a></li>
-    <li><a class="dropdown-item" href="../articles/book-22-case-drug.html">22. Case study: drug utilisation</a></li>
-    <li><a class="dropdown-item" href="../articles/book-23-case-table1.html">23. Case study: a harmonised Table 1</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="active nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="../articles/v01_getting_started.html">Getting Started with dsOMOP v2</a></li>
+    <li><a class="dropdown-item" href="../articles/v02_exploration.html">Schema Exploration</a></li>
+    <li><a class="dropdown-item" href="../articles/v03_cohorts.html">Populations, index dates and study recipes</a></li>
+    <li><a class="dropdown-item" href="../articles/v04_extraction.html">Events, reducers and analysis outputs</a></li>
+    <li><a class="dropdown-item" href="../articles/v05_multi_server.html">Multi-Server Federated Analysis</a></li>
+    <li><a class="dropdown-item" href="../articles/v06_security.html">Security and Disclosure Controls</a></li>
+    <li><a class="dropdown-item" href="../articles/v07_querylibrary_sticky.html">OHDSI QueryLibrary Sticky Redesigns</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -76,7 +58,7 @@
 
 
   </div>
-</nav><div class="container template-article">
+</nav><div class="container template-article" id="container">
 
 
 
@@ -84,15 +66,15 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Events, reducers and analysis outputs</h1>
-            
-      
+
+
       <small class="dont-index">Source: <a href="https://github.com/isglobal-brge/dsOMOPClient/blob/HEAD/vignettes/v04_extraction.Rmd" class="external-link"><code>vignettes/v04_extraction.Rmd</code></a></small>
       <div class="d-none name"><code>v04_extraction.Rmd</code></div>
     </div>
 
-    
-    
-<p>These 2.10.4 examples use the integrated recipe-language-2 implementation. They are not evaluated during documentation builds because they need live DataSHIELD connections and study-specific vocabulary inputs. Patient tables are assigned beside the data; use reviewed DataSHIELD methods to analyse them. The previous chapter explains populations and index dates.</p>
+
+
+<p>These 2.10.5 examples use the integrated recipe-language-2 implementation. They are not evaluated during documentation builds because they need live DataSHIELD connections and study-specific vocabulary inputs. Patient tables are assigned beside the data; use reviewed DataSHIELD methods to analyse them. The previous chapter explains populations and index dates.</p>
 <div class="section level2">
 <h2 id="choose-rows-then-columns">Choose rows, then columns<a class="anchor" aria-label="anchor" href="#choose-rows-then-columns"></a>
 </h2>
@@ -270,26 +252,41 @@
 <p>Staged mode writes private server-local Parquet (CSV fallback) and returns validated descriptors, not download URLs. A server-side consumer resolves a committed component with <code>omopStagedDatasetPath()</code>. Uncommitted or revoked components are unreadable. Keep the returned dynamic inventory rather than predicting component suffixes.</p>
 <p>Exact birth components and exact age may be assigned on request. Assigned age bands accept any increasing integer grid starting at zero, including <code>c(0, 18, 19, 65)</code>, without per-band suppression. Aggregate endpoints retain their existing admission, banding and suppression rules; a permitted assigned column does not grant an unrestricted aggregate release.</p>
 </div>
+<div class="section level2">
+<h2 id="numeric-presentation-and-recorded-day-reduction-in-2-10-5">Numeric presentation and recorded-day reduction in 2.10.5<a class="anchor" aria-label="anchor" href="#numeric-presentation-and-recorded-day-reduction-in-2-10-5"></a>
+</h2>
+<p><code><a href="../reference/omop_number_spec.html">omop_number_spec()</a></code> declares units, transforms, rounding and representation. <code><a href="../reference/omop_number_spec.html">omop_number_expr()</a></code> composes checked private arithmetic; <code><a href="../reference/omop_number_spec.html">omop_number_input()</a></code> chooses canonical or presented inputs explicitly. Signed64 selectors retain exact decimal transport, including the signed minimum and empty results. Arithmetic refuses inexact conversion to binary64. Keep raw/count identity representation when exact conversion is unavailable; do not repair a refusal by coercing IDs.</p>
+<p>Ordinary reducers weight records. To weight recorded concept-days equally, select events first and reduce within each day before applying the outer reducer:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">measurement_rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_rows</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, concepts <span class="op">=</span> <span class="fl">3004410</span><span class="op">)</span>, value <span class="op">=</span> <span class="st">"value_as_number"</span><span class="op">)</span></span>
+<span><span class="va">daily_mean</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_number_daily.html">omop_number_daily</a></span><span class="op">(</span><span class="va">measurement_rows</span>,</span>
+<span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span>, within_day <span class="op">=</span> <span class="st">"mean"</span>, missing <span class="op">=</span> <span class="st">"skip"</span><span class="op">)</span></span></code></pre></div>
+<p>Choose concept IDs and normalize source units for the study. Within-day choices are <code>mean</code>, <code>max</code> and canonical-event <code>first</code>; missingness is <code>skip</code> or <code>propagate</code>, separately from the outer reducer. No absent days are filled, and multiple concepts remain separate concept-day observations. A server must advertise <code>number.daily</code> before this declaration can execute.</p>
+<p>The versioned <code><a href="../reference/omop_formula_bmi.html">omop_formula_bmi()</a></code>, <code><a href="../reference/omop_formula_bmi.html">omop_formula_map()</a></code>, <code><a href="../reference/omop_formula_bmi.html">omop_formula_ratio()</a></code> and <code><a href="../reference/omop_formula_bmi.html">omop_formula_egfr_ckdepi2021()</a></code> constructors expand into typed private operations. Declare coordinates and conversions explicitly. For eGFR, provide an explicit sex mapping and completed calendar age at the selected creatinine event; put source-unit normalization on the shared event used by both inputs. Invalid values produce typed NA; structural unit, anchor and version errors refuse. Independently selected measurements do not imply contemporaneity.</p>
+</div>
+<div class="section level2">
+<h2 id="typed-categories-and-codebooks-in-2-10-5">Typed categories and codebooks in 2.10.5<a class="anchor" aria-label="anchor" href="#typed-categories-and-codebooks-in-2-10-5"></a>
+</h2>
+<p><code><a href="../reference/omop_category_rows.html">omop_category_rows()</a></code> and <code><a href="../reference/omop_category_column.html">omop_category_column()</a></code> select typed categorical sources; <code><a href="../reference/omop_category_spec.html">omop_category_spec()</a></code> declares public presentation. <code><a href="../reference/omop_category_rows.html">omop_category_indicators()</a></code> uses stable category keys, and <code><a href="../reference/omop_category_reduce.html">omop_category_reduce()</a></code> supplies typed input context for indicator <code>any</code>/<code>all</code> reductions. Ordinary <code>omop_reduce("any")</code> or <code>omop_reduce("all")</code> still needs an explicit predicate.</p>
+<p>Inspect <code>recipe_codebook(recipe)</code> before execution and <code>recipe_codebook(result)</code> afterward. The shared presentation contract preserves column order, numeric/date/ category copies, membership provenance and lossless character row keys. Execution resolves source availability and concrete storage types, so those fields need not equal unresolved prospective metadata. Rebuild old codebooks after upgrading and keep native row keys as opaque strings.</p>
+</div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
 
 
 
-    <footer><div class="pkgdown-footer-left">
-  <p>Book by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>.</p>
+   </div>
+  <footer><div class="container">
+  <div class="pkgdown-footer-left">
+  <p>Developed by <a href="https://github.com/davidsarratgonzalez" class="external-link">David Sarrat González</a>, <a href="https://github.com/ESCRI11" class="external-link">Xavier Escribà-Montagut</a>, <a href="https://github.com/isglobal-brge" class="external-link">Juan R González</a>.</p>
 </div>
 
 <div class="pkgdown-footer-right">
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-    </footer>
-</div>
-
-
-
-
-
-  </body>
+  </div></footer>
+</body>
 </html>

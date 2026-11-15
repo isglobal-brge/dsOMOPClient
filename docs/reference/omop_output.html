@@ -95,7 +95,9 @@ produced by <code><a href="recipe_to_plan.html">recipe_to_plan</a></code>.</p>
 <span>  columns <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  format <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sources <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  collapse <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  collapse <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  number_columns <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  category_columns <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -171,6 +173,14 @@ and <code>format</code> are alternatives; giving neither keeps the legacy
 <dt id="arg-collapse">collapse<a class="anchor" aria-label="anchor" href="#arg-collapse"></a></dt>
 <dd><p>(2.10.3) <code>"first_episode"</code>, <code>"last_episode"</code> or
 <code>"any"</code>: person grain over an indexed population.</p></dd>
+
+
+<dt id="arg-number-columns">number_columns<a class="anchor" aria-label="anchor" href="#arg-number-columns"></a></dt>
+<dd><p>Named numeric column copies/formulas over the canonical output frame.</p></dd>
+
+
+<dt id="arg-category-columns">category_columns<a class="anchor" aria-label="anchor" href="#arg-category-columns"></a></dt>
+<dd><p>Named categorical copies over original typed output columns.</p></dd>
 
 </dl></div>
     <div class="section level2">

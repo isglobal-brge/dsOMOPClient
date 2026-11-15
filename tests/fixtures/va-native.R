@@ -1,4 +1,4 @@
-# A-28 native colleague recipe. Question IDs below are synthetic fixture IDs;
+# A-28 native survey recipe. Question IDs below are synthetic fixture IDs;
 # replace them with the corresponding questions in the study CDM.
 # First visit means the earliest visit; latest answers are independent per
 # question across available history. Missing anchors retain the person.
@@ -20,7 +20,7 @@ va_native_recipe <- function(education_question_id = 900001L,
 
 # With initialized conns, returns only the symbol mapping. Example:
 # library(dsOMOPClient)
-# source("tools/dates/va-native.R")
+# source("tests/fixtures/va-native.R")
 # va_native_execute(conns)
 va_native_execute <- function(conns, education_question_id = 900001L,
                               fever_question_id = 900002L) {

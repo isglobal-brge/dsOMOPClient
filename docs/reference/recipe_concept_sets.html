@@ -112,7 +112,10 @@ refused on export rather than flattened.</p>
 <dd><p>A JSON string or file with one concept-set expression
 (<code>list(items = ...)</code>), a named list of them, or an ATLAS
 <code>ConceptSets</code> array (elements with <code>name</code> and
-<code>expression</code>).</p></dd>
+<code>expression</code>). Concept IDs must be scalar integral JSON numbers in
+0..2147483647. Present flags must be scalar Booleans; omitted means false
+and null is invalid. Duplicate object keys and unsupported item fields
+are refused before include/exclude partitioning.</p></dd>
 
 </dl></div>
     <div class="section level2">

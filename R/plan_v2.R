@@ -111,6 +111,7 @@
   out <- list(concepts = .v2_array(cs$concepts),
               include_descendants = isTRUE(cs$descendants))
   if (isTRUE(cs$mapped)) out$include_mapped <- TRUE
+  if (!is.null(cs$validity_policy)) out$validity_policy <- .ohdsiValidityPolicy(cs$validity_policy)
   if (!is.null(cs$exclude)) {
     out$exclude <- if (inherits(cs$exclude, "omop_concept_set")) {
       .v2w_concept_set_inline(cs$exclude)
@@ -461,8 +462,14 @@
     anchor <- if (!is.null(p$reference_date)) p$reference_date else "index"
     .v2w_window(ctx, omop_window(w$start, w$end, anchor = anchor), where)
   }
+  legacy_concepts <- function(ids) {
+    cs <- p$concept_set
+    if (is.null(cs)) return(as.integer(ids))
+    omop_concept_set(as.integer(unlist(cs$concepts)), descendants = isTRUE(cs$include_descendants),
+      mapped = isTRUE(cs$include_mapped), validity_policy = cs$validity_policy)
+  }
   legacy_event <- function(table, ids) {
-    list(event = .v2c_event(ctx, omop_event(table, as.integer(ids)), where))
+    list(event = .v2c_event(ctx, omop_event(table, legacy_concepts(ids)), where))
   }
   switch(f$type,
     sex = list(person = list(var = "gender_concept_id", op = "==",
@@ -544,7 +551,7 @@
         if (!is.null(p$max_value)) list(var = "value", op = "<", value = as.numeric(p$max_value))))
       source <- if (length(bounds)) {
         tree <- if (length(bounds) == 1L) bounds[[1L]] else list(and = bounds)
-        list(event = .v2c_event(ctx, omop_event("measurement", ids,
+        list(event = .v2c_event(ctx, omop_event("measurement", legacy_concepts(ids),
                                                 where = omop_where_tree(tree)), where))
       } else legacy_event("measurement", ids)
       inner <- list(source = source, op = ">=", n = 1L)
@@ -599,7 +606,7 @@
 .v2_lower_index_event <- function(ctx, ie, context) {
   cs <- if (is.null(ie$concept_id)) NULL else
     omop_concept_set(ie$concept_id, descendants = isTRUE(ie$include_descendants),
-                     mapped = isTRUE(ie$include_mapped))
+                     mapped = isTRUE(ie$include_mapped), validity_policy = ie$validity_policy)
   ev <- omop_event(ie$table, cs)
   end <- omop_end("observation_end")
   if (!is.null(ie$end_strategy)) {
@@ -626,12 +633,16 @@
 
 .v2w_population <- function(ctx, pop, extra_filters = list()) {
   context <- paste0("population '", pop$id, "'")
+  pop <- .circe_reconcile_population(pop)
   if (!is.null(pop[["circe_v2"]])) {
     # A Circe import carries its language-2 form (recipe_import_circe()).
     shadow <- pop[["circe_v2"]]
     pop$index <- shadow$index
     pop$filters <- shadow$filters
-    pop$coverage <- shadow$coverage
+    # A public population coverage declaration overrides the imported default.
+    # Keep it separate from legacy index/filter reconciliation: translating an
+    # index edit must not reset an independently chosen observation policy.
+    pop$coverage <- pop$coverage %||% shadow$coverage
     pop$index_event <- NULL
     pop$circe_v2 <- NULL
   }
@@ -781,6 +792,8 @@
 
 .v2w_variable <- function(ctx, v, name) {
   out <- .v2w_variable_base(ctx, v, name)
+  if (!is.null(v$number_spec)) out$number_spec <- .numberWireSpec(ctx, v$number_spec, name)
+  if (!is.null(v$category_spec)) out$category_spec <- .categoryWire(v$category_spec)
   if (!is.null(v$date_spec)) out$date_spec <- .dateWireSpec(ctx, v$date_spec, name)
   for (key in c("labels", "column_names")) {
     map <- .conceptMap(v[[key]], paste0("variables.", name, ".", key), key == "column_names")
@@ -802,6 +815,8 @@
     },
     derived = {
       d <- .v2_resolve_params(v$derived, context)
+      if (d$kind %in% c("category_rows","category_indicators","category_reduce","category_column","repeated")) return(list(derived=.categoryWireDerived(ctx,d,context),broadcast=isTRUE(v$broadcast)))
+      if (d$kind %in% .NUMBER_KINDS) return(list(derived=.numberWireDerived(ctx,d,context),broadcast=isTRUE(v$broadcast)))
       if (d$kind %in% .DATE_KINDS) {
         wire <- d[!vapply(d, is.null, logical(1))]
         for (key in intersect(names(wire), c("reference", "from", "to"))) wire[[key]] <- .dateWireSource(ctx, wire[[key]], context)
@@ -1250,6 +1265,8 @@
   rows <- out$rows %||% out$population_id %||% "base"
   ctx$referenced_pops <- union(ctx$referenced_pops, rows)
   wire <- list(rows = rows, format = format)
+  if (!is.null(out$category_columns)) wire$category_columns <- lapply(out$category_columns,function(v).v2w_variable(ctx,v,name))
+  if (!is.null(out$number_columns)) wire$number_columns <- lapply(out$number_columns,function(v) .v2w_variable(ctx,v,name))
   grain <- out$grain
   if (legacy) {
     grain <- grain %||% out$options$grain
@@ -1272,7 +1289,7 @@
                               "person_period", "sparse")) {
     # The preset's variables are its event sources (design 2.9, B-22).
     take <- columns %||% names(recipe_vars)
-    missing <- setdiff(take, names(recipe_vars))
+    missing <- if(length(out$number_columns)||length(out$category_columns)) character() else setdiff(take, names(recipe_vars))
     if (length(missing)) {
       .v2_stop(context, " references unknown variable(s): ", paste(missing, collapse = ", "), ".")
     }
@@ -1283,11 +1300,11 @@
     take <- if (is.null(columns)) {
       if (identical(format, "wide")) names(recipe_vars) else character(0)
     } else columns
-    missing <- setdiff(take, names(recipe_vars))
+    missing <- if(length(out$number_columns)||length(out$category_columns)) character() else setdiff(take, c(names(recipe_vars), unlist(lapply(names(recipe_vars), function(n) .pnv2VariableColumns(n, recipe_vars[[n]])), use.names=FALSE)))
     if (length(missing)) {
       .v2_stop(context, " references unknown variable(s): ", paste(missing, collapse = ", "), ".")
     }
-    for (vn in take) {
+    for (vn in intersect(take,names(recipe_vars))) {
       v <- recipe_vars[[vn]]
       if (.v2_is_v2_variable(v)) next
       if (identical(out$type, "baseline") && identical(v$format, "age")) {
@@ -1297,8 +1314,7 @@
                                                    bands = TRUE)))
         .v2_register_variable(ctx, vn, wire_v)
       } else {
-        .v2_register_variable(ctx, vn, .v2_lower_legacy_variable(ctx, v, vn,
-                                                                  paste0("variable '", vn, "'")))
+        .v2_register_variable(ctx, vn, .v2w_variable(ctx, v, vn))
       }
     }
   } else if (!is.null(columns)) {
@@ -1419,6 +1435,8 @@
                            client_version = as.character(utils::packageVersion("dsOMOPClient"))))
   opts <- recipe$options %||% list()
   plan_opts <- list()
+  if (!is.null(opts$number_spec)) plan_opts$number_spec <- .numberWireSpec(ctx, opts$number_spec, "recipe number_spec")
+  if (!is.null(opts$category_spec)) plan_opts$category_spec <- .categoryWire(opts$category_spec)
   if (!is.null(opts$date_spec)) plan_opts$date_spec <- .dateWireSpec(ctx, opts$date_spec, "recipe date_spec")
   for (nm in c("translate_concepts", "block_sensitive", "factor_concepts")) {
     if (!is.null(opts[[nm]]) && !isTRUE(opts[[nm]])) plan_opts[[nm]] <- FALSE
@@ -1448,7 +1466,7 @@
   .v2_validate_plan_semantics(plan)
   .v2_assert_no_class1(plan)
   .v2_assert_schema(plan)
-  structure(plan, class = c("omop_plan_v2", "list"))
+  structure(plan, class = c("omop_plan_v2", "list"), omop_formula_provenance=.formulaInventory(recipe))
 }
 
 # Class-1 columns (section 7.6) are never projected, used as value columns or
@@ -1608,7 +1626,7 @@
     if (!is.null(o$collapse) && !identical(o$grain, "person")) {
       .v2_stop(context, ": collapse applies only to person grain.")
     }
-    missing <- setdiff(unlist(o$columns), names(vars))
+    missing <- if(length(o$number_columns)||length(o$category_columns)) character() else setdiff(unlist(o$columns), c(names(vars), unlist(lapply(names(vars), function(n) .pnv2VariableColumns(n, vars[[n]])), use.names=FALSE)))
     if (length(missing)) .v2_stop(context, " references unknown variable(s): ",
                                   paste(missing, collapse = ", "), ".")
     if (identical(o$format, "survival")) {

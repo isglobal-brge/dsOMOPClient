@@ -16,7 +16,8 @@ omop_index_event(
   primary_limit = c("first", "last", "all"),
   include_descendants = FALSE,
   include_mapped = FALSE,
-  end_strategy = NULL
+  end_strategy = NULL,
+  validity_policy = NULL
 )
 ```
 
@@ -57,6 +58,11 @@ omop_index_event(
     "StartDate"|"EndDate", Offset = <integer>))`. Use `EndDate` with
     offset zero to select the physical event end (capped at
     observation-period end, as in Circe).
+
+  - validity\_policy:
+
+    NULL for native semantics, or `"ohdsi-import-1"` for the
+    server-enforced imported-vocabulary validity contract.
 
 ## Value
 

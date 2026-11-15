@@ -1,0 +1,158 @@
+test_that("N01 N37 N48 N52 public numeric clones lower independently", {
+  v<-omop_variable(event=omop_event("measurement",3000963L),reducer=omop_reduce("mean"))
+  vars<-list(raw=omop_number(v),rounded=omop_number(v,omop_number_spec(rounding=omop_number_round("decimals",1))),
+    band=omop_number_bins(v,breaks=c(-Inf,5,10,Inf)),category=omop_number_category(v,thresholds=c(5,10)))
+  r<-omop_recipe(variables=vars)
+  p<-recipe_to_plan(r,version=2)
+  expect_equal(length(p$variables),4L)
+  expect_null(v$number_spec)
+  expect_equal(.planNormalizeV2(p)$variables$rounded$number_spec$pipeline[[1]]$method,"decimals")
+  expect_error(recipe_to_plan(r,version=1),"number_spec|numeric")
+  code<-recipe_to_code(r)
+  expect_match(paste(code,collapse="\n"),"number_spec")
+})
+test_that("N50 N51 N53 public composition validates stage order and complete maps", {
+  v<-omop_variable(event=omop_event("measurement"),reducer=omop_reduce("last_value"))
+  s<-omop_number_pipeline(omop_number_unit("unit:9002","unit:9001",2),omop_number_round("decimals",1),omop_number_spec(representation="bins",breaks=c(-Inf,5,10,Inf)),omop_number_spec(representation="category",range="bins",category_map=c("low","normal","high")))
+  expect_s3_class(omop_number(v,s),"omop_variable")
+  expect_error(omop_number_pipeline(omop_number_spec(representation="bins",breaks=c(0,5,10)),omop_number_round("floor")),"Arithmetic")
+  expect_error(omop_number_bins(v,breaks=c(0,5),number_spec=s),"Shortcuts")
+  expect_error(omop_number_transform("sqrt",factor=2),"documented")
+})
+test_that("N23 N30 N35 N54 N55 N58 N67 numeric computations have closed wire", {
+  e<-omop_event("measurement",3000963L)
+  q<-omop_number_rows(e)
+  expr<-list(version=1L,assign=list(list(name="y",expr=list(op="*",args=list(list(col="x"),list(lit=2))))))
+  v<-omop_number_derive(list(x=q),expr,"coordinate:doubled",reducer=omop_reduce("sum"))
+  r<-omop_recipe(variables=list(total=v,count=omop_number_count(e),change=omop_number_change(e),time=omop_number_change(e,"time_to_threshold",threshold=5)))
+  p<-recipe_to_plan(r,version=2)
+  expect_equal(p$variables$total$derived$kind,"number_derive")
+  expect_equal(p$variables$count$derived$count_kind,"nonmissing")
+  expect_equal(p$variables$time$derived$reference$kind,"first_observation")
+  expect_error(omop_number_expr("system('id')"),"closed mutate")
+})
+test_that("N45 N59 native numeric constructors survive code, JSON and merge", {
+  e<-omop_event("measurement",name="lab")
+  q<-omop_number_rows("lab")
+  req<-list(version=1L,assign=list(list(name="doubled",expr=list(op="*",args=list(list(col="q"),list(lit=2))))))
+  v<-omop_number_derive(list(q=q),req,"coordinate:doubled",reducer=omop_reduce("sum"),number_spec=omop_number_spec(rounding=omop_number_round("decimals",1)))
+  r<-omop_recipe(events=list(e),variables=list(total=v))
+  p<-recipe_to_plan(r,version=2)
+  expect_true("number.expression" %in% .plan_v2_operations(p))
+  expect_true("number.rows" %in% .plan_v2_operations(p))
+  text<-paste(recipe_to_code(r),collapse="\n")
+  expect_silent(parse(text=text))
+  merged<-recipe_merge(r,r,prefix="copy")
+  pm<-recipe_to_plan(merged,version=2)
+  expect_true(all(c("total","copy_total") %in% names(pm$variables)))
+  expect_error(omop_number_derive(list(q=q),req,"1",reducer=omop_reduce("sum",value="value")),"omitted")
+})
+
+test_that("N45 typed numeric constants bind before validation and survive executable code", {
+  digits<-omop_param("digits",type="integer",default=1L)
+  factor<-omop_param("factor",type="number",default=2)
+  s<-omop_number_spec(transform=omop_number_transform("affine",factor=factor),rounding=omop_number_round("decimals",digits))
+  v<-omop_number(omop_variable(event=omop_event("measurement"),reducer=omop_reduce("mean")),s)
+  r<-omop_recipe(variables=list(x=v))
+  bound<-recipe_bind(r,digits=2L,factor=3)
+  p<-recipe_to_plan(bound,version=2)
+  expect_equal(.planNormalizeV2(p)$variables$x$number_spec$pipeline[[1]]$factor,3)
+  expect_equal(.planNormalizeV2(p)$variables$x$number_spec$pipeline[[2]]$digits,2)
+  expect_error(recipe_bind(r,digits=309L),"digits")
+  env<-new.env(parent=asNamespace("dsOMOPClient"))
+  eval(parse(text=recipe_to_code(bound)),envir=env)
+  recipes<-Filter(function(x)inherits(x,"omop_recipe"),as.list(env))
+  expect_true(length(recipes)>0L)
+  expect_equal(.planNormalizedDigest(recipe_to_plan(tail(recipes,1)[[1]],version=2))$sha256,.planNormalizedDigest(p)$sha256)
+})
+test_that("N59 N66 N74 nested reducers negotiate and column copies merge with producers", {
+  req<-list(version=1L,assign=list(list(name="y",expr=list(col="x"))))
+  e<-omop_event("measurement",name="lab")
+  v<-omop_number_derive(list(x=omop_number_rows("lab")),req,"1",reducer=omop_reduce("median"))
+  r<-omop_recipe(events=list(e),variables=list(total=v),outputs=omop_output("w",format="wide",number_columns=list(copy=omop_number_column("total"))))
+  p<-recipe_to_plan(r,version=2)
+  expect_true("median" %in% attr(.plan_v2_operations(p),"reducers"))
+  m<-recipe_to_plan(recipe_merge(r,r,prefix="b"),version=2)
+  expect_identical(m$outputs$b_w$number_columns$copy$derived$column,"b_total")
+})
+
+test_that("N45 expression literals, thresholds and interchange bind deterministically", {
+  e<-omop_event("measurement",name="lab")
+  threshold<-omop_param("threshold",type="number",default=5)
+  multiplier<-omop_param("multiplier",type="number",default=2)
+  req<-list(version=1L,assign=list(list(name="y",expr=list(op="*",args=list(list(col="x"),list(lit=multiplier))))))
+  r<-omop_recipe(events=list(e),variables=list(t=omop_number_change("lab","time_to_threshold",threshold=threshold),y=omop_number_derive(list(x=omop_number_rows("lab")),req,"1",reducer=omop_reduce("sum"))))
+  bound<-recipe_bind(r,threshold=7,multiplier=3)
+  p<-recipe_to_plan(bound,version=2)
+  expect_equal(p$variables$t$derived$threshold,7)
+  expect_equal(p$variables$y$derived$exprs$assign[[1]]$expr$args[[2]]$lit,3)
+  for(format in c("json","yaml")) {
+    file<-tempfile(fileext=paste0(".",format));on.exit(unlink(file),add=TRUE)
+    get(paste0("recipe_export_",format))(bound,file)
+    restored<-get(paste0("recipe_import_",format))(file)
+    expect_equal(.planNormalizedDigest(recipe_to_plan(restored,version=2))$sha256,.planNormalizedDigest(p)$sha256)
+  }
+})
+
+test_that("N74 generated original-column selection reaches declared server schema binding", {
+  e<-omop_event("measurement",3000963L,name="lab")
+  r<-omop_recipe(events=list(e),populations=omop_population("p",index=omop_index(e)),outputs=omop_output("panel",format="person_period",rows="p",columns=c("days","copy"),sources=list(e),number_columns=list(copy=omop_number_column("days")),options=list(bins=list(width=10L),window=omop_window(0L,20L,anchor="index"))))
+  expect_equal(unlist(recipe_to_plan(r,version=2)$outputs$panel$columns),c("days","copy"))
+})
+
+test_that("N44 explain and lint expose only declared numeric semantics", {
+  v<-omop_variable(event=omop_event("measurement",3000963L,unit=omop_unit(8713L)),reducer=omop_reduce("mean"))
+  r<-omop_recipe(variables=list(raw=v,band=omop_number_bins(v,breaks=c(-Inf,12,15,Inf))),number_spec=omop_number_spec(rounding=omop_number_round("decimals",1)))
+  x<-recipe_explain(r,detail="semantics")
+  text<-paste(x$text,collapse="\n")
+  expect_match(text,"specification origin: recipe")
+  expect_match(text,"specification origin: variable/wrapper")
+  expect_match(text,"complete public levels")
+  expect_match(text,"unavailable sources remain unavailable")
+  expect_match(text,"unit:|8713")
+  expect_silent(recipe_lint(r))
+  expect_silent(parse(text=recipe_to_code(r)))
+})
+
+test_that("N45 N66 N67 N74 every missing numeric capability refuses before any assignment", {
+  e<-omop_event("measurement",3000963L,name="lab")
+  req<-list(version=1L,assign=list(list(name="y",expr=list(col="x"))))
+  r<-omop_recipe(events=list(e),variables=list(n=omop_number_count("lab"),change=omop_number_change("lab"),v=omop_number_derive(list(x=omop_number_rows("lab")),req,"1",reducer=omop_reduce("sum"),number_spec=omop_number_spec(rounding=omop_number_round("floor")))),outputs=omop_output("w",format="wide",number_columns=list(copy=omop_number_column("v"))))
+  required<-grep("^number[.]",.plan_v2_operations(recipe_to_plan(r,version=2)),value=TRUE)
+  expect_setequal(required,c("number.presentation","number.rows","number.count","number.change","number.expression","number.columns"))
+  for(missing in required) {
+    state<-.legacy_federation(new=c("one","two"),ops=setdiff(union(.V2_ALL_OPS,required),missing))
+    expect_error(recipe_execute(r),paste0("lacks ",missing))
+    expect_identical(unname(state$assigns),c(0L,0L))
+  }
+})
+
+test_that("N49 reconciliation transport retains full binary64 numeric constants", {
+  spec<-list(numbers=list(x=list(unit="weeks",pipeline=list(list(kind="fixed_unit",from="days",to="weeks",factor=1/7,offset=0)),breaks=as.list(c(1.25-2^-52,1.25,1.25+2^-52)))))
+  decoded<-dsOMOP:::.ds_arg(.ds_encode(spec))
+  expect_identical(decoded$numbers$x$pipeline[[1]]$factor,1/7)
+  expect_identical(unlist(decoded$numbers$x$breaks),c(1.25-2^-52,1.25,1.25+2^-52))
+})
+
+test_that("N45 N49 numeric JSON and YAML preserve adjacent boundaries and recipe defaults", {
+  v<-omop_variable(event=omop_event("measurement",3000963L,unit=omop_unit(8713L)),reducer=omop_reduce("mean"))
+  r<-omop_recipe(variables=list(band=omop_number_bins(v,breaks=c(-Inf,1.25-2^-52,1.25,1.25+2^-52,Inf))),number_spec=omop_number_spec(transform=omop_number_transform("affine",factor=1/7)))
+  expected<-.planNormalizedDigest(recipe_to_plan(r,version=2))$sha256
+  for(format in c("json","yaml")) {
+    text<-get(paste0("recipe_export_",format))(r)
+    restored<-get(paste0("recipe_import_",format))(text)
+    expect_identical(.planNormalizedDigest(recipe_to_plan(restored,version=2))$sha256,expected)
+  }
+})
+
+test_that("selected numeric roles resolve independent declared coordinates", {
+  plan<-list(events=list(drug=list(table="drug_exposure"),lab=list(table="measurement",unit=list(target=8840L))))
+  rows<-function(event,value)list(derived=list(kind="number_rows",source=list(event=event),value=value))
+  expect_identical(.numberDeclaredUnit(plan,rows("drug","days_supply")),"days")
+  expect_identical(.numberDeclaredUnit(plan,rows("drug","quantity")),"1")
+  expect_identical(.numberDeclaredUnit(plan,rows("lab","value_as_number")),"unit:8840")
+  expect_identical(.numberDeclaredUnit(plan,rows("lab","unit_unknown")),"1")
+  expect_identical(.numberDeclaredUnit(plan,rows("lab","value_source")),"unresolved_source")
+  change<-rows("drug","days_supply");change$derived$kind<-"number_change";change$derived$method<-"slope"
+  expect_identical(.numberDeclaredUnit(plan,change),"days/days")
+})

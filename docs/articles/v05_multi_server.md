@@ -1,5 +1,18 @@
 # Multi-Server Federated Analysis
 
+## Numeric and categorical contracts in 2.10.5
+
+Upgrade every participating server before using `number.daily` or
+imported vocabulary validity; capability negotiation refuses unsupported
+operations before assignment. Compare stable codebook keys, numeric
+coordinates and category identities, as well as column names.
+Prospective and executed codebooks preserve declaration order,
+membership provenance and native character row keys. Factor-only
+conversion preserves unrelated numeric metadata; an explicit numeric
+contract still requires exact cross-site agreement. Do not coerce large
+integer or row keys to binary64 to make incompatible schemas appear
+equal.
+
 ## Overview
 
 dsOMOP v2 is designed for federated analysis across multiple DataSHIELD

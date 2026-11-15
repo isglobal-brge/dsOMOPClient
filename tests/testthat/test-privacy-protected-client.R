@@ -352,8 +352,8 @@ test_that("protection labels print the protected routes and masked fields", {
 
 # --- B12: one logical source counted once -----------------------------------------
 
-test_that("Astra catalogue pooling must reject repeated logical site components", {
-  # Astra's review probe (astra-p0-review.md, B12): the same one-site protected
+test_that("regression catalogue pooling must reject repeated logical site components", {
+  # Repeated-source regression: the same one-site protected
   # payload under two connection names used to pool to N 20 instead of 10.
   df <- data.frame(persons = 10)
   attr(df, "dsomop_release") <- list(protocol = .DP_PROTECTED_RELEASE_PROTOCOL,
@@ -945,8 +945,8 @@ test_that("ds.omop.analysis.run pools record-weighted summaries in their schema"
 }
 
 test_that("protected effect estimates pool by meta-analysis of the site estimates", {
-  frames <- list(nairobi = .pc_effect_frame(log(1.5), 0.2, 1L),
-                 douala = .pc_effect_frame(log(2.0), 0.3, 2L,
+  frames <- list(site_a = .pc_effect_frame(log(1.5), 0.2, 1L),
+                 site_b = .pc_effect_frame(log(2.0), 0.3, 2L,
                                            persons = c(120, 110),
                                            events = c(24, 18),
                                            time = c(1200, 1100)))
@@ -968,8 +968,8 @@ test_that("protected effect estimates pool by meta-analysis of the site estimate
   })
   # An unavailable site estimate fails a strict pool closed; pooled_only_ok
   # meta-analyses the others.
-  frames$douala$log_estimate <- NA_real_
-  frames$douala$se_log_estimate <- NA_real_
+  frames$site_b$log_estimate <- NA_real_
+  frames$site_b$se_log_estimate <- NA_real_
   .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
     strict <- ds.omop.meta.effect_estimate(
       params = list(outcome_concept_id = 4329847), cohort = c(1L, 2L))
@@ -981,8 +981,8 @@ test_that("protected effect estimates pool by meta-analysis of the site estimate
     expect_equal(loose$pooled$estimate_fixed, rep(1.5, 2L), tolerance = 1e-9)
   })
   # Without the effect descriptor the entry pools its components only.
-  frames <- list(nairobi = .pc_effect_frame(log(1.5), 0.2, 1L),
-                 douala = .pc_effect_frame(log(2.0), 0.3, 2L))
+  frames <- list(site_a = .pc_effect_frame(log(1.5), 0.2, 1L),
+                 site_b = .pc_effect_frame(log(2.0), 0.3, 2L))
   .pc_analysis_run_meta(frames, .pc_effect_meta(effect = FALSE), function() {
     res <- ds.omop.analysis.run("dsomop:cm.effect_estimate",
                                 cohort = c(1L, 2L))
@@ -1262,7 +1262,7 @@ test_that("catalogue labels and typed payloads share one scope check (B14)", {
   })
 })
 
-test_that("Astra: protected NA pooling skips with an explicit warning", {
+test_that("regression: protected NA pooling skips with an explicit warning", {
   frames <- list(a=.pc_effect_frame(log(1.5), .2, 1L),
                  b=.pc_effect_frame(NA_real_, NA_real_, 2L))
   .pc_analysis_run_meta(frames, .pc_effect_meta(), function() {
@@ -1271,19 +1271,19 @@ test_that("Astra: protected NA pooling skips with an explicit warning", {
     expect_true(all(loose$pooled$n_databases == 1L))
     expect_equal(loose$pooled$estimate_fixed, rep(1.5,2L), tolerance=1e-9)
     expect_match(paste(loose$meta$warnings,collapse=" "), "Dropped server.*b")
-    message("ASTRA NA warning: ", paste(loose$meta$warnings,collapse=" | "))
+    message("regression NA warning: ", paste(loose$meta$warnings,collapse=" | "))
   })
 })
 
-test_that("Astra: real 2.10.2 client validator rejects current protected status", {
+test_that("regression: real 2.10.2 client validator rejects current protected status", {
   old <- new.env(parent=environment())
-  sys.source(test_path("fixtures/astra-client-2.10.2-privacy.R"),old)
+  sys.source(test_path("fixtures/regression-client-2.10.2-privacy.R"),old)
   error <- tryCatch({old$.dp_status_shape(.pc_status(),"newserver");NULL},
                     error=conditionMessage)
-  message("ASTRA old-client/new-server error: ", error)
+  message("regression old-client/new-server error: ", error)
   expect_match(error,"incoherent v3 DP contract field 'history_dependent'")
   # Its actual 2.10.2 pooling code respects the current server's not_poolable fallback.
-  sys.source(test_path("fixtures/astra-client-2.10.2-pooling.R"),old)
+  sys.source(test_path("fixtures/regression-client-2.10.2-pooling.R"),old)
   out <- old$.pool_analysis_contract(list(site=.pc_effect_frame(log(1.5),.2,1L)),
     .pc_effect_meta()$pooling_contract)
   expect_null(out$result)
@@ -1295,7 +1295,7 @@ test_that("the 2.10.2 client shows a server's DP status refusal verbatim (R08)",
   # suite: test-privacy-typed-views.R); the old client's own transport code
   # surfaces that message, so the analyst reads the upgrade instruction.
   old <- new.env(parent = environment())
-  sys.source(test_path("fixtures/astra-client-2.10.2-privacy.R"), old)
+  sys.source(test_path("fixtures/regression-client-2.10.2-privacy.R"), old)
   refusal <- paste0("This server runs dsOMOP 2.10.3, whose DP releases are ",
                     "protected components ... Upgrade dsOMOPClient to 2.10.3 ",
                     "or later to use ds.omop.dp.status()")
