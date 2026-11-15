@@ -210,7 +210,7 @@ ds.omop.concept.locate(unname(visit_ids), scope = "pooled", conns = conns)$poole
 
 ## Find the questionnaire questions, answers and causes
 
-The questionnaire fixture is explicitly synthetic and separate from GiBleed.
+The questionnaire dataset is synthetic and separate from GiBleed.
 Its local concepts are teaching examples, not codes to copy into a clinical study.
 Search the whole small catalogue so the question, answer and cause roles are
 visible together. Later questionnaire chapters refer back to this catalogue.
@@ -231,7 +231,7 @@ cause_sets <- lapply(question_ids[c("Myocardial infarction", "Pneumonia")], omop
 
 The education question selects observations. Secondary and University education
 are possible answers in `value_as_concept_id`. Myocardial infarction and Pneumonia
-are coded causes in death. Local fixture concepts have no external mapping or
+are coded causes in death. The questionnaire dataset’s local concepts have no external mapping or
 hierarchy; do not invent SNOMED or ATC ancestry for them.
 
 ```{r questionnaire-presence}

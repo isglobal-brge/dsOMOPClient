@@ -41,7 +41,7 @@ conns <- practice$conns
 names(conns)
 ```
 
-The `site` connection is ready. This chapter creates its temporary questionnaire fixture locally.
+The `site` connection is ready. This chapter creates its temporary questionnaire dataset locally.
 
 ## Start with an index event
 

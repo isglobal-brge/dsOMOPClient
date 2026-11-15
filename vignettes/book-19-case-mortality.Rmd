@@ -24,7 +24,7 @@ public synthetic teaching data; the numerical results are not clinical evidence.
 
 How many deaths from each recorded cause occur in 2024, and how much observed
 person-time supports those counts? This worked example uses the
-synthetic **questionnaire fixture**. Every person is observed
+synthetic **questionnaire dataset**. Every person is observed
 throughout 2024 until death or the year end. The dataset contains equal numbers
 of female and male residents, so we can calculate each group’s person-time
 and cause-specific rate.
@@ -124,7 +124,7 @@ ds.omop.table("D_mortality", "cause", conns = conns)
 
 The output keeps missing cause separate from an observed cause. In a mortality study,
 restrict cause events to the analysis period and intersect residency intervals
-with follow-up. Do not borrow this fixture's complete residency assumption.
+with follow-up. Do not borrow this dataset’s complete residency assumption.
 
 ## Count causes by age band
 

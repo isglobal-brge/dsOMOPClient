@@ -57,7 +57,7 @@ list and its resource names.
 
 For local practice, keep the setup above. `book_connect()` reads the same
 connection settings when a later section changes datasets. Questionnaire
-chapters identify their separate local fixture.
+chapters identify their separate local dataset.
 
 ```{r resolved-resources}
 resource_names

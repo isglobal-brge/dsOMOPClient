@@ -7,7 +7,7 @@ choose the chapter that teaches your next step.
 
 Read the cards as a quick tour, or run them in order. Each output is a
 real 2.10.5 result. The first four cards use the **24-person synthetic
-questionnaire fixture**; the last two use **synthetic Synthea27Nj
+questionnaire dataset**; the last two use **synthetic Synthea27Nj
 labs**.
 
 **You need:** the packages and downloaded helpers from [Before you

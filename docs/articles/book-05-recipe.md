@@ -39,13 +39,13 @@ names(conns)
     #> [1] "site"
 
 The `site` connection is ready. This chapter creates its temporary
-questionnaire fixture locally.
+questionnaire dataset locally.
 
 ## Select the education question
 
 An *event* describes records of interest. It is a definition on your
 computer, not a downloaded table. We have switched from chapter 4’s
-GiBleed asthma search to the questionnaire fixture. First look up its
+GiBleed asthma search to the questionnaire dataset. First look up its
 education question by concept:
 
 ``` r

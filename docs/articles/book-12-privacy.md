@@ -41,7 +41,7 @@ names(conns)
     #> [1] "site"
 
 The `site` connection is ready. This chapter creates its temporary
-questionnaire fixture locally.
+questionnaire dataset locally.
 
 ## Know which side holds each object
 
@@ -112,8 +112,7 @@ the disclosure rules of its own method.
 
 Each final patient component needs enough **distinct persons** for the
 server’s `nfilter.subset`. Many events from one person still contribute
-only one person to this check. Our fixture uses the ordinary threshold
-of five. Thresholds are server policy, not something the analyst lowers
+only one person to this check. The practice server uses the ordinary threshold of five. Thresholds are server policy, not something the analyst lowers
 to obtain a desired answer.
 
 Intermediate calculations may contain small populations privately. The

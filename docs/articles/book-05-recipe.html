@@ -109,12 +109,12 @@
 <span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="va">practice</span><span class="op">$</span><span class="va">conns</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "site"</span></span></code></pre>
-<p>The <code>site</code> connection is ready. This chapter creates its temporary questionnaire fixture locally.</p>
+<p>The <code>site</code> connection is ready. This chapter creates its temporary questionnaire dataset locally.</p>
 </div>
 <div class="section level2">
 <h2 id="select-the-education-question">Select the education question<a class="anchor" aria-label="anchor" href="#select-the-education-question"></a>
 </h2>
-<p>An <em>event</em> describes records of interest. It is a definition on your computer, not a downloaded table. We have switched from chapter 4’s GiBleed asthma search to the questionnaire fixture. First look up its education question by concept:</p>
+<p>An <em>event</em> describes records of interest. It is a definition on your computer, not a downloaded table. We have switched from chapter 4’s GiBleed asthma search to the questionnaire dataset. First look up its education question by concept:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">question</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ds.omop.concept.lookup.html">ds.omop.concept.lookup</a></span><span class="op">(</span><span class="fl">900001L</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">question</span><span class="op">$</span><span class="va">pooled</span><span class="op">[</span><span class="st">"concept_name"</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>

@@ -41,7 +41,7 @@ names(conns)
     #> [1] "site"
 
 The `site` connection is ready. This chapter creates its temporary
-questionnaire fixture locally.
+questionnaire dataset locally.
 
 ## A date source and a presentation are separate
 

@@ -39,7 +39,7 @@ names(conns)
     #> [1] "site"
 
 The `site` connection is ready. This chapter creates its temporary
-questionnaire fixture locally.
+questionnaire dataset locally.
 
 ## Find the questionnaire concepts first
 
@@ -354,8 +354,7 @@ ds.omop.table("D_va", "cause_of_death", conns = conns)
 
 All shown category tables contain labels, never numeric concept IDs. The
 recipe produces person rows privately; the book deliberately shows
-aggregates rather than a row preview, even though the development
-fixture is synthetic.
+aggregates rather than a row preview, even though these data are synthetic.
 
 ## Try it
 

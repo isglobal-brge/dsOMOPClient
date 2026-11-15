@@ -60,7 +60,7 @@ use that `conns` list and its resource names.
 
 For local practice, keep the setup above. `book_connect()` reads the
 same connection settings when a later section changes datasets.
-Questionnaire chapters identify their separate local fixture.
+Questionnaire chapters identify their separate local dataset.
 
 ``` r
 resource_names
