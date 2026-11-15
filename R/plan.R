@@ -73,12 +73,12 @@ ds.omop.plan <- function() {
     return(.plan_integer_vector(value, field))
   }
   allowed <- c(
-    "concepts", "include_descendants", "include_mapped", "exclude"
+    "concepts", "include_descendants", "include_mapped", "exclude", "validity_policy"
   )
   if (is.null(names(value)) || any(!nzchar(names(value))) ||
       anyDuplicated(names(value)) || length(setdiff(names(value), allowed))) {
     stop(field, " may contain only concepts, include_descendants, ",
-         "include_mapped, and exclude.", call. = FALSE)
+         "include_mapped, exclude, and validity_policy.", call. = FALSE)
   }
   normalized <- list(
     concepts = .plan_integer_vector(value$concepts, paste0(field, "$concepts"))
@@ -92,6 +92,7 @@ ds.omop.plan <- function() {
       normalized[[flag]] <- value[[flag]]
     }
   }
+  if (!is.null(value$validity_policy)) normalized$validity_policy <- .ohdsiValidityPolicy(value$validity_policy)
   if (!is.null(value$exclude)) {
     normalized$exclude <- .plan_integer_vector(
       value$exclude, paste0(field, "$exclude"), allow_empty = TRUE
@@ -1888,6 +1889,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
                                server_method = "omopPlanExecuteDS",
                                harmonize_factors = TRUE,
                                on_small_site = c("error", "skip")) {
+  formula_provenance <- attr(plan,"omop_formula_provenance")
   on_small_site <- match.arg(on_small_site)
   output_mode <- match.arg(output_mode, c("memory", "staged"))
   # A language-2 plan (recipe_to_plan(), version 2) runs through the same
@@ -1896,17 +1898,24 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   v2 <- .v2_is_plan_v2(plan)
   .conceptValidatePlan(plan, wire = v2)
   # Translation is one contract for memory, staged and protected executions.
-  harmonize_factors <- !isFALSE(plan$options$translate_concepts) || .categoryNeedsPresentation(plan)
+  harmonize_factors <- v2 || !isFALSE(plan$options$translate_concepts) || .categoryNeedsPresentation(plan) || .numberHas(plan)
   session <- .get_session(symbol)
   session$concept_presentation <- NULL
   assign(symbol, session, envir = .dsomop_client_env)
   presentation_key <- .conceptPlanKey(plan)
   conns <- conns %||% session$conns
+  if (.ohdsiHasImportedValidity(plan)) {
+    language <- .v2_server_language(session, names(conns))
+    capable <- vapply(names(conns), function(s) {
+      "vocabulary.ohdsi_import_validity" %in% language[[s]]$operations
+    }, logical(1))
+    if (!all(capable)) stop("Imported definitions require vocabulary.ohdsi_import_validity; upgrade the paired server before execution.", call. = FALSE)
+  }
   # B1: which protocol every participating site supports, before anything is
   # assigned. The publication protocol needs it on every site; otherwise a v2
   # plan is refused and a v1 plan runs as the 2.10.2 legacy call everywhere.
   harmonizes <- isTRUE(harmonize_factors) &&
-    (isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan)) &&
+    (v2 || isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan)) &&
     !(v2 && !is.null(plan$publish) && length(plan$publish) == 0L)
   if (harmonizes && !v2) {
     language <- .v2_server_language(session, names(conns))
@@ -2096,7 +2105,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     .plan_verify_publication(conns, inventories)
     presentation <- list()
     if (isTRUE(harmonize_factors) &&
-        (isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan))) {
+        (v2 || isTRUE(plan$options$factor_concepts %||% TRUE) || .categoryNeedsPresentation(plan))) {
       presentation <- .harmonizePublicationFactors(inventories, conns)
     }
     if (any(partial)) {
@@ -2125,7 +2134,11 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     session <- .get_session(symbol)
     session$concept_presentation <- list(key=presentation_key,sites=names(conns),components=presentation)
     assign(symbol, session, envir=.dsomop_client_env)
-    if (standard) out else inventories
+    answer<-if (standard) out else inventories
+    codebooks<-lapply(presentation,function(x)attr(x,"codebook"))
+    codebooks<-Filter(Negate(is.null),codebooks)
+    if(length(codebooks))attr(answer,"omop_codebook")<-list(plan=plan,components=codebooks,formulas=formula_provenance)
+    answer
   }, error = function(e) {
     cleanup <- tryCatch({
       .plan_revoke_execution(conns, exec_symbol)
@@ -2171,7 +2184,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
   # code validation_error and one constant of the closed vocabulary (the
   # section 11 adapter refusals; A-20 (j): the interval helpers' row caps)
   reasons <- c("adapter_person_mismatch", "cost_currency_mixed",
-               "stockpile_row_cap", "reducer_row_cap", "date_spec_invalid", "date_source_invalid",
+               "stockpile_row_cap", "reducer_row_cap", "category_spec_invalid", "category_domain_incompatible", "category_rollup_ambiguous", "category_source_forbidden", "category_type_unsupported", "repeated_spec_invalid", "repeated_grain_incompatible", "codebook_metadata_missing", "number_daily_input", "number_daily_reducer", "number_daily_quantity", "number_spec_invalid", "number_unit_conflict", "number_source_invalid", "number_representation_conflict", "number_type_unsupported", "number_expression_invalid", "number_dependency_invalid", "date_spec_invalid", "date_source_invalid",
                "date_pattern_invalid", "date_policy_conflict", "date_parts_names")
   for (rejection in x$rejected) {
     if (!is.list(rejection) || !length(rejection) %in% 2:3 ||
@@ -2277,7 +2290,7 @@ ds.omop.plan.execute <- function(plan, out = NULL,
       symbols <- unlist(symbols, use.names = TRUE)
       if (length(symbols)) {
         lines <- .harmonizeOneSymbol(symbols, conns[names(symbols)])
-        if (length(lines)) explanation[[paste(root,component,sep="/")]] <- lines
+        if (length(lines)||!is.null(attr(lines,"codebook"))) explanation[[paste(root,component,sep="/")]] <- lines
       }
     }
   }
@@ -2719,7 +2732,9 @@ ds.omop.plan.execute <- function(plan, out = NULL,
     stop("Concept-factor recoding failed or was incomplete on: ",
          paste(failed, collapse = ", "), ".", call. = FALSE)
   }
-  invisible(attr(spec,"concept_explain"))
+  lines<-attr(spec,"concept_explain") %||% character()
+  if(!is.null(spec$schema))attr(lines,"codebook")<-list(schema=spec$schema,categories=spec$columns)
+  invisible(lines)
 }
 
 #' Merge per-server concept levels into one shared ordered spec
@@ -4507,6 +4522,7 @@ plot.omop_plan <- function(x, engine = c("dot", "base"), ...) {
 # Sex has a fixed F/M domain; the remaining domains use the controlled date
 # metadata route so different local observations cannot change factor coding.
 .categoryNeedsPresentation <- function(plan) {
+  if(length(.categoryCapabilities(plan)))return(TRUE)
   if (.dateNeedsPresentation(plan)) return(TRUE)
   if (any(vapply(plan$variables, function(v) {
     d <- v$derived

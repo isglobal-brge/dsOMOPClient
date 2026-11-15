@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -86,9 +86,10 @@
 </ul>
 </div>
 <div class="section level2">
-<h2 id="upgrading-to-2-10-4">Upgrading to 2.10.4<a class="anchor" aria-label="anchor" href="#upgrading-to-2-10-4"></a>
+<h2 id="upgrading-to-2-10-5">Upgrading to 2.10.5<a class="anchor" aria-label="anchor" href="#upgrading-to-2-10-5"></a>
 </h2>
-<p>Install matching dsOMOP and dsOMOPClient 2.10.4, publish the server package’s methods and Options on Opal, and call <code>ds.omop.server.version(conns)</code> to confirm both installed and published versions. Existing private roots are reused; no privacy settings, key provisioning, epoch bump or TLS change is needed. Re-run recipes to obtain the new categorical outputs. The extraction chapter covers concept labels, native calendar dates and anchored ages.</p>
+<p>Install matching dsOMOP and dsOMOPClient 2.10.5, publish the server package’s methods and Options on Opal, and call <code>ds.omop.server.version(conns)</code> to confirm both installed and published versions. Existing private roots are reused; no privacy settings, key provisioning, epoch bump or TLS change is needed. Re-run affected recipes and rebuild codebooks to obtain the corrected numeric and categorical outputs. The extraction chapter covers numeric presentation, recorded-day reduction, typed categories, calendar dates and anchored ages. Check server capabilities before using new operations at several sites.</p>
+<p>Release validation: <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661271157" class="external-link">Opal contract run 43661271157</a> and <a href="https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661274062" class="external-link">end-to-end run 43661274062</a>. The release pipeline records both as successful; the end-to-end artifacts cover fresh installation and upgrade from 2.10.4 on Opal 6.2.1, including preservation of the existing DP noise root. These runs do not establish live execution on every SQL dialect or exercise the separate numeric scenario N.</p>
 </div>
 <div class="section level2">
 <h2 id="prerequisites">Prerequisites<a class="anchor" aria-label="anchor" href="#prerequisites"></a>
@@ -179,8 +180,8 @@
 <span></span>
 <span><span class="co"># D and E are now protected server-side omop.table objects. These calls are</span></span>
 <span><span class="co"># illustrative only after the deployment has reviewed their compatibility.</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.summary</span><span class="op">(</span><span class="st">"D"</span><span class="op">)</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"E"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.summary.html" class="external-link">ds.summary</a></span><span class="op">(</span><span class="st">"D"</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"E"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="clean-up">6. Clean Up<a class="anchor" aria-label="anchor" href="#clean-up"></a>

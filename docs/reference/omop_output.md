@@ -22,7 +22,9 @@ omop_output(
   columns = NULL,
   format = NULL,
   sources = NULL,
-  collapse = NULL
+  collapse = NULL,
+  number_columns = NULL,
+  category_columns = NULL
 )
 ```
 
@@ -93,6 +95,15 @@ omop_output(
 
     (2.10.3) `"first_episode"`, `"last_episode"` or `"any"`: person
     grain over an indexed population.
+
+  - number\_columns:
+
+    Named numeric column copies/formulas over the canonical output
+    frame.
+
+  - category\_columns:
+
+    Named categorical copies over original typed output columns.
 
 ## Value
 

@@ -1,5 +1,21 @@
 # Security and Disclosure Controls
 
+## Release 2.10.5 behavior
+
+Private numeric expressions, formulas and recorded-day reduction remain
+subject to the final publication gate. Checked arithmetic refuses
+inexact signed64 to binary64 conversion, including unnamed
+intermediates. Category presentation and source absence retain their
+typed missingness/provenance contracts.
+
+Staging cleanup checks ownership, permissions, canonical paths and
+committed manifests. It can reclaim only owned outputs that are expired,
+consumed or revoked; live outputs remain intact. The former per-handle
+directory-count limit is retired. Repeated requests have no privacy
+budget or history-dependent answer. Pinned analysis loaders now seal DP
+provenance after final presentation; rerun an affected loader to obtain
+a valid sealed input.
+
 ## Overview
 
 dsOMOP v2 applies endpoint-specific disclosure controls to its

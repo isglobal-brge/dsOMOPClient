@@ -281,7 +281,7 @@ test_that(".pool_concept_metadata dedupes shared vocab to one clean view", {
   one <- data.frame(concept_id = c(80180, 40481087),
                     concept_name = c("Osteoarthritis", "Viral sinusitis"),
                     stringsAsFactors = FALSE)
-  out <- .pool_concept_metadata(list(nairobi = one, douala = one, dakar = one))
+  out <- .pool_concept_metadata(list(site_a = one, site_b = one, site_c = one))
   expect_equal(nrow(out), 2L)                       # 3 identical copies -> 2 rows
   expect_setequal(out$concept_id, c(80180, 40481087))
   expect_null(.pool_concept_metadata(list(a = data.frame(), b = NULL)))

@@ -16,7 +16,8 @@ omop_concept_set(
   descendants = FALSE,
   mapped = FALSE,
   exclude = NULL,
-  name = NULL
+  name = NULL,
+  validity_policy = NULL
 )
 ```
 
@@ -43,6 +44,12 @@ omop_concept_set(
   - name:
 
     Optional registry name.
+
+  - validity\_policy:
+
+    NULL retains native semantics. The versioned `"ohdsi-import-1"`
+    policy requires valid explicit vocabulary records and excludes
+    invalid expanded records; OHDSI importers select it explicitly.
 
 ## Value
 

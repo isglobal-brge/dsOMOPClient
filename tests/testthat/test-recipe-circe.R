@@ -312,7 +312,7 @@ test_that("an unsupported filter type errors on Circe export", {
 })
 
 test_that("an unsupported recipe table errors on Circe export", {
-  # death has no Circe domain analog.
+  # Upstream Circe has Death; this dsOMOP bridge does not implement that criterion.
   r <- omop_recipe(
     populations = omop_population(id = "p", label = "p",
       index_event = omop_index_event(201820, "condition_occurrence"),

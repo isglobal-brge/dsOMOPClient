@@ -11,14 +11,19 @@ See `recipe_export_circe` for the full supported-constructs list.
 ## Usage
 
 ``` r
-recipe_import_circe(file_or_json, id = NULL, label = NULL)
+recipe_import_circe(file_or_json, id = NULL, label = NULL, origin = NULL)
 ```
 
 ## Arguments
 
   - file\_or\_json:
 
-    Character; a Circe JSON string, or a path to a JSON file.
+    A Circe JSON string, a path to a JSON file, or a parsed list.
+    Concept IDs must be scalar integral JSON numbers in 0..2147483647;
+    text, arrays and classed numbers are refused. Present
+    expansion/exclusion flags must be scalar Booleans; omitted flags
+    mean false, while null is invalid. Duplicate object keys and
+    unsupported item fields are refused.
 
   - id:
 
@@ -29,13 +34,22 @@ recipe_import_circe(file_or_json, id = NULL, label = NULL)
 
     Character or `NULL`; population label (defaults likewise).
 
+  - origin:
+
+    Optional public provenance list with uri, phenotype\_id, release,
+    review\_status and deprecation\_status. URI
+    credentials/query/fragment are stripped; no URI is fetched. Original
+    JSON bytes/hash and adapter/digests stay client-side and survive
+    recipe serialization. Edited populations are marked derivative when
+    serialized; the original definition is retained.
+
 ## Value
 
 An `omop_population` object.
 
 ## See also
 
-`recipe_export_circe`, `omop_population`
+`recipe_export_circe`, `omop_population`, `recipe_circe_check`
 
 ## Examples
 

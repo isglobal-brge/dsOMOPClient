@@ -4,15 +4,25 @@
 \alias{recipe_import_circe}
 \title{Import an OHDSI Circe cohort expression as a recipe population}
 \usage{
-recipe_import_circe(file_or_json, id = NULL, label = NULL)
+recipe_import_circe(file_or_json, id = NULL, label = NULL, origin = NULL)
 }
 \arguments{
-\item{file_or_json}{Character; a Circe JSON string, or a path to a JSON file.}
+\item{file_or_json}{A Circe JSON string, a path to a JSON file, or a parsed
+list. Concept IDs must be scalar integral JSON numbers in 0..2147483647;
+text, arrays and classed numbers are refused. Present expansion/exclusion
+flags must be scalar Booleans; omitted flags mean false, while null is
+invalid. Duplicate object keys and unsupported item fields are refused.}
 
 \item{id}{Character or \code{NULL}; population ID for the result (defaults to
 the \code{.dsomop} round-trip hint, else \code{"imported"}).}
 
 \item{label}{Character or \code{NULL}; population label (defaults likewise).}
+
+\item{origin}{Optional public provenance list with uri, phenotype_id, release,
+review_status and deprecation_status. URI credentials/query/fragment are
+stripped; no URI is fetched. Original JSON bytes/hash and adapter/digests
+stay client-side and survive recipe serialization. Edited populations are
+marked derivative when serialized; the original definition is retained.}
 }
 \value{
 An \code{omop_population} object.
@@ -34,5 +44,6 @@ recipe <- omop_recipe(populations = pop,
 }
 }
 \seealso{
-\code{\link{recipe_export_circe}}, \code{\link{omop_population}}
+\code{\link{recipe_export_circe}}, \code{\link{omop_population}},
+  \code{\link{recipe_circe_check}}
 }

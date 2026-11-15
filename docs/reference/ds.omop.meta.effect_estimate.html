@@ -23,7 +23,7 @@ disclosure-safe per-site log_estimate + SE; this function pools them."></head><b
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,7 +63,7 @@ disclosure-safe per-site log_estimate + SE; this function pools them."></head><b
     <p>The CLIENT half of OHDSI evidence synthesis: run a per-site fitted comparative
 effect estimate on every server, then INVERSE-VARIANCE meta-analyze the
 per-site log-estimates into ONE pooled estimate + 95% CI (the
-<code>metafor::rma</code> pattern by hand — no new dependency). A single site cannot
+<code><a href="https://wviechtb.github.io/metafor/reference/rma.uni.html" class="external-link">metafor::rma</a></code> pattern by hand — no new dependency). A single site cannot
 compute a cross-database pooled estimate, so the server-side
 <code>dsomop:cm.effect_estimate</code> (CohortMethod HR/RR; the
 <code>es_cm_result</code> delegate) and <code>dsomop:sccs.incidence_rate_ratio</code>

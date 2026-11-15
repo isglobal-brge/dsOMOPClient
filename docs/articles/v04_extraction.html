@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,7 @@
 
 
 
-<p>These 2.10.4 examples use the integrated recipe-language-2 implementation. They are not evaluated during documentation builds because they need live DataSHIELD connections and study-specific vocabulary inputs. Patient tables are assigned beside the data; use reviewed DataSHIELD methods to analyse them. The previous chapter explains populations and index dates.</p>
+<p>These 2.10.5 examples use the integrated recipe-language-2 implementation. They are not evaluated during documentation builds because they need live DataSHIELD connections and study-specific vocabulary inputs. Patient tables are assigned beside the data; use reviewed DataSHIELD methods to analyse them. The previous chapter explains populations and index dates.</p>
 <div class="section level2">
 <h2 id="choose-rows-then-columns">Choose rows, then columns<a class="anchor" aria-label="anchor" href="#choose-rows-then-columns"></a>
 </h2>
@@ -142,7 +142,7 @@
 <p>After publishing the education recipe above, use its committed symbol for a pooled table that retains every permitted category, including unused levels:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.table.html">ds.omop.table</a></span><span class="op">(</span><span class="st">"D_profile"</span>, <span class="st">"education"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span></code></pre></div>
-<p>This helper preserves commas and other literal label text and excludes actual missing values. A failed or suppressed site count causes refusal, never a zero substitution. Direct <code>dsBaseClient::ds.table()</code> can omit globally unused levels. Concept factors keep their shared levels during model-frame subsetting; other packages still need their own reviewed methods and model compatibility checks.</p>
+<p>This helper preserves commas and other literal label text and excludes actual missing values. A failed or suppressed site count causes refusal, never a zero substitution. Direct <code><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.table.html" class="external-link">dsBaseClient::ds.table()</a></code> can omit globally unused levels. Concept factors keep their shared levels during model-frame subsetting; other packages still need their own reviewed methods and model compatibility checks.</p>
 <p>Derived sex uses the public <code>F</code>, <code>M</code> factor domain. Age bands, birth-year bands and calendar categories are ordered factors, including unused declared levels. Ordered factors use ordered contrasts in R models; choose your model coding explicitly. Use <code><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character()</a></code> for labels, not integer factor codes as values. CSV and Parquet staging preserve levels and order; read them through the staged descriptor contract rather than treating the CSV file as an ordinary download.</p>
 </div>
 <div class="section level2">
@@ -241,7 +241,7 @@
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/recipe_execute.html">recipe_execute</a></span><span class="op">(</span><span class="va">recipe</span>, out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>profile <span class="op">=</span> <span class="st">"D_profile"</span><span class="op">)</span>,</span>
 <span>                         output_mode <span class="op">=</span> <span class="st">"memory"</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span><span class="co"># Use the symbols in result's committed inventory for downstream analysis.</span></span>
-<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu">ds.dim</span><span class="op">(</span><span class="st">"D_profile"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="fu">dsBaseClient</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dsBaseClient/man/ds.dim.html" class="external-link">ds.dim</a></span><span class="op">(</span><span class="st">"D_profile"</span>, datasources <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Assigned ordinary analysis columns can be transformed server-side.</span></span>
 <span><span class="fu"><a href="../reference/ds.omop.mutate.html">ds.omop.mutate</a></span><span class="op">(</span><span class="st">"D_profile"</span>, has_cause <span class="op">=</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">cause_of_death</span><span class="op">)</span>,</span>
@@ -251,6 +251,25 @@
 <p>Fresh names may differ when destinations already exist. Verbs publish a new patient object and recheck its own support; mutations cannot read or write person, episode or set keys. They use a closed expression language, not arbitrary R. In-place mutation (<code>newobj = x</code>) keeps a rollback copy until federation commit is verified and invalidates DP provenance.</p>
 <p>Staged mode writes private server-local Parquet (CSV fallback) and returns validated descriptors, not download URLs. A server-side consumer resolves a committed component with <code>omopStagedDatasetPath()</code>. Uncommitted or revoked components are unreadable. Keep the returned dynamic inventory rather than predicting component suffixes.</p>
 <p>Exact birth components and exact age may be assigned on request. Assigned age bands accept any increasing integer grid starting at zero, including <code>c(0, 18, 19, 65)</code>, without per-band suppression. Aggregate endpoints retain their existing admission, banding and suppression rules; a permitted assigned column does not grant an unrestricted aggregate release.</p>
+</div>
+<div class="section level2">
+<h2 id="numeric-presentation-and-recorded-day-reduction-in-2-10-5">Numeric presentation and recorded-day reduction in 2.10.5<a class="anchor" aria-label="anchor" href="#numeric-presentation-and-recorded-day-reduction-in-2-10-5"></a>
+</h2>
+<p><code><a href="../reference/omop_number_spec.html">omop_number_spec()</a></code> declares units, transforms, rounding and representation. <code><a href="../reference/omop_number_spec.html">omop_number_expr()</a></code> composes checked private arithmetic; <code><a href="../reference/omop_number_spec.html">omop_number_input()</a></code> chooses canonical or presented inputs explicitly. Signed64 selectors retain exact decimal transport, including the signed minimum and empty results. Arithmetic refuses inexact conversion to binary64. Keep raw/count identity representation when exact conversion is unavailable; do not repair a refusal by coercing IDs.</p>
+<p>Ordinary reducers weight records. To weight recorded concept-days equally, select events first and reduce within each day before applying the outer reducer:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">measurement_rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_number_spec.html">omop_number_rows</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/omop_event.html">omop_event</a></span><span class="op">(</span><span class="st">"measurement"</span>, concepts <span class="op">=</span> <span class="fl">3004410</span><span class="op">)</span>, value <span class="op">=</span> <span class="st">"value_as_number"</span><span class="op">)</span></span>
+<span><span class="va">daily_mean</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/omop_number_daily.html">omop_number_daily</a></span><span class="op">(</span><span class="va">measurement_rows</span>,</span>
+<span>  reducer <span class="op">=</span> <span class="fu"><a href="../reference/omop_reduce.html">omop_reduce</a></span><span class="op">(</span><span class="st">"mean"</span><span class="op">)</span>, within_day <span class="op">=</span> <span class="st">"mean"</span>, missing <span class="op">=</span> <span class="st">"skip"</span><span class="op">)</span></span></code></pre></div>
+<p>Choose concept IDs and normalize source units for the study. Within-day choices are <code>mean</code>, <code>max</code> and canonical-event <code>first</code>; missingness is <code>skip</code> or <code>propagate</code>, separately from the outer reducer. No absent days are filled, and multiple concepts remain separate concept-day observations. A server must advertise <code>number.daily</code> before this declaration can execute.</p>
+<p>The versioned <code><a href="../reference/omop_formula_bmi.html">omop_formula_bmi()</a></code>, <code><a href="../reference/omop_formula_bmi.html">omop_formula_map()</a></code>, <code><a href="../reference/omop_formula_bmi.html">omop_formula_ratio()</a></code> and <code><a href="../reference/omop_formula_bmi.html">omop_formula_egfr_ckdepi2021()</a></code> constructors expand into typed private operations. Declare coordinates and conversions explicitly. For eGFR, provide an explicit sex mapping and completed calendar age at the selected creatinine event; put source-unit normalization on the shared event used by both inputs. Invalid values produce typed NA; structural unit, anchor and version errors refuse. Independently selected measurements do not imply contemporaneity.</p>
+</div>
+<div class="section level2">
+<h2 id="typed-categories-and-codebooks-in-2-10-5">Typed categories and codebooks in 2.10.5<a class="anchor" aria-label="anchor" href="#typed-categories-and-codebooks-in-2-10-5"></a>
+</h2>
+<p><code><a href="../reference/omop_category_rows.html">omop_category_rows()</a></code> and <code><a href="../reference/omop_category_column.html">omop_category_column()</a></code> select typed categorical sources; <code><a href="../reference/omop_category_spec.html">omop_category_spec()</a></code> declares public presentation. <code><a href="../reference/omop_category_rows.html">omop_category_indicators()</a></code> uses stable category keys, and <code><a href="../reference/omop_category_reduce.html">omop_category_reduce()</a></code> supplies typed input context for indicator <code>any</code>/<code>all</code> reductions. Ordinary <code>omop_reduce("any")</code> or <code>omop_reduce("all")</code> still needs an explicit predicate.</p>
+<p>Inspect <code>recipe_codebook(recipe)</code> before execution and <code>recipe_codebook(result)</code> afterward. The shared presentation contract preserves column order, numeric/date/ category copies, membership provenance and lossless character row keys. Execution resolves source availability and concrete storage types, so those fields need not equal unresolved prospective metadata. Rebuild old codebooks after upgrading and keep native row keys as opaque strings.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

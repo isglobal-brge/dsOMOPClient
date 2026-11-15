@@ -1,3 +1,289 @@
+# dsOMOPClient 2.10.5 (2026-11-15)
+
+- Release: paired server/client 2.10.5, with checked numeric expressions,
+  typed categories and shared codebooks, versioned clinical formulas and
+  recorded-day reduction. Republish server methods and Options after upgrading;
+  retain existing private roots. Broader workflow/declaration-library work is
+  deferred.
+
+Release validation: [Opal contract run 43661271157](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661271157)
+and [end-to-end run 43661274062](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43661274062).
+The release pipeline records both as successful; the end-to-end artifacts cover
+fresh installation and upgrade from 2.10.4 on Opal 6.2.1, including preservation
+of the existing DP noise root. These runs do not establish live execution on
+every SQL dialect or exercise the separate numeric scenario N.
+
+- Corrected: ordinary `any`/`all` reducers still require a predicate at
+  construction. Within `omop_category_reduce()`, the typed category input
+  supplies that context, so indicator reductions remain available without an
+  unrelated event predicate. No process-wide validation option is used.
+
+- Corrected: mixed named and unnamed variable declarations pass through category
+  bundle expansion until normal recipe naming resolves them; genuine expanded
+  name collisions still refuse. Existing declaration syntax remains valid.
+- Corrected: Circe export preflight preserves precise refusals for half-open
+  numeric ranges and authenticated safe-bin contracts. Keep these filters in
+  native recipes; neither can be represented faithfully by the Circe bridge.
+
+- Corrected (STG-R1-01): staging cleanup validates every committed descriptor
+  before classifying expired or consumed output. Parseable malformed manifests
+  preserve the entire directory and its ownership tracking. Re-run affected
+  recipes after upgrading; public readers still reject invalid or expired data.
+
+- Newly permitted (CR-33 / A-32): repeated staged executions no longer stop at
+  a per-handle directory count. Before reserving a directory, the server reclaims
+  only handle-owned staging whose committed outputs are all expired, consumed
+  (data files removed), or revoked. Live outputs and active executions remain
+  intact; byte and row caps still protect staging. Re-run affected recipes;
+  `dsomop.max_staging_dirs_per_handle` is retired and ignored.
+
+- Corrected (A-29 second review): integer numeric expressions retain a
+  conservative signed64 result type through nested formulas, selectors and
+  publication, including empty inputs. Re-run affected recipes; integer
+  expression results now consistently use integer64 storage.
+- Newly refused: native numeric arithmetic and mixed numeric branches/coalesce
+  reject inexact integer-to-binary64 conversions even for inline intermediates.
+  Retain raw/count identity representation or use exactly representable inputs;
+  naming an intermediate does not change admission. Legacy mutate semantics
+  and the closed expression grammar are unchanged.
+
+- Corrected (shared codebook presentation): prospective columns use the execution
+  numeric/date/category evaluators on empty public prototypes, including existing
+  and generated dates, canonical numeric copies and categorical copies. Membership
+  provenance and mixed covariate ordering share their execution declarations.
+  Rebuild existing codebooks; recipe syntax does not change.
+- Corrected (cross-format equivalence): requested plain numeric covariates no
+  longer disappear without an explicit number specification, mixed covariates
+  follow declared order, and untranslated reference tables retain the provenance
+  needed for codebook reconciliation. Existing recipes gain their requested
+  columns; downstream code should select columns by their declared names.
+- Corrected (native multi-state identity): restore lossless episode keys after
+  state-machine evaluation, including keys above 2^53 and empty results. Native
+  row keys are character strings; use them as opaque identifiers rather than
+  converting them to floating point. The v1 state machine is unchanged.
+
+- Corrected (membership/long codebook review): prospective existing date columns
+  honor recipe category defaults, with producer-specific applicability. Membership
+  schemas also include the declared roster's index provenance in publication order.
+  Native row keys are declared as the lossless character strings actually released.
+  Rebuild affected codebooks; recipe declarations and published data do not change.
+
+- Corrected (generated date factor review): prospective codebooks apply recipe
+  category defaults to generated date endpoints, including ordering, recodes,
+  public levels, reference and contrasts in nested and joined outputs. Rebuild
+  affected codebooks; recipe declarations and published data do not change.
+
+- Corrected / newly refused: CKD-EPI 2021 eGFR rejects input-local source-unit
+  maps that differ from the age anchor's shared event normalization. Such maps
+  could select creatinine from a different date and use the wrong calendar age
+  or adult eligibility. Move `omop_unit()` normalization onto the event shared
+  by creatinine and `omop_age_at()`; retain explicit numeric coordinate
+  conversions on the creatinine input. Aligned shared maps and day-zero/index
+  age inputs remain supported.
+
+- Newly permitted: four exact-version client formula constructors (BMI,
+  arithmetic MAP, ratio, and race-free CKD-EPI 2021 creatinine eGFR) expand into
+  existing typed private operations. Declare source selection, canonical units
+  or explicit conversions, and the eGFR sex mapping/calendar-age anchor. Invalid
+  values yield typed NA; structural unit/anchor/version errors refuse. Formula
+  identity and derivative provenance survive JSON, YAML and generated R.
+- Newly permitted: `omop_number_daily()` selects original events, applies input
+  presentation, collapses within recorded concept-days, then applies the outer
+  numeric reducer and final presentation. Mean/max/first and skip/propagate are
+  explicit. Use this route for equal-day weighting instead of ordinary record
+  weighting. It requires the server's `number.daily` capability; old servers
+  refuse before assignment. No absent days, reference ranges or support counts
+  are invented.
+- Corrected: YAML and generated R retain small binary64 coefficients exactly,
+  including the eGFR age factor. Regenerate affected serialized recipes from
+  their original numeric declarations; already rounded coefficients cannot be
+  recovered from saved text.
+- Scope: broader A-31 deliverables are deferred as listed in
+  the issue tracker. Real Opal evidence is cited above; numeric scenario N was not exercised there.
+
+- Corrected (audit prerequisite integration): imported vocabulary validity
+  remains executable in category rollup domains, including exclusions.
+  Use a server advertising vocabulary.ohdsi_import_validity for these domains.
+- Corrected: prospective generated-date columns apply category ordering defaults
+  consistently with publication. Rebuild affected codebooks.
+
+- Corrected: explicit coverage on an imported Circe population now overrides
+  the translated coverage default during compilation, including saved and
+  generated recipes. Remove the explicit coverage to restore the imported
+  policy. Original source provenance is retained and edits remain derivatives.
+- Corrected: Circe inspection reports independent unsupported clauses inside
+  nested groups at each structural path; groups remain unsupported for import.
+
+* **Corrected:** Circe inspection reports measurement bounds, occurrence,
+  window, age and sex clauses independently when several are unsupported.
+  Editing an imported legacy population now rebuilds its native translation;
+  an explicit native index takes precedence. Conflicting edits to both stored
+  representations are **newly refused**: choose a native index or remove
+  `circe_v2` to execute the edited legacy declaration. Prefixed merges refresh
+  derivative provenance and retain original source hashes.
+
+* **Corrected:** imported-vocabulary capability and preflight traversal now
+  distinguishes declaration registries from advisory metadata. Event and
+  concept-set names such as `meta`, `metadata`, and `circe_provenance` retain
+  identical validation and capability requirements. Existing names remain
+  valid; use a capable server and valid vocabulary references for these plans.
+
+* **Corrected / newly refused:** both OHDSI import paths attach the executable
+  `ohdsi-import-1` vocabulary policy. Explicit included/excluded concepts must
+  exist as valid public vocabulary records (including concept 0); invalid
+  descendants and invalid mapped sources are excluded. Mapping follows valid
+  Maps-to sources toward selected targets; classification concepts are allowed.
+  Native declarations retain their existing behavior. Re-import old saved
+  definitions to opt into the stricter policy. Policy-bearing plans require
+  the paired server's `vocabulary.ohdsi_import_validity` capability; incapable
+  servers refuse without native fallback. Save/load, code generation, merge,
+  wire normalization and semantic digests retain the policy.
+
+* **Newly permitted:** `recipe_circe_support()` describes the directional
+  bridge subset, and `recipe_circe_check()` inspects definitions locally and
+  reports independent unsupported clauses with bounded structural diagnostics.
+  Import/export use the checker. Native populations without an export adapter
+  receive `unsupported_native_export`; retain their native recipe.
+* **Corrected:** Circe imports retain original JSON bytes (canonical JSON for
+  list inputs), hashes, adapter/subset versions and optional sanitized public
+  origin declarations. Save/load retains the origin and marks edited population
+  declarations as derivatives. This provenance is client-side, not a claim of
+  general phenotype equivalence. Vocabulary validity is enforced separately by
+  the executable policy described above.
+  The pinned PhenotypeLibrary 304 example has a private membership/date oracle
+  against its upstream SQL; unsupported example 10 reports structural refusals.
+  Re-import an old definition to obtain the new provenance fields.
+
+* **Newly refused:** incidence `clean_window` values other than zero and
+  `fe.prevalence` `time_windows` values other than zero now fail with a bounded
+  setting-specific remedy before patient computation on ordinary, protected
+  and alias routes. These selectors previously did not implement the requested
+  science. Use a validated native risk/window recipe when that setting matters;
+  dropping a required window is not an equivalent analysis. Explicit null,
+  nonfinite/fractional values and malformed selectors are invalid settings.
+* **Corrected:** incidence discovery describes the first-target-episode,
+  full-window person-day estimand and separates contribution bounds from risk
+  windows. FE prevalence describes all-history events among scoped members,
+  without a cohort-relative date predicate.
+
+* **Newly refused:** both OHDSI concept importers now validate concept IDs and
+  Boolean flags before coercion, exclusion or deduplication. Supply integral
+  JSON numbers in 0..2147483647 (including 0 for unknown), not numeric strings;
+  use true/false or omit flags, not null. Duplicate keys and unsupported item
+  semantics refuse. Nested concept descriptions are limited to CONCEPT_NAME,
+  STANDARD_CONCEPT, STANDARD_CONCEPT_CAPTION, INVALID_REASON,
+  INVALID_REASON_CAPTION, CONCEPT_CODE, DOMAIN_ID, VOCABULARY_ID,
+  CONCEPT_CLASS_ID, VALID_START_DATE and VALID_END_DATE; they never affect
+  membership. Circe cohort exclusions/mixed flags remain unsupported; the
+  registry retains uniform included/excluded groups. List and JSON/file inputs
+  use the same strict parser.
+
+- Corrected (date/category schema review): prospective codebooks include native
+  date endpoints before final selection, with their effective presentation types
+  and order, including nested survival and joined outputs. Rebuild affected
+  codebooks; recipe declarations and published data do not change.
+
+- Corrected (categorical schema review): prospective codebooks enumerate closed
+  panel source columns and apply the same required numeric-role rules as
+  execution for selected panel and survival copies, including nested components.
+  Rebuild affected codebooks; no recipe declaration changes are needed.
+
+- Corrected (categorical composition review): final column selection and order
+  apply to output-local copies and expanded variables in both execution and
+  prospective codebooks. Structural columns remain present.
+- Corrected: output-local category copies accept categorical selector reductions
+  (including mode and vector nth), retaining consumed identity, missingness and
+  admission contracts while allowing independent presentation. Re-run affected
+  native recipes; no declaration changes are needed.
+
+- Corrected (categorical review): prospective codebooks expand native nth-value
+  columns and honor effective numeric, date and category presentation defaults,
+  overrides and untranslated concepts. Native outputs can select expanded
+  keys such as `answer_3` in the requested order.
+- Corrected: recipe hierarchy defaults are inactive for semantic flags and
+  numeric/date categories, including `multiple="all"`. Explicit incompatible
+  hierarchy requests still refuse; use concept inputs and category indicators
+  when multiple hierarchy targets are intended.
+
+- Native language-2 releases now carry codebook metadata for every real table,
+  including plain numeric and untranslated plans. They require
+  `output.codebook_metadata`; upgrade participating servers to 2.10.5.
+  Existing v1 plans retain their compatibility path.
+
+- Newly permitted (A-30 / CR-31): native category specifications add typed
+  identity order, nominal recodes, hierarchy maps, language and code labels,
+  explicit Missing/Unknown levels and semantic-flag representations. Category
+  event projections, indicators and reductions preserve explicit identity.
+- Newly permitted: declared repeated time-point/visit columns and output-local
+  category copies; client codebooks use public plans and admitted release
+  metadata. These constructs require native language 2 and matching 2.10.5
+  capabilities. Use wide/long typed columns for factor analyses, with a numeric
+  sibling for quantitative arithmetic.
+- Newly refused: ambiguous hierarchy mappings require a declared priority or
+  membership indicators. A mixed zero/nonzero user-label merge cannot become
+  an Unknown sentinel: retain unknown=keep, use separate labels, or explicitly
+  recode its identities before sentinel handling.
+
+- Corrected: native matrix and person-period outputs no longer implicitly
+  consume unrelated recipe variables. Select analytic columns explicitly;
+  use a typed wide companion for factor/logical matrix covariates.
+- Corrected: undefined anchors remain NA through repeated subsetting and
+  Missing presentation. Staged empty category contracts preserve nullable
+  references, declared levels and contrast specifications.
+- Newly permitted: prospective codebooks describe structural schema and
+  survival/reference component families locally; published codebooks retain
+  reconciled names, category provenance and mapping contracts.
+- Categorical binary presentation of abnormal-event reducers means at least
+  one abnormal event. Keep an unwrapped numeric sibling for event counts.
+
+- Corrected (A-29 review): independently normalized numeric siblings retain
+  their original event-row binding in long and intervals outputs. BIGINT
+  longitudinal arithmetic now checks exact conversion before calculation;
+  retain raw/count identity when a binary64 conversion is refused.
+- Corrected: expression types follow each selected canonical/presented input
+  prefix, preserving fractional values and exact integers. Slope reducers and
+  generated relation-day columns retain class-2 provenance through copies,
+  categories and transport. Supply roles use days; unrelated numeric roles
+  do not inherit measurement units. Re-run affected numeric recipes.
+- Newly refused: scalar formulas in long output, including nested formulas,
+  require explicit `broadcast = TRUE`, just like direct scalar reducers.
+
+- Corrected: shared numeric contracts retain full binary64 precision through
+  DataSHIELD JSON transport, including fractional conversion factors and
+  adjacent breakpoints. Re-execute recipes to reconcile those contracts.
+
+- Newly permitted (A-29 / CR-30): native numeric presentation with declared
+  source and fixed units, ordered transforms, exact binary64 decimal rounding,
+  public bins and clinical categories, flags and value presence/missingness.
+  Numeric rows, counts, longitudinal changes, closed multi-input expressions
+  and output-local canonical column copies run before protection and release.
+  Numeric capabilities are negotiated before assignment; new declarations
+  require native language 2 and dsOMOP 2.10.5 at every selected site.
+- Newly permitted: numeric factor reconciliation retains the complete ordered
+  public domain, including unused levels. Memory and Parquet carry numeric
+  units, expression identity, domains and privacy lineage. Incompatible retained
+  contracts fail and roll back; a numeric sibling is required for arithmetic.
+- Corrected: A-29 CV results are dimensionless SD/mean. The compatibility route
+  without numeric declarations retains its percentage CV. To display a native
+  CV as a percent, explicitly apply an affine factor of 100.
+- Corrected: exact BIGINT selectors and integer count promotion avoid silent
+  binary64/32-bit loss. Identity and round(none) retain integer64; operations
+  requiring an inexact double conversion refuse with a bounded remedy.
+- Newly refused: explicit numeric presentation of identifiers, concept values,
+  Dates/factors, model weights or structural codes; factor-valued matrix cells;
+  implicit event broadcasts; and nonnumeric/foreign expression bindings.
+  Use registered numeric measures, explicit numeric date representations,
+  declared broadcasts/reducers, and typed wide/long companions as applicable.
+
+- Corrected with the matching server: empty active-comparator populations now
+  receive `insufficient_support` at the final gate. Default execution rolls back
+  all sites; `on_small_site = "skip"` retains both analysis roots at supported
+  sites, in memory and staged modes. This also covers populations emptied by
+  eligibility criteria. Update the server and re-run the recipe.
+
+- Fixed deferred panel source policy names during prefixed recipe merging,
+  so binding before or after a merge produces the same plan.
+
 # dsOMOPClient 2.10.4 (2026-11-13)
 
 - Corrected: assigned age bands, birth-year bands and panel/calendar categories
@@ -100,12 +386,7 @@ choose the native date/age helpers explicitly for new semantics. The protected
 release protocol introduced in 2.10.3 is unchanged; pooling still requires
 compatible contracts and logical source identities.
 
-Release verification: [recipe/publication contract run 43515122503](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515122503)
-passed fresh and upgrade paths on Opal 5.7.6 and 6.1.3;
-[full e2e run 43515127555](https://github.com/davidsarrat/dsomop-opal-e2e/actions/runs/43515127555)
-passed both fresh and upgrade jobs. Both tested harness commit
-`17e5df40f4718bdece091f68d3003c764f061854`. These are evidence for that
-candidate, not a claim of live execution on every supported SQL dialect.
+The release candidate passed recipe/publication and end-to-end checks for fresh installations and upgrades on Opal 5.7.6 and 6.1.3. These checks do not establish live execution on every supported SQL dialect.
 
 # dsOMOPClient 2.10.3 (2026-11-13)
 

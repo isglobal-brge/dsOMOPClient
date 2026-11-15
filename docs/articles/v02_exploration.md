@@ -1,5 +1,16 @@
 # Schema Exploration
 
+## Numeric and category metadata in 2.10.5
+
+Use `recipe_codebook(recipe)` to inspect prospective columns locally and
+`recipe_codebook(result)` to inspect an execution receipt. Both use the
+same presentation declarations; execution additionally resolves
+available sources and storage types. Preserve stable keys and declared
+column order when comparing sites. Public vocabulary labels are
+metadata; their presence does not establish that any patient has the
+corresponding value. Numeric binning and category presentation do not
+bypass the final disclosure gate.
+
 ## Overview
 
 Before extracting data, you need to understand what’s available in each

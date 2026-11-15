@@ -19,7 +19,7 @@ recipe_export_circe for the full supported-constructs list."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,7 @@ semantics are rejected rather than warned about and dropped. See
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">recipe_import_circe</span><span class="op">(</span><span class="va">file_or_json</span>, id <span class="op">=</span> <span class="cn">NULL</span>, label <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">recipe_import_circe</span><span class="op">(</span><span class="va">file_or_json</span>, id <span class="op">=</span> <span class="cn">NULL</span>, label <span class="op">=</span> <span class="cn">NULL</span>, origin <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -75,7 +75,11 @@ semantics are rejected rather than warned about and dropped. See
 
 
 <dl><dt id="arg-file-or-json">file_or_json<a class="anchor" aria-label="anchor" href="#arg-file-or-json"></a></dt>
-<dd><p>Character; a Circe JSON string, or a path to a JSON file.</p></dd>
+<dd><p>A Circe JSON string, a path to a JSON file, or a parsed
+list. Concept IDs must be scalar integral JSON numbers in 0..2147483647;
+text, arrays and classed numbers are refused. Present expansion/exclusion
+flags must be scalar Booleans; omitted flags mean false, while null is
+invalid. Duplicate object keys and unsupported item fields are refused.</p></dd>
 
 
 <dt id="arg-id">id<a class="anchor" aria-label="anchor" href="#arg-id"></a></dt>
@@ -86,6 +90,14 @@ the <code>.dsomop</code> round-trip hint, else <code>"imported"</code>).</p></dd
 <dt id="arg-label">label<a class="anchor" aria-label="anchor" href="#arg-label"></a></dt>
 <dd><p>Character or <code>NULL</code>; population label (defaults likewise).</p></dd>
 
+
+<dt id="arg-origin">origin<a class="anchor" aria-label="anchor" href="#arg-origin"></a></dt>
+<dd><p>Optional public provenance list with uri, phenotype_id, release,
+review_status and deprecation_status. URI credentials/query/fragment are
+stripped; no URI is fetched. Original JSON bytes/hash and adapter/digests
+stay client-side and survive recipe serialization. Edited populations are
+marked derivative when serialized; the original definition is retained.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -93,7 +105,8 @@ the <code>.dsomop</code> round-trip hint, else <code>"imported"</code>).</p></dd
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="recipe_export_circe.html">recipe_export_circe</a></code>, <code><a href="omop_population.html">omop_population</a></code></p></div>
+    <div class="dont-index"><p><code><a href="recipe_export_circe.html">recipe_export_circe</a></code>, <code><a href="omop_population.html">omop_population</a></code>,
+  <code><a href="recipe_circe_check.html">recipe_circe_check</a></code></p></div>
     </div>
 
     <div class="section level2">

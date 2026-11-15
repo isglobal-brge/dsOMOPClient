@@ -45,7 +45,9 @@ test_that("B4 custom ranges retain shared unused levels through final publicatio
   }
   vars$builtin <- omop_date("2000-01-01",omop_date_spec(precision="year",level_range=range))
   r <- omop_recipe(variables=vars,outputs=omop_output("o",format="wide",grain="person"))
-  expect_identical(recipe_execute(r,out=c(o="D_range"),conns=conns),c(o="D_range"))
+  receipt <- recipe_execute(r,out=c(o="D_range"),conns=conns)
+  expect_identical(setNames(as.character(receipt),names(receipt)), c(o="D_range"))
+  expect_type(attr(receipt,"omop_codebook"),"list")
   frames <- DSLite::getDSLiteData(conns,"D_range")
   visits <- list(site=as.Date(c("2020-06-15","2020-03-14","2020-07-20",NA)),
     site2=as.Date(c("2020-06-15","2020-06-15","2020-07-20",NA)))
@@ -68,7 +70,9 @@ test_that("B4 custom ranges retain shared unused levels through final publicatio
       expect_identical(levels(d[[col]]),levels(frames$site[[col]]))
     }
   }
-  expect_identical(recipe_execute(r,out=c(o="D_range_reverse"),conns=rev(conns)),c(o="D_range_reverse"))
+  receipt <- recipe_execute(r,out=c(o="D_range_reverse"),conns=rev(conns))
+  expect_identical(setNames(as.character(receipt),names(receipt)), c(o="D_range_reverse"))
+  expect_type(attr(receipt,"omop_codebook"),"list")
   reversed <- DSLite::getDSLiteData(conns,"D_range_reverse")
   for (site in names(frames)) for (col in names(vars)) {
     expect_identical(levels(reversed[[site]][[col]]),levels(frames[[site]][[col]]))

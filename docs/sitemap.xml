@@ -321,6 +321,10 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop.feature.time_since.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop.temporal.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_age.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_category_column.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_category_reduce.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_category_rows.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_category_spec.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_censor.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_concept_set.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_cost.html</loc></url>
@@ -331,12 +335,15 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_ever.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_filter_group.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_formula_bmi.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_has.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_history.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_index.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_index_event.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_match.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_new_users.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_number_daily.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_number_spec.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_output.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_param.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_population.html</loc></url>
@@ -346,6 +353,7 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_recipe.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_reduce.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_study.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_timepoint.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_unit.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/omop_variable_age.html</loc></url>
@@ -385,7 +393,10 @@
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_add_output.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_add_population.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_add_variable.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_circe_check.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_circe_support.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_clear.html</loc></url>
+<url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_codebook.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_concept_sets.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_execute.html</loc></url>
 <url><loc>https://isglobal-brge.github.io/dsOMOPClient/reference/recipe_explain.html</loc></url>

@@ -721,8 +721,10 @@ test_that("ds.omop.prevalence delegates to fe.prevalence with mapped params", {
       # entry name (3rd positional) is the fe.prevalence catalog id.
       expect_equal(run[[3]], "dsomop:fe.prevalence")
       # params (4th positional) carry the mapped domain_code + top_n.
-      params <- jsonlite::fromJSON(rawToChar(jsonlite::base64_dec(
-        gsub("_", "/", gsub("-", "+", sub("^B64:", "", run[[4]]))))))
+      encoded <- gsub("_", "/", gsub("-", "+", sub("^B64:", "", run[[4]])))
+      encoded <- paste0(encoded, strrep("=", (4L - nchar(encoded) %% 4L) %% 4L))
+      params <- jsonlite::fromJSON(rawToChar(jsonlite::base64_dec(encoded)))
+      expect_identical(params$time_windows, "0")
       expect_equal(params$domain_code, "1")   # "drug" -> "1"
       expect_equal(params$top_n, 10)
     })
@@ -812,8 +814,8 @@ test_that("ds.omop.meta.effect_estimate inverse-variance pools per-site HRs", {
     ci_hi = exp(le + 1.96 * se), log_estimate = le,
     se_log_estimate = se, stringsAsFactors = FALSE)
   frames <- list(
-    nairobi = mk(log(1.5), 0.2, c(100, 90), c(1000, 900), c(20, 15)),
-    douala = mk(log(2.0), 0.3, c(120, 110), c(1200, 1100), c(24, 18))
+    site_a = mk(log(1.5), 0.2, c(100, 90), c(1000, 900), c(20, 15)),
+    site_b = mk(log(2.0), 0.3, c(120, 110), c(1200, 1100), c(24, 18))
   )
   .acat_with_mocked_meta(frames, function() {
     res <- ds.omop.meta.effect_estimate(
@@ -837,7 +839,7 @@ test_that("ds.omop.meta.effect_estimate inverse-variance pools per-site HRs", {
     expect_equal(res$pooled$estimate_fixed, rep(exp(fe), 2L),
                  tolerance = 1e-8)
     # Per-site frames are retained intact.
-    expect_named(res$per_site, c("nairobi", "douala"))
+    expect_named(res$per_site, c("site_a", "site_b"))
   })
 })
 
@@ -848,9 +850,9 @@ test_that("ds.omop.meta.effect_estimate strict fails closed if a site suppressed
     outcomes = c(20, 15), estimate = exp(le),
     ci_lo = exp(le - 1.96 * se), ci_hi = exp(le + 1.96 * se),
     log_estimate = le, se_log_estimate = se, stringsAsFactors = FALSE)
-  # douala suppressed its estimate (small arm -> NA).
-  frames <- list(nairobi = mk(log(1.5), 0.2),
-                 douala = mk(NA_real_, NA_real_))
+  # site_b suppressed its estimate (small arm -> NA).
+  frames <- list(site_a = mk(log(1.5), 0.2),
+                 site_b = mk(NA_real_, NA_real_))
   .acat_with_mocked_meta(frames, function() {
     res <- ds.omop.meta.effect_estimate(cohort = c(1L, 2L),
                                         pooling_policy = "strict")

@@ -86,7 +86,7 @@ recipe_explain <- function(recipe, detail = c("summary", "semantics"), conns = N
     text <- v1$text
     defaults <- v1$defaults
   }
-  text <- c(text, .conceptExplain(if (v2) norm else recipe), if(v2) .dateExplain(norm))
+  text <- c(text, .conceptExplain(if (v2) norm else recipe), if(v2) .dateExplain(norm), if(v2) .numberExplain(norm,plan), if(v2) .categoryExplain(norm))
   server <- NULL
   if (!is.null(conns)) {
     session <- .get_session(symbol)

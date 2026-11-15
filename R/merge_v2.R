@@ -40,6 +40,8 @@
 recipe_merge <- function(a, b, prefix = NULL) {
   .v2_recipe_check(a)
   .v2_recipe_check(b)
+  a$populations <- lapply(a$populations, .circe_reconcile_population)
+  b$populations <- lapply(b$populations, .circe_reconcile_population)
   a <- .merge_freeze_columns(a)
   b <- .merge_freeze_columns(b)
   if (!is.null(prefix)) {
@@ -53,7 +55,9 @@ recipe_merge <- function(a, b, prefix = NULL) {
     b <- .merge_prefix(b, prefix, share_base = share_base, defer_base = defer_base)
     if (share_base) b$filters <- a$filters
   }
-  .merge_into(a, b)
+  out <- .merge_into(a, b)
+  out$populations <- lapply(out$populations, .circe_refresh_provenance)
+  out
 }
 
 # --- shared helpers --------------------------------------------------------------------
@@ -176,6 +180,7 @@ recipe_merge <- function(a, b, prefix = NULL) {
   }
   r$options$column_names <- rewrite_names(r$options$column_names)
   for (vn in names(r$variables)) r$variables[[vn]]$column_names <- rewrite_names(r$variables[[vn]]$column_names)
+  maps$number_column <- .numberGeneratedKeyMap(r,maps)
   rn <- .merge_renamer(maps, prefix = prefix)
 
   # b's recipe-level filters keep constraining b's base: they move onto it.
@@ -392,15 +397,33 @@ recipe_merge <- function(a, b, prefix = NULL) {
       x <- upd(x, "event", self$src)
       return(upd(x, "window", self$any))
     }
+    if(inherits(x,"omop_timepoint"))return(upd(x,"anchor",self$any))
+    if(inherits(x,"omop_timepoints")) {x<-upd(x,"anchor",self$any);return(upd(x,"points",function(p)lapply(p,self$any)))}
+    if(inherits(x,"omop_visits")) {x<-upd(x,"source",self$src);return(upd(x,"window",self$any))}
     if (inherits(x, "omop_reducer")) {
       for (k in c("window", "reference", "simple")) x <- upd(x, k, self$any)
       return(x)
     }
     if (inherits(x, "omop_variable") && .v2_is_v2_variable(x)) {
       x <- upd(x, "event", self$src)
-      for (k in c("reducer", "where", "date_spec")) x <- upd(x, k, self$any)
+      for (k in c("reducer", "where", "date_spec", "number_spec")) x <- upd(x, k, self$any)
       for (k in c("reference", "from", "to")) if (!is.null(x$derived[[k]])) x$derived[[k]] <- self$any(x$derived[[k]])
       if (!is.null(x$derived$window)) x$derived$window <- self$any(x$derived$window)
+      if (!is.null(x$derived$source)) x$derived$source <- self$src(x$derived$source)
+      if ((x$derived$kind %||% "") %in% c("number_column","category_column")) {
+        key<-x$derived$column
+        if(key %in% names(maps$variable))key<-self$var(key)
+        else if(key %in% names(maps$number_column))key<-unname(maps$number_column[[key]])
+        x$derived$column<-key
+        if(!is.null(x$derived$component))x$derived$component<-self$out(x$derived$component)
+      }
+      if(!is.null(x$derived$variable))x$derived$variable<-self$any(x$derived$variable)
+      if(!is.null(x$derived$values))x$derived$values<-lapply(x$derived$values,self$any)
+      if(!is.null(x$derived$timepoints))x$derived$timepoints<-self$any(x$derived$timepoints)
+      if(!is.null(x$derived$visits))x$derived$visits<-self$any(x$derived$visits)
+      if (identical(x$derived$kind,"number_daily")) x$derived$input <- self$any(x$derived$input)
+      if (!is.null(x$derived$inputs)) x$derived$inputs <- lapply(x$derived$inputs,self$any)
+      if (!is.null(x$derived$reducer)) x$derived$reducer <- self$any(x$derived$reducer)
       return(x)
     }
     if (inherits(x, c("omop_predicate", "omop_concept_set", "omop_unit", "omop_end",
@@ -440,6 +463,8 @@ recipe_merge <- function(a, b, prefix = NULL) {
     o$population_id <- self$pop(o$population_id %||% "base")
     if (!is.null(o$variables)) o$variables <- refs(o$variables, self$var)
     if (!is.null(o$sources)) o$sources <- sources(o$sources)
+    if (!is.null(o$number_columns)) o$number_columns <- lapply(o$number_columns,self$any)
+    if (!is.null(o$category_columns)) o$category_columns <- lapply(o$category_columns,self$any)
     opts <- o$options %||% list()
     named_refs <- function(x) {
       if (is.null(x)) return(x)
@@ -473,7 +498,17 @@ recipe_merge <- function(a, b, prefix = NULL) {
       opts$partition$boundaries <- sources(opts$partition$boundaries)
     }
     for (k in intersect(names(opts), c("carry_forward", "source_analyses"))) {
-      if (length(opts[[k]])) names(opts[[k]]) <- unname(vapply(names(opts[[k]]), self$src, ""))
+      if (length(opts[[k]])) names(opts[[k]]) <- unname(vapply(names(opts[[k]]), function(key) {
+        mapped <- self$src(key)
+        # A named panel policy may refer to an inline source supplied only
+        # when an event parameter is bound. Its key lives in that deferred
+        # namespace too, even though no declaration exists in maps yet.
+        if (identical(mapped, key) && !is.null(prefix) &&
+            .merge_deferred_has_params(opts$sources %||% o$sources)) {
+          mapped <- .v2_name(paste0(prefix, "_", key), "recipe_merge(): deferred panel source")
+        }
+        mapped
+      }, ""))
     }
     if (!is.null(opts$from)) {
       from <- function(fr) {

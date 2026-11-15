@@ -204,13 +204,16 @@
 #' @param exclude \code{NULL}, an integer vector of exact concept IDs, or an
 #'   unnamed \code{omop_concept_set()} expanded with its own flags.
 #' @param name Optional registry name.
+#' @param validity_policy NULL retains native semantics. The versioned
+#'   \code{"ohdsi-import-1"} policy requires valid explicit vocabulary records
+#'   and excludes invalid expanded records; OHDSI importers select it explicitly.
 #' @return An \code{omop_concept_set} object.
 #' @examples
 #' t2dm <- omop_concept_set(201826, descendants = TRUE, name = "t2dm")
 #' @seealso \code{\link{omop_event}}, \code{\link{omop_recipe}}
 #' @export
 omop_concept_set <- function(concepts, descendants = FALSE, mapped = FALSE,
-                             exclude = NULL, name = NULL) {
+                             exclude = NULL, name = NULL, validity_policy = NULL) {
   if (missing(concepts)) stop("omop_concept_set(): concepts is required.", call. = FALSE)
   concepts <- .v2_ids(concepts, "omop_concept_set(): concepts", allow_empty = TRUE)
   descendants <- .v2_flag(descendants, "omop_concept_set(): descendants")
@@ -226,9 +229,11 @@ omop_concept_set <- function(concepts, descendants = FALSE, mapped = FALSE,
     }
   }
   name <- .v2_name(name, "omop_concept_set(): name")
-  structure(list(concepts = concepts, descendants = descendants,
+  out <- structure(list(concepts = concepts, descendants = descendants,
                  mapped = mapped, exclude = exclude, name = name),
             class = c("omop_concept_set", "list"))
+  if (!is.null(validity_policy)) out$validity_policy <- .ohdsiValidityPolicy(validity_policy)
+  out
 }
 
 #' @export
@@ -1470,6 +1475,7 @@ omop_reduce <- function(fn, value = NULL, window = NULL, which = NULL, n = 1L,
                         coverage = c("recorded", "effective_supply"),
                         fills = c("start_in_window", "clipped"),
                         observed_only = FALSE) {
+  explicit_value <- !is.null(value)
   if (base::missing(fn)) stop("omop_reduce(): fn is required.", call. = FALSE)
   fn <- .v2_choice(fn, .V2_REDUCER_FNS, "omop_reduce(): fn")
   value <- .v2_column(value, "omop_reduce(): value")
@@ -1516,8 +1522,16 @@ omop_reduce <- function(fn, value = NULL, window = NULL, which = NULL, n = 1L,
   if (!identical(fn, "quantile") && !is.null(p)) {
     stop("omop_reduce(): p is used only with quantile.", call. = FALSE)
   }
+  # Ordinary event reducers need an explicit predicate. A typed category
+  # consumer can supply the input context through this request-local restart;
+  # no global option or caller-name inspection changes constructor validation.
   if (fn %in% c("any", "all") && is.null(predicate)) {
-    stop("omop_reduce(): ", fn, " needs a predicate.", call. = FALSE)
+    withRestarts(
+      stop(structure(list(message = paste0("omop_reduce(): ", fn, " needs a predicate."),
+                          call = NULL),
+                     class = c("dsomop_reducer_predicate_required", "error", "condition"))),
+      dsomop_category_reducer_input = function() NULL
+    )
   }
   if (!fn %in% c("any", "all") && !is.null(predicate)) {
     stop("omop_reduce(): predicate is used only with any/all.", call. = FALSE)
@@ -1548,7 +1562,7 @@ omop_reduce <- function(fn, value = NULL, window = NULL, which = NULL, n = 1L,
                  reference = reference, predicate = predicate,
                  reference_date = reference_date, unit = unit, coverage = coverage,
                  fills = fills, observed_only = observed_only),
-            class = c("omop_reducer", "list"))
+            number_value_explicit = explicit_value, class = c("omop_reducer", "list"))
 }
 
 #' @export

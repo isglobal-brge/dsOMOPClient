@@ -37,7 +37,9 @@ omop_variable(
   broadcast = FALSE,
   labels = NULL,
   column_names = NULL,
-  date_spec = NULL
+  date_spec = NULL,
+  number_spec = NULL,
+  category_spec = NULL
 )
 ```
 
@@ -165,6 +167,14 @@ omop_variable(
   - date\_spec:
 
     Native date presentation; variable fields override recipe defaults.
+
+  - number\_spec:
+
+    Native numeric presentation created with omop\_number\_spec().
+
+  - category\_spec:
+
+    Native category identity and presentation.
 
 ## Value
 

@@ -19,7 +19,7 @@ resolves to nothing matches no row (it never means &quot;all concepts&quot;)."><
 
     <a class="navbar-brand me-2" href="../index.html">dsOMOPClient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.10.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +72,8 @@ resolves to nothing matches no row (it never means "all concepts").</p>
 <span>  descendants <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  mapped <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  exclude <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  name <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  validity_policy <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -100,6 +101,12 @@ unnamed <code>omop_concept_set()</code> expanded with its own flags.</p></dd>
 
 <dt id="arg-name">name<a class="anchor" aria-label="anchor" href="#arg-name"></a></dt>
 <dd><p>Optional registry name.</p></dd>
+
+
+<dt id="arg-validity-policy">validity_policy<a class="anchor" aria-label="anchor" href="#arg-validity-policy"></a></dt>
+<dd><p>NULL retains native semantics. The versioned
+<code>"ohdsi-import-1"</code> policy requires valid explicit vocabulary records
+and excludes invalid expanded records; OHDSI importers select it explicitly.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -199,7 +199,10 @@ recipe_set_publish <- function(recipe, publish) {
 #' @param x A JSON string or file with one concept-set expression
 #'   (\code{list(items = ...)}), a named list of them, or an ATLAS
 #'   \code{ConceptSets} array (elements with \code{name} and
-#'   \code{expression}).
+#'   \code{expression}). Concept IDs must be scalar integral JSON numbers in
+#'   0..2147483647. Present flags must be scalar Booleans; omitted means false
+#'   and null is invalid. Duplicate object keys and unsupported item fields
+#'   are refused before include/exclude partitioning.
 #' @return A named list of \code{omop_concept_set} objects, a JSON string, or
 #'   the modified recipe.
 #' @export
@@ -249,10 +252,7 @@ recipe_export_concept_sets <- function(recipe, file = NULL) {
 #' @export
 recipe_import_concept_sets <- function(recipe, x) {
   .v2_recipe_check(recipe)
-  if (length(x) == 1L && is.character(x) && file.exists(x)) {
-    x <- paste(readLines(x, warn = FALSE), collapse = "\n")
-  }
-  data <- if (is.character(x)) jsonlite::fromJSON(x, simplifyVector = FALSE) else x
+  data <- .ohdsi_read_definition(x)
   entries <- if (!is.null(data$items)) {
     list(list(name = "concept_set_1", expression = data))
   } else if (is.null(names(data))) {
@@ -260,6 +260,7 @@ recipe_import_concept_sets <- function(recipe, x) {
   } else {
     lapply(names(data), function(nm) list(name = nm, expression = data[[nm]]))
   }
+  for (e in entries) .ohdsi_concept_items(e$expression %||% e)
   for (e in entries) {
     expr <- e$expression %||% e
     cs <- .v2_concept_set_from_ohdsi(expr, .v2_truncate_name(.sanitize_name(e$name %||% "concept_set")))
@@ -270,18 +271,11 @@ recipe_import_concept_sets <- function(recipe, x) {
 
 # One OHDSI concept-set expression as an omop_concept_set.
 .v2_concept_set_from_ohdsi <- function(expr, name) {
-  items <- expr$items %||% list()
-  if (length(items) == 0L) stop("Concept-set expression '", name, "' has no items.", call. = FALSE)
-  flag <- function(it, f) isTRUE(it[[f]])
-  incl <- Filter(function(it) !flag(it, "isExcluded"), items)
-  excl <- Filter(function(it) flag(it, "isExcluded"), items)
-  ids_of <- function(lst) vapply(lst, function(it) {
-    id <- suppressWarnings(as.integer(it$concept$CONCEPT_ID))
-    if (length(id) != 1L || is.na(id) || id < 0L) {
-      stop("Concept-set '", name, "': CONCEPT_ID must be a non-negative integer.", call. = FALSE)
-    }
-    id
-  }, integer(1))
+  items <- .ohdsi_concept_items(expr)
+  flag <- function(it, f) it[[f]]
+  incl <- Filter(function(it) !it$is_excluded, items)
+  excl <- Filter(function(it) it$is_excluded, items)
+  ids_of <- function(lst) vapply(lst, `[[`, integer(1), "concept_id")
   uniform <- function(lst, f) {
     v <- unique(vapply(lst, flag, logical(1), f = f))
     if (length(v) > 1L) {
@@ -293,12 +287,12 @@ recipe_import_concept_sets <- function(recipe, x) {
   if (length(incl) == 0L) stop("Concept-set '", name, "' has only excluded items.", call. = FALSE)
   exclude <- NULL
   if (length(excl)) {
-    ex_desc <- uniform(excl, "includeDescendants")
-    ex_map <- uniform(excl, "includeMapped")
-    exclude <- if (ex_desc || ex_map) {
-      omop_concept_set(ids_of(excl), descendants = ex_desc, mapped = ex_map)
-    } else ids_of(excl)
+    ex_desc <- uniform(excl, "include_descendants")
+    ex_map <- uniform(excl, "include_mapped")
+    exclude <- omop_concept_set(ids_of(excl), descendants = ex_desc, mapped = ex_map,
+                               validity_policy = "ohdsi-import-1")
   }
-  omop_concept_set(ids_of(incl), descendants = uniform(incl, "includeDescendants"),
-                   mapped = uniform(incl, "includeMapped"), exclude = exclude, name = name)
+  omop_concept_set(ids_of(incl), descendants = uniform(incl, "include_descendants"),
+                   mapped = uniform(incl, "include_mapped"), exclude = exclude, name = name,
+                   validity_policy = "ohdsi-import-1")
 }

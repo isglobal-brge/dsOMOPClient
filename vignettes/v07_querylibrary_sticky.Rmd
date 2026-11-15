@@ -12,6 +12,18 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(dsOMOPClient)
 ```
 
+## Corrected contracts in 2.10.5
+
+Pinned analysis loaders seal the final presented frame inside the original read
+snapshot. Re-run an affected loader before a typed protected release; provenance
+verification remains strict. The query-library redesign is deferred in this
+release, so continue to use the existing reviewed mappings below.
+
+Incidence `clean_window` and FE prevalence `time_windows` values other than zero
+are refused because those catalog routes do not implement the requested window.
+Use a validated native risk/window recipe when that scientific requirement
+matters; silently dropping a required window is not an equivalent analysis.
+
 The QueryLibrary integration distinguishes an upstream clinical question from
 its published SQL. The SQL is training/reference material and is never executed
 by the sticky redesign path. Instead, a typed recipe or plan defines the
