@@ -60,15 +60,15 @@ local({
   # for both passwords and tokens. The helper's login/attach calls remain unrun.
   for (token in c("", "example-token")) {
     Sys.setenv(BOOK_OPAL_TOKEN=token)
-    helper <- new.env(parent=example)
-    helper$resource <- "numeric"
-    helper$env <- helper
-    for (expr in as.list(body(example$book_connect))[-1L]) {
-      if (is.call(expr) && identical(expr[[1L]], as.name("<-")) &&
-          identical(expr[[2L]], as.name("conns"))) break
-      eval(expr, helper)
-    }
-    config <- helper$builder$build()
+    helper <- example$book_connect
+    expressions <- as.list(body(helper))[-1L]
+    login_at <- which(vapply(expressions, function(expr)
+      is.call(expr) && identical(expr[[1L]], as.name("<-")) &&
+        identical(expr[[2L]], as.name("conns")), logical(1)))
+    stopifnot(length(login_at) == 1L)
+    body(helper) <- as.call(c(list(as.name("{")), expressions[seq_len(login_at - 1L)],
+                             list(quote(builder$build()))))
+    config <- helper("numeric")
     stopifnot(config$url == login$url, config$profile == login$profile,
               config$driver == "OpalDriver")
     if (nzchar(token)) stopifnot(config$token == token)
