@@ -51,19 +51,16 @@ request goes.
 
 ## The Opal login path
 
-Edit `tools/book/connection.R` once to set `book_driver <- "Opal"`, your
-`opal_url`, `opal_project`, `opal_resources` and `opal_profile`. Keep
-credentials in `BOOK_OPAL_USER` and `BOOK_OPAL_PASSWORD` in your local
-environment. Restart R and run the setup above. Every public practice
-chapter uses that same file.
+For a study server, replace the local connection chunk with the [Opal
+login chunk in Getting
+started](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#connect-to-your-opal-server).
+It uses DSI and DSOpal with the URL, credentials, profile and resources
+supplied by your administrator. The attach and analysis calls below then
+use that `conns` list and its resource names.
 
-`book_connect()` logs in with DSOpal when Opal is selected; with DSLite
-it calls `book_practice()` locally. Both return a list, so the
-assignment `conns <- practice$conns` is essential. Questionnaire
-chapters use their explicitly separate local fixture. The optional
-[administrator
-walkthrough](https://isglobal-brge.github.io/dsOMOPClient/articles/book-00-start.html#use-the-same-two-resources-on-opal)
-creates and checks both Opal resources.
+For local practice, keep the setup above. `book_connect()` reads the
+same connection settings when a later section changes datasets.
+Questionnaire chapters identify their separate local fixture.
 
 ``` r
 resource_names
@@ -79,8 +76,8 @@ resource.
 ## A resource is a route to a database
 
 A *resource* stores the connection details on the server. On the
-practice server its name is `gibleed`. In the optional Opal setup it is
-`practice.gibleed`.
+practice server its name is `gibleed`. On Opal, use the
+project-qualified name supplied by your administrator.
 
 A *symbol* is an R object name inside the DataSHIELD session. Attach the
 resource and deliberately name the session handle `omop`:
@@ -166,8 +163,7 @@ later by a recipe.
 
 At the end of your own work, call `ds.omop.disconnect(conns = conns)`
 and then `DSI::datashield.logout(conns)`. Start again with the practice
-helper for another chapter. The reproduction script performs both
-cleanup calls after each chapter.
+helper for another chapter.
 
 ## Switch between the two practice resources
 
@@ -184,9 +180,9 @@ class(numeric_session)
     #> [1] "omop_session"
 
 This changes the database behind the OMOP handle. It does not copy or
-combine patient rows between resources. On Opal the corresponding name
-is `practice.numeric`. Return to GiBleed for the next introductory
-chapters:
+combine patient rows between resources. On Opal,
+`resource_names[["numeric"]]` selects the resource you configured.
+Return to GiBleed for the next introductory chapters:
 
 ``` r
 ds.omop.disconnect(conns = conns)

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+mkdir -p tools/book/evidence
 read -r host port < <(python3 /workspace/astra/runpod/deckpod.py ssh-target)
 opts=(-i "$HOME/.ssh/runpod_cover" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p "$port")
 remote=/root/rt/wt/book

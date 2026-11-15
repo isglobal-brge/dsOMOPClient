@@ -25,7 +25,6 @@ data download. The lessons use a local DSLite practice server. RStudio is a conv
 
 Run this **installation block once**, before the examples. It installs every
 package needed by the client, the local practice server and the helpers.
-This chunk is not run when building the book and has no output here.
 
 
 ``` r
@@ -185,7 +184,7 @@ the methods available to your session agree.
 
 Your administrator has already set up the server and gives you its URL, your user
 and password (or token), the resource names and the DataSHIELD profile. Use those
-details in this connection chunk; no server administration is part of the lessons.
+details in this connection chunk.
 
 In a fresh session, replace the chapter's local connection chunk with the block
 below. It is not executed here: the printed chapter results use the local

@@ -93,18 +93,18 @@
     
 <div class="learn-box">
 <p><strong>What you will learn</strong></p>
-<p>Install the client, choose a practice environment, and check both package versions.</p>
+<p>Install the client, open a practice connection, and check both package versions.</p>
 </div>
 <p>This chapter creates the public synthetic GiBleed practice connection. Run the sections in order in one R session. All printed results below were computed with dsOMOP and dsOMOPClient 2.10.5. They are teaching data, not clinical findings.</p>
 <div class="section level2">
 <h2 id="before-you-start">Before you start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
 </h2>
-<p>You need R 4.1 or newer (the recorded run used R 4.6.2), internet access for installation, and either an Opal with dsOMOP 2.10.5 or the local DSLite practice server below. RStudio is a convenient editor; ordinary R also works. Download the book helpers below; you do not need a Git checkout.</p>
-<p>Run this <strong>installation block once</strong>, before the examples. It installs every package used by the lessons, the offline server and the helpers.</p>
+<p>You need R 4.1 or newer and internet access for installation and the practice data download. The lessons use a local DSLite practice server. RStudio is a convenient editor; ordinary R also works. Download the book helpers below; you do not need a Git checkout.</p>
+<p>Run this <strong>installation block once</strong>, before the examples. It installs every package needed by the client, the local practice server and the helpers.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"remotes"</span>, <span class="st">"DSI"</span>, <span class="st">"DSOpal"</span>, <span class="st">"DSLite"</span>, <span class="st">"DBI"</span>, <span class="st">"RSQLite"</span>,</span>
 <span>                   <span class="st">"resourcer"</span>, <span class="st">"withr"</span>, <span class="st">"openssl"</span>, <span class="st">"jsonlite"</span>, <span class="st">"knitr"</span>,</span>
-<span>                   <span class="st">"rmarkdown"</span>, <span class="st">"pkgdown"</span>, <span class="st">"bslib"</span>, <span class="st">"opalr"</span>, <span class="st">"duckdb"</span><span class="op">)</span><span class="op">)</span></span>
+<span>                   <span class="st">"rmarkdown"</span>, <span class="st">"duckdb"</span>, <span class="st">"lme4"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBase@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"datashield/dsBaseClient@6.3.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"isglobal-brge/dsOMOP@2.10.5"</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span>
@@ -125,8 +125,8 @@
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"tools/book/capstone.R"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>The last line prints your home directory followed by <code>/book-work</code>. In every new R session run <code>setwd(path.expand("~/book-work"))</code> before the chapter setup. The ZIP preserves <code>tools/book/</code> automatically. Alternatively, save the individual <a href="../downloads/practice.R">practice</a>, <a href="../downloads/fixture.R">fixture</a>, <a href="../downloads/connection.R">connection</a>, <a href="../downloads/display.R">display</a> and <a href="../downloads/load-practice.R">practice loader</a> and <a href="../downloads/load-numeric.R">numeric loader</a> and <a href="../downloads/case-helpers.R">formula helpers</a> files under <code>book-work/tools/book/</code>. Keep the numeric loader filename <code>load-numeric.R</code>; the practice loader sources it. Save the <a href="../downloads/capstone.R">capstone helper</a> in <code>book-work/tools/book/</code>; chapter 18’s solution uses it.</p>
-<p><code>display.R</code> formats released summaries, tables and returned symbol mappings for reading. It does not retrieve patient rows. <code>practice.R</code> defines <code>book_connect()</code> and the local practice server; it reads the connection settings and attaches the selected resource. Source these downloaded files in the order shown in each chapter.</p>
-<p><code>connection.R</code> is the one place to select DSLite or Opal and set the Opal URL, project, profile and two resource names. Leave its defaults for local practice.</p>
+<p><code>display.R</code> formats released summaries, tables and returned symbol mappings for reading. It does not retrieve patient rows. <code>practice.R</code> defines the local practice server. <code>connection.R</code> defines <code>book_connect()</code>, which reads the connection settings and attaches the selected resource. Source these downloaded files in the order shown in each chapter.</p>
+<p>Leave <code>connection.R</code> at its defaults for local practice. The <a href="#connect-to-your-opal-server">Opal connection chunk</a> below replaces those defaults for a session on your study server.</p>
 </div>
 <div class="section level2">
 <h2 id="check-the-client">Check the client<a class="anchor" aria-label="anchor" href="#check-the-client"></a>
@@ -146,7 +146,7 @@
 <h2 id="load-two-public-synthetic-datasets">Load two public synthetic datasets<a class="anchor" aria-label="anchor" href="#load-two-public-synthetic-datasets"></a>
 </h2>
 <p>The practice server has two resources. <strong>GiBleed</strong> supports the introductory schema and vocabulary lessons. <strong>Synthea27Nj</strong> supplies hemoglobin and other numeric measurements with units for <a href="book-14-labs.html">Working with lab values</a>. Both contain fictional patients; “numeric” means populated numeric fields, not real patient records. GiBleed has 44,053 measurement rows but no populated <code>value_as_number</code>, so it cannot teach lab-value reducers on its own.</p>
-<p>The administrator loader is <a href="../downloads/load-practice.R">tools/book/load-practice.R</a>. It downloads the two <a href="https://github.com/OHDSI/EunomiaDatasets" class="external-link">Eunomia datasets</a> and creates the SQLite databases used by the lessons. Run it once from <code>book-work</code>:</p>
+<p>The local practice loader is <a href="../downloads/load-practice.R">tools/book/load-practice.R</a>. It downloads the two <a href="https://github.com/OHDSI/EunomiaDatasets" class="external-link">Eunomia datasets</a> and creates the SQLite databases used by the lessons. Run it once from <code>book-work</code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/system2.html" class="external-link">system2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Rhome.html" class="external-link">R.home</a></span><span class="op">(</span><span class="st">"bin"</span><span class="op">)</span>, <span class="st">"Rscript"</span><span class="op">)</span>,</span>
 <span>        <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"tools/book/load-practice.R"</span>, <span class="st">"../practice-data"</span><span class="op">)</span><span class="op">)</span></span>
@@ -161,7 +161,7 @@
 <div class="section level2">
 <h2 id="open-the-practice-server">Open the practice server<a class="anchor" aria-label="anchor" href="#open-the-practice-server"></a>
 </h2>
-<p>To reproduce without Opal, install the matching dsOMOP package and DSLite, DBI, RSQLite, resourcer, withr, dsBase and dsBaseClient. Use <code>book-work</code> as your R working directory. DSLite executes real DataSHIELD methods inside R; this helper creates one server with both loaded resources and attaches GiBleed.</p>
+<p>Use <code>book-work</code> as your R working directory after running the installation block above. DSLite executes real DataSHIELD methods inside R; this helper creates one server with both loaded resources and attaches GiBleed.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
@@ -179,96 +179,46 @@
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"server"</span>, <span class="st">"published"</span>, <span class="st">"running"</span>, <span class="st">"ready"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   server published running ready</span></span>
 <span><span class="co">#&gt; 1   site    2.10.5  2.10.5  TRUE</span></span></code></pre>
-<p>The reply comes from the server. Check both the installed and published versions when using Opal: publishing makes the package methods available to analysts.</p>
+<p>The reply comes from the server. <code>ready</code> confirms that the running package and the methods available to your session agree.</p>
 </div>
 <div class="section level2">
-<h2 id="use-the-same-two-resources-on-opal">Use the same two resources on Opal<a class="anchor" aria-label="anchor" href="#use-the-same-two-resources-on-opal"></a>
+<h2 id="connect-to-your-opal-server">Connect to your Opal server<a class="anchor" aria-label="anchor" href="#connect-to-your-opal-server"></a>
 </h2>
-<p><strong>Optional administrator walkthrough; requires a Docker host.</strong> Ordinary readers can continue with DSLite.</p>
-<div class="section level3">
-<h3 id="start-the-practice-stack-and-mount-the-databases">Start the practice stack and mount the databases<a class="anchor" aria-label="anchor" href="#start-the-practice-stack-and-mount-the-databases"></a>
-</h3>
-<p>On the Docker host, install Docker with Compose, then install easy-opal. Obtain the helper ZIP and load the two databases there exactly as above. The host layout must be <code>~/book-work/tools/book/</code> and <code>~/practice-data/</code>. Run in a terminal:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="ex">uv</span> tool install easy-opal</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a><span class="ex">easy-opal</span> instance create book</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a><span class="ex">easy-opal</span> -i book setup --stack-name book --host localhost --ssl-strategy none --http-port 8080 --yes</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a><span class="ex">easy-opal</span> -i book up</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true"></a><span class="ex">easy-opal</span> -i book status</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true"></a><span class="bu">cd</span> ~/book-work</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true"></a><span class="fu">bash</span> tools/book/book-compose.sh up -d --force-recreate rock</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true"></a><span class="fu">bash</span> tools/book/book-compose.sh exec -T rock sh -c <span class="st">'test -r /data/practice/gibleed.sqlite &amp;&amp; test -r /data/practice/numeric.sqlite'</span></span></code></pre></div>
-<p>Use <code>pipx install easy-opal</code> if you do not use uv. The setup prints the local Opal URL and administrator password; keep them for the next step. This local practice stack uses HTTP. For a remote deployment use your administrator’s URL. The shell helper uses the generated instance directory <code>~/.easy-opal/instances/book</code>; if <code>easy-opal instance info book</code> shows another location, set <code>BOOK_OPAL_INSTANCE_DIR</code> to it.</p>
-<p>The ZIP includes this concrete Compose overlay, <code>tools/book/book-rock.yml</code>:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="fu">services</span><span class="kw">:</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true"></a><span class="at">  </span><span class="fu">rock</span><span class="kw">:</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> bind</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true"></a><span class="at">        </span><span class="fu">source</span><span class="kw">:</span><span class="at"> ${BOOK_DATA_DIR}</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true"></a><span class="at">        </span><span class="fu">target</span><span class="kw">:</span><span class="at"> /data/practice</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true"></a><span class="at">        </span><span class="fu">read_only</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
-<p><code>book-compose.sh</code> resolves the absolute host data directory and combines this overlay with easy-opal’s generated <code>docker-compose.yml</code>. The original Rock <code>/srv</code> volume is retained. Use <code>bash tools/book/book-compose.sh up -d</code> and <code>bash tools/book/book-compose.sh stop</code> to manage the mounted stack thereafter. After an easy-opal configuration change, run <code>easy-opal -i book up</code>, then the <code>--force-recreate rock</code> command above again to restore the overlay. Reapply the package installation steps after recreating Rock if its image lacks the packages.</p>
-</div>
-<div class="section level3">
-<h3 id="install-in-rock-and-publish-the-datashield-methods">Install in Rock and publish the DataSHIELD methods<a class="anchor" aria-label="anchor" href="#install-in-rock-and-publish-the-datashield-methods"></a>
-</h3>
-<p>First install the SQLite driver and GitHub installer <strong>inside Rock</strong>:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a><span class="fu">bash</span> tools/book/book-compose.sh exec -T --user root rock Rscript -e <span class="st">'install.packages(c("remotes", "RSQLite"), repos="https://cloud.r-project.org")'</span></span></code></pre></div>
-<p>In <code>tools/book/connection.R</code>, set <code>book_driver &lt;- "Opal"</code>, set <code>opal_url</code> to the URL printed by setup, and retain <code>opal_project &lt;- "practice"</code>, the two default resource names, and <code>opal_profile &lt;- "default"</code>. These are the same settings all public practice chapters read. In your local R environment set <code>BOOK_OPAL_ADMIN_PASSWORD</code> to the generated password, <code>BOOK_OPAL_USER</code> to a new analyst name (for example <code>bookreader</code>) and <code>BOOK_OPAL_PASSWORD</code> to its password. Run <code>file.edit(path.expand("~/.Renviron"))</code> and add these lines, replacing the placeholders with your values (retain quotes around passwords). This is a private local file, not a shared notebook:</p>
-<pre class="text"><code><span><span class="va">BOOK_OPAL_ADMIN_PASSWORD</span><span class="op">=</span><span class="st">"&lt;password printed by easy-opal&gt;"</span></span>
-<span><span class="va">BOOK_OPAL_USER</span><span class="op">=</span><span class="va">bookreader</span></span>
-<span><span class="va">BOOK_OPAL_PASSWORD</span><span class="op">=</span><span class="st">"&lt;choose a password of at least eight characters&gt;"</span></span></code></pre>
-<p>Save the file and restart R so those environment variables are loaded.</p>
-<p>From an R session in <code>book-work</code>, run:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/opal-admin.R"</span><span class="op">)</span></span></code></pre></div>
-<p>This downloadable <a href="../downloads/opal-admin.R">administrator script</a> logs in as <code>administrator</code> (or <code>BOOK_OPAL_ADMIN_USER</code>), installs dsBase 6.3.5 and dsOMOP 2.10.5 after enabling R package management in Opal’s general settings. It installs in the configured profile with <code>dsadmin.install_github_package()</code>, then calls <code>dsadmin.publish_package()</code> for both. Publishing registers their assign/aggregate methods and package options. It creates the named analyst if absent, grants DataSHIELD and profile use, creates the project and these resources, and grants the analyst resource <code>view</code> permission (the permission used for DataSHIELD). It leaves disclosure thresholds unchanged and refuses an existing resource whose URL or format differs. Existing analyst passwords are not reset.</p>
-<table class="table">
-<colgroup>
-<col width="33%">
-<col width="33%">
-<col width="33%">
-</colgroup>
-<thead><tr class="header">
-<th>Configured resource</th>
-<th>URL inside Rock</th>
-<th>Format</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>practice.gibleed</code></td>
-<td><code>omop+dbi:sqlite:///data/practice/gibleed.sqlite</code></td>
-<td><code>omop.dbi.db</code></td>
-</tr>
-<tr class="even">
-<td><code>practice.numeric</code></td>
-<td><code>omop+dbi:sqlite:///data/practice/numeric.sqlite</code></td>
-<td><code>omop.dbi.db</code></td>
-</tr>
-</tbody>
-</table>
-<p>SQLite needs no database credentials. The script declares <code>package = "dsOMOP"</code> on each resource so its resolver loads when assigned. It prints the installed package versions and resource definitions for checking. In the Opal browser UI, log in as the administrator using the same URL, open <strong>Administration → DataSHIELD</strong>, and verify the selected profile lists dsBase 6.3.5 and dsOMOP 2.10.5 with published methods. Resources remain database references; do not import them as downloadable patient tables.</p>
-</div>
-<div class="section level3">
-<h3 id="first-analyst-login-and-checks-for-both-resources">First analyst login and checks for both resources<a class="anchor" aria-label="anchor" href="#first-analyst-login-and-checks-for-both-resources"></a>
-</h3>
-<p>Keep only the analyst credentials for ordinary lessons. In a fresh R session:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">setwd</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/path.expand.html" class="external-link">path.expand</a></span><span class="op">(</span><span class="st">"~/book-work"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/check-opal.R"</span><span class="op">)</span></span></code></pre></div>
-<p>The <a href="../downloads/check-opal.R">check script</a> uses the same configuration and DSOpal login as the chapters, prints <code>site</code> and <code><a href="../reference/ds.omop.server.version.html">ds.omop.server.version()</a></code>, then attaches each resource and requests its measurement schema. Both calls must return a nonempty schema. The script prints a confirmation for each resource.</p>
-<p>Confirm installed and published server versions are 2.10.5 in the version reply. A failed login, missing driver, unpublished method, unreadable mount or wrong resource name stops the checks; do not proceed to the lessons until both pass. The script disconnects and logs out. Start the chapter’s visible setup to log in again. <a href="book-02-connect.html">Chapter 2</a> exercises switching on the same connection.</p>
-<p>To move to a future demo Opal, transfer the same two SQLite files to its Rock mount, run the resource provisioning with that host’s administrator, and update only <code>connection.R</code>. No database TLS setting or study-specific privacy setting is needed.</p>
-</div>
+<p>Your administrator has already set up the server and gives you its URL, your user and password (or token), the resource names and the DataSHIELD profile. Use those details in this connection chunk.</p>
+<p>In a fresh session, replace the chapter’s local connection chunk with the block below. It is not executed here: the printed chapter results use the local practice data. Use <code>"numeric"</code> instead of <code>"gibleed"</code> in the final attach call for a numeric-data chapter; the analysis code that follows the connection is the same.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://isglobal-brge.github.io/dsOMOPClient/">dsOMOPClient</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/datashield/DSOpal/" class="external-link">DSOpal</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/display.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span>, local <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/practice.R"</span><span class="op">)</span></span>
+<span><span class="va">book_driver</span> <span class="op">&lt;-</span> <span class="st">"Opal"</span></span>
+<span><span class="va">opal_url</span> <span class="op">&lt;-</span> <span class="st">"&lt;server-url&gt;"</span></span>
+<span><span class="va">opal_project</span> <span class="op">&lt;-</span> <span class="st">"&lt;project&gt;"</span></span>
+<span><span class="va">opal_resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>gibleed <span class="op">=</span> <span class="st">"&lt;gibleed-resource&gt;"</span>, numeric <span class="op">=</span> <span class="st">"&lt;numeric-resource&gt;"</span><span class="op">)</span></span>
+<span><span class="va">opal_profile</span> <span class="op">&lt;-</span> <span class="st">"&lt;profile&gt;"</span></span>
+<span><span class="va">resource_names</span> <span class="op">&lt;-</span> <span class="fu">book_resource_names</span><span class="op">(</span><span class="va">book_driver</span>, <span class="va">opal_project</span>, <span class="va">opal_resources</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>BOOK_OPAL_USER <span class="op">=</span> <span class="st">"&lt;user&gt;"</span>, BOOK_OPAL_PASSWORD <span class="op">=</span> <span class="st">"&lt;password&gt;"</span><span class="op">)</span></span>
+<span><span class="va">builder</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/newDSLoginBuilder.html" class="external-link">newDSLoginBuilder</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">builder</span><span class="op">$</span><span class="fu">append</span><span class="op">(</span>server <span class="op">=</span> <span class="st">"site"</span>, url <span class="op">=</span> <span class="va">opal_url</span>,</span>
+<span>  user <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_OPAL_USER"</span><span class="op">)</span>, password <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"BOOK_OPAL_PASSWORD"</span><span class="op">)</span>,</span>
+<span>  driver <span class="op">=</span> <span class="st">"OpalDriver"</span>, profile <span class="op">=</span> <span class="va">opal_profile</span><span class="op">)</span></span>
+<span><span class="va">conns</span> <span class="op">&lt;-</span> <span class="fu">DSI</span><span class="fu">::</span><span class="fu"><a href="https://datashield.github.io/DSI/reference/datashield.login.html" class="external-link">datashield.login</a></span><span class="op">(</span><span class="va">builder</span><span class="op">$</span><span class="fu">build</span><span class="op">(</span><span class="op">)</span>, assign <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ds.omop.connect.html">ds.omop.connect</a></span><span class="op">(</span>resource <span class="op">=</span> <span class="va">resource_names</span><span class="op">[[</span><span class="st">"gibleed"</span><span class="op">]</span><span class="op">]</span>, conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span></span>
+<span><span class="va">practice</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">conns</span><span class="op">)</span></span></code></pre></div>
+<p>Keep credentials in your private R session, outside shared study scripts. If you receive an access token, set <code>Sys.setenv(BOOK_OPAL_TOKEN = "&lt;token&gt;")</code> instead of the user and password, and replace the builder’s <code>user</code> and <code>password</code> arguments with <code>token = Sys.getenv("BOOK_OPAL_TOKEN")</code>. Later calls to <code>book_connect()</code> use the same token. Resource names include their project prefix, for example <code>study.measurements</code>; enter the project and resource parts separately above. The two names in <code>opal_resources</code> map the book’s datasets to the resources you were given. Your study data will produce different results from the practice data.</p>
+<p><a href="book-02-connect.html">Chapter 2</a> explains attaching resources and switching between them. Chapters that introduce the synthetic questionnaire or a local two-site example identify that practice setup explicitly.</p>
 </div>
 <div class="section level2">
 <h2 id="try-it">Try it<a class="anchor" aria-label="anchor" href="#try-it"></a>
 </h2>
 <p>Ask the client and server for their versions again. Which call needs a connection?</p>
 <details><p><summary>Solution</summary></p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.client.version.html">ds.omop.client.version</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "2.10.5"</span></span></code></pre>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/ds.omop.server.version.html">ds.omop.server.version</a></span><span class="op">(</span>conns <span class="op">=</span> <span class="va">conns</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"server"</span>, <span class="st">"published"</span>, <span class="st">"running"</span>, <span class="st">"ready"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   server published running ready</span></span>
 <span><span class="co">#&gt; 1   site    2.10.5  2.10.5  TRUE</span></span></code></pre>
@@ -279,11 +229,11 @@
 </h2>
 <p>Which packages run locally?</p>
 <details><p><summary>Solution 2</summary></p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DSI"</span>, <span class="st">"DSLite"</span>, <span class="st">"dsOMOPClient"</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>, <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;          DSI       DSLite dsOMOPClient </span></span>
 <span><span class="co">#&gt;      "1.8.0"      "1.5.0"     "2.10.5"</span></span></code></pre>
-<p>These are client packages. The server installs dsOMOP and dsBase separately.</p>
+<p>DSI and dsOMOPClient handle analyst requests. DSLite runs the practice server locally, using the dsOMOP and dsBase packages installed in the same block.</p>
 </details>
 </div>
 <div class="section level2">
@@ -291,12 +241,12 @@
 </h2>
 <p>Check that the shared resource configuration names both practice datasets.</p>
 <details><p><summary>Solution 3</summary></p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/book/connection.R"</span><span class="op">)</span></span>
 <span><span class="va">resource_names</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   gibleed   numeric </span></span>
 <span><span class="co">#&gt; "gibleed" "numeric"</span></span></code></pre>
-<p>Both named resources are required. Changing a host belongs in this one file, not in each lesson.</p>
+<p>These names select the two local practice datasets. The Opal connection chunk replaces them with the resource names supplied by your administrator.</p>
 </details>
 </div>
 <div class="section level2">
