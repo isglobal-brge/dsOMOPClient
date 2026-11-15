@@ -111,7 +111,7 @@ articles:
       - book-21-case-glucose
       - book-22-case-drug
       - book-23-case-table1
-  - title: Earlier reference guides
+  - title: Reference guides
     navbar: ~
     contents:
       - starts_with('v0')

@@ -21,7 +21,7 @@ withr::local_options(list(nfilter.subset = 5, default.nfilter.subset = 5,
 fixture_path <- tempfile(fileext = ".sqlite")
 db <- DBI::dbConnect(RSQLite::SQLite(), fixture_path)
 DBI::dbWriteTable(db, "person", data.frame(person_id = 1:4,
-  gender_concept_id = 0L, year_of_birth = c(1980L, 1990L, 2000L, 1975L),
+  gender_concept_id = 8532L, year_of_birth = c(1980L, 1990L, 2000L, 1975L),
   month_of_birth = c(12L, 3L, NA_integer_, 6L), day_of_birth = c(31L, 15L, NA_integer_, 1L), race_concept_id = 0L,
   ethnicity_concept_id = 0L))
 DBI::dbWriteTable(db, "observation_period", data.frame(observation_period_id = 1:4,
@@ -63,10 +63,19 @@ for (tab in c("person", "observation_period", "observation", "visit_occurrence",
     d <- base
     if (key != "person_id") d[[key]] <- d[[key]] + i * nrow(base)
     d$person_id <- d$person_id + i * 4L
+    if (tab == "person") d$gender_concept_id <- if (i %% 2L == 0L) 8532L else 8507L
     d
   })
   DBI::dbWriteTable(db, tab, do.call(rbind, copies), overwrite = TRUE)
 }
+sex_concepts <- DBI::dbReadTable(db, "concept")[rep(1, 2), ]
+sex_concepts$concept_id <- c(8532L, 8507L)
+sex_concepts$concept_name <- c("FEMALE", "MALE")
+sex_concepts$domain_id <- "Gender"
+sex_concepts$vocabulary_id <- "Gender"
+sex_concepts$concept_class_id <- "Gender"
+sex_concepts$concept_code <- c("F", "M")
+DBI::dbWriteTable(db, "concept", sex_concepts, append = TRUE)
 # Extend the released VA fixture with a second fever answer and visit settings.
 DBI::dbExecute(db, "UPDATE visit_occurrence SET visit_concept_id = CASE WHEN visit_occurrence_id % 5 IN (1,3) THEN 9201 ELSE 9202 END")
 DBI::dbWriteTable(db, "observation", data.frame(observation_id=31:36,
@@ -140,15 +149,13 @@ if (categories) {
 }
 # Optional explicitly synthetic formula practice, separate from Synthea.
 if (formulas) {
-  new <- data.frame(concept_id=c(970001L,970002L,970003L,8840L),
-    concept_name=c("Teaching standardized serum creatinine","Female equation branch",
-      "Male equation branch","milligram per deciliter"),
-    domain_id=c("Measurement","Gender","Gender","Unit"),
+  new <- data.frame(concept_id=c(970001L,8840L),
+    concept_name=c("Teaching standardized serum creatinine","milligram per deciliter"),
+    domain_id=c("Measurement","Unit"),
     vocabulary_id="Fixture",concept_class_id="Fixture",standard_concept="S",
-    concept_code=c("scr","female","male","mg/dL"),valid_start_date="1970-01-01",
+    concept_code=c("scr","mg/dL"),valid_start_date="1970-01-01",
     valid_end_date="2099-12-31",invalid_reason=NA_character_)
   DBI::dbWriteTable(db,"concept",new,append=TRUE)
-  DBI::dbExecute(db,"UPDATE person SET gender_concept_id = CASE WHEN person_id % 2 = 1 THEN 970002 ELSE 970003 END")
   DBI::dbWriteTable(db,"measurement",data.frame(measurement_id=1001:1024,person_id=1:24,
     measurement_concept_id=970001L,measurement_date="2024-06-01",measurement_type_concept_id=0L,
     value_as_number=rep(c(.7,.9,1.4,1.8),6),unit_concept_id=8840L),append=TRUE)

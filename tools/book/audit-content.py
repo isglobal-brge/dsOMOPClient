@@ -60,8 +60,7 @@ for p in [root/'docs/index.html', root/'docs/authors.html', *sorted((root/'docs/
             target_parser=Links(); target_parser.feed(target.read_text())
             if unquote(url.fragment) not in target_parser.ids:
                 missing.append({'page':str(p.relative_to(root)), 'href':link})
-# Check every rendered article's visible text, excluding generated recipe-explain
-# output (which may identify its machine language) and site navigation metadata.
+# Check every rendered article; audit-wording.py covers the complete site.
 class Visible(HTMLParser):
     def __init__(self): super().__init__(); self.words=[]; self.skip=0
     def handle_starttag(self,tag,attrs):

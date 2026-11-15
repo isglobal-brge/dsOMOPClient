@@ -25,7 +25,7 @@ verify_book4 <- function(input,env) {
     egfr <- DSLite::getDSLiteData(env$formula_conns,"D_egfr")$site$egfr
     # Independent direct-power equation; no reuse of the helper's log/exp expansion.
     scr <- rep(c(.7,.9,1.4,1.8),6); age <- rep(c(43,34,NA,49),6)
-    female <- rep(c(TRUE,FALSE,TRUE,FALSE),6)
+    female <- rep(rep(c(TRUE,FALSE),each=4),3)
     k <- ifelse(female,.7,.9);alpha <- ifelse(female,-.241,-.302)
     expected <- 142*pmin(scr/k,1)^alpha*pmax(scr/k,1)^(-1.2)*.9938^age*ifelse(female,1.012,1)
     same(egfr,expected)
@@ -39,7 +39,7 @@ verify_book4 <- function(input,env) {
       identical(levels(d$D_ordered$education),c("primary","secondary","tertiary")),
       sum(is.na(d$D_ordered$education))==12L,
       sum(d$D_missing_categories$education=="Missing")==12L,
-      all(d$D_missing_categories$sex=="Unknown"),
+      identical(as.integer(table(d$D_missing_categories$sex)[c("FEMALE", "MALE", "Missing", "Unknown")]), c(12L, 12L, 0L, 0L)),
       is.logical(d$D_flags$logical_flag),is.integer(d$D_flags$integer_flag),
       identical(as.integer(d$D_flags$logical_flag),d$D_flags$integer_flag),
       identical(as.character(d$D_flags$named_flag),ifelse(d$D_flags$integer_flag==1,"yes","no")),
@@ -59,12 +59,32 @@ verify_book4 <- function(input,env) {
       all(c("measurements_hb_baseline","measurements_hb_year3") %in% names(repeated)))
     message("BOOK4 REPEATED PASS: exact baseline alignment and expanded published schema")
   }
+  if(grepl('book-17-reproduce',input)) {
+    stopifnot(identical(recipe_to_plan(env$check), recipe_to_plan(env$second_recipe)),
+      identical(readLines(file.path(env$record_dir, "plan-digest.txt")), recipe_explain(env$check)$digest),
+      identical(readRDS(file.path(env$record_dir, "codebook.rds")), env$published),
+      identical(readLines(file.path(env$record_dir, "explanation.txt")), recipe_explain(env$check)$text),
+      identical(env$published[[1]]$columns$name, env$second_codebook[[1]]$columns$name),
+      nrow(DSLite::getDSLiteData(env$conns["site2"], "D_repeated")$site2) == 24L)
+    message("BOOK4 STUDY RECORD PASS: recipe, explanation, codebook, digest and second connection")
+  }
   if(grepl('book-19-case-mortality',input)) {
     d<-data('D_mortality_rate')
     stopifnot(nrow(d)==24L,sum(d$mi)==12,sum(d$pneumonia)==6,
       sum(is.na(d$age_band))==12L,all(d$risk_days>0 & d$risk_days<=366))
     expected<-c(12,6)/sum(d$risk_days)*365.25*1000
     same(env$rates$Per_1000_person_years,expected)
+    stopifnot(identical(as.integer(table(d$sex)), c(12L, 12L)))
+    db <- DBI::dbConnect(RSQLite::SQLite(), env$practice$path[[1]])
+    source <- DBI::dbGetQuery(db, "SELECT p.gender_concept_id, d.death_date, d.cause_concept_id FROM person p LEFT JOIN death d ON p.person_id=d.person_id")
+    DBI::dbDisconnect(db)
+    for (sex in c("FEMALE", "MALE")) {
+      x <- source[source$gender_concept_id == if (sex == "FEMALE") 8532L else 8507L, ]
+      days <- as.numeric(as.Date(x$death_date) - as.Date("2024-01-01")); days[is.na(days)] <- 366
+      expected_sex <- c(sum(x$cause_concept_id == 900201L, na.rm=TRUE),
+        sum(x$cause_concept_id == 900202L, na.rm=TRUE)) / sum(days) * 365.25 * 1000
+      same(env$sex_rates$Per_1000_person_years[env$sex_rates$Sex == sex], expected_sex)
+    }
     message('BOOK4 MORTALITY PASS: deaths, missing ages, clipped risk time and released rates')
   }
   if(grepl('book-20-case-gibleed',input)) {

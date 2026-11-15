@@ -327,8 +327,8 @@ creatinine <- omop_number(creatinine, omop_number_spec(unit =
 egfr <- omop_formula_egfr_ckdepi2021(creatinine,
   age = omop_age_at(omop_anchor(serum_event, which = "first", scope = "episode")),
   sex = omop_variable(table = "person", column = "gender_concept_id"),
-  sex_map = list(female = paste0("concept:", sex_ids[["Female equation branch"]]),
-    male = paste0("concept:", sex_ids[["Male equation branch"]])))
+  sex_map = list(female = paste0("concept:", sex_ids[["FEMALE"]]),
+    male = paste0("concept:", sex_ids[["MALE"]])))
 egfr_recipe <- omop_recipe(
   populations = omop_population("measurements", index = omop_index(serum_event)),
   variables = list(egfr = egfr),

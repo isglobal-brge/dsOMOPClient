@@ -14,7 +14,7 @@ knitr::opts_chunk$set(eval = FALSE)
 
 ## Imported populations in 2.10.5
 
-Re-import OHDSI definitions to attach the executable `ohdsi-import-1` vocabulary
+Import OHDSI definitions to attach the executable `ohdsi-import-1` vocabulary
 validity policy. A matching capable server checks included and excluded public
 concepts; unsupported clauses refuse with structural diagnostics from
 `recipe_circe_check()`. `recipe_circe_support()` describes the directional subset.
