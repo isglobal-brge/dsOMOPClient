@@ -290,15 +290,26 @@ Elapsed days need both dates. This calculation does not need a complete birth da
 
 ## Exercise 2: a common variant
 
-Read the calendar output’s definition rather than inferring meaning from a number.
+Compare the month calendar variable with the elapsed-days variable. Read their
+sources and the month precision/representation instead of inferring meaning from
+a number.
 
 <details><summary>Solution 2</summary>
 
 ```{r book4-exercise-2}
-class(elapsed)
+calendar <- months$variables$month
+list(source_table = calendar$derived$reference$event$table,
+  selection = calendar$derived$reference$which,
+  precision = calendar$date_spec$precision,
+  representation = calendar$date_spec$representation)
+duration <- elapsed$variables$days$derived
+list(from_table = duration$from$event$table, from_selection = duration$from$which,
+  to_table = duration$to$event$table, unit = duration$unit)
 ```
 
-The elapsed recipe defines a duration. A year coordinate and a day duration must not share an interpretation.
+The month variable uses `first_visit`, month precision and factor representation.
+The elapsed variable measures the duration from first visit to death. A calendar
+period and a day duration answer different questions.
 
 </details>
 

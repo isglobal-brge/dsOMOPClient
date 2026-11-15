@@ -263,7 +263,8 @@ Compile the all-visit membership definition and check its index selection.
 <details><summary>Solution 3</summary>
 
 ```{r book4-exercise-3}
-all_visitors$index$select
+compiled_membership <- recipe_to_plan(all_recipe)
+compiled_membership$populations[[1L]]$index$select
 ```
 
 The all selector retains repeated episodes. The episode, not necessarily the person, is the analysis row.

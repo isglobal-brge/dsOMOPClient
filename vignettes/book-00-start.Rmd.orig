@@ -104,12 +104,17 @@ The local practice loader is [tools/book/load-practice.R](../downloads/load-prac
 It downloads the two [Eunomia datasets](https://github.com/OHDSI/EunomiaDatasets)
 and creates the SQLite databases used by the lessons. Run it once from `book-work`:
 
-```r
-system2(file.path(R.home("bin"), "Rscript"),
-        c("tools/book/load-practice.R", "../practice-data"))
+```{r load-practice-data}
+source("tools/book/load-practice.R")
+load_book_practice("../practice-data")
 stopifnot(file.exists("../practice-data/gibleed.sqlite"),
           file.exists("../practice-data/numeric.sqlite"))
 ```
+
+The output reports both loaded datasets. GiBleed has 44,053 measurement rows
+and zero numeric values; Synthea has 10,040 rows, including 9,107 numeric values
+and 8,403 numeric values with a mapped unit. The checks confirm that both local
+databases exist.
 
 It uses the installed DBI, RSQLite, duckdb, withr, openssl and jsonlite packages. The source data are Apache-2.0 licensed;
 keep their [license](https://github.com/OHDSI/EunomiaDatasets/blob/3d349dcdd79cc346b8e36eb837e49feffe7f7497/LICENSE)

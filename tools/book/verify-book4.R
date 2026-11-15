@@ -111,12 +111,20 @@ verify_book4 <- function(input,env) {
     message('BOOK4 GLUCOSE PASS: category type, observed times and independent Gaussian fit')
   }
   if(grepl('book-22-case-drug',input)) {
-    same(env$class_pdc$Global.Mean[1,1],30/365)
+    same(env$class_pdc$Global.Mean[1,1],(365+120+60)/(3*365))
+    class <- env$class_snapshot
+    stopifnot(nrow(class)==18L)
+    same(sort(class$covered),sort(rep(c(365,120,60),6)))
+    same(sort(class$persistence),sort(rep(c(365,120,30),6)))
+    same(class$pdc,class$covered/365)
+    same(class$discontinued,as.integer(class$persistence<365))
+    stopifnot(sum(class$discontinued)==12L)
     d<-data('D_utilisation_analysis')
     stopifnot(nrow(d)>5,all(d$pdc>=0 & d$pdc<=1),all(d$covered>=0 & d$covered<=365))
     same(d$pdc,d$covered/365)
     same(d$discontinued,as.integer(d$persistence<365))
-    message('BOOK4 UTILISATION PASS: PDC bounds and discontinuation rule')
+    stopifnot(nrow(d)==1745L,all(d$covered==1),all(d$persistence==1),all(d$discontinued==1))
+    message('BOOK4 UTILISATION PASS: independent supply-pattern predictions, restart/overlap, and GiBleed one-day limitation')
   }
   if(grepl('book-23-case-table1',input)) {
     frames<-DSLite::getDSLiteData(env$two_conns,'D_table1')

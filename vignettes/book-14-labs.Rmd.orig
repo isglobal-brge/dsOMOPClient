@@ -358,7 +358,7 @@ bin_counts <- dsBaseClient::ds.table("D_lab_flags$band", useNA = "always", datas
 knitr::kable(book_counts(bin_counts))
 ```
 
-Unlike the old mutate-plus-cut workaround, the factor is ordered before release.
+The factor is ordered before release.
 That affects model contrasts: choose the raw number or explicit contrasts when
 a linear ordinal effect is not the model you intend.
 

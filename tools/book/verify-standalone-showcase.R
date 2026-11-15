@@ -92,6 +92,10 @@ verify_standalone_showcase <- function(input, env, get_data) {
     summary_matches(env$selected_result,10*means[means>=14])
     summary_matches(env$all_result,10*means)
     stopifnot(nrow(get_data("D_tour_selected"))==19L)
+    flagged <- get_data("D_tour_flagged")
+    same(flagged$above_teaching_cutoff,as.integer(flagged$hb>=14))
+    stopifnot(!"above_teaching_cutoff" %in% names(get_data("D_tour_converted")),
+      all(get_data("D_tour_selected")$above_teaching_cutoff==1L))
     message("SHOWCASE PASS: two harmonised sites, ages/dates, 12 shapes, VA, numeric counts, converted/filter summaries and solution")
   }
 }

@@ -96,7 +96,13 @@ local({
     dir.create(work, recursive=TRUE)
     # Only the loader-produced databases and manifest are shared, never a checkout.
     data_dir <- file.path(case, if (custom) "custom-data" else "practice-data")
-    stopifnot(file.symlink(practice_dir, data_dir))
+    if (grepl("book-00-start", input)) {
+      # Chapter 0 now executes the actual loader: use fresh output databases,
+      # with only the verified archives cached to avoid another download.
+      dir.create(data_dir)
+      archives <- list.files(practice_dir, "[.]zip$", full.names=TRUE)
+      stopifnot(length(archives)==2L, all(file.copy(archives, data_dir)))
+    } else stopifnot(file.symlink(practice_dir, data_dir))
     if (custom) Sys.setenv(BOOK_PRACTICE_DIR=data_dir)
     else Sys.unsetenv("BOOK_PRACTICE_DIR")
     unzip(file.path(root, "docs/downloads/book-helpers.zip"), exdir=work)

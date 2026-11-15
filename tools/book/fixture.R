@@ -1,5 +1,5 @@
 # Synthetic-only fixture derived from tests/testthat/helper-dates-va.R.
-book_fixture <- function(two_sites=FALSE, threshold=5L, levels_max=NULL, categories=FALSE, formulas=FALSE, symbol="omop", env=parent.frame()) {
+book_fixture <- function(two_sites=FALSE, threshold=5L, levels_max=NULL, categories=FALSE, formulas=FALSE, symbol="omop", env=parent.frame(), drug_histories=FALSE) {
 library(dsOMOP)
 library(dsOMOPClient)
 library(DSLite)
@@ -146,6 +146,25 @@ if (categories) {
     concept_id_2=c(900201L,900202L,960020L,960021L),
     relationship_id=c("Maps to","Maps to","Is a","Is a"),
     valid_start_date="1970-01-01",valid_end_date="2099-12-31",invalid_reason=NA_character_),overwrite=TRUE)
+}
+# Optional longitudinal supply example; default chapter fixtures stay unchanged.
+if (drug_histories) {
+  stopifnot(categories)
+  # Six people per public pattern: continuous supply, overlapping fills,
+  # and a restart after a gap longer than the 30-day persistence rule.
+  patterns <- list(list(start=c(0L,100L,220L), supply=c(120L,120L,125L)),
+    list(start=c(0L,30L), supply=c(60L,60L)),
+    list(start=c(0L,120L), supply=c(30L,30L)))
+  histories <- lapply(0:5, function(i) do.call(rbind, lapply(1:3, function(j) {
+    p <- patterns[[j]]
+    data.frame(person_id=i*4L+j, drug_concept_id=950001L,
+      drug_exposure_start_date=as.character(as.Date("2020-08-01")+p$start),
+      drug_exposure_end_date=as.character(as.Date("2020-08-01")+p$start+p$supply-1L),
+      drug_type_concept_id=0L, days_supply=p$supply)
+  })))
+  histories <- do.call(rbind,histories)
+  histories$drug_exposure_id <- seq_len(nrow(histories))
+  DBI::dbWriteTable(db,"drug_exposure",histories,overwrite=TRUE)
 }
 # Optional explicitly synthetic formula practice, separate from Synthea.
 if (formulas) {

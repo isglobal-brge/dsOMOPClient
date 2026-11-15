@@ -47,6 +47,7 @@ verify_chapter <- function(input, env) {
   verify_longitudinal(input, env, get_data)
   verify_standalone_showcase(input, env, get_data)
   verify_book4(input, env)
+  if (exists("verify_book4_fix1", mode="function")) verify_book4_fix1(input, env)
   # No native recipe accidentally executes through the legacy path.
   for(name in ls(env)) {
     obj <- get(name,env)

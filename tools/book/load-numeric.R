@@ -27,7 +27,7 @@ load_numeric_cdm <- function(directory) {
     DBI::dbBegin(connections$postgresql)
   }
   if (Sys.getenv("NUMERIC_DUCKDB", "1") != "0") {
-    connections$duckdb <- DBI::dbConnect(duckdb::duckdb(), dbdir = file.path(directory, "numeric_cdm.duckdb"))
+    connections$duckdb <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), dbdir = file.path(directory, "numeric_cdm.duckdb"))
     DBI::dbBegin(connections$duckdb)
   }
   counts <- list()

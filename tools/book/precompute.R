@@ -5,6 +5,7 @@ library(dsOMOPClient)
 source("tools/book/verify-book2.R")
 source("tools/book/verify.R")
 source("tools/book/verify-book4.R")
+source("tools/book/verify-book4-fix1.R")
 source("tools/book/verify-book3.R")
 source("tools/book/verify-longitudinal.R")
 source("tools/book/verify-standalone-showcase.R")
@@ -60,6 +61,8 @@ if (!"--chapter-worker" %in% args) {
           chapter_env$showcase_snapshot <- setNames(lapply(symbols, function(symbol)
             DSLite::getDSLiteData(chapter_env$conns, symbol)$site), symbols)
         }
+        if (grepl("book-22-case-drug", input) && options$label == "utilisation-cleanup")
+          chapter_env$class_snapshot <- DSLite::getDSLiteData(chapter_env$class_conns, "D_class_use")$site
         options
       })
       tryCatch(knitr::knit(input, output=sub("\\.orig$", "", input), envir=environment(), quiet=TRUE), error=function(e) { print(DSI::datashield.errors()); stop(e) })
